@@ -7,11 +7,11 @@ This SDK (Software Development Kit) folder contains:
 
 The SDK requires one of the PCIe cards listed shown here (http://processors.wiki.ti.com/index.php/HPC) to be installed in a Linux server. Linux distributions supported include:
 
-• Ubuntu
+    • Ubuntu
 
-• RHEL
+    • RHEL
 
-• CentOS
+    • CentOS
 
 Virtualized demos require KVM + QEMU to be installed
 
@@ -20,13 +20,13 @@ autoInstall_Sig_BSDK_XXX.sh script is used to install Signalogic_sw_host_DirectC
 
 Run the script, and it will prompt blow shown options to choose from:
 
-1) Signalogic SW installation
+    1) Signalogic SW installation
 
-2) Uninstall Signalogic SW
+    2) Uninstall Signalogic SW
 
-3) Signalogic Install Check
+    3) Signalogic Install Check
 
-4) exit
+    4) exit
 
 •	Option 1) will perform a full Signalogic software installation. On choosing this option, the install script will ask for software installation path and then proceed
 
