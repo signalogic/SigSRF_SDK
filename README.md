@@ -5,7 +5,7 @@ This SDK (Software Development Kit) folder contains:
 
 2) Several HPC application demos and test programs, including C/C++ source code
 
-The SDK requires one of the PCIe cards listed shown here (http://processors.wiki.ti.com/index.php/HPC) to be installed in a Linux server. Linux distributions supported include:
+The SDK requires one of the PCIe cards <a href="http://processors.wiki.ti.com/index.php/HPC">listed here</a> to be installed in a Linux server. Linux distributions supported include:
 
     • Ubuntu
 
