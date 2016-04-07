@@ -18,7 +18,7 @@ Virtualized demos require KVM + QEMU to be installed
 #Install Scripts
 autoInstall_Sig_BSDK_XXX.sh script is used to install Signalogic_sw_host_DirectCore_XXX.rar package
 
-Run the script, and it will prompt with the option shown below:
+Run the script, and it will prompt with the options shown below:
 
     1) Signalogic SW installation
 
@@ -26,13 +26,15 @@ Run the script, and it will prompt with the option shown below:
 
     3) Signalogic Install Check
 
-    4) exit
+    4) Exit
 
 •	Option 1) will perform a full Signalogic software installation. On choosing this option, the install script will ask for software installation path and then proceed
 
 •	Option 2) will perform a software uninstall.This option can be used for a full software uninstall; it may also be useful in case of errors or a need to repeat the installation process
 
-•	Option 3) This option is for diagnostic purpose. if there is any issue in sw installation or using Signalogic module etc..., user can choose this option whoch will create DirectCore_diagnostic_report_XXX.txt showing sucessfully/unsuccessfully installed software parts that can help debug the issue
+•	Option 3) is for diagnostic purposes. If there is any issue in sw installation or using Signalogic module etc..., user can choose this option whoch will create DirectCore_diagnostic_report_XXX.txt showing sucessfully/unsuccessfully installed software parts that can help debug the issue
+
+**NOTE: As shown above, in the Script/Diagnostic Reports naming convention, XXX can be the version number or date/time stamp which can change with new updates**
 
 #RAR Packages
 There are seperate RAR packages has been provided for different Operating Systems and thier versions for example,
