@@ -18,7 +18,7 @@ Virtualized demos require KVM + QEMU to be installed
 #Install Scripts
 autoInstall_Sig_BSDK_XXX.sh script is used to install Signalogic_sw_host_DirectCore_XXX.rar package
 
-Run the script, and it will prompt blow shown options to choose from:
+Run the script, and it will prompt with the option shown below:
 
     1) Signalogic SW installation
 
@@ -41,4 +41,4 @@ RHEL_7.1 (Red Hat version 7.1)
 
 Ubuntu_14.04.4_Trusty (Ubuntu 14.04)
 
-**NOTE: User needs to download and use suitable version of rar package (depending on thier OS) with the auto install script**
+**NOTE: User needs to download and use suitable version of rar package (depending on their OS) with the auto install script**
