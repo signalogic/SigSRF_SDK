@@ -37,7 +37,7 @@ Run the script, and it will prompt with the options shown below:
 **NOTE: As shown above, in the Script/Diagnostic Reports naming convention, XXX can be the version number or date/time stamp which can change with new updates**
 
 #RAR Packages
-There are seperate RAR packages has been provided for different Operating Systems and thier versions for example,
+There are seperate RAR packages has been provided for different Operating Systems and their versions for example,
 
 RHEL_7.1 (Red Hat version 7.1)
 
