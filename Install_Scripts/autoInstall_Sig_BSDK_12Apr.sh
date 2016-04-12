@@ -1,4 +1,5 @@
 #!/bin/bash
+
 #============================================
 # Copyright (C) Signalogic Inc 2014
 # Script provides full install/uninstall of Signalogic SW
@@ -7,12 +8,11 @@
 	# Added options:
 	# It will ask if target system is a Host or a VM, and then it will offer following options,
 	
-	# 1. Full installation options that includes dependency package, Signalogic SW, Qemu, libvirt and VMM installation to support c66x virtualization
+	# 1. Binary SDK version of Signalogic SW which includes binary version of Signalogic driver and libraries
 	# 2. Uninstall of Signalogic SW
-	# 3. Signalogic Install check for diagnostic purpose
+	# 3. Signalogic install check
 	# 4. Exit the script
-	
-# Created: March, 2016 by Harshal Patel
+# Created: March, 2016 by HP
 #============================================
 
 packageSetup() {			# This func. prompts for Signalogic installation path, extarct package, set envionment var
@@ -44,34 +44,36 @@ packageSetup() {			# This func. prompts for Signalogic installation path, extarc
 dependencyCheck() {			# It will check for generic non-Signalogic SW packages and prompt for installation if not installed
 	
 	DOTs='................................................................'
-	if [ ! $installPath ]; then
+	
+	if [ "$opt" = "Signalogic SW installation" ]; then
+		dependencyInstall="Dependency Check + Install"
+	elif [ "$opt" = "Dependency Check" ]; then
 		installPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
+		dependencyInstall="Dependency Check"
 		
 		if [ ! $installPath ]; then
 			echo 
-			echo "Signalogic install path could not be found. Please check if Signalogic SW has been successfully installed on the system or not"
+			echo "Signalogic install path could not be found."
 			echo "Exiting..."
 			echo
 			exit
 		fi
 	fi
-	echo
-	echo "Do you wish to perform just the (dependency check) ? or (dependency check + install) ?"
-	echo
-	read -p "Press 1 for (dependency check), and Press 2 for (dependency check + install): " dependencyInstall
-					
-	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS" ]; then
+	
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 	{
-		cd $installPath/Signalogic*/installation_rpms/RHEL
+
+		cd $installPath/Signalogic_2014v5/installation_rpms/RHEL
 		filename="rhelDependency.txt"
 		while read -r -u 3 line
 		do
 		d=$(sed 's/.rpm//g' <<< $line)
 		package=`rpm -qa | grep -w $d | head -n1`
 		if [ ! $package ]; then
-			if [ $dependencyInstall = "2" ]; then
+			if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 				if [ ! $totalInstall ]; then
-					read -p "Do you wish to install $d packages? Please insert [Y]ES, [N]O, [Aa]ll: " Dn
+					echo "Do you wish to install $d package?"
+					read -p "Please insert [Y]ES, [N]O, [Aa]ll: " Dn
 						if [[ ($Dn = "a") || ($Dn = "A") ]]; then
 							totalInstall=1
 						fi
@@ -81,19 +83,18 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 					[Nn]* ) ;;
 					* ) echo "Please retry with just *Yy/Aa* or *Nn*";;
 				esac
-			elif [ $dependencyInstall = "1" ]; then
+			elif [ "$dependencyInstall" = "Dependency Check" ]; then
 				printf "%s %s[ NOT INSTALLED ]\n" $d "${DOTs:${#d}}"
 			fi
 		else
 			printf "%s %s[ ALREADY INSTALLED ]\n" $d "${DOTs:${#d}}"
 		fi
-		
 		done 3< "$filename"
 	}
 	
-	elif [ $target = "VM" -o $OS = "Ubuntu" ]; then
+	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
 	{
-		if [ $dependencyInstall = "2" ]; then
+		if [ $dependencyInstall = "Dependency Check + Install" ]; then
 			package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
 			if [ ! $package ]; then
 				package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')
@@ -112,7 +113,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		d=$(sed 's/_.*//g' <<< $line)
 		package=$(dpkg -s $d 2>/dev/null | grep Status | awk ' {print $4} ')
 		if [ ! $package ]; then
-			if [ $dependencyInstall = "2" ]; then
+			if [ $dependencyInstall = "Dependency Check + Install" ]; then
 				if [ ! $totalInstall ]; then
 					read -p "Do you wish to install $d packages? Please insert [Y]ES, [N]O, [Aa]ll: " Dn
 						if [[ ($Dn = "a") || ($Dn = "A") ]]; then
@@ -124,7 +125,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 					[Nn]* ) ;;
 					* ) echo "Please retry with just *y* or *n*";;
 				esac
-			elif [ $dependencyInstall = "1" ]; then
+			elif [ $dependencyInstall = "Dependency Check" ]; then
 				printf "%s %s[ NOT INSTALLED ]\n" $d "${DOTs:${#d}}"
 			fi
 		elif [ $package ]; then
@@ -132,7 +133,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		fi
 		done 3< "$filename"
 		
-		if [ $dependencyInstall = "2" ]; then
+		if [ $dependencyInstall = "Dependency Check + Install" ]; then
 			# Dependencies gcc and g++ will be installed as gcc-4.8 and g++-4.8 so it is necessary to create a symmlink (gcc and g++) otherwise SW installation might be fail
 			ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
 			ln -s /usr/bin/g++-4.8 /usr/bin/g++
@@ -144,7 +145,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 
 depInstall () {
 
-	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS" ]; then
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 		rpm -Uvh $line
 	elif [ "$target" = "VM" -o $OS = "Ubuntu" ]; then
 		dpkg -i $line
@@ -163,7 +164,7 @@ swInstall() {				# It will install Signalogic SW on specified path
 	echo $kernel_version
 	echo "Creating symlinks..."
 	
-	if [ "$OS" = "CentOS" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 		ln -s /usr/src/kernels/$kernel_version /usr/src/linux 
 	elif [ "$OS" = "Ubuntu" ]; then
 		ln -s /usr/src/linux-headers-$kernel_version /usr/src/linux
@@ -188,7 +189,7 @@ swInstall() {				# It will install Signalogic SW on specified path
 		ln -s $installPath/Signalogic/DirectCore/virt_driver/virtio-sig.ko /lib/modules/$kernel_version
 	fi
 	depmod -a
-	if [ "$OS" = "CentOS" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 		cp $installPath/Signalogic/DirectCore/driver/sig_mc_hw.modules /etc/sysconfig/modules/
 		chmod 755 /etc/sysconfig/modules/sig_mc_hw.modules
 		echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.d/rc.local
@@ -198,6 +199,7 @@ swInstall() {				# It will install Signalogic SW on specified path
 		sed -i '/exit*/d' /etc/rc.local
 		echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.local
 		echo "exit 0" >> /etc/rc.local
+		chmod 755 /etc/rc.local
 	fi
 	echo
 	echo "Building Signalogic libraries..."
@@ -231,13 +233,13 @@ unInstall() {			# It will uninstall Signalogic SW completely
 	rmmod sig_mc_hw
 	unlink /usr/src/linux
 	
-	if [ "$OS" = "CentOS" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 		rm -rf /etc/sysconfig/modules/sig_mc_hw.modules
 	fi
 	
 	kernel_version=`uname -r`
 	
-		if [ "$OS" = "CentOS" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 			if [ $target = "Host" ]; then
 				rm -rf /usr/lib/modules/$kernel_version/sig_mc_hw.ko
 			elif [ $target = "VM" ]; then
@@ -251,7 +253,7 @@ unInstall() {			# It will uninstall Signalogic SW completely
 			fi
 		fi
 	
-	if [ "$OS" = "CentOS" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 		sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.d/rc.local 
 	elif [ "$OS" = "Ubuntu" ]; then
 		sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.local
