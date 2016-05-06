@@ -44,3 +44,9 @@ RHEL_7.1 (Red Hat version 7.1)
 Ubuntu_14.04.4_Trusty (Ubuntu 14.04)
 
 **NOTE: User needs to download and use suitable version of rar package (depending on their OS) with the auto install script**
+
+#User Guide
+
+<a href="http://signalogic.com/pages/SigC667x_UserGuide_RevD2.pdf">Click here</a> to access Signalogic User Guide
+
+It provides detailed information about Signalogic software installation, SigC667x Hardware installation, Test apps/Program demos etc.
