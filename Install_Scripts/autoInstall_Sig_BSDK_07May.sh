@@ -1,7 +1,7 @@
 #!/bin/bash
 #============================================
 # Copyright (C) Signalogic Inc 2014
-# Script provides full install/uninstall of Signalogic SW
+# Script provides Binary SDK install/uninstall of Signalogic SW
 # Rev 1.0
 # Revision History
 	# Added options:
@@ -10,10 +10,8 @@
 	# 1. Full installation options that includes dependency package, Signalogic SW, Qemu, libvirt and VMM installation to support c66x virtualization
 	# 2. Uninstall of Signalogic SW
 	# 3. Just dependency check and installation, required for Signalogic SW installation
-	# 4. Just Qemu, libvirt & VMM install
-	# 5. TI tools install
-	# 6. ROSE/BOOST install
-# Created: November, 2015 by HP
+
+# Created: Feb, 2016 by HP
 #============================================
 
 packageSetup() {			# This func. prompts for Signalogic installation path, extarct package, set envionment var
