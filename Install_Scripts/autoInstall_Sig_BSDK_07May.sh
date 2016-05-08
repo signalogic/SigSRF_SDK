@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #============================================
 # Copyright (C) Signalogic Inc 2014
 # Script provides full install/uninstall of Signalogic SW
@@ -8,11 +7,13 @@
 	# Added options:
 	# It will ask if target system is a Host or a VM, and then it will offer following options,
 	
-	# 1. Binary SDK version of Signalogic SW which includes binary version of Signalogic driver and libraries
+	# 1. Full installation options that includes dependency package, Signalogic SW, Qemu, libvirt and VMM installation to support c66x virtualization
 	# 2. Uninstall of Signalogic SW
-	# 3. Signalogic install check
-	# 4. Exit the script
-# Created: March, 2016 by HP
+	# 3. Just dependency check and installation, required for Signalogic SW installation
+	# 4. Just Qemu, libvirt & VMM install
+	# 5. TI tools install
+	# 6. ROSE/BOOST install
+# Created: November, 2015 by HP
 #============================================
 
 packageSetup() {			# This func. prompts for Signalogic installation path, extarct package, set envionment var
@@ -41,6 +42,18 @@ packageSetup() {			# This func. prompts for Signalogic installation path, extarc
 
 }
 
+depInstall () {
+
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+			yum -y --nogpgcheck localinstall $line
+	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+		dpkg -i $line
+		if [ $? -gt 0 ]; then
+			apt-get -f --force-yes --yes install
+		fi
+	fi
+	
+}
 dependencyCheck() {			# It will check for generic non-Signalogic SW packages and prompt for installation if not installed
 	
 	DOTs='................................................................'
@@ -63,10 +76,17 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 	{
 
+		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
+			package=$(rpm -qa gcc-c++)
+			if [ ! $package ]; then
+				yum -y remove gcc
+			fi
+		fi
 		cd $installPath/Signalogic_2014v5/installation_rpms/RHEL
 		filename="rhelDependency.txt"
 		while read -r -u 3 line
 		do
+		
 		d=$(sed 's/.rpm//g' <<< $line)
 		package=`rpm -qa | grep -w $d | head -n1`
 		if [ ! $package ]; then
@@ -94,7 +114,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 	
 	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
 	{
-		if [ $dependencyInstall = "Dependency Check + Install" ]; then
+		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 			package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
 			if [ ! $package ]; then
 				package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')
@@ -113,7 +133,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		d=$(sed 's/_.*//g' <<< $line)
 		package=$(dpkg -s $d 2>/dev/null | grep Status | awk ' {print $4} ')
 		if [ ! $package ]; then
-			if [ $dependencyInstall = "Dependency Check + Install" ]; then
+			if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 				if [ ! $totalInstall ]; then
 					read -p "Do you wish to install $d packages? Please insert [Y]ES, [N]O, [Aa]ll: " Dn
 						if [[ ($Dn = "a") || ($Dn = "A") ]]; then
@@ -125,7 +145,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 					[Nn]* ) ;;
 					* ) echo "Please retry with just *y* or *n*";;
 				esac
-			elif [ $dependencyInstall = "Dependency Check" ]; then
+			elif [ "$dependencyInstall" = "Dependency Check" ]; then
 				printf "%s %s[ NOT INSTALLED ]\n" $d "${DOTs:${#d}}"
 			fi
 		elif [ $package ]; then
@@ -133,22 +153,12 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		fi
 		done 3< "$filename"
 		
-		if [ $dependencyInstall = "Dependency Check + Install" ]; then
+		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 			# Dependencies gcc and g++ will be installed as gcc-4.8 and g++-4.8 so it is necessary to create a symmlink (gcc and g++) otherwise SW installation might be fail
 			ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
 			ln -s /usr/bin/g++-4.8 /usr/bin/g++
 		fi
 	}
-	fi
-	
-}
-
-depInstall () {
-
-	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-		rpm -Uvh $line
-	elif [ "$target" = "VM" -o $OS = "Ubuntu" ]; then
-		dpkg -i $line
 	fi
 	
 }
@@ -207,7 +217,6 @@ swInstall() {				# It will install Signalogic SW on specified path
 	for d in *; do
 		if [[ "$d" != "voplib" ]]; then
 			cd $d; cp lib* /usr/lib; ldconfig; cd -
-			#cd $d; make clean; make; cd -
 		fi
 	done
 	cd $installPath/Signalogic_*/DirectCore/apps/SigC641x_C667x/
@@ -299,6 +308,7 @@ fi
 
 echo >>$diagReportFile
 echo "Symlinks Check:">>$diagReportFile
+
 d="Signalogic_Symlink"
 if [ -L $installPath/Signalogic ]; then
 	printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
@@ -451,9 +461,9 @@ select opt in "Signalogic SW installation" "Uninstall Signalogic SW" "Signalogic
 do
     case $opt in
 		"Signalogic SW installation") packageSetup; dependencyCheck; swInstall; break;;
-      "Uninstall Signalogic SW") unInstall; break;;
+		"Uninstall Signalogic SW") unInstall; break;;
 		"Signalogic Install Check") installCheck; break;;
-      "exit") echo "Exiting..."; break;;
+		"exit") echo "Exiting..."; break;;
       *) echo invalid option;;
     esac
 done
