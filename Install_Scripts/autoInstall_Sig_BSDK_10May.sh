@@ -1,18 +1,32 @@
 #!/bin/bash
-#============================================
+#================================================================================================
 # Copyright (C) Signalogic Inc 2014
 # Script provides Binary SDK install/uninstall of Signalogic SW
 # Rev 1.0
-# Revision History
-	# Added options:
-	# It will ask if target system is a Host or a VM, and then it will offer following options,
-	
-	# 1. Full installation options that includes dependency package, Signalogic SW, Qemu, libvirt and VMM installation to support c66x virtualization
-	# 2. Uninstall of Signalogic SW
-	# 3. Just dependency check and installation, required for Signalogic SW installation
 
+	# Added options
+		# It will ask if target system is a Host or a VM, and then it will offer following options,
+			# 1. Signalogic SW install
+			# 2. Uninstall of Signalogic SW
+			# 3. Signalogic SW install check for troubleshoot
+	
+	# Pre-requirements
+		# Internet connection
+		# User will need to install unrar package prior to use script otherwise the script will not be able to unpack Signalogic RAR package and perform further installation
+			# For Ubuntu, use command:
+				# apt-get install unrar
+			# For RHEL/CentOS,
+				# wget http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm (Here package is for el7 version, user may have to use diff link or diff repo package)
+				# rpm -Uvh rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm
+				# yum install unrar
+
+	# CAUTION
+		# Dependency installation step will check if g++ is installed or not (Some newely installed OS does not include it), if not installed, the script will remove gcc, g++ package to avoid version difference and install it again provided with RAR package
+		# To avoid that situation, user needs to manually install g++ package and the script will not perform above step
+
+# Revision History
 # Created: Feb, 2016 by HP
-#============================================
+#================================================================================================
 
 packageSetup() {			# This func. prompts for Signalogic installation path, extarct package, set envionment var
 
@@ -30,10 +44,6 @@ packageSetup() {			# This func. prompts for Signalogic installation path, extarc
 		installPath="/"
 		echo "Default Install path (/) is chosen"
 	fi
-	
-	# Set up env. var permanently
-	export SIGNALOGIC_INSTALL_PATH=$installPath 
-	echo "SIGNALOGIC_INSTALL_PATH=$installPath" >> /etc/environment
 	
 	unrar x Signalogic_sw_host_DirectCore_BSDK*.rar $installPath/
 	unrar x Signalogic_sw_host_video_files*.rar $installPath/
@@ -163,6 +173,10 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 
 swInstall() {				# It will install Signalogic SW on specified path
 
+	# Set up environment var permanently
+	export SIGNALOGIC_INSTALL_PATH=$installPath 
+	echo "SIGNALOGIC_INSTALL_PATH=$installPath" >> /etc/environment
+	
 	echo
 	echo "Signalogic SW Installation will be performed..."
 	mv $installPath/Signalogic*/etc/signalogic /etc
@@ -234,6 +248,17 @@ unInstall() {			# It will uninstall Signalogic SW completely
 	echo "Signalogic SW uninstallation will be performed..."
 	echo
 	unInstallPath=$SIGNALOGIC_INSTALL_PATH
+	if [ ! $unInstallPath ]; then
+		unInstallPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
+		if [ ! $unInstallPath ]; then
+			echo 
+			echo "Signalogic install path could not be found."
+			echo "Exiting..."
+			echo
+			exit
+		fi
+	fi
+	
 	echo "Signalogic Install Path: $unInstallPath"
 	rm -rf $unInstallPath/Signalogic*
 	rm -rf /etc/signalogic
@@ -283,9 +308,17 @@ installCheck () {
 
 line='................................................................'
 
-if [ !$installPath ]; then
-	installPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
-fi
+	installPath=$SIGNALOGIC_INSTALL_PATH
+	if [ ! $installPath ]; then
+		installPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
+		if [ ! $installPath ]; then
+			echo 
+			echo "Signalogic install path could not be found."
+			echo "Exiting..."
+			echo
+			exit
+		fi
+	fi
 
 current_time=$(date +"%m.%d.%Y-%H:%M:%S")
 diagReportFile=DirectCore_diagnostic_report_$current_time.txt
