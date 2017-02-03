@@ -4,13 +4,13 @@
 # Script provides Binary SDK install/uninstall of Signalogic SW
 # Rev 1.0
 
-	# Added options
+	# Options
 		# It will ask if target system is a Host or a VM, and then it will offer following options,
 			# 1. Signalogic SW install
-			# 2. Uninstall of Signalogic SW
+			# 2. Uninstall Signalogic SW
 			# 3. Signalogic SW install check for troubleshoot
 	
-	# Pre-requirements
+	# Prerequisites
 		# Internet connection
 		# User will need to install unrar package prior to use script otherwise the script will not be able to unpack Signalogic RAR package and perform further installation
 			# For Ubuntu, use command:
@@ -66,7 +66,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 	
 	DOTs='................................................................'
 	
-	if [ "$opt" = "Signalogic SW installation" ]; then
+	if [ "$opt" = "Install Signalogic SW" ]; then
 		dependencyInstall="Dependency Check + Install"
 	elif [ "$opt" = "Dependency Check" ]; then
 		installPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
@@ -90,7 +90,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 				yum -y remove gcc
 			fi
 		fi
-		cd $installPath/Signalogic_2014v5/installation_rpms/RHEL
+		cd $installPath/Signalogic_2017v6/installation_rpms/RHEL
 		filename="rhelDependency.txt"
 		while read -r -u 3 line
 		do
@@ -163,8 +163,12 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 			# Dependencies gcc and g++ will be installed as gcc-4.8 and g++-4.8 so it is necessary to create a symmlink (gcc and g++) otherwise SW installation might be fail
-			ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
-			ln -s /usr/bin/g++-4.8 /usr/bin/g++
+			if [ ! -L  /usr/bin/gcc ]; then
+                        	ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
+                        fi
+			if [ ! -L  /usr/bin/g++ ]; then
+				ln -s /usr/bin/g++-4.8 /usr/bin/g++
+                        fi
 		fi
 	}
 	fi
@@ -179,7 +183,7 @@ swInstall() {				# It will install Signalogic SW on specified path
 	
 	echo
 	echo "Signalogic SW Installation will be performed..."
-	mv $installPath/Signalogic*/etc/signalogic /etc
+	mv $installPath/Signalogic_*/etc/signalogic /etc
 	rm -rf $installPath/Signalogic*/etc
 	echo
 	kernel_version=`uname -r`
@@ -187,18 +191,48 @@ swInstall() {				# It will install Signalogic SW on specified path
 	echo "Creating symlinks..."
 	
 	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
-		ln -s /usr/src/kernels/$kernel_version /usr/src/linux 
+		if [ ! -L  /usr/src/linux ]; then
+			ln -s /usr/src/kernels/$kernel_version /usr/src/linux
+		fi 
 	elif [ "$OS" = "Ubuntu" ]; then
-		ln -s /usr/src/linux-headers-$kernel_version /usr/src/linux
+		if [ ! -L  /usr/src/linux ]; then
+			ln -s /usr/src/linux-headers-$kernel_version /usr/src/linux
+		fi
 	fi
-	
-	ln -s $installPath/Signalogic_* $installPath/Signalogic
-	echo
-	
+		
+        if [ ! -L  $installPath/Signalogic ]; then
+		ln -s $installPath/Signalogic_* $installPath/Signalogic
+        fi
+	echo	
 	echo "loading driver"
 	if [ "$target" = "Host" ]; then
-		cd $installPath/Signalogic_*/DirectCore/hw_utils; make clean; make
-		cd ../driver; make load
+		#cd $installPath/Signalogic_*/DirectCore/hw_utils; make clean; make
+		cd $installPath/Signalogic_*/DirectCore/hw_utils; make
+		cd ../driver; 
+                distribution=$(lsb_release -d)
+                kernel=$(uname -r) 
+                if [[ $kernel == 3.2.0-49-generic ]]; then
+                   cp sig_mc_hw_ubuntu_12.04.5.ko sig_mc_hw.ko
+                elif [[ $kernel == 3.16.0-67-generic ]]; then
+                   cp sig_mc_hw_ubuntu_14.04.4.ko sig_mc_hw.ko
+                elif [[ $kernel == 4.4.0-31-generic ]]; then
+                   cp sig_mc_hw_ubuntu_14.04.5.ko sig_mc_hw.ko
+                elif [[ $kernel == "4.4.0-59-generic" ]]; then
+                   cp sig_mc_hw_ubuntu_16.04.1.ko sig_mc_hw.ko
+                elif [[ $distribution == *12.04.5* ]]; then
+                   cp sig_mc_hw_ubuntu_12.04.5.ko sig_mc_hw.ko
+                elif [[ $distribution == *14.04.4* ]]; then
+                   cp sig_mc_hw_ubuntu_14.04.4.ko sig_mc_hw.ko
+                elif [[ $distribution == *14.04.5* ]]; then
+                   cp sig_mc_hw_ubuntu_14.04.5.ko sig_mc_hw.ko
+                elif [[ $distribution == *16.04.1* ]]; then
+                   cp sig_mc_hw_ubuntu_16.04.1.ko sig_mc_hw.ko
+                fi
+	        if lsmod | grep sig_mc_hw &> /dev/null ; then
+			echo "Signalogic Driver is loaded"
+  		else		
+                	make load
+		fi
 	elif [ "$target" = "VM" ]; then
 		cd $installPath/Signalogic_*/DirectCore/virt_driver; make load
 	fi
@@ -206,9 +240,13 @@ swInstall() {				# It will install Signalogic SW on specified path
 	echo  "Setting up autoload of Signalogic driver on boot"
 	
 	if [ "$target" = "Host" ]; then
-		ln -s $installPath/Signalogic/DirectCore/driver/sig_mc_hw.ko /lib/modules/$kernel_version
+		if [ ! -f /lib/modules/$kernel_version//sig_mc_hw.ko ]; then
+			ln -s $installPath/Signalogic/DirectCore/driver/sig_mc_hw.ko /lib/modules/$kernel_version
+		fi
 	elif [ "$target" = "VM" ]; then
-		ln -s $installPath/Signalogic/DirectCore/virt_driver/virtio-sig.ko /lib/modules/$kernel_version
+		if [ ! -L /lib/modules/$kernel_version ]; then
+			ln -s $installPath/Signalogic/DirectCore/virt_driver/virtio-sig.ko /lib/modules/$kernel_version
+		fi
 	fi
 	depmod -a
 	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
@@ -488,10 +526,10 @@ done
 echo "*****************************************************"
 echo
 PS3="Please select install operation to perform [1-6]: "
-select opt in "Signalogic SW installation" "Uninstall Signalogic SW" "Signalogic Install Check" "exit"
+select opt in "Install Signalogic SW" "Uninstall Signalogic SW" "Signalogic Install Check" "exit"
 do
     case $opt in
-		"Signalogic SW installation") packageSetup; dependencyCheck; swInstall; break;;
+		"Install Signalogic SW") packageSetup; dependencyCheck; swInstall; break;;
 		"Uninstall Signalogic SW") unInstall; break;;
 		"Signalogic Install Check") installCheck; break;;
 		"exit") echo "Exiting..."; break;;
