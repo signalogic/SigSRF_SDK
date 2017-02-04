@@ -41,7 +41,7 @@ There are seperate RAR packages has been provided for different Operating System
 
 RHEL_7.1 (Red Hat version 7.1)
 
-Ubuntu_14.04.4_Trusty (Ubuntu 14.04)
+Ubuntu_16.04.1_Xenial (Ubuntu 16.04)
 
 **NOTE: User needs to download and use suitable version of rar package (depending on their OS) with the auto install script**
 
