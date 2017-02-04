@@ -20,7 +20,7 @@ autoInstall_Sig_BSDK_XXX.sh script is used to install Signalogic_sw_host_DirectC
 
 Run the script, and it will prompt with the options shown below:
 
-    1) Signalogic SW installation
+    1) Install Signalogic SW
 
     2) Uninstall Signalogic SW
 
