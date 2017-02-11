@@ -1,31 +1,21 @@
 #!/bin/bash
 #================================================================================================
-# Copyright (C) Signalogic Inc 2014
+# Copyright (C) Signalogic Inc 2017
 # Script provides Binary SDK install/uninstall of Signalogic SW
 # Rev 1.0
 
-	# Options
-		# It will ask if target system is a Host or a VM, and then it will offer following options,
-			# 1. Signalogic SW install
-			# 2. Uninstall Signalogic SW
-			# 3. Signalogic SW install check for troubleshoot
-	
-	# Prerequisites
+	# Requirements
 		# Internet connection
-		# User will need to install unrar package prior to use script otherwise the script will not be able to unpack Signalogic RAR package and perform further installation
+		# Install unrar package
 			# For Ubuntu, use command:
 				# apt-get install unrar
 			# For RHEL/CentOS,
-				# wget http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm (Here package is for el7 version, user may have to use diff link or diff repo package)
-				# rpm -Uvh rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm
+				# yum -y install epel-release && rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm
 				# yum install unrar
 
-	# CAUTION
-		# Dependency installation step will check if g++ is installed or not (Some newely installed OS does not include it), if not installed, the script will remove gcc, g++ package to avoid version difference and install it again provided with RAR package
-		# To avoid that situation, user needs to manually install g++ package and the script will not perform above step
-
 # Revision History
-# Created: Feb, 2016 by HP
+# Created:  Feb, 2016 by HP
+# Modified: Feb, 2017 by AM
 #================================================================================================
 
 packageSetup() {			# This func. prompts for Signalogic installation path, extarct package, set envionment var
@@ -53,7 +43,7 @@ packageSetup() {			# This func. prompts for Signalogic installation path, extarc
 depInstall () {
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-			yum -y --nogpgcheck localinstall $line
+			yum localinstall $line
 	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
 		dpkg -i $line
 		if [ $? -gt 0 ]; then
@@ -83,11 +73,17 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 	
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 	{
-
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 			package=$(rpm -qa gcc-c++)
 			if [ ! $package ]; then
-				yum -y remove gcc
+			        echo -e "gcc compiler and toolchain is needed\n"
+				yum install gcc-c++
+			fi
+			
+                	unrarInstalled=`type -p lsb_release`
+	                if [ ! $unrarInstalled ]; then
+		  		echo "lsb_release package is needed"
+				yum install redhat-lsb-core
 			fi
 		fi
 		cd $installPath/Signalogic_2017v6/installation_rpms/RHEL
@@ -525,7 +521,7 @@ do
 done
 echo "*****************************************************"
 echo
-PS3="Please select install operation to perform [1-6]: "
+PS3="Please select install operation to perform [1-4]: "
 select opt in "Install Signalogic SW" "Uninstall Signalogic SW" "Signalogic Install Check" "exit"
 do
     case $opt in
