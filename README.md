@@ -1,4 +1,4 @@
-Instructions for installing Signalogic SW from GitHub page.
+#Instructions for installing Signalogic SW from GitHub page.
 
 This SDK (Software Development Kit) contains:
 
