@@ -1,4 +1,5 @@
-###Instructions for installing Signalogic SW.
+####Instructions for installing Signalogic SW
+----------------------------------------------
 
 This SDK (Software Development Kit) contains:
 
