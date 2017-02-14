@@ -5,7 +5,7 @@ This SDK (Software Development Kit) contains:
 
     2) HPC application demos and test programs, including C/C++ source code.
     
-To run the basic programs, you will need to install one of the PCIe cards shown here (http://processors.wiki.ti.com/index.php).    
+To run the basic programs, you will need to install one of the PCIe cards shown here http://processors.wiki.ti.com/index.php.    
  
 Separate RAR packages are provided for different Linux distributions. Please download appropriate rar package to use with the install script.
 
