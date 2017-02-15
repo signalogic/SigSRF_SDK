@@ -42,19 +42,21 @@ The script will then prompt as follows:
   2. VM
   Please select target for co-CPU software install [1-2]:
 
-After choosing an install target of either Host or VM, the script will next prompt:
+After choosing an install target of either Host or VM, the script will next prompt for an install option:
 
   1. Install co-CPU software
   2. Uninstall co-CPU software
-  3. Install Check / Verify
+  3. Check / Verify
   4. Exit
   Please select install operation to perform [1-4]:
   
-After choosing one of these the script will prompt for an install path:
+If the install operation (1.) is selected, the script will prompt for an install path:
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enter the path for co-CPU software installation:
 
 If no path is entered the default path is /usr.
+
+If needed, the Check / Verify option can be selected to generate a log for troubleshooting purposes.
 
 ### co-CPU Users Guide
 
