@@ -40,9 +40,9 @@ The script will then prompt as follows:
 
   1. Host
   2. VM
-  Please select target for Signalogic SW install [1-2]:
+  Please select target for co-CPU software install [1-2]:
 
-After choosing one of these, the script will next prompt:
+After choosing an install target of either Host or VM, the script will next prompt:
 
   1. Install Signalogic SW
   2. Uninstall Signalogic SW
