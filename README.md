@@ -34,7 +34,7 @@ Test and demo application examples are provided as C/C++ source code and Makefil
 
 To run the install script enter:
 
-   sh autoInstall_Sig_BSDK_2017v2.sh
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sh autoInstall_Sig_BSDK_2017v2.sh
  
 The script will then prompt as follows:
 
