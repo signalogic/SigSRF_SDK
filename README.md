@@ -22,7 +22,7 @@ Note that the install script checks for the presence of the unrar command, and i
 
 ### Sudo Privilege
 
-The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (as shown here http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user).  In CentOS a user can be added to the “/etc/sudoers” file (as shown here https://wiki.centos.org/TipsAndTricks/BecomingRoot).
+The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href=http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).
 
 ### Building Test and Demo Applications
 
@@ -40,4 +40,6 @@ The following command line options may be used:
 
 ### co-CPU Users Guide
 
-The <a href="ftp://ftp.signalogic.com/documentation/Hardware/SigC667x/SigC667x_UserGuide_RevD2.pdf" target="_blank">co-CPU User Guide</a> provides detailed information about co-CPU and software installation, test and demo applications, build instructions, etc.
+The <a href="ftp://ftp.signalogic.com/documentation/Hardware/SigC667x/SigC667x_UserGuide_RevD2.pdf " target="_blank">co-CPU User Guide</a> provides detailed information about co-CPU and software installation, test and demo applications, build instructions, etc.
+
+Note -- Github markdown has a bug for over 6 years that doesn't allow ftp links to render correctly so here is the link without markdown formatting:  ftp://ftp.signalogic.com/documentation/Hardware/SigC667x/SigC667x_UserGuide_RevD2.pdf.  Suggest to open it a new tab
