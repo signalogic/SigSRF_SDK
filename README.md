@@ -8,7 +8,9 @@ The co-CPU download consists of an install script and .rar file containing:
   
     1) A limited trial version of the co-CPU software stack, including DirectCore libraries and drivers.
 
-    2) HPC application demos and test programs, including C/C++ source code and Makefiles.  Demos include H.264 video streaming (ffmpeg acceleration), image analytics, and high capacity telecom transcoding.  Multiple users can share a co-CPU card, as noted above.
+    2) HPC application demos and test programs, including C/C++ source code and Makefiles.  Demos include
+       H.264 video streaming (ffmpeg acceleration), image analytics, and high capacity telecom transcoding.
+       Multiple users can share a co-CPU card, as noted above.
     
 To run the basic programs, you will need one of the co-CPU cards shown on <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank"> the TI HPC page</a>.  co-CPU cards can be obtained from TI, Advantech, or Signalogic.
 
