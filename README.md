@@ -30,7 +30,7 @@ The install script requires sudo root privilege.  In Ubuntu, allowing a user sud
 
 Test and demo application examples are provided as C/C++ source code and Makefiles, and must be built using gcc before they can be run.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
 
-### Running the Install Script
+## Running the Install Script
 
 To run the install script enter:
 
@@ -56,8 +56,12 @@ If the install operation (1.) is selected, the script will prompt for an install
 
 If no path is entered the default path is /usr.
 
-If needed, the Check / Verify option can be selected to generate a log for troubleshooting purposes.
+If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
 
-### co-CPU Users Guide
+## co-CPU Users Guide
 
 The <a href = "http://goo.gl/Vs1b3R" target="_blank")>co-CPU User Guide</a> provides detailed information about co-CPU and software installation, test and demo applications, build instructions, etc.
+
+## Technical Support
+
+Tech support for the co-CPU SDK is available from Signalogic at no charge via e-mail and Skype.
