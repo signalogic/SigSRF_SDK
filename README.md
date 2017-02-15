@@ -40,6 +40,4 @@ The following command line options may be used:
 
 ### co-CPU Users Guide
 
-The <a href="ftp://ftp.signalogic.com/documentation/Hardware/SigC667x/SigC667x_UserGuide_RevD2.pdf " target="_blank">co-CPU User Guide</a> provides detailed information about co-CPU and software installation, test and demo applications, build instructions, etc.
-
-Note -- Github markdown has a bug for over 6 years that doesn't allow ftp links to render correctly so if the words "co-CPU User Guide" are not appearing as a link in the above sentence here is the unformatted link:  ftp://ftp.signalogic.com/documentation/Hardware/SigC667x/SigC667x_UserGuide_RevD2.pdf.  Suggest to right-click and open it in a new tab.  The Github code for this appears to be <a href="https://github.com/mattermost/platform/pull/1053/files" target="_blank">here</a> in case anyone knows how to fix it.
+The <a href="ftp.signalogic.com/documentation/Hardware/SigC667x/SigC667x_UserGuide_RevD2.pdf " target="_blank">co-CPU User Guide</a> provides detailed information about co-CPU and software installation, test and demo applications, build instructions, etc.
