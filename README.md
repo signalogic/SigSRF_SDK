@@ -6,7 +6,7 @@ The co-CPU&trade; SDK introduces the co-CPU approach to HPC and AI servers.  Unl
 
 The co-CPU download consists of an install script and .rar file containing:
   
-    1) A limited trial version of the co-CPU software stack, including DirectCore libraries and drivers.
+    1) A limited eval / demo version of the co-CPU software stack, including DirectCore libraries and drivers.
 
     2) HPC application demos and test programs, including C/C++ source code and Makefiles.  Demos include
        H.264 video streaming (ffmpeg acceleration), image analytics, and high capacity telecom transcoding.
