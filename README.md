@@ -52,9 +52,9 @@ After choosing one of these, the script will next prompt:
   
 After choosing one of these the script will prompt for an install path:
 
-  Enter the path for co-CPU software installation:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enter the path for co-CPU software installation:
 
-If no path is entered the default is /usr.
+If no path is entered the default path is /usr.
 
 ### co-CPU Users Guide
 
