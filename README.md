@@ -39,7 +39,7 @@ To run the install script enter:
 The script will then prompt as follows:
 
   1. Host
-  2. VM
+  2. VM <br/>
   Please select target for co-CPU software install [1-2]:
 
 After choosing an install target of either Host or VM, the script will next prompt for an install option:
@@ -47,7 +47,7 @@ After choosing an install target of either Host or VM, the script will next prom
   1. Install co-CPU software
   2. Uninstall co-CPU software
   3. Check / Verify
-  4. Exit
+  4. Exit <br/>
   Please select install operation to perform [1-4]:
   
 If the install operation (1.) is selected, the script will prompt for an install path:
