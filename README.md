@@ -44,9 +44,9 @@ The script will then prompt as follows:
 
 After choosing an install target of either Host or VM, the script will next prompt:
 
-  1. Install Signalogic SW
-  2. Uninstall Signalogic SW
-  3. Signalogic Install Check
+  1. Install co-CPU software
+  2. Uninstall co-CPU software
+  3. Install Check / Verify
   4. Exit
   Please select install operation to perform [1-4]:
   
