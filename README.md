@@ -32,13 +32,30 @@ Test and demo application examples are provided as C/C++ source code and Makefil
 
 ### Running the Install Script
 
-To run the install script: 
+To run the install script enter:
 
-    • sh autoInstall_Sig_BSDK_2017v2.sh
+   sh autoInstall_Sig_BSDK_2017v2.sh
  
-The following command line options may be used:
+The script will then prompt as follows:
 
+  1) Host
+  2) VM
+  Please select target for Signalogic SW install [1-2]:
 
+AFter choosing one of these, the script will next prompt:
+
+  1) Install Signalogic SW
+  2) Uninstall Signalogic SW
+  3) Signalogic Install Check
+  4) Exit
+  Please select install operation to perform [1-4]:
+  
+After choosing one of these the script will prompt for an install path:
+
+  Enter the path for co-CPU software installation:
+  Please select install operation to perform [1-4]:
+
+If no path is entered the default is /usr.
 
 ### co-CPU Users Guide
 
