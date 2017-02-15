@@ -42,7 +42,7 @@ The script will then prompt as follows:
   2. VM
   Please select target for Signalogic SW install [1-2]:
 
-AFter choosing one of these, the script will next prompt:
+After choosing one of these, the script will next prompt:
 
   1. Install Signalogic SW
   2. Uninstall Signalogic SW
@@ -53,7 +53,6 @@ AFter choosing one of these, the script will next prompt:
 After choosing one of these the script will prompt for an install path:
 
   Enter the path for co-CPU software installation:
-  Please select install operation to perform [1-4]:
 
 If no path is entered the default is /usr.
 
