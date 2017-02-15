@@ -1,6 +1,6 @@
 # co-CPU&trade; SDK Overview
 
-The co-CPU&trade; SDK introduces the co-CPU approach to HPC and AI servers.  Unlike GPUs, DSPs, FPGAs, ASICS, and other specialized chips, co-CPUs can be added to 1U, 2U, and mini-ITX servers to create HPC and AI servers with 100s of CPU cores, and still maintain Linux compatibility, software ease-of-use, and low power consumption. In a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated to VMs.  In a bare-metal environment, concurrent multiuser operation is supported. VM and bare-metal users can share also, as the available pool of cores is handled by a physical layer back-end driver, creating a flexible environment for cloud and enterprise AI and HPC applications.
+The co-CPU&trade; SDK introduces the co-CPU approach to HPC and AI servers.  Unlike GPUs, DSPs, FPGAs, ASICS, and other specialized chips, co-CPUs can be added to 1U, 2U, and mini-ITX servers to create HPC and AI servers with 100s of CPU cores, and still maintain Linux compatibility, software ease-of-use, and low power consumption. In a bare-metal environment, concurrent multiuser operation is supported. In a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated to VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows AI and HPC applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
 ## co-CPU&trade; Software Download
 
