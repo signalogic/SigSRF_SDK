@@ -14,16 +14,30 @@ To run the basic programs, you will need one of the co-CPU cards shown here http
 
 ## Installation Notes
 
-Separate RAR packages are provided for different Linux distributions. The install script will auto-check for kernel version and Linux distro version to decide which drivers to install.
+Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match.The install script will auto-check for kernel version and Linux distro version to decide which drivers to install.
 
-The install script requires superuser privileges and will require you to log in as root. To run the script, use the command below: 
+All .rar files and the auto install script must stay together in the same folder after downloading.
+
+Note that the install script checks for the presence of the unrar command, and if not found it will install the "UnRar" package.
+
+### Sudo Privilege
+
+The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (as shown here http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user).  In CentOS a user can be added to the “/etc/sudoers” file (as shown here https://wiki.centos.org/TipsAndTricks/BecomingRoot).
+
+### Building Test and Demo Applications
+
+Test and demo application examples are provided as C/C++ source code and Makefiles, and must be built using gcc before they can be run.  To allow this, the install script also checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
+
+### Running the Install Script
+
+To run the install script: 
 
     • sh autoInstall_Sig_BSDK_2017v2.sh
  
-The .rar files and auto install script file must stay together in the same folder after downloading.
- 
-The install script checks for the presence of the unrar command, and if not found it installs the "UnRar" package.
+The following command line options may be used:
 
-The install script also checks for the presence of the following packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.  These packages are required to build the test and demo application examples (provided as C/C++ source code).
+
+
+### co-CPU Users Guide
 
 The <a href ="ftp://ftp.signalogic.com/documentation/Hardware/SigC667x/SigC667x_UserGuide_RevD2.pdf">co-CPU User Guide</a> provides detailed information about co-CPU and software installation, test and demo applications, build instructions, etc.
