@@ -33,28 +33,28 @@ Test and demo application examples are provided as C/C++ source code and Makefil
 ## Running the Install Script
 
 To run the install script enter:
-
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sh autoInstall_Sig_BSDK_2017v2.sh
+    
+    * source autoInstall_Sig_BSDK_2017v2.sh
  
 The script will then prompt as follows:
-
-  1. Host
-  2. VM <br/>
-  Please select target for co-CPU software install [1-2]:
-
+    
+    1) Host
+    2) VM <br/>
+    Please select target for co-CPU software install [1-2]:
+    
 After choosing an install target of either Host or VM, the script will next prompt for an install option:
 
-  1. Install co-CPU software
-  2. Uninstall co-CPU software
-  3. Check / Verify
-  4. Exit <br/>
-  Please select install operation to perform [1-4]:
+    1) Install co-CPU software
+    2) Uninstall co-CPU software
+    3) Check / Verify
+    4)  Exit <br/>
+    Please select install operation to perform [1-4]:
   
 If the install operation (1.) is selected, the script will prompt for an install path:
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enter the path for co-CPU software installation:
 
-If no path is entered the default path is /usr.
+If no path is entered the default path is /usr/local.
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
 
