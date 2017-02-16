@@ -20,7 +20,7 @@ Separate RAR packages are provided for different Linux distributions. Please cho
 
 All .rar files and the auto install script must stay together in the same folder after downloading.
 
-Note that the install script checks for the presence of the unrar command, and if not found it will install the "UnRar" package.
+Note that the install script checks for the presence of the unrar command, and if not found it will install the unrar package.
 
 ### Sudo Privilege
 
