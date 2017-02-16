@@ -16,7 +16,7 @@ To run the demo programs, you will need one of the co-CPU cards <a href="http://
 
 ## Installation Notes
 
-Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. The install script will auto-check for kernel version and Linux distro version to decide which drivers to install.
+Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. The install script will auto-check for kernel version and Linux distro version to decide which co-CPU drivers to install.
 
 All .rar files and the auto install script must stay together in the same folder after downloading.
 
