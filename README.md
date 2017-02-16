@@ -38,7 +38,7 @@ To run the install script enter:
  
 The script will then prompt as follows:
     
-    1) Host��
+    1) Host
     2) VM
     Please select target for co-CPU software install [1-2]:
     
