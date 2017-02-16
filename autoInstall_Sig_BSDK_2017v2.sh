@@ -26,12 +26,12 @@ packageSetup() {			# This func. prompts for Signalogic installation path, extarc
 		exit
 	fi
 	
-	echo "Enter the path for Signalogic SW and dependency package installation:"
+	echo "Enter the path for co-CPU software and dependency package installation:"
 	read installPath
 	if [ $installPath ]; then
 		echo "Install path: $installPath"
 	else
-		installPath="/"
+		installPath="/usr/local"
 		echo "Default Install path (/) is chosen"
 	fi
 	
@@ -56,7 +56,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 	
 	DOTs='................................................................'
 	
-	if [ "$opt" = "Install Signalogic SW" ]; then
+	if [ "$opt" = "Install co-CPU software" ]; then
 		dependencyInstall="Dependency Check + Install"
 	elif [ "$opt" = "Dependency Check" ]; then
 		installPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
@@ -64,7 +64,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		
 		if [ ! $installPath ]; then
 			echo 
-			echo "Signalogic install path could not be found."
+			echo "co-CPU software install path could not be found."
 			echo "Exiting..."
 			echo
 			exit
@@ -178,7 +178,7 @@ swInstall() {				# It will install Signalogic SW on specified path
 	echo "SIGNALOGIC_INSTALL_PATH=$installPath" >> /etc/environment
 	
 	echo
-	echo "Signalogic SW Installation will be performed..."
+	echo "co-CPU software Installation will be performed..."
 	mv $installPath/Signalogic_*/etc/signalogic /etc
 	rm -rf $installPath/Signalogic*/etc
 	echo
@@ -511,7 +511,7 @@ fi
 wdPath=$PWD
 OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')
 echo "Host Operating System: $OS"
-PS3="Please select target for Signalogic SW install [1-2]: "
+PS3="Please select target for co-CPU software install [1-2]: "
 select target in "Host" "VM" 
 do
 	case $target in
@@ -522,12 +522,12 @@ done
 echo "*****************************************************"
 echo
 PS3="Please select install operation to perform [1-4]: "
-select opt in "Install Signalogic SW" "Uninstall Signalogic SW" "Signalogic Install Check" "exit"
+select opt in "Install co-CPU software" "Uninstall co-CPU software" "co-CPU software Install Check" "exit"
 do
     case $opt in
-		"Install Signalogic SW") packageSetup; dependencyCheck; swInstall; break;;
-		"Uninstall Signalogic SW") unInstall; break;;
-		"Signalogic Install Check") installCheck; break;;
+		"Install co-CPU software") packageSetup; dependencyCheck; swInstall; break;;
+		"Uninstall co-CPU software") unInstall; break;;
+		"co-CPU software Install Check") installCheck; break;;
 		"exit") echo "Exiting..."; break;;
       *) echo invalid option;;
     esac
