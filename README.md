@@ -63,11 +63,11 @@ If needed, the Check / Verify option can be selected to generate a log for troub
 
 ## SigMRF Users Guide
 
-SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href = "http://goo.gl/Vs1b3R")>SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
+SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="http://goo.gl/Vs1b3R">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
 
 ## coCPU Users Guide
 
-The <a href = "http://goo.gl/Vs1b3R")>coCPU User Guide</a> provides detailed information about coCPU and software installation, test and demo applications, build instructions, etc.
+The <a href="http://goo.gl/Vs1b3R">coCPU User Guide</a> provides detailed information about coCPU and software installation, test and demo applications, build instructions, etc.
 
 ## Technical Support
 
