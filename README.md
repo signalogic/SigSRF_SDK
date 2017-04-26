@@ -61,9 +61,13 @@ If no path is entered the default path is /usr/local.
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
 
-## co-CPU Users Guide
+## SigMRF Users Guide
 
-The <a href = "http://goo.gl/Vs1b3R" target="_blank")>co-CPU User Guide</a> provides detailed information about co-CPU and software installation, test and demo applications, build instructions, etc.
+SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href = "http://goo.gl/Vs1b3R")>SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
+
+## coCPU Users Guide
+
+The <a href = "http://goo.gl/Vs1b3R")>co-CPU User Guide</a> provides detailed information about co-CPU and software installation, test and demo applications, build instructions, etc.
 
 ## Technical Support
 
