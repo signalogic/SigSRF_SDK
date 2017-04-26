@@ -4,7 +4,7 @@ The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to 
 
 SigSRF supports concurrent multiuser operation in a a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
-## SigSRF Software Download
+## SigSRF SDK Download
 
 The SigSRF SDK download consists of an install script and .rar files and includes:
   
@@ -67,7 +67,7 @@ SigMRF (Media Resource Functions) software is part of SigSRF software. The <a hr
 
 ## coCPU Users Guide
 
-The <a href = "http://goo.gl/Vs1b3R")>co-CPU User Guide</a> provides detailed information about co-CPU and software installation, test and demo applications, build instructions, etc.
+The <a href = "http://goo.gl/Vs1b3R")>coCPU User Guide</a> provides detailed information about coCPU and software installation, test and demo applications, build instructions, etc.
 
 ## Technical Support
 
