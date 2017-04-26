@@ -67,7 +67,7 @@ SigMRF (Media Resource Functions) software is part of SigSRF software. The <a hr
 
 ## coCPU Users Guide
 
-The <a href="http://goo.gl/Vs1b3R">coCPU User Guide</a> provides detailed information about coCPU and software installation, test and demo applications, build instructions, etc.
+The <a href="http://goo.gl/Vs1b3R" target="_blank">coCPU User Guide</a> provides detailed information about coCPU and software installation, test and demo applications, build instructions, etc.
 
 ## Technical Support
 
