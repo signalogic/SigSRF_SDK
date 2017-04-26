@@ -47,15 +47,15 @@ The script will then prompt as follows:
     
 After choosing an install target of either Host or VM, the script will next prompt for an install option:
 
-    1) Install co-CPU software
-    2) Uninstall co-CPU software
+    1) Install SigSRF software
+    2) Uninstall SigSRF software
     3) Check / Verify
     4) Exit
     Please select install operation to perform [1-4]:
   
 If the install operation (1.) is selected, the script will prompt for an install path:
 
-    Enter the path for co-CPU software installation:
+    Enter the path for SigSRF software installation:
 
 If no path is entered the default path is /usr/local.
 
@@ -63,7 +63,7 @@ If needed, the Check / Verify option can be selected to generate a log for troub
 
 ## SigMRF Users Guide
 
-SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="http://goo.gl/Vs1b3R">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
+SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="http://goo.gl/Vs1b3R" target="_blank">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
 
 ## coCPU Users Guide
 
