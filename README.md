@@ -1,18 +1,21 @@
-# co-CPU&trade; SDK Overview
+# SigSRF SDK Overview
 
-The co-CPU&trade; SDK introduces the co-CPU approach to HPC and AI servers.  Unlike GPUs, DSPs, FPGAs, ASICs, and other specialized chips, co-CPUs can be added to 1U, 2U, and mini-ITX servers to create HPC and AI servers with 100s of CPU cores, and still maintain Linux compatibility, software ease-of-use, and low power consumption. In a bare-metal environment, concurrent multiuser operation is supported. In a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows AI and HPC applications to scale between cloud, enterprise, and remote vehicle/location servers.
+The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to media, HPC, and AI servers.  SigSRF software is x86 Linux centric, with *expandable performance* per box using coCPU&trade; technology, which adds NICs and up to 100s of CPU cores to increase per-box streaming and performance density.  coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity media, HPC, and AI servers, supporting OpenCV, TensorFlow, media transcoding, speech recognition, and other high performance applications -- and do so without resorting to GPUs, FPGAs, and ASICs that increase server size and power consumption, or dictate an ARM based or other non-cloud compatible software architecture.
 
-## co-CPU&trade; Software Download
+SigSRF supports concurrent multiuser operation in a a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
-The co-CPU SDK download consists of an install script and .rar file containing:
+## SigSRF Software Download
+
+The SigSRF SDK download consists of an install script and .rar files and includes:
   
-    1) A limited eval / demo version of the co-CPU software stack, including DirectCore libraries and drivers.
-
-    2) HPC application demos and test programs, including C/C++ source code and Makefiles.  Demos include
-       H.264 video streaming (ffmpeg acceleration), image analytics, and high capacity telecom transcoding.
-       Multiple users can share a co-CPU card, as noted above.
+    1) A limited eval / demo version of several SigSRF demos, including C/C++ source code and Makefiles.  Demos include
+       H.264 video streaming (ffmpeg acceleration), image analytics, and high capacity telecom transcoding
     
-To run the demo programs, you will need one of the co-CPU cards <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>.  co-CPU cards can be obtained from TI, Advantech, or Signalogic.
+    2) coCPU software stack, including DirectCore libraries and drivers (requires a coCPU card to be active)
+
+    3) Multiple concurrent user/instance demonstration
+    
+To run coCPU specific demo programs, you will need one of the coCPU cards <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>.  coCPU cards can be obtained from TI, Advantech, or Signalogic.
 
 ## Installation Notes
 
