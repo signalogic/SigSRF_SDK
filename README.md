@@ -25,6 +25,8 @@ All .rar files and the auto install script must stay together in the same folder
 
 Note that the install script checks for the presence of the unrar command, and if not found it will install the unrar package.
 
+Media transcoding demos require tcpreplay or other method to generate packet traffic (using as input pcap files included in the install).
+
 ### Sudo Privilege
 
 The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href=http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
