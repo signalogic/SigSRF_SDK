@@ -19,7 +19,7 @@ To run coCPU specific demo programs, you will need one of the coCPU cards <a hre
 
 ## Installation Notes
 
-Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. The install script will auto-check for kernel version and Linux distro version to decide which co-CPU drivers to install.
+Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install (including coCPU driver, if you have a coCPU card).
 
 All .rar files and the auto install script must stay together in the same folder after downloading.
 
