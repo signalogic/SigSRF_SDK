@@ -71,4 +71,4 @@ The <a href="http://goo.gl/Vs1b3R" target="_blank">coCPU User Guide</a> provides
 
 ## Technical Support
 
-Tech support for the co-CPU SDK is available from Signalogic at no charge via e-mail and Skype.
+Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic at no charge via e-mail and Skype.
