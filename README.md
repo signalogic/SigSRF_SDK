@@ -63,7 +63,7 @@ If needed, the Check / Verify option can be selected to generate a log for troub
 
 ## SigMRF Users Guide
 
-SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="http://goo.gl/Vs1b3R" target="_blank">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
+SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="ftp://ftp.signalogic.com/documentation/SigSRF/Signalogic_SigMRF_Users_Guide_RevA2.pdf" target="_blank">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
 
 ## coCPU Users Guide
 
