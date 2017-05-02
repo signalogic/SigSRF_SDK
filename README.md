@@ -1,6 +1,8 @@
 # SigSRF SDK Overview
 
-The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to media, HPC, and AI servers.  SigSRF software is optimized to obtain maximum possible performance with basic, commodity x86 cloud servers.  In addition, SigSRF provides *expandable performance per box* using coCPU&trade; technology, which adds NICs and up to 100s of CPU cores to increase per-box streaming and performance density.  coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity media, HPC, and AI servers, supporting OpenCV, TensorFlow, media transcoding, speech recognition, and other calculation and data intensive applications.  For applications facing SWaP (size, weight, and power consumption) constraints, SigSRF software eliminates GPUs without resorting to FPGAs or ASICs that dictate an ARM based or other non-cloud compatible software architecture.
+The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to media, HPC, and AI servers, the basic idea being to scale gracefully between cloud, private cloud, and very small form factors (including embedded and IoT servers) while maintaining cloud compatibility (i.e. compatibility in terms of open source software support, server architectures, latest programming languages, etc).
+
+The primary objective of SigSRF software is to obtain maximum possible performance with basic, commodity x86 cloud servers, but not be limited to x86 CPU cores.  x86 softwares are often referred to as "software only" solutions, but trends in streaming, AI, and data analytics clearly point to heterogeneous CPU cores as what's coming.  To enable mixed CPU processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of CPU cores to scale per-box streaming and performance density.  For example coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity media, HPC, and AI servers, or they can allow an embedded AI server to operate independently of the cloud.  For all platforms, SigSRF supports OpenCV, TensorFlow, media transcoding, speech recognition, and other calculation and data intensive applications.  For applications facing SWaP (size, weight, and power consumption) constraints, SigSRF software can eliminate GPUs without resorting to FPGAs or ASICs that dictate an ARM based or other non-cloud compatible software architecture.
 
 SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
@@ -15,7 +17,7 @@ The SigSRF SDK download consists of an install script and .rar files and include
 
     3) Multiple concurrent user/instance demonstration
     
-To run coCPU specific demo programs, you will need one of the coCPU cards <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>.  coCPU cards can be obtained from TI, Advantech, or Signalogic.
+Some demo programs are coCPU specific; for those you will need one of the coCPU cards <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>.  coCPU cards can be obtained from TI, Advantech, or Signalogic.
 
 ## Installation Notes
 
