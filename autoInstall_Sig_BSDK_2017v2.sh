@@ -264,9 +264,9 @@ swInstall() {				# It will install Signalogic SW on specified path
 	echo "Building Signalogic libraries..."
 	cd $installPath/Signalogic_*/DirectCore/lib/
 	for d in *; do
-		if [[ "$d" != "voplib" ]]; then
+		#if [[ "$d" != "voplib" ]]; then
 			cd $d; cp lib* /usr/lib; ldconfig; cd -
-		fi
+		#fi
 	done
 	cd $installPath/Signalogic_*/DirectCore/apps/coCPU/
 	for d in *; do
@@ -298,8 +298,11 @@ unInstall() {			# It will uninstall Signalogic SW completely
 	
 	echo "Signalogic Install Path: $unInstallPath"
 	rm -rf $unInstallPath/Signalogic*
+	MODEXIST=/sbin/lsmod | grep "sig_mc_hw"
+	if [ -n "$MODEXIST" ]; then
+	   rmmod sig_mc_hw
+    fi
 	rm -rf /etc/signalogic
-	rmmod sig_mc_hw
 	unlink /usr/src/linux
 	
 	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
@@ -335,6 +338,11 @@ unInstall() {			# It will uninstall Signalogic SW completely
 	rm -rf /usr/lib/libhwlib.so
 	rm -rf /usr/lib/libhwmgr.a
 	rm -rf /usr/lib/libtdmlib.a
+	rm -rf /usr/lib/libevscom_sig.x86.so
+	rm -rf /usr/lib/libevsdec_sig.x86.so
+	rm -rf /usr/lib/libevsenc_sig.x86.so
+	rm -rf /usr/lib/libpktlib.so
+	rm -rf /usr/lib/libvoplib.so
 	unset SIGNALOGIC_INSTALL_PATH
 	sed -i '/SIGNALOGIC_INSTALL_PATH*/d' /etc/environment
 	echo "Uninstall complete..."
