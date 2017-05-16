@@ -38,7 +38,7 @@ The following command lines specify coCPU cores.  The first one does the same EV
 ./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv8c.INP -otest_files/c6x8c_j.wav -Csession_config/codec_test_8kHz_13200bps_config
 ```
 
-In the above command lines, eight (8) coCPU cores are specified, although the free demo is limited to one coCPU core.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).
+In the above command lines, eight (8) coCPU cores are specified, although the free demo is limited to one coCPU core per instance.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).
 
 ## Frame Mode Tests
 
