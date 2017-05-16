@@ -64,6 +64,6 @@ Packet mode tests perform encode, decode, or transcoding based on specifications
 
 1) NB = Narrowband (8 kHz), WB = Wideband (16 kHz), SWB = Super Wideband (32 kHz)
 2) Comparison results are bit-exact if the cmp command gives no messages
-3) .wav files can be played with Win Media or other player.  Note that some .wav files may be stored in G711 format (uLaw compressed format).
+3) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media or other player
 4) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited
 
