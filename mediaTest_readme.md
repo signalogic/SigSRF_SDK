@@ -55,9 +55,9 @@ Frame mode tests perform encode, decode, or transcoding based on specifications 
 Packet mode tests perform encode, decode, or transcoding based on specifications in a "session configuration file" given in the command line (see notes below).  Packet mode tests use both Voplib and Pktlib APIs.  Pktlib APIs include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements. The following examples use the EVS codec. 
 
 ```C
-./mediaTest -M0 -cx86 -C session_config/pcap_file_test_config -i pcaps/pcmutest.pcap -i pcaps/EVS_13.2_16000.pcap
+./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/pcmutest.pcap -ipcaps/EVS_13.2_16000.pcap
 
-./mediaTest -M0 -cx86 -C session_config/pcap_file_test_config -i pcaps/pcmutest.pcap -i pcaps/EVS_13.2_16000.pcap -o stream1_xcoded.pcap -o stream2_xcoded.pcap
+./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/pcmutest.pcap -ipcaps/EVS_13.2_16000.pcap -o stream1_xcoded.pcap -o stream2_xcoded.pcap
 ```
 
 ## Notes
