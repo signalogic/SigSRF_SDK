@@ -1,16 +1,16 @@
 # mediaTest Getting Started
 
-Here are some command lines to use with the mediaTest demo.
+Here are some command lines to use with the mediaTest demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM usage. 
 
 ## EVS Codec Tests
 
 The following command line will encode a 3GPP reference file (WB sampling rate, 13.2 kbps) to a compressed bitstream file:
 ```C
-  ./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.COD -Csession_config/codec_test_16kHz_13200bps_config
+./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.COD -Csession_config/codec_test_16kHz_13200bps_config
 ```
 To compare with the relevant 3GPP reference file:
 ```C
-  cmp reference_files/stv16c_13200_16kHz_mime_o3.COD test_files/stv16c_13200_16kHz_mime.COD
+cmp reference_files/stv16c_13200_16kHz_mime_o3.COD test_files/stv16c_13200_16kHz_mime.COD
 ```
 The following command line will encode and then decode a 3GPP reference file (WB sampling rate, 13.2 kbps), producing a .wav file:
 ```C
@@ -30,13 +30,15 @@ The following command line will encode and then decode a 3GPP reference file (SW
 ```
 ## coCPU EVS Codec Tests
 
-The following command lines specify coCPU cores.  The first one does the same EVS WB test as above, and the seond one does an EVS NB test.  Both produce .wav files that you can listen to and experience EVS audio quality:
+The following command lines specify coCPU cores.  The first one does the same EVS WB test as above, and the second one does an EVS NB test.  Both produce .wav files that you can listen to and experience EVS audio quality:
 
 ```C
 ./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv16c.INP -otest_files/c6x16c_j.wav 
 
 ./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv8c.INP -otest_files/c6x8c_j.wav -Csession_config/codec_test_8kHz_13200bps_config
 ```
+
+In the above command lines, eight (8) coCPU cores are specified, although the free demo is limited to one coCPU core.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).
 
 ## EVS Frame Mode Tests
 ```C
