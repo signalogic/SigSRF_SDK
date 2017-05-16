@@ -4,7 +4,7 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 
 ## Codec Tests
 
-Codec tests are low-level test that perform encode and/or decode using the specified codec.  No transcoding is performed.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  The following examples use the EVS codec.  Codec tests do not use either Voplib or Pktlib APIs.  The following command line will encode a 3GPP reference file (WB sampling rate, 13.2 kbps) to a compressed bitstream file:
+Codec tests are low-level test that perform encode and/or decode using the specified codec.  No transcoding is performed.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  The following examples use the EVS codec.  Codec tests do not use Voplib or Pktlib APIs.  The following command line will encode a 3GPP reference file (WB sampling rate, 13.2 kbps) to a compressed bitstream file:
 ```C
 ./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.COD -Csession_config/codec_test_16kHz_13200bps_config
 ```
