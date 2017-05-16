@@ -1,6 +1,6 @@
 # mediaTest Getting Started
 
-Here are some command lines to use with the mediaTest demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM usage. 
+Here are some command lines to use with the mediaTest demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM operation. 
 
 ## Codec Tests
 
@@ -46,8 +46,9 @@ Frame mode tests perform encode, decode, or transcoding based on specifications 
 
 ```C
 ./mediaTest -cx86 -M4 -Csession_config/frame_test_config
+
+./mediaTest -cx86 -M4 -Csession_config/frame_test_config_wav_output
 ```
-[Can we also add here a cmd line where the config file gives a .wav file as an output ?]
 
 ## Packet Mode Tests
 
