@@ -40,6 +40,10 @@ The following command lines specify coCPU cores.  The first one does the same EV
 
 In the above command lines, eight (8) coCPU cores are specified, although the free demo is limited to one coCPU core per instance.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).
 
+Below is a screen capture showing side-by-side comparison of the NB output with the 3GPP reference waveform:
+
+![alt text](https://github.com/signalogic/markdown-here/raw/master/src/common/images/EVS_NB_compare_screen_cap.png "EVS NB comparison betwen co"CPU fixed-point and 3GPP reference fiexed-point")
+
 ## Frame Mode Tests
 
 Frame mode tests perform encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  Frame mode tests use Voplib APIs but not Pktlib APIs.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
