@@ -20,7 +20,7 @@ The following command line will encode a 3GPP reference file (SWB sampling rate,
 ```C
 ./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.COD -Csession_config/codec_test_32kHz_13200bps_config
 ```
-To compare with 3GPP reference file:
+To compare with the relevant 3GPP reference file:
 ```C
 cmp reference_files/stv32c_13200_32kHz_mime_o3.COD test_files/stv32c_13200_32kHz_mime.COD
 ```
