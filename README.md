@@ -5,8 +5,8 @@ The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to 
 The primary objectives of SigSRF software are:
 
 * provide high performance software modules for media, AI, and analytics streaming applications
-* maintain x86 programmability
 * scale up without using GPU, and scale down without using ARM
+* maintain programmability compatible with cloud servers
 
  ++ Cloud compatibility in terms of open source software support, server architectures, latest programming languages, etc.
 
