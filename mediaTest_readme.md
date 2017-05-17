@@ -42,7 +42,7 @@ In the above command lines, eight (8) coCPU cores are specified, although the fr
 
 Below is a screen capture showing side-by-side comparison of the NB output with the 3GPP reference waveform:
 
-![alt text](https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_NB_compare_screen_cap.png "EVS NB comparison betwen co"CPU fixed-point and 3GPP reference fixed-point")
+![Image](/images/EVS_NB_compare_screen_cap.png "EVS NB comparison betwen co"CPU fixed-point and 3GPP reference fixed-point")
 
 ## Frame Mode Tests
 
