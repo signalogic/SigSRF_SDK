@@ -40,9 +40,11 @@ The following command lines specify coCPU cores.  The first one does the same EV
 
 In the above command lines, eight (8) coCPU cores are specified, although the free demo is limited to one coCPU core per instance.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).
 
-Below is a screen capture showing side-by-side comparison of the NB output with the 3GPP reference waveform:
+Below is a screen capture showing overlay side comparison of the NB output with the 3GPP reference waveform:
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_NB_compare_screen_cap.png?raw=true "EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point")
+
+Note the small differences due to coCPU optimization for high capacity applications.  These differences do not perceptually affect audio quality.
 
 ## Frame Mode Tests
 
@@ -114,7 +116,7 @@ term2.evs_header_full=1  # Full header format used
 1) NB = Narrowband (8 kHz), WB = Wideband (16 kHz), SWB = Super Wideband (32 kHz)
 2) Comparison results are bit-exact if the cmp command gives no messages
 3) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media or other player
-4) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header. This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP decoder generated .cod file and feed it to the mediaTest command line
+4) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header. This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line
 5) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited
 6) Transcoding in frame mode tests is not supported yet, will be added soon
 
