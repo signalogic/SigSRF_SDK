@@ -40,7 +40,7 @@ The following command lines specify coCPU cores.  The first one does the same EV
 
 In the above command lines, eight (8) coCPU cores are specified, although the free demo is limited to one coCPU core per instance.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).
 
-Below is a screen capture showing overlay side comparison of the NB output with the 3GPP reference waveform:
+Below is a screen capture showing overlay comparison of the NB output with the 3GPP reference waveform:
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_NB_compare_screen_cap.png?raw=true "EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point")
 
