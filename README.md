@@ -1,14 +1,16 @@
 # SigSRF SDK Overview
 
-The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to media, HPC, and AI servers, the basic idea being to scale gracefully between cloud, private cloud, and very small form factors (including embedded and IoT servers) while maintaining cloud compatibility (i.e. compatibility in terms of open source software support, server architectures, latest programming languages, etc).
+The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to media, HPC, and AI servers.  The basic concept is to scale between cloud, private cloud, and very small form factors (including embedded and IoT servers) while maintaining a cloud programming model.
 
-The primary objectives of SigSRF software are twofold:
+The primary objectives of SigSRF software are:
 
-* provide software modules for media, AI, and analytics streaming applications that run on commodity x86 cloud servers with maximum possible performance
+* provide high performance software modules for media, AI, and analytics streaming applications
+* scale up without using GPU, and scale down without using ARM
+* maintain programmability compatible with cloud servers, including open source software support, server architectures, latest programming languages, etc.
 
-* not limit those modules to x86 CPU cores
+x86 software is sometimes referred to as a "software only" solution, but high performance streaming often requires heterogeneous CPU cores.  To enable mixed core processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density.  For example, coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity media, HPC, and AI servers, or they can allow an embedded AI server to operate independently of the cloud.
 
-x86 software is often referred to as a "software only" solution, but streaming trends point to heterogeneous CPU cores as what's coming.  To enable mixed CPU processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of CPU cores to scale per-box streaming and performance density.  For example coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity media, HPC, and AI servers, or they can allow an embedded AI server to operate independently of the cloud.  For all platforms, SigSRF supports OpenCV, TensorFlow, media transcoding, speech recognition, and other calculation and data intensive applications.  For applications facing SWaP (size, weight, and power consumption) constraints, SigSRF software can eliminate GPUs without resorting to FPGAs or ASICs that dictate an ARM based or other non-cloud compatible software architecture.
+For all platforms, SigSRF supports OpenCV, TensorFlow, media transcoding, speech recognition, and other calculation / data intensive applications.  For applications facing SWaP (size, weight, and power consumption) constraints, SigSRF software can eliminate GPUs without resorting to FPGAs or ASICs that dictate an ARM based or other non-cloud compatible software architecture.
 
 SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
@@ -70,6 +72,14 @@ If the install operation (1.) is selected, the script will prompt for an install
 If no path is entered the default path is /usr/local.
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
+
+## mediaTest Demo
+
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest demo page</a> has command lines for EVS codec testing and transcoding.  The demo allows codec output comparison vs. 3GPP reference files, per-core performance measurement (both x86 and coCPU cores), .wav file generation to experience EVS audio quality, RTP packet transcoding using pcap files, and more.
+
+## iaTest Demo
+
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest demo page</a> has command lines for image analytics and OpenCV testing.  The iaTest demo performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.
 
 ## SigMRF Users Guide
 
