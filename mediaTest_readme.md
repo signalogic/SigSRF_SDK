@@ -9,12 +9,12 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 [Frame Mode Tests](#FrameModeTests)<br/>
 [Packet Mode Tests](#PacketModeTests)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
-[mediaTest Notes](#medaTestNotes)<br/>
+[mediaTest Notes](#mediaTestNotes)<br/>
 [3GPP Reference Code Notes](#3GPPNotes)<br/>
 &nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
 &nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
 [Wireshark Notes](#WiresharkNotes)<br/>
-&nbsp;&nbsp;[Procedure for Playing Audio in Wireshark](#ProcedurePlayingAudioWireshark)<br/>
+&nbsp;&nbsp;[Playing Audio in Wireshark](#PlayingAudioWireshark)<br/>
 
 <a name="CodecTests"></a>
 ## Codec Tests
@@ -180,8 +180,8 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 <a name="WiresharkNotes"></a>
 ## Wireshark Notes
 
-<a name="ProcedurePlayingAudioWireshark"></a>
-### Procedure for Playing Audio in Wireshark
+<a name="PlayingAudioWireshark"></a>
+### Playing Audio in Wireshark
 
 As a quick reference, the basic procedure for playing G711 encoded audio from Wireshark is given here:
 
