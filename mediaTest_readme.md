@@ -112,7 +112,7 @@ term1.remote_ip=192.16.0.16
 term1.remote_port=6170
 term1.media_type="voice"
 term1.codec_type="G711_ULAW"
-term1.bitrate=64000  #in kbps
+term1.bitrate=64000  # in kbps
 term1.ptime=20  # in msec
 term1.rtp_payload_type=0
 term1.dtmf_type="NONE"
@@ -154,7 +154,7 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 <a name="Using3GPPDecoder"></a>
 ### Using the 3GPP Decoder
 
-*Note: The examples in this section assume you have downloaded the 3GPP reference code and installed somewhere on your system.*
+*Note: the examples in this section assume you have downloaded the 3GPP reference code and installed somewhere on your system.*
 
 The 3GPP decoder can be used as the "gold standard" reference for debug and comparison in several situations. Below are a few examples.
 
