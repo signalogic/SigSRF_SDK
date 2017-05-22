@@ -11,6 +11,7 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
 [Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
 &nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
+[Procedure for Playing Audio in Wireshark](#ProcedurePlayingAudioWireshark)><br/>
 [Notes](#Notes)<br/>
 
 <a name="CodecTests"></a>
@@ -132,6 +133,8 @@ term2.evs_header_full=1  # Full header format used
 [end_of_session_data]
 ```
 
+When using pcap files, "remote" IP addr and UDP port values refer to pcap source, and "local" values refer to pcap destination.
+
 <a name="Using3GPPDecoder"></a>
 ## Using the 3GPP Decoder
 
@@ -158,6 +161,27 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 ```C
 ./mediaTest -cx86 -iEVS_pcap_extracted.cod -omediaTest_decoded_audio.wav
 ```
+<a name="ProcedurePlayingAudioWireshark"></a>
+### Procedure for Playing Audio in Wireshark
+
+As a quick reference, the basic procedure for playing G711 encoded audio from Wireshark is given here:
+
+1. First, Wiresark must "see" the stream in RTP format:
+
+ - right click a packet in the stream and select "decode as"
+ - Under 'Current' select "RTP"
+
+After doing this, the protocol field in the main Wireshark window for the relevant packets should display "RTP".
+
+2. Playing the stream:
+
+ - In the menu bar, go to Telephony -> RTP -> RTP Streams
+ - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
+ - Click "Analyze" in the "RTP Streams" pop-up window
+ - Click "Play Streams" in the "RTP Stream Analysis" pop-up window
+ - Click the play button in the "RTP Player" pop-up window
+
+* Note: the above instructions apply to Wireshark version 2.0.2.*
 
 <a name="Notes"></a>
 ## Notes
