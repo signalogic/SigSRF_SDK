@@ -76,6 +76,10 @@ The second command line is similar, but also does the following:
 
 ./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/pcmutest.pcap -ipcaps/EVS_13.2_16000.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap
 ```
+The screencap below shows mediaTest output after the second command line above.
+
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
+
 Here is a look inside the session configuration file (pcap_file_test_config) used in the above command lines:
 
 ```CoffeeScript
@@ -109,6 +113,31 @@ term2.evs_sample_rate=8000   # in Hz
 term2.evs_header_full=1  # Full header format used
 
 [end_of_session_data]
+```
+
+## Using the 3GPP Decoder
+
+*Note: The examples in this section assume you have downloaded the 3GPP reference code and installed somewhere on your system.*
+
+The 3GPP decoder can be used as the "gold standard" reference in several situaions. Below are a few examples.
+
+### Verifying an EVS pcap
+
+In some cases, maybe due to unintelligble audio output, questions about pcap format or capture method, SDP descriptor options used for EVS encoding, etc, you may want to simply take a pcap, extract its EVS RTP payload stream, and copy to a .cod file with MIME header suitable for 3GPP decoder input.  The mediaTest command line can do this, here is an example:
+
+```C
+./mediaTest -cx86 -ipcaps/EVS_13.2_compact_format_PT_127.pcap -oEVS_pcap_extracted.cod
+```
+Next, run the 3GPP decoder:
+
+```C
+./EVS_dec -mime -no_delay_cmp 16 EVS_pcap_extracted.cod 3GPP_decoded_audio.raw
+```
+
+Note the 3GPP decoder will produce only a raw audio format file, so you will need to use sox or other tool to convert to .wav file for playback.  You can also decode with mediaTest directly to .wav format:
+
+```C
+./mediaTest -cx86 -iEVS_pcap_extracted.cod -omediaTest_decoded_audio.wav
 ```
 
 ## Notes
