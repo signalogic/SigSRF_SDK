@@ -9,10 +9,12 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 [Frame Mode Tests](#FrameModeTests)<br/>
 [Packet Mode Tests](#PacketModeTests)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
-[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
-&nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
-[Procedure for Playing Audio in Wireshark](#ProcedurePlayingAudioWireshark)<br/>
-[Notes](#Notes)<br/>
+[mediaTest Notes](#medaTestNotes)<br/>
+[3GPP Reference Code Notes](#3GPPNotes)<br/>
+&nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
+[Wireshark Notes](#WiresharkNotes)<br/>
+&nbsp;&nbsp;[Procedure for Playing Audio in Wireshark](#ProcedurePlayingAudioWireshark)<br/>
 
 <a name="CodecTests"></a>
 ## Codec Tests
@@ -135,12 +137,26 @@ term2.evs_header_full=1  # Full header format used
 
 When using pcap files, "remote" IP addr and UDP port values refer to pcap source, and "local" values refer to pcap destination.
 
+<a name="mediaTestNotes"></a>
+## mediaTest Notes
+
+1) NB = Narrowband (8 kHz sampling rate), WB = Wideband (16 kHz), SWB = Super Wideband (32 kHz)
+2) Comparison results are bit-exact if the cmp command gives no messages
+3) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media or other player
+4) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header. This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line
+5) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited
+6) Transcoding in frame mode tests is not supported yet, will be added soon
+
+
+<a name="3GPPNotes"></a>
+## 3GPP Reference Code Notes
+
 <a name="Using3GPPDecoder"></a>
-## Using the 3GPP Decoder
+### Using the 3GPP Decoder
 
 *Note: The examples in this section assume you have downloaded the 3GPP reference code and installed somewhere on your system.*
 
-The 3GPP decoder can be used as the "gold standard" reference in several situaions. Below are a few examples.
+The 3GPP decoder can be used as the "gold standard" reference for debug and comparison in several situations. Below are a few examples.
 
 <a name="VerifyingEVSpcap"></a>
 ### Verifying an EVS pcap
@@ -161,6 +177,9 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 ```C
 ./mediaTest -cx86 -iEVS_pcap_extracted.cod -omediaTest_decoded_audio.wav
 ```
+<a name="Wireshark"></a>
+## Wireshark Notes
+
 <a name="ProcedurePlayingAudioWireshark"></a>
 ### Procedure for Playing Audio in Wireshark
 
@@ -182,14 +201,3 @@ After doing this, the protocol field in the main Wireshark window for the releva
  - Click the play button in the "RTP Player" pop-up window
 
 * Note: the above instructions apply to Wireshark version 2.0.2.*
-
-<a name="Notes"></a>
-## Notes
-
-1) NB = Narrowband (8 kHz sampling rate), WB = Wideband (16 kHz), SWB = Super Wideband (32 kHz)
-2) Comparison results are bit-exact if the cmp command gives no messages
-3) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media or other player
-4) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header. This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line
-5) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited
-6) Transcoding in frame mode tests is not supported yet, will be added soon
-
