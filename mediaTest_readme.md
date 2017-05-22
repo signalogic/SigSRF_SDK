@@ -200,4 +200,4 @@ After doing this, the protocol field in the main Wireshark window for the releva
  - Click "Play Streams" in the "RTP Stream Analysis" pop-up window
  - Click the play button in the "RTP Player" pop-up window
 
-* Note: the above instructions apply to Wireshark version 2.0.2.*
+*Note: the above instructions apply to Wireshark version 2.0.2.*
