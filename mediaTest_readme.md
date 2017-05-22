@@ -93,7 +93,7 @@ The second command line is similar, but also does the following:
 
 ./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/pcmutest.pcap -ipcaps/EVS_13.2_16000.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap
 ```
-The screencap below shows mediaTest output after the second command line above.
+The screencap below shows mediaTest output after the second command line.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
 
