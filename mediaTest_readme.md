@@ -5,13 +5,13 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 # Table of Contents
 
 [Codec Tests](#CodecTests)<br/>
-&nbsp;&nbsp;coCPU Codec Test<br/>
-Frame Tests<br/>
-Packet Tests<br/>
-&nbsp;&nbsp;Session Configuration File Format<br/>
-Using the 3GPP Decoder<br/>
-&nbsp;&nbsp;Verifying an EVS pcap<br/>
-Notes<br/>
+&nbsp;&nbsp;[coCPU Codec Tests](#coCPUCodecTests)<br/>
+[Frame Mode Tests](#FrameMOdeTests)<br/>
+[Packet Mode Tests](#PacketModeTests)<br/>
+&nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
+[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
+&nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
+[Notes](#Notes)<br/>
 
 <a name="CodecTests"></a>
 ## Codec Tests
@@ -40,6 +40,7 @@ The following command line will encode and then decode a 3GPP reference file (SW
 ```C
 ./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv16c_13200_32kHz_mime.wav -Csession_config/codec_test_32kHz_13200bps_config
 ```
+<a name="coCPUCodecTests"></a>
 ### coCPU Codec Tests
 
 The following command lines specify coCPU cores.  The first one does the same EVS WB test as above, and the second one does an EVS NB test.  Both produce .wav files that you can listen to and experience EVS audio quality:
@@ -58,6 +59,7 @@ Below is a screen capture showing overlay comparison of the NB output with the 3
 
 Note the small differences due to coCPU optimization for high capacity applications.  These differences do not perceptually affect audio quality.
 
+<a name="FrameModeTests"></a>
 ## Frame Mode Tests
 
 Frame mode tests perform encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  Frame mode tests use Voplib APIs but not Pktlib APIs.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
@@ -67,7 +69,7 @@ Frame mode tests perform encode, decode, or transcoding based on specifications 
 
 ./mediaTest -cx86 -M4 -Csession_config/frame_test_config_wav_output
 ```
-
+<a name="PacketModeTests"></a>
 ## Packet Mode Tests
 
 Packet mode tests perform encode, decode, or transcoding based on specifications in a "session configuration file" given in the command line (see notes below).  Packet mode tests use both Voplib and Pktlib APIs.  Pktlib APIs include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements. The following examples use the EVS codec.
@@ -92,6 +94,7 @@ The screencap below shows mediaTest output after the second command line above.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
 
+<a name="SessionConfigFileFormat"></a>
 ### Session Configuration File Format
 
 Here is a look inside the session configuration file (pcap_file_test_config) used in the above command lines:
@@ -129,12 +132,14 @@ term2.evs_header_full=1  # Full header format used
 [end_of_session_data]
 ```
 
+<a name="Using3GPPDecoder"></a>
 ## Using the 3GPP Decoder
 
 *Note: The examples in this section assume you have downloaded the 3GPP reference code and installed somewhere on your system.*
 
 The 3GPP decoder can be used as the "gold standard" reference in several situaions. Below are a few examples.
 
+<a name="VerifyingEVSpcap"></a>
 ### Verifying an EVS pcap
 
 In some cases, maybe due to unintelligble audio output, questions about pcap format or capture method, SDP descriptor options used for EVS encoding, etc, you may want to simply take a pcap, extract its EVS RTP payload stream, and copy to a .cod file with MIME header suitable for 3GPP decoder input.  The mediaTest command line can do this, here is an example:
@@ -154,6 +159,7 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 ./mediaTest -cx86 -iEVS_pcap_extracted.cod -omediaTest_decoded_audio.wav
 ```
 
+<a name="Notes"></a>
 ## Notes
 
 1) NB = Narrowband (8 kHz sampling rate), WB = Wideband (16 kHz), SWB = Super Wideband (32 kHz)
