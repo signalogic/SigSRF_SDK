@@ -4,7 +4,7 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 
 # Table of Contents
 
-![Codec Tests](#CodecTests)<br/>
+[Codec Tests](#CodecTests)<br/>
 &nbsp;&nbsp;coCPU Codec Test<br/>
 Frame Tests<br/>
 Packet Tests<br/>
