@@ -2,6 +2,18 @@
 
 Here are some command lines to use with the mediaTest demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM operation. 
 
+# Table of Contents
+
+![Codec Tests](#CodecTests)<br/>
+&nbsp;&nbsp;coCPU Codec Test<br/>
+Frame Tests<br/>
+Packet Tests<br/>
+&nbsp;&nbsp;Session Configuration File Format<br/>
+Using the 3GPP Decoder<br/>
+&nbsp;&nbsp;Verifying an EVS pcap<br/>
+Notes<br/>
+
+<a name="CodecTests"></a>
 ## Codec Tests
 
 Codec tests are low-level test that perform encode and/or decode using the specified codec.  No transcoding is performed.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  The following examples use the EVS codec.  Codec tests do not use Voplib or Pktlib APIs.  The following command line will encode a 3GPP reference file (WB sampling rate, 13.2 kbps) to a compressed bitstream file:
@@ -28,7 +40,7 @@ The following command line will encode and then decode a 3GPP reference file (SW
 ```C
 ./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv16c_13200_32kHz_mime.wav -Csession_config/codec_test_32kHz_13200bps_config
 ```
-## coCPU Codec Tests
+### coCPU Codec Tests
 
 The following command lines specify coCPU cores.  The first one does the same EVS WB test as above, and the second one does an EVS NB test.  Both produce .wav files that you can listen to and experience EVS audio quality:
 
@@ -79,6 +91,8 @@ The second command line is similar, but also does the following:
 The screencap below shows mediaTest output after the second command line above.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
+
+### Session Configuration File Format
 
 Here is a look inside the session configuration file (pcap_file_test_config) used in the above command lines:
 
