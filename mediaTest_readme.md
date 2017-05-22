@@ -6,7 +6,7 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 
 [Codec Tests](#CodecTests)<br/>
 &nbsp;&nbsp;[coCPU Codec Tests](#coCPUCodecTests)<br/>
-[Frame Mode Tests](#FrameMOdeTests)<br/>
+[Frame Mode Tests](#FrameModeTests)<br/>
 [Packet Mode Tests](#PacketModeTests)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
 [Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
