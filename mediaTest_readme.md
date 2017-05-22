@@ -11,7 +11,7 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
 [Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
 &nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
-[Procedure for Playing Audio in Wireshark](#ProcedurePlayingAudioWireshark)><br/>
+[Procedure for Playing Audio in Wireshark](#ProcedurePlayingAudioWireshark)<br/>
 [Notes](#Notes)<br/>
 
 <a name="CodecTests"></a>
