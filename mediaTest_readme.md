@@ -12,7 +12,7 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 [mediaTest Notes](#medaTestNotes)<br/>
 [3GPP Reference Code Notes](#3GPPNotes)<br/>
 &nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
+&nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
 [Wireshark Notes](#WiresharkNotes)<br/>
 &nbsp;&nbsp;[Procedure for Playing Audio in Wireshark](#ProcedurePlayingAudioWireshark)<br/>
 
@@ -143,8 +143,8 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 1) NB = Narrowband (8 kHz sampling rate), WB = Wideband (16 kHz), SWB = Super Wideband (32 kHz)
 2) Comparison results are bit-exact if the cmp command gives no messages
 3) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media or other player
-4) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header. This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line
-5) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited
+4) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header. This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line.  See examples in the "Using the 3GPP Decoder" section below.
+5) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the "Session Configuration File Format" section above.
 6) Transcoding in frame mode tests is not supported yet, will be added soon
 
 
@@ -177,7 +177,7 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 ```C
 ./mediaTest -cx86 -iEVS_pcap_extracted.cod -omediaTest_decoded_audio.wav
 ```
-<a name="Wireshark"></a>
+<a name="WiresharkNotes"></a>
 ## Wireshark Notes
 
 <a name="ProcedurePlayingAudioWireshark"></a>
