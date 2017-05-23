@@ -19,27 +19,27 @@ Here are some command lines to use with the mediaTest demo.  The demo is limited
 <a name="CodecTests"></a>
 ## Codec Tests
 
-Codec tests are low-level test that perform encode and/or decode using the specified codec.  No transcoding is performed.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  The following examples use the EVS codec.  Codec tests do not use Voplib or Pktlib APIs.  The following command line will encode a 3GPP reference file (WB sampling rate, 13.2 kbps) to a compressed bitstream file:
+Codec tests are low-level tests that perform encode and/or decode using the specified codec.  No transcoding is performed, and Voplib and Pktlib APIs are not used.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  The following command line will encode a 3GPP reference audio file (WB sampling rate, 13.2 kbps) to an EVS compressed bitstream file:
 ```C
 ./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.COD -Csession_config/codec_test_16kHz_13200bps_config
 ```
-To compare with the relevant 3GPP reference file:
+To compare with the relevant 3GPP reference bitstream file:
 ```C
 cmp reference_files/stv16c_13200_16kHz_mime_o3.COD test_files/stv16c_13200_16kHz_mime.COD
 ```
-The following command line will encode and then decode a 3GPP reference file (WB sampling rate, 13.2 kbps), producing a .wav file you can listen to and experience EVS audio quality:
+The following command line will encode and then decode a 3GPP reference audio file (WB sampling rate, 13.2 kbps), producing a .wav file you can listen to and experience EVS audio quality:
 ```C
 ./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.wav 
 ```
-The following command line will encode a 3GPP reference file (SWB sampling rate, 13.2 kbps) to a compressed bitstream file:
+The following command line will encode a 3GPP reference file audio (SWB sampling rate, 13.2 kbps) to an EVS compressed bitstream file:
 ```C
 ./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.COD -Csession_config/codec_test_32kHz_13200bps_config
 ```
-To compare with the relevant 3GPP reference file:
+To compare with the relevant 3GPP reference bitstream file:
 ```C
 cmp reference_files/stv32c_13200_32kHz_mime_o3.COD test_files/stv32c_13200_32kHz_mime.COD
 ```
-The following command line will encode and then decode a 3GPP reference file (SWB sampling rate, 13.2 kbps), producing a .wav file:
+The following command line will encode and then decode a 3GPP reference bitstream file (SWB sampling rate, 13.2 kbps), producing a .wav file:
 ```C
 ./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv16c_13200_32kHz_mime.wav -Csession_config/codec_test_32kHz_13200bps_config
 ```
@@ -54,7 +54,7 @@ The following command lines specify coCPU cores.  The first one does the same EV
 ./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv8c.INP -otest_files/c6x8c_j.wav -Csession_config/codec_test_8kHz_13200bps_config
 ```
 
-In the above command lines, eight (8) coCPU cores are specified, although the free demo is limited to one coCPU core per instance.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).
+In the above command lines, eight (8) coCPU cores are specified, although the free demo is limited to one coCPU core per instance.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).  Depending on which coCPU card you have, up to 64 coCPU cores can be specified.  Multiple instances of mediaTest can make use of more cards.
 
 Below is a screen capture showing overlay comparison of the NB output with the 3GPP reference waveform:
 
@@ -185,9 +185,9 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 
 As a quick reference, the basic procedure for playing G711 encoded audio from Wireshark is given here:
 
-1. First, Wiresark must "see" the stream in RTP format:
+1. First, Wireshark must "see" the stream in RTP format:
 
- - right click a packet in the stream and select "decode as"
+ - Right click a packet in the stream and select "decode as"
  - Under 'Current' select "RTP"
 
 After doing this, the protocol field in the main Wireshark window for the relevant packets should display "RTP".
