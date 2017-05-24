@@ -5,14 +5,16 @@ The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to 
 The primary objectives of SigSRF software are:
 
 * provide high performance software modules for media, AI, and analytics streaming applications
-* scale up without using GPU, and scale down without using ARM
+* scale up without using GPU, scale down without using ARM
 * maintain programmability compatible with cloud servers, including open source software support, server architectures, latest programming languages, etc.
 
 x86 software is sometimes referred to as a "software only" solution, but high performance streaming often requires heterogeneous CPU cores.  To enable mixed core processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density.  For example, coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity media, HPC, and AI servers, or they can allow an embedded AI server to operate independently of the cloud.
 
-For all platforms, SigSRF supports OpenCV, TensorFlow, media transcoding, speech recognition, and other calculation / data intensive applications.  For applications facing SWaP (size, weight, and power consumption) constraints, SigSRF software can eliminate GPUs without resorting to FPGAs or ASICs that dictate an ARM based or other non-cloud compatible software architecture.
+For all platforms, SigSRF supports OpenCV, TensorFlow, media transcoding, speech recognition, and other calculation / data intensive applications.  For applications facing SWaP <sup>1</sup> constraints, SigSRF software can eliminate GPUs without resorting to FPGAs or ASICs that dictate an ARM or other non-cloud compatible software architecture.
 
 SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
+
+<sup>1</sup> SWaP = size, weight, and power consumption
 
 ## SigSRF SDK Download
 
