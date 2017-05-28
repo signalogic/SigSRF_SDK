@@ -135,7 +135,7 @@ term2.evs_header_full=1  # Full header format used
 [end_of_session_data]
 ```
 
-When using pcap files, "remote" IP addr and UDP port values refer to pcap source, and "local" values refer to pcap destination.
+When using pcap files, "remote" IP addr and UDP port values refer to pcap source, and "local" values refer to pcap destination.  When used with mediaTest, local IP addrs are the mediaTest application, and remote IP addrs are the endpoints. Rx traffic (i.e. incoming, with respect to mediaTest) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, w.r.t. mediaTest) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.
 
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
