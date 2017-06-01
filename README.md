@@ -16,6 +16,10 @@ SigSRF supports concurrent multiuser operation in a bare-metal environment, and 
 
 <sup>1</sup> SWaP = size, weight, and power consumption
 
+Below is a SigSRF software and streaming I/O architecture diagram:
+
+SigSRF_Software_Architecture_and_Packet_IO.png
+
 ## SigSRF SDK Download
 
 The SigSRF SDK download consists of an install script and .rar files and includes:
