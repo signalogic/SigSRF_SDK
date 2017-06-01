@@ -34,14 +34,15 @@ Below is a SigSRF software and streaming I/O architecture diagram:
 
 The SigSRF SDK and demo download consists of an install script and .rar files and includes:
   
-    1) A limited eval / demo version of several SigSRF demos, including C/C++ source code and Makefiles.  Demos include
-       H.264 video streaming (ffmpeg acceleration), image analytics, and high capacity telecom transcoding
+    1) A limited eval / demo version of several SigSRF demos, including telecom transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration)
     
-    2) coCPU software stack, including DirectCore libraries and drivers (requires a coCPU card to be active)
+    2) C/C++ source code showing Pktlib and Voplib API usage (source and Makefiles for demo programs included)
 
     3) Multiple concurrent user/instance demonstration
-    
-Some demo programs are coCPU specific; for those you will need one of the coCPU cards <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>.  coCPU cards can be obtained from TI, Advantech, or Signalogic.
+
+    4) coCPU software stack, including DirectCore libraries and drivers (requires a coCPU card to be active)
+
+A few demo programs are coCPU specific; for those you will need one of the coCPU cards <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>.  coCPU cards can be obtained from TI, Advantech, or Signalogic.
 
 <a name="InstallNotes"></a>
 ## Install Notes
