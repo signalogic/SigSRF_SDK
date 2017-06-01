@@ -1,4 +1,13 @@
-# SigSRF SDK Overview
+# Table of Contents
+
+[SigSRF Overview](#Overview)<br/>
+[SDK and Demo Download](#SDKDemoDownload)<br/>
+[Install Notes](#InstallNotes)<br/>
+[Demo Pages](#DemoPages)<br/>
+[Documentation and Support](#DocumentationSupport)<br/>
+
+<a name="Overview"></a>
+# SigSRF Overview
 
 The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to media, HPC, and AI servers.  The basic concept is to scale between cloud, private cloud, and very small form factors (including embedded and IoT servers) while maintaining a cloud programming model.
 
@@ -20,9 +29,10 @@ Below is a SigSRF software and streaming I/O architecture diagram:
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_and_Packet_IO.png?raw=true "SigSRF software and streaming I/O architecture diagram")
 
-## SigSRF SDK Download
+<a name="SDKDemoDownload"></a>
+## SDK and Demo Download
 
-The SigSRF SDK download consists of an install script and .rar files and includes:
+The SigSRF SDK and demo download consists of an install script and .rar files and includes:
   
     1) A limited eval / demo version of several SigSRF demos, including C/C++ source code and Makefiles.  Demos include
        H.264 video streaming (ffmpeg acceleration), image analytics, and high capacity telecom transcoding
@@ -33,7 +43,8 @@ The SigSRF SDK download consists of an install script and .rar files and include
     
 Some demo programs are coCPU specific; for those you will need one of the coCPU cards <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>.  coCPU cards can be obtained from TI, Advantech, or Signalogic.
 
-## Installation Notes
+<a name="InstallNotes"></a>
+## Install Notes
 
 Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install (including coCPU driver, if you have a coCPU card).
 
@@ -51,7 +62,7 @@ The install script requires sudo root privilege.  In Ubuntu, allowing a user sud
 
 Test and demo application examples are provided as C/C++ source code and Makefiles, and must be built using gcc before they can be run.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
 
-## Running the Install Script
+### Running the Install Script
 
 To run the install script enter:
     
@@ -79,22 +90,28 @@ If no path is entered the default path is /usr/local.
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
 
-## mediaTest Demo
+<a name="DemoPages"></a>
+## Demo Instruction Pages
+
+### mediaTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest demo page</a> has command lines for EVS codec testing and transcoding.  The demo allows codec output comparison vs. 3GPP reference files, per-core performance measurement (both x86 and coCPU cores), .wav file generation to experience EVS audio quality, RTP packet transcoding using pcap files, and more.
 
-## iaTest Demo
+### iaTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest demo page</a> has command lines for image analytics and OpenCV testing.  The iaTest demo performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.
 
-## SigMRF Users Guide
+<a name="DocumentationSupport"></a>
+## Documentation and Support
+
+### SigMRF Users Guide
 
 SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="http://goo.gl/fU43oE" target="_blank">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
 
-## coCPU Users Guide
+### coCPU Users Guide
 
 The <a href="http://goo.gl/Vs1b3R" target="_blank">coCPU User Guide</a> provides detailed information about coCPU and software installation, test and demo applications, build instructions, etc.
 
-## Technical Support
+### Technical Support
 
-Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.
+Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can ask for group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).
