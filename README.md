@@ -18,7 +18,7 @@ SigSRF supports concurrent multiuser operation in a bare-metal environment, and 
 
 Below is a SigSRF software and streaming I/O architecture diagram:
 
-SigSRF_Software_Architecture_and_Packet_IO.png
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_and_Packet_IO.png?raw=true "SigSRF software and streaming I/O architecture diagram")
 
 ## SigSRF SDK Download
 
