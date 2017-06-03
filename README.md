@@ -23,7 +23,7 @@ For all platforms, SigSRF supports OpenCV, media transcoding, TensorFlow <sup>1<
 
 SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
-<sup>1</sup> In progress
+<sup>1</sup> In progress<br/>
 <sup>2</sup> SWaP = size, weight, and power consumption
 
 ## SigSRF Software and Streaming I/O Architecture Diagram
