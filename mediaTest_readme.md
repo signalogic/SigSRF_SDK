@@ -1,6 +1,6 @@
 # mediaTest Getting Started
 
-Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines to use with the mediaTest demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM operation. 
+Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the mediaTest demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM operation. 
 
 # Table of Contents
 
@@ -130,7 +130,7 @@ term2.rtp_payload_type=127
 term2.dtmf_type="NONE"
 term2.dtmf_payload_type="NONE"
 term2.evs_sample_rate=8000   # in Hz
-term2.evs_header_full=1  # Full header format used
+term2.evs_header_full=1  # Full Header format used (0 = Compact Header format)
 
 [end_of_session_data]
 ```
