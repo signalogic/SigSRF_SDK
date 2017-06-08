@@ -217,7 +217,7 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
 1. First, follow steps 1. and 2. in the "Playing Audio" notes above.
 
-2. Scond, save to .au file from Wireshark:
+2. Second, save to .au file from Wireshark:
 
  - In the menu bar, go to Telephony > RTP > RTP Streams
  - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
@@ -229,6 +229,6 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
  - sox audio_file.au audio_file.wav
  
-If for some reason you have used .raw format, then you will have to correctly specify to sox, Audacity, or other conversion program uLaw vs. ALaw.  If that doesn't match the mediaTest session config file, then the output audio data, although still audible, won't sound quite correct (it will have a dc offset and incorrect amplitude scale).
+When .au format is given to Wireshark, it peforms uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples.  If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, or other conversion program.  If that doesn't match the mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
 
 *Note: the above instructions apply to Wireshark version 2.2.6.*
