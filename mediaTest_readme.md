@@ -190,7 +190,7 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 
 As a quick reference, the basic procedure for playing audio from G711 encoded caps from within Wireshark is given here:
 
-1. First, make sure your session config file has the correct payload type set for either G711 uLaw or ALaw.  If this doesn't match, then the output audio data, although still audible, won't sound quite correct (it will have a dc offset and incorrect amplitude scale).
+1. First, when you run mediaTest, make sure your session config file has the correct payload type set for either G711 uLaw or ALaw.  If this doesn't match, then the output audio data, although still audible, won't sound quite correct (it will have a dc offset and incorrect amplitude scale).
 
  - Session config payload type values should be 0 (zero) for uLaw and 8 (eight) for ALaw
  - this is the "termN.rtp_payload_type" field in the session config file (see above), where N is 1 or 2, depending on which endpoint is G711
@@ -213,13 +213,13 @@ After doing this, the protocol field in the main Wireshark window for the releva
 <a name="SavingAudioWireshark"></a>
 ### Saving Audio to File in Wireshark
 
-The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above.  Here are additional instructions to save the audio data to .au file format, and then use the Linux "sox" program to convert to .wav.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
+The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above.  Here are additional instructions to save the audio data to .au file format, and then use the Linux "sox" program to convert to .wav format.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
 
 1. First, save to .au file from Wireshark:
 
- - Telephony > RTP > RTP Streams
- - Click the stream to save
- - Click Analyze
+ - In the menu bar, go to Telephony > RTP > RTP Streams
+ - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
+ - Click Analyze in the "RTP Streams" pop-up window
  - Click Save > Forward Audio Stream to save (this will give .au and .raw options)
  - Enter in filename and choose the location to save, then click Save
 
