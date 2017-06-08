@@ -15,6 +15,7 @@ Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/
 &nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
 [Wireshark Notes](#WiresharkNotes)<br/>
 &nbsp;&nbsp;[Playing Audio in Wireshark](#PlayingAudioWireshark)<br/>
+&nbsp;&nbsp;[Saving Audio to File in Wireshark](#SavingAudioWireshark)<br/>
 
 <a name="CodecTests"></a>
 ## Codec Tests
@@ -187,7 +188,7 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 <a name="PlayingAudioWireshark"></a>
 ### Playing Audio in Wireshark
 
-As a quick reference, the basic procedure for playing G711 encoded audio from Wireshark is given here:
+As a quick reference, the basic procedure for playing audio from G711 encoded caps from within Wireshark is given here:
 
 1. First, Wireshark must "see" the stream in RTP format:
 
@@ -196,12 +197,21 @@ As a quick reference, the basic procedure for playing G711 encoded audio from Wi
 
 After doing this, the protocol field in the main Wireshark window for the relevant packets should display "RTP".
 
-2. Playing the stream:
+2. Second, make sure Wireshark has the correct payload type set for either G711 uLaw or ALaw.  If this doesn't match, then the output audio data, although still audible, won't sound quite correct (it will have a dc offset and incorrect amplitude scale).
+
+  -payload type values should be 0 (zero) for uLaw and 8 (eight) for ALaw
+
+3. Playing the stream:
 
  - In the menu bar, go to Telephony -> RTP -> RTP Streams
  - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
  - Click "Analyze" in the "RTP Streams" pop-up window
  - Click "Play Streams" in the "RTP Stream Analysis" pop-up window
  - Click the play button in the "RTP Player" pop-up window
+
+<a name="SavingAudioWireshark"></a>
+### Saving Audio to File in Wireshark
+
+The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above.  Here are additional instructions to save the audio data to .au file format, and then use the Linux "sox" program to convert to .wav.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
 
 *Note: the above instructions apply to Wireshark version 2.0.2.*
