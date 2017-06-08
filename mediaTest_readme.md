@@ -190,7 +190,7 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 
 As a quick reference, the basic procedure for playing audio from G711 encoded caps from within Wireshark is given here.  These instructions are for pcaps containing one RTP stream (not multiple streams).
 
-1. First, when you run mediaTest, make sure your session config file has the correct payload type set for either G711 uLaw or ALaw.  If this doesn't match, then the output audio data, although still audible, won't sound quite correct (it will have a dc offset and incorrect amplitude scale).
+1. First, when you run mediaTest, make sure your session config file has the correct payload type set for either G711 uLaw or ALaw.
 
  - Session config payload type values should be 0 (zero) for uLaw and 8 (eight) for ALaw
  - this is the "termN.rtp_payload_type" field in the session config file (see above), where N is 1 or 2, depending on which endpoint is G711
@@ -215,7 +215,9 @@ After doing this, the protocol field in the main Wireshark window for the releva
 
 The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above.  Here are additional instructions to save the audio data to .au file format, and then use the Linux "sox" program to convert to .wav format.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
 
-1. First, save to .au file from Wireshark:
+1. First, follow steps 1. and 2. in the "Playing Audio" notes above.
+
+2. Scond, save to .au file from Wireshark:
 
  - In the menu bar, go to Telephony > RTP > RTP Streams
  - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
@@ -223,8 +225,10 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
  - Click Save > Forward Audio Stream to save (this will give .au and .raw options)
  - Enter in filename and choose the location to save, then click Save
 
-2. Second, convert the .au file to .wav format:
+3. Last, convert the .au file to .wav format:
 
  - sox audio_file.au audio_file.wav
  
+If for some reason you have used .raw format, then you will have to correctly specify to sox, Audacity, or other conversion program uLaw vs. ALaw.  If that doesn't match the mediaTest session config file, then the output audio data, although still audible, won't sound quite correct (it will have a dc offset and incorrect amplitude scale).
+
 *Note: the above instructions apply to Wireshark version 2.2.6.*
