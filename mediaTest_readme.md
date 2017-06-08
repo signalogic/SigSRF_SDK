@@ -188,7 +188,7 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 <a name="PlayingAudioWireshark"></a>
 ### Playing Audio in Wireshark
 
-As a quick reference, the basic procedure for playing audio from G711 encoded caps from within Wireshark is given here:
+As a quick reference, the basic procedure for playing audio from G711 encoded caps from within Wireshark is given here.  These instructions are for pcaps containing one RTP stream (not multiple streams).
 
 1. First, when you run mediaTest, make sure your session config file has the correct payload type set for either G711 uLaw or ALaw.  If this doesn't match, then the output audio data, although still audible, won't sound quite correct (it will have a dc offset and incorrect amplitude scale).
 
@@ -227,4 +227,4 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
  - sox audio_file.au audio_file.wav
  
-*Note: the above instructions apply to Wireshark version 2.0.2.*
+*Note: the above instructions apply to Wireshark version 2.2.6.*
