@@ -6,7 +6,7 @@ mediaTest serves two (2) purposes:
 
  - an example application, including source code, showing how to use Pktlib and Voplib APIs (see architecture diagram on the SigSRF page)
  
- - perform test and measurement, including codec audio quality and performance, pcap verification and transcoding, and support for waveform and compressed file formats
+ - perform test and measurement, including codec audio quality and performance, pcap verification and transcoding, and support for waveform and compressed bitstream file formats
 
 # Table of Contents
 
