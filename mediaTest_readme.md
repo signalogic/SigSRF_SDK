@@ -234,9 +234,10 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 3. Last, convert the .au file to .wav format:
 
  - Enter the following Linux command:
- 
-     ~$ sox audio_file.au audio_file.wav
- 
+```C 
+  sox audio_file.au audio_file.wav
+ ```
+
 When .au format is given to Wireshark, it performs uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples.  If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, or other conversion program.  If that doesn't match the mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
 
 *Note: the above instructions apply to Wireshark version 2.2.6.*
