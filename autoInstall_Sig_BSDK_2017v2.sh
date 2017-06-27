@@ -272,7 +272,8 @@ swInstall() {				# It will install Signalogic SW on specified path
 	done
 	cd $installPath/Signalogic_*/DirectCore/apps/coCPU/
 	for d in *; do
-	if [[ "$d" != "appTest" ]]; then
+	if [[ "$d" != "appTest" ]] &&
+	   [[ "$d" != "iaTest" ]]; then
 			cd $d; make clean; make; cd -
 		fi
 	done

@@ -1,6 +1,12 @@
-# mediaTest Getting Started
+# mediaTest Demo
 
-Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines to use with the mediaTest demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM operation. 
+Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the mediaTest demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM operation.
+
+mediaTest serves two (2) purposes:
+
+ - an example application, including source code, showing how to use Pktlib and Voplib APIs (see architecture diagram on the SigSRF page)
+ 
+ - perform test and measurement, including codec audio quality and performance, pcap verification and transcoding, and support for waveform and compressed bitstream file formats
 
 # Table of Contents
 
@@ -15,6 +21,7 @@ Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/
 &nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
 [Wireshark Notes](#WiresharkNotes)<br/>
 &nbsp;&nbsp;[Playing Audio in Wireshark](#PlayingAudioWireshark)<br/>
+&nbsp;&nbsp;[Saving Audio to File in Wireshark](#SavingAudioWireshark)<br/>
 
 <a name="CodecTests"></a>
 ## Codec Tests
@@ -130,7 +137,7 @@ term2.rtp_payload_type=127
 term2.dtmf_type="NONE"
 term2.dtmf_payload_type="NONE"
 term2.evs_sample_rate=8000   # in Hz
-term2.evs_header_full=1  # Full header format used
+term2.evs_header_full=1  # Full Header format used (0 = Compact Header format)
 
 [end_of_session_data]
 ```
@@ -187,16 +194,21 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 <a name="PlayingAudioWireshark"></a>
 ### Playing Audio in Wireshark
 
-As a quick reference, the basic procedure for playing G711 encoded audio from Wireshark is given here:
+As a quick reference, the basic procedure for playing audio from G711 encoded caps from within Wireshark is given here.  These instructions are for pcaps containing one RTP stream (not multiple streams).
 
-1. First, Wireshark must "see" the stream in RTP format:
+1. First, when you run mediaTest, make sure your session config file has the correct payload type set for either G711 uLaw or ALaw.
+
+ - Session config payload type values should be 0 (zero) for uLaw and 8 (eight) for ALaw
+ - this is the "termN.rtp_payload_type" field in the session config file (see above), where N is 1 or 2, depending on which endpoint is G711
+
+2. Second, Wireshark must "see" the stream in RTP format:
 
  - Right click a packet in the stream and select "decode as"
  - Under 'Current' select "RTP"
 
 After doing this, the protocol field in the main Wireshark window for the relevant packets should display "RTP".
 
-2. Playing the stream:
+3. Playing the stream:
 
  - In the menu bar, go to Telephony -> RTP -> RTP Streams
  - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
@@ -204,4 +216,28 @@ After doing this, the protocol field in the main Wireshark window for the releva
  - Click "Play Streams" in the "RTP Stream Analysis" pop-up window
  - Click the play button in the "RTP Player" pop-up window
 
-*Note: the above instructions apply to Wireshark version 2.0.2.*
+<a name="SavingAudioWireshark"></a>
+### Saving Audio to File in Wireshark
+
+The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above.  Here are additional instructions to save the audio data to .au file format, and then use the Linux "sox" program to convert to .wav format.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
+
+1. First, follow steps 1. and 2. in the "Playing Audio" notes above.
+
+2. Second, save to .au file from Wireshark:
+
+ - In the menu bar, go to Telephony > RTP > RTP Streams
+ - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
+ - Click Analyze in the "RTP Streams" pop-up window
+ - Click Save > Forward Audio Stream to save (this will give .au and .raw options)
+ - Enter in filename and choose the location to save, then click Save
+
+3. Last, convert the .au file to .wav format:
+
+ - Enter the following Linux command:
+```C 
+  sox audio_file.au audio_file.wav
+ ```
+
+When .au format is given to Wireshark, it performs uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples.  If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, or other conversion program.  If that doesn't match the mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
+
+*Note: the above instructions apply to Wireshark version 2.2.6.*
