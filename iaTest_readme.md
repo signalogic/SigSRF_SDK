@@ -1,19 +1,47 @@
 # iaTest Demo
 
-Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the iaTest demo.  Input and output options include .yuv file formats.
+Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the iaTest demo.
 
-iaTest serves two (2) purposes:
+The iaTest demo serves two (2) purposes:
 
- - an example application, including source code, showing how to obtain 16x higher capacity OpenCV on small, low-power Atom servers
+ - show how to implement a vision + AI server with 34 total CPU cores under 75 W
  
- - measure OpenCV performance between Atom only and Atom + coCPU card, with no ARM or GPU involved
+ - an example application, including source code, to measure OpenCV performance between Atom only and Atom + coCPU cores, with no ARM or GPU
+
+In addition to OpenCV, the next iteration of this demo will will include TensorFlow.
 
 # Table of Contents
 
+[Vision + AI Atom Server](#AtomServer)<br/>
 [Atom Only Tests](#AtomTests)<br/>
 [Atom + coCPU Tests](#coCPUTests)<br/>
-[Atom Server](#AtomServer)<br/>
 [Install Notes](#InstallNotes)<br/>
+
+<a name="AtomServer"></a>
+### Vision + AI Atom Server
+
+The basic requirements for the Atom vision/AI server are:
+
+* small size, 8" x 9" x 3"
+* low power -- target of 50W, the current prototype shown here is 75 W
+* cloud compatible programming model -- no ARM, no GPU
+* ready to run OpenCV and TensorFlow
+
+Here are some pictures of the Atom server, with coCPU cores installed:
+
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
+
+coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
+
+Here are specifics of the vision + AI server shown here:
+
+* Mini-ITX motherboard and case
+* Dual core Atom (C2358, 1.74 GHz), 4x GbE interfaces, 8 GB DDR3 mem, 1333 MHz
+* 32 coCPU cores (C6678, 1.6 GHz), GbE interface, 8 GB DDR3 mem, 1333 MHz, x8 PCIe
+* 4x USB interfaces
+* IPMI (dedicated GbE)
+* Audio I/O interface (via USB)
+* VGA optional display
 
 <a name="AtomTests"></a>
 ## Atom Only Tests
@@ -24,23 +52,15 @@ iaTest serves two (2) purposes:
 <a name="coCPUTests"></a>
 ### Atom + coCPU Tests
 
+To run coCPU tests, a coCPU card has to be installed in the Atom server.  The pictures above show a 32-core card; a 64-core card is also available.  Cards can be obtained fromn Signalogic, Advantech, or Texas Instruments.
 
-Below is a frame mode command line that reads a pcap file and outputs to wav file.  No jitter buffering is done, so any out-of-order packets, DTX packets, or SSRC changes are not handled.  The wav file sampling rate is determined from the session config file.
+Below are example command lines to use with coCPU cards.
 
 ```C
 ./iaTest -m1 -f1600 -eia.out -cSIGC66XX-8 -s0 -i/test_files/hallway_352x288p_30fps_420fmt.yuv -x352 -y288 -ohallway_test.yuv -l0x01000003
 
 ./iaTest -m1 -f1600 -eia.out -cSIGC66XX-8 -s0 -i/test_files/CCTV_640x360p_30fps_420fmt.yuv -x640 -y360 -occtv_test.yuv -l0x01100003
 ```
-
-<a name="AtomServer"></a>
-### Atom Server
-
-Here are some pictures of the Atom server, with coCPU card installed:
-
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
-
-
 
 <a name="InstallNotes"></a>
 ### Install Notes
