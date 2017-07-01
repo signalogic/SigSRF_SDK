@@ -4,7 +4,7 @@ Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/
 
  - show how to implement an Atom-based vision + AI server with 34 total CPU cores under 75 W
  
- - an example application, including source code, to measure OpenCV performance between Atom only and Atom + coCPU cores, with no ARM or GPU
+ - provide an example application, including source code, to measure OpenCV performance between Atom only and Atom + coCPU cores, with no ARM or GPU
 
 In addition to OpenCV, the next iteration of this demo will will include TensorFlow.
 
