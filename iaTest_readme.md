@@ -29,11 +29,13 @@ The basic requirements for the Atom vision/AI server are:
 * All cores have direct access to network I/O
 * Ready to run OpenCV and TensorFlow
 
-Here are some pictures of the Atom server, with coCPU cores installed:
+Here are some pictures of the Atom server, with 32 coCPU cores installed.  coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
 
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Local_AI_server_C2358_32cores_iso_view.png?raw=true "AI + vision Atom server, iso view")
 
-coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Small_AI_server_32cores_iso_view.png?raw=true "AI + vision Atom server, with top removed showing coCPU card installation")
+
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Small_AI_server_32cores_top_view.png?raw=true "AI + vision Atom server, top view")
 
 Here are specifics of the vision + AI server shown here:
 
