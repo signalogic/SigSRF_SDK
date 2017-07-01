@@ -17,7 +17,7 @@ In addition to OpenCV, the next iteration of this demo will will include TensorF
 [Demo Notes](#DemoNotes)<br/>
 
 <a name="AtomServer"></a>
-### Vision + AI Atom Server
+# Vision + AI Atom Server
 
 Requirements for a practical, deployable Atom vision/AI server are:
 
@@ -47,13 +47,13 @@ Here are specifics of the vision + AI server shown here:
 * VGA optional display
 
 <a name="AtomTests"></a>
-## Atom Only Tests
+# Atom Only Tests
 
 ```C
 ./iaTest -m1 -cx86 -s0 -i/test_files/hallway_352x288p_30fps_420fmt.yuv -x352 -y288 -ohallway_test.yuv -l0x01000003
 ```
 <a name="coCPUTests"></a>
-### Atom + coCPU Tests
+# Atom + coCPU Tests
 
 To run coCPU tests, a coCPU card has to be installed in the Atom server.  The pictures above show a 32-core card; a 64-core card is also available.  Cards can be obtained from Signalogic, Advantech, or Texas Instruments.
 
@@ -66,7 +66,7 @@ Below are example command lines to use with coCPU cards.
 ```
 
 <a name="InstallNotes"></a>
-### Install Notes
+# Install Notes
 
 1) For Atom operation, the demo installs two OpenCV v3.2 libraries (libcore_sig.so and libimgproc_sig.so).  Demo-specific filenames are used so as not to interfere with an existing OpenCV installation.  For coCPU operation, the demo installs the libopencv.le66 library, which includes a number of OpenCV 2.4.2 libraries.
 
