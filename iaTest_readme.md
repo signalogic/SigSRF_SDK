@@ -1,10 +1,8 @@
 # iaTest Demo
 
-Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the iaTest demo.
+Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the iaTest demo.  The demo has two (2) purposes:
 
-The iaTest (image analytics test) demo serves two (2) purposes:
-
- - show how to implement a vision + AI server with 34 total CPU cores under 75 W
+ - show how to implement an Atom-based vision + AI server with 34 total CPU cores under 75 W
  
  - an example application, including source code, to measure OpenCV performance between Atom only and Atom + coCPU cores, with no ARM or GPU
 
@@ -16,20 +14,21 @@ In addition to OpenCV, the next iteration of this demo will will include TensorF
 [Atom Only Tests](#AtomTests)<br/>
 [Atom + coCPU Tests](#coCPUTests)<br/>
 [Install Notes](#InstallNotes)<br/>
+[Demo Notes](#DemoNotes)<br/>
 
 <a name="AtomServer"></a>
 ### Vision + AI Atom Server
 
-The basic requirements for the Atom vision/AI server are:
+Requirements for a practical, deployable Atom vision/AI server are:
 
 * Small size, 8" x 9" x 3"
-* Low power -- target of 50W, the current prototype shown here is 75 W
+* Low power -- target of 50 W, the current prototype shown here is 75 W
 * High performance -- this demo shows a 16x increase in OpenCV capacity vs. a dual-core Atom
 * Cloud compatible programming model -- no ARM, GPU, or FPGA, no special APIs or flow graphs, etc
 * All cores have direct access to network I/O
 * Ready to run OpenCV and TensorFlow
 
-Here are some pictures of the Atom server, with 32 coCPU cores installed.  coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
+Below are some pictures of the Atom server, with 32 coCPU cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Local_AI_server_C2358_32cores_iso_view.png?raw=true "AI + vision Atom server, iso view")
 
@@ -72,3 +71,10 @@ Below are example command lines to use with coCPU cards.
 1) For Atom operation, the demo installs two OpenCV v3.2 libraries (libcore_sig.so and libimgproc_sig.so).  Demo-specific filenames are used so as not to interfere with an existing OpenCV installation.  For coCPU operation, the demo installs the libopencv.le66 library, which includes a number of OpenCV 2.4.2 libraries.
 
 2) For Atom operation, demo source code (for example ia.c and yuv.c files) can be modified, rebuilt, and linked, but if new OpenCV functions are required then the iaTest Makefile will need to be modified to reference the required libraries.  For coCPU operation, demo source can also be modified; in this case you will need to download the c66x CGT tools for Linux from TI's website in order to rebuild.  The Makefile installed on the mCPU_target subfolder may need to be modified.
+
+<a name="DemoNotes"></a>
+### Demo Notes
+
+1) iaTest = image analytics test.  The iaTest demo is one of several SigSRF demos, including mediaTest (media streaming and transcoding, and ffmpeg_accel (accelerated ffmpeg encoding and image processing).
+
+2) iaTest source code files use #ifdef's to allow compilation for both x86 and c66x CPUs.  All source code examples make C or C++ OpenCV function calls per OpenCV standards.  All source code can have network I/O APIs added.
