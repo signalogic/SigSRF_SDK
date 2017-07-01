@@ -1,6 +1,6 @@
 # mediaTest Demo
 
-Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the mediaTest demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM operation.
+Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the mediaTest demo.  Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav).  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM operation.
 
 mediaTest serves two (2) purposes:
 
@@ -15,6 +15,7 @@ mediaTest serves two (2) purposes:
 [Frame Mode Tests](#FrameModeTests)<br/>
 [Packet Mode Tests](#PacketModeTests)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
+[Jitter Buffer Notes](#JitterBufferNotes)<br/>
 [mediaTest Notes](#mediaTestNotes)<br/>
 [3GPP Reference Code Notes](#3GPPNotes)<br/>
 &nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
@@ -79,6 +80,13 @@ Frame mode tests perform encode, decode, or transcoding based on specifications 
 
 ./mediaTest -cx86 -M4 -Csession_config/frame_test_config_wav_output
 ```
+
+Below is a frame mode command line that reads a pcap file and outputs to wav file.  No jitter buffering is done, so any out-of-order packets, DTX packets, or SSRC changes are not handled.  The wav file sampling rate is determined from the session config file.
+
+```C
+./mediaTest -M4 -cx86 -Csession_config/pcap_file_test_config -ipcaps/EVS_13.2_16000.pcap -oEVS_13.2_16000.wav
+```
+
 <a name="PacketModeTests"></a>
 ## Packet Mode Tests
 
@@ -103,6 +111,12 @@ The second command line is similar, but also does the following:
 The screencap below shows mediaTest output after the second command line.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
+
+Below is a packet mode command line similar to the above examples, except output is to wav file instead of pcap.  In this case, unlike the equivalent frame mode test above, jitter buffering is peformed, so out-of-order packets, DTX packets, and SSRC changes are handled.  Depending on the nature of network or pcap input, this can make the difference between intelligble audio or not.
+
+```C
+./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/EVS_13.2_16000.pcap -oEVS_13.2_16000.wav
+```
 
 <a name="SessionConfigFileFormat"></a>
 ### Session Configuration File Format
@@ -147,6 +161,16 @@ Note that each session has one or two "terminations", or endpoints (term1 and te
 When using pcap files, "remote" IP addr and UDP port values refer to pcap source, and "local" values refer to pcap destination.  When used with mediaTest, local IP addrs are the mediaTest application, and remote IP addrs are the endpoints. Rx traffic (i.e. incoming, with respect to mediaTest) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, w.r.t. mediaTest) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
+
+<a name="JitterBufferNotes"></a>
+## Jitter Buffer Notes
+
+As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
+
+* Handles out-of-order packets, including 2 packet swaps
+* Dynamic delay depth adjustment option
+* Accepts sustained "burst mode" input, up to 10x faster than the media ptime (also referred to as "back pressure" in data analytics applications)
+* Statistics API, logging, and several options such as overrun control, probation control, flush, and bypass modes
 
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
