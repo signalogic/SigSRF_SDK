@@ -19,7 +19,7 @@ In addition to OpenCV, the next iteration of this demo will will include TensorF
 <a name="AtomServer"></a>
 # Vision + AI Atom Server
 
-Requirements for a practical, deployable Atom vision/AI server are:
+The demo defines the requirements for a practical, deployable Atom vision + AI server as follows:
 
 * Small size, 8" x 9" x 3"
 * Low power -- target of 50 W, the current prototype shown here is 75 W
@@ -28,7 +28,7 @@ Requirements for a practical, deployable Atom vision/AI server are:
 * All cores have direct access to network I/O
 * Ready to run OpenCV and TensorFlow
 
-Below are some pictures of the Atom server, with 32 coCPU cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
+Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Local_AI_server_C2358_32cores_iso_view.png?raw=true "AI + vision Atom server, iso view")
 
@@ -36,7 +36,7 @@ Below are some pictures of the Atom server, with 32 coCPU cores installed. coCPU
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Small_AI_server_32cores_top_view.png?raw=true "AI + vision Atom server, top view")
 
-Here are specifics of the vision + AI server shown here:
+Specifics of the vision + AI server shown here include:
 
 * Mini-ITX motherboard and case
 * Dual core Atom (C2358, 1.74 GHz), 4x GbE interfaces, 8 GB DDR3 mem, 1333 MHz
