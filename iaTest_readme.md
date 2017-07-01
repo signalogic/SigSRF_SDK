@@ -2,7 +2,7 @@
 
 Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the iaTest demo.
 
-The iaTest demo serves two (2) purposes:
+The iaTest (image analytics test) demo serves two (2) purposes:
 
  - show how to implement a vision + AI server with 34 total CPU cores under 75 W
  
@@ -22,10 +22,12 @@ In addition to OpenCV, the next iteration of this demo will will include TensorF
 
 The basic requirements for the Atom vision/AI server are:
 
-* small size, 8" x 9" x 3"
-* low power -- target of 50W, the current prototype shown here is 75 W
-* cloud compatible programming model -- no ARM, no GPU
-* ready to run OpenCV and TensorFlow
+* Small size, 8" x 9" x 3"
+* Low power -- target of 50W, the current prototype shown here is 75 W
+* High performance -- this demo shows a 16x increase in OpenCV capacity vs. a dual-core Atom
+* Cloud compatible programming model -- no ARM, GPU, or FPGA, no special APIs or flow graphs, etc
+* All cores have direct access to network I/O
+* Ready to run OpenCV and TensorFlow
 
 Here are some pictures of the Atom server, with coCPU cores installed:
 
@@ -52,7 +54,7 @@ Here are specifics of the vision + AI server shown here:
 <a name="coCPUTests"></a>
 ### Atom + coCPU Tests
 
-To run coCPU tests, a coCPU card has to be installed in the Atom server.  The pictures above show a 32-core card; a 64-core card is also available.  Cards can be obtained fromn Signalogic, Advantech, or Texas Instruments.
+To run coCPU tests, a coCPU card has to be installed in the Atom server.  The pictures above show a 32-core card; a 64-core card is also available.  Cards can be obtained from Signalogic, Advantech, or Texas Instruments.
 
 Below are example command lines to use with coCPU cards.
 
