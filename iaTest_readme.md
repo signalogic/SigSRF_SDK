@@ -16,6 +16,7 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 [Install Notes](#InstallNotes)<br/>
 [Output Frame Grabs](#OutputFrameGrabs)<br/>
 [Demo Notes](#DemoNotes)<br/>
+[Power Consumption Notes](#PowerConsumptionNotes)<br/>
 
 <a name="AtomServer"></a>
 # Vision + AI Atom Server
@@ -78,7 +79,7 @@ Below are example command lines to use with coCPU cards.
 2) For Atom operation, demo source code (for example ia.c and yuv.c files) can be modified, rebuilt, and linked, but if new OpenCV functions are required then the iaTest Makefile will need to be modified to reference the required libraries.  For coCPU operation, demo source can also be modified; in this case you will need to download the c66x CGT tools for Linux from TI's website in order to rebuild.  The Makefile installed on the mCPU_target subfolder may need to be modified.
 
 <a name="OutputFrameGrabs"></a>
-# OutputFrameGrabs
+# Output Frame Grabs
 
 Below are some example frame grabs from output .yuv files.  This is what you should see prior to making source code modifications.
 
@@ -92,3 +93,8 @@ Below are some example frame grabs from output .yuv files.  This is what you sho
 2) SWaP = size, weight, and power consumption.
 
 3) iaTest source code files use #ifdef's to allow compilation for both x86 and c66x CPUs.  All source code examples invoke C or C++ OpenCV function calls per OpenCV standards.  All source code can be augmented with network I/O APIs.
+
+<a name="PowerConsumptionNotes"></a>
+# Power Consumption Notes
+
+The demo server consumes up to 75 W.  Ongoing R&D work aims to reduce usage to under 50 W, and also add a 35 W "minimum mode", under which reduced processing is performed until some event or trigger enables full processing.
