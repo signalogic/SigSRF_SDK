@@ -12,7 +12,7 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 
 # Table of Contents
 
-[Vision + AI Atom Server](#AtomServer)<br/>
+[Vision + AI Server](#AtomServer)<br/>
 [Atom Only Tests](#AtomTests)<br/>
 [Atom + coCPU Tests](#coCPUTests)<br/>
 [Output Frame Grabs](#OutputFrameGrabs)<br/>
@@ -21,18 +21,18 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 [Power Consumption Notes](#PowerConsumptionNotes)<br/>
 
 <a name="AtomServer"></a>
-# Vision + AI Atom Server
+# Vision + AI Server
 
 The demo defines the requirements for a practical, deployable vision + AI server as follows:
 
 * Small size, 8" x 9" x 3"
 * Low power -- target of 50 W, the current prototype shown here is 75 W
-* High performance -- this demo shows a 16x increase in OpenCV capacity vs. a dual-core Atom
-* Cloud compatible programming model -- x86 Linux, with no ARM, GPU, or FPGA, no special APIs or flow graphs, etc
+* High performance -- this demo shows a 16x increase in OpenCV capacity vs. dual-core Atom
+* Cloud compatible programming model -- use Atom x86 + Linux, with no ARM, GPU, or FPGA, no special APIs or flow graphs, etc
 * All cores have direct access to network I/O
 * Ready to run OpenCV and TensorFlow
 
-Low SWaP<sup>2</sup> requirements are obvious enough; what is less obvious, yet cannot be overemphasized, is the importance of a fully cloud compatible programming model.  Every new vision and AI application, including low SWaP products, is tested in the cloud prior to  production; no one wants to be forced to port code to ARM and end up in an unsupported backwater.
+Low SWaP<sup>2</sup> requirements are obvious enough; what is less obvious, yet cannot be overemphasized, is the importance of a fully cloud compatible programming model.  All new vision and AI algorithms, including low SWaP applications, are tested in the cloud prior to production.  No one wants to be forced to port code to ARM and end up in an unsupported backwater.
 
 Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
 
