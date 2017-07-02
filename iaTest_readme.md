@@ -112,6 +112,8 @@ The current vision + AI server demo uses TI C6678 CPUs, which meet these require
 
 2) iaTest source code files use #ifdef's to allow compilation for both x86 and c66x CPUs.  All source code examples invoke C or C++ OpenCV function calls per OpenCV standards.  All source code can be augmented with network I/O APIs.
 
+3) The demo includes optimized YUV - RGB conversion routines not provided with OpenCV.  These are in the yuv.c file.
+
 <a name="PowerConsumptionNotes"></a>
 # Power Consumption Notes
 
