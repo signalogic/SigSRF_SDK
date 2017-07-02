@@ -16,6 +16,7 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 [Atom Only Tests](#AtomTests)<br/>
 [Atom + coCPU Tests](#coCPUTests)<br/>
 [Output Frame Grabs](#OutputFrameGrabs)<br/>
+[coCPU Notes](#coCPUNotes)<br/>
 [Install Notes](#InstallNotes)<br/>
 [Demo Notes](#DemoNotes)<br/>
 [Power Consumption Notes](#PowerConsumptionNotes)<br/>
@@ -34,7 +35,7 @@ The demo defines the requirements for a practical, deployable vision + AI server
 
 Low SWaP<sup> 2</sup> requirements are obvious enough; what is less obvious, yet cannot be overemphasized, is the importance of a fully cloud compatible programming model.  All new vision and AI algorithms, including low SWaP applications, are tested in the cloud prior to production.  No one wants to be forced to port code to ARM and end up in an unsupported backwater.
 
-Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
+Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Local_AI_server_C2358_32cores_iso_view.png?raw=true "AI + vision Atom server, iso view")
 
@@ -80,6 +81,17 @@ Below are example command lines to use with coCPU cards.
 Below are some example frame grabs from output .yuv files.  This is what you should see prior to making source code modifications.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Surveillance_video_detection_algorithm_concurrent_suspects.png?raw=true "Object tracking and stats printout in mobile phone capture of CCTV surveillance video")
+
+<a name="coCPUNotes"></a>
+# coCPU Notes
+
+coCPU cores must meet the following requirements:
+
+* High performance, including 8 or more cores per CPU, L1 and L2 cache, and extensive DMA capabilities
+* Contain onchip network I/O and packet processing and onchip PCIe
+* Access 2 GB or more external DDR3 mem
+
+The current vision + AI server demo uses TI C6678 cores, which meet these requirements.  Over time, other suitable cores may become available.
 
 <a name="InstallNotes"></a>
 # Install Notes
