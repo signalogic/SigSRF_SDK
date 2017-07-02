@@ -8,7 +8,7 @@ Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/
 
 In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 
-<sup>1</sup> iaTest = image analytics test
+<sup>1 </sup>iaTest = image analytics test
 
 # Table of Contents
 
@@ -53,7 +53,7 @@ Specifics of the Atom-based vision + AI demo server include:
 * Audio I/O interface (via USB)
 * VGA optional display
 
-<sup>2</sup>SWaP = Size, Weight, and Power consumption
+<sup>2 </sup>SWaP = Size, Weight, and Power consumption
 
 <a name="AtomTests"></a>
 # Atom Only Tests
@@ -83,7 +83,7 @@ Below are some example frame grabs from output .yuv files.  This is what you sho
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Surveillance_video_detection_algorithm_concurrent_suspects.png?raw=true "Object tracking and stats printout in mobile phone capture of CCTV surveillance video")
 
 <a name="coCPUNotes"></a>
-# coCPU Notes
+# coCPU&trade; Notes
 
 coCPU cores must meet the following requirements:
 
@@ -91,7 +91,7 @@ coCPU cores must meet the following requirements:
 * Contain onchip network I/O and packet processing and onchip PCIe
 * Access 2 GB or more external DDR3 mem
 
-The current vision + AI server demo uses TI C6678 cores, which meet these requirements.  Over time, other suitable cores may become available.
+The current vision + AI server demo uses TI C6678 CPUs, which meet these requirements.  Over time, other suitable CPUs may become available.
 
 <a name="InstallNotes"></a>
 # Install Notes
