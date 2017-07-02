@@ -78,7 +78,7 @@ Below are example command lines to use with coCPU cards.
 <a name="OutputFrameGrabs"></a>
 # Output Frame Grabs
 
-Below are some example frame grabs from output .yuv files.  This is what you should see prior to making source code modifications.
+Below are some example frame grabs from output .yuv files.  After running the demo, this is what you should see for output yuv file results, prior to making source code modifications.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Surveillance_video_detection_algorithm_concurrent_suspects.png?raw=true "Object tracking and stats printout in CCTV surveillance video with unstable camera (video was captured with a hand-held mobile phone)")
 
