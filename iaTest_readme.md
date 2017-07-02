@@ -1,12 +1,14 @@
 # iaTest Demo
 
-Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), below are notes and example command lines for the iaTest demo.  The demo has two (2) purposes:
+Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), below are notes and example command lines for the iaTest<sup>1</sup> demo.  The demo has two (2) purposes:
 
  - show how to implement an Atom-based vision + AI server with 34 total CPU cores under 75 W
  
  - provide an example application, including source code, to measure OpenCV performance between Atom only and Atom + coCPU cores, with no ARM or GPU
 
 In addition to OpenCV, the next iteration of this demo will include TensorFlow.
+
+<sup>1</sup> iaTest = image analytics test
 
 # Table of Contents
 
@@ -30,7 +32,7 @@ The demo defines the requirements for a practical, deployable vision + AI server
 * All cores have direct access to network I/O
 * Ready to run OpenCV and TensorFlow
 
-Low SWaP requirements are obvious enough; what is less obvious, yet cannot be overemphasized, is the importance of a fully cloud compatible programming model.  Every new vision and AI application, including low SWaP products, is tested in the cloud prior to  production; no one wants to be forced to port code to ARM and end up in an unsupported backwater.
+Low SWaP<sup>2</sup> requirements are obvious enough; what is less obvious, yet cannot be overemphasized, is the importance of a fully cloud compatible programming model.  Every new vision and AI application, including low SWaP products, is tested in the cloud prior to  production; no one wants to be forced to port code to ARM and end up in an unsupported backwater.
 
 Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
 
@@ -49,6 +51,8 @@ Specifics of the Atom-based vision + AI demo server include:
 * IPMI (dedicated GbE)
 * Audio I/O interface (via USB)
 * VGA optional display
+
+<sup>2</sup>SWaP = Size, Weight, and Power consumption
 
 <a name="AtomTests"></a>
 # Atom Only Tests
@@ -87,11 +91,9 @@ Below are some example frame grabs from output .yuv files.  This is what you sho
 <a name="DemoNotes"></a>
 # Demo Notes
 
-1) iaTest = image analytics test.  The iaTest demo is one of several SigSRF demos, including mediaTest (media streaming and transcoding), and ffmpeg_accel (accelerated ffmpeg encoding and video streaming).
+1) The iaTest demo is one of several SigSRF demos, including mediaTest (media streaming and transcoding), and ffmpeg_accel (accelerated ffmpeg encoding and video streaming).
 
-2) SWaP = size, weight, and power consumption.
-
-3) iaTest source code files use #ifdef's to allow compilation for both x86 and c66x CPUs.  All source code examples invoke C or C++ OpenCV function calls per OpenCV standards.  All source code can be augmented with network I/O APIs.
+2) iaTest source code files use #ifdef's to allow compilation for both x86 and c66x CPUs.  All source code examples invoke C or C++ OpenCV function calls per OpenCV standards.  All source code can be augmented with network I/O APIs.
 
 <a name="PowerConsumptionNotes"></a>
 # Power Consumption Notes
