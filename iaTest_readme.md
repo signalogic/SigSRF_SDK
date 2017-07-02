@@ -1,12 +1,12 @@
 # iaTest Demo
 
-Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the iaTest demo.  The demo has two (2) purposes:
+Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), below are notes and example command lines for the iaTest demo.  The demo has two (2) purposes:
 
  - show how to implement an Atom-based vision + AI server with 34 total CPU cores under 75 W
  
  - provide an example application, including source code, to measure OpenCV performance between Atom only and Atom + coCPU cores, with no ARM or GPU
 
-In addition to OpenCV, the next iteration of this demo will will include TensorFlow.
+In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 
 # Table of Contents
 
@@ -36,7 +36,7 @@ Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores inst
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Small_AI_server_32cores_top_view.png?raw=true "AI + vision Atom server, top view")
 
-Specifics of the vision + AI server shown here include:
+Specifics of the vision + AI demo server include:
 
 * Mini-ITX motherboard and case
 * Dual core Atom (C2358, 1.74 GHz), 4x GbE interfaces, 8 GB DDR3 mem, 1333 MHz
@@ -68,13 +68,13 @@ Below are example command lines to use with coCPU cards.
 <a name="InstallNotes"></a>
 # Install Notes
 
-1) For Atom operation, the demo installs two OpenCV v3.2 libraries (libcore_sig.so and libimgproc_sig.so).  Demo-specific filenames are used so as not to interfere with an existing OpenCV installation.  For coCPU operation, the demo installs the libopencv.le66 library, which includes a number of OpenCV 2.4.2 libraries.
+1) For Atom operation, the demo installs two OpenCV v3.2 libraries (libopencv_core_sig.so and libopencv_imgproc_sig.so).  Demo-specific filenames (with \_sig suffix) are used so as not to interfere with existing OpenCV installations.  For coCPU operation, the demo installs the libopencv.le66 combined library, which includes a number of OpenCV 2.4.2 modules.
 
 2) For Atom operation, demo source code (for example ia.c and yuv.c files) can be modified, rebuilt, and linked, but if new OpenCV functions are required then the iaTest Makefile will need to be modified to reference the required libraries.  For coCPU operation, demo source can also be modified; in this case you will need to download the c66x CGT tools for Linux from TI's website in order to rebuild.  The Makefile installed on the mCPU_target subfolder may need to be modified.
 
 <a name="DemoNotes"></a>
 ### Demo Notes
 
-1) iaTest = image analytics test.  The iaTest demo is one of several SigSRF demos, including mediaTest (media streaming and transcoding, and ffmpeg_accel (accelerated ffmpeg encoding and image processing).
+1) iaTest = image analytics test.  The iaTest demo is one of several SigSRF demos, including mediaTest (media streaming and transcoding), and ffmpeg_accel (accelerated ffmpeg encoding and video streaming).
 
-2) iaTest source code files use #ifdef's to allow compilation for both x86 and c66x CPUs.  All source code examples make C or C++ OpenCV function calls per OpenCV standards.  All source code can have network I/O APIs added.
+2) iaTest source code files use #ifdef's to allow compilation for both x86 and c66x CPUs.  All source code examples invoke C or C++ OpenCV function calls per OpenCV standards.  All source code can be augmented with network I/O APIs.
