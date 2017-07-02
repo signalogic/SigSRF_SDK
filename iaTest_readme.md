@@ -87,7 +87,7 @@ Below are some example frame grabs from output .yuv files.  This is what you sho
 
 coCPU cores must meet the following requirements:
 
-* High performance, including 8 or more cores per CPU, L1 and L2 cache, and extensive DMA capabilities
+* High performance, including extensive SIMD capability, 8 or more cores per CPU, L1 and L2 cache, and advanced DMA capability
 * Contain onchip network I/O and packet processing and onchip PCIe
 * Access 2 GB or more external DDR3 mem
 
