@@ -14,6 +14,7 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 [Atom Only Tests](#AtomTests)<br/>
 [Atom + coCPU Tests](#coCPUTests)<br/>
 [Install Notes](#InstallNotes)<br/>
+[Output Frame Grabs](#OutputFrameGrabs)<br/>
 [Demo Notes](#DemoNotes)<br/>
 
 <a name="AtomServer"></a>
@@ -51,7 +52,7 @@ Specifics of the Atom-based vision + AI demo server include:
 <a name="AtomTests"></a>
 # Atom Only Tests
 
-Below are example command lines to use with with or without a coCPU card installed.  The demo source code performs motion detection and tracking, with a rudimentary algorithm that compensates for camera motion (such as jerky hand-held cellphone video).
+Below are example command lines to use with with or without a coCPU card installed.  The demo source code performs motion detection and tracking, with a rudimentary algorithm that compensates for camera motion (such as jerky hand-held mobile phone video).
 
 ```C
 ./iaTest -m1 -cx86 -s0 -i/test_files/hallway_352x288p_30fps_420fmt.yuv -x352 -y288 -ohallway_test.yuv -l0x01000003
@@ -75,6 +76,13 @@ Below are example command lines to use with coCPU cards.
 1) For Atom operation, the demo installs two OpenCV v3.2 libraries (libopencv_core_sig.so and libopencv_imgproc_sig.so).  Demo-specific filenames (with \_sig suffix) are used so as not to interfere with existing OpenCV installations.  For coCPU operation, the demo installs the libopencv.le66 combined library, which includes a number of OpenCV 2.4.2 modules.
 
 2) For Atom operation, demo source code (for example ia.c and yuv.c files) can be modified, rebuilt, and linked, but if new OpenCV functions are required then the iaTest Makefile will need to be modified to reference the required libraries.  For coCPU operation, demo source can also be modified; in this case you will need to download the c66x CGT tools for Linux from TI's website in order to rebuild.  The Makefile installed on the mCPU_target subfolder may need to be modified.
+
+<a name="OutputFrameGrabs"></a>
+# OutputFrameGrabs
+
+Below are some example frame grabs from output .yuv files.  This is what you should see prior to making source code modifications.
+
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Surveillance_video_detection_algorithm_concurrent_suspects.png?raw=true "Object tracking and stats printout in mobile phone capture of CCTV surveillance video")
 
 <a name="DemoNotes"></a>
 # Demo Notes
