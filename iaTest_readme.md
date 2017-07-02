@@ -19,14 +19,16 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 <a name="AtomServer"></a>
 # Vision + AI Atom Server
 
-The demo defines the requirements for a practical, deployable Atom vision + AI server as follows:
+The demo defines the requirements for a practical, deployable vision + AI server as follows:
 
 * Small size, 8" x 9" x 3"
 * Low power -- target of 50 W, the current prototype shown here is 75 W
 * High performance -- this demo shows a 16x increase in OpenCV capacity vs. a dual-core Atom
-* Cloud compatible programming model -- no ARM, GPU, or FPGA, no special APIs or flow graphs, etc
+* Cloud compatible programming model -- x86 Linux, with no ARM, GPU, or FPGA, no special APIs or flow graphs, etc
 * All cores have direct access to network I/O
 * Ready to run OpenCV and TensorFlow
+
+Low SWaP requirements are obvious enough; what is less obvious, yet cannot be overemphasized, is the importance of a fully cloud compatible programming model.  Every new vision and AI application, including low SWaP products, is tested in the cloud prior to  production; no one wants to be forced to port code to ARM and end up in an unsupported backwater.
 
 Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code.
 
@@ -36,7 +38,7 @@ Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores inst
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Small_AI_server_32cores_top_view.png?raw=true "AI + vision Atom server, top view")
 
-Specifics of the vision + AI demo server include:
+Specifics of the Atom-based vision + AI demo server include:
 
 * Mini-ITX motherboard and case
 * Dual core Atom (C2358, 1.74 GHz), 4x GbE interfaces, 8 GB DDR3 mem, 1333 MHz
@@ -49,13 +51,15 @@ Specifics of the vision + AI demo server include:
 <a name="AtomTests"></a>
 # Atom Only Tests
 
+Below are example command lines to use with with or without a coCPU card installed.  The demo source code performs motion detection and tracking, with a rudimentary algorithm that compensates for camera motion (such as jerky hand-held cellphone video).
+
 ```C
 ./iaTest -m1 -cx86 -s0 -i/test_files/hallway_352x288p_30fps_420fmt.yuv -x352 -y288 -ohallway_test.yuv -l0x01000003
 ```
 <a name="coCPUTests"></a>
 # Atom + coCPU Tests
 
-To run coCPU tests, a coCPU card has to be installed in the Atom server.  The pictures above show a 32-core card; a 64-core card is also available.  Cards can be obtained from Signalogic, Advantech, or Texas Instruments.
+To run coCPU tests, a coCPU card must be installed in the Atom server.  The pictures above show a 32-core card; a 64-core card is also available (but would increase the size of the enclosure).  If supported by the riser, multiple 32-core cards can be installed.  Cards can be obtained from Signalogic, Advantech, or Texas Instruments.
 
 Below are example command lines to use with coCPU cards.
 
