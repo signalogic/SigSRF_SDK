@@ -82,6 +82,8 @@ Below are some example frame grabs from output .yuv files.  This is what you sho
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Surveillance_video_detection_algorithm_concurrent_suspects.png?raw=true "Object tracking and stats printout in mobile phone capture of CCTV surveillance video")
 
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Hallway_men_walking.png?raw=true "Object tracking and stats printout in mobile phone capture of CCTV surveillance video")
+
 <a name="coCPUNotes"></a>
 # coCPU&trade; Notes
 
