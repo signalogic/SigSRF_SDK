@@ -91,7 +91,8 @@ coCPU cores must meet the following requirements:
 
 * High performance, including extensive SIMD capability, 8 or more cores per CPU, L1 and L2 cache, and advanced DMA capability
 * Contain onchip network I/O and packet processing and onchip PCIe
-* Access 2 GB or more external DDR3 mem
+* Access to 2 (two) GB or more external DDR3 mem
+* Able to efficiently decode camera input, e.g. H.264 streams arriving as input via onchip network I/O
 * CGT<sup> 3</sup> supports gcc compatible C/C++ build and link, mature and reliable debug tools, RTOS, and numerous libraries
 
 The current vision + AI server demo uses TI C6678 CPUs, which meet these requirements.  Over time, other suitable CPUs may become available.
@@ -101,7 +102,7 @@ The current vision + AI server demo uses TI C6678 CPUs, which meet these require
 <a name="InstallNotes"></a>
 # Install Notes
 
-1) For Atom operation, the demo installs two OpenCV v3.2 libraries (libopencv_core_sig.so and libopencv_imgproc_sig.so).  Demo-specific filenames (with \_sig suffix) are used so as not to interfere with existing OpenCV installations.  For coCPU operation, the demo installs the libopencv.le66 combined library, which includes a number of OpenCV 2.4.2 modules.  This link has [more information on how libopencv.le66 was created](http://processors.wiki.ti.com/index.php/C66x_opencv).
+1) For Atom operation, the demo installs two OpenCV v3.2 libraries (libopencv_core_sig.so and libopencv_imgproc_sig.so).  Demo-specific filenames (with \_sig suffix) are used so as not to interfere with existing OpenCV installations.  For coCPU operation, the demo installs the libopencv.le66 combined library, which includes a number of OpenCV v2.4.2 modules.  This link has [more information on how libopencv.le66 was created](http://processors.wiki.ti.com/index.php/C66x_opencv).
 
 2) For Atom operation, demo source code (for example ia.c and yuv.c files) can be modified, rebuilt, and linked, but if new OpenCV functions are required then the iaTest Makefile will need to be modified to reference the required libraries.  For coCPU operation, demo source can also be modified; in this case you will need to download the c66x CGT tools for Linux from TI's website in order to rebuild.  The Makefile installed on the mCPU_target subfolder may need to be modified.
 
