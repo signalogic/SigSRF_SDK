@@ -13,7 +13,7 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 # Table of Contents
 
 [Vision + AI Server](#AtomServer)<br/>
-&nbsp;&nbsp;[Architecture Diagram](#ArchitectureDiagram)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Architecture Diagram](#ArchitectureDiagram)<br/>
 [Atom Only Tests](#AtomTests)<br/>
 [Atom + coCPU Tests](#coCPUTests)<br/>
 [Output Frame Grabs](#OutputFrameGrabs)<br/>
