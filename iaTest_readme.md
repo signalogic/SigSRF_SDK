@@ -2,13 +2,14 @@
 
 Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), below are notes and example command lines for the iaTest<sup> 1</sup> demo.  The demo has two (2) purposes:
 
- - show how to implement an Atom-based vision + AI server with 34 total CPU cores under 75 W
+ - show how to implement an Atom-based vision<sup> 2</sup> + AI server with 34 total CPU cores under 75 W
  
  - provide an example application, including source code, to measure OpenCV performance between Atom only and Atom + coCPU cores, with no ARM or GPU
 
 In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 
 <sup>1 </sup>iaTest = image analytics test
+<sup>2 </sup>vision = computer vision, machine vision, vehicle vision, etc
 
 # Table of Contents
 
@@ -25,7 +26,7 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 <a name="AtomServer"></a>
 # Vision + AI Server
 
-The demo defines the requirements for a practical, deployable vision + AI server as follows:
+The demo defines as follows the requirements for a practical, deployable vision + AI server:
 
 * Small size, 8" x 9" x 3"
 * Low power -- target of 50 W, the current prototype shown here is 75 W
@@ -34,7 +35,7 @@ The demo defines the requirements for a practical, deployable vision + AI server
 * All cores have direct access to network I/O
 * Ready to run OpenCV and TensorFlow
 
-Low SWaP<sup> 2</sup> requirements are obvious enough; what is less obvious, yet cannot be overemphasized, is the importance of a fully cloud compatible programming model.  All new vision and AI algorithms, including low SWaP applications, are tested in the cloud prior to production.  No one wants to be forced to port complex, performance sensitive algorithm based code to ARM and end up in an unsupported backwater.
+Low SWaP<sup> 3</sup> requirements are obvious enough; what is less obvious, yet cannot be overemphasized, is the importance of a fully cloud compatible programming model.  All new vision and AI algorithms, including low SWaP applications, are tested in the cloud prior to production.  No one wants to be forced to port complex, performance sensitive algorithm based code to ARM and end up in an unsupported backwater.
 
 Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code
 
@@ -54,7 +55,7 @@ Specifics of the Atom-based vision + AI demo server include:
 * Audio I/O interface (via USB)
 * VGA optional display
 
-<sup>2 </sup>SWaP = Size, Weight, and Power consumption
+<sup>3 </sup>SWaP = Size, Weight, and Power consumption
 
 <a name="ArchitectureDiagram"></a>
 ## Architecture Diagram
@@ -105,11 +106,11 @@ coCPU cores must meet the following requirements:
 * Contain onchip network I/O and packet processing and onchip PCIe
 * Access to 2 (two) GB or more external DDR3 mem
 * Able to efficiently decode camera input, e.g. H.264 streams arriving as input via onchip network I/O
-* CGT<sup> 3</sup> supports gcc compatible C/C++ build and link, mature and reliable debug tools, RTOS, and numerous libraries
+* CGT<sup> 4</sup> supports gcc compatible C/C++ build and link, mature and reliable debug tools, RTOS, and numerous libraries
 
 The current vision + AI server demo uses TI C6678 CPUs, which meet these requirements.  Over time, other suitable CPUs may become available.
 
-<sup>3 </sup>CGT = Code Generation Tools
+<sup>4 </sup>CGT = Code Generation Tools
 
 <a name="InstallNotes"></a>
 # Install Notes
