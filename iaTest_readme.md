@@ -8,7 +8,7 @@ Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/
 
 In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 
-<sup>1 </sup>iaTest = image analytics test
+<sup>1 </sup>iaTest = image analytics test<br/>
 <sup>2 </sup>vision = computer vision, machine vision, vehicle vision, etc
 
 # Table of Contents
