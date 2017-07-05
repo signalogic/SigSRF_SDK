@@ -13,7 +13,7 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 # Table of Contents
 
 [Vision + AI Server](#AtomServer)<br/>
-  [Architecture Diagram](#ArchitectureDiagram)<br/>
+&nbsp;&nbsp;[Architecture Diagram](#ArchitectureDiagram)<br/>
 [Atom Only Tests](#AtomTests)<br/>
 [Atom + coCPU Tests](#coCPUTests)<br/>
 [Output Frame Grabs](#OutputFrameGrabs)<br/>
@@ -61,7 +61,11 @@ Specifics of the Atom-based vision + AI demo server include:
 
 Below is an architecture diagram showing network I/O and processing performed by x86 CPUs and c66x coCPUs.
 
+&nbsp;<br/>
+
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_Image_Analytics.png?raw=true "Atom server software architecture diagram")
+
+&nbsp;<br/>
 
 <a name="AtomTests"></a>
 # Atom Only Tests
