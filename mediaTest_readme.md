@@ -16,6 +16,7 @@ mediaTest serves two (2) purposes:
 [Packet Mode Tests](#PacketModeTests)<br/>
 &nbsp;&nbsp;[Multiple RTP Streams](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
+[Packet Stats Logging](#PacketStatsLogging)<br/>
 [Jitter Buffer Notes](#JitterBufferNotes)<br/>
 [mediaTest Notes](#mediaTestNotes)<br/>
 [3GPP Reference Code Notes](#3GPPNotes)<br/>
@@ -122,9 +123,9 @@ Below is a packet mode command line similar to the above examples, except output
 <a name="MultipleRTPStreams"></a>
 ### Multiple RTP Streams
 
-RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams wihin a single session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a a new RTP stream is created, new encoder and decoder instances are also created dynamically.  This is particularly important for newer codecs such as EVS, which depends on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams within a single session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically.  This is particularly important for newer codecs such as EVS, which depends on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
 
-Here is mediaTest command line example:
+Here is the mediaTest command line example included in the demo for multiple RTP streams:
 
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/evs_multiple_ssrc_IPv6.pcap -oevs_multiple_ssrc_IPv6_g711.pcap -oevs_multiple_ssrc_IPv6.wav -Csession_config/evs_multiple_ssrc_IPv6_config
@@ -141,30 +142,30 @@ Here is a look inside the session configuration file (pcap_file_test_config) use
 # Session 1
 [start_ofsession_data]
 
-term1.local_ip=192.16.0.147
-term1.local_port=18446
-term1.remote_ip=192.16.0.16
-term1.remote_port=6170
-term1.media_type="voice"
-term1.codec_type="G711_ULAW"
-term1.bitrate=64000  # in kbps
-term1.ptime=20  # in msec
-term1.rtp_payload_type=0
-term1.dtmf_type="NONE"
-term1.dtmf_payload_type="NONE"
+term1.local_ip = 192.16.0.147
+term1.local_port = 18446
+term1.remote_ip = 192.16.0.16
+term1.remote_port = 6170
+term1.media_type = "voice"
+term1.codec_type = "G711_ULAW"
+term1.bitrate = 64000  # in kbps
+term1.ptime = 20  # in msec
+term1.rtp_payload_type = 0
+term1.dtmf_type = "NONE"
+term1.dtmf_payload_type = "NONE"
 
-term2.local_ip=192.16.0.16
-term2.local_port=6154
-term2.remote_ip=192.16.0.130
-term2.remote_port=10242
-term2.media_type="voice"
-term2.codec_type="EVS"
-term2.bitrate=13200  # in kbps
-term2.ptime=20  # in msec
-term2.rtp_payload_type=127
-term2.dtmf_type="NONE"
+term2.local_ip = 192.16.0.16
+term2.local_port = 6154
+term2.remote_ip = 192.16.0.130
+term2.remote_port = 10242
+term2.media_type = "voice"
+term2.codec_type = "EVS"
+term2.bitrate = 13200  # in kbps
+term2.ptime = 20  # in msec
+term2.rtp_payload_type = 127
+term2.dtmf_type = "NONE"
 term2.dtmf_payload_type="NONE"
-term2.evs_sample_rate=8000   # in Hz
+term2.sample_rate = 16000   # in Hz
 term2.evs_header_full=1  # Full Header format used (0 = Compact Header format)
 
 [end_of_session_data]
@@ -175,6 +176,30 @@ Note that each session has one or two "terminations", or endpoints (term1 and te
 When using pcap files, "remote" IP addr and UDP port values refer to pcap source, and "local" values refer to pcap destination.  When used with mediaTest, local IP addrs are the mediaTest application, and remote IP addrs are the endpoints. Rx traffic (i.e. incoming, with respect to mediaTest) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, w.r.t. mediaTest) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
+
+<a name="PacketStatsLogging"></a>
+## PacketStatsLogging
+
+mediaTest includes packet statistics logging for:
+
+  -incoming packets (network input, pcap file)
+  -jitter buffer output
+  -outgoing packets (network output, pcap file)
+
+Statistics include packets dropped, out-of-order (ooo), missing, and duplicated.  Packets are grouped by SSRC (see Multiple RTP Streams section above), with each entry showing sequence number, timestamp, and type (bitstream payload, DTX, etc).  Here is a packet stats log file excerpt:
+
+```CoffeeScript
+Packet info for SSRC = 353707 (cont), first seq num = 685, last seq num = 872 ...
+
+Seq num 685              timestamp = 547104, pkt len = 33
+Seq num 686              timestamp = 547424, pkt len = 33
+Seq num 687 ooo 688      timestamp = 548064, pkt len = 33
+Seq num 688 ooo 687      timestamp = 547744, pkt len = 33
+Seq num 689 ooo 690      timestamp = 548704, pkt len = 33
+Seq num 690 ooo 689      timestamp = 548384, pkt len = 33
+Seq num 691              timestamp = 549024, pkt len = 33
+Seq num 692              timestamp = 549344, pkt len = 6 (DTX)
+```
 
 <a name="JitterBufferNotes"></a>
 ## Jitter Buffer Notes
