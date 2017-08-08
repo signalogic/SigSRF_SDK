@@ -74,7 +74,7 @@ Below is an architecture diagram showing network I/O and processing performed by
 Below are example command lines to use with with or without a coCPU card installed.  The demo source code performs motion detection and tracking, with a rudimentary algorithm that compensates for camera motion (such as jerky hand-held mobile phone video).
 
 ```C
-./iaTest -m1 -cx86 -s0 -i/test_files/hallway_352x288p_30fps_420fmt.yuv -x352 -y288 -ohallway_test.yuv -l0x01000003
+./iaTest -m1 -cx86 -s0 -itest_files/hallway_352x288p_30fps_420fmt.yuv -x352 -y288 -ohallway_test.yuv -l0x01000003
 ```
 <a name="coCPUTests"></a>
 # Atom + coCPU Tests
@@ -84,9 +84,9 @@ To run coCPU tests, a coCPU card must be installed in the Atom server.  The pict
 Below are example command lines to use with coCPU cards.
 
 ```C
-./iaTest -m1 -f1600 -eia.out -cSIGC66XX-8 -s0 -i/test_files/hallway_352x288p_30fps_420fmt.yuv -x352 -y288 -ohallway_test.yuv -l0x01000003
+./iaTest -m1 -f1600 -eia.out -cSIGC66XX-8 -s0 -itest_files/hallway_352x288p_30fps_420fmt.yuv -x352 -y288 -ohallway_test.yuv -l0x01000003
 
-./iaTest -m1 -f1600 -eia.out -cSIGC66XX-8 -s0 -i/test_files/CCTV_640x360p_30fps_420fmt.yuv -x640 -y360 -occtv_test.yuv -l0x01100003
+./iaTest -m1 -f1600 -eia.out -cSIGC66XX-8 -s0 -itest_files/CCTV_640x360p_30fps_420fmt.yuv -x640 -y360 -occtv_test.yuv -l0x01100003
 ```
 <a name="OutputFrameGrabs"></a>
 # Output Frame Grabs
