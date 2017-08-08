@@ -178,7 +178,7 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
 
 <a name="PacketStatsLogging"></a>
-## PacketStatsLogging
+## Packet Stats Logging
 
 mediaTest includes packet statistics logging for:
 
