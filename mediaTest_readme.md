@@ -14,6 +14,7 @@ mediaTest serves two (2) purposes:
 &nbsp;&nbsp;[coCPU Codec Tests](#coCPUCodecTests)<br/>
 [Frame Mode Tests](#FrameModeTests)<br/>
 [Packet Mode Tests](#PacketModeTests)<br/>
+&nbsp;&nbsp;[Multiple RTP Streams](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
 [Jitter Buffer Notes](#JitterBufferNotes)<br/>
 [mediaTest Notes](#mediaTestNotes)<br/>
@@ -117,6 +118,19 @@ Below is a packet mode command line similar to the above examples, except output
 ```C
 ./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/EVS_13.2_16000.pcap -oEVS_13.2_16000.wav
 ```
+
+<a name="MultipleRTPStreams"></a>
+### Multiple RTP Streams
+
+RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams wihin a single session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a a new RTP stream is created, new encoder and decoder instances are also created dynamically.  This is particularly important for newer codecs such as EVS, which depends on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+
+Here is mediaTest command line example:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/evs_multiple_ssrc_IPv6.pcap -oevs_multiple_ssrc_IPv6_g711.pcap -oevs_multiple_ssrc_IPv6.wav -Csession_config/evs_multiple_ssrc_IPv6_config
+```
+
+The packet stats log file produced by the above command (evs_multiple_ssrc_IPv6_g711.txt) shows each SSRC stream, and shows how the SigSRF jitter buffer correctly collates each stream, while still resolving out-of-order packets.
 
 <a name="SessionConfigFileFormat"></a>
 ### Session Configuration File Format
