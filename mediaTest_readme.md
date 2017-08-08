@@ -123,7 +123,7 @@ Below is a packet mode command line similar to the above examples, except output
 <a name="MultipleRTPStreams"></a>
 ### Multiple RTP Streams
 
-RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams within a single session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically.  This is particularly important for newer codecs such as EVS, which depends on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically, in order to keep content of each RTP stream separate and contiguous.  This is particularly important for advanced codecs such as EVS, which depends on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
 
 Here is the mediaTest command line example included in the demo for multiple RTP streams:
 
@@ -206,9 +206,10 @@ Seq num 692              timestamp = 549344, pkt len = 6 (DTX)
 
 As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
 
-* Handles out-of-order packets, including 2 packet swaps
+* Handles out-of-order packets, including packet swaps
 * Dynamic delay depth adjustment option
-* Accepts sustained "burst mode" input, up to 10x faster than the media ptime (also referred to as "back pressure" in data analytics applications)
+* Accepts sustained "burst mode" input, up to 10x faster than real-time (also referred to as "back pressure" in data analytics applications)
+* Dynamic channel creation to support multiple RTP streams per session (see Multiple RTP Streams section above)
 * Statistics API, logging, and several options such as overrun control, probation control, flush, and bypass modes
 
 <a name="mediaTestNotes"></a>
