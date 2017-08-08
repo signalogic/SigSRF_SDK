@@ -131,6 +131,10 @@ Here is the mediaTest command line example included in the demo for multiple RTP
 ./mediaTest -M0 -cx86 -ipcaps/evs_multiple_ssrc_IPv6.pcap -oevs_multiple_ssrc_IPv6_g711.pcap -oevs_multiple_ssrc_IPv6.wav -Csession_config/evs_multiple_ssrc_IPv6_config
 ```
 
+Here is a screen capture showing output for the above command line, with RTP stream transitions highlighted:
+
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaTest multiple RTP stream command line example")
+
 The packet stats log file produced by the above command (evs_multiple_ssrc_IPv6_g711.txt) shows each SSRC stream, and shows how the SigSRF jitter buffer correctly collates each stream, while still resolving out-of-order packets.
 
 <a name="SessionConfigFileFormat"></a>
