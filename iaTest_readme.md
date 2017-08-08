@@ -1,6 +1,6 @@
 # iaTest Demo
 
-Assuming you have installed the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), below are notes and example command lines for the iaTest<sup> 1</sup> demo.  The demo has two (2) purposes:
+After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), below are notes and example command lines for the iaTest<sup> 1</sup> demo.  The demo has two (2) purposes:
 
  - show how to implement an Atom-based vision<sup> 2</sup> + AI server with 34 total CPU cores under 75 W
  
