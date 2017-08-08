@@ -182,9 +182,9 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 
 mediaTest includes packet statistics logging for:
 
-  -incoming packets (network input, pcap file)
-  -jitter buffer output
-  -outgoing packets (network output, pcap file)
+  * incoming packets (network input, pcap file)
+  * jitter buffer output
+  * outgoing packets (network output, pcap file)
 
 Statistics include packets dropped, out-of-order (ooo), missing, and duplicated.  Packets are grouped by SSRC (see Multiple RTP Streams section above), with each entry showing sequence number, timestamp, and type (bitstream payload, DTX, etc).  Here is a packet stats log file excerpt:
 
