@@ -1,6 +1,6 @@
 # mediaTest Demo
 
-After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the mediaTest demo.  Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav).  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no concurrency or multiuser limitations, for either bare metal or VM operation.
+After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the mediaTest demo.  Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav).  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no limitations for concurrency or multiuser, for either bare metal or VM operation.
 
 mediaTest serves two (2) purposes:
 
@@ -123,7 +123,7 @@ Below is a packet mode command line similar to the above examples, except output
 <a name="MultipleRTPStreams"></a>
 ### Multiple RTP Streams
 
-RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically, in order to keep content of each RTP stream separate and contiguous.  This is particularly important for advanced codecs such as EVS, which depends on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically, in order to keep content of each RTP stream separate and contiguous.  This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
 
 Here is the mediaTest command line example included in the demo for multiple RTP streams:
 
