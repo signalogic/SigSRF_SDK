@@ -14,11 +14,12 @@ mediaTest serves two (2) purposes:
 &nbsp;&nbsp;[coCPU Codec Tests](#coCPUCodecTests)<br/>
 [Frame Mode Tests](#FrameModeTests)<br/>
 [Packet Mode Tests](#PacketModeTests)<br/>
-&nbsp;&nbsp;[Multiple RTP Streams](#MultipleRTPStreams)<br/>
+&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
 [Packet Stats Logging](#PacketStatsLogging)<br/>
-[Jitter Buffer Notes](#JitterBufferNotes)<br/>
+[Pktlib and Jitter Buffer Notes](#PktlibandJitterBufferNotes)<br/>
 [mediaTest Notes](#mediaTestNotes)<br/>
+[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
 [3GPP Reference Code Notes](#3GPPNotes)<br/>
 &nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
 &nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
@@ -120,7 +121,7 @@ Below is a packet mode command line similar to the above examples, except output
 ./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/EVS_13.2_16000.pcap -oEVS_13.2_16000.wav
 ```
 
-<a name="MultipleRTPStreams"></a>
+<a name="MultipleRTPStreams (RFC8108)"></a>
 ### Multiple RTP Streams
 
 RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically, in order to keep content of each RTP stream separate and contiguous.  This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
@@ -205,8 +206,8 @@ Seq num 691              timestamp = 549024, pkt len = 33
 Seq num 692              timestamp = 549344, pkt len = 6 (DTX)
 ```
 
-<a name="JitterBufferNotes"></a>
-## Jitter Buffer Notes
+<a name="PktlibandJitterBufferNotes"></a>
+## Pktlib and Jitter Buffer Notes
 
 As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
 
@@ -215,6 +216,25 @@ As part of the SigSRF software, with its emphasis on high performance streaming,
 * Accepts sustained "burst mode" input, up to 10x faster than real-time (also referred to as "back pressure" in data analytics applications)
 * Dynamic channel creation to support multiple RTP streams per session (see Multiple RTP Streams section above)
 * Statistics API, logging, and several options such as overrun control, probation control, flush, and bypass modes
+
+Some of the RFCs supported by Pktlib include:
+
+* RFC 3550 (real-time transport protocol)
+* RFC 7198 (packet duplication)
+* RFC 8108 (multiple RTP streams)
+* RFC 2833 and 4733 (DTMF)
+* RFC 4867 (RTP payload and file storage for AMR-NB and AMR-WB codecs)
+
+<a name="ConvertPcap2Wav"></a>
+## Convert Pcap to Wav
+
+Here is a simple mediaTest demo command line to convert an EVS pcap to wav file:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_IPv4.pcap -oevs_16khz_13200bps_IPv4.pcap.wav -Csession_config/evs_16khz_13200bps_IPv4_config
+```
+
+An output pcap could also be added to the above command line, for example transcode the EVS to G711 or other codec.
 
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
