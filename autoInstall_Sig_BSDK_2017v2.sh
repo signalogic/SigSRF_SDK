@@ -207,7 +207,6 @@ swInstall() {				# It will install Signalogic SW on specified path
 	echo	
 	echo "Loading driver"
 	if [ "$target" = "Host" ]; then
-		#cd $installPath/Signalogic_*/DirectCore/hw_utils; make clean; make
 		cd $installPath/Signalogic_*/DirectCore/hw_utils; make clean; make
 		cd ../driver; 
                 distribution=$(lsb_release -d)
@@ -266,9 +265,7 @@ swInstall() {				# It will install Signalogic SW on specified path
 	echo "Building Signalogic libraries..."
 	cd $installPath/Signalogic_*/DirectCore/lib/
 	for d in *; do
-		#if [[ "$d" != "voplib" ]]; then
-			cd $d; echo $d; cp -f lib* /usr/lib; ldconfig; cd - > /dev/null
-		#fi
+		cd $d; echo $d; cp -f lib* /usr/lib; ldconfig; cd - > /dev/null
 	done
 	
 	cd $installPath/Signalogic_*/SIG_LIBS/Voice/EVS_floating-point/lib
@@ -278,9 +275,8 @@ swInstall() {				# It will install Signalogic SW on specified path
 	cd $installPath/Signalogic_*/DirectCore/apps/coCPU/
 	for d in *; do
 	if [[ "$d" != "appTest" ]]; then
-	  # && [[ "$d" != "iaTest" ]]; then
-			cd $d; make clean; make; cd -
-		fi
+		cd $d; make clean; make; cd -
+	fi
 	done
 	cd $wdPath
 	
@@ -309,7 +305,7 @@ unInstall() {			# It will uninstall Signalogic SW completely
 	MODEXIST=/sbin/lsmod | grep "sig_mc_hw"
 	if [ -n "$MODEXIST" ]; then
 	   rmmod sig_mc_hw
-    fi
+        fi
 	rm -rf /etc/signalogic
 	unlink /usr/src/linux
 	
