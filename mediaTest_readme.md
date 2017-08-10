@@ -156,7 +156,7 @@ Here is a look inside the session configuration file (pcap_file_test_config) use
 
 ```CoffeeScript
 # Session 1
-[start_ofsession_data]
+[start_of_session_data]
 
 term1.local_ip = 192.16.0.147
 term1.local_port = 18446
