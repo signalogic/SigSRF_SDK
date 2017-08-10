@@ -220,6 +220,22 @@ Seq num 692              timestamp = 549344, pkt len = 6 (DTX)
 :
 ```
 
+Here is an excerpt from a stream summary:
+
+```CoffeeScript
+:
+:
+Seq num 10001            timestamp = 451024, pkt len = 33
+Seq num 10002            timestamp = 451344, pkt len = 6 (DTX)
+Seq num 10003            timestamp = 453904, pkt len = 6 (DTX)
+Seq num 10004            timestamp = 456464, pkt len = 6 (DTX)
+
+Out-of-order seq numbers = 0, missing seq numbers = 22, number of DTX packets = 78
+
+Total packets dropped = 0
+Total packets duplicated = 0
+```
+
 <a name="PktlibandJitterBufferNotes"></a>
 ## Pktlib and Jitter Buffer Notes
 
