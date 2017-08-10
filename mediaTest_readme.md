@@ -169,7 +169,7 @@ term1.ptime = 20  # in msec
 term1.rtp_payload_type = 0
 term1.dtmf_type = "NONE"
 term1.dtmf_payload_type = "NONE"
-term2.sample_rate = 8000   # in Hz  (note for fixed rate codecs this field is descriptive only)
+term1.sample_rate = 8000   # in Hz  (note for fixed rate codecs this field is descriptive only)
 
 term2.local_ip = 192.16.0.16
 term2.local_port = 6154
