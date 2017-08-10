@@ -14,12 +14,12 @@ mediaTest serves two (2) purposes:
 &nbsp;&nbsp;[coCPU Codec Tests](#coCPUCodecTests)<br/>
 [Frame Mode Tests](#FrameModeTests)<br/>
 [Packet Mode Tests](#PacketModeTests)<br/>
+&nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
 &nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
 [Packet Stats Logging](#PacketStatsLogging)<br/>
 [Pktlib and Jitter Buffer Notes](#PktlibandJitterBufferNotes)<br/>
 [mediaTest Notes](#mediaTestNotes)<br/>
-[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
 [3GPP Reference Code Notes](#3GPPNotes)<br/>
 &nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
 &nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
@@ -120,6 +120,17 @@ Below is a packet mode command line similar to the above examples, except output
 ```C
 ./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/EVS_13.2_16000.pcap -oEVS_13.2_16000.wav
 ```
+
+<a name="ConvertPcap2Wav"></a>
+### Convert Pcap to Wav
+
+Here is a simple mediaTest demo command line to convert an EVS pcap to wav file:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_IPv4.pcap -oevs_16khz_13200bps_IPv4.pcap.wav -Csession_config/evs_16khz_13200bps_IPv4_config
+```
+
+An output pcap could also be added to the above command line, for example transcode the EVS pcap input to G711 or other codec.  Depending on the number of sessions defined in the session config fie (given by the -C cmd line option, see Session Configuration File Format section below), multiple inputs and outputs can be entered.
 
 <a name="MultipleRTPStreams (RFC8108)"></a>
 ### Multiple RTP Streams
@@ -224,17 +235,6 @@ Some of the RFCs supported by Pktlib include:
 * RFC 8108 (multiple RTP streams)
 * RFC 2833 and 4733 (DTMF)
 * RFC 4867 (RTP payload and file storage for AMR-NB and AMR-WB codecs)
-
-<a name="ConvertPcap2Wav"></a>
-## Convert Pcap to Wav
-
-Here is a simple mediaTest demo command line to convert an EVS pcap to wav file:
-
-```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_IPv4.pcap -oevs_16khz_13200bps_IPv4.pcap.wav -Csession_config/evs_16khz_13200bps_IPv4_config
-```
-
-An output pcap could also be added to the above command line, for example transcode the EVS to G711 or other codec.
 
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
