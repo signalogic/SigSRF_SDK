@@ -147,7 +147,7 @@ Here is a screen capture showing output for the above command line, with RTP str
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaTest multiple RTP stream command line example")
 
-The packet stats log file produced by the above command (evs_multiple_ssrc_IPv6_g711.txt) shows each SSRC stream, and shows how the SigSRF jitter buffer correctly collates each stream, while still resolving out-of-order packets.
+The packet stats log file produced by the above command (evs_multiple_ssrc_IPv6_g711.txt) shows how the SigSRF jitter buffer correctly collates and treats each stream separately, while still resolving out-of-order packets.
 
 <a name="SessionConfigFileFormat"></a>
 ### Session Configuration File Format
@@ -235,6 +235,7 @@ Some of the RFCs supported by Pktlib include:
 * RFC 8108 (multiple RTP streams)
 * RFC 2833 and 4733 (DTMF)
 * RFC 4867 (RTP payload and file storage for AMR-NB and AMR-WB codecs)
+* RFC 3551, 3558, 4788, 5188, 5391, 5993, 6716
 
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
