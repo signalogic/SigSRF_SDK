@@ -164,7 +164,7 @@ term1.remote_ip = 192.16.0.16
 term1.remote_port = 6170
 term1.media_type = "voice"
 term1.codec_type = "G711_ULAW"
-term1.bitrate = 64000  # in kbps
+term1.bitrate = 64000  # in bps
 term1.ptime = 20  # in msec
 term1.rtp_payload_type = 0
 term1.dtmf_type = "NONE"
@@ -176,13 +176,13 @@ term2.remote_ip = 192.16.0.130
 term2.remote_port = 10242
 term2.media_type = "voice"
 term2.codec_type = "EVS"
-term2.bitrate = 13200  # in kbps
+term2.bitrate = 13200  # in bps
 term2.ptime = 20  # in msec
 term2.rtp_payload_type = 127
 term2.dtmf_type = "NONE"
-term2.dtmf_payload_type="NONE"
+term2.dtmf_payload_type = "NONE"
 term2.sample_rate = 16000   # in Hz
-term2.evs_header_full=1  # Full Header format used (0 = Compact Header format)
+term2.evs_header_full = 1  # Full Header format (0 = Compact Header format)
 
 [end_of_session_data]
 ```
