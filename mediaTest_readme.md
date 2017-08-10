@@ -132,8 +132,8 @@ Here is a simple mediaTest demo command line to convert an EVS pcap to wav file:
 
 An output pcap could also be added to the above command line, for example transcode the EVS pcap input to G711 or other codec.  Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see the Session Configuration File Format section below).
 
-<a name="MultipleRTPStreams (RFC8108)"></a>
-### Multiple RTP Streams
+<a name="MultipleRTPStreams"></a>
+### Multiple RTP Streams (RFC 8108)
 
 RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically, in order to keep content of each RTP stream separate and contiguous.  This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
 
