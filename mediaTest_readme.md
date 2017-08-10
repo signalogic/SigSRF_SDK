@@ -216,6 +216,8 @@ Seq num 689 ooo 690      timestamp = 548704, pkt len = 33
 Seq num 690 ooo 689      timestamp = 548384, pkt len = 33
 Seq num 691              timestamp = 549024, pkt len = 33
 Seq num 692              timestamp = 549344, pkt len = 6 (DTX)
+:
+:
 ```
 
 <a name="PktlibandJitterBufferNotes"></a>
