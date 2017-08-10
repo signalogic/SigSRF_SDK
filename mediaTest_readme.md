@@ -130,7 +130,7 @@ Here is a simple mediaTest demo command line to convert an EVS pcap to wav file:
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_IPv4.pcap -oevs_16khz_13200bps_IPv4.pcap.wav -Csession_config/evs_16khz_13200bps_IPv4_config
 ```
 
-An output pcap could also be added to the above command line, for example transcode the EVS pcap input to G711 or other codec.  Depending on the number of sessions defined in the session config fie (given by the -C cmd line option, see Session Configuration File Format section below), multiple inputs and outputs can be entered.
+An output pcap could also be added to the above command line, for example transcode the EVS pcap input to G711 or other codec.  Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see the Session Configuration File Format section below).
 
 <a name="MultipleRTPStreams (RFC8108)"></a>
 ### Multiple RTP Streams
