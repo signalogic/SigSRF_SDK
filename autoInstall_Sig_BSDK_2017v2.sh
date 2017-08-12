@@ -347,6 +347,9 @@ unInstall() {			# It will uninstall Signalogic SW completely
 	rm -rf /usr/lib/libevsenc_sig.x86.so
 	rm -rf /usr/lib/libpktlib.so
 	rm -rf /usr/lib/libvoplib.so
+	rm -rf /usr/lib/libdiaglib.so
+	rm -rf /usr/lib/libopencv_core_sig.so
+	rm -rf /usr/lib/libopencv_imgproc_sig.so
 	unset SIGNALOGIC_INSTALL_PATH
 	sed -i '/SIGNALOGIC_INSTALL_PATH*/d' /etc/environment
 	echo "Uninstall complete..."
