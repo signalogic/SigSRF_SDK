@@ -116,12 +116,6 @@ The screencap below shows mediaTest output after the second command line.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
 
-Below is a packet mode command line similar to the above examples, except output is to wav file instead of pcap.  In this case, unlike the equivalent frame mode test above, jitter buffering is peformed, so out-of-order packets, DTX packets, and SSRC changes are handled.  Depending on the nature of network or pcap input, this can make the difference between intelligble audio or not.
-
-```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config
-```
-
 <a name="ConvertPcap2Wav"></a>
 ### Convert Pcap to Wav
 
@@ -133,7 +127,11 @@ Here are two simple mediaTest demo command lines that convert an EVS pcap to a w
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_PT127_IPv4.pcap -oevs_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config
 ```
 
-An output pcap could also be added to the above command line, for example transcode the EVS pcap input to G711 or other codec.  Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see the Session Configuration File Format section below).
+In this case, unlike the similar frame mode test example above, jitter buffering is peformed, so out-of-order packets, DTX packets, and SSRC changes are handled.  Depending on the nature of network or pcap input, this can make the difference between intelligble audio or not.
+
+An output pcap filename could also be added to the above command lines, i.e. decoded audio to wav file, and also encode the audio to G711 or other codec.
+
+Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see the Session Configuration File Format section below).
 
 <a name="MultipleRTPStreams"></a>
 ### Multiple RTP Streams (RFC 8108)
