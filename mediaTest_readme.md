@@ -16,6 +16,7 @@ mediaTest serves two (2) purposes:
 [Packet Mode Tests](#PacketModeTests)<br/>
 &nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
 &nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
+&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
 [Packet Stats Logging](#PacketStatsLogging)<br/>
 [Pktlib and Jitter Buffer Notes](#PktlibandJitterBufferNotes)<br/>
@@ -87,7 +88,7 @@ Frame mode tests perform encode, decode, or transcoding based on specifications 
 Below is a frame mode command line that reads a pcap file and outputs to wav file.  No jitter buffering is done, so any out-of-order packets, DTX packets, or SSRC changes are not handled.  The wav file sampling rate is determined from the session config file.
 
 ```C
-./mediaTest -M4 -cx86 -Csession_config/pcap_file_test_config -ipcaps/EVS_13.2_16000.pcap -oEVS_13.2_16000.wav
+./mediaTest -M4 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config
 ```
 
 <a name="PacketModeTests"></a>
@@ -107,9 +108,9 @@ The second command line is similar, but also does the following:
 * sends over the network any additional streams beyond the number of output files given
 
 ```C
-./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/pcmutest.pcap -ipcaps/EVS_13.2_16000.pcap
+./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config
 
-./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/pcmutest.pcap -ipcaps/EVS_13.2_16000.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap
+./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -Csession_config/pcap_file_test_config
 ```
 The screencap below shows mediaTest output after the second command line.
 
@@ -118,16 +119,18 @@ The screencap below shows mediaTest output after the second command line.
 Below is a packet mode command line similar to the above examples, except output is to wav file instead of pcap.  In this case, unlike the equivalent frame mode test above, jitter buffering is peformed, so out-of-order packets, DTX packets, and SSRC changes are handled.  Depending on the nature of network or pcap input, this can make the difference between intelligble audio or not.
 
 ```C
-./mediaTest -M0 -cx86 -Csession_config/pcap_file_test_config -ipcaps/EVS_13.2_16000.pcap -oEVS_13.2_16000.wav
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config
 ```
 
 <a name="ConvertPcap2Wav"></a>
 ### Convert Pcap to Wav
 
-Here is a simple mediaTest demo command line to convert an EVS pcap to wav file:
+Here are two simple mediaTest demo command lines that convert an EVS pcap to a wav file:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_IPv6.pcap -oevs_16khz_13200bps_IPv6.wav -Csession_config/evs_16khz_13200bps_IPv6_config
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config
+
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_PT127_IPv4.pcap -oevs_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config
 ```
 
 An output pcap could also be added to the above command line, for example transcode the EVS pcap input to G711 or other codec.  Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see the Session Configuration File Format section below).
@@ -140,7 +143,7 @@ RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP 
 Here is the mediaTest command line example included in the demo for multiple RTP streams:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/evs_multiple_ssrc_IPv6.pcap -oevs_multiple_ssrc_IPv6_g711.pcap -oevs_multiple_ssrc_IPv6.wav -Csession_config/evs_multiple_ssrc_IPv6_config
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC8108_IPv6.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config
 ```
 
 Here is a screen capture showing output for the above command line, with RTP stream transitions highlighted:
@@ -148,6 +151,15 @@ Here is a screen capture showing output for the above command line, with RTP str
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaTest multiple RTP stream command line example")
 
 The packet stats log file produced by the above command (evs_multiple_ssrc_IPv6_g711.txt) shows how the SigSRF jitter buffer correctly collates and treats each stream separately, while still resolving out-of-order packets.  For a log file excerpt, see the Packet Stats and Logging section below.
+
+<a name="DuplicatedRTPStreams"></a>
+### Duplicated RTP Streams (RFC 7198)
+
+RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams.  Here is the mediaTest command line example included in the demo for RFC7198:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config
+```
 
 <a name="SessionConfigFileFormat"></a>
 ### Session Configuration File Format
@@ -280,21 +292,27 @@ The 3GPP decoder can be used as the "gold standard" reference for debug and comp
 <a name="VerifyingEVSpcap"></a>
 ### Verifying an EVS pcap
 
-In some cases, maybe due to unintelligble audio output, questions about pcap format or capture method, SDP descriptor options used for EVS encoding, etc, you may want to simply take a pcap, extract its EVS RTP payload stream, and copy to a .cod file with MIME header suitable for 3GPP decoder input.  The mediaTest command line can do this, here is an example:
+In some cases, maybe due to unintelligble audio output, questions about pcap format or capture method, SDP descriptor options used for EVS encoding, etc, you may want to simply take a pcap, extract its EVS RTP payload stream, and copy to a .cod file with MIME header suitable for 3GPP decoder input.  The mediaTest command line can do this, here are two examples:
 
 ```C
-./mediaTest -cx86 -ipcaps/EVS_13.2_compact_format_PT_127.pcap -oEVS_pcap_extracted.cod
+./mediaTest -cx86 -ipcaps/evs_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_pcap_extracted1.cod
+
+./mediaTest -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oEVS_pcap_extracted2.cod
 ```
 Next, run the 3GPP decoder:
 
 ```C
-./EVS_dec -mime -no_delay_cmp 16 EVS_pcap_extracted.cod 3GPP_decoded_audio.raw
+./EVS_dec -mime -no_delay_cmp 16 EVS_pcap_extracted1.cod 3GPP_decoded_audio1.raw
+
+./EVS_dec -mime -no_delay_cmp 16 EVS_pcap_extracted2.cod 3GPP_decoded_audio2.raw
 ```
 
 Note the 3GPP decoder will produce only a raw audio format file, so you will need to use sox or other tool to convert to .wav file for playback.  You can also decode with mediaTest directly to .wav format:
 
 ```C
-./mediaTest -cx86 -iEVS_pcap_extracted.cod -omediaTest_decoded_audio.wav
+./mediaTest -cx86 -iEVS_pcap_extracted1.cod -omediaTest_decoded_audio1.wav
+
+./mediaTest -cx86 -iEVS_pcap_extracted2.cod -omediaTest_decoded_audio2.wav
 ```
 <a name="WiresharkNotes"></a>
 ## Wireshark Notes
