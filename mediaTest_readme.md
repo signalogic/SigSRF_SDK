@@ -129,7 +129,7 @@ Here are two simple mediaTest demo command lines that convert an EVS pcap to a w
 
 In this case, unlike the similar frame mode test example above, jitter buffering is peformed, so out-of-order packets, DTX packets, and SSRC changes are handled.  Depending on the nature of network or pcap input, this can make the difference between intelligble audio or not.
 
-An output pcap filename could also be added to the above command lines, i.e. decoded audio to wav file, and also encode the audio to G711 or other codec.
+An output pcap filename could also be added to the above command lines, i.e. decode audio to wav file, and also encode the audio to G711 or other codec.
 
 Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see the Session Configuration File Format section below).
 
