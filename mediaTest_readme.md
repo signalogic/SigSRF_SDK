@@ -90,7 +90,7 @@ Frame mode tests perform encode, decode, or transcoding based on specifications 
 Below is a frame mode command line that reads a pcap file and outputs to wav file.  No jitter buffering is done, so any out-of-order packets, DTX packets, or SSRC changes are not handled.  The wav file sampling rate is determined from the session config file.
 
 ```C
-./mediaTest -M4 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config
+./mediaTest -M4 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
 ```
 
 <a name="PacketModeTests"></a>
