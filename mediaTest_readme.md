@@ -18,6 +18,8 @@ mediaTest serves two (2) purposes:
 &nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
+[DTX Handling](#DTXHandling)<br/>
+[DTMF Handling](#DTMFHandling)<br/>
 [Packet Stats Logging](#PacketStatsLogging)<br/>
 [Pktlib and Jitter Buffer Notes](#PktlibandJitterBufferNotes)<br/>
 [mediaTest Notes](#mediaTestNotes)<br/>
@@ -80,9 +82,9 @@ Note the small differences due to coCPU optimization for high capacity applicati
 Frame mode tests perform encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  Voplib APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
 
 ```C
-./mediaTest -cx86 -M4 -Csession_config/frame_test_config
+./mediaTest -cx86 -M4 -Csession_config/frame_test_config -L
 
-./mediaTest -cx86 -M4 -Csession_config/frame_test_config_wav_output
+./mediaTest -cx86 -M4 -Csession_config/frame_test_config_wav_output -L
 ```
 
 Below is a frame mode command line that reads a pcap file and outputs to wav file.  No jitter buffering is done, so any out-of-order packets, DTX packets, or SSRC changes are not handled.  The wav file sampling rate is determined from the session config file.
@@ -108,9 +110,9 @@ The second command line is similar, but also does the following:
 * sends over the network any additional streams beyond the number of output files given
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config
+./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L
 
-./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -Csession_config/pcap_file_test_config
+./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -Csession_config/pcap_file_test_config -L
 ```
 The screencap below shows mediaTest output after the second command line.
 
@@ -122,9 +124,9 @@ The screencap below shows mediaTest output after the second command line.
 Here are two simple mediaTest demo command lines that convert an EVS pcap to a wav file:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
 
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_PT127_IPv4.pcap -oevs_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_PT127_IPv4.pcap -oevs_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config -L
 ```
 
 In this case, unlike the similar frame mode test example above, jitter buffering is peformed, so out-of-order packets, DTX packets, and SSRC changes are handled.  Depending on the nature of network or pcap input, this can make the difference between intelligble audio or not.
@@ -141,7 +143,7 @@ RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP 
 Here is the mediaTest command line example included in the demo for multiple RTP streams:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC8108_IPv6.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC8108_IPv6.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config -L
 ```
 
 Here is a screen capture showing output for the above command line, with RTP stream transitions highlighted:
@@ -156,32 +158,33 @@ The packet stats log file produced by the above command (evs_multiple_ssrc_IPv6_
 RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams.  Here is the mediaTest command line example included in the demo for RFC7198:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L
 ```
 
 <a name="SessionConfigFileFormat"></a>
 ### Session Configuration File Format
 
-Here is a look inside the session configuration file (pcap_file_test_config) used in the above command lines:
+Here is a look inside a typical session configuration file, similar to those used in the above command lines:
 
 ```CoffeeScript
 # Session 1
 [start_of_session_data]
 
-term1.local_ip = 192.16.0.147
+term1.local_ip = fd01:5d2::11:123:5222  # IPv6 format
 term1.local_port = 18446
-term1.remote_ip = 192.16.0.16
+term1.remote_ip = d01:5d2::11:123:5201
 term1.remote_port = 6170
 term1.media_type = "voice"
 term1.codec_type = "G711_ULAW"
 term1.bitrate = 64000  # in bps
 term1.ptime = 20  # in msec
 term1.rtp_payload_type = 0
-term1.dtmf_type = "NONE"
+term1.dtmf_type = "NONE"  # "RTP" = handle DTMF event packets
 term1.dtmf_payload_type = "NONE"
 term1.sample_rate = 8000   # in Hz  (note for fixed rate codecs this field is descriptive only)
+## term1.dtx_handling = -1  # -1 disables DTX handling
 
-term2.local_ip = 192.16.0.16
+term2.local_ip = 192.16.0.16  # IPv4 format
 term2.local_port = 6154
 term2.remote_ip = 192.16.0.130
 term2.remote_port = 10242
@@ -193,7 +196,8 @@ term2.rtp_payload_type = 127
 term2.dtmf_type = "NONE"
 term2.dtmf_payload_type = "NONE"
 term2.sample_rate = 16000   # in Hz
-term2.evs_header_full = 1  # Full Header format (0 = Compact Header format)
+term2.header_format = 1  # Header format, applies to some codecs (EVS, AMR), 0 = CH (Compact Header), 1 = FH (Full Header)
+## term2.dtx_handling = -1  # -1 disables DTX handling
 
 [end_of_session_data]
 ```
@@ -204,6 +208,12 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
 
+<a name="DTXHandling"></a>
+## DTX Handling
+
+<a name ="DTMFHandling"></a>
+## DTMF Handling
+
 <a name="PacketStatsLogging"></a>
 ## Packet Stats Logging
 
@@ -213,17 +223,19 @@ mediaTest includes packet statistics logging for:
   * jitter buffer output
   * outgoing packets (network output, pcap file)
 
-Statistics include packets dropped, out-of-order (ooo), missing, and duplicated.  Packets are grouped by SSRC (see Multiple RTP Streams section above), with each entry showing sequence number, timestamp, and type (bitstream payload, DTX, etc).  Here is a packet stats log file excerpt:
+In the above command lines, the -L entry activates packet logging, with the first output filename found taken as the log filename but replaced with a ".txt" extension.  If -Lxxx is given then xxx becomes the log filename.
+
+Statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated.  Packets are grouped by SSRC (see Multiple RTP Streams section above), with each entry showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID Reuse, DTMF Event, etc).  Here is a packet stats log file excerpt:
 
 ```CoffeeScript
 Packet info for SSRC = 353707 (cont), first seq num = 685, last seq num = 872 ...
 
 Seq num 685              timestamp = 547104, pkt len = 33
 Seq num 686              timestamp = 547424, pkt len = 33
-Seq num 687 ooo 688      timestamp = 548064, pkt len = 33
-Seq num 688 ooo 687      timestamp = 547744, pkt len = 33
-Seq num 689 ooo 690      timestamp = 548704, pkt len = 33
-Seq num 690 ooo 689      timestamp = 548384, pkt len = 33
+Seq num 688 ooo 687      timestamp = 548064, pkt len = 33
+Seq num 687 ooo 688      timestamp = 547744, pkt len = 33
+Seq num 690 ooo 689      timestamp = 548704, pkt len = 33
+Seq num 689 ooo 690      timestamp = 548384, pkt len = 33
 Seq num 691              timestamp = 549024, pkt len = 33
 Seq num 692              timestamp = 549344, pkt len = 6 (DTX)
 :
