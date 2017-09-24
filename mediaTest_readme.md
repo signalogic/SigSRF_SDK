@@ -219,10 +219,14 @@ DTX (Discontinuous Transmission) handling can be enabled/disabled on per session
   
 A log file example showing incoming SID packets and outgoing DTX expansion is shown below in "Packet Stats Logging".
 
+If DTX handling is enabled with the SigSRF background process, then the user program does not need to call APIs or make any other intervention.
+
 <a name ="DTMFHandling"></a>
 ## DTMF Handling
 
-DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the Pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  C/C++ ource code files included with the demo include DTMF handling examples.
+DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the Pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  C/C++ source code files included with the demo include DTMF handling examples.
+
+If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
 
 <a name="PacketStatsLogging"></a>
 ## Packet Stats Logging
