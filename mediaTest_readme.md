@@ -181,7 +181,7 @@ term1.ptime = 20  # in msec
 term1.rtp_payload_type = 0
 term1.dtmf_type = "NONE"  # "RTP" = handle DTMF event packets
 term1.dtmf_payload_type = "NONE"
-term1.sample_rate = 8000   # in Hz  (note for fixed rate codecs this field is descriptive only)
+term1.sample_rate = 8000   # in Hz (note for fixed rate codecs this field is descriptive only)
 ## term1.dtx_handling = -1  # -1 disables DTX handling
 
 term2.local_ip = 192.16.0.16  # IPv4 format
@@ -210,6 +210,8 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 
 <a name="DTXHandling"></a>
 ## DTX Handling
+
+DTX handling is enabled by default, and can be disabled in the session config file (see the above example).  When enabled, the media decoder generates comfort noise (CNG) from incoming SID packets for each DTX duration.  A log file example showing incoming SID packets and DTX expansion is shown below in the Packet Stats Logging section.
 
 <a name ="DTMFHandling"></a>
 ## DTMF Handling
@@ -256,6 +258,49 @@ Out-of-order seq numbers = 0, missing seq numbers = 22, number of DTX packets = 
 
 Total packets dropped = 0
 Total packets duplicated = 0
+```
+
+As mentioned in the DTX Handling section above, here is log file example, first showing the input SID packets...
+
+```CoffeeScript
+:
+:
+Seq num 22              timestamp = 107024, pkt len = 33
+Seq num 23              timestamp = 107344, pkt len = 33
+Seq num 24              timestamp = 107664, pkt len = 6 (SID)
+Seq num 25              timestamp = 110224, pkt len = 6 (SID)
+Seq num 26              timestamp = 112144, pkt len = 33
+Seq num 27              timestamp = 112464, pkt len = 33
+:
+:
+```
+
+... and the corresponding output SID and SID comfort noise packets:
+
+
+```CoffeeScript
+:
+:
+Seq num 22              timestamp = 107024, pkt len = 33
+Seq num 23              timestamp = 107344, pkt len = 33
+Seq num 24              timestamp = 107664, pkt len = 6 (SID)
+Seq num 25              timestamp = 107664, pkt len = 6 (SID Reuse)
+Seq num 26              timestamp = 107664, pkt len = 6 (SID Reuse)
+Seq num 27              timestamp = 107664, pkt len = 6 (SID Reuse)
+Seq num 28              timestamp = 107664, pkt len = 6 (SID Reuse)
+Seq num 29              timestamp = 107664, pkt len = 6 (SID Reuse)
+Seq num 30              timestamp = 107664, pkt len = 6 (SID Reuse)
+Seq num 31              timestamp = 107664, pkt len = 6 (SID Reuse)
+Seq num 32              timestamp = 110224, pkt len = 6 (SID)
+Seq num 33              timestamp = 110224, pkt len = 6 (SID Reuse)
+Seq num 34              timestamp = 110224, pkt len = 6 (SID Reuse)
+Seq num 35              timestamp = 110224, pkt len = 6 (SID Reuse)
+Seq num 36              timestamp = 110224, pkt len = 6 (SID Reuse)
+Seq num 37              timestamp = 110224, pkt len = 6 (SID Reuse)
+Seq num 38              timestamp = 112144, pkt len = 33
+Seq num 39              timestamp = 112464, pkt len = 33
+:
+:
 ```
 
 <a name="PktlibandJitterBufferNotes"></a>
