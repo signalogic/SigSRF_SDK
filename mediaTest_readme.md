@@ -202,7 +202,7 @@ term2.header_format = 1  # Header format, applies to some codecs (EVS, AMR), 0 =
 [end_of_session_data]
 ```
 
-Note that each session has one or two "terminations", or endpoints (term1 and term2).  A session with only term1 can accept and send streaming data with one endpoint, performing some processing on the data.  A session with term1 and term2 can exchange streaming data between endpoints, and perform some intermediate processing, such as transcoding.
+Note that each session typically has one or two "terminations", or endpoints (term1 and term2).  A session with only term1 can accept and send streaming data with one endpoint, performing some processing on the data.  A session with term1 and term2 can exchange streaming data between endpoints, and perform some intermediate processing, such as transcoding.
 
 When using pcap files, "remote" IP addr and UDP port values refer to pcap source, and "local" values refer to pcap destination.  When used with mediaTest, local IP addrs are the mediaTest application, and remote IP addrs are the endpoints. Rx traffic (i.e. incoming, with respect to mediaTest) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, w.r.t. mediaTest) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
 
