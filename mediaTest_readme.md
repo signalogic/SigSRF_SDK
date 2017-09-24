@@ -1,12 +1,13 @@
 # mediaTest Demo
 
-After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), here are some command lines and notes for the mediaTest demo.  Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav).  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no limitations for concurrency or multiuser, for either bare metal or VM operation.
+After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), this page gives example command lines and basic documentation for the mediaTest demo.  Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav).  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no limitations for concurrency or multiuser, for either bare metal or VM operation.
 
 mediaTest serves two (2) purposes:
 
+ - perform test and measurement, including codec audio quality and performance, RFC verification, packet re-ordering, and transcoding.  The example command lines below do this using pcap, wav file, and cod (compressed bitstream format) files included with the demo
+
  - an example application, including source code, showing how to use Pktlib and Voplib APIs (see architecture diagram on the SigSRF page)
- 
- - perform test and measurement, including codec audio quality and performance, pcap verification and transcoding, and support for waveform and compressed bitstream file formats
+
 
 # Table of Contents
 
