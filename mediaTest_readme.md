@@ -325,7 +325,7 @@ Seq num 39              timestamp = 112464, pkt len = 33
 :
 ```
 
-As mentioned in "DTMF Handling" above, here is a log file example, first showing incoming DTMF event packets...
+As mentioned in "DTMF Handling" above, here is a log file example showing incoming DTMF event packets.  Note that per RFC 4733, one or more packets within the event may have duplicated sequence numbers and timestamps.  The packet logging APIs included with SigSRF can optionally mark these as duplicated if needed.
 
 ```CoffeeScript
 :
@@ -343,23 +343,12 @@ Seq num 275              timestamp = 48400, pkt len = 160
 :
 ```
 
-... and corresponding outgoing DTMF event packets.  Note that per RFC 4733, one or more packets within the event may have duplicated sequence numbers and timestamps.  The packet logging APIs included with SigSRF can optionally mark these as duplicated if needed.
+Packet stats logging is part of the Diaglib module, which includes several flags (see the diaglib.h header file included with the demo).  Some of the more notable flags include:
 
-```CoffeeScript
-:
-:
-Seq num 269              timestamp = 47600, pkt len = 160
-Seq num 270              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 271              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 272              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 273              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 275              timestamp = 48400, pkt len = 160
-:
-:
-```
+  - DS_PKTSTATS_LOG_COLLATE_STREAMS, collate packet logs by RTP stream using SSRC values
+  - DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from Diaglib analysis sections
+  - DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from Diaglib analysis sections
+
 
 <a name="PktlibandJitterBufferNotes"></a>
 ## Pktlib and Jitter Buffer Notes
