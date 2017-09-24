@@ -213,7 +213,7 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 
 DTX (Discontinuous Transmission) handling can be enabled/disabled on per session basis, and is enabled by default (see the above session config file example).  When enabled the following functionality expands the output packet stream to meet the required duration for each DTX occurrence:
 
-  - the Pktlib DSGetOrderedPackets() API reacts to incoming SID packets and inserts SID CNG (comfort noise generation) packets with adjusted timestamps in the outgoing packet stream
+  - the Pktlib DSGetOrderedPackets() API reacts to incoming SID packets and inserts SID CNG (comfort noise generation) packets with adjusted timestamps and sequence numbers in the outgoing packet stream
   
   - the media decoder specified for the session generates comfort noise from the SIG CNG packets
   
