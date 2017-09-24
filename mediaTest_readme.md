@@ -211,7 +211,7 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 <a name="DTXHandling"></a>
 ## DTX Handling
 
-DTX handling is enabled by default, and can be disabled in the session config file (see the above example).  When enabled, the media decoder generates comfort noise (CNG) from incoming SID packets for each DTX duration.  A log file example showing incoming SID packets and DTX expansion is shown below in the Packet Stats Logging section.
+DTX (Discontinuous Transmission) handling is enabled by default, and can be disabled in the session config file (see the above example).  When enabled for a session, the media decoder specified for that session generates comfort noise (CNG) from incoming SID packets.  Comfort noise is generated for the duration specified by each DTX.  A log file example showing incoming SID packets and DTX expansion is shown below in "Packet Stats Logging".
 
 <a name ="DTMFHandling"></a>
 ## DTMF Handling
@@ -260,7 +260,7 @@ Total packets dropped = 0
 Total packets duplicated = 0
 ```
 
-As mentioned in the DTX Handling section above, here is log file example, first showing the input SID packets...
+As mentioned in "DTX Handling" above, here is log file example, first showing the input SID packets...
 
 ```CoffeeScript
 :
@@ -284,19 +284,19 @@ Seq num 27              timestamp = 112464, pkt len = 33
 Seq num 22              timestamp = 107024, pkt len = 33
 Seq num 23              timestamp = 107344, pkt len = 33
 Seq num 24              timestamp = 107664, pkt len = 6 (SID)
-Seq num 25              timestamp = 107664, pkt len = 6 (SID Reuse)
-Seq num 26              timestamp = 107664, pkt len = 6 (SID Reuse)
-Seq num 27              timestamp = 107664, pkt len = 6 (SID Reuse)
-Seq num 28              timestamp = 107664, pkt len = 6 (SID Reuse)
-Seq num 29              timestamp = 107664, pkt len = 6 (SID Reuse)
-Seq num 30              timestamp = 107664, pkt len = 6 (SID Reuse)
-Seq num 31              timestamp = 107664, pkt len = 6 (SID Reuse)
+Seq num 25              timestamp = 107984, pkt len = 6 (SID CNG-R)
+Seq num 26              timestamp = 108304, pkt len = 6 (SID CNG-R)
+Seq num 27              timestamp = 108624, pkt len = 6 (SID CNG-R)
+Seq num 28              timestamp = 108944, pkt len = 6 (SID CNG-R)
+Seq num 29              timestamp = 109264, pkt len = 6 (SID CNG-R)
+Seq num 30              timestamp = 109584, pkt len = 6 (SID CNG-R)
+Seq num 31              timestamp = 109904, pkt len = 6 (SID CNG-R)
 Seq num 32              timestamp = 110224, pkt len = 6 (SID)
-Seq num 33              timestamp = 110224, pkt len = 6 (SID Reuse)
-Seq num 34              timestamp = 110224, pkt len = 6 (SID Reuse)
-Seq num 35              timestamp = 110224, pkt len = 6 (SID Reuse)
-Seq num 36              timestamp = 110224, pkt len = 6 (SID Reuse)
-Seq num 37              timestamp = 110224, pkt len = 6 (SID Reuse)
+Seq num 33              timestamp = 110544, pkt len = 6 (SID CNG-R)
+Seq num 34              timestamp = 110864, pkt len = 6 (SID CNG-R)
+Seq num 35              timestamp = 111184, pkt len = 6 (SID CNG-R)
+Seq num 36              timestamp = 111504, pkt len = 6 (SID CNG-R)
+Seq num 37              timestamp = 111824, pkt len = 6 (SID CNG-R)
 Seq num 38              timestamp = 112144, pkt len = 33
 Seq num 39              timestamp = 112464, pkt len = 33
 :
