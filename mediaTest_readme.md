@@ -179,8 +179,8 @@ term1.codec_type = "G711_ULAW"
 term1.bitrate = 64000  # in bps
 term1.ptime = 20  # in msec
 term1.rtp_payload_type = 0
-term1.dtmf_type = "NONE"  # "RTP" = handle DTMF event packets
-term1.dtmf_payload_type = "NONE"
+term1.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term1 -> term2 direction, forward DTMF events for term2 -> term1 direction
+term1.dtmf_payload_type = "NONE"  # A value should be given depending on the dtmf_type field
 term1.sample_rate = 8000   # in Hz (note for fixed rate codecs this field is descriptive only)
 ## term1.dtx_handling = -1  # -1 disables DTX handling
 
@@ -193,7 +193,7 @@ term2.codec_type = "EVS"
 term2.bitrate = 13200  # in bps
 term2.ptime = 20  # in msec
 term2.rtp_payload_type = 127
-term2.dtmf_type = "NONE"
+term2.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term2 -> term1 direction, forward DTMF events for term1 -> term2 direction
 term2.dtmf_payload_type = "NONE"
 term2.sample_rate = 16000   # in Hz
 term2.header_format = 1  # Header format, applies to some codecs (EVS, AMR), 0 = CH (Compact Header), 1 = FH (Full Header)
@@ -211,16 +211,18 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 <a name="DTXHandling"></a>
 ## DTX Handling
 
-DTX (Discontinuous Transmission) handling can be enabled/disabled on per session basis, and is enabled by default (see the above session config file example).  When enabled the following functionality expands the output packet stream to meet the required duration for each DTX occurrence:
+DTX (Discontinuous Transmission) handling can be enabled/disabled on per session basis, and is enabled by default (see the above session config file example).  When enabled, the following functionality expands the output packet stream to meet the required duration for each DTX occurrence:
 
   - the Pktlib DSGetOrderedPackets() API reacts to incoming SID packets and inserts SID CNG (comfort noise generation) packets with adjusted timestamps and sequence numbers in the outgoing packet stream
   
-  - the media decoder specified for the session generates comfort noise from the SIG CNG packets
+  - the media decoder specified for the session generates comfort noise from the SID CNG packets
   
 A log file example showing incoming SID packets and outgoing DTX expansion is shown below in "Packet Stats Logging".
 
 <a name ="DTMFHandling"></a>
 ## DTMF Handling
+
+DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the Pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  C/C++ ource code files included with the demo include DTMF handling examples.
 
 <a name="PacketStatsLogging"></a>
 ## Packet Stats Logging
