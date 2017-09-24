@@ -325,6 +325,42 @@ Seq num 39              timestamp = 112464, pkt len = 33
 :
 ```
 
+As mentioned in "DTMF Handling" above, here is a log file example, first showing incoming DTMF event packets...
+
+```CoffeeScript
+:
+:
+Seq num 269              timestamp = 47600, pkt len = 160
+Seq num 270              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 271              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 272              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 273              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 275              timestamp = 48400, pkt len = 160
+:
+:
+```
+
+... and corresponding outgoing DTMF event packets.  Note that per RFC 4733, one or more packets within the event may have duplicated sequence numbers and timestamps.  The packet logging APIs included with SigSRF can optionally mark these as duplicated if needed.
+
+```CoffeeScript
+:
+:
+Seq num 269              timestamp = 47600, pkt len = 160
+Seq num 270              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 271              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 272              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 273              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 275              timestamp = 48400, pkt len = 160
+:
+:
+```
+
 <a name="PktlibandJitterBufferNotes"></a>
 ## Pktlib and Jitter Buffer Notes
 
