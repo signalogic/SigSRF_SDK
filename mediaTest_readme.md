@@ -260,7 +260,7 @@ Total packets dropped = 0
 Total packets duplicated = 0
 ```
 
-As mentioned in "DTX Handling" above, here is log file example, first showing the input SID packets...
+As mentioned in "DTX Handling" above, here is a log file example, first showing incoming SID packets...
 
 ```CoffeeScript
 :
@@ -275,7 +275,7 @@ Seq num 27              timestamp = 112464, pkt len = 33
 :
 ```
 
-... and the corresponding output SID and SID comfort noise packets:
+... and corresponding outgoing SID and SID comfort noise packets:
 
 
 ```CoffeeScript
