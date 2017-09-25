@@ -252,7 +252,7 @@ mediaTest includes packet statistics logging for:
 
 In the above command lines, the -L entry activates packet logging, with the first output filename found taken as the log filename but replaced with a ".txt" extension.  If -Lxxx is given then xxx becomes the log filename.
 
-Statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated.  Packets are grouped by SSRC (see Multiple RTP Streams section above), with each entry showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID Reuse, DTMF Event, etc).  Here is a packet stats log file excerpt:
+Statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated.  Statistics are calculated separately for each SSRC (see Multiple RTP Streams section above), with individual packet entries showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID CNG, DTMF Event, etc).  Here is a packet stats log file excerpt:
 
 ```CoffeeScript
 Packet info for SSRC = 353707 (cont), first seq num = 685, last seq num = 872 ...
@@ -348,7 +348,7 @@ Seq num 275              timestamp = 48400, pkt len = 160
 
 Packet stats logging is part of the Diaglib module, which includes several flags (see the diaglib.h header file included with the demo).  Some of the more notable flags include:
 
-  - DS_PKTSTATS_LOG_COLLATE_STREAMS, collate packet logs by RTP stream using SSRC values
+  - DS_PKTSTATS_LOG_COLLATE_STREAMS, collate and sort packet logs by RTP stream (i.e. using SSRC values)
   - DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from Diaglib analysis sections
   - DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from Diaglib analysis sections
 
