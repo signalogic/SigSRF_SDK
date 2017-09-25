@@ -222,7 +222,7 @@ DTX (Discontinuous Transmission) handling can be enabled/disabled on per session
   
 From this point, the media encoder specified for the session can be used normally, and outgoing packets can be formatted for transmission either with the DSFormatPacket() API or a user-defined method.
 
-A log file example showing incoming SID packets and buffer output DTX expansion is shown below in "Packet Stats Logging".
+A log file example showing incoming SID packets and buffer output DTX expansion is included in "Packet Stats Logging", below.
 
 If DTX handling is enabled with the SigSRF background process, then the user program does not need to call APIs or make any other intervention.
 
@@ -237,7 +237,7 @@ Here is a demo command line that processes a pcap (included in the demo) contain
 ./mediaTest -M0 -cx86 -ipcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -Csession_config/g711_dtmfevent_config -L
 ```
 
-A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is shown below in "Packet Stats Logging".
+A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in "Packet Stats Logging", below.
 
 If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
 
