@@ -153,7 +153,7 @@ Here is a screen capture showing output for the above command line, with RTP str
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaTest multiple RTP stream command line example")
 
-The packet stats log file produced by the above command (evs_multiple_ssrc_IPv6_g711.txt) shows how the SigSRF jitter buffer correctly collates and treats each stream separately, while still resolving out-of-order packets.  For a log file excerpt, see the Packet Stats and Logging section below.
+The packet stats log file produced by the above command (evs_16khz_13200bps_CH_RFC8108_IPv6_g711.txt) shows how the SigSRF jitter buffer correctly collates and treats each stream separately, while still resolving out-of-order packets.  For a log file excerpt, see "Packet Stats and Logging" below.
 
 <a name="DuplicatedRTPStreams"></a>
 ### Duplicated RTP Streams (RFC 7198)
@@ -391,7 +391,7 @@ Some of the RFCs supported by Pktlib include:
 4) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media, VLC, or other player
 5) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header and with FH formatted frames (i.e. every frame includes a ToC byte). This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line.  See examples in the "Using the 3GPP Decoder" section below.
 6) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the "Session Configuration File Format" section above.
-7) Transcoding in frame mode tests is not supported yet, will be added soon
+7) Transcoding in frame mode tests is not supported yet.
 
 
 <a name="3GPPNotes"></a>
