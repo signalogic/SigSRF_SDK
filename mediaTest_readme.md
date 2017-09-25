@@ -214,7 +214,7 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 <a name="DTXHandling"></a>
 ## DTX Handling
 
-DTX (Discontinuous Transmission) handling can be enabled/disabled on per session basis, and is enabled by default (see the above session config file example).  When enabled, the following functionality expands each DTX occurrence to the required duration:
+DTX (Discontinuous Transmission) handling can be enabled/disabled on per session basis, and is enabled by default (see the above session config file example).  When enabled, each DTX occurrence is expanded to the required duration as follows:
 
   - the Pktlib DSGetOrderedPackets() API reacts to SID packets emerging from the jitter buffer and inserts SID CNG (comfort noise generation) packets with adjusted timestamps and sequence numbers in the buffer output packet stream
   
@@ -359,10 +359,10 @@ Packet stats logging is part of the Diaglib module, which includes several flags
 As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
 
 * Handles out-of-order packets, including packet swaps
-* Dynamic delay depth adjustment option
-* Accepts incoming packets in real-time or at unlimited rate (as fast as possible), or a combination of both
+* Accepts incoming packets in real-time or at unlimited rate (i.e. as fast as possible), or a combination
 * Maximum buffer depth (or back pressure limit) can be specified on per-session basis
 * Dynamic channel creation to support multiple RTP streams per session (see Multiple RTP Streams / RFC 8108 section above)
+* Dynamic delay depth adjustment option
 * Statistics API, logging, and several options such as overrun control, probation control, flush, and bypass modes
 
 The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets in "faster than real-time" (FTRT) mode.  The packet mode command lines on this page can be used in FTRT mode by adding "-rN", where N is the packet add interval in msec.  For example adding -r0 to the basic packet mode command line above:
@@ -371,7 +371,7 @@ The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets i
 ./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L -r0
 ```
 
-specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see the "Session Configuration File Format" section above).
+specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see "Session Configuration File Format" above).
 
 Some of the RFCs supported by Pktlib include:
 
