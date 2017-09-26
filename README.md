@@ -64,7 +64,7 @@ The install script requires sudo root privilege.  In Ubuntu, allowing a user sud
 
 ### Building Test and Demo Applications
 
-Test and demo application examples are provided as C/C++ source code and Makefiles, and must be built using gcc before they can be run.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
+Test and demo application examples are provided as executables, C/C++ source code and Makefiles.  The executable may run, but if not (due to Linux distribution or kernel differences), it should be rebuilt using gcc.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
 
 ### Running the Install Script
 
