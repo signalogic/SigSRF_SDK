@@ -4,7 +4,7 @@
 [SDK and Demo Download](#SDKDemoDownload)<br/>
 [Install Notes](#InstallNotes)<br/>
 [Demo Pages](#DemoPages)<br/>
-[Documentation and Support](#DocumentationSupport)<br/>
+[Documentation, Support, and Contact](#DocumentationSupport)<br/>
 
 <a name="Overview"></a>
 # SigSRF Overview
@@ -106,7 +106,7 @@ The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_read
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest demo page</a> has command lines for image analytics and OpenCV testing.  The iaTest demo performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.
 
 <a name="DocumentationSupport"></a>
-## Documentation and Support
+## Documentation, Support, and Contact
 
 ### SigMRF Users Guide
 
