@@ -24,8 +24,8 @@ Input and output options include network I/O, pcap file, and audio file format f
 [DTX Handling](#DTXHandling)<br/>
 [Variable Ptimes](#VariablePtimes)<br/>
 [DTMF Handling](#DTMFHandling)<br/>
-[Packet Stats Logging](#PacketStatsLogging)<br/>
 [Media Processing Insertion Point](#MediaProcessing)<br/>
+[Packet Stats Logging](#PacketStatsLogging)<br/>
 [Pktlib and Jitter Buffer Notes](#PktlibandJitterBufferNotes)<br/>
 [mediaTest Notes](#mediaTestNotes)<br/>
 [3GPP Reference Code Notes](#3GPPNotes)<br/>
