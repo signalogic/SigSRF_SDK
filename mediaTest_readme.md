@@ -257,7 +257,7 @@ If DTMF handling is enabled with the SigSRF background process, then DTMF events
 <a name="MediaProcessing"></a>
 ## Media Processing Insertion Point
 
-The mediaTest source codes included with the demo show where to insert signal processing and other algorithms to process media data, after it has been extracted from ordered payloads and/or decoded.  The example source code files perform sampling rate conversion and encoding (depending on session configuration), but other algorithms can also be applied.
+The mediaTest source codes included with the demo show where to insert signal processing and other algorithms to process media data, after it's been extracted from ordered payloads and/or decoded.  The example source code files perform sampling rate conversion and encoding (depending on session configuration), but other algorithms can also be applied.
 
 Examples of media processing include speech and sound recognition, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to another process, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries.
 
