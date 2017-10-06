@@ -22,8 +22,10 @@ Input and output options include network I/O, pcap file, and audio file format f
 &nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
 &nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
 [DTX Handling](#DTXHandling)<br/>
+[Variable Ptimes](#VariablePtimes)<br/>
 [DTMF Handling](#DTMFHandling)<br/>
 [Packet Stats Logging](#PacketStatsLogging)<br/>
+[Media Processing Insertion Point](#MediaProcessing)<br/>
 [Pktlib and Jitter Buffer Notes](#PktlibandJitterBufferNotes)<br/>
 [mediaTest Notes](#mediaTestNotes)<br/>
 [3GPP Reference Code Notes](#3GPPNotes)<br/>
@@ -226,6 +228,17 @@ A log file example showing incoming SID packets and buffer output DTX expansion 
 
 If DTX handling is enabled with the SigSRF background process, then the user program does not need to call APIs or make any other intervention.
 
+<a name="VariablePtimes"></a>
+## Variable Ptimes
+
+Variable ptimes refers to endpoints that have uequal payload times (ptimes); for example one endpoint might be sending/receiving media every 20 msec and another endpoint every 40 msec.  The mediaTest demo includes examples that match, or "transrate" timing between endpoints with unequal ptimes.
+
+Here are demo command lines that converts an incoming pcap with 20 msec ptime to an outgoing pcap with 40 msec ptime and from 240 msec to 20 msec:
+
+```C
+./mediaTest -cx86 -M0 -Csession_config/evs_240ptime_test_config -ipcaps/evs_16khz_16400bps_ptime240_FH_IPv4.pcap -ooutput.pcap
+```
+
 <a name ="DTMFHandling"></a>
 ## DTMF Handling
 
@@ -240,6 +253,13 @@ Here is a demo command line that processes a pcap (included in the demo) contain
 A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in "Packet Stats Logging", below.
 
 If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
+
+<a name="MediaProcessing"></a>
+## Media Processing Insertion Point
+
+The mediaTest source codes included with the demo show where to insert signal processing and other algorithms to process media data, after it has been extracted from ordered payloads and/or decoded.  The example source code files perform sampling rate conversion and encoding (depending on session configuration), but other algorithms can also be applied.
+
+Examples of media processing include speech and sound recognition, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to another process, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries.
 
 <a name="PacketStatsLogging"></a>
 ## Packet Stats Logging
