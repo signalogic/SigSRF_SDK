@@ -233,10 +233,20 @@ If DTX handling is enabled with the SigSRF background process, then the user pro
 
 Variable ptimes refers to endpoints that have uequal payload times (ptimes); for example one endpoint might be sending/receiving media every 20 msec and another endpoint every 40 msec.  The mediaTest demo includes examples that match, or "transrate" timing between endpoints with unequal ptimes.
 
-Here are demo command lines that converts an incoming pcap with 20 msec ptime to an outgoing pcap with 40 msec ptime and from 240 msec to 20 msec:
+Here are demo command lines that convert incoming pcaps with 20 msec ptime to outgoing pcaps with 40 msec ptime:
 
 ```C
-./mediaTest -cx86 -M0 -Csession_config/evs_240ptime_test_config -ipcaps/evs_16khz_16400bps_ptime240_FH_IPv4.pcap -ooutput.pcap
+./mediaTest -cx86 -M0 -Csession_config/g711_20ptime_g711_40ptime_test_config -ipcaps/pcmutest.pcap -opcmutest_40ptime.pcap -opcmutest_40ptime.wav
+```
+
+```C
+./mediaTest -cx86 -M0 -C session_config/evs_20ptime_g711_40ptime_test_config -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ovptime_test1.pcap
+```
+
+Here is a demo command line that converts an incoming pcap with 240 msec ptime to 20 msec:
+
+```C
+./mediaTest -cx86 -M0 -Csession_config/evs_240ptime_g711_20ptime_test_config -ipcaps/evs_16khz_16400bps_ptime240_FH_IPv4.pcap -ovptime_test2.pcap -ovptime_test2.wav
 ```
 
 <a name ="DTMFHandling"></a>
