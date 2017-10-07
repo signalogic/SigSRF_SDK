@@ -273,6 +273,8 @@ The mediaTest source codes included with the demo show where to insert signal pr
 
 Examples of media processing include speech and sound recognition, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to another process, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries.
 
+In the mediaTest source code examples, look for the APIs DSSaveStreamData(), which is used to save ordered / extracted / decoded payload data, and DSGetStreamData(), which is used to retrieve it.  These two APIs allow user-defined algorithms to control buffer timing between endpoints, depending on the objective -- minimize latency (real-time applications), maximize bandwidth, match or transrate endpoint timing, or otherwise as needed.
+
 <a name="PacketStatsLogging"></a>
 ## Packet Stats Logging
 
