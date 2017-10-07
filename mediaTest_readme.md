@@ -231,7 +231,7 @@ If DTX handling is enabled with the SigSRF background process, then the user pro
 <a name="VariablePtimes"></a>
 ## Variable Ptimes
 
-Variable ptimes refers to endpoints that have uequal payload times (ptimes); for example one endpoint might be sending/receiving media every 20 msec and another endpoint every 40 msec.  The mediaTest demo includes examples that match, or "transrate" timing between endpoints with unequal ptimes.
+Variable ptimes refers to endpoints that have unequal payload times (ptimes); for example one endpoint might be sending/receiving media every 20 msec and another endpoint every 40 msec.  The mediaTest demo includes examples that match, or "transrate" timing between endpoints with unequal ptimes.
 
 Here are demo command lines that convert incoming pcaps with 20 msec ptime to outgoing pcaps with 40 msec ptime:
 
