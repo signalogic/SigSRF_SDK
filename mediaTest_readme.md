@@ -238,17 +238,19 @@ Variable ptimes refers to endpoints that have unequal payload times (ptimes); fo
 Here are demo command lines that convert incoming pcaps with 20 msec ptime to outgoing pcaps with 40 msec ptime:
 
 ```C
-./mediaTest -cx86 -M0 -Csession_config/g711_20ptime_g711_40ptime_test_config -ipcaps/pcmutest.pcap -opcmutest_40ptime.pcap -opcmutest_40ptime.wav
+./mediaTest -cx86 -M0 -Csession_config/g711_20ptime_g711_40ptime_test_config -ipcaps/pcmutest.pcap -opcmutest_40ptime.pcap -opcmutest_40ptime.wav -L
 ```
 
 ```C
-./mediaTest -cx86 -M0 -C session_config/evs_20ptime_g711_40ptime_test_config -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ovptime_test1.pcap
+./mediaTest -cx86 -M0 -C session_config/evs_20ptime_g711_40ptime_test_config -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ovptime_test1.pcap -L
 ```
+
+For the above command lines, note in the mediaTest displayed statistics counters, the number of transcoded frames is half of the number of buffered / pulled frames, because of the 20 to 40 msec ptime conversion.
 
 Here is a demo command line that converts an incoming pcap with 240 msec ptime to 20 msec:
 
 ```C
-./mediaTest -cx86 -M0 -Csession_config/evs_240ptime_g711_20ptime_test_config -ipcaps/evs_16khz_16400bps_ptime240_FH_IPv4.pcap -ovptime_test2.pcap -ovptime_test2.wav
+./mediaTest -cx86 -M0 -Csession_config/evs_240ptime_g711_20ptime_test_config -ipcaps/evs_16khz_16400bps_ptime240_FH_IPv4.pcap -ovptime_test2.pcap -ovptime_test2.wav -L
 ```
 
 Note however that 240 msec is a very large ptime more suited to unidirectional media streams.  For a bidirectional real-time media stream, for example a 2-way voice conversation, large ptimes would cause excessive delay and difficulty for the endpoints to understand each other.
