@@ -13,3 +13,4 @@
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
+*.rar filter=lfs diff=lfs merge=lfs -text
