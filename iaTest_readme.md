@@ -65,7 +65,7 @@ Below is an architecture diagram showing network I/O and processing performed by
 
 &nbsp;<br/>
 
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_Image_Analytics.png?raw=true "Atom server software architecture diagram")
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_Image_Analytics_w_cameras.png?raw=true "Atom server software architecture diagram")
 
 &nbsp;<br/>
 
