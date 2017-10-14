@@ -22,6 +22,7 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 [Install Notes](#InstallNotes)<br/>
 [Demo Notes](#DemoNotes)<br/>
 [Power Consumption Notes](#PowerConsumptionNotes)<br/>
+[Embedded AI Comparison](#EmbeddedAIComparison)<br/>
 
 <a name="AtomServer"></a>
 # Vision + AI Server
@@ -132,3 +133,12 @@ The current vision + AI server demo uses TI C6678 CPUs, which meet these require
 # Power Consumption Notes
 
 The demo server consumes up to 75 W.  Ongoing R&D work aims to reduce usage to under 50 W, and also add a 35 W "minimum mode", under which reduced processing is performed until some event or trigger enables full processing.
+
+<a name="EmbeddedAIComparison"></a>
+# Embedded AI Comparison
+
+The advantages of a miniaturized x86 based AI server are compelling:  immediately run cloud software with no code rewrite, flexible, reliable peripherals and storage like any other server, and high performance using coCPU cores.  The disadvantage is power consumption.  Even though this approach consumes relatively low power, some of the embedded AI boxes out there, such as [PerceptIn](https://www.perceptin.io/) contain numerous ARM cores, which can reduce power consumption to the 20W - 30W range and potentially to under 10W.
+
+To make an x86 based AI server completely portable requires a small Lithium battery, for example [this one](https://www.amazon.com/100-Watt-Portable-Generator-Hurricane-Emergency/dp/B01M3S00H0), but this increases overall solution weight.
+
+SWaP tradeoffs -- as always -- depend on specific application requirements.
