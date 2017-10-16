@@ -95,7 +95,7 @@ If no path is entered the default path is /usr/local.
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
 
 <a name="DemoPages"></a>
-## Demo Instruction Pages
+## Demo Pages
 
 ### mediaTest Demo
 
