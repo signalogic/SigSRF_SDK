@@ -11,6 +11,13 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 <sup>1 </sup>iaTest = image analytics test<br/>
 <sup>2 </sup>vision = computer vision, machine vision, vehicle vision, etc
 
+# Other Demos
+
+[mediaTest Demo (Image Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md)
+
+[paTest Demo (Predictive Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md)
+
+
 # Table of Contents
 
 [Vision + AI Server](#AtomServer)<br/>
