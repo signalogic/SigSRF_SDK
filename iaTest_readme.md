@@ -13,7 +13,7 @@ In addition to OpenCV, the next iteration of this demo will include TensorFlow.
 
 # Other Demos
 
-[mediaTest Demo (Image Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md)
+[mediaTest Demo ( (Streaming Media, Buffering, Transcoding, and Packet RFCs))](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md)
 
 [paTest Demo (Predictive Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md)
 
