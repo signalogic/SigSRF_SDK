@@ -4,7 +4,7 @@
 
 After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), below are notes and example command lines for the paTest<sup> 1</sup> demo.  The demo has two (2) purposes:
 
- - show a predictive analytics application that applies algorithms and deep learning to continuous log data in orderf to predict failure anomalies
+ - show a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies
  
  - provide an example application, including Java and C/C++ source code, that interfaces to Spark and SigSRF software, and shows examples of API usage for both
  
