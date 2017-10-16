@@ -118,6 +118,8 @@ coCPU cores must meet the following requirements:
 
 The current vision + AI server demo uses TI C6678 CPUs, which meet these requirements.  Over time, other suitable CPUs may become available.
 
+Combining x86 and c66x CPUs and running software components necessary for AI applications such as H.264 decode, OpenCV and TensorFlow, is another form of an ["AI Accelerator"](https://en.wikipedia.org/wiki/AI_accelerator). The architecture described here favors fast, reliable development: mature semiconductors and tools, open source software, standard server format, and a wide range of easy-to-use peripherals and storage. 
+
 <sup>4 </sup>CGT = Code Generation Tools
 
 <a name="InstallNotes"></a>
@@ -140,6 +142,8 @@ The current vision + AI server demo uses TI C6678 CPUs, which meet these require
 # Power Consumption Notes
 
 The demo server consumes up to 75 W.  Ongoing R&D work aims to reduce usage to under 50 W, and also add a 35 W "minimum mode", under which reduced processing is performed until some event or trigger enables full processing.
+
+To achieve portability in the 30 to 75 W range requires a sizable Lithium battery. A typical ["generator style" battery](https://www.amazon.com/100-Watt-Portable-Generator-Hurricane-Emergency/dp/B01M3S00H0) provides 100W over 41 amp-hour, with dimensions 6" x 3" x 7" and weight 3.3 lb.  Such a battery increases overall solution size and weight and must be considered vs. application SWaP requirements.
 
 <a name="EmbeddedAIComparison"></a>
 # Embedded AI Comparison
