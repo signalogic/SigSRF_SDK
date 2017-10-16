@@ -12,7 +12,7 @@ After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK)
 
 # Other Demos
 
-[mediaTest Demo (Streaming Media, Buffering, and Packet RFCs)](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md)
+[mediaTest Demo (Streaming Media, Buffering, Transcoding, and Packet RFCs)](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md)
 
 [iaTest Demo (Image Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md)
 
