@@ -21,7 +21,7 @@ After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK)
 [Predictive Analytics from Log Data](#PredictiveAnalyticsLogData)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Data Flow Diagram](#DataFlowDiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Theory](#Theory)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Log Data Requirements](#LogDataRequirements)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Log Data Requirements and Format](#LogDataRequirementsandFormat)<br/>
 [Install Notes](#InstallNotes)<br/>
 [Demo Notes](#DemoNotes)<br/>
 [coCPU Notes](#coCPUNotes)<br/>
@@ -75,8 +75,8 @@ To create the SFFFT time series input, measurement data in the log must be combi
 
 For both the time series combination neural net and the vision CNN, training occurs in two phases (i) to learn normal operation, and (ii) to learn conditions temporally near the anomaly (about a minute before and a few secondsd afterwards).
 
-<a name="LogDataRequirements"></a>
-## Log Data Requirements
+<a name="LogDataRequirementsandFormat"></a>
+## Log Data Requirements and Format
 
 The demo assumes that input log data meets the following requirements:
 
@@ -92,7 +92,7 @@ Below is an excerpt from the logs used in the demo:
 
 &nbsp;<br/>
 
-Note that some entries include measurement data and some do not, which is typical of general log formats.  Also note that entries do not have regular timestamps, so any extracted measurement data must be interpolated into a time series with linear sampling period, in order to apply standard signal processing algorithms.
+Note that some entries include measurement data and some do not, which is typical of general log formats.  Also note that entries do not have linear timestamps, so any extracted measurement data types must be interpolated into one or more time series with linear sampling periods, in order to apply standard signal processing algorithms.
 
 <a name="InstallNotes"></a>
 # Install Notes
