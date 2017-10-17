@@ -22,7 +22,7 @@ After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK)
 &nbsp;&nbsp;&nbsp;&nbsp;[Data Flow Diagram](#DataFlowDiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Theory](#Theory)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Log Data Requirements and Format](#LogDataRequirementsandFormat)<br/>
-[Install Notes](#InstallNotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Converting Log Data to Time Series](#ConvertingLogDatatoTimeSeries)<br/>
 [Demo Notes](#DemoNotes)<br/>
 [coCPU Notes](#coCPUNotes)<br/>
 
@@ -84,7 +84,7 @@ The demo assumes that input log data meets the following requirements:
  * one or more entries include measurment data.  Some entries may be events, or combinations of events and measurements.  In the case study example, measurement data include CPU and memory usage, number of current active calls, call setup and tear-down time, etc
  * for training purposes, some logs include the target anomaly, or other error conditions closely associated with the anomaly
 
-Below is an excerpt from the logs used in the demo:
+Below is an excerpt from the logs used in the demo, with measurement data highlighted:
 
 &nbsp;<br/>
 
@@ -92,7 +92,12 @@ Below is an excerpt from the logs used in the demo:
 
 &nbsp;<br/>
 
-Note that some entries include measurement data and some do not, which is typical of general log formats.  Also note that entries do not have linear timestamps, so any extracted measurement data types must be interpolated into one or more time series with linear sampling periods, in order to apply standard signal processing algorithms.
+<a name="ConvertingLogDatatoTimeSeries"></a>
+## Converting Log Data to Time Series
+
+Note in the log data excerpt above that some entries include measurement data and some do not, which is typical of general, unstructured log formats.  Also note that entries do not have linear timestamps, so any extracted measurement data types must be interpolated into one or more time series with linear sampling periods, in order to apply standard signal processing algorithms.
+
+In some cases, if long intervals beween measurements make the data sparse, it may be necessary to use curve fit methods rather than interpolation.  The case study in this demo does not require that.
 
 <a name="InstallNotes"></a>
 # Install Notes
