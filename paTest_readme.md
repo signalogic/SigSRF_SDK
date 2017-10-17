@@ -39,7 +39,7 @@ Fortunately debug efforts were eventually successful, culminating in a "row mark
 
 During post-case debrief discussions, one common question among the engineers involved was whether deep learning methods might have been used to identify operational trends occcuring temporally near the anomaly, thus providing indications of which stress conditions to emphasize to make the error appear more frequently.  If so, then potentially weeks of engineering time could be saved for future production systems with tough, intermittent issues.
 
-It's worthwhile to note this is not a "glamorous" application of AI methods.  Instead it's a practical example, applied not as a cure-all or as press-worthy advance towards the "singularity", but as a helpful new tool in complement with traditional tools, such as detailed continuous log data and software debug.
+It's worthwhile to note this is not a "glamorous" application of AI methods.  Instead it's a practical example, applied not as a cure-all or as press-worthy advance towards the "singularity", but as a helpful new tool to augment traditional tools.
 
 <a name="DataflowDiagram"></a>
 ## DataFlow Diagram
@@ -97,7 +97,7 @@ Below is an excerpt from the logs used in the demo, with measurement data highli
 
 Note in the log data excerpt above that some entries include measurement data and some do not, which is typical of general, unstructured log formats.  Also note that entries do not have linear timestamps, so any extracted measurement data types must be interpolated into one or more time series with linear sampling periods, in order to apply standard signal processing algorithms.
 
-In some cases, if long intervals beween measurements make the data sparse, it may be necessary to use curve fit methods rather than interpolation.  The case study in this demo does not require that.
+In some cases, if long or irregular intervals beween measurements make the data sparse, it may be necessary to use curve fit methods rather than interpolation.  The case study in this demo does not require that.
 
 <a name="InstallNotes"></a>
 # Install Notes
