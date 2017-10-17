@@ -20,6 +20,7 @@ After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK)
 
 [Predictive Analytics from Log Data](#PredictiveAnalyticsLogData)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Data Flow Diagram](#DataFlowDiagram)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Theory](#Theory)<br/>
 [Install Notes](#InstallNotes)<br/>
 [Demo Notes](#DemoNotes)<br/>
 [coCPU Notes](#coCPUNotes)<br/>
@@ -52,11 +53,16 @@ Below is a data flow diagram showing I/O, algorithms, and convolutional neural n
 
 As shown in the above diagram, the approach centers around the concept of converting continuous log data a series of images, which are then used to train a convolutional neural network.  A primary objective of this approach is take advantage of algorithms, training methods, and inference performance available due to computer vision current state-of-the-art.
 
-Performing "recognition" based on frequency domain data is not a new approach, having been well established as the primary basis for human vision and speech recognition.  For speech, the 2-D spectrograph display below gives an example.
+<a name="Theory"></a>
+## Theory
+
+Performing "recognition" based on frequency domain data is not a new approach, having been well-established as the primary basis for human vision and speech recognition.  For speech, the waveform displays below give an example.
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/spectrograph1.gif?raw=true "2-D spectrograph display of speech ime series data")
 
-In the above diagram, frequency is on the y-axis, time is on the x-axis, and amplitude is color coded.  The spectrograph display is actually a series of images, each representing about 20 msec of time series data.  For speech, 20 msec is the natural "framesize" of the underlying time series data produced by a human vocal tract.  For predictive analytics measurement, the natural framesize will vary depending on the specific system under test (SUT) and the nature of the data processed by the system.  In the case study being used for this demo, the natural framesize is about 100 usec.
+In the above diagram, the upper display shows time series data (in yellow), and the lower display shows its corresponding freuqency domain data as a "2-D spectrograph", with frequency on the y-axis, time on the x-axis, and amplitude as color coded.
+
+The spectrograph display is actually a series of images, each representing about 20 msec of time series data.  For speech, 20 msec is the natural "framesize" of the underlying time series data produced by a human vocal tract.  For predictive analytics measurement, the natural framesize will vary depending on the specific system under test (SUT) and the nature of the data processed by the system.  In the case study being used for this demo, the natural framesize is about 100 usec.
 
 Once the framesize is known, then a short-time FFT (Fourier analysis) can be performed to generate each image.  As noted in the above data flow diagram, overlap and windowing are used in the STFFT, in what is sometimes referred to as a "sliding FFT".
 
