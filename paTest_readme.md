@@ -58,9 +58,13 @@ As shown in the above diagram, the approach centers around the concept of conver
 
 Performing "recognition" based on frequency domain data is not a new approach, having been well-established as the primary basis for human vision and speech recognition.  For speech, the waveform displays below give an example.
 
+&nbsp;<br/>
+
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/spectrograph1.gif?raw=true "2-D spectrograph display of speech ime series data")
 
-In the above diagram, the upper display shows time series data (in yellow), and the lower display shows its corresponding freuqency domain data as a "2-D spectrograph", with frequency on the y-axis, time on the x-axis, and amplitude as color coded.
+&nbsp;<br/>
+
+In the above waveform displays, the upper display shows time series data (in yellow), and the lower display shows the equivalent frequency domain data as a "2-D spectrograph", with frequency on the y-axis, time on the x-axis, and amplitude as color coded.
 
 The spectrograph display is actually a series of images, each representing about 20 msec of time series data.  For speech, 20 msec is the natural "framesize" of the underlying time series data produced by a human vocal tract.  For predictive analytics measurement, the natural framesize will vary depending on the specific system under test (SUT) and the nature of the data processed by the system.  In the case study being used for this demo, the natural framesize is about 100 usec.
 
@@ -79,7 +83,9 @@ TBD
 <a name="coCPUNotes"></a>
 # coCPU&trade; Notes
 
-As explained on the main SigSRF SDK page, the demos support coCPU™ technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density. For example, coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity media, HPC, and AI servers, or they can allow an embedded AI server to operate independently of the cloud. coCPU cards have NICs, allowing coCPUs to front streaming data and perform wirespeed packet filtering, routing decisions and processing.
+As explained on the main SigSRF SDK page, the demos support coCPU™ technology when per-box performance increases are required.  Examples include servers with SWaP<sup>2 </sup> constraints, very small form-factors, and increasing overall system bandwidth by "fronting" data with additional CPU cores.
+
+coCPU cards add NICs and up to 100s of coCPU cores to scale per-box streaming and performance density. For example, coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity media, HPC, and AI servers, or they can allow an embedded AI server to operate independently of the cloud. coCPU cards have NICs, allowing coCPUs to front streaming data and perform wirespeed packet filtering, routing decisions and processing.
 The coCPU cards supported by the demos include:
 
 * High performance, including extensive SIMD capability, 8 or more cores per CPU, L1 and L2 cache, and advanced DMA capability
@@ -92,4 +98,5 @@ The current vision + AI server demo uses TI C6678 CPUs, which meet these require
 
 Combining x86 and c66x CPUs and running software components necessary for AI applications such as H.264 decode, OpenCV and TensorFlow, is another form of an ["AI Accelerator"](https://en.wikipedia.org/wiki/AI_accelerator). The architecture described here favors fast, reliable development: mature semiconductors and tools, open source software, standard server format, and a wide range of easy-to-use peripherals and storage. 
 
+<sup>2 </sup>SWaP = Size, Weight, and Power Consumption
 <sup>4 </sup>CGT = Code Generation Tools
