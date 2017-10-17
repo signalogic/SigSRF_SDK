@@ -102,5 +102,6 @@ The current vision + AI server demo uses TI C6678 CPUs, which meet these require
 
 Combining x86 and c66x CPUs and running software components necessary for AI applications such as H.264 decode, OpenCV and TensorFlow, is another form of an ["AI Accelerator"](https://en.wikipedia.org/wiki/AI_accelerator). The architecture described here favors fast, reliable development: mature semiconductors and tools, open source software, standard server format, and a wide range of easy-to-use peripherals and storage. 
 
-<sup>2 </sup>SWaP = Size, Weight, and Power Consumption
-<sup>4 </sup>CGT = Code Generation Tools
+<sup>2 </sup>SWaP = Size, Weight, and Power Consumption<br/>
+<sup>4 </sup>CGT = Code Generation Tools<br/>
+
