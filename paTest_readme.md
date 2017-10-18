@@ -97,7 +97,7 @@ Below is an excerpt from the logs used in the demo, with measurement data highli
 
 Note in the log data excerpt above that some entries include measurement data and some do not, which is typical of general, unstructured log formats.  Also note that entries do not have linear timestamps, so any extracted measurement data types must be interpolated into one or more time series with linear sampling periods, in order to apply standard signal processing algorithms.
 
-In some cases, if long or irregular intervals beween measurements make the data sparse, it may be necessary to use curve fit methods rather than interpolation.  The case study in this demo does not require that.
+In some cases, if long or irregular intervals beween measurements make the data sparse, it may be necessary to curve fit rather than interpolate.  The case study in this demo does not require that.
 
 <a name="InstallNotes"></a>
 # Install Notes
