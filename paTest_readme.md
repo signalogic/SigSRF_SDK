@@ -69,11 +69,11 @@ In the above waveform displays, the upper display shows time series data (in yel
 
 The spectrograph display is actually a series of images, each representing about 20 msec of time series data.  For speech, 20 msec is the natural "framesize" of the underlying time series data produced by a human vocal tract.  For predictive analytics measurement, the natural framesize will vary depending on the specific system under test (SUT) and the nature of the data processed by the system.  In the case study being used for this demo, the natural framesize is about 100 usec.
 
-Once the framesize is known, then a short-time FFT (Fourier analysis) can be performed to generate each image.  As noted in the above data flow diagram, overlap and windowing are used in the STFFT, in what is sometimes referred to as a "sliding FFT".
+Once the framesize is known, then a short-time FFT (Fourier analysis) can be performed to generate each image.  As noted in the above data flow diagram, overlap and windowing are used to calculate the STFFT.  The overlap + windowing method is sometimes referred to as a "sliding FFT".
 
-To create the SFFFT time series input, measurement data in the log must be combined.  The data flow diagram above shows a neural net used to assign weights and combine multiple measurements.  This neural net is trained with a labeled data set; i.e. logs that show normal operation and logs that include the anomaly.
+To create the time series input to the STFFT, measurement data in the log must be combined.  The data flow diagram above shows a regression neural net with one hidden layer using weights to combine multiple log data measurements.  This neural net is trained with a labeled data set; i.e. comparing measurement data during normal operation and near the anomaly.  At this point in the data flow, the objective is to eliminate measurements that have no statistical correlation with the anomaly, not to predict it, so this neural net acts more like a filter.
 
-For both the time series combination neural net and the vision CNN, training occurs in two phases (i) to learn normal operation, and (ii) to learn conditions temporally near the anomaly (about a minute before and a few secondsd afterwards).
+For both the time series combination neural net and the vision CNN, training occurs in two phases (i) to learn normal operation, and (ii) to learn conditions temporally near the anomaly (about a minute before and a few seconds afterwards).
 
 <a name="LogDataRequirementsandFormat"></a>
 ## Log Data Requirements and Format
