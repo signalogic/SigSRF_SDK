@@ -6,7 +6,7 @@
 [Demo Pages](#DemoPages)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](#mediaTestDemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#iaTestDemo)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#iaTestDemo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#paTestDemo)<br/>
 [Documentation, Support, and Contact](#DocumentationSupport)<br/>
 
 <a name="Overview"></a>
