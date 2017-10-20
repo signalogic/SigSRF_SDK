@@ -4,6 +4,9 @@
 [SDK and Demo Download](#SDKDemoDownload)<br/>
 [Install Notes](#InstallNotes)<br/>
 [Demo Pages](#DemoPages)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](#mediaTestDemo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#iaTestDemo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#iaTestDemo)<br/>
 [Documentation, Support, and Contact](#DocumentationSupport)<br/>
 
 <a name="Overview"></a>
@@ -97,14 +100,17 @@ If needed, the Check / Verify option can be selected to generate a log for troub
 <a name="DemoPages"></a>
 ## Demo Pages
 
+<a name="mediaTestDemo"></a>
 ### mediaTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest demo page</a> gives example command lines for streaming media, buffering, transcoding, and packet RFCs.  The demo allows codec output comparison vs. 3GPP reference files, per-core performance measurement (both x86 and coCPU cores), .wav file generation to experience codec audio quality, RTP packet transcoding using pcap files, and more.  The state-of-the-art EVS codec is used for several of the command lines.  Application C/C++ source code is included.
 
+<a name="iaTestDemo"></a>
 ### iaTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest demo page</a> gives example command lines for image analytics and OpenCV testing.  The iaTest demo performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.  Application C/C++ source code is included.
 
+<a name="paTestDemo"></a>
 ### paTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md">paTest demo page</a> gives example command lines for a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies.  Application Java and C/C++ source code is included.
