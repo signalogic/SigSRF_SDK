@@ -39,8 +39,6 @@ Fortunately debug efforts were eventually successful, culminating in a "row mark
 
 During post-case debrief discussions, one common question among the engineers involved was whether deep learning methods might have been used to identify operational trends occcuring temporally near the core crashes, which were visible early in the debug process, thus predicting which stress conditions to emphasize to make the error occur more frequently.  If so, then potentially weeks of engineering time could be saved for future production systems with tough, intermittent issues.
 
-It's worthwhile to note this is not a "glamorous" application of AI methods.  Instead it's a practical example, applied not as a cure-all or as press-worthy advance towards the "singularity", but as a helpful new tool to augment traditional tools.
-
 <a name="DataflowDiagram"></a>
 ## DataFlow Diagram
 
