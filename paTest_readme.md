@@ -23,6 +23,7 @@ After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK)
 &nbsp;&nbsp;&nbsp;&nbsp;[Theory](#Theory)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Log Data Requirements and Format](#LogDataRequirementsandFormat)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Converting Log Data to Time Series](#ConvertingLogDatatoTimeSeries)<br/>
+[Java and Spark Source Excerpts](#SourceExcerpts)<br/>
 [Demo Notes](#DemoNotes)<br/>
 [coCPU Notes](#coCPUNotes)<br/>
 
@@ -96,6 +97,35 @@ Below is an excerpt from the logs used in the demo, with measurement data highli
 Note in the log data excerpt above that some entries include measurement data and some do not, which is typical of general, unstructured log formats.  Also note that entries do not have linear timestamps, so any extracted measurement data types must be interpolated into one or more time series with linear sampling periods, in order to apply standard signal processing algorithms.
 
 In some cases, if long or irregular intervals beween measurements make the data sparse, it may be necessary to curve fit rather than interpolate.  The case study in this demo does not require that.
+
+<a name="SourceExcerpts"></a>
+# Java and Spark Source Excerpts
+
+      while ((line = br.readLine()) != null) {
+         
+         /* check for string delineating log sections to switch file to write to */
+         if (line.contains("Start of one-time log area")) {
+            contLog = false;
+         } else {
+            
+            /* only use lines that contain "core" */
+            if (line.contains("core")) {
+               
+               /* only use lines that start with "core" and don't contain "core" elsewhere */
+               if (line.indexOf("core", 1) == -1) {
+                  if (contLog) {
+                     if (firstContLog) firstContLog = false;
+                     else bwCont.newLine();
+                     bwCont.write(line);
+                  } else {
+                     if (firstOneLog) firstOneLog = false;
+                     else bwOne.newLine();
+                     bwOne.write(line);
+                  }
+               }
+            }
+         }
+      }
 
 <a name="InstallNotes"></a>
 # Install Notes
