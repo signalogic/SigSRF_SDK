@@ -156,30 +156,32 @@ The following Java source excerpt calls Spark APIs to extract specific fields fr
 
 For example, after the above processing, if the "number of concurrent sessions" field were to be written to a .csv file, it might look something like this:
 
-+--------+--------+<br/>
-|ts&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|num sesn|<br/>
-+--------+--------+<br/>
-|10309858|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10310449|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10310519|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10311273|38&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10312181|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10313911|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10314064|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10315589|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10315732|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10317302|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10318486|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10319008|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10319167|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10320760|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10320862|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10321624|38&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10322476|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10324206|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10324369|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-|10325033|38&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
-+--------+--------+<br/>
+<pre>
++--------+--------+
+|ts      |num sesn|
++--------+--------+
+|10309858|39      |
+|10310449|40      |
+|10310519|39      |
+|10311273|38      |
+|10312181|39      |
+|10313911|40      |
+|10314064|39      |
+|10315589|40      |
+|10315732|39      |
+|10317302|40      |
+|10318486|39      |
+|10319008|40      |
+|10319167|39      |
+|10320760|40      |
+|10320862|39      |
+|10321624|38      |
+|10322476|39      |
+|10324206|40      |
+|10324369|39      |
+|10325033|38      |
++--------+--------+
+</pre>
 
 where "ts" is the timestamp (in msec) and "num sesn" is the current number of sessions.
 
