@@ -70,7 +70,7 @@ The spectrograph display is actually a series of STFTT output frames, each repre
 
 Once the framesize is known, then a short-time FFT (Fourier analysis) can be performed to generate output frames and images.  As noted in the above data flow diagram, overlap and windowing are used to calculate the STFFT.  The overlap + windowing method is sometimes referred to as a "sliding FFT".  The Fourier transform is a linear operation, so it's important to eliminate "edges" (discontinuities) from input data; overlap + windowing accomplishes this.  It's also important to ensure that all incoming time series data points are evenly spaced; in signal processing, this is known as the "sampling rate".
 
-To create the time series input to the STFFT, multiple measurement time series must be combined, and interpolated where necessary to ensure evenly spaced data points (also known as "gap filling").  The data flow diagram above shows a regression neural net with one hidden layer calculating a weighted combination of multiple log data measurements.  This neural net is trained with a labeled data set; i.e. comparing measurement data during normal operation and near the anomaly.  At this point in the data flow, the objective is to eliminate measurements that have little or no statistical correlation with the anomaly, not to predict it, so this neural net acts as a qualifier.
+To create the time series input to the STFFT, multiple measurement time series must be combined, and interpolated where necessary to ensure evenly spaced data points (also known as "gap filling").  The data flow diagram above shows a regression neural net model with one hidden layer calculating a weighted combination of multiple log data measurements.  This neural net is trained with a labeled data set; i.e. comparing measurement data during normal operation and near the anomaly.  At this point in the data flow, the objective is to eliminate measurements that have little or no statistical correlation with the anomaly, not to predict it, so this neural net acts as a qualifier.
 
 For both the time series combination neural net and the vision CNN, training occurs in two phases (i) to learn normal operation, and (ii) to learn conditions temporally near the anomaly (about a minute before and a few seconds afterwards).
 
@@ -154,31 +154,31 @@ The following Java source excerpt calls Spark APIs to extract specific fields fr
    data = data.withColumn(data_field, functions.regexp_extract(col("value"), data_field + " = (\\d+)", 1));
 ```
 
-For example, after the above processing, if the "number of concurrent sessions" field were to be written to a .csv file, it would might something like this:
+For example, after the above processing, if the "number of concurrent sessions" field were to be written to a .csv file, it might look something like this:
 
 +--------+--------+<br/>
-|ts      |num sesn|<br/>
+|ts&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|num sesn|<br/>
 +--------+--------+<br/>
-|10309858|39      |<br/>
-|10310449|40      |<br/>
-|10310519|39      |<br/>
-|10311273|38      |<br/>
-|10312181|39      |<br/>
-|10313911|40      |<br/>
-|10314064|39      |<br/>
-|10315589|40      |<br/>
-|10315732|39      |<br/>
-|10317302|40      |<br/>
-|10318486|39      |<br/>
-|10319008|40      |<br/>
-|10319167|39      |<br/>
-|10320760|40      |<br/>
-|10320862|39      |<br/>
-|10321624|38      |<br/>
-|10322476|39      |<br/>
-|10324206|40      |<br/>
-|10324369|39      |<br/>
-|10325033|38      |<br/>
+|10309858|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10310449|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10310519|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10311273|38&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10312181|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10313911|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10314064|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10315589|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10315732|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10317302|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10318486|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10319008|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10319167|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10320760|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10320862|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10321624|38&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10322476|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10324206|40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10324369|39&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+|10325033|38&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
 +--------+--------+<br/>
 
 where "ts" is the timestamp (in msec) and "num sesn" is the current number of sessions.
