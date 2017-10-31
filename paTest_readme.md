@@ -23,7 +23,7 @@ After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK)
 &nbsp;&nbsp;&nbsp;&nbsp;[Theory](#Theory)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Log Data Requirements and Format](#LogDataRequirementsandFormat)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Converting Log Data to Time Series](#ConvertingLogDatatoTimeSeries)<br/>
-[Java and Spark Source Excerpts](#SourceExcerpts)<br/>
+[Java Source and Spark API Excerpts](#JavaSourceExcerpts)<br/>
 [Demo Notes](#DemoNotes)<br/>
 [coCPU Notes](#coCPUNotes)<br/>
 
@@ -98,8 +98,8 @@ Note in the log data excerpt above that some entries include measurement data an
 
 In some cases, if long or irregular intervals beween measurements make the data sparse, it may be necessary to curve fit rather than interpolate.  The case study in this demo does not require that.
 
-<a name="SourceExcerpts"></a>
-# Java and Spark Source Excerpts
+<a name="JavaSourceExcerpts"></a>
+# Java Source and Spark API Excerpts
 
 Below is a simplified Java source excerpt that parses unstructured log files.
 
@@ -156,32 +156,32 @@ The following Java source excerpt calls Spark APIs to extract specific fields fr
 
 For example, after the above processing, if the "number of concurrent sessions" field were to be written to a .csv file, it would might something like this:
 
-+--------+--------+
-|ts      |num sesn|
-+--------+--------+
-|10309858|39      |
-|10310449|40      |
-|10310519|39      |
-|10311273|38      |
-|10312181|39      |
-|10313911|40      |
-|10314064|39      |
-|10315589|40      |
-|10315732|39      |
-|10317302|40      |
-|10318486|39      |
-|10319008|40      |
-|10319167|39      |
-|10320760|40      |
-|10320862|39      |
-|10321624|38      |
-|10322476|39      |
-|10324206|40      |
-|10324369|39      |
-|10325033|38      |
-+--------+--------+
++--------+--------+<br/>
+|ts      |num sesn|<br/>
++--------+--------+<br/>
+|10309858|39      |<br/>
+|10310449|40      |<br/>
+|10310519|39      |<br/>
+|10311273|38      |<br/>
+|10312181|39      |<br/>
+|10313911|40      |<br/>
+|10314064|39      |<br/>
+|10315589|40      |<br/>
+|10315732|39      |<br/>
+|10317302|40      |<br/>
+|10318486|39      |<br/>
+|10319008|40      |<br/>
+|10319167|39      |<br/>
+|10320760|40      |<br/>
+|10320862|39      |<br/>
+|10321624|38      |<br/>
+|10322476|39      |<br/>
+|10324206|40      |<br/>
+|10324369|39      |<br/>
+|10325033|38      |<br/>
++--------+--------+<br/>
 
-where "ts" means timestamp (in msec) and "num sesn" means the current number of sessions.
+where "ts" is the timestamp (in msec) and "num sesn" is the current number of sessions.
 
 <a name="InstallNotes"></a>
 # Install Notes
