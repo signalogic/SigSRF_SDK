@@ -154,9 +154,10 @@ The following Java source excerpt calls Spark APIs to extract specific fields fr
    data = data.withColumn(data_field, functions.regexp_extract(col("value"), data_field + " = (\\d+)", 1));
 ```
 
-For example, after the above processing, if the "number of concurrent sessions" field were to be written to a .csv file, it might look something like this:
+For example, after the above processing, if the "number of concurrent sessions" field were to be written to a .csv file and then displayed with an appropriate viewer, it might look something like this:
 
 <pre>
+<small>
 +--------+--------+
 |ts      |num sesn|
 +--------+--------+
@@ -181,6 +182,7 @@ For example, after the above processing, if the "number of concurrent sessions" 
 |10324369|39      |
 |10325033|38      |
 +--------+--------+
+</small>
 </pre>
 
 where "ts" is the timestamp (in msec) and "num sesn" is the current number of sessions.
