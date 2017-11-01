@@ -156,7 +156,7 @@ The following Java source excerpt calls Spark APIs to extract specific fields fr
 
 For example, after the above processing, if the "number of concurrent sessions" field were to be written to a .csv file and then displayed with an appropriate viewer, it might look something like this:
 
-<pre><sub><sup>
+<pre>
 +--------+--------+
 |ts      |num sesn|
 +--------+--------+
@@ -181,7 +181,7 @@ For example, after the above processing, if the "number of concurrent sessions" 
 |10324369|39      |
 |10325033|38      |
 +--------+--------+
-</sup></sub></pre>
+</pre>
 
 where "ts" is the timestamp (in msec) and "num sesn" is the current number of sessions.
 
