@@ -193,7 +193,11 @@ TBD
 <a name="DemoNotes"></a>
 # Demo Notes
 
-TBD
+An example command line is shown below
+
+ /home/spark-2.2.0-bin-hadoop2.7/bin/spark-submit --class "PaTest" --master local[4] target/simple-project-1.0.jar -r10000 -ilog_file.txt -omultichan_time_series.wav "num sesn" "crt time" sesn dur"
+ 
+where the input log is log_file.txt, the sampling rate is 10 kHz, and the output (multichan_time_series.wav) contains three (3) channels, corresponding to extracted data for unstructured data fields "num sesn" (number of concurrent sessions), "crt time" (session create time), and "sesn dur" (session duration).
 
 <a name="coCPUNotes"></a>
 # coCPU&trade; Notes
