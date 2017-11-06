@@ -23,6 +23,7 @@ After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK)
 &nbsp;&nbsp;&nbsp;&nbsp;[Theory](#Theory)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Log Data Requirements and Format](#LogDataRequirementsandFormat)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Converting Log Data to Time Series](#ConvertingLogDatatoTimeSeries)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Frequency Domain Contour Images](#FrequencyDomainContourImages)<br/>
 [Java Source and Spark API Excerpts](#JavaSourceExcerpts)<br/>
 [Demo Notes](#DemoNotes)<br/>
 [coCPU Notes](#coCPUNotes)<br/>
@@ -60,7 +61,7 @@ Performing "recognition" based on frequency domain data is not a new approach, h
 
 &nbsp;<br/>
 
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/spectrograph1.gif?raw=true "2-D spectrograph display of speech ime series data")
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/spectrograph1.gif?raw=true "2-D spectrograph display of speech time series data")
 
 &nbsp;<br/>
 
@@ -94,9 +95,24 @@ Below is an excerpt from the logs used in the demo, with measurement data highli
 <a name="ConvertingLogDatatoTimeSeries"></a>
 ## Converting Log Data to Time Series
 
-Note in the log data excerpt above that some entries include measurement data and some do not, which is typical of general, unstructured log formats.  Also note that entries do not have linear timestamps, so any extracted measurement data types must be interpolated into one or more time series with linear sampling periods, in order to apply standard signal processing algorithms.
+Note in the log data excerpt above that some entries include measurement data and some do not, which is typical of general, unstructured log formats.  Also note that entries do not have linear timestamps, so any extracted measurement data must be interpolated into one or more time series with linear sampling periods, in order to apply standard signal processing algorithms.
+
+Below is a waveform plot showing log data "number of sessions" measurements as an interpolated time series.
+
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_time_series.png?raw=true "Time series display of the number-of-sessions feature, after log data extraction and interpolation")
+
+The demo uses Apache Commons Math linear interpolator to create a polynomial spline function.
 
 In some cases, if long or irregular intervals beween measurements make the data sparse, it may be necessary to curve fit rather than interpolate.  The case study in this demo does not require that.
+
+<a name="FrequencyDomainContourImages"></a>
+## Frequency Domain Contour Images
+
+As shown in the above data flow diagram, extracted log data measurements are converted to time series and given as inputs to a regression model neural network.  Each input is considered a feature, and the network's output is a combined time series, which is then processed by short-time FFT analysis.  Below is a frequency domain 2-D contour plot showing the number of sessions feature.
+
+![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_stfft_highlighted.png?raw=true "Frequency domain 2D contour display of the number-of-sessions feature")
+
+In the above image, only one component of the combined time series is displayed, for explanation purposes.  The highlighted areas show "wideband energy" which indicates areas of rapid, sharp changes in the time series data.  In this, case since the feature is the number of concurrent sessions, these areas indicate the telephony system was rapidly opening and closing sessions.
 
 <a name="JavaSourceExcerpts"></a>
 # Java Source and Spark API Excerpts
