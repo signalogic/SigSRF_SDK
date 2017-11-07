@@ -114,7 +114,7 @@ As shown in the above data flow diagram, extracted log data measurements are con
 
 Notes about the above image:
 
-* Time is on the horizontal axis (as with a time series plot), frequency on the vertical axis, and amplitude is indicated by color, using a "heatmap" color scheme.  the particular combination of colors is similar to "inferno" or "magma" colormaps in Matlab and R.  Together the 3 dimensions forms a contour display
+* Time is on the horizontal axis (as with a time series plot), frequency on the vertical axis, and amplitude is indicated by color, using a "heatmap" color scheme; the particular combination of colors is similar to "inferno" or "magma" colormaps in Matlab and R.  Together the 3 dimensions form a contour display
 * Highlighted areas show "wideband energy" which indicates areas of rapid, sharp changes in the time series data. The term comes from signal processing, and typically refers to an edge, or discontinuity in the time-series data. In this case, since the feature is the number of concurrent sessions, such areas indicate the telephony system was rapidly opening and closing sessions
 
 <a name="JavaSourceExcerpts"></a>
