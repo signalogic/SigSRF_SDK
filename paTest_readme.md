@@ -108,14 +108,14 @@ In some cases, if long or irregular intervals beween measurements make the data 
 <a name="FrequencyDomainContourImages"></a>
 ## Frequency Domain Contour Images
 
-As shown in the above data flow diagram, extracted log data measurements are converted to time series and given as inputs to a regression model neural network.  Each input is considered a feature, and the network's output is a combined time series, which is then processed by short-time FFT analysis.  Below is a frequency domain 2-D contour plot showing only the number of sessions feature (i.e. not combined with other features).
+As shown in the above data flow diagram, extracted log data measurements are converted to time series and given as inputs to a regression model neural network.  Each input is considered a feature, and the network's output is a combined time series, which is then processed by short-time FFT analysis.  For explanation purposes, below is a frequency domain 2-D contour plot showing only the number of sessions feature (i.e. not combined with other features).
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_stfft_highlighted.png?raw=true "Frequency domain 2D contour display of the number-of-sessions feature")
 
 Notes about the above display:
 
 * Time is on the horizontal axis (as with a time series plot), frequency on the vertical axis, and amplitude is indicated by color, using a "heatmap" color scheme. Together the 3 dimensions form a contour display
-* The combination of colors is similar to "inferno" or "magma" colormaps in Matlab and R, which are known as perceptually uniform colormaps, and for which researchers have found that the human brain perceives equal data steps as equal steps in the color space.  This is important for convolutional neural networks based on machine vision, in order to provide input images that approximate common real world images
+* The combination of colors is similar to "inferno" or "magma" colormaps in Matlab and R, which are known as perceptually uniform colormaps, and for which researchers have found that the human brain perceives equal data steps as equal color space steps.  This is important for convolutional neural networks based on machine vision, in order to generate input images that approximate common real world images
 * Highlighted areas show "wideband energy" which indicates areas of rapid, sharp changes in the time series data. The term comes from signal processing, and typically refers to an edge, or discontinuity in the time-series data. In this case, since the feature is the number of concurrent sessions, such areas indicate the telephony system was rapidly opening and closing sessions
 
 <a name="JavaSourceExcerpts"></a>
