@@ -67,7 +67,7 @@ Performing "recognition" based on frequency domain data is not a new approach, h
 
 In the above waveform displays, the upper display shows time series data (in yellow), and the lower display shows the equivalent frequency domain data as a "2-D spectrograph", with frequency on the y-axis, time on the x-axis, and amplitude as color coded.
 
-The spectrograph display is actually a series of STFTT output frames, each representing around 20 msec of time series data.  For speech, 20 msec is the natural "framesize" of the underlying time series data produced by a human vocal tract.  For speech recognition, phoneme segmentation is used to form images for CNN input, where each image consists of 8 to 10 STFFT output frames.  For predictive analytics, the natural framesize will vary depending on the specific system under test (SUT) and the nature of the data processed by the system.  In the case study being used for this demo, the natural framesize is about 100 usec and each image represents around 40 STFFT output frames (about 4 msec).
+The spectrograph display is actually a series of STFTT output frames, each representing around 20 msec of time series data.  For speech, 20 msec is the natural "framesize" of the underlying time series data produced by a human vocal tract.  For speech recognition, phoneme segmentation is used to form images for CNN input, where each image consists of 8 to 10 STFFT output frames.  For predictive analytics, the natural framesize will vary depending on the specific system under test (SUT) and the nature of the data processed by the system.  In the case study being used for this demo, the natural framesize is about 100 usec and each image represents around 40000 STFFT output frames (about 4 sec).
 
 Once the framesize is known, then a short-time FFT (Fourier analysis) can be performed to generate output frames and images.  As noted in the above data flow diagram, overlap and windowing are used to calculate the STFFT.  The overlap + windowing method is sometimes referred to as a "sliding FFT".  The Fourier transform is a linear operation, so it's important to eliminate "edges" (discontinuities) from input data; overlap + windowing accomplishes this.  It's also important to ensure that all incoming time series data points are evenly spaced; in signal processing, this is known as the "sampling rate".
 
@@ -101,18 +101,21 @@ Below is a waveform plot showing log data "number of sessions" measurements as a
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_time_series.png?raw=true "Time series display of the number-of-sessions feature, after log data extraction and interpolation")
 
-The demo uses Apache Commons Math linear interpolator to create a polynomial spline function.
+The demo uses Apache Commons Math APIs called from Java, in this case a linear interpolator to create a polynomial spline function to approximate missing samples in time series data.
 
 In some cases, if long or irregular intervals beween measurements make the data sparse, it may be necessary to curve fit rather than interpolate.  The case study in this demo does not require that.
 
 <a name="FrequencyDomainContourImages"></a>
 ## Frequency Domain Contour Images
 
-As shown in the above data flow diagram, extracted log data measurements are converted to time series and given as inputs to a regression model neural network.  Each input is considered a feature, and the network's output is a combined time series, which is then processed by short-time FFT analysis.  Below is a frequency domain 2-D contour plot showing the number of sessions feature.
+As shown in the above data flow diagram, extracted log data measurements are converted to time series and given as inputs to a regression model neural network.  Each input is considered a feature, and the network's output is a combined time series, which is then processed by short-time FFT analysis.  Below is a frequency domain 2-D contour plot showing only the number of sessions feature (i.e. not combined with other features).
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_stfft_highlighted.png?raw=true "Frequency domain 2D contour display of the number-of-sessions feature")
 
-In the above image, only one component of the combined time series is displayed, for explanation purposes.  The highlighted areas show "wideband energy" which indicates areas of rapid, sharp changes in the time series data.  In this, case since the feature is the number of concurrent sessions, these areas indicate the telephony system was rapidly opening and closing sessions.
+Notes about the above image:
+
+* Time is on the horizontal axis (as with a time series plot), frequency on the vertical axis, and amplitude is indicated by color, using a "heatmap" color scheme.  the particular combination of colors is similar to "inferno" or "magma" colormaps in Matlab and R.  Together the 3 dimensions forms a contour display
+* Highlighted areas show "wideband energy" which indicates areas of rapid, sharp changes in the time series data. The term comes from signal processing, and typically refers to an edge, or discontinuity in the time-series data. In this case, since the feature is the number of concurrent sessions, such areas indicate the telephony system was rapidly opening and closing sessions
 
 <a name="JavaSourceExcerpts"></a>
 # Java Source and Spark API Excerpts
