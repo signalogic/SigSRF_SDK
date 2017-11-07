@@ -112,7 +112,7 @@ As shown in the above data flow diagram, extracted log data measurements are con
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_stfft_highlighted.png?raw=true "Frequency domain 2D contour display of the number-of-sessions feature")
 
-Notes about the above image:
+Notes about the above display:
 
 * Time is on the horizontal axis (as with a time series plot), frequency on the vertical axis, and amplitude is indicated by color, using a "heatmap" color scheme. Together the 3 dimensions form a contour display
 * The combination of colors is similar to "inferno" or "magma" colormaps in Matlab and R, which are known as perceptually uniform colormaps, for which researchers have found that the human brain perceives data steps as equal steps in the color space
