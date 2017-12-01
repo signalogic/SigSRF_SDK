@@ -99,7 +99,7 @@ Below is a screen capture showing overlay comparison of the NB output with the 3
 
 ![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/evs_codec_2d_spectrograph.png?raw=true "Frequency domain EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point")
 
-Note the small differences due to coCPU optimization for high capacity applications.  These differences do not perceptually affect audio quality.
+Note the small differences due to coCPU optimization for high capacity applications.  These differences do not perceptually affect audio quality.  Especially in the frequency domain, differences are very slight and hard to find.  If you look carefully some slight differences can be found at higher frequencies.
 
 <a name="FrameModeTests"></a>
 ## Frame Mode Tests
