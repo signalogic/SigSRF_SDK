@@ -41,7 +41,7 @@ Fortunately debug efforts were eventually successful, culminating in a "row mark
 
 During post-case debrief discussions, one common question among the engineers involved was whether deep learning methods might have been used to identify operational trends occcuring temporally near the core crashes, which were visible early in the debug process, thus predicting which stress conditions to emphasize to make the error occur more frequently.  If so, then potentially weeks of engineering time could be saved for future production systems with tough, intermittent issues.
 
-<a name="DataflowDiagram"></a>
+<a name="DataFlowDiagram"></a>
 ## Data Flow Diagram
 
 Below is a data flow diagram showing I/O, algorithms, and convolutional neural networks used to predict anomalies in log data.
