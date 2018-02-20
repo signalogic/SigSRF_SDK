@@ -47,11 +47,11 @@ Low SWaP<sup> 3</sup> requirements are obvious enough; what is less obvious, yet
 
 Below are some pictures of the demo Atom server, with 32 coCPU&trade; cores installed. coCPU cores are high performance CPU cores that run gcc compatible C/C++ code
 
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Local_AI_server_C2358_32cores_iso_view.png?raw=true "AI + vision Atom server, iso view")
+![deep learning + vision Atom server, iso view](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Local_AI_server_C2358_32cores_iso_view.png?raw=true "deep learning + OpenCV Atom server, iso view")
 
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Small_AI_server_32cores_iso_view.png?raw=true "AI + vision Atom server, with top removed showing coCPU card installation")
+![deep learning + OpenCV Atom server, with top removed showing coCPU card installation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Small_AI_server_32cores_iso_view.png?raw=true "deep learning + OpenCV Atom server, with top removed showing coCPU card installation")
 
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Small_AI_server_32cores_top_view.png?raw=true "AI + vision Atom server, top view")
+![deep learning + OpenCV Atom server, top view](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Small_AI_server_32cores_top_view.png?raw=true "deep learning + OpenCV Atom server, top view")
 
 Specifics of the Atom-based vision + AI demo server include:
 
@@ -72,7 +72,7 @@ Below is an architecture diagram showing network I/O and processing performed by
 
 &nbsp;<br/>
 
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_Image_Analytics_w_cameras.png?raw=true "Atom server software architecture diagram")
+![deep learning + OpenCV Atom server software architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_Image_Analytics_w_cameras.png?raw=true "deep learning + OpenCV Atom server software architecture diagram")
 
 &nbsp;<br/>
 
@@ -101,9 +101,9 @@ Below are example command lines to use with coCPU cards.
 
 Below are some example frame grabs from output .yuv files.  After running the demo, this is what you should see for output yuv file results, prior to making source code modifications.
 
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Surveillance_video_detection_algorithm_concurrent_suspects.png?raw=true "Object tracking and stats printout in CCTV surveillance video with unstable camera (video was captured with a hand-held mobile phone)")
+![Object tracking and stats printout in CCTV surveillance video with unstable camera (video was captured with a hand-held mobile phone)](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Surveillance_video_detection_algorithm_concurrent_suspects.png?raw=true "Object tracking and stats printout in CCTV surveillance video with unstable camera (video was captured with a hand-held mobile phone)")
 
-![Image](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Hallway_men_walking.png?raw=true "Object tracking and stats printout or men walking in a hallway carrying objects, stable camera")
+![Object tracking and stats printout or men walking in a hallway carrying objects, stable camera](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Hallway_men_walking.png?raw=true "Object tracking and stats printout or men walking in a hallway carrying objects, stable camera")
 
 <a name="coCPUNotes"></a>
 # coCPU&trade; Notes
