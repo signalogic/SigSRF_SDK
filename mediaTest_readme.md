@@ -81,7 +81,9 @@ The following command line will encode and then decode a 3GPP reference bitstrea
 <a name="coCPUCodecTests"></a>
 ### coCPU Codec Tests
 
-The following command lines specify coCPU cores.  The first one does the same EVS WB test as above, and the second one does an EVS NB test.  Both produce .wav files that you can listen to and experience EVS audio quality:
+As explained on the SigSRF page, coCPU refers to Texas Instruments, FPGA, neural net, or other non x86 CPUs available in the server.  coCPUs are typically used to (i) "front" incoming network or USB data and perform real-time, latency-sensitive processing, or (ii) accelerate computationally intensive operations (e.g. convolutions in a deep learning application).
+
+For transcoding, coCPU cores can be used to achieve extremely high capacity per box, for example in applications where power consumption and/or box size is constrained.  The following command lines specify TI c66x coCPU cores.  The first one does the same EVS WB test as above, and the second one does an EVS NB test.  Both produce .wav files that you can listen to and experience EVS audio quality:
 
 ```C
 ./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv16c.INP -otest_files/c6x16c_j.wav 
@@ -197,10 +199,10 @@ Here is a look inside a typical session configuration file, similar to those use
 # Session 1
 [start_of_session_data]
 
-term1.local_ip = fd01:5d2::11:123:5222  # IPv6 format
-term1.local_port = 18446
-term1.remote_ip = d01:5d2::11:123:5201
+term1.remote_ip = d01:5d2::11:123:5201  # IPv6 format
 term1.remote_port = 6170
+term1.local_ip = fd01:5d2::11:123:5222
+term1.local_port = 18446
 term1.media_type = "voice"
 term1.codec_type = "G711_ULAW"
 term1.bitrate = 64000  # in bps
@@ -211,10 +213,10 @@ term1.dtmf_payload_type = "NONE"  # A value should be given depending on the dtm
 term1.sample_rate = 8000   # in Hz (note for fixed rate codecs this field is descriptive only)
 ## term1.dtx_handling = -1  # -1 disables DTX handling
 
-term2.local_ip = 192.16.0.16  # IPv4 format
-term2.local_port = 6154
-term2.remote_ip = 192.16.0.130
+term2.remote_ip = 192.16.0.130  # IPv4 format
 term2.remote_port = 10242
+term2.local_ip = 192.16.0.16
+term2.local_port = 6154
 term2.media_type = "voice"
 term2.codec_type = "EVS"
 term2.bitrate = 13200  # in bps
@@ -234,6 +236,8 @@ Note that each session typically has one or two "terminations", or endpoints (te
 When using pcap files, "remote" IP addr and UDP port values refer to pcap source, and "local" values refer to pcap destination.  When used with mediaTest, local IP addrs are the mediaTest application, and remote IP addrs are the endpoints. Rx traffic (i.e. incoming, with respect to mediaTest) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, w.r.t. mediaTest) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
 
 ![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
+
+Although terminations can be defined in any order, in general term1 remote should match the incoming socket or pcap IP source, and term1 local should match the incoming socket or pcap destination. If output is simply a pcap file that won't be sent, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
 
 <a name="DTXHandling"></a>
 ## DTX Handling
