@@ -237,7 +237,7 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 
 ![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
 
-Although terminations can be defined in any order, in general term1 remote should match the incoming socket or pcap IP source, and term1 local should match the incoming socket or pcap destination. If output is simply a pcap file that won't be sent, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
+Although terminations can be defined in any order, in general term1 remote should match incoming (socket or pcap) source values, and term1 local should match incoming destination values. If outgoing is simply a pcap file that won't be sent, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
 
 <a name="DTXHandling"></a>
 ## DTX Handling
