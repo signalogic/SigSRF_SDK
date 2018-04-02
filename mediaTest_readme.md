@@ -49,7 +49,7 @@ Codec tests are low-level tests that perform encode and/or decode using the spec
 
 * for decoder tests, input can be from encoder output, or compressed bitstream file. Output can be waveform file or USB audio
 
-* sampling rate, bitrate, DTX control, RF aware enable, number of channels, and other parameters can be specified in a codec confguration file entered on the command line
+* sampling rate, bitrate, DTX control, RF aware enable, number of channels, and other parameters can be specified in a codec configuration file entered on the command line
 
 * pass-thru mode (no codec) allowing raw audio or USB audio to be converted / saved to wav file.  Sampling rate, number of channels, sample bitwidth, and sample bitwise justification can be specified in the confguration file.  This mode is useful for testing USB audio devices, for example some devices may have limited available sampling rates, 24-bit or 32-bit sample width, or other specs that need SNR and line amplitude testing to determine an optimum set of parameters for compatibility with 16-bit narrowband and wideband codecs
 
