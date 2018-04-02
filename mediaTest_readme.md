@@ -129,7 +129,7 @@ For professional codec test purposes, below is an image showing a lab audio work
 
 * HP 33120A function generator for reference and calibration
 
-![Lab Audio Workstation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/ 	lab_audio_workstation_Dell_R230_Focusrite2i2_sm.jpg?raw=true "Lab audio workstation based on Dell R230 1U server and Focusrite 2i2 USB audio unit")
+![Lab Audio Workstation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/lab_audio_workstation_Dell_R230_Focusrite2i2_sm.jpg?raw=true "Lab audio workstation based on Dell R230 1U server and Focusrite 2i2 USB audio unit")
 
 <a name="FrameModeOperation"></a>
 ## Frame Mode Operation
