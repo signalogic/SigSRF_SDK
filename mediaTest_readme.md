@@ -18,10 +18,10 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # Table of Contents
 
-[Codec Tests](#CodecTests)<br/>
-&nbsp;&nbsp;[coCPU Codec Tests](#coCPUCodecTests)<br/>
-[Frame Mode Tests](#FrameModeTests)<br/>
-[Packet Mode Tests](#PacketModeTests)<br/>
+[Codec Testing](#CodecTesting)<br/>
+&nbsp;&nbsp;[coCPU Codec Testing](#coCPUCodecTesting)<br/>
+[Frame Mode Operation](#FrameModeOperation)<br/>
+[Packet Mode Operation](#PacketModeOperation)<br/>
 &nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
 &nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
@@ -40,10 +40,22 @@ Input and output options include network I/O, pcap file, and audio file format f
 &nbsp;&nbsp;[Playing Audio in Wireshark](#PlayingAudioWireshark)<br/>
 &nbsp;&nbsp;[Saving Audio to File in Wireshark](#SavingAudioWireshark)<br/>
 
-<a name="CodecTests"></a>
-## Codec Tests
+<a name="CodecTesting"></a>
+## Codec Testing
 
-Codec tests are low-level tests that perform encode and/or decode using the specified codec.  No transcoding is performed, and Voplib and Pktlib APIs are not used.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  The following command line will encode a 3GPP reference audio file (WB sampling rate, 13.2 kbps) to an EVS compressed bitstream file:
+Codec tests are low-level tests that perform encode and/or decode using the specified codec.  No transcoding is performed, and Voplib and Pktlib APIs are not used (for full packet flow and transcoding operation, see Packet Mode Operation below).  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Codec test mode supports the following functionality:
+
+* for encoder tests, input can be from waveform file (several types supported), USB audio. Output can be a direct feed to the decoder (for example to test audio quality) or compressed bitsteram file
+
+* for decoder tests, input can be from encoder output, or compressed bitstream file. Output can be waveform file or USB audio
+
+* sampling rate, bitrate, dtx control, RF aware enable, number of channels, and other parameters can be specified in a codec confguration file specified on the command line
+
+* pass-thru mode (no codec), allows raw audio or USB audio to be converted / saved to wav file.  Sampling rate, number of channels, and sample bitwidth can be specified in a codec confguration file specified on the command line
+
+* sampling rate conversion is applied when input sampling rate does not match the specified codec (or pass-thru) rate
+
+The following command line will encode a 3GPP reference audio file (WB sampling rate, 13.2 kbps) to an EVS compressed bitstream file:
 
 ```C
 ./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.COD -Csession_config/codec_test_16kHz_13200bps_config
