@@ -115,7 +115,7 @@ Below is a screen capture showing overlay comparison of the NB output with the 3
 
 Note the small differences due to coCPU optimization for high capacity applications.  These differences do not perceptually affect audio quality.  Especially in the frequency domain, differences are very slight and hard to find.  If you look carefully some slight differences can be found at higher frequencies.
 
-<sup>1</sup> For some examples of c66x PCIe cards, see [this HPC TI wiki page](http://processors.wiki.ti.com/index.php/HPC).
+<sup>1</sup> For some examples of c66x PCIe cards added to Dell and HP servers, see [this HPC TI wiki page](http://processors.wiki.ti.com/index.php/HPC).
 
 <a name="FrameModeOperation"></a>
 ## Frame Mode Operation
