@@ -45,13 +45,13 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 Codec tests are low-level tests that perform encode and/or decode using the specified codec.  No transcoding is performed, and Voplib and Pktlib APIs are not used (for full packet flow and transcoding operation, see Packet Mode Operation below).  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Codec test mode supports the following functionality:
 
-* for encoder tests, input can be from waveform file (several types supported) or USB audio. Output can be a "back-to-back" feed to the decoder (for example to test audio quality) or compressed bitsteram file
+* for encoder tests, input can be from waveform file (several types supported) or USB audio. Output can be a "back-to-back feed" to the decoder (for example to test audio quality) or compressed bitstream file
 
 * for decoder tests, input can be from encoder output, or compressed bitstream file. Output can be waveform file or USB audio
 
-* sampling rate, bitrate, dtx control, RF aware enable, number of channels, and other parameters can be specified in a codec confguration file specified on the command line
+* sampling rate, bitrate, DTX control, RF aware enable, number of channels, and other parameters can be specified in a codec confguration file entered on the command line
 
-* pass-thru mode (no codec), allows raw audio or USB audio to be converted / saved to wav file.  Sampling rate, number of channels, and sample bitwidth can be specified in a codec confguration file specified on the command line
+* pass-thru mode (no codec), allows raw audio or USB audio to be converted / saved to wav file.  Sampling rate, number of channels, and sample bitwidth can be specified in the confguration file
 
 * sampling rate conversion is applied when input sampling rate does not match the specified codec (or pass-thru) rate
 
