@@ -20,6 +20,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 [Codec Testing](#CodecTesting)<br/>
 &nbsp;&nbsp;[coCPU Codec Testing](#coCPUCodecTesting)<br/>
+&nbsp;&nbsp;[Lab Audio Workstation](#LabAudioWorkstation)<br/>
 [Frame Mode Operation](#FrameModeOperation)<br/>
 [Packet Mode Operation](#PacketModeOperation)<br/>
 &nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
@@ -116,6 +117,19 @@ Below is a screen capture showing overlay comparison of the NB output with the 3
 Note the small differences due to coCPU optimization for high capacity applications.  These differences do not perceptually affect audio quality.  Especially in the frequency domain, differences are very slight and hard to find.  If you look carefully some slight differences can be found at higher frequencies.
 
 <sup>1</sup> For some examples of c66x PCIe cards added to Dell and HP servers, see [this HPC TI wiki page](http://processors.wiki.ti.com/index.php/HPC).
+
+<a name="LabAudioWorkstation"></a>
+## Lab Audio Workstation
+
+For professional codec test purposes, below is an image showing a lab audio workstation, configured with:
+
+* Dell R230 1U server, quad-core x86, 8 GB mem, multiple GbE and USB ports.  1U servers are notoriously noisy due to small fan size (higher rpm), but the Dell R230 series has a reputation as a very quiet -- yet high performance -- solution
+
+* Focusrite 2i2 unit (dual line and/or mic input, sampling rates from 44.1 to 192 kHz, 24-bit sample width).  Focusrite also makes quad input and other professional units with reasonable pricing
+
+* HP 33120A function generator for reference and calibration
+
+![Lab Audio Workstation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/ 	lab_audio_workstation_Dell_R230_Focusrite2i2_sm.jpg?raw=true "Lab audio workstation based on Dell R230 1U server and Focusrite 2i2 USB audio unit")
 
 <a name="FrameModeOperation"></a>
 ## Frame Mode Operation
