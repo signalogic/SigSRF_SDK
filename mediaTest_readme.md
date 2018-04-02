@@ -45,7 +45,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 Codec tests are low-level tests that perform encode and/or decode using the specified codec.  No transcoding is performed, and Voplib and Pktlib APIs are not used (for full packet flow and transcoding operation, see Packet Mode Operation below).  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Codec test mode supports the following functionality:
 
-* for encoder tests, input can be from waveform file (several types supported) or USB audio. Output can be a "back-to-back feed" to the decoder (for example to test audio quality) or compressed bitstream file
+* for encoder tests, input can be from waveform file (several types supported) or USB audio. Output can be a "back-to-back feed" to the decoder (for example to test audio quality) or compressed bitstream file.  When possible, compressed bitstream files are saved in a format compatible with 3GPP reference programs (or other reference programs as appropriate for the codec type), in order to interoperate with reference encoders/decoders and allow independent testing and validation
 
 * for decoder tests, input can be from encoder output, or compressed bitstream file. Output can be waveform file or USB audio
 
