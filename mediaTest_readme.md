@@ -123,11 +123,13 @@ Note the small differences due to coCPU optimization for high capacity applicati
 
 For professional codec test purposes, below is an image showing a lab audio workstation, configured with:
 
-* Dell R230 1U server, quad-core x86, 8 GB mem, multiple GbE and USB ports.  1U servers are notoriously noisy due to small fan size (higher rpm), but the Dell R230 series has a reputation as a very quiet -- yet high performance -- solution
+* Dell R230 1U server (quad-core x86, 8 GB mem, multiple GbE and USB ports).  1U servers are notoriously noisy due to small fan size (higher rpm), but the Dell R230 series has a reputation as a very quiet -- yet high performance -- solution
 
-* Focusrite 2i2 unit (dual line and/or mic input, sampling rates from 44.1 to 192 kHz, 24-bit sample width).  Focusrite also makes quad input and other professional units with reasonable pricing
+* Focusrite 2i2 USB audio unit (dual line and/or mic input, dual line out, sampling rates from 44.1 to 192 kHz, 24-bit sample width).  Focusrite also makes quad I/O and other professional units with reasonable pricing
 
-* HP 33120A function generator for reference and calibration
+* HP 33120A function generator for reference waveforms and calibration
+
+* Configured with Ubuntu 16.04 Linux, mediaTest v2.3, and recent versions of pktlib, voplib, and aviolib
 
 ![Lab Audio Workstation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/lab_audio_workstation_Dell_R230_Focusrite2i2_sm.jpg?raw=true "Lab audio workstation based on Dell R230 1U server and Focusrite 2i2 USB audio unit")
 
