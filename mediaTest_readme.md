@@ -90,8 +90,8 @@ The following command line will encode and then decode a 3GPP reference bitstrea
 ```C
 ./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.wav -Csession_config/codec_test_32kHz_13200bps_config
 ```
-<a name="coCPUCodecTests"></a>
-### coCPU Codec Tests
+<a name="coCPUCodecTesting"></a>
+### coCPU Codec Testing
 
 As explained on the SigSRF page, coCPU refers to Texas Instruments, FPGA, neural net, or other non x86 CPUs available in the server.  coCPUs are typically used to (i) "front" incoming network or USB data and perform real-time, latency-sensitive processing, or (ii) accelerate computationally intensive operations (e.g. convolutions in a deep learning application).
 
@@ -115,10 +115,10 @@ Below is a screen capture showing overlay comparison of the NB output with the 3
 
 Note the small differences due to coCPU optimization for high capacity applications.  These differences do not perceptually affect audio quality.  Especially in the frequency domain, differences are very slight and hard to find.  If you look carefully some slight differences can be found at higher frequencies.
 
-<a name="FrameModeTests"></a>
-## Frame Mode Tests
+<a name="FrameModeOperation"></a>
+## Frame Mode Operation
 
-Frame mode tests perform encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  Voplib APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
+Frame mode operation performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  Voplib APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
 
 ```C
 ./mediaTest -cx86 -M4 -Csession_config/frame_test_config -L
@@ -132,10 +132,10 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 ./mediaTest -M4 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
 ```
 
-<a name="PacketModeTests"></a>
-## Packet Mode Tests
+<a name="PacketModeOperation"></a>
+## Packet Mode Operation
 
-Packet mode tests perform encode, decode, or transcoding based on specifications in a "session configuration file" given in the command line (see notes below).  Packet mode tests read/write IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements. The following examples use the EVS codec.
+Packet mode operation performs encode, decode, or transcoding based on specifications in a "session configuration file" given in the command line (see notes below).  Packet mode operation reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements. The following examples use the EVS codec.
 
 The first command line below does the following:
 
