@@ -10,6 +10,14 @@ After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK)
 
 Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav); the example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no limitations for concurrency or multiuser, for either bare metal or VM operation.
 
+# News and Updates
+
+SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or deployed with more 20 customers.  Here are some new features added recently (likely coming soon in limited form to the online demo):
+
+* USB audio support.  There are some pics below showing the Focusrite 2i2 in action
+
+* New codecs including MELPe (gov/mil standard for 2400, 1200, and 600 bps)
+
 # Other Demos
 
 [iaTest Demo (Image Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md)
@@ -133,6 +141,25 @@ For professional codec test purposes, below is an image showing a lab audio work
 
 ![Lab Audio Workstation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/lab_audio_workstation_Dell_R230_Focusrite2i2_sm.jpg?raw=true "Lab audio workstation based on Dell R230 1U server and Focusrite 2i2 USB audio unit")
 
+Below is a mediaTest command lines showing USB audio input using "default" capabilities of the USB device:
+```C
+./mediaTest -cx86 -iusb0 -ousb_codec_output.wav
+```
+The next command line uses a config file to specify sampling rate and number of channels for the USB device:
+```C
+./mediaTest -cx86 -iusb0 -omelp_tst.wav -Csession_config/wav_test_config_melpe
+```
+Note that various USB devices will have different capabilities and options for sampling rate and number of channels.  For example, the Focusrite 2i2 supports four (4) rates from 44.1 to 192 kHz.  During codec test operation, mediaTest selects a device rate that is "nearest integer" to the test rate, and performs sampling rate conversion as needed.  As one typical example, when testing a narrowband codec (8 kHz sampling rate), mediaTest will select a device rate of 48 kHz, and then decimate and filter by 1/6.
+
+The mediaTest command lines below show USB audio acquisition of a stereo wav file at 48 kHz, and processing USB audio with the EVS codec at 16 kHz sampling rate.
+
+```C
+./mediaTest -cx86 -iusb0 -ousb_test.wav -Csession_config/wav_test_config_48kHz_2chan
+
+./mediaTest -cx86 -iusb0 -ousb_codec_output.wav -Csession_config/codec_test_16kHz_13200bps_config
+```
+
+The first 
 <a name="FrameModeOperation"></a>
 ## Frame Mode Operation
 
