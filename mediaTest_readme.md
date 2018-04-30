@@ -312,11 +312,11 @@ Although terminations can be defined in any order, in general term1 remote shoul
 
 mediaTest can perform transcoding in two ways:
 
-* in packet mode, decoding packet streams in real-time (or at a specified rate) from network sockets or pcap files, and encoding to a network stream, pcap file.  Numerous RFCs are supported (see lists on this page), and intermediate wav file output from the decoded endpoint is also supported
+* in packet mode, decoding packet streams in real-time (or at a specified rate) from a combination of network sockets and pcap files, and encoding to a network stream and/or pcap file
 
 * in codec + audio mode, encoding from an audio input (see list above in "Codec + Audio Mode Operation" section) to a compressed bitstream file, and decoding the bitstream file to an audio output
 
-In packet mode, mediaTest handles all aspects of transcoding, including mismatched codec framesizes, variable ptimes between endpoints, DTX frames, DTMF events, and more.  A single command line specifies I/O and a session config file including endpoint definitions, packet parameters, and streaming parameters
+In packet mode, mediaTest handles all aspects of transcoding and transrating, including mismatched codec framesizes, variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, and more. Numerous RFCs are supported (see lists on this page), as is intermediate wav file output from the decoded endpoint.  A single command line specifies I/O and a session config file including endpoint definitions, packet parameters, and streaming parameters
 
 In codec + audio mode, two command lines are required, and it's up to the user to ensure that framesize duration (e.g. 20 msec, 25 msec, etc) matches between the codecs.
 
