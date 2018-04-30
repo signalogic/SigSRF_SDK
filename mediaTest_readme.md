@@ -12,12 +12,14 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or deployed with more 20 customers.  Here are some new features added recently (likely coming soon in limited form to the online demo):
+SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or deployed with more 20 customers.  Here are some new features added recently:
 
 * USB audio support.  There are some pics below showing the Focusrite 2i2 in action
 
 * New codecs including MELPe (gov/mil standard for 2400, 1200, and 600 bps)
 
+These new features are likely coming soon to the online demo, in limited form.
+ 
 # Other Demos
 
 [iaTest Demo (Image Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md)
@@ -52,11 +54,13 @@ SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or depl
 <a name="CodecAudioMode"></a>
 ## Codec + Audio Mode Operation
 
-Codec + audio mode allows testing with a range of audio I/O, including waveform and compressed bitstream file types and USB audio, including:
+Codec + audio mode allows testing with a range of audio I/O, including:
 
 * codec testing
 
 * wav file acquisition, sampling rate conversion, file format conversions, etc
+
+* audio I/O includes waveform file formats, compressed bitstream file types, and USB audio
 
 Codec tests perform encode and/or decode using audio  specified codec.  Pktlib APIs are not used (for full packet flow and transcoding operation, see Packet Mode Operation below).  Transcoding is not performed in a single command line (although it can be done with successive commands).  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Codec + audio mode supports the following functionality:
 
