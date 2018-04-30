@@ -26,7 +26,7 @@ SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or depl
 
 # Table of Contents
 
-[Codec Testing](#CodecTesting)<br/>
+[Codec + Audio Mode Operation](#CodecAudioMode)<br/>
 &nbsp;&nbsp;[coCPU Codec Testing](#coCPUCodecTesting)<br/>
 &nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#LabAudioWorkstation)<br/>
 [Frame Mode Operation](#FrameModeOperation)<br/>
@@ -49,10 +49,16 @@ SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or depl
 &nbsp;&nbsp;[Playing Audio in Wireshark](#PlayingAudioWireshark)<br/>
 &nbsp;&nbsp;[Saving Audio to File in Wireshark](#SavingAudioWireshark)<br/>
 
-<a name="CodecTesting"></a>
-## Codec Testing
+<a name="CodecAudioMode"></a>
+## Codec + Audio Mode Operation
 
-Codec tests are low-level tests that perform encode and/or decode using the specified codec.  No transcoding is performed, and Voplib and Pktlib APIs are not used (for full packet flow and transcoding operation, see Packet Mode Operation below).  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Codec test mode supports the following functionality:
+Codec + audio mode allows testing with a range of audio I/O, including waveform and compressed bitstream file types and USB audio, including:
+
+* codec testing
+
+* wav file acquisition, sampling rate conversion, file format conversions, etc
+
+Codec tests perform encode and/or decode using audio  specified codec.  Pktlib APIs are not used (for full packet flow and transcoding operation, see Packet Mode Operation below).  Transcoding is not performed in a single command line (although it can be done with successive commands).  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Codec + audio mode supports the following functionality:
 
 * for encoder tests, input can be from waveform file (several types supported) or USB audio. Output can be a "back-to-back feed" to the decoder (for example to test audio quality) or compressed bitstream file.  When possible, compressed bitstream files are saved in a format compatible with 3GPP reference programs (or other reference programs as appropriate for the codec type), in order to interoperate with reference encoders/decoders and allow independent testing and validation
 
@@ -129,7 +135,7 @@ Note the small differences due to coCPU optimization for high capacity applicati
 <a name="LabAudioWorkstation"></a>
 ## Lab Audio Workstation with USB Audio
 
-For professional codec test purposes, below is an image showing a lab audio workstation, configured with:
+For professional codec and audio test purposes, below is an image showing a lab audio workstation, configured with:
 
 * Dell R230 1U server (quad-core x86, 8 GB mem, multiple GbE and USB ports).  1U servers are notoriously noisy due to small fan size (higher rpm), but the Dell R230 series has a reputation as a very quiet -- yet high performance -- solution
 
@@ -149,7 +155,7 @@ The next command line includes a config file to control sampling rate and number
 ```C
 ./mediaTest -cx86 -iusb0 -omelp_tst.wav -Csession_config/wav_test_config_melpe
 ```
-Note that various USB devices will have different capabilities and options for sampling rate and number of channels.  For example, the Focusrite 2i2 supports four (4) rates from 44.1 to 192 kHz.  During codec test operation, mediaTest selects a device rate that is "nearest integer" to the test rate, and performs sampling rate conversion as needed.  As one typical example, when testing a narrowband codec (8 kHz sampling rate), mediaTest will select a device rate of 48 kHz, and then decimate and filter by 1/6.
+Note that various USB devices will have different capabilities and options for sampling rate and number of channels.  For example, the Focusrite 2i2 supports four (4) rates from 44.1 to 192 kHz.  In codec + audio mode, mediaTest selects a device rate that is "nearest integer" to the test rate, and performs sampling rate conversion as needed.  As one typical example, when testing a narrowband codec (8 kHz sampling rate), mediaTest will select a device rate of 48 kHz, and then decimate and filter by 1/6.
 
 The mediaTest command lines below show (i) USB audio acquisition of a stereo wav file at 48 kHz, and (ii) processing USB audio with the EVS codec at 16 kHz sampling rate.
 ```C
