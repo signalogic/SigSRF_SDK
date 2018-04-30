@@ -12,7 +12,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or deployed with more 20 customers.  Here are some new features added recently:
+SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or deployed with more than 20 customers.  Here are some new features added recently:
 
 * USB audio support.  There are some pics below showing the Focusrite 2i2 in action
 
@@ -56,13 +56,15 @@ These new features are likely coming soon to the online demo, in limited form.
 
 Codec + audio mode allows testing with a range of audio I/O, including:
 
-* codec testing
+* codecs
 
 * wav file acquisition, sampling rate conversion, file format conversions, etc
 
 * audio I/O includes waveform file formats, compressed bitstream file types, and USB audio
 
-Codec tests perform encode and/or decode using audio  specified codec.  Pktlib APIs are not used (for full packet flow and transcoding operation, see Packet Mode Operation below).  Transcoding is not performed in a single command line (although it can be done with successive commands).  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Codec + audio mode supports the following functionality:
+Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec co.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and Pktlib APIs are not used (for full packet flow and transcoding operation, see Packet Mode Operation below).
+
+Codec + audio mode supports the following functionality:
 
 * for encoder tests, input can be from waveform file (several types supported) or USB audio. Output can be a "back-to-back feed" to the decoder (for example to test audio quality) or compressed bitstream file.  When possible, compressed bitstream files are saved in a format compatible with 3GPP reference programs (or other reference programs as appropriate for the codec type), in order to interoperate with reference encoders/decoders and allow independent testing and validation
 
