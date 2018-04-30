@@ -145,13 +145,13 @@ Below is a mediaTest command line testing default capabilities of the USB audio 
 ```C
 ./mediaTest -cx86 -iusb0 -ousb_codec_output.wav
 ```
-The next command line uses a config file to control sampling rate and number of channels for the USB device:
+The next command line includes a config file to control sampling rate and number of channels for the USB device:
 ```C
 ./mediaTest -cx86 -iusb0 -omelp_tst.wav -Csession_config/wav_test_config_melpe
 ```
 Note that various USB devices will have different capabilities and options for sampling rate and number of channels.  For example, the Focusrite 2i2 supports four (4) rates from 44.1 to 192 kHz.  During codec test operation, mediaTest selects a device rate that is "nearest integer" to the test rate, and performs sampling rate conversion as needed.  As one typical example, when testing a narrowband codec (8 kHz sampling rate), mediaTest will select a device rate of 48 kHz, and then decimate and filter by 1/6.
 
-The mediaTest command lines below show USB audio acquisition of a stereo wav file at 48 kHz, and processing USB audio with the EVS codec at 16 kHz sampling rate.
+The mediaTest command lines below show (i) USB audio acquisition of a stereo wav file at 48 kHz, and (ii) processing USB audio with the EVS codec at 16 kHz sampling rate.
 ```C
 ./mediaTest -cx86 -iusb0 -ousb_test.wav -Csession_config/wav_test_config_48kHz_2chan
 
