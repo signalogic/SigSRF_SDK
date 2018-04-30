@@ -28,7 +28,7 @@ SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or depl
 
 [Codec Testing](#CodecTesting)<br/>
 &nbsp;&nbsp;[coCPU Codec Testing](#coCPUCodecTesting)<br/>
-&nbsp;&nbsp;[Lab Audio Workstation](#LabAudioWorkstation)<br/>
+&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#LabAudioWorkstation)<br/>
 [Frame Mode Operation](#FrameModeOperation)<br/>
 [Packet Mode Operation](#PacketModeOperation)<br/>
 &nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
@@ -127,7 +127,7 @@ Note the small differences due to coCPU optimization for high capacity applicati
 <sup>1</sup> For some examples of c66x PCIe cards added to Dell and HP servers, see [this HPC TI wiki page](http://processors.wiki.ti.com/index.php/HPC).
 
 <a name="LabAudioWorkstation"></a>
-## Lab Audio Workstation
+## Lab Audio Workstation with USB Audio
 
 For professional codec test purposes, below is an image showing a lab audio workstation, configured with:
 
@@ -135,9 +135,9 @@ For professional codec test purposes, below is an image showing a lab audio work
 
 * Focusrite 2i2 USB audio unit (dual line and/or mic input, dual line out, sampling rates from 44.1 to 192 kHz, 24-bit sample width).  Focusrite also makes quad I/O and other professional units with reasonable pricing
 
-* HP 33120A function generator for reference waveforms and calibration
-
 * Ubuntu 16.04 Linux, mediaTest v2.3, and recent versions of pktlib, voplib, diaglib, and aviolib
+
+Also shown is for test and demonstration purposes is an HP 33120A function generator for reference waveforms and calibration.
 
 ![Lab Audio Workstation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/lab_audio_workstation_Dell_R230_Focusrite2i2_sm.jpg?raw=true "Lab audio workstation based on Dell R230 1U server and Focusrite 2i2 USB audio unit")
 
