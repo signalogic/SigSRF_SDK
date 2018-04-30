@@ -149,7 +149,7 @@ For professional codec and audio test purposes, below is an image showing a lab 
 
 * Ubuntu 16.04 Linux, mediaTest v2.3, and recent versions of pktlib, voplib, diaglib, and aviolib
 
-Also shown is for test and demonstration purposes is an HP 33120A function generator for reference waveforms and calibration.
+Also shown for test and demonstration purposes is an HP 33120A function generator, providing reference waveforms and USB audio device calibration.
 
 ![Lab Audio Workstation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/lab_audio_workstation_Dell_R230_Focusrite2i2_sm.jpg?raw=true "Lab audio workstation based on Dell R230 1U server and Focusrite 2i2 USB audio unit")
 
