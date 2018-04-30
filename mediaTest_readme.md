@@ -62,7 +62,7 @@ Codec + audio mode allows testing with flexible and interchangeable audio I/O, i
 
 * a wide range of audio I/O, including waveform file formats, compressed bitstream file types, and USB audio
 
-Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and Pktlib APIs are not used (for streaming packet flow and transcoding operation, see Packet Mode Operation below).
+Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and Pktlib APIs are not used (for single command real-time streaming packet flow and transcoding operation, see Packet Mode Operation below).
 
 Codec + audio mode supports the following functionality:
 
