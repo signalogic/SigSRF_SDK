@@ -73,9 +73,9 @@ Codec + audio mode supports the following functionality:
 
 * sampling rate, bitrate, DTX control, RF aware enable, number of channels, and other parameters can be specified in a codec configuration file entered on the command line
 
-* pass-thru mode (no codec) allowing raw audio or USB audio to be converted / saved to wav file.  Sampling rate, number of channels, sample bitwidth, and sample bitwise justification can be specified in the confguration file.  This mode is useful for testing USB audio devices, for example some devices may have limited available sampling rates, 24-bit or 32-bit sample width, or other specs that need SNR and line amplitude testing to determine an optimum set of parameters for compatibility with 16-bit narrowband and wideband codecs
+* pass-thru mode (no codec) allowing raw audio file or USB audio to be converted / saved to wav file.  Sampling rate, number of channels, sample bitwidth, and sample bitwise justification can be specified in the confguration file.  This mode is useful for testing USB audio devices, for example some devices may have limited available sampling rates, 24-bit or 32-bit sample width, or other specs that need SNR and line amplitude testing to determine an optimum set of parameters for compatibility with 16-bit narrowband and wideband codecs
 
-* sampling rate conversion is applied when input sampling rate does not match the specified codec (or pass-thru) rate
+* sampling rate conversion is applied whenever input sampling rate does not match the specified codec (or pass-thru) rate
 
 The following command line will encode a 3GPP reference audio file (WB sampling rate, 13.2 kbps) to an EVS compressed bitstream file:
 
