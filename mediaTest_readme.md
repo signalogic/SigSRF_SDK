@@ -63,7 +63,7 @@ Codec + audio mode allows testing with flexible and interchangeable audio I/O, i
 
 * a wide range of audio I/O, including waveform file formats, compressed bitstream file types, and USB audio
 
-Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and Pktlib APIs are not used (for single command real-time streaming packet flow and transcoding operation, see Packet Mode Operation below).
+Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and Pktlib APIs are not used (for single command real-time streaming packet flow and transcoding, see Packet Mode Operation below).
 
 Codec + audio mode supports the following functionality:
 
@@ -309,6 +309,16 @@ Although terminations can be defined in any order, in general term1 remote shoul
 
 <a name="Transcoding"></a>
 ## Transcoding
+
+mediaTest can perform transcoding in two ways:
+
+* in packet mode, decoding packet streams in real-time (or at a specified rate) from network sockets or pcap files, and encoding to a network stream, pcap file.  Numerous RFCs are supported (see lists on this page), and intermediate wav file output from the decoded endpoint is also supported
+
+* in codec + audio mode, encoding from an audio input (see list above in "Codec + Audio Mode Operation" section) to a compressed bitstream file, and decoding the bitstream file to an audio output
+
+In packet mode, mediaTest handles all aspects of transcoding, including mismatched codec framesizes, variable ptimes between endpoints, DTX frames, DTMF events, and more.  A single command line specifies I/O and a session config file including endpoint definitions, packet parameters, and streaming parameters
+
+In codec + audio mode, two command lines are required, and it's up to the user to ensure that framesize duration (e.g. 20 msec, 25 msec, etc) matches between the codecs.
 
 <a name="DTXHandling"></a>
 ### DTX Handling
