@@ -28,28 +28,29 @@ These new features are likely coming soon to the online demo, in limited form.
 
 # Table of Contents
 
-[Codec + Audio Mode Operation](#CodecAudioMode)<br/>
-&nbsp;&nbsp;[coCPU Codec Testing](#coCPUCodecTesting)<br/>
-&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#LabAudioWorkstation)<br/>
-[Frame Mode Operation](#FrameModeOperation)<br/>
-[Packet Mode Operation](#PacketModeOperation)<br/>
-&nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
-&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
-&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
-&nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
-[DTX Handling](#DTXHandling)<br/>
-[Variable Ptimes](#VariablePtimes)<br/>
-[DTMF Handling](#DTMFHandling)<br/>
-[Media Processing Insertion Point](#MediaProcessing)<br/>
-[Packet Stats Logging](#PacketStatsLogging)<br/>
-[Pktlib and Jitter Buffer Notes](#PktlibandJitterBufferNotes)<br/>
-[mediaTest Notes](#mediaTestNotes)<br/>
-[3GPP Reference Code Notes](#3GPPNotes)<br/>
-&nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
-&nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
-[Wireshark Notes](#WiresharkNotes)<br/>
-&nbsp;&nbsp;[Playing Audio in Wireshark](#PlayingAudioWireshark)<br/>
-&nbsp;&nbsp;[Saving Audio to File in Wireshark](#SavingAudioWireshark)<br/>
+[**Codec + Audio Mode Operation**](#CodecAudioMode)<br/>
+&nbsp;&nbsp;&nbsp;[coCPU Codec Testing](#coCPUCodecTesting)<br/>
+&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#LabAudioWorkstation)<br/>
+[**Frame Mode Operation**](#FrameModeOperation)<br/>
+[**Packet Mode Operation**](#PacketModeOperation)<br/>
+&nbsp;&nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
+&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
+&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
+&nbsp;&nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
+[**Transcoding**](#Transcoding)<br/>
+&nbsp;&nbsp;&nbsp;[DTX Handling](#DTXHandling)<br/>
+&nbsp;&nbsp;&nbsp;[Variable Ptimes](#VariablePtimes)<br/>
+&nbsp;&nbsp;&nbsp;[DTMF Handling](#DTMFHandling)<br/>
+[**Media Processing Insertion Point**](#MediaProcessing)<br/>
+[**Packet Stats Logging**](#PacketStatsLogging)<br/>
+[**Pktlib and Jitter Buffer Notes**](#PktlibandJitterBufferNotes)<br/>
+[**mediaTest Notes**](#mediaTestNotes)<br/>
+[**3GPP Reference Code Notes**](#3GPPNotes)<br/>
+&nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
+&nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#VerifyingEVSpcap)<br/>
+[**Wireshark Notes**](#WiresharkNotes)<br/>
+&nbsp;&nbsp;&nbsp;[Playing Audio in Wireshark](#PlayingAudioWireshark)<br/>
+&nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#SavingAudioWireshark)<br/>
 
 <a name="CodecAudioMode"></a>
 ## Codec + Audio Mode Operation
@@ -306,8 +307,11 @@ When using pcap files, "remote" IP addr and UDP port values refer to pcap source
 
 Although terminations can be defined in any order, in general term1 remote should match incoming (socket or pcap) source values, and term1 local should match incoming destination values. If outgoing is simply a pcap file that won't be sent, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
 
+<a name="Transcoding"></a>
+## Transcoding
+
 <a name="DTXHandling"></a>
-## DTX Handling
+### DTX Handling
 
 DTX (Discontinuous Transmission) handling can be enabled/disabled on per session basis, and is enabled by default (see the above session config file example).  When enabled, each DTX occurrence is expanded to the required duration as follows:
 
@@ -322,7 +326,7 @@ A log file example showing incoming SID packets and buffer output DTX expansion 
 If DTX handling is enabled with the SigSRF background process, then the user program does not need to call APIs or make any other intervention.
 
 <a name="VariablePtimes"></a>
-## Variable Ptimes
+### Variable Ptimes
 
 Variable ptimes refers to endpoints that have unequal payload times (ptimes); for example one endpoint might be sending/receiving media every 20 msec and another endpoint every 40 msec.  The mediaTest demo includes examples that match, or "transrate" timing between endpoints with unequal ptimes.
 
@@ -347,7 +351,7 @@ Here is a demo command line that converts an incoming pcap with 240 msec ptime t
 Note however that 240 msec is a very large ptime more suited to unidirectional media streams.  For a bidirectional real-time media stream, for example a 2-way voice conversation, large ptimes would cause excessive delay and difficulty for the endpoints to understand each other.
 
 <a name ="DTMFHandling"></a>
-## DTMF Handling
+### DTMF Handling
 
 DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the Pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  Complete DTMF handling examples are shown in C/C++ source codes included with the demo.
 
