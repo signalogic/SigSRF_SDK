@@ -42,10 +42,10 @@ These new features are likely coming soon to the online demo, in limited form.
 &nbsp;&nbsp;&nbsp;[DTX Handling](#DTXHandling)<br/>
 &nbsp;&nbsp;&nbsp;[Variable Ptimes](#VariablePtimes)<br/>
 &nbsp;&nbsp;&nbsp;[DTMF Handling](#DTMFHandling)<br/>
-[**Media Processing Insertion Point**](#MediaProcessing)<br/>
-[**Packet Stats Logging**](#PacketStatsLogging)<br/>
 [**Pktlib Jitter Buffer**](#PktlibJitterBuffer)<br/>
 [**Pktlib RFCs**](#PktlibRFCs)<br/>
+[**Media Processing Insertion Point**](#MediaProcessing)<br/>
+[**Packet Stats Logging**](#PacketStatsLogging)<br/>
 [**mediaTest Notes**](#mediaTestNotes)<br/>
 [**3GPP Reference Code Notes**](#3GPPNotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
@@ -395,10 +395,41 @@ Here is a demo command line that processes a pcap (included in the demo) contain
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -Csession_config/g711_dtmfevent_config -L
 ```
-
 A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in "Packet Stats Logging", below.
 
 If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
+
+<a name="PktlibJitterBuffer"></a>
+## Pktlib Jitter Buffer
+
+As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
+
+* Handles out-of-order packets, including packet swaps
+* Accepts incoming packets in real-time or at unlimited rate (i.e. as fast as possible), or a combination
+* Maximum buffer depth (or back pressure limit) can be specified on per-session basis
+* Dynamic channel creation to support multiple RTP streams per session (see Multiple RTP Streams / RFC 8108 section above)
+* Dynamic delay depth adjustment option
+* Statistics API, logging, and several options such as overrun control, probation control, flush, and bypass modes
+
+The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets in "faster than real-time" (FTRT) mode.  The packet mode command lines on this page can be used in FTRT mode by adding "-rN", where N is the packet add interval in msec.  For example adding -r0 to the basic packet mode command line above:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L -r0
+```
+
+specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see "Session Configuration File Format" above).
+
+<a name="PktlibRFCs"></a>
+## Pktlib RFCs
+
+Some of the RFCs supported by Pktlib include:
+
+* RFC 3550 (real-time transport protocol)
+* RFC 7198 (packet duplication)
+* RFC 8108 (multiple RTP streams)
+* RFC 2833 and 4733 (DTMF)
+* RFC 4867 (RTP payload and file storage for AMR-NB and AMR-WB codecs)
+* RFC 3551, 3558, 4788, 5188, 5391, 5993, 6716
 
 <a name="MediaProcessing"></a>
 ## Media Processing Insertion Point
@@ -520,38 +551,6 @@ Packet stats logging is part of the Diaglib module, which includes several flags
   - DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from Diaglib analysis sections
   - DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from Diaglib analysis sections
 
-<a name="PktlibJitterBuffer"></a>
-## Pktlib Jitter Buffer
-
-As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
-
-* Handles out-of-order packets, including packet swaps
-* Accepts incoming packets in real-time or at unlimited rate (i.e. as fast as possible), or a combination
-* Maximum buffer depth (or back pressure limit) can be specified on per-session basis
-* Dynamic channel creation to support multiple RTP streams per session (see Multiple RTP Streams / RFC 8108 section above)
-* Dynamic delay depth adjustment option
-* Statistics API, logging, and several options such as overrun control, probation control, flush, and bypass modes
-
-The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets in "faster than real-time" (FTRT) mode.  The packet mode command lines on this page can be used in FTRT mode by adding "-rN", where N is the packet add interval in msec.  For example adding -r0 to the basic packet mode command line above:
-
-```C
-./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L -r0
-```
-
-specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see "Session Configuration File Format" above).
-
-<a name="PktlibRFCs"></a>
-## Pktlib RFCs
-
-Some of the RFCs supported by Pktlib include:
-
-* RFC 3550 (real-time transport protocol)
-* RFC 7198 (packet duplication)
-* RFC 8108 (multiple RTP streams)
-* RFC 2833 and 4733 (DTMF)
-* RFC 4867 (RTP payload and file storage for AMR-NB and AMR-WB codecs)
-* RFC 3551, 3558, 4788, 5188, 5391, 5993, 6716
-
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
 
@@ -562,7 +561,6 @@ Some of the RFCs supported by Pktlib include:
 5) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header and with FH formatted frames (i.e. every frame includes a ToC byte). This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line.  See examples in the "Using the 3GPP Decoder" section below.
 6) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the "Session Configuration File Format" section above.
 7) Transcoding in frame mode tests is not supported yet.
-
 
 <a name="3GPPNotes"></a>
 ## 3GPP Reference Code Notes
