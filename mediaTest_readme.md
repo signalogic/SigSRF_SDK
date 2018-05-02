@@ -33,6 +33,7 @@ These new features are likely coming soon to the online demo, in limited form.
 &nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#LabAudioWorkstation)<br/>
 [**Frame Mode Operation**](#FrameModeOperation)<br/>
 [**Packet Mode Operation**](#PacketModeOperation)<br/>
+&nbsp;&nbsp;&nbsp;[Real-Time Streaming and Packet Flow](#RealTimeStreaming)</br>
 &nbsp;&nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
 &nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
@@ -199,9 +200,14 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 <a name="PacketModeOperation"></a>
 ## Packet Mode Operation
 
-Packet mode operation performs encode, decode, or transcoding based on specifications in a "session configuration file" given in the command line (see notes below).  Packet mode operation reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements. The following examples use the EVS codec.
+Packet mode operation performs encode, decode, or transcoding in real-time (or at a specified rate) based on parameters in a "session configuration file" given in the command line (see notes below).  Packet mode operation reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements.
 
-The first command line below does the following:
+<a name="RealTimeStreaming"></a>
+### Real-Time Streaming and Packet Flow
+
+Packet mode operation with SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs and encoding, decoding, or transcoding in real-time (or at a specified rate).  Additional signal processing can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.  Multiple concurrent streams with arbitrary endpoints and requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
+
+Below are some command line examples (using the EVS codec).  The first command does the following:
 
 * reads IP/UDP/RTP packets from the specified input pcap files
 * listens for all UDP ports (on any network interface)
