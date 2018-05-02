@@ -205,7 +205,7 @@ Packet mode operation performs encode, decode, or transcoding in real-time (or a
 <a name="RealTimeStreaming"></a>
 ### Real-Time Streaming and Packet Flow
 
-Packet mode operation with SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs and encoding, decoding, or transcoding in real-time (or at a specified rate).  Additional signal processing can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.  Multiple concurrent streams with arbitrary endpoints and requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
+Packet mode operation with SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).  Additional signal processing can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
 
 Below are some command line examples (using the EVS codec).  The first command does the following:
 
