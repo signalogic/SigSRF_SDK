@@ -425,10 +425,10 @@ specifies a packet add interval of zero, or as fast as possible.  -r10 would spe
 Some of the RFCs supported by Pktlib include:
 
 * RFC 3550 (real-time transport protocol)
-* RFC 7198 (packet duplication)
-* RFC 8108 (multiple RTP streams)
 * RFC 2833 and 4733 (DTMF)
 * RFC 4867 (RTP payload and file storage for AMR-NB and AMR-WB codecs)
+* RFC 7198 (packet duplication)
+* RFC 8108 (multiple RTP streams)
 * RFC 3551, 3558, 4788, 5188, 5391, 5993, 6716
 
 <a name="MediaProcessing"></a>
