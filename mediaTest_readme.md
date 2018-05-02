@@ -42,8 +42,8 @@ These new features are likely coming soon to the online demo, in limited form.
 &nbsp;&nbsp;&nbsp;[DTX Handling](#DTXHandling)<br/>
 &nbsp;&nbsp;&nbsp;[Variable Ptimes](#VariablePtimes)<br/>
 &nbsp;&nbsp;&nbsp;[DTMF Handling](#DTMFHandling)<br/>
-[**Pktlib Jitter Buffer**](#PktlibJitterBuffer)<br/>
-[**Pktlib RFCs**](#PktlibRFCs)<br/>
+[**Jitter Buffer**](#JitterBuffer)<br/>
+[**RFCs**](#SupportedRFCs)<br/>
 [**Media Processing Insertion Point**](#MediaProcessing)<br/>
 [**Packet Stats Logging**](#PacketStatsLogging)<br/>
 [**mediaTest Notes**](#mediaTestNotes)<br/>
@@ -208,7 +208,7 @@ Packet mode operation performs encode, decode, or transcoding in real-time (or a
 
 Packet mode operation with SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
 
-Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Pktlib Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#PktlibJitterBuffer)).
+Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#JitterBuffer)).
 
 Additional signal processing can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
 
@@ -399,8 +399,8 @@ A log file example showing incoming DTMF event packets and how they are translat
 
 If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
 
-<a name="PktlibJitterBuffer"></a>
-## Pktlib Jitter Buffer
+<a name="JitterBuffer"></a>
+## Jitter Buffer
 
 As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
 
@@ -419,8 +419,8 @@ The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets i
 
 specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see "Session Configuration File Format" above).
 
-<a name="PktlibRFCs"></a>
-## Pktlib RFCs
+<a name="SupportedRFCs"></a>
+## RFCs
 
 Some of the RFCs supported by Pktlib include:
 
