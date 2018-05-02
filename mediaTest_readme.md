@@ -44,7 +44,8 @@ These new features are likely coming soon to the online demo, in limited form.
 &nbsp;&nbsp;&nbsp;[DTMF Handling](#DTMFHandling)<br/>
 [**Media Processing Insertion Point**](#MediaProcessing)<br/>
 [**Packet Stats Logging**](#PacketStatsLogging)<br/>
-[**Pktlib and Jitter Buffer Notes**](#PktlibandJitterBufferNotes)<br/>
+[**Pktlib Jitter Buffer**](#PktlibJitterBuffer)<br/>
+[**Pktlib RFCs**](#PktlibRFCs)<br/>
 [**mediaTest Notes**](#mediaTestNotes)<br/>
 [**3GPP Reference Code Notes**](#3GPPNotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#Using3GPPDecoder)<br/>
@@ -205,7 +206,11 @@ Packet mode operation performs encode, decode, or transcoding in real-time (or a
 <a name="RealTimeStreaming"></a>
 ### Real-Time Streaming and Packet Flow
 
-Packet mode operation with SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).  Additional signal processing can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
+Packet mode operation with SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
+
+Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Pktlib Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#PktlibJitterBuffer)).
+
+Additional signal processing can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
 
 Below are some command line examples (using the EVS codec).  The first command does the following:
 
@@ -515,9 +520,8 @@ Packet stats logging is part of the Diaglib module, which includes several flags
   - DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from Diaglib analysis sections
   - DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from Diaglib analysis sections
 
-
-<a name="PktlibandJitterBufferNotes"></a>
-## Pktlib and Jitter Buffer Notes
+<a name="PktlibJitterBuffer"></a>
+## Pktlib Jitter Buffer
 
 As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
 
@@ -535,6 +539,9 @@ The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets i
 ```
 
 specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see "Session Configuration File Format" above).
+
+<a name="PktlibRFCs"></a>
+## Pktlib RFCs
 
 Some of the RFCs supported by Pktlib include:
 
