@@ -201,7 +201,7 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 <a name="PacketModeOperation"></a>
 ## Packet Mode Operation
 
-Packet mode operation performs encode, decode, or transcoding in real-time (or at a specified rate) based on parameters in a "session configuration file" given in the command line (see notes below).  Packet mode operation reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements.
+Packet mode operation performs encode, decode, or transcoding in real-time (or at a specified rate) based on parameters in a ["session configuration file"](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#SessionConfigFileFormat) given in the command line.  Packet mode operation reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements.
 
 <a name="RealTimeStreaming"></a>
 ### Real-Time Streaming and Packet Flow
