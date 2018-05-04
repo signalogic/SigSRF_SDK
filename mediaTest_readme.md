@@ -405,10 +405,10 @@ If DTMF handling is enabled with the SigSRF background process, then DTMF events
 As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
 
 * Handles out-of-order packets, including packet swaps
-* Accepts incoming packets in real-time or at unlimited rate (i.e. as fast as possible), or a combination
-* Maximum buffer depth (or back pressure limit) can be specified on per-session basis
+* Accepts incoming packets in real-time, unlimited rate (i.e. as fast as possible), or user-specified rate
+* Maximum buffer depth (or backpressure limit) can be specified on per-session basis
 * Dynamic channel creation to support multiple RTP streams per session (see Multiple RTP Streams / RFC 8108 section above)
-* Dynamic delay depth adjustment option
+* Dynamic delay and depth adjustment options
 * Statistics API, logging, and several options such as overrun control, probation control, flush, and bypass modes
 
 The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets in "faster than real-time" (FTRT) mode.  The packet mode command lines on this page can be used in FTRT mode by adding "-rN", where N is the packet add interval in msec.  For example adding -r0 to the basic packet mode command line above:
