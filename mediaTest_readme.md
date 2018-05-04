@@ -210,7 +210,7 @@ Packet mode operation with SigSRF software processes streams from/to network soc
 
 Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#JitterBuffer)).
 
-Additional signal processing can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
+[Additional signal processing](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#MediaProcessing) can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
 
 Below are some command line examples (using the EVS codec).  The first command does the following:
 
@@ -439,7 +439,7 @@ Some of the RFCs supported by Pktlib include:
 
 The mediaTest source codes included with the demo show where to insert signal processing and other algorithms to process media data, after extraction from ordered payloads and/or decoding.  The example source code files perform sampling rate conversion and encoding (depending on session configuration), but other algorithms can also be applied.
 
-Examples of media processing include speech and sound recognition, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to another process, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries.
+Examples of media processing include speech and sound recognition, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to another process, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries.  The alglib library (not included in the demo) contains FFT, convolution, correlation, and other optimized, high performance signal processing functions.  Alglib supports both x86 and coCPU&trade; cores, and is used by the SigDL deep learning framework.
 
 In the mediaTest source code examples, look for the APIs DSSaveStreamData(), which is used to save ordered / extracted / decoded payload data, and DSGetStreamData(), which is used to retrieve it.  These APIs allow user-defined algorithms to control buffer timing between endpoints, depending on the objective -- minimize latency (real-time applications), maximize bandwidth, match or transrate endpoint timing, or otherwise as needed.
 
