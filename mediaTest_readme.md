@@ -430,9 +430,9 @@ Some of the RFCs supported by Pktlib include:
 * RFC 7198 (packet duplication)
 * RFC 8108 (multiple RTP streams)
 * RFC 3551, 3558, 4788, 5188, 5391, 5993, 6716
-* RFC 8130 (payload format for MELPe / STANAG 4591) <sup> 1<sup>
+* RFC 8130 (payload format for MELPe / STANAG 4591) <sup> 1</sup>
  
- <sup>1 <sup>In progress, not yet in the demo
+ <sup>1 </sup>In progress, not yet in the demo
 
 <a name="MediaProcessing"></a>
 ## Media Processing Insertion Point
