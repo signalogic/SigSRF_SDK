@@ -16,7 +16,7 @@ SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or depl
 
 * USB audio support.  There are some pics below showing the Focusrite 2i2 in action
 
-* New codecs including MELPe (gov/mil standard for 2400, 1200, and 600 bps)
+* New codecs including MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
 
 These new features are likely coming soon to the online demo, in limited form.
  
@@ -430,6 +430,9 @@ Some of the RFCs supported by Pktlib include:
 * RFC 7198 (packet duplication)
 * RFC 8108 (multiple RTP streams)
 * RFC 3551, 3558, 4788, 5188, 5391, 5993, 6716
+* RFC 8130 (payload format for MELPe / STANAG 4591) <sup> 1<sup>
+ 
+ <sup>1 <sup>In progress, not yet in the demo
 
 <a name="MediaProcessing"></a>
 ## Media Processing Insertion Point
