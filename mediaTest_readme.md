@@ -402,7 +402,7 @@ If DTMF handling is enabled with the SigSRF background process, then DTMF events
 <a name="JitterBuffer"></a>
 ## Jitter Buffer
 
-As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer has several advanced features, including:
+As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer provides several advanced features, including:
 
 * Handles out-of-order packets, including packet swaps
 * Accepts incoming packets in real-time, unlimited rate (i.e. as fast as possible), or user-specified rate
