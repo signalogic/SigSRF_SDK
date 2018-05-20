@@ -202,6 +202,7 @@ swInstall() {				# It will install Signalogic SW on specified path
 		ln -s $installPath/Signalogic_* $installPath/Signalogic
         fi
         if [[ ! -L   $installPath/Signalogic_*/DirectCore/apps/SigC641x_C667x ]]; then
+	        ln -s $installPath/Signalogic_*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/apps
 		ln -s  $installPath/Signalogic_*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic_2017v6/DirectCore/apps/coCPU 
         fi
 	echo	
