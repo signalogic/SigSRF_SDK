@@ -50,7 +50,7 @@ Some notes about the above data flow diagram:
 
    1) Data flow matches <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest</a> example application C source code (packet_mode section of x86_mediaTest.c).  Subroutine symbols are labeled with pktlib and voplib API names.
 
-   2) A few areas of the flow diagram are somewhat approximated, to simplify and make easier to read.  For example, loops do not have "for" or "while" flow symbols, and some APIs, such as DSCodecEncode() and DSFormatPacket(), appear in the flow once, but actually may be called multiple times (e.g. both for non-merged and merged audio data).
+   2) A few areas of the flow diagram are somewhat approximated, to simplify and make easier to read.  For example, loops do not have "for" or "while" flow symbols, and some APIs, such as DSCodecEncode() and DSFormatPacket(), appear in the flow once, but actually may be called multiple times, depending on what signal processing algorithms are in effect.
 
    3) The orange vertical line divides the "packet domain" and "audio domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The audio domain contains raw audio data in 16-bit PCM format, which allows signal processing operations, such as sample rate conversion, conferencing, echo cancellation, etc, to be performed.  Also this is where voice analytics takes place, for instance by handing audio data off to another process.
 
