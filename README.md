@@ -35,16 +35,24 @@ SigSRF supports concurrent multiuser operation in a bare-metal environment, and 
 <a name="SoftwareArchitectureDiagram"></a>
 ## SigSRF Software and Streaming I/O Architecture Diagram
 
-Below is a SigSRF software and streaming I/O architecture diagram:
+Below is a SigSRF software and streaming I/O architecture diagram.
 
 ![SigSRF software and streaming I/O architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_and_Packet_IO_RevA2.png?raw=true "SigSRF software and streaming I/O architecture diagram")
 
 <a name="DataFlowDiagram"></a>
 ## SigSRF Packet and Media Processing Data Flow Diagram
 
-Below is a SigSRF software and streaming I/O architecture diagram:
+Below is a SigSRF software streaming packet and media processing data flow diagram.
 
 ![SigSRF streaming packet and media processing data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_RevA1.png?raw=true "SigSRF streaming packet and media processing data flow diagram")
+
+Some notes about the above data flow diagram:
+
+   1) Data flow matches <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest</a> example application C source code (packet_mode section of x86_mediaTest.c).  Subroutine symbols are labeled with pktlib and voplib API names.
+
+   2) A few areas of the flow diagram are somewhat approximated, to simplify and make easier to read.  For example, loops do not have "for" or "while" flow symbols, and some APIs, such as DSCodecEncode() and DSFormatPacket(), appear in the flow once, but actually may be called multiple times (e.g. both for non-merged and merged audio data).
+
+   3) The orange vertical line divides the "packet domain" and "audio domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The audio domain contains raw audio data in 16-bit PCM format, which allows signal processing operations, such as sample rate conversion, conferencing, echo cancellation, etc, to be performed.  Also this is where voice analytics takes place, for instance by handing audio data off to another process.
 
 <a name="SDKDemoDownload"></a>
 ## SDK and Demo Download
