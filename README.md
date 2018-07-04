@@ -44,7 +44,7 @@ Below is a SigSRF software and streaming I/O architecture diagram.
 
 Below is a SigSRF software streaming packet and media processing data flow diagram.
 
-![SigSRF streaming packet and media processing data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_RevA3.png?raw=true "SigSRF streaming packet and media processing data flow diagram")
+![SigSRF streaming packet and media processing data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_RevA4.png?raw=true "SigSRF streaming packet and media processing data flow diagram")
 
 Some notes about the above data flow diagram:
 
@@ -52,7 +52,9 @@ Some notes about the above data flow diagram:
 
    2) A few areas of the flow diagram are somewhat approximated, to simplify and make easier to read.  For example, loops do not have "for" or "while" flow symbols, and some APIs, such as DSCodecEncode() and DSFormatPacket(), appear in the flow once, but actually may be called multiple times, depending on what signal processing algorithms are in effect.
 
-   3) The orange vertical line divides the "packet domain" and "media domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The media domain contains raw audio or video data, which allows signal processing operations, such as sample rate conversion, conferencing, filtering, echo cancellation, convolutional neural network (CNN) classification, etc. to be performed.  Also this is where image and voice analytics takes place, for instance by handing video and audio data off to another process.
+   3) The "Input and Packet Buffering", "Packet Processing", and "Media Processing and Output" sections are multichannel and  thread-safe.  Each section is optimized for high capacity channel processing.  mediaTest includes multithread example command lines, and can also run in multiple instances concurrently.
+   
+   4) The second orange vertical line divides the "packet domain" and "media domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The media domain contains raw audio or video data, which allows signal processing operations, such as sample rate conversion, conferencing, filtering, echo cancellation, convolutional neural network (CNN) classification, etc. to be performed.  Also this is where image and voice analytics takes place, for instance by handing video and audio data off to another process.
 
 <a name="SDKDemoDownload"></a>
 ## SDK and Demo Download
