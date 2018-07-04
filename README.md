@@ -52,7 +52,7 @@ Some notes about the above data flow diagram:
 
    2) A few areas of the flow diagram are somewhat approximated, to simplify and make easier to read.  For example, loops do not have "for" or "while" flow symbols, and some APIs, such as DSCodecEncode() and DSFormatPacket(), appear in the flow once, but actually may be called multiple times, depending on what signal processing algorithms are in effect.
 
-   3) The orange vertical line divides the "packet domain" and "audio domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The audio domain contains raw audio data in 16-bit PCM format, which allows signal processing operations, such as sample rate conversion, conferencing, echo cancellation, etc. to be performed.  Also this is where voice analytics takes place, for instance by handing audio data off to another process.
+   3) The orange vertical line divides the "packet domain" and "media domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The media domain contains raw audio or video data, which allows signal processing operations, such as sample rate conversion, conferencing, filtering, echo cancellation, convolutional neural network (CNN) classification, etc. to be performed.  Also this is where image and voice analytics takes place, for instance by handing video and audio data off to another process.
 
 <a name="SDKDemoDownload"></a>
 ## SDK and Demo Download
