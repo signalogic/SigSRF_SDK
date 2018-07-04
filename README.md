@@ -44,7 +44,7 @@ Below is a SigSRF software and streaming I/O architecture diagram.
 
 Below is a SigSRF software streaming packet and media processing data flow diagram.
 
-![SigSRF streaming packet and media processing data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_RevA2.png?raw=true "SigSRF streaming packet and media processing data flow diagram")
+![SigSRF streaming packet and media processing data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_RevA3.png?raw=true "SigSRF streaming packet and media processing data flow diagram")
 
 Some notes about the above data flow diagram:
 
