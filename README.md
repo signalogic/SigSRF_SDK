@@ -1,7 +1,7 @@
 # Table of Contents
 
 [SigSRF Overview](#Overview)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Software and Streaming I/O Architecture Diagram](#SoftwareArchitectureDiagram)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#SoftwareArchitectureDiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#DataFlowDiagram)<br/>
 [SDK and Demo Download](#SDKDemoDownload)<br/>
 [Install Notes](#InstallNotes)<br/>
@@ -23,19 +23,19 @@ The primary objectives of SigSRF software are:
 * scale down with or without ARM, and provide IoT and Edge embedded device solutions for SWaP <sup>1</sup> constrained applications
 * maintain full program compatibility with cloud servers, including open source software support, server architectures, latest programming languages, etc.
 
-x86 software is sometimes referred to as a "software only" solution, but that's an Intel marketing term. In reality there is no software without hardware, and with the advent of deep learning and a surge in neural net chips attempting to emulate the human brain, that's never been so apparent.  High performance applications -- especially deep learning and machine vision -- quickly encounter hardware limitations, and as much as people have tried to solve this with generic x86 processors, it hasn't happened for 30 years and isn't likely to happen any time soon.  One solution is heterogeneous (mixed) CPU cores that "front" streaming data and perform some initial, specific processing, and x86 cores to perform general processing.  To enable mixed core processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density.  Examples of coCPU cores include GPU, neural net chips, and Texas Instruments multicore CPUs.  coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity, energy efficient media, HPC, and AI servers -- they can allow an embedded AI server to operate independently of the cloud, and they can acquire new data to learn on the fly.
+x86 software is sometimes referred to as a "software only" solution, but that's an Intel marketing term. In reality there is no software without hardware, and with the advent of deep learning and a surge in neural net chips attempting to emulate the human brain, that's never been so apparent.  High performance applications quickly encounter hardware limitations, and as much as people have tried to solve this with generic x86 processors, it hasn't happened for 30 years and isn't likely to happen any time soon.  One solution is heterogeneous (mixed) CPU cores that "front" streaming data and perform some initial, specific processing, and x86 cores to perform general processing.  To enable mixed core processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density.  Examples of coCPU cores include GPU, neural net chips, and Texas Instruments multicore CPUs.  coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity, energy efficient media, HPC, and AI servers -- they can allow an embedded AI server to operate independently of the cloud, and they can acquire new data to learn on the fly.
 
-For all platforms, SigSRF supports OpenCV, media transcoding, TensorFlow <sup>2</sup>, speech recognition <sup>2</sup>, and other calculation / data intensive applications.  For applications facing SWaP constraints, SigSRF software supports a wide range of coCPU and SoC embedded device targets that can avoid FPGAs, ASICs and other "hardwired" solutions which might dictate a non-cloud compatible software architecture.
+For all platforms, SigSRF supports OpenCV, media transcoding, deep learning <sup>2</sup>, speech recognition <sup>2</sup>, and other calculation / data intensive applications.  For applications facing SWaP constraints, SigSRF software supports a wide range of coCPU and SoC embedded device targets while maintaining a cloud compatible software architecture.
 
-SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
+When coCPU cores are active, SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
 <sup>1</sup> SWaP = size, weight, and power consumption<br/>
 <sup>2</sup> In progress
 
 <a name="SoftwareArchitectureDiagram"></a>
-## SigSRF Software and Streaming I/O Architecture Diagram
+## SigSRF Software and I/O Architecture Diagram
 
-Below is a SigSRF software and streaming I/O architecture diagram.
+Below is a SigSRF software and I/O architecture diagram.
 
 ![SigSRF software and streaming I/O architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_and_Packet_IO_RevA2.png?raw=true "SigSRF software and streaming I/O architecture diagram")
 
