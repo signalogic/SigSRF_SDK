@@ -285,7 +285,9 @@ RFC7198 is a method to address packet loss that does not incur unbounded delay, 
 <a name="SessionConfig"></a>
 ### Session Configuration
 
-Session configuration can be handled programmatically using the DSSetSessionInfo() API, setting SESSION_DATA and TERMINATION_INFO struct elements directly, or using a session configuration file method, which is what's implemented by mediaTest.
+Session configuration can be handled programmatically using the DSSetSessionInfo() API, directly setting elements of structs defined in shared_include/session.h, or using a session configuration file method, which is what's implemented by mediaTest.
+
+Structs defined in shared_include/session.h include SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
 
 Here is a look inside a typical session configuration file, similar to those used in the above command lines:
 
