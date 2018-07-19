@@ -129,7 +129,7 @@ Available demos are listed below.  The mediaTest demo is limited as follows:
 
    1) Data limit.  Processing is limited to 3000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap) and network sockets.
 
-   1) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
+   2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
 
 The iaTest and paTest demos are not limited.
 
