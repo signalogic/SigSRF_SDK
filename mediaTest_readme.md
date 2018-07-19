@@ -37,7 +37,7 @@ These new features are likely coming soon to the online demo, in limited form.
 &nbsp;&nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
 &nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
-&nbsp;&nbsp;&nbsp;[Session Configuration File Format](#SessionConfigFileFormat)<br/>
+&nbsp;&nbsp;&nbsp;[Session Configuration](#SessionConfig)<br/>
 [**Transcoding**](#Transcoding)<br/>
 &nbsp;&nbsp;&nbsp;[DTX Handling](#DTXHandling)<br/>
 &nbsp;&nbsp;&nbsp;[Variable Ptimes](#VariablePtimes)<br/>
@@ -206,7 +206,7 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 <a name="PacketModeOperation"></a>
 ## Packet Mode Operation
 
-Packet mode operation performs encode, decode, or transcoding in real-time (or at a specified rate) based on parameters in a ["session configuration file"](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#SessionConfigFileFormat) given in the command line.  Packet mode operation reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements.
+Packet mode operation performs encode, decode, or transcoding in real-time (or at a specified rate) based on parameters in a ["session configuration file"](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#SessionConfig) given in the command line.  Packet mode operation reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements.
 
 <a name="RealTimeStreaming"></a>
 ### Real-Time Streaming and Packet Flow
@@ -282,8 +282,10 @@ RFC7198 is a method to address packet loss that does not incur unbounded delay, 
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L
 ```
 
-<a name="SessionConfigFileFormat"></a>
-### Session Configuration File Format
+<a name="SessionConfig"></a>
+### Session Configuration
+
+Session configuration can be handled programmatically using the DSSetSessionInfo() API, setting SESSION_DATA and TERMINATION_INFO struct elements directly, or using a session configuration file method, which is what's implemented by mediaTest.
 
 Here is a look inside a typical session configuration file, similar to those used in the above command lines:
 
