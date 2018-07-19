@@ -133,7 +133,7 @@ Available demos are listed below.  The iaTest and paTest demos do not have a fun
 
    2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
 
-If you need an evaluation demo with a larger limit for a trial period, [contact us](#DocumentationSupport).
+If you need an evaluation demo with an increased limit for a trial period, [contact us](#DocumentationSupport).
 
 <a name="mediaTestDemo"></a>
 ### mediaTest Demo
