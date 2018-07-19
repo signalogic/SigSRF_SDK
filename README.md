@@ -5,7 +5,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#DataFlowDiagram)<br/>
 [SDK and Demo Download](#SDKDemoDownload)<br/>
 [Install Notes](#InstallNotes)<br/>
-[Demo Pages](#DemoPages)<br/>
+[Demos](#Demos)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](#mediaTestDemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#iaTestDemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#paTestDemo)<br/>
@@ -65,13 +65,13 @@ Some notes about the above data flow diagram:
 
 The SigSRF SDK and demo download consists of an install script and .rar files and includes:
   
-    1) A limited eval / demo version of several SigSRF demos, including telecom transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration)
+   1) A limited eval / demo version of several SigSRF demos, including telecom transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For a detailed explanation of demo limits, see the <a name="Demos">Demos</a> section below.
     
-    2) C/C++ source code showing Pktlib and Voplib API usage (source and Makefiles for demo programs included)
+   2) C/C++ source code showing Pktlib and Voplib API usage (source and Makefiles for demo programs included)
 
-    3) Multiple concurrent user/instance demonstration
+   3) Multiple concurrent user/instance demonstration
 
-    4) coCPU software stack, including DirectCore libraries and drivers (requires a coCPU card to be active)
+   4) coCPU software stack, including DirectCore libraries and drivers (requires a coCPU card to be active)
 
 A few demo programs are coCPU specific; for those you will need one of the coCPU cards <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>.  coCPU cards can be obtained from TI, Advantech, or Signalogic.
 
@@ -122,8 +122,16 @@ If no path is entered the default path is /usr/local.
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
 
-<a name="DemoPages"></a>
-## Demo Pages
+<a name="Demos"></a>
+## Demos
+
+Available demos are listed below.  The mediaTest demo is limited as follows:
+
+   1) Data limit.  Processing is limited to 3000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap) and network sockets.
+
+   1) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
+
+The iaTest and paTest demos are not limited.
 
 <a name="mediaTestDemo"></a>
 ### mediaTest Demo
