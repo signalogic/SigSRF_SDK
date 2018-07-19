@@ -67,7 +67,7 @@ Some notes about the above data flow diagram:
 
 The SigSRF SDK and demo download consists of an install script and .rar files and includes:
   
-   1) A limited eval / demo version of several SigSRF demos, including telecom transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For a detailed explanation of demo limits, see the <a name="Demos">Demos</a> section below.
+   1) A limited eval / demo version of several SigSRF demos, including telecom transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For a detailed explanation of demo limits, see [Demos](#Demos) below.
     
    2) C/C++ source code showing Pktlib and Voplib API usage (source and Makefiles for demo programs included)
 
