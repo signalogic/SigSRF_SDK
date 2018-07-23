@@ -27,7 +27,7 @@ mediaTest demo functionality is limited as follows:
 
    2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
 
-If you need an evaluation demo with an increased limit for a trial period, [contact us](https://github.com/signalogic/SigSRF_SDK/edit/master/README.md#DocumentationSupport).
+If you need an evaluation demo with an increased limit for a trial period, [contact us](https://github.com/signalogic/SigSRF_SDK#DocumentationSupport).
 
 # Other Demos
 
@@ -218,7 +218,7 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 
 Simple mediaTest command lines can be used to convert Pcaps to wav file, listen to Pcaps over USB audio, or both.
 
-These commands can be run either in Frame Mode, or [Packet Mode](<a "#PacketModeOperation"></a>).
+These commands can be run either in Frame Mode, or [Packet Mode](#PacketModeOperation").
 
 <a name="EVSPlayer"></a>
 ### EVS Player
