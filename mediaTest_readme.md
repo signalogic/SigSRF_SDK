@@ -37,14 +37,14 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 # Table of Contents
 
-[**Codec + Audio Mode Operation**](#CodecAudioMode)<br/>
+[**Codec + Audio Mode**](#CodecAudioMode)<br/>
 &nbsp;&nbsp;&nbsp;[coCPU Codec Testing](#coCPUCodecTesting)<br/>
 &nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#LabAudioWorkstation)<br/>
-[**Frame Mode Operation**](#FrameModeOperation)<br/>
+[**Frame Mode**](#FrameMode)<br/>
 &nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#ConvertingPcaps2Wav)<br/>
 &nbsp;&nbsp;&nbsp;[EVS Player](#EVSPlayer)</br>
 &nbsp;&nbsp;&nbsp;[AMR Player](#AMRPlayer)</br>
-[**Packet Mode Operation**](#PacketModeOperation)<br/>
+[**Packet Mode**](#PacketMode)<br/>
 &nbsp;&nbsp;&nbsp;[Real-Time Streaming and Packet Flow](#RealTimeStreaming)</br>
 &nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
@@ -66,7 +66,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#SavingAudioWireshark)<br/>
 
 <a name="CodecAudioMode"></a>
-## Codec + Audio Mode Operation
+## Codec + Audio Mode
 
 Codec + audio mode allows testing with flexible and interchangeable audio I/O, including:
 
@@ -76,7 +76,7 @@ Codec + audio mode allows testing with flexible and interchangeable audio I/O, i
 
 * a wide range of audio I/O, including waveform file formats, compressed bitstream file types, and USB audio
 
-Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and Pktlib APIs are not used (for single command real-time streaming packet flow and transcoding, see Packet Mode Operation below).
+Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and Pktlib APIs are not used (for single command real-time streaming packet flow and transcoding, see Packet Mode below).
 
 Codec + audio mode supports the following functionality:
 
@@ -197,10 +197,10 @@ Below are waveform displays for a 1.5 kHz sine wave from the HP 33120A function 
 
 Note that EVS -- unlike older codecs that rely only on a vocal tract model -- is able to handle a pure tone input.
 
-<a name="FrameModeOperation"></a>
-## Frame Mode Operation
+<a name="FrameMode"></a>
+## Frame Mode
 
-Frame mode operation performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  Voplib APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
+Frame mode performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  Voplib APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
 
 ```C
 ./mediaTest -cx86 -M4 -Csession_config/frame_test_config -L
@@ -267,15 +267,15 @@ The above command lines will work on any AMR pcap, including full header, compac
 
 In the USB audio output example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
 
-<a name="PacketModeOperation"></a>
-## Packet Mode Operation
+<a name="PacketMode"></a>
+## Packet Mode
 
-Packet mode operation performs encode, decode, or transcoding in real-time (or at a specified rate) based on parameters in a ["session configuration file"](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#SessionConfig) given in the command line.  Packet mode operation reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements.
+Packet mode performs encode, decode, or transcoding in real-time (or at a specified rate) based on parameters in a ["session configuration file"](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#SessionConfig) given in the command line.  Packet mode reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements.
 
 <a name="RealTimeStreaming"></a>
 ### Real-Time Streaming and Packet Flow
 
-Packet mode operation with SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
+SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
 
 Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#JitterBuffer)).
 
@@ -393,7 +393,7 @@ mediaTest can perform transcoding in two ways:
 
 * in packet mode, decoding packet streams in real-time (or at a specified rate) from a combination of network sockets and pcap files, and encoding to a network stream and/or pcap file
 
-* in codec + audio mode, encoding from an audio input (see list above in "Codec + Audio Mode Operation" section) to a compressed bitstream file, and decoding the bitstream file to an audio output
+* in codec + audio mode, encoding from an audio input (see list above in "Codec + Audio Mode") to a compressed bitstream file, and decoding the bitstream file to an audio output
 
 In packet mode, mediaTest handles all aspects of transcoding and transrating, including mismatched codec framesizes, variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, and more. Numerous RFCs are supported (see lists on this page), as is intermediate wav file output from the decoded endpoint.  A single command line specifies I/O and a session config file including endpoint definitions, packet parameters, and streaming parameters
 
