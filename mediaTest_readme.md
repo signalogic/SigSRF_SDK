@@ -16,7 +16,7 @@ SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or depl
 
 * USB audio support.  There are some pics below showing the Focusrite 2i2 in action
 
-* Codecs now include EVS, AMR-NB, AMR-WB, G729AB, G726, and MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
+* Codecs now include EVS, AMR-NB, AMR-WB, G729AB, G726, G711, and MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
 
 <a name="DemoLimits"></a>
 # Demo Limits
