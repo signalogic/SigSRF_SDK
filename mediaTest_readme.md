@@ -16,10 +16,19 @@ SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or depl
 
 * USB audio support.  There are some pics below showing the Focusrite 2i2 in action
 
-* New codecs including MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
+* New codecs including G729AB, G726, AMR-NB, AMR-WB, and MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
 
-These new features are likely coming soon to the online demo, in limited form.
- 
+<a name="DemoLimits"></a>
+## Demo Limits
+
+mediaTest demo functionality is limited as follows:
+
+   1) Data limit.  Processing is limited to 3000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
+
+   2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
+
+If you need an evaluation demo with an increased limit for a trial period, [contact us](https://github.com/signalogic/SigSRF_SDK/edit/master/README.md#DocumentationSupport).
+
 # Other Demos
 
 [iaTest Demo (Image Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md)
@@ -32,9 +41,11 @@ These new features are likely coming soon to the online demo, in limited form.
 &nbsp;&nbsp;&nbsp;[coCPU Codec Testing](#coCPUCodecTesting)<br/>
 &nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#LabAudioWorkstation)<br/>
 [**Frame Mode Operation**](#FrameModeOperation)<br/>
+&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#ConvertPcaps2Wav)<br/>
+&nbsp;&nbsp;&nbsp;[EVS Player](#EVSPlayer)</br>
+&nbsp;&nbsp;&nbsp;[AMR Player](#AMRPlayer)</br>
 [**Packet Mode Operation**](#PacketModeOperation)<br/>
 &nbsp;&nbsp;&nbsp;[Real-Time Streaming and Packet Flow](#RealTimeStreaming)</br>
-&nbsp;&nbsp;&nbsp;[Convert Pcap to Wav](#ConvertPcap2Wav)<br/>
 &nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#MultipleRTPStreams)<br/>
 &nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#DuplicatedRTPStreams)<br/>
 &nbsp;&nbsp;&nbsp;[Session Configuration](#SessionConfig)<br/>
@@ -202,6 +213,59 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 ```C
 ./mediaTest -M4 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
 ```
+<a name="ConvertingPcaps2Wav"></a>
+### Converting Pcaps to Wav and Playing Pcaps
+
+Simple mediaTest command lines can be used to convert Pcaps to wav file, listen to Pcaps over USB audio, or both.
+
+These commands can be run either in Frame Mode, or [Packet Mode](<a "#PacketModeOperation"></a>).
+
+<a name="EVSPlayer"></a>
+### EVS Player
+
+Here are two simple mediaTest demo command lines that convert an EVS pcap to a wav file:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
+
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_PT127_IPv4.pcap -oevs_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config -L
+```
+
+The following command line will play an EVS pcap over USB audio:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/pcap_file_test_config -L
+```
+
+The above command lines will work on any EVS pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes the mediaTest demo an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
+
+In the USB audio output example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
+
+Unlike the frame mode test examples above, when an -M0 mode argument is entered, jitter buffering is peformed, and out-of-order packets, DTX packets, and SSRC changes are handled.
+
+An output pcap filename could also be added to the above command lines, i.e. decode audio to wav file, and also encode the audio to G711 or other codec.
+
+Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see the Session Configuration File Format section below).
+
+<a name="AMRPlayer"></a>
+### AMR Player
+
+The following mediaTest demo command lines convert AMR pcaps to wav files:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -oamr_WB_23850bps.wav -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
+
+./mediaTest -M0 -cx86 -ipcaps/AMR-12.2kbps-20ms_bw.pcap -oevs_16khz_13200bps_CH_PT127_IPv4.wav -Camr_packet_test_config_AMR-12.2kbps-20ms_bw -L
+```
+
+The following command line will play an AMR pcap over USB audio:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -ousb0 -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
+```
+The above command lines will work on any AMR pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes the mediaTest demo an "AMR player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
+
+In the USB audio output example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
 
 <a name="PacketModeOperation"></a>
 ## Packet Mode Operation
@@ -236,25 +300,6 @@ The second command line is similar, but also does the following:
 The screencap below shows mediaTest output after the second command line.
 
 ![mediaTest pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
-
-<a name="ConvertPcap2Wav"></a>
-### Convert Pcap to Wav
-
-Here are two simple mediaTest demo command lines that convert an EVS pcap to a wav file:
-
-```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
-
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_PT127_IPv4.pcap -oevs_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config -L
-```
-
-The demo will work on any EVS pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes the mediaTest demo an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per the 3GPP spec).
-
-In this case, unlike the similar frame mode test example above, jitter buffering is peformed, so out-of-order packets, DTX packets, and SSRC changes are handled.  Depending on the nature of network or pcap input, this can make the difference between intelligble audio or not.
-
-An output pcap filename could also be added to the above command lines, i.e. decode audio to wav file, and also encode the audio to G711 or other codec.
-
-Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see the Session Configuration File Format section below).
 
 <a name="MultipleRTPStreams"></a>
 ### Multiple RTP Streams (RFC 8108)
