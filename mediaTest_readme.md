@@ -239,9 +239,9 @@ The following command line will play an EVS pcap over USB audio:
 
 The above command lines will work on any EVS pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes the mediaTest demo an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
 
-In the USB audio output example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
+In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
 
-Unlike the frame mode test examples above, when an -M0 mode argument is entered, jitter buffering is peformed, and out-of-order packets, DTX packets, and SSRC changes are handled.
+Unlike the frame mode test examples above, where an -M0 mode argument is entered, the -M4 mode argument (packet mode) enables jitter buffering and handling of out-of-order packets, DTX packets, and SSRC changes.
 
 An output pcap filename could also be added to the above command lines, i.e. decode audio to wav file, and also encode the audio to G711 or other codec.
 
@@ -263,9 +263,9 @@ The following command line will play an AMR pcap over USB audio:
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -ousb0 -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
 ```
-The above command lines will work on any AMR pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes the mediaTest demo an "AMR player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
+The above command lines will work on any AMR pcap, including octet aligned and bandwidth efficient formats.  Combined with the .cod file input described above, this makes the mediaTest demo an "AMR player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
 
-In the USB audio output example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
+In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
 
 <a name="PacketMode"></a>
 ## Packet Mode
