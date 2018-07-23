@@ -218,7 +218,7 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 
 Simple mediaTest command lines can be used to convert Pcaps to wav file, listen to Pcaps over USB audio, or both.
 
-These commands can be run either in Frame Mode, or [Packet Mode](#PacketModeOperation").
+These commands can be run either in Frame Mode, or [Packet Mode](#PacketModeOperation).
 
 <a name="EVSPlayer"></a>
 ### EVS Player
