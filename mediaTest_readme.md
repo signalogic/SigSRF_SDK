@@ -223,7 +223,7 @@ These commands can be run either in Frame Mode, or [Packet Mode](#PacketModeOper
 <a name="EVSPlayer"></a>
 ### EVS Player
 
-Here are two simple mediaTest demo command lines that convert an EVS pcap to a wav file:
+The following mediaTest demo command lines convert EVS pcaps to wav files:
 
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
