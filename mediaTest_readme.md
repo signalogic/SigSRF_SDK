@@ -19,7 +19,7 @@ SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or depl
 * New codecs including G729AB, G726, AMR-NB, AMR-WB, and MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
 
 <a name="DemoLimits"></a>
-## Demo Limits
+# Demo Limits
 
 mediaTest demo functionality is limited as follows:
 
@@ -41,7 +41,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[coCPU Codec Testing](#coCPUCodecTesting)<br/>
 &nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#LabAudioWorkstation)<br/>
 [**Frame Mode Operation**](#FrameModeOperation)<br/>
-&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#ConvertPcaps2Wav)<br/>
+&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#ConvertingPcaps2Wav)<br/>
 &nbsp;&nbsp;&nbsp;[EVS Player](#EVSPlayer)</br>
 &nbsp;&nbsp;&nbsp;[AMR Player](#AMRPlayer)</br>
 [**Packet Mode Operation**](#PacketModeOperation)<br/>
