@@ -246,7 +246,7 @@ Unlike the frame mode test examples above, where an -M0 mode argument is entered
 
 An output pcap filename could also be added to the above command lines, i.e. decode audio to wav file, and also encode the audio to G711 or other codec.
 
-Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see the Session Configuration File Format section below).
+Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see [Session Configuration](#SessionConfig) below).
 
 <a name="AMRPlayer"></a>
 ### AMR Player
@@ -475,7 +475,7 @@ The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets i
 ./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L -r0
 ```
 
-specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see "Session Configuration File Format" above).
+specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see [Session Configuration](#SessionConfig) above).
 
 <a name="SupportedRFCs"></a>
 ## RFCs
@@ -620,8 +620,8 @@ Packet stats logging is part of the Diaglib module, which includes several flags
 3) Comparison results are bit-exact if the cmp command gives no messages
 4) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media, VLC, or other player
 5) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header and with FH formatted frames (i.e. every frame includes a ToC byte). This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line.  See examples in the "Using the 3GPP Decoder" section below.
-6) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the "Session Configuration File Format" section above.
-7) Transcoding in frame mode tests is not supported yet.
+6) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the [Session Configuration](#SessionConfig) above.
+7) Transcoding in frame mode tests is not yet supported.
 
 <a name="3GPPNotes"></a>
 ## 3GPP Reference Code Notes
