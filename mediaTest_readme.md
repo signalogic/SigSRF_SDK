@@ -331,7 +331,7 @@ RFC7198 is a method to address packet loss that does not incur unbounded delay, 
 <a name="SessionConfig"></a>
 ### Session Configuration
 
-Session configuration can be handled programmatically using the DSCreateSession() API, directly setting elements of structs defined in shared_include/session.h, or using a session configuration text file to set the struct elements.  The latter method is implemented by mediaTest (see transcoder.c).  For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
+Session configuration can be handled programmatically using the DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or using a session configuration text file to set the struct elements.  The latter method is implemented by mediaTest (see transcoder.c).  For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
 
 Structs defined in shared_include/session.h include SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
 
