@@ -67,15 +67,13 @@ Some notes about the above data flow diagram:
 
 The SigSRF SDK and demo download consists of an install script and .rar files and includes:
   
-   1) A limited eval / demo version of several SigSRF demos, including telecom transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For a detailed explanation of demo limits, see [Demos](#Demos) below.
+   1) A limited eval / demo version of several SigSRF demos, including media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For a detailed explanation of demo limits, see [Demos](#Demos) below.
     
    2) C/C++ source code showing Pktlib and Voplib API usage (source and Makefiles for demo programs included)
 
    3) Multiple concurrent user/instance demonstration
 
-   4) coCPU software stack, including DirectCore libraries and drivers (requires a coCPU card to be active)
-
-A few demo programs are coCPU specific; for those you will need one of the coCPU cards <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>.  coCPU cards can be obtained from TI, Advantech, or Signalogic.
+All demos run on x86 Linux platforms.  The mediaTest and iaTest demos will also utilize one or more coCPU cards if found at run-time.  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.  Demo .rar files contain a coCPU software stack, including drivers.  As noted above, coCPU technology increases per-box energy efficiency and performance density.  
 
 <a name="InstallNotes"></a>
 ## Install Notes
