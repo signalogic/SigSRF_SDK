@@ -71,7 +71,7 @@ The SigSRF SDK and demo download consists of an install script and .rar files an
     
    2) C/C++ source code showing Pktlib and Voplib API usage (source and Makefiles for demo programs included)
 
-   3) Multiple concurrent user/instance demonstration
+   3) Concurrency examples, including stream, instance, and multiple user
 
 All demos run on x86 Linux platforms.  The mediaTest and iaTest demos will also utilize one or more coCPU cards if found at run-time.  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.  Demo .rar files contain a coCPU software stack, including drivers.  As noted above, coCPU technology increases per-box energy efficiency and performance density.  
 
