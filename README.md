@@ -30,6 +30,10 @@ The primary objectives of SigSRF software are:
 
 SigSRF software is designed to be run on private, cloud, or hybrid Linux servers.  All available demos are intended to run on any Linux server in any form-factor, including x86, ARM, and PowerPC.
 
+SigSRF supports OpenCV, media transcoding, deep learning <sup>2</sup>, speech recognition <sup>2</sup>, and other calculation / data intensive applications.  For applications facing SWaP constraints, SigSRF software supports a wide range of coCPU and SoC embedded device targets while maintaining a cloud compatible software architecture (see [When Software Only is Not Enough](#BeyondSoftwareOnly) below).
+
+SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
+
 <a name="BeyondSoftwareOnly"></a>
 ## When Software Only is Not Enough
 
@@ -37,11 +41,7 @@ Cloud solutions are sometimes referred to as a "software only", but that's an In
 
 One promising solution is heterogeneous (mixed) cores that "front" streaming data and perform calculation intensive processing, combined with x86 cores that perform general processing.  The basic concept is to move calculation intensive processing closer to the data.  To enable mixed core processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density.  Examples of coCPU cores include GPU, neural net chips, and Texas Instruments multicore CPUs. coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity, energy efficient media, HPC, and AI servers -- they can allow an embedded AI server to operate independently of the cloud, and they can acquire new data to learn on the fly.
 
-SigSRF supports OpenCV, media transcoding, deep learning <sup>2</sup>, speech recognition <sup>2</sup>, and other calculation / data intensive applications.  For applications facing SWaP constraints, SigSRF software supports a wide range of coCPU and SoC embedded device targets while maintaining a cloud compatible software architecture.
-
-All SigSRF demo programs run on x86 platforms, and media processing and image analytics demos can additionally make use of coCPU cards containing Texas Instruments c66x multicore CPUs (the demo programs will auto-discover coCPU hardware if installed).  Besides TI, the expectation is there will soon be additional, suitable multicore CPU cards due to the explosion in deep learning applications, which is driving new chip and card development.  For the time being, the c66x series CPUs, although implemented in 45 nm, still provide a huge per-box energy efficiency advantage for applications with high amounts of convolution, FFT, and matrix operations.
-
-SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
+Available media processing and image analytics demos can make use of coCPU cards containing Texas Instruments c66x multicore CPUs (the demo programs will auto-discover coCPU hardware if installed).  Besides TI, the expectation is there will soon be additional, suitable multicore CPU cards due to the explosion in deep learning applications, which is driving new chip and card development.  For the time being, the c66x series CPUs, although implemented in 45 nm, still provide a huge per-box energy efficiency advantage for applications with high amounts of convolution, FFT, and matrix operations.
 
 <sup>1</sup> SWaP = size, weight, and power consumption<br/>
 <sup>2</sup> In progress
