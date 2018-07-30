@@ -1,6 +1,8 @@
 # Table of Contents
 
 [SigSRF Overview](#Overview)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#PlatformsSupported)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[When Software Only is Not Enough](#SoftwareOnly)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#SoftwareArchitectureDiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#DataFlowDiagram)<br/>
 [SDK and Demo Download](#SDKDemoDownload)<br/>
@@ -23,7 +25,15 @@ The primary objectives of SigSRF software are:
 * scale down with or without ARM, and provide IoT and Edge embedded device solutions for SWaP <sup>1</sup> constrained applications
 * maintain full program compatibility with cloud servers, including open source software support, server architectures, latest programming languages, etc.
 
-x86 software is sometimes referred to as a "software only" solution, but that's an Intel marketing term. In reality there is no software without hardware.  With the recent surge in deep learning / neural net chips attempting to emulate human intelligence -- and the ultra energy efficiency of the human brain -- hardware limitations have never been more apparent.  In addition to AI technology, a wide range of HPC applications face hardware contraints.  For 30 years people have failed to solve this with generic x86 processors, and it isn't likely to happen any time soon.
+<a name="PlatformsSupported"></a>
+## Platforms Supported
+
+SigSRF software is designed to be run on private, cloud, or hybrid Linux servers.  All available demos are intended to run on any Linux server in any form-factor, including x86, ARM, and PowerPC.
+
+<a name="BeyondSoftwareOnly"></a>
+## When Software Only is Not Enough
+
+Cloud solutions are sometimes referred to as a "software only", but that's an Intel marketing term. In reality there is no software without hardware.  With the recent surge in deep learning / neural net chips attempting to emulate human intelligence -- and the ultra energy efficiency of the human brain -- hardware limitations have never been more apparent.  In addition to AI technology, a wide range of HPC applications face hardware contraints.  For 30 years people have failed to solve this with generic x86 processors, and it isn't likely to happen any time soon.
 
 One promising solution is heterogeneous (mixed) cores that "front" streaming data and perform calculation intensive processing, combined with x86 cores that perform general processing.  The basic concept is to move calculation intensive processing closer to the data.  To enable mixed core processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density.  Examples of coCPU cores include GPU, neural net chips, and Texas Instruments multicore CPUs. coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity, energy efficient media, HPC, and AI servers -- they can allow an embedded AI server to operate independently of the cloud, and they can acquire new data to learn on the fly.
 
