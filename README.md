@@ -22,7 +22,7 @@ The primary objectives of SigSRF software are:
 
 * provide high performance software modules for media, AI (deep learning), and analytics streaming applications
 * scale up with or without GPU, and provide high capacity, "real-time at scale" streaming and processing
-* scale down with or without ARM, and provide IoT and Edge embedded device solutions for SWaP <sup>1</sup> constrained applications
+* scale down with or without ARM, and provide IoT and Edge solutions for SWaP <sup>1</sup> constrained applications
 * maintain full program compatibility with cloud servers, including open source software support, server architectures, latest programming languages, etc.
 
 <a name="PlatformsSupported"></a>
