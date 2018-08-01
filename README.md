@@ -2,7 +2,7 @@
 
 [SigSRF Overview](#Overview)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#PlatformsSupported)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[When Software Only is Not Enough](#SoftwareOnly)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#SoftwareOnly)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#SoftwareArchitectureDiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#DataFlowDiagram)<br/>
 [SDK and Demo Download](#SDKDemoDownload)<br/>
@@ -35,7 +35,7 @@ SigSRF supports OpenCV, media transcoding, deep learning <sup>2</sup>, speech re
 SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
 <a name="BeyondSoftwareOnly"></a>
-## When Software Only is Not Enough
+## When "Software Only" is Not Enough
 
 Cloud solutions are sometimes referred to as "software only", but that's an Intel marketing term. In reality there is no software without hardware.  With the recent surge in deep learning / neural net chips attempting to emulate human intelligence -- and the ultra energy efficiency of the human brain -- hardware limitations have never been more apparent.  In addition to AI technology, a wide range of HPC applications face hardware contraints.  For 30 years people have failed to solve this with generic x86 processors, and it isn't likely to happen any time soon.
 
