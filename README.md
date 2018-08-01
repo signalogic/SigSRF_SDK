@@ -16,7 +16,7 @@
 <a name="Overview"></a>
 # SigSRF Overview
 
-The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to media, HPC, and AI servers.  The basic concept is to scale between cloud, private cloud, and very small form factors (including embedded and IoT servers) while maintaining a cloud programming model.
+The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to media, HPC, and AI servers.  The basic concept is to scale between cloud, private cloud, and very small form factors (including Edge and IoT servers) while maintaining a cloud programming model.
 
 The primary objectives of SigSRF software are:
 
