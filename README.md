@@ -28,7 +28,7 @@ The primary objectives of SigSRF software are:
 <a name="PlatformsSupported"></a>
 ## Platforms Supported
 
-SigSRF software is designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Demos available on this page are intended to run on any Linux server in any form-factor, including x86, ARM, and PowerPC.
+SigSRF software is designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Demos available on this page are intended to run on any Linux server based on x86, ARM, and PowerPC, and in form-factors as small as mini- and micro-ITX.
 
 SigSRF supports OpenCV, media transcoding, deep learning <sup>2</sup>, speech recognition <sup>2</sup>, and other calculation / data intensive applications.  For applications facing SWaP, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU and SoC embedded device targets while maintaining a cloud compatible software architecture (see [When Software Only is Not Enough](#BeyondSoftwareOnly) below).
 
