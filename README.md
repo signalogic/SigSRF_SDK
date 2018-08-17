@@ -121,7 +121,7 @@ The script will then prompt as follows:
 After choosing an install target of either Host or VM, the script will next prompt for an install option:
 
     1) Install SigSRF Software
-    2) Install coCPU Option
+    2) Install SigSRF Software with coCPU Option
     3) Uninstall SigSRF Software
     4) Check / Verify
     5) Exit
