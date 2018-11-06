@@ -2,6 +2,9 @@
 
 [SigSRF Overview](#Overview)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#PlatformsSupported)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Timestamp or Clockless Timing Modes](#TimingModes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#Multithreaded)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#DeploymentGrade")<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#SoftwareOnly)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#SoftwareArchitectureDiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#DataFlowDiagram)<br/>
@@ -33,6 +36,24 @@ SigSRF software is designed to run on (i) private, public, or hybrid cloud serve
 SigSRF supports OpenCV, media transcoding, deep learning <sup>2</sup>, speech recognition <sup>2</sup>, and other calculation / data intensive applications.  For applications facing SWaP, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture (see [When Software Only is Not Enough](#BeyondSoftwareOnly) below).
 
 SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
+
+<a name="TimingModes"></a>
+## Timestamp or Clockless Timing Modes
+
+SigSRF components support both a packet timestamp timing mode, and a clockless, or data driven mode, where packet timestamps are ignored.  Clockless timing is useful for data analytics, lawful interception, and other applications that are "one step removed" from original source timing.
+
+<a name="Multithreaded"></a>
+## Multithreaded for High Performance
+
+SigSRF components support multiple packet and media processing threads, each typically running on one CPU core, to allow high performance on
+multicore platforms.
+
+<a name="DeploymentGrade"></a>
+## Deployment Grade
+
+SigSRF software is currently deployed in major carriers and LEAs.  With permission, it may be possible to provide more information on deployment locations under NDA.
+
+SigSRF software, unlike many open source repositories, is not experimental or prototype, and has been through rigorous customer acceptance testing.
 
 <a name="BeyondSoftwareOnly"></a>
 ## When "Software Only" is Not Enough
@@ -67,25 +88,25 @@ Some notes about the above data flow diagram:
    2) A few areas of the flow diagram are somewhat approximated, to simplify and make easier to read.  For example, loops do not have "for" or "while" flow symbols, and some APIs, such as DSCodecEncode() and DSFormatPacket(), appear in the flow once, but actually may be called multiple times, depending on what signal processing algorithms are in effect.
 
    3) <b>Multisession</b>.  The "Input and Packet Buffering", "Packet Processing", and "Media Processing and Output" stages are per-session, and repeat for multiple sessions.  See <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#SessionConfigFile">Session Config File</a> for more info.
-   
+
    4) <b>Multichannel</b>.  For each session, The "Input and Packet Buffering", "Packet Processing", and "Media Processing and Output" stages of data flow are multichannel and optimized for high capacity channel processing.
-   
+
    5) <b>Multithread</b>.  Each data flow stage is fully thread-safe, and could be placed in concurrent threads (although mediaTest source code currently doesn't include that).  mediaTest does include multithread example command lines, in which case each thread includes all three (3) data flow stages.  Also mediaTest can run in multiple instances concurrently.
-   
+
    6) <b>Media signal processing and inference</b>.  The second orange vertical line divides the "packet domain" and "media domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The media domain contains raw audio or video data, which allows signal processing operations, such as sample rate conversion, conferencing, filtering, echo cancellation, convolutional neural network (CNN) classification, etc. to be performed.  Also this is where image and voice analytics takes place, for instance by handing video and audio data off to another process.
 
 <a name="SDKDemoDownload"></a>
 ## SDK and Demo Download
 
 The SigSRF SDK and demo download consists of an install script and .rar files and includes:
-  
+
    1) A limited eval / demo version of several SigSRF demos, including media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For a detailed explanation of demo limits, see [Demos](#Demos) below.
-    
+
    2) C/C++ source code showing Pktlib and Voplib API usage (source and Makefiles for demo programs included)
 
    3) Concurrency examples, including stream, instance, and multiple user
 
-All demos run on x86 Linux platforms.  The mediaTest and iaTest demos will also utilize one or more coCPU cards if found at run-time.  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.  Demo .rar files contain a coCPU software stack, including drivers.  As noted above, coCPU technology increases per-box energy efficiency and performance density.  
+All demos run on x86 Linux platforms.  The mediaTest and iaTest demos will also utilize one or more coCPU cards if found at run-time.  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.  Demo .rar files contain a coCPU software stack, including drivers.  As noted above, coCPU technology increases per-box energy efficiency and performance density.
 
 <a name="InstallNotes"></a>
 ## Install Notes
@@ -109,15 +130,15 @@ Test and demo application examples are provided as executables, C/C++ source cod
 ### Running the Install Script
 
 To run the install script enter:
-    
+
     > source autoInstall_Sig_BSDK_2017v2.sh
- 
+
 The script will then prompt as follows:
-    
+
     1) Host
     2) VM
     Please select target for co-CPU software install [1-2]:
-    
+
 After choosing an install target of either Host or VM, the script will next prompt for an install option:
 
     1) Install SigSRF Software
@@ -126,7 +147,7 @@ After choosing an install target of either Host or VM, the script will next prom
     4) Check / Verify
     5) Exit
     Please select install operation to perform [1-4]:
-  
+
 If the install operation (1.) is selected, the script will prompt for an install path:
 
     Enter the path for SigSRF software installation:
