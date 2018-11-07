@@ -40,20 +40,19 @@ SigSRF supports concurrent multiuser operation in a bare-metal environment, and 
 <a name="TimingModes"></a>
 ## Timestamp or Clockless Timing Modes
 
-SigSRF components support both a packet timestamp timing mode, and a clockless, or data driven mode, where packet timestamps are ignored.  Clockless timing is useful for data analytics, lawful interception, and other applications that are "one step removed" from original source timing.
+SigSRF library modules support both a packet timestamp timing mode, and a clockless (data driven) mode, where packet timestamps are ignored.  Clockless timing is useful for data analytics, lawful interception, web IT, and other applications that are "one step removed" from original end-point / source timing.
 
 <a name="Multithreaded"></a>
 ## Multithreaded for High Performance
 
-SigSRF components support multiple packet and media processing threads, each typically running on one CPU core, to allow high performance on
-multicore platforms.
+SigSRF library modules support multiple, concurrent packet and media processing threads, each typically running on one CPU core, to enable high performance on multicore platforms.  Session to thread allocation modes include linear and round-robin.  Threads may be optionally pinned to a CPU core.
 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
 
-SigSRF software is currently deployed in major carriers and LEAs.  With permission, it may be possible to provide more information on deployment locations under NDA.
+SigSRF software is currently deployed in major carriers and LEAs.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
 
-SigSRF software, unlike many open source repositories, is not experimental or prototype, and has been through rigorous customer acceptance testing.
+SigSRF software, unlike many open source repositories, is not experimental or prototype, and has been through rigorous customer acceptance testing.  Some of the signal processing modules have a history dating back to 2005, including deployments in telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer, and also have a deployment history in telecom systems.
 
 <a name="BeyondSoftwareOnly"></a>
 ## When "Software Only" is Not Enough
