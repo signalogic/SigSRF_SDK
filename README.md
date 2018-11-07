@@ -4,7 +4,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#PlatformsSupported)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Timestamp or Clockless Timing Modes](#TimingModes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#Multithreaded)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#DeploymentGrade")<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#DeploymentGrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#SoftwareOnly)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#SoftwareArchitectureDiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#DataFlowDiagram)<br/>
