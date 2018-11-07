@@ -50,7 +50,7 @@ SigSRF library modules support multiple, concurrent packet and media processing 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
 
-SigSRF software is currently deployed in major carriers and LEAs.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
+SigSRF software is currently deployed in major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
 
 SigSRF software, unlike many open source repositories, is not experimental or prototype, and has been through rigorous customer acceptance testing.  Some of the signal processing modules have a history dating back to 2005, including deployments in telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer, and also have a deployment history in telecom systems.
 
