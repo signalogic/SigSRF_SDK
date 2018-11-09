@@ -42,7 +42,7 @@ SigSRF supports concurrent multiuser operation in a bare-metal environment, and 
 <a name="TimingModes"></a>
 ## Timestamp and Clockless Timing Modes
 
-SigSRF library modules support both a packet timestamp timing mode, and a clockless (data driven) mode in which packet timestamps are ignored.  Timestamp timing serves telecom and media delivery applications with hard real-time performance and latency requirements.  Clockless timing serves data analytics, lawful interception, web IT, and other applications that are "one step removed" from original end-point / source timing.
+SigSRF library modules support both a packet timestamp timing mode, and a clockless (data driven) mode in which packet timestamps are ignored.  Timestamp timing serves telecom and media delivery applications with hard requirements for real-time performance and latency.  Clockless timing serves data analytics, lawful interception, web IT, and other applications that are "one step removed" from original end-point / source timing.
 
 <a name="Multithreaded"></a>
 ## Multithreaded for High Performance
