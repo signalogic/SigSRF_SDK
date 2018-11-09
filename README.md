@@ -2,7 +2,7 @@
 
 [SigSRF Overview](#Overview)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#PlatformsSupported)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Timestamp or Clockless Timing Modes](#TimingModes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Timestamp and Clockless Timing Modes](#TimingModes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#Multithreaded)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#DeploymentGrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#SoftwareOnly)<br/>
@@ -38,7 +38,7 @@ SigSRF supports OpenCV, media transcoding, deep learning <sup>2</sup>, speech re
 SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
 <a name="TimingModes"></a>
-## Timestamp or Clockless Timing Modes
+## Timestamp and Clockless Timing Modes
 
 SigSRF library modules support both a packet timestamp timing mode, and a clockless (data driven) mode, where packet timestamps are ignored.  Clockless timing is useful for data analytics, lawful interception, web IT, and other applications that are "one step removed" from original end-point / source timing.
 
