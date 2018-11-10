@@ -24,8 +24,8 @@ The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to 
 The primary objectives of SigSRF software are:
 
 * provide high performance software modules for media, AI (deep learning), and analytics streaming applications
-* provide timing modes for both (i) telecom and CDN applications and (ii) data analytics and web IT applications
-* a deployment grade solution.  All modules and sources have been through customer acceptance testing
+* provide both timestamp and data driven modes for (i) telecom and CDN applications and (ii) data analytics and web IT applications
+* maintain a deployment grade solution.  All modules and sources have been through customer acceptance testing
 * scale up with or without GPU, and provide high capacity, "real-time at scale" streaming and processing
 * scale down with or without ARM, and provide IoT and Edge solutions for SWaP <sup>1</sup> constrained applications
 * maintain full program compatibility with cloud servers, including open source software support, server architectures, latest programming languages, etc.
@@ -42,7 +42,7 @@ SigSRF supports concurrent multiuser operation in a bare-metal environment, and 
 <a name="TimingModes"></a>
 ## Timestamp and Clockless Timing Modes
 
-SigSRF library modules support both a packet timestamp timing mode, and a clockless (data driven) mode in which packet timestamps are ignored.  Timestamp timing serves telecom and media delivery applications with hard requirements for real-time performance and latency.  Clockless timing serves data analytics, lawful interception, web IT, and other applications that are "one step removed" from original end-point / source timing.
+SigSRF library modules support both packet timestamp and RTP timestamp timing modes, and a clockless (data driven) mode in which packet timestamps are ignored.  Timestamp timing supports telecom and media delivery applications with hard requirements for real-time performance and latency.  Clockless timing supports data analytics, lawful interception, web IT, and other applications that are "one step removed" from original end-point / source timing.
 
 <a name="Multithreaded"></a>
 ## Multithreaded for High Performance
