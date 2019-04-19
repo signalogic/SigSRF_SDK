@@ -1,20 +1,20 @@
 # Table of Contents
 
-[SigSRF Overview](#user-content-Overview)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#PlatformsSupported)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Timestamp and Clockless Timing Modes](#TimingModes)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#Multithreaded)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#DeploymentGrade)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#SoftwareOnly)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#SoftwareArchitectureDiagram)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#DataFlowDiagram)<br/>
-[SDK and Demo Download](#SDKDemoDownload)<br/>
-[Install Notes](#InstallNotes)<br/>
-[Demos](#Demos)<br/>
+[SigSRF Overview](#user-content-overview)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#user-content-platformssupported)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Timestamp and Clockless Timing Modes](#user-content-timingmodes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#user-content-multithreaded)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-dataflowdiagram)<br/>
+[SDK and Demo Download](#user-content-sdkdemodownload)<br/>
+[Install Notes](#user-content-installnotes)<br/>
+[Demos](#user-content-demos)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](#user-content-mediatestdemo)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#iaTestDemo)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#paTestDemo)<br/>
-[Documentation, Support, and Contact](#DocumentationSupport)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
+[Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
 
 <a name="Overview"></a>
 # SigSRF Overview
@@ -168,8 +168,7 @@ Available demos are listed below.  The iaTest and paTest demos do not have a fun
 
 If you need an evaluation demo with an increased limit for a trial period, [contact us](#DocumentationSupport).
 
-<a name="mediatestdemo"></a>
-<a id="mediatestdemo"></a>
+<a name="mediaTestDemo"></a>
 ### mediaTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest demo page</a> gives example command lines for streaming media, buffering, transcoding, and packet RFCs.  The demo allows codec output comparison vs. 3GPP reference files, per-core performance measurement (both x86 and coCPU cores), .wav file generation to experience codec audio quality, RTP packet transcoding using pcap files, and more.  The state-of-the-art EVS codec is used for several of the command lines.  Application C/C++ source code is included.
