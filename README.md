@@ -11,7 +11,7 @@
 [SDK and Demo Download](#SDKDemoDownload)<br/>
 [Install Notes](#InstallNotes)<br/>
 [Demos](#Demos)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](#user-content-mediaTestdemo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](#user-content-mediatestdemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#iaTestDemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#paTestDemo)<br/>
 [Documentation, Support, and Contact](#DocumentationSupport)<br/>
@@ -168,8 +168,8 @@ Available demos are listed below.  The iaTest and paTest demos do not have a fun
 
 If you need an evaluation demo with an increased limit for a trial period, [contact us](#DocumentationSupport).
 
-<a name="mediaTestDemo"></a>
-<a id="mediaTestDemo"></a>
+<a name="mediatestdemo"></a>
+<a id="mediatestdemo"></a>
 ### mediaTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest demo page</a> gives example command lines for streaming media, buffering, transcoding, and packet RFCs.  The demo allows codec output comparison vs. 3GPP reference files, per-core performance measurement (both x86 and coCPU cores), .wav file generation to experience codec audio quality, RTP packet transcoding using pcap files, and more.  The state-of-the-art EVS codec is used for several of the command lines.  Application C/C++ source code is included.
