@@ -11,7 +11,7 @@
 [SDK and Demo Download](#user-content-SDKDemoDownload)<br/>
 [Install Notes](#user-content-InstallNotes)<br/>
 [Demos](#user-content-Demos)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](#user-content-mediaTestDemo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](https://github.com/signalogic/SigSRF_SDK#user-content-mediaTestDemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iaTestDemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-paTestDemo)<br/>
 [Documentation, Support, and Contact](#user-content-DocumentationSupport)<br/>
