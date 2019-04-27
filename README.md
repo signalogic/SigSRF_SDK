@@ -2,10 +2,11 @@
 
 [SigSRF Overview](#user-content-overview)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#user-content-platformssupported)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Timestamp and Clockless Timing Modes](#user-content-timingmodes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Telecom and Analytics Modes](#user-content-operatingmodes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Telecom Mode Data Flow Diagram](#user-content-telecommodedataflowdiagram)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode Data Flow Diagram](#user-content-analyticsmodedataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#user-content-multithreaded)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-dataflowdiagram)<br/>
 [SDK and Demo Download](#user-content-sdkdemodownload)<br/>
@@ -15,34 +16,45 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
 
 <a name="Overview"></a>
 # SigSRF Overview
 
-The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to media, HPC, and AI servers.  The basic concept is to scale between cloud, private cloud, and Edge and IoT servers, while maintaining a cloud programming model.
+The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to telecom, media, HPC, and AI servers.  The basic concept is to scale between cloud, private cloud, and Edge and IoT servers, while maintaining a cloud programming model.
 
 The primary objectives of SigSRF software are:
 
-* provide high performance software modules for media, AI (deep learning), and analytics streaming applications
-* provide both timestamp and data driven modes for (i) telecom and CDN applications and (ii) data analytics and web IT applications
+* provide high performance software modules for telecom, media, AI (deep learning), and analytics streaming applications
+* provide both telecom and analytics modes for (i) telecom and CDN applications and (ii) data analytics and web IT applications
 * maintain a deployment grade solution.  All modules and sources have been through customer acceptance testing
-* scale up with or without GPU, and provide high capacity, "real-time at scale" streaming and processing
-* scale down with or without ARM, and provide IoT and Edge solutions for SWaP <sup>1</sup> constrained applications
+* scale up without GPU if needed, and provide high capacity, "real-time at scale" streaming and processing
+* scale down without ARM if needed, and provide IoT and Edge solutions for SWaP <sup>1</sup> constrained applications
 * maintain full program compatibility with cloud servers, including open source software support, server architectures, latest programming languages, etc.
 
 <a name="PlatformsSupported"></a>
 ## Platforms Supported
 
-SigSRF software is designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Demos available on this page are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
+SigSRF software is designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Demos available on this page and the mediaTest/mediaMin demo pages are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
 
-SigSRF supports OpenCV, media transcoding, deep learning <sup>2</sup>, speech recognition <sup>2</sup>, and other calculation / data intensive applications.  For applications facing SWaP, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture (see [When Software Only is Not Enough](#user-content-beyondsoftwareonly) below).
+SigSRF supports media delivery, transcoding, deep learning <sup>2</sup>, OpenCV, speech recognition <sup>2</sup>, and other calculation / data intensive applications.  For applications facing SWaP, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture (see [When Software Only is Not Enough](#user-content-beyondsoftwareonly) below).
 
 SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
-<a name="TimingModes"></a>
-## Timestamp and Clockless Timing Modes
+<a name="OperatingModes"></a>
+## Telecom and Analytics Modes
 
-SigSRF library modules support both packet timestamp and RTP timestamp timing modes, and a clockless (data driven) mode in which packet timestamps are ignored.  Timestamp timing supports telecom and media delivery applications with hard requirements for real-time performance and latency.  Clockless timing supports data analytics, lawful interception, web IT, and other applications that are "one step removed" from original end-point / source timing.
+SigSRF library modules support both telecom and analytics modes.
+
+Telecom mode is defined as direct handling of IP/UDP/RTP traffic.  This mode is sometimes also referred to as “clocked” mode, as a wall clock reference is required for correct jitter buffer operation.  Examples of telecom mode applications include network midpoints such as SBC (Session Border Controller) and media gateway, and endpoints such as handsets and softphones.  Typically telecom applications have hard requirements for real-time performance and latency.
+
+<a name="TelecomModeDataFlowDiagram"></a>
+### Telecom Mode Data Flow Diagram
+
+Analytics mode is defined as indirect handling of IP/UDP/RTP traffic, where traffic is encapsulated or "one step removed", having been captured, copied, or relayed from direct traffic for additional processing.  This mode is sometimes also referred to as data driven or “clockless” mode, the latter description referring to jitter buffer packet processing either wholly or partially without a wall clock reference.  In general, analytics mode applications operate after real-time traffic has already occurred, although it may be incorrect to say "non-real-time" as they may need to reproduce or emulate the original real-time behavior.  Examples of analytics mode include Lawful Intercept (LI) and web IT data analytics such as speaker identification and automatic speech recognition (ASR). 
+
+<a name="AnalyticsModeDataFlowDiagram"></a>
+### Analytics Mode Data Flow Diagram
 
 <a name="Multithreaded"></a>
 ## Multithreaded for High Performance
@@ -55,18 +67,6 @@ SigSRF library modules support multiple, concurrent packet and media processing 
 SigSRF software is currently deployed in major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
 
 SigSRF software, unlike many open source repositories, is not experimental or prototype, and has been through rigorous customer acceptance testing.  Some of the signal processing modules have a history dating back to 2005, including deployments in telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer, and also have a deployment history in telecom systems.
-
-<a name="BeyondSoftwareOnly"></a>
-## When "Software Only" is Not Enough
-
-Cloud solutions are sometimes referred to as "software only", but that's an Intel marketing term. In reality there is no software without hardware.  With the recent surge in deep learning / neural net chips attempting to emulate human intelligence -- and the ultra energy efficiency of the human brain -- hardware limitations have never been more apparent.  In addition to AI technology, a wide range of HPC applications face hardware contraints.  For 30 years people have failed to solve this with generic x86 processors, and it isn't likely to happen any time soon.
-
-One promising solution is heterogeneous (mixed) cores that "front" streaming data and perform calculation intensive processing, combined with x86 cores that perform general processing.  The basic concepts are (i) move calculation intensive processing closer to the data, and (ii) use cores that are extremely energy efficient for data calculation purposes.  To enable mixed core processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density.  Examples of coCPU cores include GPU, neural net chips, and Texas Instruments multicore CPUs. coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity, energy efficient edge servers for media, HPC, and AI applications, solving SWaP, latency, and bandwidth contraints.  For example, an embedded AI server can operate independently of the cloud, acquiring new data and learning on the fly.
-
-Available media processing and image analytics demos can make use of optional coCPU cards containing Texas Instruments c66x multicore CPUs (the demo programs will auto-discover coCPU hardware if installed -- coCPU hardware is not required for any of the demos).  Besides TI, the expectation is there will soon be additional, suitable multicore CPU cards due to the explosion in deep learning applications, which is driving new chip and card development.  For the time being, c66x series CPUs, although implemented in 45 nm, still provide a huge per-box energy efficiency advantage for applications with high amounts of convolution, FFT, and matrix operations.
-
-<sup>1</sup> SWaP = size, weight, and power consumption<br/>
-<sup>2</sup> In progress
 
 <a name="SoftwareArchitectureDiagram"></a>
 ## SigSRF Software and I/O Architecture Diagram
@@ -186,14 +186,31 @@ The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.
 <a name="DocumentationSupport"></a>
 ## Documentation, Support, and Contact
 
-### SigMRF Users Guide
+### SigSRF Software Documentation
 
-SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="http://goo.gl/fU43oE" target="_blank">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
+SigSRF documentation, including Quick Start command line examples, High Capacity Operation, API Usage, and other sections is located at:
 
+ <a href="ftp://ftp.signalogic.com/documentation/SigSRF" target="_blank">SigSRF Documentation</a>
+ 
 ### coCPU Users Guide
 
 The <a href="http://goo.gl/Vs1b3R" target="_blank">coCPU User Guide</a> provides detailed information about coCPU and software installation, test and demo applications, build instructions, etc.
 
+SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="http://goo.gl/fU43oE" target="_blank">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
+
 ### Technical Support / Questions
 
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can ask for group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+
+<a name="BeyondSoftwareOnly"></a>
+## When "Software Only" is Not Enough
+
+Cloud solutions are sometimes referred to as "software only", but that's an Intel marketing term. In reality there is no software without hardware.  With the recent surge in deep learning / neural net chips attempting to emulate human intelligence -- and the ultra energy efficiency of the human brain -- hardware limitations have never been more apparent.  In addition to AI technology, a wide range of HPC applications face hardware contraints.  For 30 years people have failed to solve this with generic x86 processors, and it isn't likely to happen any time soon.
+
+One promising solution is heterogeneous (mixed) cores that "front" streaming data and perform calculation intensive processing, combined with x86 cores that perform general processing.  The basic concepts are (i) move calculation intensive processing closer to the data, and (ii) use cores that are extremely energy efficient for data calculation purposes.  To enable mixed core processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density.  Examples of coCPU cores include GPU, neural net chips, and Texas Instruments multicore CPUs. coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity, energy efficient edge servers for media, HPC, and AI applications, solving SWaP, latency, and bandwidth contraints.  For example, an embedded AI server can operate independently of the cloud, acquiring new data and learning on the fly.
+
+Available media processing and image analytics demos can make use of optional coCPU cards containing Texas Instruments c66x multicore CPUs (the demo programs will auto-discover coCPU hardware if installed -- coCPU hardware is not required for any of the demos).  Besides TI, the expectation is there will soon be additional, suitable multicore CPU cards due to the explosion in deep learning applications, which is driving new chip and card development.  For the time being, c66x series CPUs, although implemented in 45 nm, still provide a huge per-box energy efficiency advantage for applications with high amounts of convolution, FFT, and matrix operations.
+
+<sup>1</sup> SWaP = size, weight, and power consumption<br/>
+<sup>2</sup> In progress
+
