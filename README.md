@@ -203,7 +203,7 @@ SigMRF (Media Resource Functions) software is part of SigSRF software. The <a hr
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can ask for group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
 
 <a name="BeyondSoftwareOnly"></a>
-## When "Software Only" is Not Enough
+# When "Software Only" is Not Enough
 
 Cloud solutions are sometimes referred to as "software only", but that's an Intel marketing term. In reality there is no software without hardware.  With the recent surge in deep learning / neural net chips attempting to emulate human intelligence -- and the ultra energy efficiency of the human brain -- hardware limitations have never been more apparent.  In addition to AI technology, a wide range of HPC applications face hardware contraints.  For 30 years people have failed to solve this with generic x86 processors, and it isn't likely to happen any time soon.
 
