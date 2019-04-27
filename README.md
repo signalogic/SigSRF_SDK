@@ -16,7 +16,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
+[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
 
 <a name="Overview"></a>
 # SigSRF Overview
