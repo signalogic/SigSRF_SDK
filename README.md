@@ -206,7 +206,7 @@ Available media processing and image analytics demos can make use of optional co
 
 SigSRF documentation, including Quick Start command line examples, High Capacity Operation, API Usage, and other sections is located at:
 
- <a href="ftp://ftp.signalogic.com/documentation/SigSRF" target="_blank">SigSRF Documentation</a>
+ <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Documentation</a>
  
 ## coCPU Users Guide
 
