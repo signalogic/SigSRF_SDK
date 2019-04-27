@@ -15,8 +15,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](#user-content-mediatestdemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
-[Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
 [When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
+[Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
 
 <a name="Overview"></a>
 # SigSRF Overview
@@ -97,7 +97,7 @@ Some notes about the above data flow diagram:
    6) <b>Media signal processing and inference</b>.  The second orange vertical line divides the "packet domain" and "media domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The media domain contains raw audio or video data, which allows signal processing operations, such as sample rate conversion, conferencing, filtering, echo cancellation, convolutional neural network (CNN) classification, etc. to be performed.  Also this is where image and voice analytics takes place, for instance by handing video and audio data off to another process.
 
 <a name="SDKDemoDownload"></a>
-## SDK and Demo Download
+# SDK and Demo Download
 
 The SigSRF SDK and demo download consists of an install script and .rar files and includes:
 
@@ -110,7 +110,7 @@ The SigSRF SDK and demo download consists of an install script and .rar files an
 All demos run on x86 Linux platforms.  The mediaTest and iaTest demos will also utilize one or more coCPU cards if found at run-time.  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.  Demo .rar files contain a coCPU software stack, including drivers.  As noted above, coCPU technology increases per-box energy efficiency and performance density.
 
 <a name="InstallNotes"></a>
-## Install Notes
+# Install Notes
 
 Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install (including coCPU driver, if you have a coCPU card).
 
@@ -120,15 +120,15 @@ Note that the install script checks for the presence of the unrar command, and i
 
 Media transcoding demos require tcpreplay or other method to generate packet traffic (using as input pcap files included in the install).
 
-### Sudo Privilege
+## Sudo Privilege
 
 The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
-### Building Test and Demo Applications
+## Building Test and Demo Applications
 
 Test and demo application examples are provided as executables, C/C++ source code and Makefiles.  Executables may run, but if not (due to Linux distribution or kernel differences), they should be rebuilt using gcc.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
 
-### Running the Install Script
+## Running the Install Script
 
 To run the install script enter:
 
@@ -158,7 +158,7 @@ If no path is entered the default path is /usr/local.
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
 
 <a name="Demos"></a>
-## Demos
+# Demos
 
 Available demos are listed below.  The iaTest and paTest demos do not have a functionality limit.  mediaTest demo functionality is limited as follows:
 
@@ -169,38 +169,19 @@ Available demos are listed below.  The iaTest and paTest demos do not have a fun
 If you need an evaluation demo with an increased limit for a trial period, [contact us](#DocumentationSupport).
 
 <a name="mediaTestDemo"></a>
-### mediaTest Demo
+## mediaTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest demo page</a> gives example command lines for streaming media, buffering, transcoding, and packet RFCs.  The demo allows codec output comparison vs. 3GPP reference files, per-core performance measurement (both x86 and coCPU cores), .wav file generation to experience codec audio quality, RTP packet transcoding using pcap files, and more.  The state-of-the-art EVS codec is used for several of the command lines.  Application C/C++ source code is included.
 
 <a name="iaTestDemo"></a>
-### iaTest Demo
+## iaTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest demo page</a> gives example command lines for image analytics and OpenCV testing.  The iaTest demo performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.  Application C/C++ source code is included.
 
 <a name="paTestDemo"></a>
-### paTest Demo
+## paTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md">paTest demo page</a> gives example command lines for a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies.  Application Java and C/C++ source code is included.
-
-<a name="DocumentationSupport"></a>
-## Documentation, Support, and Contact
-
-### SigSRF Software Documentation
-
-SigSRF documentation, including Quick Start command line examples, High Capacity Operation, API Usage, and other sections is located at:
-
- <a href="ftp://ftp.signalogic.com/documentation/SigSRF" target="_blank">SigSRF Documentation</a>
- 
-### coCPU Users Guide
-
-The <a href="http://goo.gl/Vs1b3R" target="_blank">coCPU User Guide</a> provides detailed information about coCPU and software installation, test and demo applications, build instructions, etc.
-
-SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="http://goo.gl/fU43oE" target="_blank">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
-
-### Technical Support / Questions
-
-Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can ask for group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
 
 <a name="BeyondSoftwareOnly"></a>
 # When "Software Only" is Not Enough
@@ -214,3 +195,21 @@ Available media processing and image analytics demos can make use of optional co
 <sup>1</sup> SWaP = size, weight, and power consumption<br/>
 <sup>2</sup> In progress
 
+<a name="DocumentationSupport"></a>
+# Documentation, Support, and Contact
+
+## SigSRF Software Documentation
+
+SigSRF documentation, including Quick Start command line examples, High Capacity Operation, API Usage, and other sections is located at:
+
+ <a href="ftp://ftp.signalogic.com/documentation/SigSRF" target="_blank">SigSRF Documentation</a>
+ 
+## coCPU Users Guide
+
+The <a href="http://goo.gl/Vs1b3R" target="_blank">coCPU User Guide</a> provides detailed information about coCPU and software installation, test and demo applications, build instructions, etc.
+
+SigMRF (Media Resource Functions) software is part of SigSRF software. The <a href="http://goo.gl/fU43oE" target="_blank">SigMRF User Guide</a> provides detailed information about SigMRF software installation, test and demo applications, build instructions, etc.
+
+## Technical Support / Questions
+
+Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can ask for group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
