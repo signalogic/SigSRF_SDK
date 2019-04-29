@@ -204,20 +204,20 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 <a name="mediaMin_and_mediaTest_Demos"></a>
 ## mediaMin and mediaTest Demos
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.  Here is a brief list of things you can do with mediaMin and mediaTest demo command lines:
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.  Some things you can do with mediaMin and mediaTest demo command lines:
 
-  * transcoding between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc
+  * transcoding between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc.
   * "AMR Player", play an AMR pcap (either AMR-WB or AMR-NB)
   * "EVS Player", play an EVS pcap
-  * transcode multistream pcaps and merge all streams together into one output audio (for example a "unified conversation" if the streams are speech)
+  * transcode multistream pcaps and merge all streams together into one output audio (for example, generate a "unified conversation" for voice pcaps)
   * Kaldi speech recognition on pcaps or audio files (ASR, 200k word vocabulary)
   * test codecs and compare output vs. 3GPP reference files
-  * per-core performance measurement (both x86 and coCPU cores)
+  * insert user-defined signal processing or inference into the real-time data flow
   * input and output .wav file and other audio format files
   * input and output USB audio
   * test and measure packet RFCs, jitter buffer, packet loss and other stats, and more
   
-For both mediaMin and mediaTest, reference application C/C++ source code is included.
+For both mediaMin and mediaTest, reference application C/C++ source code is included.  The demos are based on deployed production code used in high capacity, real-time applications.  If you need to make performance measurements, they will be accurate and competitive.
 
 <a name="iaTestDemo"></a>
 ## iaTest Demo
