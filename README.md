@@ -2,7 +2,8 @@
 
 [SigSRF Overview](#user-content-overview)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#user-content-platformssupported)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Telecom and Analytics Modes](#user-content-operatingmodes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Telecom Mode](#user-content-telecommode)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode(#user-content-analyticsmode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Telecom Mode Data Flow Diagram](#user-content-telecommodedataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode Data Flow Diagram](#user-content-analyticsmodedataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#user-content-multithreaded)<br/>
@@ -41,10 +42,8 @@ SigSRF supports media delivery, transcoding, deep learning <sup>2</sup>, OpenCV,
 
 SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
-<a name="OperatingModes"></a>
-## Telecom and Analytics Modes
-
-SigSRF library modules support both telecom and analytics modes.
+<a name="TelecomMode"></a>
+## Telecom Mode
 
 Telecom mode is defined as direct handling of IP/UDP/RTP traffic.  This mode is sometimes also referred to as “clocked” mode, as a wall clock reference is required for correct jitter buffer operation.  Examples of telecom mode applications include network midpoints such as SBC (Session Border Controller) and media gateway, and endpoints such as handsets and softphones.  Typically telecom applications have hard requirements for real-time performance and latency.
 
@@ -52,6 +51,9 @@ Telecom mode is defined as direct handling of IP/UDP/RTP traffic.  This mode is 
 ### Telecom Mode Data Flow Diagram
 
 ![SigSRF software telecom mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_telecom_mode_RevA7.png?raw=true "SigSRF telecom mode data flow diagram")
+
+<a name="AnalyticsMode"></a>
+## Analytics Mode
 
 Analytics mode is defined as indirect handling of IP/UDP/RTP traffic, where traffic is encapsulated or "one step removed", having been captured, copied, or relayed from direct traffic for additional processing.  This mode is sometimes also referred to as data driven or “clockless” mode, the latter description referring to jitter buffer packet processing either wholly or partially without a wall clock reference.  In general, analytics mode applications operate after real-time traffic has already occurred, although it may be incorrect to say "non-real-time" as they may need to reproduce or emulate the original real-time behavior.  Examples of analytics mode include Lawful Intercept (LI) and web IT data analytics such as speaker identification and automatic speech recognition (ASR). 
 
