@@ -15,7 +15,7 @@
 [SDK and Demo Download](#user-content-sdkdemodownload)<br/>
 [Install Notes](#user-content-installnotes)<br/>
 [Demos](#user-content-demos)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition)](#user-content-mediamin_and_mediatest_demos)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest_demos)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
@@ -204,10 +204,10 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 <a name="mediaMin_and_mediaTest_Demos"></a>
 ## mediaMin and mediaTest Demos
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, buffering, transcoding, and speech recognition.  Here is a brief list of things you can do with mediaMin and mediaTest demo command lines:
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.  Here is a brief list of things you can do with mediaMin and mediaTest demo command lines:
 
   * transcoding between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc
-  * "AMR Player", i.e. play an AMR pcap (either AMR-WB or AMR-NB)
+  * "AMR Player", play an AMR pcap (either AMR-WB or AMR-NB)
   * "EVS Player", play an EVS pcap
   * transcode multistream pcaps and merge all streams together into one output audio (for example a "unified conversation" if the streams are speech)
   * Kaldi speech recognition on pcaps or audio files (ASR, 200k word vocabulary)
