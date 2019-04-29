@@ -43,7 +43,7 @@ SigSRF software is currently deployed in the following application areas:
 * Media Gateway
 * Lawful Intercept (LI)
 * Network Analyzers
-* Satcomm and HF Radio Speech Compression
+* Satcom and HF Radio Speech Compression
 * R&D Labs and Workstations
 
 <a name="PlatformsSupported"></a>
