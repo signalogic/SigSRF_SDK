@@ -85,7 +85,9 @@ SigSRF library modules support multiple, concurrent packet and media processing 
 
 SigSRF software is currently deployed in major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
 
-SigSRF software, unlike many open source repositories, is not experimental or prototype, and has been through rigorous customer acceptance testing.  Some of the signal processing modules have a history dating back to 2005, including deployments in telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer, and also have a deployment history in telecom systems.
+SigSRF software, unlike many open source repositories, is not experimental or prototype, and has been through rigorous customer production testing.  Some of the signal processing modules have a history dating back to 2005, including deployments in telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer and XDAIS standardized codec interface, with a long history of telecom system deployment.
+
+In addition to customer production testing, stress tests are always ongoing in Signalogic lab servers.  New releases must pass 672 hours (4 weeks) of continuous stress test at full capacity, running on HP DL380 series servers.  For more information on these tests, and Linux configuration used for high capacity operation, see [SigSRF Documentation](#user-content-documentationsupport) below.
 
 <a name="SoftwareArchitectureDiagram"></a>
 ## SigSRF Software and I/O Architecture Diagram
