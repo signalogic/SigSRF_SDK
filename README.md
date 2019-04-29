@@ -15,7 +15,7 @@
 [SDK and Demo Download](#user-content-sdkdemodownload)<br/>
 [Install Notes](#user-content-installnotes)<br/>
 [Demos](#user-content-demos)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[mediaTest (streaming media, buffering, transcoding, and packet RFCs)](#user-content-mediatestdemo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition)](#user-content-mediamin_and_mediatest_demos)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
@@ -201,10 +201,23 @@ Available demos are listed below.  The iaTest and paTest demos do not have a fun
 
 If you need an evaluation demo with an increased limit for a trial period, [contact us](#DocumentationSupport).
 
-<a name="mediaTestDemo"></a>
-## mediaTest Demo
+<a name="mediaMin_and_mediaTest_Demos"></a>
+## mediaMin and mediaTest Demos
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest demo page</a> gives example command lines for streaming media, buffering, transcoding, and packet RFCs.  The demo allows codec output comparison vs. 3GPP reference files, per-core performance measurement (both x86 and coCPU cores), .wav file generation to experience codec audio quality, RTP packet transcoding using pcap files, and more.  The state-of-the-art EVS codec is used for several of the command lines.  Application C/C++ source code is included.
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, buffering, transcoding, and speech recognition.  Here is a brief list of things you can do with mediaMin and mediaTest demo command lines:
+
+  * transcoding between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc
+  * "AMR Player", i.e. play an AMR pcap (either AMR-WB or AMR-NB)
+  * "EVS Player", play an EVS pcap
+  * transcode multistream pcaps and merge all streams together into one output audio (for example a "unified conversation" if the streams are speech)
+  * Kaldi speech recognition on pcaps or audio files (ASR, 200k word vocabulary)
+  * test codecs and compare output vs. 3GPP reference files
+  * per-core performance measurement (both x86 and coCPU cores)
+  * input and output .wav file and other audio format files
+  * input and output USB audio
+  * test and measure packet RFCs, jitter buffer, packet loss and other stats, and more
+  
+For both mediaMin and mediaTest, reference application C/C++ source code is included.
 
 <a name="iaTestDemo"></a>
 ## iaTest Demo
