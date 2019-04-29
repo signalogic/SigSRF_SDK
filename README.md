@@ -1,6 +1,7 @@
 # Table of Contents
 
 [SigSRF Overview](#user-content-overview)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Applications](#user-content-applications)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#user-content-platformssupported)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Telecom Mode](#user-content-telecommode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Telecom Mode Data Flow Diagram](#user-content-telecommodedataflowdiagram)<br/>
@@ -32,6 +33,18 @@ The primary objectives of SigSRF software are:
 * scale up without GPU if needed, and provide high capacity, "real-time at scale" streaming and processing
 * scale down without ARM if needed, and provide IoT and Edge solutions for SWaP <sup>1</sup> constrained applications
 * maintain full program compatibility with cloud servers, including open source software support, server architectures, latest programming languages, etc.
+
+<a name="Applications"></a>
+## Applications
+
+SigSRF software is currently deployed in the following application areas:
+
+* Session Border Controller (SBC)
+* Media Gateway
+* Lawful Intercept (LI)
+* Network Analyzers
+* Satcomm and HF Radio Speech Compression
+* R&D Labs and Workstations
 
 <a name="PlatformsSupported"></a>
 ## Platforms Supported
