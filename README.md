@@ -84,7 +84,7 @@ Below is a SigSRF software and I/O architecture diagram.
 <a name="DataFlowDiagram"></a>
 ## SigSRF Packet and Media Processing Data Flow Diagram
 
-Below is a SigSRF software streaming packet and media processing data flow diagram.
+Below is a SigSRF software streaming packet and media processing data flow diagram.  This is an expansion of the telecom mode and analytics mode data flow diagrams above, showing APIs used in one packet/media thread.  The minimum API level offers a set of APIs higher than what's shown below (session create/delete and packet push/pull).  mediaMin and mediaTest are the reference applications for the minimum API level and more detailed level, respectively.  Source code is published for both.
 
 ![SigSRF streaming packet and media processing data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_RevA4.png?raw=true "SigSRF streaming packet and media processing data flow diagram")
 
