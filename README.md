@@ -51,9 +51,12 @@ SigSRF software is currently deployed in the following application areas:
 
 SigSRF software is designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Demos available on this page and the mediaTest/mediaMin demo pages are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
 
-SigSRF supports media delivery, transcoding, deep learning <sup>2</sup>, OpenCV, speech recognition <sup>2</sup>, and other calculation / data intensive applications.  Performance is extremely high; per server capacity exceeding 2000 sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
+SigSRF supports media delivery, transcoding, deep learning <sup>1</sup>, OpenCV, speech recognition <sup>1</sup>, and other calculation / data intensive applications.  Performance is extremely high; per server capacity exceeding 2000 sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
-For applications facing SWaP, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture (see [When Software Only is Not Enough](#user-content-beyondsoftwareonly) below).
+For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture (see [When Software Only is Not Enough](#user-content-beyondsoftwareonly) below).
+
+<sup>1</sup> In progress<br/>
+<sup>2</sup> SWaP = size, weight, and power consumption
 
 <a name="TelecomMode"></a>
 ## Telecom Mode
@@ -131,7 +134,6 @@ Available media processing and image analytics demos can make use of optional co
 When used with coCPUs, SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
 
 <sup>1</sup> SWaP = size, weight, and power consumption<br/>
-<sup>2</sup> In progress
 
 <a name="SDKDemoDownload"></a>
 # SDK and Demo Download
