@@ -211,15 +211,15 @@ The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_read
   * transcoding between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc.
   * "AMR Player", play an AMR pcap (either AMR-WB or AMR-NB)
   * "EVS Player", play an EVS pcap
-  * transcode multistream pcaps and merge all streams together into one output audio (for example, generate a "unified conversation" for voice pcaps)
+  * transcode multistream pcaps and merge all streams together into one output audio (for voice pcaps, this generates a "unified conversation")
   * Kaldi speech recognition on pcaps or audio files (ASR, 200k word vocabulary)
-  * test codecs and compare output vs. 3GPP reference files
+  * test codecs and compare output vs. 3GPP or ITU reference files
   * insert user-defined signal processing or inference into the real-time data flow
   * input and output .wav file and other audio format files
   * input and output USB audio
   * test and measure packet RFCs, jitter buffer, packet loss and other stats, and more
   
-For both mediaMin and mediaTest, reference application C/C++ source code is included.  The demos are based on deployed production code used in high capacity, real-time applications.  If you need to make performance measurements, they will be accurate and competitive.
+For both mediaMin and mediaTest, reference application C/C++ source code is included.  The demos are based on deployed production code used in high capacity, real-time applications.  Performance measurements can be made that are accurate and competitive.
 
 <a name="iaTestDemo"></a>
 ## iaTest Demo
