@@ -10,7 +10,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#user-content-multithreaded)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-dataflowdiagram)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
 [SDK and Demo Download](#user-content-sdkdemodownload)<br/>
 [Install Notes](#user-content-installnotes)<br/>
@@ -81,12 +81,14 @@ Analytics mode is defined as indirect handling of IP/UDP/RTP traffic, where traf
 <a name="Multithreaded"></a>
 ## Multithreaded for High Performance
 
-SigSRF library modules support multiple, concurrent packet and media processing threads, each typically running on one CPU core, to enable high performance on multicore platforms.  Session to thread allocation modes include linear and round-robin.  Threads may be optionally pinned to a CPU core.
+SigSRF library modules support multiple, concurrent packet + media processing threads.  Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups.  Thread stats include profiling, performance, and session allocation.  Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet/media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
+
+High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
 
-SigSRF software is currently deployed in major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
+SigSRF software is currently deployed by major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
 
 SigSRF software, unlike many open source repositories, is not experimental or prototype, and is constantly going through rigorous customer production testing.  Some of the signal processing modules have deployment histories dating back to 2005, including telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer and some voice codec.  The origins of SigSRF software are in telecom system deployment, with emphasis in the last few years on deep learning.
 
@@ -101,7 +103,7 @@ Below is a SigSRF software and I/O architecture diagram.
 
 ![SigSRF software and streaming I/O architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_and_Packet_IO_RevA2.png?raw=true "SigSRF software and streaming I/O architecture diagram")
 
-<a name="DataFlowDiagram"></a>
+<a name="PacketMediaThreadDataFlowDiagram"></a>
 ## SigSRF Packet and Media Processing Data Flow Diagram
 
 Below is a SigSRF software streaming packet and media processing data flow diagram.  This is an expansion of the telecom mode and analytics mode data flow diagrams above, including shared library APIs used within a packet/media thread.
