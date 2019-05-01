@@ -7,6 +7,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Telecom Mode Data Flow Diagram](#user-content-telecommodedataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode](#user-content-analyticsmode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode Data Flow Diagram](#user-content-analyticsmodedataflowdiagram)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Stream Groups](#user-content-streamgroups)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#user-content-multithreaded)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
@@ -77,6 +78,11 @@ Analytics mode is defined as indirect handling of IP/UDP/RTP traffic, where traf
 ### Analytics Mode Data Flow Diagram
 
 ![SigSRF software analytics mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_analytics_mode_RevA7.png?raw=true "SigSRF analytics mode data flow diagram")
+
+<a name="StreamGroups"></a>
+## Stream Groups
+
+SigSRF supports the concept of "stream groups", allowing multiple streams to be grouped together for additional processing.  Examples including merging conversations for Lawful Intercept applications, conferencing, and identifying and tagging different individuals in a conversation (sometimes referred to as "diarization").
 
 <a name="Multithreaded"></a>
 ## Multithreaded for High Performance
