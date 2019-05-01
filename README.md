@@ -246,7 +246,7 @@ The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.
 
 SigSRF documentation, including Quick Start command line examples, High Capacity Operation, API Usage, and other sections is located at:
 
- <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Documentation</a>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Documentation</a>
  
 ## coCPU Users Guide
 
