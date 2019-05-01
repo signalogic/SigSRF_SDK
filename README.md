@@ -88,7 +88,9 @@ SigSRF library modules support multiple, concurrent packet and media processing 
 
 SigSRF software is currently deployed in major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
 
-SigSRF software, unlike many open source repositories, is not experimental or prototype, and has been through rigorous customer production testing.  Some of the signal processing modules have a history dating back to 2005, including deployments in telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer and XDAIS standardized codec interface, with a long history of telecom system deployment.
+SigSRF software, unlike many open source repositories, is not experimental or prototype, and is constantly going through rigorous customer production testing.  Some of the signal processing modules have deployment histories dating back to 2005, including telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer and some voice codec.  The origins of SigSRF software are in telecom system deployment, with emphasis in the last few years on deep learning.
+
+The interface used by SigSRF codec, signal processing, and inference shared library components is based on the XDAIS standard made popular by Texas Instruments.  XDAIS was designed to manage shared resources and conflict between calculation- and memory-intensive algorithms.  Originally XDAIS was intended by TI to help produce robust, reliable software on highly resource-constrained embedded platforms.  It continues to help achieve that on today's modern Linux servers.
 
 In addition to customer production testing, stress tests are always ongoing in Signalogic lab servers.  New releases must pass 672 hours (4 weeks) of continuous stress test at full capacity, running on HP DL380 series servers.  For more information on these tests, and Linux configuration used for high capacity operation, see [SigSRF Documentation](#user-content-documentationsupport) below.
 
@@ -212,18 +214,20 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.  Some things you can do with mediaMin and mediaTest demo command lines:
 
-  * transcoding between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc.
+  * transcode between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc.
   * "AMR Player", play an AMR pcap (either AMR-WB or AMR-NB)
   * "EVS Player", play an EVS pcap
   * transcode multistream pcaps and merge all streams together into one output audio (for voice pcaps, this generates a "unified conversation")
   * Kaldi speech recognition on pcaps or audio files (ASR, 200k word vocabulary)
-  * test codecs and compare output vs. 3GPP or ITU reference files
+  * test codecs and compare output vs. 3GPP or ITU reference files <sup>1</sup>
   * insert user-defined signal processing or inference into the real-time data flow
   * input and output .wav file and other audio format files
   * input and output USB audio
   * test and measure packet RFCs, jitter buffer, packet loss and other stats, and more
-  
-For both mediaMin and mediaTest, reference application C/C++ source code is included.  The demos are based on deployed production code used in high capacity, real-time applications.  Performance measurements can be made that are accurate and competitive.
+
+For both mediaMin and mediaTest, reference application C/C++ source code is included.  The demos are based on deployed production code used in high capacity, real-time applications.  Performance measurements can be made that are accurate and competitive with other commercially available software.
+
+<sup>1 </sup>Includes non-3GPP and non-ITU codecs such as MELPe
 
 <a name="iaTestDemo"></a>
 ## iaTest Demo
