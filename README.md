@@ -43,6 +43,7 @@ SigSRF software is currently deployed in the following application areas:
 * Session Border Controller (SBC)
 * Media Gateway
 * Lawful Intercept (LI)
+* RTP Decoder (![EVS](https://signalogic.com/evs_codec.html "EVS codec data sheet"), AMR, G729, MELPe, etc)
 * Network Analyzers
 * Satcom and HF Radio Speech Compression
 * R&D Labs and Workstations
@@ -96,9 +97,9 @@ High capacity operation exceeding 2000 concurrent sessions is possible on multic
 
 SigSRF software is currently deployed by major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
 
-SigSRF software, unlike many open source repositories, is not experimental or prototype, and is constantly going through rigorous customer production testing.  Some of the signal processing modules have deployment histories dating back to 2005, including telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer and some voice codec.  The origins of SigSRF software are in telecom system deployment, with emphasis in the last few years on deep learning.
+SigSRF software, unlike many open source repositories, is not experimental or prototype, and is constantly going through rigorous customer production testing.  Some of the signal processing modules have deployment histories dating back to 2005, including telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer and some voice codecs.  The origins of SigSRF software are in telecom system deployment, with emphasis in the last few years on deep learning.
 
-The interface used by SigSRF codec, signal processing, and inference shared library components is based on the XDAIS standard made popular by Texas Instruments.  XDAIS was designed to manage shared resources and conflict between calculation- and memory-intensive algorithms.  Originally XDAIS was intended by TI to help produce robust, reliable software on highly resource-constrained embedded platforms.  It continues to help achieve that on today's modern Linux servers.
+For calculation-intensive shared library components, such as codecs, signal processing, and inference, SigSRF implements the XDAIS standard made popular by Texas Instruments.  XDAIS was designed to manage shared resources and conflict between calculation- and memory-intensive algorithms.  Originally XDAIS was intended by TI to help produce robust, reliable software on highly resource-constrained embedded platforms.  It continues to help achieve that on today's modern Linux servers.
 
 In addition to customer production testing, stress tests are always ongoing in Signalogic lab servers.  New releases must pass 672 hours (4 weeks) of continuous stress test at full capacity, running on HP DL380 series servers.  For more information on these tests, and Linux configuration used for high capacity operation, see [SigSRF Documentation](#user-content-documentationsupport) below.
 
