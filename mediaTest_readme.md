@@ -12,11 +12,21 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-SigSRF and mediaTest software reached a milestone in 1Q 2018, now in use or deployed with more than 20 customers.  Here are some new features added recently:
+1Q 2018:  SigSRF and mediaTest software reached a milestone, now in use or deployed with more than 20 customers.
+
+3Q 2018:  mediaMin joins mediaTest as a reference / example application, with published soure code.  mediaMin uses a minimal set of SigSRF APIs -- push packet, pull packet, session management -- and dynamic session creation to process pcaps and UDP port data.  Plug in a multistream pcap and decode all streams, handle DTX, merge streams together, generate output pcaps and wav files, and more
+
+1Q 2019:  SigSRF software deployed in G7 country equivalent to FBI, providing single server high capacity (500+ concurrent sessions)
+
+4Q 2019: SigSRF documentation published at <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Documentation</a>
+
+Here are some new features added recently:
 
 * USB audio support.  There are some pics below showing the Focusrite 2i2 in action
 
-* Codecs now include EVS, AMR-NB, AMR-WB, G729AB, G726, G711, and MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
+* Codecs now include EVS, AMR-NB, AMR-WB, AMR-WB+, G729AB, G726, G711, and MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
+
+* integrated, real-time Kaldi speech recognition (Kaldi guys refer to this as "online decoding")
 
 <a name="DemoLimits"></a>
 # Demo Limits
@@ -38,6 +48,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 # Table of Contents
 
 [**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
+&nbsp;&nbsp;&nbsp;[x86 Codec Testing](#user-content-x86codectesting)<br/>
 &nbsp;&nbsp;&nbsp;[coCPU Codec Testing](#user-content-cocpucodectesting)<br/>
 &nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
 [**Frame Mode**](#user-content-framemode)<br/>
@@ -91,7 +102,12 @@ Codec + audio mode supports the following functionality:
 
 * sampling rate conversion is applied whenever input sampling rate does not match the specified codec (or pass-thru) rate
 
-The following command line will encode a 3GPP reference audio file (WB sampling rate, 13.2 kbps) to an EVS compressed bitstream file:
+<a name="x86CodecTesting"></a>
+### x86 Codec Testing
+
+The mediaTest codec + audio mode command lines below run on x86 platforms, showing examples of encoding, decoding, and back-to-back encode and decode.
+
+The following command line applies the EVS encoder to a 3GPP reference audio file (WB sampling rate, 13.2 kbps), generating a compressed bitstream file:
 
 ```C
 ./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.COD -Csession_config/codec_test_16kHz_13200bps_config
@@ -103,13 +119,13 @@ To compare with the relevant 3GPP reference bitstream file:
 cmp reference_files/stv16c_13200_16kHz_mime_o3.COD test_files/stv16c_13200_16kHz_mime.COD
 ```
 
-The following command line will encode and then decode a 3GPP reference audio file (WB sampling rate, 13.2 kbps), producing a .wav file you can listen to and experience EVS audio quality:
+The following command line EVS encodes and then decodes a 3GPP reference audio file (WB sampling rate, 13.2 kbps), producing a .wav file you can listen to and experience EVS audio quality:
 
 ```C
 ./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.wav 
 ```
 
-The following command line will encode a 3GPP reference file audio (SWB sampling rate, 13.2 kbps) to an EVS compressed bitstream file:
+The following command line EVS encodes a 3GPP reference file audio (SWB sampling rate, 13.2 kbps) to a compressed bitstream file:
 
 ```C
 ./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.COD -Csession_config/codec_test_32kHz_13200bps_config
@@ -121,7 +137,7 @@ To compare with the relevant 3GPP reference bitstream file:
 cmp reference_files/stv32c_13200_32kHz_mime_o3.COD test_files/stv32c_13200_32kHz_mime.COD
 ```
 
-The following command line will encode and then decode a 3GPP reference bitstream file (SWB sampling rate, 13.2 kbps), producing a .wav file:
+The following command line EVS encodes and then decodes a 3GPP reference bitstream file (SWB sampling rate, 13.2 kbps), producing a .wav file:
 
 ```C
 ./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.wav -Csession_config/codec_test_32kHz_13200bps_config
@@ -129,9 +145,9 @@ The following command line will encode and then decode a 3GPP reference bitstrea
 <a name="coCPUCodecTesting"></a>
 ### coCPU Codec Testing
 
-As explained on the SigSRF page, coCPU refers to Texas Instruments, FPGA, neural net, or other non x86 CPUs available in the server.  coCPUs are typically used to (i) "front" incoming network or USB data and perform real-time, latency-sensitive processing, or (ii) accelerate computationally intensive operations (e.g. convolutions in a deep learning application).
+As explained on the SigSRF page, coCPU refers to Texas Instruments, FPGA, neural net, or other non x86 CPUs available in a server, typically on a PCIe card.  coCPUs are typically used to (i) "front" incoming network or USB data and perform real-time, latency-sensitive processing, or (ii) accelerate computationally intensive operations (e.g. convolutions in a deep learning application).
 
-For transcoding, coCPU cores can be used to achieve extremely high capacity per box, for example in applications where power consumption and/or box size is constrained.  The following command lines specify TI c66x coCPU cores <sup>1</sup>.  The first one does the same EVS WB test as above, and the second one does an EVS NB test.  Both produce .wav files that contain a variety of speech, music, and other sounds that demonstrate fidelity and high definition achieved by wideband EVS encoding:
+For transcoding, coCPU cores can be used to achieve extremely high capacity per box, for example in applications where power consumption and/or box size is constrained.  The following command lines specify Texas Insstruments c66x coCPU cores <sup>1</sup>.  The first one does the same EVS WB test as above, and the second one does an EVS NB test.  Both produce .wav files that contain a variety of speech, music, and other sounds that demonstrate fidelity and high definition achieved by wideband EVS encoding:
 
 ```C
 ./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv16c.INP -otest_files/c6x16c_j.wav 
