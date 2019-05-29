@@ -18,7 +18,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 1Q 2019:  SigSRF software deployed in G7 country equivalent to FBI, providing single server high capacity (500+ concurrent sessions)
 
-4Q 2019: SigSRF documentation published at <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Documentation</a>
+4Q 2019: Consolidated <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF documentation<a> published
 
 Here are some new features added recently:
 
