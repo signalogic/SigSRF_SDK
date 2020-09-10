@@ -182,15 +182,15 @@ Test and demo application examples are provided as executables, C/C++ source cod
 
 To run the install script enter:
 
-    > source autoInstall_Sig_BSDK_2017v2.sh
+    > source autoInstall_Sig_BSDK_2019v5.sh
 
 The script will then prompt as follows:
 
     1) Host
     2) VM
-    Please select target for co-CPU software install [1-2]:
+    Please select target for coCPU software install [1-2]:
 
-After choosing an install target of either Host or VM, the script will next prompt for an install option:
+Host effectively means bare-metal; i.e. not a container. After choosing either Host or VM, the script will next prompt for an install option:
 
     1) Install SigSRF Software
     2) Install SigSRF Software with coCPU Option
@@ -199,7 +199,7 @@ After choosing an install target of either Host or VM, the script will next prom
     5) Exit
     Please select install operation to perform [1-4]:
 
-If the install operation (1.) is selected, the script will prompt for an install path:
+If install operation 1) is selected, the script will prompt for an install path:
 
     Enter the path for SigSRF software installation:
 
@@ -210,18 +210,20 @@ If needed, the Check / Verify option can be selected to generate a log for troub
 <a name="Demos"></a>
 # Demos
 
-Available demos are listed below.  The iaTest and paTest demos do not have a functionality limit.  mediaTest demo functionality is limited as follows:
+Available demos are listed below.  The iaTest and paTest demos do not have a functionality limit.  mediaMin and mediaTest demo functionality is limited as follows:
 
-   1) Data limit.  Processing is limited to 3000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
+   1) Data limit.  Processing is limited to 100,000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
 
    2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
 
-If you need an evaluation demo with an increased limit for a trial period, [contact us](#DocumentationSupport).
+If you would prefer an evaluation demo with increased concurrency limits for a trial period, [contact us](#DocumentationSupport). This requires a business case and possibly an NDA.
 
 <a name="mediaMin_and_mediaTest_Demos"></a>
 ## mediaMin and mediaTest Demos
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.  Some things you can do with mediaMin and mediaTest demo command lines:
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
+
+mediaMin is a production reference application, using a minimum set of APIs (create/delete session, push/pull packets), it can handle a wide range of RTP audio packet inputs. mediaTest targets test and measurement functionality and accepts USB and wav file audio input. Some things you can do with mediaMin and mediaTest demo command lines:
 
   * transcode between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc.
   * "AMR Player", play an AMR pcap (either AMR-WB or AMR-NB)
