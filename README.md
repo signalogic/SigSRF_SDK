@@ -155,10 +155,10 @@ The SigSRF SDK and demo download consists of an install script and .rar files an
 
    2) C/C++ source code for
 
-     * media/packet real-time threads, including API usage for packet queue receive/send, jitter buffer add/retrieve, codec decode/encode, stream group processing, and packet diagnostics
-     * reference applications, including API usage for session create/modify/delete, packet push/pull, and event and packet logging. Also includes static and dynamic session creation, RTP stream auto-detect, packet pcap and UDP input
-     * stream group output audio processing, user-defined signal processing
-     * Makefiles for demo programs
+* media/packet real-time threads, including API usage for packet queue receive/send, jitter buffer add/retrieve, codec decode/encode, stream group processing, and packet diagnostics
+* reference applications, including API usage for session create/modify/delete, packet push/pull, and event and packet logging. Also includes static and dynamic session creation, RTP stream auto-detect, packet pcap and UDP input
+* stream group output audio processing, user-defined signal processing
+* Makefiles for demo programs
 
    3) Concurrency examples, including stream, instance, and multiple user
 
