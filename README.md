@@ -13,12 +13,12 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
-[SDK and Demo Download](#user-content-sdkdemodownload)<br/>
-[Install Notes](#user-content-installnotes)<br/>
-[Demos](#user-content-demos)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest_demos)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
+[Demo and SDK Download](#user-content-sdkdemodownload)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-demos)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest_demos)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
 
 <a name="Overview"></a>
@@ -147,7 +147,7 @@ When used with coCPUs, SigSRF supports concurrent multiuser operation in a bare-
 <sup>1</sup> SWaP = size, weight, and power consumption<br/>
 
 <a name="SDKDemoDownload"></a>
-# SDK and Demo Download
+# Demo and SDK Download
 
 The SigSRF SDK and demo download consists of an install script and .rar files and includes:
 
@@ -160,7 +160,7 @@ The SigSRF SDK and demo download consists of an install script and .rar files an
 All demos run on x86 Linux platforms.  For coCPU card platforms, the mediaTest and iaTest demos will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in the demo .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.  As noted above, coCPU technology increases per-box efficiency and performance.
 
 <a name="InstallNotes"></a>
-# Install Notes
+## Install Notes
 
 Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install (including coCPU driver, if you have a coCPU card).
 
@@ -170,15 +170,15 @@ Note that the install script checks for the presence of the unrar command, and i
 
 Media transcoding demos require tcpreplay or other method to generate packet traffic (using as input pcap files included in the install).
 
-## Sudo Privilege
+### Sudo Privilege
 
 The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
-## Building Test and Demo Applications
+### Building Test and Demo Applications
 
 Test and demo application examples are provided as executables, C/C++ source code and Makefiles.  Executables may run, but if not (due to Linux distribution or kernel differences), they should be rebuilt using gcc.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
 
-## Running the Install Script
+### Running the Install Script
 
 To run the install script enter:
 
@@ -208,7 +208,7 @@ If no path is entered the default path is /usr/local.
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
 
 <a name="Demos"></a>
-# Demos
+## Run Notes
 
 Available demos are listed below.  The iaTest and paTest demos do not have a functionality limit.  mediaMin and mediaTest demo functionality is limited as follows:
 
@@ -219,7 +219,7 @@ Available demos are listed below.  The iaTest and paTest demos do not have a fun
 If you would prefer an evaluation demo with increased concurrency limits for a trial period, [contact us](#DocumentationSupport). This requires a business case and possibly an NDA.
 
 <a name="mediaMin_and_mediaTest_Demos"></a>
-## mediaMin and mediaTest Demos
+### mediaMin and mediaTest Demos
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
 
@@ -241,12 +241,12 @@ For both mediaMin and mediaTest, reference application C/C++ source code is incl
 <sup>1 </sup>Includes non-3GPP and non-ITU codecs such as MELPe
 
 <a name="iaTestDemo"></a>
-## iaTest Demo
+### iaTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest demo page</a> gives example command lines for image analytics and OpenCV testing.  The iaTest demo performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.  Application C/C++ source code is included.
 
 <a name="paTestDemo"></a>
-## paTest Demo
+### paTest Demo
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md">paTest demo page</a> gives example command lines for a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies.  Application Java and C/C++ source code is included.
 
