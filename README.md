@@ -162,7 +162,9 @@ The SigSRF SDK and demo download consists of an install script and RAR package c
  
    3) Concurrency examples, including stream, instance, and multiple user
    
-All demos run on x86 Linux servers. For servers augmented with a coCPU card, the mediaTest and iaTest demos will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in the demo .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.  As noted above, coCPU technology increases per-box efficiency and performance.
+All demos run on x86 Linux servers.
+
+For servers augmented with a coCPU card, the mediaTest and iaTest demos will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in the demo .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.
 
 <a name="InstallNotes"></a>
 ## Install Notes
