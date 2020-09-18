@@ -189,7 +189,7 @@ Demo application examples are provided as executables, C/C++ source code and Mak
 
 To run the install script enter:
 
-    > source autoInstall_Sig_SDK_2019v5.sh
+    > source autoInstall_SigSRF_SDK_2019v5.sh
 
 The script will then prompt as follows:
 
