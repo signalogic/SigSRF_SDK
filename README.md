@@ -149,21 +149,20 @@ When used with coCPUs, SigSRF supports concurrent multiuser operation in a bare-
 <a name="SDKDemoDownload"></a>
 # Demo and SDK Download
 
-The SigSRF SDK and demo download consists of an install script and .rar files and includes:
+The SigSRF SDK and demo download consists of an install script and RAR package containing:
 
-   1) A limited eval / demo version of several SigSRF demos, including media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For a detailed explanation of demo limits, see [Demos](#user-content-demos) below.
+   1) A limited eval / demo version of SigSRF libraries and executables, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on demo limits, see [Demos](#user-content-demos) below.
 
-   2) C/C++ source code for
-   &nbsp;&nbsp;&nbsp;&nbsp;<ul style="margin-left: 0.2in;">
+   2) Makefiles and C/C++ source code for
+   &nbsp;&nbsp;&nbsp;&nbsp;<ul>
      <li>media/packet real-time threads, including API usage for packet queue receive/send, jitter buffer add/retrieve, codec decode/encode, stream group processing, and packet diagnostics</li>
      <li>reference applications, including API usage for session create/modify/delete, packet push/pull, and event and packet logging. Also includes static and dynamic session creation, RTP stream auto-detect, packet pcap and UDP input</li>
      <li>stream group output audio processing, user-defined signal processing</li>
-     <li>Makefiles for demo programs</li>
    </ul>
  
    3) Concurrency examples, including stream, instance, and multiple user
-
-All demos run on x86 Linux platforms.  For coCPU card platforms, the mediaTest and iaTest demos will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in the demo .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.  As noted above, coCPU technology increases per-box efficiency and performance.
+   
+All demos run on x86 Linux servers. For servers augmented with a coCPU card, the mediaTest and iaTest demos will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in the demo .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.  As noted above, coCPU technology increases per-box efficiency and performance.
 
 <a name="InstallNotes"></a>
 ## Install Notes
@@ -174,7 +173,7 @@ All .rar files and the auto install script must stay together in the same folder
 
 Note that the install script checks for the presence of the unrar command, and if not found it will install the unrar package.
 
-Media transcoding demos require tcpreplay or other method to generate packet traffic (using as input pcap files included in the install).
+Several pcap files are included in the install, providing input for example command lines. After these are verified to work, user-supplied pcaps, UDP input, and wav files can be used.
 
 ### Sudo Privilege
 
@@ -182,7 +181,7 @@ The install script requires sudo root privilege.  In Ubuntu, allowing a user sud
 
 ### Building Test and Demo Applications
 
-Test and demo application examples are provided as executables, C/C++ source code and Makefiles.  Executables may run, but if not (due to Linux distribution or kernel differences), they should be rebuilt using gcc.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
+Demo application examples are provided as executables, C/C++ source code and Makefiles.  Executables may run, but if not (due to Linux distribution or kernel differences), they should be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
 
 ### Running the Install Script
 
