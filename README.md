@@ -173,7 +173,7 @@ Separate RAR packages are provided for different Linux distributions. Please cho
 
 All .rar files and the auto install script must stay together in the same folder after downloading.
 
-Note that the install script checks for the presence of the unrar command, and if not found it will install the unrar package.
+Note that the install script checks for the presence of the unrar package, and if not found prompts to install it.
 
 Several pcap files are included in the install, providing input for example command lines. After these are verified to work, user-supplied pcaps, UDP input, and wav files can be used.
 
@@ -210,7 +210,7 @@ If install operation 1) is selected, the script will prompt for an install path:
 
     Enter the path for SigSRF software installation:
 
-If no path is entered the default path is /usr/local. Do not enter a path such as "Signalogic" or "/home/Signalogic" as during the install a "Signalogic" symlink is created for the base install, which would conflict. Here are a few possible install path examples:
+If no path is entered the default path is /usr/local. Do not enter a path such as "Signalogic" or "/home/Signalogic" as during the install a "Signalogic" symlink is created for the base install folder, which would conflict. Here are a few possible install path examples:
 
 ```
   /home
