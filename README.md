@@ -189,7 +189,7 @@ Demo application examples are provided as executables, C/C++ source code and Mak
 
 To run the install script enter:
 
-    > source autoInstall_SigSRF_SDK_2019v5.sh
+    > source autoInstall_SigSRF_SDK_2020v6.sh
 
 The script will then prompt as follows:
 
@@ -202,7 +202,7 @@ Host effectively means bare-metal; i.e. not a container. After choosing either H
     1) Install SigSRF Software
     2) Install SigSRF Software with coCPU Option
     3) Uninstall SigSRF Software
-    4) Check / Verify
+    4) Check / Verify SigSRF Software Install
     5) Exit
     Please select install operation to perform [1-4]:
 
@@ -210,7 +210,13 @@ If install operation 1) is selected, the script will prompt for an install path:
 
     Enter the path for SigSRF software installation:
 
-If no path is entered the default path is /usr/local.
+If no path is entered the default path is /usr/local. Do not enter a path such as "Signalogic" or "/home/Signalogic" as during the install a "Signalogic" symlink is created for the base install, which would conflict. Here are a few possible install path examples:
+
+```
+  /home
+  /home/user_name
+  /root
+```
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
 
