@@ -1,0 +1,1 @@
+DirectCore shared library (hwlib)
