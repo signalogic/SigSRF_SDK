@@ -149,7 +149,7 @@ When used with coCPUs, SigSRF supports concurrent multiuser operation in a bare-
 <a name="SDKDemoDownload"></a>
 # Demo and SDK Download
 
-The SigSRF SDK and demo download consists of an install script and RAR package containing:
+The SigSRF SDK and demo download consists of an install script and a RAR package or Docker container containing:
 
    1) A limited eval / demo version of SigSRF libraries and executables, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on demo limits, see [Demos](#user-content-demos) below.
 
@@ -169,13 +169,15 @@ For servers augmented with a coCPU card, the mediaTest and iaTest demos will uti
 <a name="InstallNotes"></a>
 ## Install Notes
 
-Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install (including coCPU driver, if you have a coCPU card).
+Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install.
+
+For advanced pcap examples, such as multiple streams, multiple RFC8108, dormant SSRC, etc. the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of work and provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison.
 
 All .rar files and the auto install script must stay together in the same folder after downloading.
 
-Note that the install script checks for the presence of the unrar package, and if not found prompts to install it.
+Note that the install script checks for the presence of the unrar package, and if not found attempts to install it. There may be some additional prompts depending on the host Linux version.
 
-Several pcap files are included in the install, providing input for example command lines. After these are verified to work, user-supplied pcaps, UDP input, and wav files can be used.
+Several pcap and wav files are included in the default install, providing input for example command lines. After these are verified to work, user-supplied pcaps, UDP input, and wav files can be used.
 
 ### Sudo Privilege
 
@@ -183,7 +185,7 @@ The install script requires sudo root privilege.  In Ubuntu, allowing a user sud
 
 ### Building Test and Demo Applications
 
-Demo application examples are provided as executables, C/C++ source code and Makefiles.  Executables may run, but if not (due to Linux distribution or kernel differences), they should be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu).  These are installed if not found.
+Demo application examples are provided as executables, C/C++ source code and Makefiles. Executables should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
 
 ### Running the Install Script
 
