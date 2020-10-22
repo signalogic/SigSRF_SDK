@@ -16,7 +16,7 @@
 [Demo and SDK Download](#user-content-sdkdemodownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-demos)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-runnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest_demos)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
@@ -150,7 +150,7 @@ When used with coCPUs, SigSRF supports concurrent multiuser operation in a bare-
 <a name="SDKDemoDownload"></a>
 # Demo and SDK Download
 
-The SigSRF SDK and demo download consists of an install script and a RAR package or Docker container containing:
+There are two (2) options for SigSRF SDK and demo download (i) RAR package and install script or (ii) or Docker container. The SDK contains:
 
    1) A limited eval / demo version of SigSRF libraries and executables, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on demo limits, see [Demos](#user-content-demos) below.
 
@@ -226,7 +226,7 @@ If needed, the Check / Verify option can be selected to generate a log for troub
 
 Demo application examples are provided as executables, C/C++ source code and Makefiles. Executables should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
 
-<a name="Demos"></a>
+<a name="RunNotes"></a>
 ## Run Notes
 
 Available demos are listed below.  The iaTest and paTest demos do not have a functionality limit.  mediaMin and mediaTest demo functionality is limited as follows:
