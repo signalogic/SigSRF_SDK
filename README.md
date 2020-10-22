@@ -14,8 +14,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
 [Demo and SDK Download](#user-content-sdkdemodownload)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-demos)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest_demos)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
@@ -167,6 +167,13 @@ All demos run on x86 Linux servers.
 
 For servers augmented with a coCPU card, the mediaTest and iaTest demos will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in the demo .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.
 
+<a name="TestFileNotes"></a>
+## Test File Notes
+
+Several pcap and wav files are included in the default install, providing input for example command lines. After these are verified to work, user-supplied pcaps, UDP input, and wav files can be used.
+
+For advanced pcap examples, such as multiple streams, multiple RFC8108, dormant SSRC, etc. the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison.
+
 <a name="InstallNotes"></a>
 ## Install Notes
 
@@ -176,18 +183,11 @@ All .rar files and the auto install script must stay together in the same folder
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it. There may be some additional prompts depending on the host Linux version.
 
-<a name="TestFileNotes"></a>
-## Test File Notes
-
-Several pcap and wav files are included in the default install, providing input for example command lines. After these are verified to work, user-supplied pcaps, UDP input, and wav files can be used.
-
-For advanced pcap examples, such as multiple streams, multiple RFC8108, dormant SSRC, etc. the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison.
-
 ### Sudo Privilege
 
 The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
-### Building Test and Demo Applications
+### Building Demo Applications
 
 Demo application examples are provided as executables, C/C++ source code and Makefiles. Executables should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
 
