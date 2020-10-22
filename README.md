@@ -185,6 +185,8 @@ Additional advanced pcap examples are also available, including:
 
 For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison.
 
+Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a>. 
+
 <a name="InstallNotes"></a>
 ## Install Notes
 
