@@ -187,10 +187,6 @@ Note that the install script checks for the presence of the unrar package, and i
 
 The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
-### Building Demo Applications
-
-Demo application examples are provided as executables, C/C++ source code and Makefiles. Executables should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
-
 ### Running the Install Script
 
 To run the install script enter:
@@ -225,6 +221,10 @@ If no path is entered the default path is /usr/local. Do not enter a path such a
 ```
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
+
+### Building Demo Applications
+
+Demo application examples are provided as executables, C/C++ source code and Makefiles. Executables should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
 
 <a name="Demos"></a>
 ## Run Notes
