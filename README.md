@@ -176,10 +176,10 @@ Additional advanced pcap examples are also available, including:
 
     -multiple streams with different LTE codecs and DTX configurations
     -multiple RFC8108 (SSRC transitions)
-    -dormant SSRC (stream "takeover")
     -call gaps
     -media server playout packet rate variation (up to +/-10%)
-    -sustained packet rate mismatches
+    -sustained packet rate mismatches between streams
+    -dormant SSRC ("stream takeover")
 
 For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison.
 
