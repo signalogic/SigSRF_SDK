@@ -199,7 +199,7 @@ The script will then prompt as follows:
     2) VM
     Please select target for coCPU software install [1-2]:
 
-Host effectively means bare-metal; i.e. not a container. After choosing either Host or VM, the script will next prompt for an install option:
+Host means bare-metal or container. Selecting VM causes additional resource management to be installed that are needed if both host and guest share resources.  After choosing either Host or VM, the script will next prompt for an install option:
 
     1) Install SigSRF Software
     2) Install SigSRF Software with coCPU Option
