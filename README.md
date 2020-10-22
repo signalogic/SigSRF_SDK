@@ -176,6 +176,7 @@ Additional advanced pcap examples are also available, including:
 
     -multiple streams with different LTE codecs and DTX configurations
     -multiple RFC8108 (SSRC transitions)
+    -sustained packet loss (up to 10%), both media and SID
     -call gaps
     -media server playout packet rate variation (up to +/-10%)
     -sustained packet rate mismatches between streams
