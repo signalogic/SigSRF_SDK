@@ -15,6 +15,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
 [Demo and SDK Download](#user-content-sdkdemodownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-demos)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest_demos)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
@@ -171,13 +172,16 @@ For servers augmented with a coCPU card, the mediaTest and iaTest demos will uti
 
 Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install.
 
-For advanced pcap examples, such as multiple streams, multiple RFC8108, dormant SSRC, etc. the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of work and provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison.
-
 All .rar files and the auto install script must stay together in the same folder after downloading.
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it. There may be some additional prompts depending on the host Linux version.
 
+<a name="TestFileNotes"></a>
+## Test File Notes
+
 Several pcap and wav files are included in the default install, providing input for example command lines. After these are verified to work, user-supplied pcaps, UDP input, and wav files can be used.
+
+For advanced pcap examples, such as multiple streams, multiple RFC8108, dormant SSRC, etc. the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison.
 
 ### Sudo Privilege
 
