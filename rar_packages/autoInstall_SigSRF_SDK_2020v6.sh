@@ -215,17 +215,10 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 	fi
 }
 
-swInstall() {				# It will install Signalogic SW on specified path
+createSymLinks() {
 
-	# Set up environment var permanently
-	export SIGNALOGIC_INSTALL_PATH=$installPath 
-	echo "SIGNALOGIC_INSTALL_PATH=$installPath" >> /etc/environment
-	
 	echo
-	echo "SigSRF software Installation will be performed..."
-	mv $installPath/Signalogic_*/etc/signalogic /etc
-	rm -rf $installPath/Signalogic*/etc
-	echo
+
 	kernel_version=`uname -r`
 	echo $kernel_version
 	echo "Creating symlinks..."
@@ -253,15 +246,29 @@ swInstall() {				# It will install Signalogic SW on specified path
 	if [ ! -L $installPath/Signalogic/DirectCore/apps/coCPU ]; then
 	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/DirectCore/apps/coCPU 
    fi
+}
 
+swInstall() {				# It will install Signalogic SW on specified path
+
+	# Set up environment var permanently
+	export SIGNALOGIC_INSTALL_PATH=$installPath 
+	echo "SIGNALOGIC_INSTALL_PATH=$installPath" >> /etc/environment
+	
+	echo
+	echo "SigSRF software Installation will be performed..."
+
+	mv $installPath/Signalogic/etc/signalogic /etc
+	rm -rf $installPath/Signalogic/etc
+
+	kernel_version=`uname -r`
 	echo	
 
    if [ "$installOptions" = "coCPU" ]; then
 
       echo "loading driver"
       if [ "$target" = "Host" ]; then
-         #cd $installPath/Signalogic_*/DirectCore/hw_utils; make clean; make
-         cd $installPath/Signalogic_*/DirectCore/hw_utils; make
+         #cd $installPath/Signalogic/DirectCore/hw_utils; make clean; make
+         cd $installPath/Signalogic/DirectCore/hw_utils; make
          cd ../driver; 
          distribution=$(lsb_release -d)
          kernel=$(uname -r) 
@@ -288,7 +295,7 @@ swInstall() {				# It will install Signalogic SW on specified path
   		      # make load
 		   fi
       elif [ "$target" = "VM" ]; then
-         cd $installPath/Signalogic_*/DirectCore/virt_driver; make load
+         cd $installPath/Signalogic/DirectCore/virt_driver; make load
       fi
    
       echo  "Setting up autoload of Signalogic driver on boot"
@@ -319,7 +326,7 @@ swInstall() {				# It will install Signalogic SW on specified path
 
 	echo
 	echo "Installing SigSRF pktlib, voplib, streamlib, diaglib, and other shared libraries..."
-	cd $installPath/Signalogic_*/DirectCore/lib/
+	cd $installPath/Signalogic/DirectCore/lib/
 	for d in *; do
 		cd $d; cp -p lib* /usr/lib; ldconfig; cd -
 	done
@@ -396,19 +403,19 @@ unInstall() {			# uninstall Signalogic SW completely
 	
 	kernel_version=`uname -r`
 	
-		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
-			if [ $target = "Host" ]; then
-				rm -rf /usr/lib/modules/$kernel_version/sig_mc_hw.ko
-			elif [ $target = "VM" ]; then
-				rm -rf /usr/lib/modules/$kernel_version/virtio-sig.ko
-			fi
-		elif [ "$OS" = "Ubuntu" ]; then
-			if [ $target = "Host" ]; then
-				rm -rf /lib/modules/$kernel_version/sig_mc_hw.ko
-			elif [ $target = "VM" ]; then
-				rm -rf /lib/modules/$kernel_version/virtio-sig.ko
-			fi
+	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+		if [ $target = "Host" ]; then
+			rm -rf /usr/lib/modules/$kernel_version/sig_mc_hw.ko
+		elif [ $target = "VM" ]; then
+			rm -rf /usr/lib/modules/$kernel_version/virtio-sig.ko
 		fi
+	elif [ "$OS" = "Ubuntu" ]; then
+		if [ $target = "Host" ]; then
+			rm -rf /lib/modules/$kernel_version/sig_mc_hw.ko
+		elif [ $target = "VM" ]; then
+			rm -rf /lib/modules/$kernel_version/virtio-sig.ko
+		fi
+	fi
 	
 	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 		sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.d/rc.local 
@@ -639,11 +646,11 @@ select opt in "Install SigSRF Software" "Install SigSRF Software with coCPU Opti
 do
    case $opt in
 		"Install SigSRF Software") if ! unrarCheck; then
-			packageSetup; dependencyCheck; swInstall;
+			packageSetup; createSymLinks; dependencyCheck; swInstall;
 		fi
 		break;;
 		"Install SigSRF Software with coCPU Option") if ! unrarCheck; then
-			packageSetup; dependencyCheck; installOptions = "coCPU"; swInstall;
+			packageSetup; createSymLinks; dependencyCheck; installOptions = "coCPU"; swInstall;
 		fi
 		break;;
 		"Uninstall SigSRF Software") unInstall; break;;
