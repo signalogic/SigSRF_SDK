@@ -195,9 +195,9 @@ Separate RAR packages are provided for different Linux distributions. Please cho
 To download the install script and one or more rar files directly from Github (i.e. without checking out a clone repository), use the following commands:
 
     > wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2020v6.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2020v6.sh
-    > wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_Demo_distro_nn_date.rar
+    > wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_Demo_SDK_distroNN_date.rar
 
-where "distro_nn" is the Linux distro and version and "date" is the package date.
+where "distroNN" is the Linux distro and version and "date" is the package date.
 
 All .rar files and the install script should be downloaded to the same folder.
 
