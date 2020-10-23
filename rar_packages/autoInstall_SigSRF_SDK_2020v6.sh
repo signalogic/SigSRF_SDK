@@ -392,7 +392,8 @@ unInstall() {			# uninstall Signalogic SW completely
 	fi
 	
 	echo "Signalogic Install Path: $unInstallPath"
-	rm -rf $unInstallPath/Signalogic*
+	rm -rf $unInstallPath/Signalogic/*  # remove all installed folders
+	rm -rf $unInstallPath/Signalogic*  # remove rar files
 	rm -rf /etc/signalogic
 	rmmod sig_mc_hw
 	unlink /usr/src/linux
