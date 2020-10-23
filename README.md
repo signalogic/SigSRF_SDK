@@ -190,11 +190,16 @@ Example command lines for both the default set of pcaps and wav files and advanc
 <a name="InstallNotes"></a>
 ## Install Notes
 
-Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install.
+Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install. To download the install script and one or more rar files directly from Github (i.e. without checking out a clone repository), use the following commands:
 
-All .rar files and the auto install script must stay together in the same folder after downloading.
+    > wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2020v6.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2020v6.sh
+    > wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_Demo_distro_nn_date.rar
 
-Note that the install script checks for the presence of the unrar package, and if not found attempts to install it. There may be some additional prompts depending on the host Linux version.
+where "distro_nn" is the Linux distro and version and "date" is the package date.
+
+All .rar files and the install script should be downloaded to the same folder.
+
+Note that the install script checks for the presence of the unrar package, and if not found attempts to install it. There may be some additional prompts depending on the Linux version.
 
 ### Sudo Privilege
 
