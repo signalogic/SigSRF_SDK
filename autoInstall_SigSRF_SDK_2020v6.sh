@@ -1,6 +1,6 @@
 #!/bin/bash
 #================================================================================================
-# Copyright (C) Signalogic Inc 2017-2018
+# Copyright (C) Signalogic Inc 2017-2020
 # Script provides SDK install/uninstall of Signalogic SW
 # Rev 1.5
 
@@ -18,9 +18,23 @@
 #  Modified Feb 2017 AM
 #  Modified Aug 2018 JHB
 #  Modified Sep 2019 JHB, fix issues in install menu options
-#  Modified Sep 2020 JHB, correct problem where unrar is not installed the script exits and exits the terminal window also (because script is sourced)
-#                         -prompt to install unrar if needed, install inside script
+#  Modified Sep 2020 JHB, correct various problems with unrar
+#                         -if unrar was not installed the script was exiting both itself and the terminal window also (because script must be run as sourced)
+#                         -add unrarCheck() function, which prompts to install unrar if needed
+#                         -add depInstall_wo_dpkg() function, which does OS-dependent install based on line_pkg var
+#                         -add method to install unrar for Ubuntu 17.04 and earlier, where unrar was in a weird repository due to licensing restrictions
+#  Modified Sep 2020 JHB, fix problems with re-install (i.e. installing over existing files), including unrar command line, symlinks
+#  Modified Sep 2020 JHB, other minor fixes, such as removing "cd -" commands after non DirectCore/lib installs (which are in a loop). Test in Docker containers, including Ubuntu 12.04, 18.04, and 20.04
 #================================================================================================
+
+depInstall_wo_dpkg() {
+
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+		yum localinstall $line_pkg
+	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+		apt-get install $line_pkg
+	fi
+}
 
 unrarCheck() {
 
@@ -30,21 +44,34 @@ unrarCheck() {
 		while true; do
 			read -p "Unrar not installed, ok to install now ?" yn
 			case $yn in
-				[Yy]* ) apt-get install unrar; return 1; break;;
+#				[Yy]* ) apt-get install unrar; return 1; break;;
+				[Yy]* ) line_pkg="unrar"
+                    depInstall_wo_dpkg;
+                    if [[ $? > 0 ]]
+                    then
+                       echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
+                       sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
+                       depInstall_wo_dpkg;
+                       if [[ $? = 0 ]]
+                       then
+                          return 1
+                       fi;
+                    else
+                       return 1
+                    fi
+                    break;;
 				[Nn]* ) return 0;;
 				* ) echo "Please enter y or n";;
 			esac
 		done
-#		echo "Unrar package not installed, will be installed now, is that ok ?"
-#		return 0
-	fi
-
-	return 1
+	else
+		return 1
+   fi
 }
 
 packageSetup() {			# prompt for Signalogic installation path, extarct package, set envionment var
 
-	echo "Enter the path for SigSRF software and dependency package installation:"
+	echo "Enter path for SigSRF software and dependency package installation:"
 	read installPath
 	if [ $installPath ]; then
 		echo "Install path: $installPath"
@@ -53,17 +80,17 @@ packageSetup() {			# prompt for Signalogic installation path, extarct package, s
 		echo "Default Install path (/) is chosen"
 	fi
 
-	unrar x Signalogic_sw_host_SigSRF_*.rar $installPath/
+	unrar x -o+ Signalogic_sw_host_SigSRF_*.rar $installPath/
 }
 
 depInstall () {
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-			yum localinstall $line
+		yum localinstall $line
 	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
 		dpkg -i $line
 		if [ $? -gt 0 ]; then
-			apt-get -f --force-yes --yes install
+			apt-get -f --force-yes --yes install  # package name not needed if run immediately after dpkg, JHB Sep2020
 		fi
 	fi
 }
@@ -175,13 +202,13 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		done 3< "$filename"
 		
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
-			# Dependencies gcc and g++ will be installed as gcc-4.8 and g++-4.8 so it is necessary to create a symmlink (gcc and g++) otherwise SW installation might be fail
+			# Dependencies gcc and g++ will be installed as gcc-4.8 and g++-4.8 so it is necessary to create a symmlink (gcc and g++) otherwise SW installation might fail
 			if [ ! -L  /usr/bin/gcc ]; then
-                        	ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
-                        fi
+           	ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
+         fi
 			if [ ! -L  /usr/bin/g++ ]; then
 				ln -s /usr/bin/g++-4.8 /usr/bin/g++
-                        fi
+         fi
 		fi
 	}
 	fi
@@ -203,22 +230,27 @@ swInstall() {				# It will install Signalogic SW on specified path
 	echo "Creating symlinks..."
 	
 	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
-		if [ ! -L  /usr/src/linux ]; then
+		if [ ! -L /usr/src/linux ]; then
 			ln -s /usr/src/kernels/$kernel_version /usr/src/linux
 		fi 
 	elif [ "$OS" = "Ubuntu" ]; then
-		if [ ! -L  /usr/src/linux ]; then
+		if [ ! -L /usr/src/linux ]; then
 			ln -s /usr/src/linux-headers-$kernel_version /usr/src/linux
 		fi
 	fi
-		
-   if [ ! -L  $installPath/Signalogic ]; then
-	   ln -s $installPath/Signalogic_* $installPath/Signalogic
-	   ln -s $installPath/Signalogic_*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/apps
+
+# Create symlinks. Assume _2xxx in the name, otherwise ln command might try to symlink the .rar file :-(
+
+   if [ ! -L $installPath/Signalogic ]; then
+	   ln -s $installPath/Signalogic_2* $installPath/Signalogic
    fi
-		
-	if [[ ! -L   $installPath/Signalogic_*/DirectCore/apps/SigC641x_C667x ]]; then
-	   ln -s  $installPath/Signalogic_*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic_2018v7/DirectCore/apps/coCPU 
+
+   if [ ! -L $installPath/Signalogic/apps ]; then
+	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/apps
+   fi
+
+	if [ ! -L $installPath/Signalogic/DirectCore/apps/coCPU ]; then
+	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/DirectCore/apps/coCPU 
    fi
 
 	echo	
@@ -294,19 +326,19 @@ swInstall() {				# It will install Signalogic SW on specified path
 	echo
 	echo "Installing SigSRF codec shared libraries..."
 	cd $installPath/Signalogic/SIG_LIBS/Voice/AMR/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null; cd -
+	cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/AMR-WB/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null; cd -
+	cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/AMR-WB+/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null; cd -
+	cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/EVS_floating-point/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null; cd -
+	cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/G726/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null; cd -
+	cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/G729AB/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null; cd -
+	cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/MELPe_floating-point/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null; cd -
+	cp -p lib* /usr/lib 2>/dev/null;
 	ldconfig;
 
 	echo
@@ -315,20 +347,20 @@ swInstall() {				# It will install Signalogic SW on specified path
    if [ "$installOptions" = "coCPU" ]; then
 
 		cd $installPath/Signalogic/apps/boardTest
-		make clean; make all; cd -
+		make clean; make all;
 
 		cd $installPath/Signalogic/apps/streamTest
-		make clean; make all; cd -
+		make clean; make all;
 
 		cd $installPath/Signalogic/apps/iaTest
-		make clean; make all; cd -
+		make clean; make all;
 	fi
 
 	cd $installPath/Signalogic/apps/mediaTest
-	make clean; make all; cd -
+	make clean; make all;
 
 	cd $installPath/Signalogic/apps/mediaTest/mediaMin
-	make clean; make all; cd -
+	make clean; make all;
 
 	cd $wdPath
 }
