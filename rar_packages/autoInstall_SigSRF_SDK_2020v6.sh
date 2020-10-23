@@ -25,6 +25,7 @@
 #                         -add method to install unrar for Ubuntu 17.04 and earlier, where unrar was in a weird repository due to licensing restrictions
 #  Modified Sep 2020 JHB, fix problems with re-install (i.e. installing over existing files), including unrar command line, symlinks
 #  Modified Sep 2020 JHB, other minor fixes, such as removing "cd -" commands after non DirectCore/lib installs (which are in a loop). Test in Docker containers, including Ubuntu 12.04, 18.04, and 20.04
+#  Modified Oct 2020 JHB, assume symlink exists in rpm dependency checks
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -130,7 +131,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 			fi
 		fi
 
-		cd $installPath/Signalogic_2018v7/installation_rpms/RHEL
+		cd $installPath/Signalogic/installation_rpms/RHEL  # assume symlink exists, JHB Oct2020
 		filename="rhelDependency.txt"
 		while read -r -u 3 line
 		do
@@ -174,7 +175,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 				unlink /usr/bin/g++
 			fi
 		fi
-		cd $installPath/Signalogic*/installation_rpms/Ubuntu
+		cd $installPath/Signalogic/installation_rpms/Ubuntu  # assume symlink exists, JHB Oct2020
 		filename="UbuntuDependency.txt"
 		while read -r -u 3 line
 		do
