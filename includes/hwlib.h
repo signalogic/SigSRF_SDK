@@ -453,7 +453,7 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
 
   #pragma GCC diagnostic push  /* some codecs are built with -pedantic, we suppress mixed declarations/code warning for those, JHB Aug 2019 */
   
-  #if GCC_VERSION >= 40800  /* check for gcc 4.8.0 or higher */
+  #if (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) >= 40800  /* check for gcc versions 4.8.0 or higher */
     #pragma GCC diagnostic ignored "-Wpedantic"
   #else
     #pragma GCC diagnostic ignored "-pedantic"
