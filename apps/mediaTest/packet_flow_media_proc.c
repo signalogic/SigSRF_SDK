@@ -2543,7 +2543,7 @@ next_session:
                         #ifdef FTRTDEBUG
                         static bool fOnce[MAX_SESSIONS][MAX_TERMS] = {{ false }};
                         if (!fOnce[hSession][term]) {
-                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %d, ptime = %d, timing = %s%s\n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval[hSession][term], ptime[hSession][term], (uFlags_get & DS_GETORD_PKT_FTRT) ? "analytics" : "telecom", DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? ", compatibilty mode" : "");
+                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %d, ptime = %d, timing = %s%s\n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval[hSession][term], ptime[hSession][term], (uFlags_get & DS_GETORD_PKT_FTRT) ? "analytics" : "telecom", (uFlags_get & DS_GETORD_PKT_FTRT) && DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? ", compatibilty mode" : "");
                            sig_printf(tmpstr, PRN_LEVEL_INFO, thread_index);
                            fOnce[hSession][term] = true;
                         }
@@ -5591,12 +5591,12 @@ organize_by_ssrc:
                DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, 1, &termInfo);
 
                #if 0  /* example of how to use voplib DSGetCodecInfo() with a codec handle, JHB Oct2020 */
-               CODEC_PARAMS codec_params;
+               CODEC_PARAMS codec_params;  /* CODEC_PARAMS is in voplib.h */
                HCODEC hCodec = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC, 1, NULL);  /*  1 = decoder, 2 = encoder ... see pktlib.h comments */
-               DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE, &codec_params);  /* voplib API */
+               DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE, &codec_params);  /* voplib.h API */
                strcpy(codec_name, codec_params.codec_name);
                // printf(" bit rate = %d, sampling rate = %d \n", codec_params.dec_params.bitRate, codec_params.dec_params.samplingRate);
-               #else  /* or if codec type is already known ... */
+               #else  /* or if codec type is already known and we just need the codec name... */
                DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE, codec_name);
                #endif
 
