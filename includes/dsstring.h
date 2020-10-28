@@ -91,11 +91,11 @@ short lstrlendz(LPCSTR);
 
 static inline void strcpyrws(char* s1, const char* s2) {  /* copy and remove white space (there isn't a standard C function for this (https://stackoverflow.com/questions/122616/how-do-i-trim-leading-trailing-whitespace-in-a-standard-way), JHB Aug2017 */
 
-unsigned int i, j = 0;
+int i, j = 0;
 
    if (!s1 || !s2) return;
 
-   for (i=0; i<strlen(s2); i++) if (s2[i] != ' ') s1[j++] = s2[i];
+   for (i=0; i<(int)strlen(s2); i++) if (s2[i] != ' ') s1[j++] = s2[i];
 
    s1[j] = 0;
 }
