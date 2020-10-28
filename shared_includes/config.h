@@ -179,7 +179,7 @@ enum EVENT_LOG_MODE {  /* uEventLogMode enums, these are in addition to LOG_xx c
   DS_EVENT_LOG_APPEND = 8,                     /* open event log in append mode (i.e. append if it already exists) */
   DS_EVENT_LOG_UPTIME_TIMESTAMPS = 0x20,       /* event log uses uptime (relative) time stamps */
   DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS = 0x40,    /* event log uses wall clock (system) date/time stamps */
-  DS_EVENT_LOG_WARN_ERROR_ONLY = 0x80,         /* set event log to level 3 output and below.  Intended for temporary purposes, for example file or screen I/O is taking a lot of system time */
+  DS_EVENT_LOG_WARN_ERROR_ONLY = 0x80          /* set event log to level 3 output and below.  Intended for temporary purposes, for example file or screen I/O is taking a lot of system time */
 };
 
 #define DS_LOG_LEVEL_MASK                 0x1f       /* up to 15 log levels supported */
