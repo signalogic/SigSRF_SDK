@@ -1,8 +1,8 @@
 #!/bin/bash
 #================================================================================================
 # Copyright (C) Signalogic Inc 2017-2020
-# Script provides SDK install/uninstall of Signalogic SW
-# Rev 1.5
+# Script for installing/uinstalling Signalogic SW (includes demo + SRF, license versions)
+# Rev 2.1
 
 	# Requirements
 		# Internet connection
@@ -70,7 +70,7 @@ unrarCheck() {
    fi
 }
 
-packageSetup() {			# prompt for Signalogic installation path, extarct package, set envionment var
+packageSetup() { # prompt for Signalogic installation path, extarct package, set envionment var
 
 	echo "Enter path for SigSRF software and dependency package installation:"
 	read installPath
@@ -81,7 +81,9 @@ packageSetup() {			# prompt for Signalogic installation path, extarct package, s
 		echo "Default Install path (/) is chosen"
 	fi
 
-	unrar x -o+ Signalogic_sw_host_SigSRF_*.rar $installPath/
+# add -o+ to force overwrite if files already exist, JHB Sep2020
+
+	unrar x -o+ Signalogic_sw_*.rar $installPath/
 }
 
 depInstall () {
@@ -96,7 +98,7 @@ depInstall () {
 	fi
 }
 
-dependencyCheck() {			# It will check for generic non-Signalogic SW packages and prompt for installation if not installed
+dependencyCheck() { # check for generic non-Signalogic SW packages and prompt for installation if not installed
 	
 	DOTs='................................................................'
 	
@@ -108,7 +110,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		
 		if [ ! $installPath ]; then
 			echo 
-			echo "SigSRF software install path could not be found."
+			echo "SigSRF software install path could not be found"
 			echo "Exiting..."
 			echo
 			exit
@@ -215,7 +217,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 	fi
 }
 
-createSymLinks() {
+createSymLinks() { # create symlinks
 
 	echo
 
@@ -231,6 +233,12 @@ createSymLinks() {
 		if [ ! -L /usr/src/linux ]; then
 			ln -s /usr/src/linux-headers-$kernel_version /usr/src/linux
 		fi
+	fi
+
+# if unrar fails for any reason, we need to avoid attempting to symlink to "Signalogic_2*", otherwise we'll end up with a symlink with a literal "*", JHB Oct2020
+
+	if [ ! -d $installPath/Signalogic_2* ]; then
+		return 0;
 	fi
 
 # Create symlinks. Assume _2xxx in the name, otherwise ln command might try to symlink the .rar file :-(
@@ -384,7 +392,7 @@ unInstall() {			# uninstall Signalogic SW completely
 		unInstallPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
 		if [ ! $unInstallPath ]; then
 			echo 
-			echo "Signalogic install path could not be found."
+			echo "Signalogic install path could not be found"
 			echo "Exiting..."
 			echo
 			exit
@@ -393,7 +401,7 @@ unInstall() {			# uninstall Signalogic SW completely
 	
 	echo "Signalogic Install Path: $unInstallPath"
 	rm -rf $unInstallPath/Signalogic/*  # remove all installed folders
-	rm -rf $unInstallPath/Signalogic*  # remove rar files
+	rm -rf $unInstallPath/Signalogic*  # remove symlink, rar files
 	rm -rf /etc/signalogic
 	rmmod sig_mc_hw
 	unlink /usr/src/linux
@@ -423,7 +431,9 @@ unInstall() {			# uninstall Signalogic SW completely
 	elif [ "$OS" = "Ubuntu" ]; then
 		sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.local
 	fi
-	
+
+# remove libs from /user/lib
+
 #	rm -rf /usr/lib/libcallmgr.a
 #	rm -rf /usr/lib/libenmgr*
 	rm -rf /usr/lib/libcimlib*
@@ -431,6 +441,7 @@ unInstall() {			# uninstall Signalogic SW completely
 	rm -rf /usr/lib/libfilelib*
 	rm -rf /usr/lib/libhwlib*
 	rm -rf /usr/lib/libpktib*
+	rm -rf /usr/lib/libstreamlib*
 	rm -rf /usr/lib/libvoplib*
 	rm -rf /usr/lib/libalglib*
 	rm -rf /usr/lib/libinferlib*
@@ -452,7 +463,7 @@ line='................................................................'
 		installPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
 		if [ ! $installPath ]; then
 			echo 
-			echo "Signalogic install path could not be found."
+			echo "Signalogic install path could not be found"
 			echo "Exiting..."
 			echo
 			exit
