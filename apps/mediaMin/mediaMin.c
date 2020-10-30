@@ -89,7 +89,7 @@
    Modified Jun 2020 JHB, move static session creation into StaticSessionCreate()
    Modified Jun 2020 JHB, add ENABLE_ALIGNMENT_MARKERS -dN cmd line option, to support visual inspection when deduplication algorithm is active (ENABLE_STREAM_GROUP_DEDUPLICATION flag)
    Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0: include math.h (for min/max functions), fix various security and "indentation" warnings
-   Modified Oct 2020 JHB, tested with .pcapng input files after support added to pktlib for reading pcapng format
+   Modified Oct 2020 JHB, tested with .pcapng input files after support added to pktlib for reading pcapng file format
 */
 
 
