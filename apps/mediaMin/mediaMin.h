@@ -1,7 +1,7 @@
 /*
   mediaMin.h
 
-  header file for mediaMin (i) simplified SigSRF push/pull interface and (ii) test and measurement program
+  header file for mediaMin reference application including (i) simplified SigSRF push/pull interface and (ii) test and measurement program
   
   Copyright (C) Signalogic, 2018-2020
 
