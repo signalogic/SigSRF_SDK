@@ -55,7 +55,7 @@ SigSRF software is designed to run on (i) private, public, or hybrid cloud serve
 
 SigSRF supports media delivery, transcoding, deep learning <sup>1</sup>, OpenCV, speech recognition <sup>1</sup>, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
-For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture (see [When Software Only is Not Enough](#user-content-beyondsoftwareonly) below).
+For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture, for an overview see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/WhenSoftwareOnlyIsNotEnough.md">When Software Only Is Not Enough</a>.
 
 <sup>1</sup> In progress<br/>
 <sup>2</sup> SWaP = size, weight, and power consumption
