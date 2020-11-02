@@ -1,1 +1,1 @@
-mediaMin reference app for telecom, lawful intercept, and other media applications
+mediaMin reference app for telecom (e.g. SBC), lawful intercept, and other media applications
