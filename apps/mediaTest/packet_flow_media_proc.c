@@ -66,8 +66,8 @@
    Modified Aug 2018 JHB, add sub loop for cases where DSRecvPackets() returns more than one packet
    Modified Sep 2018 JHB, implement "master buffer" scheme for stream audio merging.  This allows stream contributions at unequal and varying rates.  The default "allowable gap" for lagging streams is 1/4 sec, but can be set up to 8 sec via DS_SESSION_INFO_MERGE_BUFFER_SIZE
    Modified Sep 2018 JHB, further refinement to stream audio merging (i) ensure exact time-alignment and start offset of all streams, and (ii) fill in missing contributions with audio zeros under certain conditions
-   Modified Sep 2018 JHB, debug and test multiple merge groups.  Add merge group initialization to InitSession()
-   Modified Oct 2018 JHB, implement multiple packet/media threads.  Modifications / optimizations include thread_index initialization, ManageSessions(), get_session_handle(), ThreadDebugOutput(), sig_printf(), isMasterThread references, etc
+   Modified Sep 2018 JHB, debug and test multiple merge groups. Add merge group initialization to InitSession()
+   Modified Oct 2018 JHB, implement multiple packet/media threads. Modifications / optimizations include thread_index initialization, ManageSessions(), get_session_handle(), ThreadDebugOutput(), sig_printf(), isMasterThread references, etc
    Modified Oct 2018 JHB, additional error checking for cases when asynchronous pkt/media threads may be concurrently processing same stream groups
    Modified Oct 2018 JHB, optimize usage of DSGetStreamData(). This also fixed a crash case with multiple pkt/media threads "seeing" each other's active channels.  See USE_CHAN_NUMS define and associated comments
    Modified Nov 2018 JHB, move merging related codes to streamlib.so (streamlib.c).  streamlib API calls here include DSInitMergeGroup() and DSMergeStreamGroupContributors()
@@ -78,10 +78,10 @@
                           -correct whole group allocation requires STREAM_GROUP_WHOLE_THREAD_ALLOCATE to be added to the term1 group mode field at session creation time, and DS_CONFIG_MEDIASERVICE_ROUND_ROBIN flag to be set when creating a packet/media thread. Without the round robin flag there can still be some groups split across threads
                           -see the nomenclature comments in ThreadDebugOutput() to interpret the screen output
    Modified Dec 2018 JHB, more info printed in ThreadDebugOutput(), including some system wide stats
-   Modified Feb 2019 JHB, add DS_GETORD_PKT_ENABLE_SID_REPAIR usage.  Applying this flag enables "CNG fill-in" when damage to long silence durations is detected (audio that contains long SID periods can be significantly shortened/mis-aligned by packet loss.  Test with 13572.0 pcap)
+   Modified Feb 2019 JHB, add DS_GETORD_PKT_ENABLE_SID_REPAIR usage. Applying this flag enables "CNG fill-in" when damage to long silence durations is detected (audio that contains long SID periods can be significantly shortened/mis-aligned by packet loss.  Test with 13572.0 pcap)
    Modified Feb 2019 JHB, add RecordPacketTimeStats() to keep track of packet timestamp and RTP timestamp duration (both before and after jitter buffer)
    Modified Feb 2019 JHB, add CheckForPacketLossFlush() for packet loss mitigation (monitors jitter buffer levels for parent and child channels).  See max_loss_ptimes in TERMINATION_INFO struct (shared_include/session.h)
-   Modified Mar 2019 JHB, add packet time and loss stats.  See PACKET_TIME_STATS define, see also fPacketTimeStatsEnabled and fPacketLossStatsEnabled in PACKETMEDIATHREADINFO struct and DS_CONFIG_MEDIASERVICE_EN/DISABLE_THREAD_PACKET_TIME/LOSS_STATS flags (pktlib.h)
+   Modified Mar 2019 JHB, add packet time and loss stats. See PACKET_TIME_STATS define, see also fPacketTimeStatsEnabled and fPacketLossStatsEnabled in PACKETMEDIATHREADINFO struct and DS_CONFIG_MEDIASERVICE_EN/DISABLE_THREAD_PACKET_TIME/LOSS_STATS flags (pktlib.h)
    Modified Mar 2019 JHB, improve profiling, give each category its own independent running sum index and increase running sum length to 16 (THREAD_STATS_TIME_MOVING_AVG defined in pktlib.h)
    Modified May 2019 JHB, when acting on payload content type returned by DSGetOrderedPackets(), check for both DS_PKT_PYLD_CONTENT_DTMF_SESSION (indicating a match to a session-defined DTMF payload type), and for generic DS_PKT_PYLD_CONTENT_DTMF content type
    Modified Aug 2019 JHB, add extern C to definition of functions used externally (sig_printf, ResetPktStats), limit number of channels that can be tracked in profiling (see MAX_CHAN_TRACKED below), add an error string param to ThreadAbort()
@@ -94,7 +94,7 @@
    Modified Dec 2019 JHB, implement DSWritePacketStatsHistoryLog() and DSLogPacketTimeLossStats() APIs.  The latter collates, formats, and prints run-time packet stats to the event log
    Modified Jan 2020 JHB, use DSGetStreamGroupInfo() when collecting packet history stats (PKT_STATS), ensure run-time packet stats are not logged twice for same session prior to deletion
    Modified Jan 2020 JHB, define SECONDARY_THREADS_DEPRECATED, which deprecates old "secondary thread" code.  Since early 2018, packet_flow_media_proc() is thread-safe and allows multiple packet/media "worker" threads.  Multiple app threads are implemented using mediaTest -Et ant -tN cmd line options, which invoke one or more mediaMin application threads
-   Modified Jan 2020 JHB, call DSCreateFilelibThread() in p/m thread initialization.  See comments in filelib.h and filemgr.cpp
+   Modified Jan 2020 JHB, call DSCreateFilelibThread() in p/m thread initialization. See comments in filelib.h and filemgr.cpp
    Modified Jan 2020 JHB, implement p/m thread preemption alarm
    Modified Jan-Feb 2020 JHB, disallow past due flush if the channel's jb output is currently in SID state.  This avoids generation of possibly extra SID reuse packets and leaves the SID reuse responsibility completely with pktlib packet repair
    Modified Feb 2020 JHB, optimize jitter output packet processing loop and stream data loop (after variable ptime):  obtain decoder codec handle, termInfo, termInfo_link, etc only if chnum changes between loop iterations (see prev_chnum)
