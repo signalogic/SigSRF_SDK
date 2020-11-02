@@ -12,7 +12,6 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[When "Software Only" is Not Enough](#user-content-softwareonly)<br/>
 [Demo and SDK Download](#user-content-sdkdemodownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
@@ -56,7 +55,7 @@ SigSRF software is designed to run on (i) private, public, or hybrid cloud serve
 
 SigSRF supports media delivery, transcoding, deep learning <sup>1</sup>, OpenCV, speech recognition <sup>1</sup>, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
-For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture (see [When Software Only is Not Enough](#user-content-beyondsoftwareonly) below).
+For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture, for an overview see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/WhenSoftwareOnlyIsNotEnough.md">When Software Only Is Not Enough</a>.
 
 <sup>1</sup> In progress<br/>
 <sup>2</sup> SWaP = size, weight, and power consumption
@@ -134,19 +133,6 @@ Some notes about the above data flow diagram:
 
    6) <b>Media signal processing and inference</b>.  The second orange vertical line divides the "packet domain" and "media domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The media domain contains raw audio or video data, which allows signal processing operations, such as sample rate conversion, conferencing, filtering, echo cancellation, convolutional neural network (CNN) classification, etc. to be performed.  Also this is where image and voice analytics takes place, for instance by handing video and audio data off to another process.
 
-<a name="BeyondSoftwareOnly"></a>
-## When "Software Only" is Not Enough
-
-Cloud solutions are sometimes referred to as "software only", but that's an Intel marketing term. In reality there is no software without hardware.  With the recent surge in deep learning / neural net chips attempting to emulate human intelligence -- and the ultra energy efficiency of the human brain -- hardware limitations have never been more apparent.  In addition to AI, a wide range of HPC applications face hardware contraints.  For 30 years people have failed to solve this with generic x86 processors, and it isn't likely to happen any time soon.
-
-One promising solution is heterogeneous (mixed) cores that "front" incoming data and perform calculation intensive processing, combined with x86 cores that perform general processing.  The basic concepts are (i) move calculation intensive processing closer to the data, and (ii) use cores that are extremely energy efficient for data calculation purposes.  To enable mixed core processing, SigSRF supports coCPU&trade; technology, which adds NICs and up to 100s of coCPU cores to scale per-box streaming and performance density.  Examples of coCPU cores include GPU, neural net chips, and Texas Instruments multicore CPUs. coCPUs can turn conventional 1U, 2U, and mini-ITX servers into high capacity, energy efficient edge servers for media, HPC, and AI applications, solving SWaP, latency, and bandwidth contraints.  For example, an embedded AI server can operate independently of the cloud, acquiring new data and learning on the fly.
-
-Available media processing and image analytics demos can make use of optional coCPU cards containing Texas Instruments c66x multicore CPUs (the demo programs will auto-discover coCPU hardware if installed -- coCPU hardware is not required for any of the demos).  Besides TI, the expectation is there will soon be additional, suitable multicore CPU cards due to the explosion in deep learning applications, which is driving new chip and card development.  For the time being, c66x series CPUs, although implemented in 45 nm, still provide a huge per-box energy efficiency advantage for applications with high amounts of convolution, FFT, and matrix operations.
-
-When used with coCPUs, SigSRF supports concurrent multiuser operation in a bare-metal environment, and in a KVM + QEMU virtualized environment, cores and network I/O interfaces appear as resources that can be allocated between VMs. VM and host users can share also, as the available pool of cores is handled by a physical layer back-end driver. This flexibility allows media, HPC, and AI applications to scale between cloud, enterprise, and remote vehicle/location servers.
-
-<sup>1</sup> SWaP = size, weight, and power consumption<br/>
-
 <a name="SDKDemoDownload"></a>
 # Demo and SDK Download
 
@@ -183,7 +169,7 @@ Additional advanced pcap examples are also available, including:
     -dormant SSRC ("stream takeover")
     -RFC7198 (temporal packet duplication)
 
-For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison.
+For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison. Both libpcap and pcapng formats are supported.
 
 Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a>. 
 
@@ -304,4 +290,4 @@ The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provid
 
 ## Technical Support / Questions
 
-Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can ask for group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can request group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
