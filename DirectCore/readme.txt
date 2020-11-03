@@ -1,1 +1,1 @@
-DirectCore folder
+DirectCore folder, including coCPU drivers
