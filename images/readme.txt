@@ -1,1 +1,1 @@
-png and jpg images for SigSRF repository readme.md files
+png and jpg images for SigSRF repository markdown (.md) files
