@@ -1,1 +1,1 @@
-SigSRF shared object libraries
+SigSRF shared object libraries (demo + SDK versions)
