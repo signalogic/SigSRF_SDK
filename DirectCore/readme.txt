@@ -1,1 +1,1 @@
-DirectCore folder, including coCPU drivers
+DirectCore folder, including VM platform management and VirtIO drivers
