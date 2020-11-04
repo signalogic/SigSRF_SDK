@@ -1,9 +1,6 @@
 # Github SigSRF License, Version 1.0
 
-This Github SigSRF License Agreement Version 1.0 (the “Agreement”) is a modified form of the the [Confluent Community License Agreement](https://www.confluent.io/confluent-community-license/), and sets forth the terms on which Signalogic, Inc. ("Signalogic") makes available Github "SigSRF_SDK" repository software (the "Github SigSRF Software"). BY INSTALLING, DOWNLOADING, ACCESSING, USING OR DISTRIBUTING ANY OF THE GITHUB SIGSRF SOFTWARE, YOU AGREE TO THE TERMS AND CONDITIONS OF 
-THIS AGREEMENT. IF YOU DO NOT AGREE TO SUCH TERMS AND CONDITIONS, YOU MUST NOT USE GITHUB SIGSRF SOFTWARE. IF YOU ARE RECEIVING GITHUB SIGSRF SOFTWARE ON 
-BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH 
-ENTITY. "Licensee" means you, an individual, or the entity on whose behalf you are receiving Github SigSRF Software.
+This Github SigSRF License Agreement Version 1.0 (the “Agreement”) is a modified form of the the [Confluent Community License Agreement](https://www.confluent.io/confluent-community-license/), and sets forth the terms on which Signalogic, Inc. ("Signalogic") makes available Github "SigSRF_SDK" repository software (the "Github SigSRF Software"). BY INSTALLING, DOWNLOADING, ACCESSING, USING OR DISTRIBUTING ANY OF THE GITHUB SIGSRF SOFTWARE, YOU AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE TO SUCH TERMS AND CONDITIONS, YOU MUST NOT USE GITHUB SIGSRF SOFTWARE. IF YOU ARE RECEIVING GITHUB SIGSRF SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY. "Licensee" means you, an individual, or the entity on whose behalf you are receiving Github SigSRF Software.
 
 ## 1 LICENSE GRANT AND CONDITIONS
 
@@ -111,4 +108,3 @@ binding upon the parties unless made in writing and signed by the duly authorize
 limitation any condition, of this Agreement is held to be unenforceable, this Agreement and all licenses and rights granted hereunder will immediately terminate. 
 Waiver by Signalogic of a breach of any provision of this Agreement or the failure by Signalogic to exercise any right hereunder will not be construed as a waiver 
 of any subsequent breach of that right or as a waiver of any other right.
-
