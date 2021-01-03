@@ -188,8 +188,6 @@ where "distroNN" is the Linux distro and version and "date" is the package date.
     wget -r -l7 --cut-dirs 6 -nH -N -A "*Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
     wget -r -l7 --cut-dirs 6 -nH -N -A "*CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 
-Whatever above commands you use, <i>before you install make sure there is only one .rar file</i>.
-
 All .rar files and the install script should be downloaded to the same folder.
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
@@ -199,6 +197,8 @@ Note that the install script checks for the presence of the unrar package, and i
 The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
 ### Running the Install Script
+
+First, whatever above wget commands you used, or other download method, <i>before you run the install script make sure there is only one .rar file</i>.
 
 To run the install script enter:
 
