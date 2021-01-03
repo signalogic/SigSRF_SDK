@@ -185,8 +185,8 @@ To download the install script and one or more rar files directly from Github (i
 
 where "distroNN" is the Linux distro and version and "date" is the package date. To avoid entering the distro release version and .rar date, you can use one of the following wget commands:
 
-    wget -r -l7 --cut-dirs 6 -nH -nc -A "*Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
-    wget -r -l7 --cut-dirs 6 -nH -nc -A "*CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
+    wget -r -l7 --cut-dirs 6 -nH -N -A "*Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
+    wget -r -l7 --cut-dirs 6 -nH -N -A "*CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 
 Whatever above commands you use, <i>before you install make sure there is only one .rar file</i>.
 
