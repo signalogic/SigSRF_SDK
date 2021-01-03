@@ -192,7 +192,7 @@ Whatever above commands you use, <i>before you install make sure there is only o
 
 All .rar files and the install script should be downloaded to the same folder.
 
-Note that the install script checks for the presence of the unrar package, and if not found attempts to install it. There may be some additional prompts depending on the Linux version.
+Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
 
 ### Sudo Privilege
 
