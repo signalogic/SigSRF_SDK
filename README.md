@@ -180,20 +180,25 @@ Separate RAR packages are provided for different Linux distributions. Please cho
 
 To download the install script and one or more rar files directly from Github (i.e. without checking out a clone repository), use the following commands:
 
-    > wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2020v6.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2020v6.sh
-    > wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_Demo_SDK_distroNN_date.rar
+    wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2020v6.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2020v6.sh
+    wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_Demo_SDK_distroNN_date.rar
 
-where "distroNN" is the Linux distro and version and "date" is the package date.
+where "distroNN" is the Linux distro and version and "date" is the package date. To avoid entering the distro release version and .rar date, you can use one of the following wget commands:
+
+    wget -r -l7 --cut-dirs 6 -nH -N -A "*Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
+    wget -r -l7 --cut-dirs 6 -nH -N -A "*CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 
 All .rar files and the install script should be downloaded to the same folder.
 
-Note that the install script checks for the presence of the unrar package, and if not found attempts to install it. There may be some additional prompts depending on the Linux version.
+Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
 
 ### Sudo Privilege
 
 The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
 ### Running the Install Script
+
+First, whatever above wget commands you used, or other download method, <i>before you run the install script make sure there is only one .rar file</i>.
 
 To run the install script enter:
 
