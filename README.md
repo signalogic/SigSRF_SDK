@@ -200,7 +200,7 @@ The install script requires sudo root privilege.  In Ubuntu, allowing a user sud
 
 To run the install script enter:
 
-    > source autoInstall_SigSRF_SDK_2020v6.sh
+    source autoInstall_SigSRF_SDK_2020v6.sh
 
 The script will then prompt as follows:
 
