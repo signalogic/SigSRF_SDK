@@ -221,7 +221,7 @@ If install operation 1) is selected, the script will prompt for an install path:
 
     Enter the path for SigSRF software installation:
 
-If no path is entered the default path is /usr/local. Do not enter a path such as "Signalogic" or "/home/Signalogic" as during the install a "Signalogic" symlink is created for the base install folder, which would conflict. Here are a few possible install path examples:
+If no path is entered the default path is /usr/local. <i>Do not enter a path such as "Signalogic" or "/home/Signalogic"</i> as during the install a "Signalogic" symlink is created for the base install folder, which would conflict. Here are a few possible install path examples:
 
 ```
   /home
