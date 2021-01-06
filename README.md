@@ -229,7 +229,35 @@ If no path is entered the default path is /usr/local. Do not enter a path such a
   /root
 ```
 
-If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes.
+If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes. The Check / Verify option also generates screen output, here is an example:
+
+```
+SigSRF Install Path and Options Check
+Install path: /home/labuser
+Install options:
+
+SigSRF Symlinks Check
+Signalogic Symlink ..............................................[ OK ]
+Apps Symlink ....................................................[ OK ]
+Linux Symlink ...................................................[ OK ]
+
+SigSRF Library Check
+cimlib ..........................................................[ OK ]
+hwlib ...........................................................[ OK ]
+libhwmgr ........................................................[ OK ]
+filelib .........................................................[ OK ]
+
+SigSRF App Executables Check
+iaTest ..........................................................[ OK ]
+mediaTest .......................................................[ OK ]
+mediaMin ........................................................[ OK ]
+
+SigSRF Leftover hwlib Files Check
+hwlib_mutex .....................................................[ OK ]
+hwlib_info ......................................................[ OK ]
+```
+
+The generated log file will have a filename something like DirectCore_diagnostic_report_01.06.2021-14:48:56.txt.
 
 ### Building Demo Applications
 
