@@ -176,7 +176,7 @@ Example command lines for both the default set of pcaps and wav files and advanc
 <a name="InstallNotes"></a>
 ## Install Notes
 
-Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. For some files, the install script will auto-check for kernel version and Linux distro version to decide which file version to install.
+Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. If you have downloaded more than one RAR package, for example you are upgrading to a newer demo version, the install script will install only the most recent .rar file. Also the install script will auto-check for kernel version and Linux distro version to decide which .rar file to install.
 
 To download the install script and one or more rar files directly from Github (i.e. without checking out a clone repository), use the following commands:
 
@@ -197,8 +197,6 @@ Note that the install script checks for the presence of the unrar package, and i
 The install script requires sudo root privilege.  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
 ### Running the Install Script
-
-First, whatever above wget commands you used, or other download method, <i>before you run the install script make sure there is only one .rar file</i>.
 
 To run the install script enter:
 
