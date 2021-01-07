@@ -263,7 +263,7 @@ hwlib_info ......................................................[ OK ]
 
 The generated log file will have a filename something like DirectCore_diagnostic_report_01.06.2021-14:48:56.txt.
 
-If you are installing with the coCPU option, the install script will also load the DirectCore driver. In that case during installation you should see something like:
+If you are installing with the coCPU option, the install script will also load the DirectCore coCPU driver. In that case during installation you should see something like:
 
 ```
 Loading coCPU driver ...
