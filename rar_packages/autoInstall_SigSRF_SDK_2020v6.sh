@@ -1,17 +1,17 @@
 #!/bin/bash
 #================================================================================================
-# Copyright (C) Signalogic Inc 2017-2020
-# Script provides SDK install/uninstall of Signalogic SW
-# Rev 1.5
+# Script to install/uninstall SigSRF SDK
+# Copyright (C) Signalogic Inc 2017-2021
+# Rev 1.6
 
-	# Requirements
-		# Internet connection
-		# Install unrar package
-			# For Ubuntu, use command:
-				# apt-get install unrar
-			# For RHEL/CentOS,
-				# yum -y install epel-release && rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm
-				# yum install unrar
+# Requirements
+	# Internet connection
+	# Install unrar package -- handled automatically in unrarCheck() below, but if that fails ...
+		# For Ubuntu, use command:
+			# apt-get install unrar
+		# For RHEL/CentOS,
+			# yum -y install epel-release && rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm
+			# yum install unrar
 
 # Revision History
 #  Created Feb 2016 HP
@@ -25,6 +25,8 @@
 #                         -add method to install unrar for Ubuntu 17.04 and earlier, where unrar was in a weird repository due to licensing restrictions
 #  Modified Sep 2020 JHB, fix problems with re-install (i.e. installing over existing files), including unrar command line, symlinks
 #  Modified Sep 2020 JHB, other minor fixes, such as removing "cd -" commands after non DirectCore/lib installs (which are in a loop). Test in Docker containers, including Ubuntu 12.04, 18.04, and 20.04
+#  Modified Jan 2021 JHB, fix minor issues in installCheckVerify(), add SIGNALOGIC_INSTALL_OPTIONS in /etc/environment, add preliminary check for valid .rar file
+#  Modified Jan 2021 JHB, unrar only most recent .rar file in case user has downloaded before, look for .rar that matches installed distro
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -71,7 +73,16 @@ unrarCheck() {
 
 packageSetup() { # check for .rar file and if found, prompt for Signalogic installation path, extract files
 
-	rarFile="Signalogic_sw_host_SigSRF_*.rar"
+   # match SigSRF .rar files by distro type, ignore the following:  JHB Jan2021
+   #  -SDK vs license
+   #  -host vs target
+   #  -distro version and date
+
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+		rarFile="Signalogic_sw_host_SigSRF_*CentOS*.rar"
+	else  # add other distro types later.  Currently Debian defaults to Ubuntu .rar, JHB Jan2021
+		rarFile="Signalogic_sw_host_SigSRF_*Ubuntu*.rar"
+	fi
 
 	if [ ! -f $rarFile ]; then  # add check for .rar file not found, JHB Jan2021
 		echo "Install package rar file not found"
@@ -88,12 +99,16 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 		echo "Default Install path (/) is chosen"
 	fi
 
-	unrar x -o+ $rarFile $installPath/
+	for iFileName in `ls -tr $rarFile`; do  # unrar only most recent .rar file found (also this avoids unraring more than one file, due to wildcard), JHB Jan2021
+		rarFileNewest=$iFileName;
+	done;
+
+	unrar x -o+ $rarFileNewest $installPath/
 
 	return 1
 }
 
-depInstall () {
+depInstall() {
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 		yum localinstall $line
@@ -139,33 +154,33 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 			fi
 		fi
 
-		cd $installPath/Signalogic_2018v7/installation_rpms/RHEL
+		cd $installPath/Signalogic/installation_rpms/RHEL
 		filename="rhelDependency.txt"
+
 		while read -r -u 3 line
 		do
-		
-		d=$(sed 's/.rpm//g' <<< $line)
-		package=`rpm -qa | grep -w $d | head -n1`
-		if [ ! $package ]; then
-			if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
-				if [ ! $totalInstall ]; then
-					echo "Do you wish to install $d package?"
-					read -p "Please insert [Y]ES, [N]O, [Aa]ll: " Dn
+
+			d=$(sed 's/.rpm//g' <<< $line)
+			package=`rpm -qa | grep -w $d | head -n1`
+			if [ ! $package ]; then
+				if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
+					if [ ! $totalInstall ]; then
+						read -p  "Do you wish to install $d package? Please enter [Y]es, [N]o, [A]ll: " Dn
 						if [[ ($Dn = "a") || ($Dn = "A") ]]; then
 							totalInstall=1
 						fi
+					fi
+					case $Dn in
+						[YyAa]* ) depInstall ; ;;
+						[Nn]* ) ;;
+						* ) echo "Please retry with just y, n, or a";;
+					esac
+				elif [ "$dependencyInstall" = "Dependency Check" ]; then
+					printf "%s %s[ NOT INSTALLED ]\n" $d "${DOTs:${#d}}"
 				fi
-				case $Dn in
-					[YyAa]* ) depInstall ; ;;
-					[Nn]* ) ;;
-					* ) echo "Please retry with just *Yy/Aa* or *Nn*";;
-				esac
-			elif [ "$dependencyInstall" = "Dependency Check" ]; then
-				printf "%s %s[ NOT INSTALLED ]\n" $d "${DOTs:${#d}}"
+			else
+				printf "%s %s[ ALREADY INSTALLED ]\n" $d "${DOTs:${#d}}"
 			fi
-		else
-			printf "%s %s[ ALREADY INSTALLED ]\n" $d "${DOTs:${#d}}"
-		fi
 		done 3< "$filename"
 	}
 	
@@ -183,31 +198,34 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 				unlink /usr/bin/g++
 			fi
 		fi
-		cd $installPath/Signalogic*/installation_rpms/Ubuntu
+
+		cd $installPath/Signalogic/installation_rpms/Ubuntu
 		filename="UbuntuDependency.txt"
+
 		while read -r -u 3 line
 		do
-		d=$(sed 's/_.*//g' <<< $line)
-		package=$(dpkg -s $d 2>/dev/null | grep Status | awk ' {print $4} ')
-		if [ ! $package ]; then
-			if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
-				if [ ! $totalInstall ]; then
-					read -p "Do you wish to install $d packages? Please insert [Y]ES, [N]O, [Aa]ll: " Dn
+
+			d=$(sed 's/_.*//g' <<< $line)
+			package=$(dpkg -s $d 2>/dev/null | grep Status | awk ' {print $4} ')
+			if [ ! $package ]; then
+				if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
+					if [ ! $totalInstall ]; then
+						read -p "Do you wish to install $d packages? Please enter [Y]es, [N]o, [A]ll: " Dn
 						if [[ ($Dn = "a") || ($Dn = "A") ]]; then
 							totalInstall=1
 						fi
+					fi
+					case $Dn in
+						[YyAa]* ) depInstall ; ;;
+						[Nn]* ) ;;
+						* ) echo "Please retry with just y, n, or a";;
+					esac
+				elif [ "$dependencyInstall" = "Dependency Check" ]; then
+					printf "%s %s[ NOT INSTALLED ]\n" $d "${DOTs:${#d}}"
 				fi
-				case $Dn in
-					[YyAa]* ) depInstall ; ;;
-					[Nn]* ) ;;
-					* ) echo "Please retry with just *y* or *n*";;
-				esac
-			elif [ "$dependencyInstall" = "Dependency Check" ]; then
-				printf "%s %s[ NOT INSTALLED ]\n" $d "${DOTs:${#d}}"
+			elif [ $package ]; then
+				printf "%s %s[ ALREADY INSTALLED ]\n" $d "${DOTs:${#d}}"
 			fi
-		elif [ $package ]; then
-			printf "%s %s[ ALREADY INSTALLED ]\n" $d "${DOTs:${#d}}"
-		fi
 		done 3< "$filename"
 		
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
@@ -252,7 +270,7 @@ swInstall() {  # install Signalogic SW on specified path
 		fi
 	fi
 
-# Create symlinks. Assume _2xxx in the name, otherwise ln command might try to symlink the .rar file :-(
+   # Create symlinks. Assume _2xxx in the name, otherwise ln command might try to symlink the .rar file :-(
 
    if [ ! -L $installPath/Signalogic ]; then
 	   ln -s $installPath/Signalogic_2* $installPath/Signalogic
@@ -266,72 +284,76 @@ swInstall() {  # install Signalogic SW on specified path
 	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/DirectCore/apps/coCPU 
    fi
 
-	echo	
+	echo
 
-   if [ "$installOptions" = "coCPU" ]; then
+	if [ "$installOptions" = "coCPU" ]; then
 
-      echo "loading driver"
-      if [ "$target" = "Host" ]; then
-         #cd $installPath/Signalogic_*/DirectCore/hw_utils; make clean; make
-         cd $installPath/Signalogic_*/DirectCore/hw_utils; make
-         cd ../driver; 
-         distribution=$(lsb_release -d)
-         kernel=$(uname -r) 
-         if [[ $kernel == 3.2.0-49-generic ]]; then
-            cp sig_mc_hw_ubuntu_12.04.5.ko sig_mc_hw.ko
-         elif [[ $kernel == 3.16.0-67-generic ]]; then
-            cp sig_mc_hw_ubuntu_14.04.4.ko sig_mc_hw.ko
-         elif [[ $kernel == 4.4.0-31-generic ]]; then
-            cp sig_mc_hw_ubuntu_14.04.5.ko sig_mc_hw.ko
-         elif [[ $kernel == "4.4.0-59-generic" ]]; then
-            cp sig_mc_hw_ubuntu_16.04.1.ko sig_mc_hw.ko
-         elif [[ $distribution == *12.04.5* ]]; then
-            cp sig_mc_hw_ubuntu_12.04.5.ko sig_mc_hw.ko
-         elif [[ $distribution == *14.04.4* ]]; then
-            cp sig_mc_hw_ubuntu_14.04.4.ko sig_mc_hw.ko
-         elif [[ $distribution == *14.04.5* ]]; then
-            cp sig_mc_hw_ubuntu_14.04.5.ko sig_mc_hw.ko
-         elif [[ $distribution == *16.04.1* ]]; then
-            cp sig_mc_hw_ubuntu_16.04.1.ko sig_mc_hw.ko
-         fi
+		echo "loading driver"
 
-	      if lsmod | grep sig_mc_hw &> /dev/null ; then
-		   	echo "Signalogic Driver is loaded"
-  		      # make load
-		   fi
-      elif [ "$target" = "VM" ]; then
-         cd $installPath/Signalogic_*/DirectCore/virt_driver; make load
-      fi
-   
-      echo  "Setting up autoload of Signalogic driver on boot"
-	
-      if [ "$target" = "Host" ]; then
-         if [ ! -f /lib/modules/$kernel_version//sig_mc_hw.ko ]; then
-            ln -s $installPath/Signalogic/DirectCore/driver/sig_mc_hw.ko /lib/modules/$kernel_version
-         fi
-      elif [ "$target" = "VM" ]; then
-         if [ ! -L /lib/modules/$kernel_version ]; then
-            ln -s $installPath/Signalogic/DirectCore/virt_driver/virtio-sig.ko /lib/modules/$kernel_version
-         fi
-      fi
-      depmod -a
-      if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
-         cp -p $installPath/Signalogic/DirectCore/driver/sig_mc_hw.modules /etc/sysconfig/modules/
-         chmod 755 /etc/sysconfig/modules/sig_mc_hw.modules
-         echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.d/rc.local
-         chmod 755 /etc/rc.d/rc.local
-      elif [ "$OS" = "Ubuntu" ]; then
-         echo "sig_mc_hw" >> /etc/modules
-         sed -i '/exit*/d' /etc/rc.local
-         echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.local
-         echo "exit 0" >> /etc/rc.local
-         chmod 755 /etc/rc.local
-      fi
-   fi
+		if [ "$target" = "Host" ]; then
+			#cd $installPath/Signalogic_*/DirectCore/hw_utils; make clean; make
+			cd $installPath/Signalogic/DirectCore/hw_utils; make
+			cd ../driver; 
+			distribution=$(lsb_release -d)
+			kernel=$(uname -r) 
+			if [[ $kernel == 3.2.0-49-generic ]]; then
+				cp sig_mc_hw_ubuntu_12.04.5.ko sig_mc_hw.ko
+			elif [[ $kernel == 3.16.0-67-generic ]]; then
+				cp sig_mc_hw_ubuntu_14.04.4.ko sig_mc_hw.ko
+			elif [[ $kernel == 4.4.0-31-generic ]]; then
+				cp sig_mc_hw_ubuntu_14.04.5.ko sig_mc_hw.ko
+			elif [[ $kernel == "4.4.0-59-generic" ]]; then
+				cp sig_mc_hw_ubuntu_16.04.1.ko sig_mc_hw.ko
+			elif [[ $distribution == *12.04.5* ]]; then
+				cp sig_mc_hw_ubuntu_12.04.5.ko sig_mc_hw.ko
+			elif [[ $distribution == *14.04.4* ]]; then
+				cp sig_mc_hw_ubuntu_14.04.4.ko sig_mc_hw.ko
+			elif [[ $distribution == *14.04.5* ]]; then
+				cp sig_mc_hw_ubuntu_14.04.5.ko sig_mc_hw.ko
+			elif [[ $distribution == *16.04.1* ]]; then
+				cp sig_mc_hw_ubuntu_16.04.1.ko sig_mc_hw.ko
+			fi
+
+			make load;  # load driver -- note if already loaded then an error message is shown, but causes no problems, JHB Jan2021
+
+			if lsmod | grep sig_mc_hw &> /dev/null ; then
+				echo "Signalogic Driver is loaded"
+			fi
+		elif [ "$target" = "VM" ]; then
+			cd $installPath/Signalogic/DirectCore/virt_driver; make load
+		fi
+
+		echo  "Setting up autoload of Signalogic driver on boot"
+
+		if [ "$target" = "Host" ]; then
+			if [ ! -f /lib/modules/$kernel_version//sig_mc_hw.ko ]; then
+				ln -s $installPath/Signalogic/DirectCore/driver/sig_mc_hw.ko /lib/modules/$kernel_version
+			fi
+		elif [ "$target" = "VM" ]; then
+			if [ ! -L /lib/modules/$kernel_version ]; then
+				ln -s $installPath/Signalogic/DirectCore/virt_driver/virtio-sig.ko /lib/modules/$kernel_version
+			fi
+		fi
+
+		depmod -a
+
+		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+			cp -p $installPath/Signalogic/DirectCore/driver/sig_mc_hw.modules /etc/sysconfig/modules/
+			chmod 755 /etc/sysconfig/modules/sig_mc_hw.modules
+			echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.d/rc.local
+			chmod 755 /etc/rc.d/rc.local
+		elif [ "$OS" = "Ubuntu" ]; then
+			echo "sig_mc_hw" >> /etc/modules
+			sed -i '/exit*/d' /etc/rc.local
+			echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.local
+			echo "exit 0" >> /etc/rc.local
+			chmod 755 /etc/rc.local
+		fi
+	fi
 
 	echo
 	echo "Installing SigSRF pktlib, voplib, streamlib, diaglib, codecs, and other shared libraries..."
-	cd $installPath/Signalogic_*/DirectCore/lib/
+	cd $installPath/Signalogic/DirectCore/lib/
 	for d in *; do
 		cd $d; cp -p lib* /usr/lib; ldconfig; cd -
 	done
@@ -381,7 +403,7 @@ swInstall() {  # install Signalogic SW on specified path
 	cd $wdPath
 }
 
-unInstall() {			# uninstall Signalogic SW completely
+unInstall() { # uninstall Signalogic SW completely
 
 	OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')
 	echo
@@ -460,7 +482,25 @@ unInstall() {			# uninstall Signalogic SW completely
 	echo "Uninstall complete..."
 }
 
-installCheckVerify () {
+diagLibPrint() {
+
+	if [ -f /usr/lib/"$libfile" ]; then
+		printf "%s %s[ OK ]\n" $libname "${line:${#libname}}" | tee -a $diagReportFile
+	else
+		printf "%s %s[ X ]\n" $libname "${line:${#libname}}" | tee -a $diagReportFile
+	fi
+}
+
+diagAppPrint() {
+
+	if [ -f $installPath/Signalogic/apps/"$appfile"/"$appfile" ]; then
+		printf "%s %s[ OK ]\n" $appname "${line:${#appname}}" | tee -a $diagReportFile
+	else
+		printf "%s %s[ X ]\n" $appname "${line:${#appname}}" | tee -a $diagReportFile
+	fi
+}
+
+installCheckVerify() {
 
 	line='................................................................'
 
@@ -484,27 +524,31 @@ installCheckVerify () {
 	diagReportFile=DirectCore_diagnostic_report_$current_time.txt
 	touch $diagReportFile
 
-	# Module check / verify
+	# Path check
 
 	echo | tee -a $diagReportFile
-	echo "Signalogic Module Check:" | tee -a $diagReportFile
+	echo "SigSRF Install Path and Options Check" | tee -a $diagReportFile
 	echo "Install path: $installPath" | tee -a $diagReportFile
 	echo "Install options: $installOptions" | tee -a $diagReportFile
 
-  if [ "$installOptions" = "coCPU" ]; then
+	if [ "$installOptions" = "coCPU" ]; then
 
-		d="sig_mc_hw"
-		if [ -c /dev/$d ]; then
-			printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
+      # Driver check
+
+		echo "SigSRF Driver Check" | tee -a $diagReportFile
+
+		libfile="sig_mc_hw"; libname="sig_mc_hw";
+		if [ -c /dev/$libfile ]; then
+			printf "%s %s[ OK ]\n" $libname "${line:${#libname}}" | tee -a $diagReportFile
 		else
-			printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
+			printf "%s %s[ X ]\n" $libname "${line:${#libname}}" | tee -a $diagReportFile
 		fi
  	fi
 
 	# Symlinks check
 
-	echo >>$diagReportFile
-	echo "Symlinks Check:">>$diagReportFile
+	echo | tee -a $diagReportFile
+	echo "SigSRF Symlinks Check" | tee -a $diagReportFile
 
 	d="Signalogic Symlink"
 	if [ -L $installPath/Signalogic ]; then
@@ -527,99 +571,47 @@ installCheckVerify () {
 		printf "%s %s[ X ]\n" "$d" "${line:${#d}}" | tee -a $diagReportFile
 	fi
 
-	# Library install check
+	# Libs check
 
 	echo | tee -a $diagReportFile
-	echo "Signalogic Library Install Check:" | tee -a $diagReportFile
-	d="cimlib"
-	if [ -f /usr/lib/libcimlib.so ]; then
-		printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	else
-		printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	fi
+	echo "SigSRF Libs Check" | tee -a $diagReportFile
 
-	d="hwlib"
-	if [ -f /usr/lib/libhwlib.so ]; then
-		printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	else
-		printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	fi
-
-	d="libhwmgr"
-	if [ -f /usr/lib/libhwmgr.a ]; then
-		printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	else
-		printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	fi
-
-	d="filelib"
-	if [ -f /usr/lib/libfilelib.a ]; then
-		printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile 
-	else
-		printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	fi
+	libfile="libhwlib.so"; libname="hwlib"; diagLibPrint;
+	libfile="libpktlib.so"; libname="pktlib"; diagLibPrint;
+	libfile="libvoplib.so"; libname="voplib"; diagLibPrint;
+	libfile="libstreamlib.so"; libname="streamlib";	diagLibPrint;
+	libfile="libdiaglib.so"; libname="diaglib"; diagLibPrint;
+	libfile="libhwmgr.a"; libname="hwmgr"; diagLibPrint;
+	libfile="libfilelib.a"; libname="filelib"; diagLibPrint;
+	libfile="libcimlib.a"; libname="cimlib"; diagLibPrint;
 
 	# Apps check
 
 	echo | tee -a $diagReportFile
-	echo "Signalogic App Executables Check:" | tee -a $diagReportFile
+	echo "SigSRF Apps Check" | tee -a $diagReportFile
 
-   if [ "$installOptions" = "coCPU" ]; then
+	if [ "$installOptions" = "coCPU" ]; then
 
-		d="memTest"
-		if [ -f $installPath/Signalogic/apps/$d/$d ]; then
-			printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-		else
-			printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-		fi
-
-		d="boardTest"
-		if [ -f $installPath/Signalogic/apps/$d/$d ]; then
-			printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-		else
-			printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-		fi
-
-		d="fftTest"
-		if [ -f $installPath/Signalogic/apps/$d/$d ]; then
-			printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-		else
-			printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-		fi
-
-		d="streamTest"
-		if [ -f $installPath/Signalogic/apps/$d/$d ]; then
-			printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-		else
-			printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-		fi
+		appfile="memTest"; appname="memTest"; diagAppPrint;
+		appfile="boardTest"; appname="boardTest"; diagAppPrint;
+		appfile="fftTest"; appname="fftTest"; diagAppPrint;
+		appfile="streamTest"; appname="streamTest"; diagAppPrint;
 	fi
 
-	d="iaTest"
-	if [ -f $installPath/Signalogic/apps/$d/$d ]; then
-		printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
+	appfile="iaTest"; appname="iaTest"; diagAppPrint;
+	appfile="mediaTest"; appname="mediaTest"; diagAppPrint;
+
+	appfile="mediaMin"; appname="mediaMin";
+	if [ -f $installPath/Signalogic/apps/mediaTest/$appfile/$appfile ]; then
+		printf "%s %s[ OK ]\n" $appname "${line:${#appname}}" | tee -a $diagReportFile
 	else
-		printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
+		printf "%s %s[ X ]\n" $appname "${line:${#appname}}" | tee -a $diagReportFile
 	fi
 
-	d="mediaTest"
-	if [ -f $installPath/Signalogic/apps/$d/$d ]; then
-		printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	else
-		printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	fi
-
-	d="mediaMin"
-	if [ -f $installPath/Signalogic/apps/mediaTest/$d/$d ]; then
-		printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	else
-		printf "%s %s[ X ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
-	fi
-
-# Check for leftover hwlib files in /dev/shm
+   # Leftover /dev/shm hwlib files check
 
 	echo | tee -a $diagReportFile
-	echo "Leftover hwlib files check:" | tee -a $diagReportFile
+	echo "SigSRF Leftover hwlib Files Check" | tee -a $diagReportFile
 	d="hwlib_mutex"
 
 	if [ -f /dev/shm/$d ]; then
@@ -637,7 +629,8 @@ installCheckVerify () {
 
 }
 
-#*************************************************************************************************************
+# *********** script entry point ************
+
 wdPath=$PWD
 OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')
 echo "Host Operating System: $OS"
@@ -653,7 +646,7 @@ done
 echo "*****************************************************"
 echo
 
-COLUMNS=1  # force single column menu
+COLUMNS=1  # force single column menu, JHB Jan2021
 PS3="Please select install operation to perform [1-5]: "
 select opt in "Install SigSRF Software" "Install SigSRF Software with coCPU Option" "Uninstall SigSRF Software" "Check / Verify SigSRF Software Install" "Exit"
 do
