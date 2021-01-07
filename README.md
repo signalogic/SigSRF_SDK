@@ -291,7 +291,7 @@ Chip Status:
 If for any reason it should be needed, the driver can be manually installed using:
 
 ```
-cd driver   # note -- assumes you're on subfolder install_path/Signalogic/DirectCore/driver
+cd driver   # note -- assumes you're on subfolder install_path/Signalogic/DirectCore
 make load
 ```
 
