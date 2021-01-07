@@ -266,6 +266,7 @@ The generated log file will have a filename something like DirectCore_diagnostic
 If you are installing with the coCPU option, the install script will also load the DirectCore driver. In that case during installation you should see something like:
 
 ```
+Loading coCPU driver ...
 make load
 sync
 insmod sig_mc_hw.ko
@@ -286,6 +287,8 @@ Chip Status:
    Chip 5: Available
    Chip 6: Available
    Chip 7: Available
+
+coCPU driver is loaded
 ```
 
 If for any reason it should be needed, the driver can be manually loaded using:
