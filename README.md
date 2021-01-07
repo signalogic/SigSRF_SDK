@@ -267,6 +267,7 @@ If you are installing with the coCPU option, the install script will also load t
 
 ```
 Loading coCPU driver ...
+
 make load
 sync
 insmod sig_mc_hw.ko
