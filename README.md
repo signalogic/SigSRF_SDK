@@ -263,6 +263,49 @@ hwlib_info ......................................................[ OK ]
 
 The generated log file will have a filename something like DirectCore_diagnostic_report_01.06.2021-14:48:56.txt.
 
+If you are installing with the coCPU option, the install script will also load the DirectCore driver. In that case during installation you should see something like:
+
+```
+make load
+sync
+insmod sig_mc_hw.ko
+chmod 666 /dev/sig_mc_hw
+../hw_utils/driver_query
+
+Module: sig_mc_hw
+   Number of C6678 devices detected: 8
+   Number of C6678 cores detected:   64
+   Number of reserved C6678 cores:   0
+
+Chip Status:
+   Chip 0: Available
+   Chip 1: Available
+   Chip 2: Available
+   Chip 3: Available
+   Chip 4: Available
+   Chip 5: Available
+   Chip 6: Available
+   Chip 7: Available
+```
+
+If for any reason it should be needed, the driver can be manually installed using:
+
+```
+cd driver  # assumes you are on install_path/Signalogic/DirectCore/driver subfolder
+make load
+```
+
+If the driver is already loaded you will see:
+
+```
+sync
+insmod sig_mc_hw.ko
+insmod: error inserting 'sig_mc_hw.ko': -1 File exists
+make: *** [load] Error 1
+```
+
+which although it shows an error message will cause no problems.
+
 ### Building Demo Applications
 
 Demo application examples are provided as executables, C/C++ source code and Makefiles. Executables should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
