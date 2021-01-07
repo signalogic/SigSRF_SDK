@@ -288,7 +288,7 @@ Chip Status:
    Chip 7: Available
 ```
 
-If for any reason it should be needed, the driver can be manually installed using:
+If for any reason it should be needed, the driver can be manually loaded using:
 
 ```
 cd driver   # note -- assumes you're on subfolder install_path/Signalogic/DirectCore
