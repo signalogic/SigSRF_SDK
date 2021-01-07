@@ -12,13 +12,13 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
-[Demo and SDK Download](#user-content-sdkdemodownload)<br/>
+[SDK Download](#user-content-sdkdownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-runnotes)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest_demos)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatestdemo)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patestdemo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatest)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patest)<br/>
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
 
 <a name="Overview"></a>
@@ -51,7 +51,7 @@ SigSRF software is currently deployed in the following application areas:
 <a name="PlatformsSupported"></a>
 ## Platforms Supported
 
-SigSRF software is designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Demos available on this page and the mediaTest/mediaMin demo pages are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
+SigSRF software is designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Reference applications available on this page and the mediaTest/mediaMin pages are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
 
 SigSRF supports media delivery, transcoding, deep learning <sup>1</sup>, OpenCV, speech recognition <sup>1</sup>, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
@@ -133,12 +133,12 @@ Some notes about the above data flow diagram:
 
    6) <b>Media signal processing and inference</b>.  The second orange vertical line divides the "packet domain" and "media domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The media domain contains raw audio or video data, which allows signal processing operations, such as sample rate conversion, conferencing, filtering, echo cancellation, convolutional neural network (CNN) classification, etc. to be performed.  Also this is where image and voice analytics takes place, for instance by handing video and audio data off to another process.
 
-<a name="SDKDemoDownload"></a>
-# Demo and SDK Download
+<a name="SDKDownload"></a>
+# SDK Download
 
-There are two (2) options for SigSRF SDK and demo download (i) RAR package and install script or (ii) or Docker container. The SDK contains:
+There are two (2) options for SigSRF SDK download (i) RAR package and install script or (ii) or Docker container. The SDK contains:
 
-   1) A limited eval / demo version of SigSRF libraries and executables, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on demo limits, see [Demos](#user-content-demos) below.
+   1) A limited eval / reference version of SigSRF libraries and applications, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on reference application limits, see [Run Notes](#user-content-RunNotes) below.
 
    2) Makefiles and C/C++ source code for
    &nbsp;&nbsp;&nbsp;&nbsp;<ul>
@@ -149,9 +149,9 @@ There are two (2) options for SigSRF SDK and demo download (i) RAR package and i
  
    3) Concurrency examples, including stream, instance, and multiple user
    
-All demos run on x86 Linux servers.
+All reference applications run on x86 Linux servers.
 
-For servers augmented with a coCPU card, the mediaTest and iaTest demos will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in the demo .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.
+For servers augmented with a coCPU card, the mediaTest, mediaMin, and iaTest reference apps will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in SDK .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.
 
 <a name="TestFileNotes"></a>
 ## Test File Notes
@@ -169,19 +169,19 @@ Additional advanced pcap examples are also available, including:
     -dormant SSRC ("stream takeover")
     -RFC7198 (temporal packet duplication)
 
-For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the demo will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison. Both libpcap and pcapng formats are supported.
+For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the reference apps will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison. Both libpcap and pcapng formats are supported.
 
-Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a>. 
+Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. 
 
 <a name="InstallNotes"></a>
 ## Install Notes
 
-Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. If you have downloaded more than one RAR package, for example you are upgrading to a newer demo version, the install script will install only the most recent .rar file. Also the install script will auto-check for kernel version and Linux distro version to decide which .rar file to install.
+Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install only the most recent .rar file. Also the install script will auto-check for kernel version and Linux distro version to decide which .rar file to install.
 
 To download the install script and one or more rar files directly from Github (i.e. without checking out a clone repository), use the following commands:
 
     wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2020v6.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2020v6.sh
-    wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_Demo_SDK_distroNN_date.rar
+    wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_distroNN_date.rar
 
 where "distroNN" is the Linux distro and version and "date" is the package date. To avoid entering the distro release version and .rar date, you can use one of the following wget commands:
 
@@ -291,7 +291,7 @@ Chip Status:
 If for any reason it should be needed, the driver can be manually installed using:
 
 ```
-cd driver  # assumes you are on install_path/Signalogic/DirectCore/driver subfolder
+cd driver   # note -- assumes you're on subfolder install_path/Signalogic/DirectCore/driver
 make load
 ```
 
@@ -306,27 +306,27 @@ make: *** [load] Error 1
 
 which although it shows an error message will cause no problems.
 
-### Building Demo Applications
+### Building Reference Applications
 
-Demo application examples are provided as executables, C/C++ source code and Makefiles. Executables should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
+Reference application examples are provided as executables, C/C++ source code and Makefiles. Executables should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
 
 <a name="RunNotes"></a>
 ## Run Notes
 
-Available demos are listed below.  The iaTest and paTest demos do not have a functionality limit.  mediaMin and mediaTest demo functionality is limited as follows:
+Available reference applications are listed below.  The iaTest and paTest apps do not have a functionality limit.  mediaMin and mediaTest app functionality is limited as follows:
 
    1) Data limit.  Processing is limited to 100,000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
 
    2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
 
-If you would prefer an evaluation demo with increased concurrency limits for a trial period, [contact us](#DocumentationSupport). This requires a business case and possibly an NDA.
+If you would prefer an evaluation version with increased concurrency limits for a trial period, [contact us](#DocumentationSupport). This requires a business case and possibly an NDA.
 
-<a name="mediaMin_and_mediaTest_Demos"></a>
-### mediaMin and mediaTest Demos
+<a name="mediaMin_and_mediaTest"></a>
+### mediaMin and mediaTest Reference Applications
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest demo page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
 
-mediaMin is a production reference application, using a minimum set of APIs (create/delete session, push/pull packets), it can handle a wide range of RTP audio packet inputs. mediaTest targets test and measurement functionality and accepts USB and wav file audio input. Some things you can do with mediaMin and mediaTest demo command lines:
+mediaMin is a production reference application, using a minimum set of APIs (create/delete session, push/pull packets), it can handle a wide range of RTP audio packet inputs. mediaTest targets test and measurement functionality and accepts USB and wav file audio input. Some things you can do with mediaMin and mediaTest command lines:
 
   * transcode between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc.
   * "AMR Player", play an AMR pcap (either AMR-WB or AMR-NB)
@@ -339,19 +339,19 @@ mediaMin is a production reference application, using a minimum set of APIs (cre
   * input and output USB audio
   * test and measure packet RFCs, jitter buffer, packet loss and other stats, and more
 
-For both mediaMin and mediaTest, reference application C/C++ source code is included.  The demos are based on deployed production code used in high capacity, real-time applications.  Performance measurements can be made that are accurate and competitive with other commercially available software.
+For both mediaMin and mediaTest, reference application C/C++ source code is included.  The apps are based on deployed production code used in high capacity, real-time applications.  Performance measurements can be made that are accurate and competitive with other commercially available software.
 
 <sup>1 </sup>Includes non-3GPP and non-ITU codecs such as MELPe
 
-<a name="iaTestDemo"></a>
-### iaTest Demo
+<a name="iaTest"></a>
+### iaTest
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest demo page</a> gives example command lines for image analytics and OpenCV testing.  The iaTest demo performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.  Application C/C++ source code is included.
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest page</a> gives example command lines for image analytics and OpenCV testing.  The iaTest app performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.  Application C/C++ source code is included.
 
-<a name="paTestDemo"></a>
-### paTest Demo
+<a name="paTest"></a>
+### paTest
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md">paTest demo page</a> gives example command lines for a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies.  Application Java and C/C++ source code is included.
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md">paTest page</a> gives example command lines for a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies.  Application Java and C/C++ source code is included.
 
 <a name="DocumentationSupport"></a>
 # Documentation, Support, and Contact
@@ -364,7 +364,7 @@ SigSRF documentation, including Quick Start command line examples, High Capacity
  
 ## coCPU Users Guide
 
-The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provides information about coCPU hardware and software installation, test and demo applications, build instructions, etc.
+The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provides information about coCPU hardware and software installation, test and reference applications, build instructions, etc.
 
 ## Technical Support / Questions
 
