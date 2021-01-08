@@ -232,6 +232,13 @@ If no path is entered the default path is /usr/local. <i>Do not enter a path suc
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes. The Check / Verify option also generates screen output, here is an example:
 
 ```
+Distro Info
+No LSB modules are available.
+Distributor ID: Ubuntu
+Description:    Ubuntu 20.04.1 LTS
+Release:        20.04
+Codename:       focal
+
 SigSRF Install Path and Options Check
 Install path: /home/labuser
 Install options:
