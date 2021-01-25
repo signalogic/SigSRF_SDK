@@ -12,11 +12,11 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-1Q 2018:  SigSRF and mediaTest software reached a milestone, now in use or deployed with more than 20 customers.
+1Q 2021 - real-time ASR option added to mediaMin command line. Kaldi ASR works on stream group outputs, after RTP decoding, stream merging and other signal processing. All codecs supported
 
-3Q 2018:  mediaMin joins mediaTest as a reference / example application, with published soure code.  mediaMin uses a minimal set of SigSRF APIs -- push packet, pull packet, session management -- and dynamic session creation to process pcaps and UDP port data.  Plug in a multistream pcap and decode all streams, handle DTX, merge streams together, generate output pcaps and wav files, and more
+1Q 2021 - sdp file option added to mediaMin command line. SDP info can be used to override mediaMin auto-detection or in application-specific cases
 
-1Q 2019:  SigSRF software deployed in G7 country equivalent to FBI, providing single server high capacity (500+ concurrent sessions)
+4Q 2020 - mediaTest generates encoded pcaps from wav and other audio format files. All codecs supported
 
 2Q 2019: Consolidated <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF documentation<a> published
 
@@ -27,6 +27,12 @@ Here are some new features added recently:
 * Codecs now include EVS, AMR-NB, AMR-WB, AMR-WB+, G729AB, G726, G711, and MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
 
 * integrated, real-time Kaldi speech recognition (Kaldi guys refer to this as "online decoding")
+
+1Q 2019:  SigSRF software deployed in G7 country equivalent to FBI, providing single server high capacity (500+ concurrent sessions)
+
+3Q 2018:  mediaMin joins mediaTest as a reference / example application, with published soure code.  mediaMin uses a minimal set of SigSRF APIs -- push packet, pull packet, session management -- and dynamic session creation to process pcaps and UDP port data.  Plug in a multistream pcap and decode all streams, handle DTX, merge streams together, generate output pcaps and wav files, and more
+
+1Q 2018:  SigSRF and mediaTest software reached a milestone, now in use or deployed with more than 20 customers.
 
 <a name="DemoLimits"></a>
 # Demo Limits
@@ -55,6 +61,9 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#user-content-convertingpcaps2wav)<br/>
 &nbsp;&nbsp;&nbsp;[EVS Player](#user-content-evsplayer)</br>
 &nbsp;&nbsp;&nbsp;[AMR Player](#user-content-amrplayer)</br>
+&nbsp;&nbsp;&nbsp;[Converting Wav to Pcaps](#user-content-convertingwav2pcaps)<br/>
+&nbsp;&nbsp;&nbsp;[EVS Pcap Generation](#user-content-evspcapgenerator)</br>
+&nbsp;&nbsp;&nbsp;[AMR Pcap Generation](#user-content-amrpcapgenerator)</br>
 [**Packet Mode**](#user-content-packetmode)<br/>
 &nbsp;&nbsp;&nbsp;[Real-Time Streaming and Packet Flow](#user-content-realtimestreaming)</br>
 &nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams)<br/>
@@ -283,6 +292,31 @@ The following command line will play an AMR pcap over USB audio:
 The above command lines will work on any AMR pcap, including octet aligned and bandwidth efficient formats.  Combined with the .cod file input described above, this makes the mediaTest demo an "AMR player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
 
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
+
+<a name="ConvertingWav2Pcaps"></a>
+### Converting Wav to Pcaps
+
+Simple mediaTest command lines can be used to convert wav and other audio format files to pcap files.
+
+<a name="EVSPcapGenerator"></a>
+### EVS Pcap Generator
+
+The following mediaTest demo command line converts a wav file to pcap:
+
+```C
+./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/evs_16kHz_13200bps_config
+```
+
+A similar command line can be used with other audio format files. The config file allows EVS bitrate, header format, and other options to be specified. mediaTest automatically performs sample rate conversion if the wav file Fs is different than the sample rate specified in the config file.
+
+<a name="AMRPcaPGenerator"></a>
+### AMR Player
+
+The following mediaTest demo command line converts a wav file to pcap:
+
+```C
+./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/amrwb_16kHz_12650bps_config
+```
 
 <a name="PacketMode"></a>
 ## Packet Mode
