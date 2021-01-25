@@ -249,7 +249,7 @@ These commands can be run either in Frame Mode, or [Packet Mode](#PacketModeOper
 <a name="EVSPlayer"></a>
 ### EVS Player
 
-The following mediaTest demo command lines convert EVS pcaps to wav files:
+The following mediaTest command lines convert EVS pcaps to wav files:
 
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
@@ -263,7 +263,7 @@ The following command line will play an EVS pcap over USB audio:
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/pcap_file_test_config -L
 ```
 
-The above command lines will work on any EVS pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes the mediaTest demo an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
+The above command lines will work on any EVS pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes mediaTest an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
 
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
 
@@ -276,7 +276,7 @@ Depending on the number of sessions defined in the session config file, multiple
 <a name="AMRPlayer"></a>
 ### AMR Player
 
-The following mediaTest demo command lines convert AMR pcaps to wav files:
+The following mediaTest command lines convert AMR pcaps to wav files:
 
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -oamr_WB_23850bps.wav -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
@@ -289,7 +289,7 @@ The following command line will play an AMR pcap over USB audio:
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -ousb0 -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
 ```
-The above command lines will work on any AMR pcap, including octet aligned and bandwidth efficient formats.  Combined with the .cod file input described above, this makes the mediaTest demo an "AMR player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
+The above command lines will work on any AMR pcap, including octet aligned and bandwidth efficient formats.  Combined with the .cod file input described above, this makes mediaTest an "AMR player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
 
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
 
@@ -301,7 +301,7 @@ Simple mediaTest command lines can be used to convert wav and other audio format
 <a name="EVSPcapGenerator"></a>
 ### EVS Pcap Generator
 
-The following mediaTest demo command line converts a wav file to pcap:
+The following mediaTest command line converts a wav file to pcap:
 
 ```C
 ./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/evs_16kHz_13200bps_config
@@ -312,7 +312,7 @@ A similar command line can be used with other audio format files. The config fil
 <a name="AMRPcaPGenerator"></a>
 ### AMR Player
 
-The following mediaTest demo command line converts a wav file to pcap:
+The following mediaTest command line converts a wav file to pcap:
 
 ```C
 ./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/amrwb_16kHz_12650bps_config
