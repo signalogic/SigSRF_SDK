@@ -1,22 +1,22 @@
 /*
-   $Header: /root/Signalogic/DirectCore/apps/common/cmdLineOpt.cpp
+ $Header: /root/Signalogic/DirectCore/apps/common/cmdLineOpt.cpp
  
-   Purpose:
-    Parses commanmd line options for SigSRF and DirectCore programs
+ Purpose: parse commanmd line options for SigSRF and DirectCore programs
   
-   Copyright (C) Signalogic Inc. 2005-2019
+ Copyright (C) Signalogic Inc. 2005-2021
   
-   Revision History:
+ Revision History
 
-     Modified Nov 2014 JHB, fixed some naming to support multiple targets, unify/consolidate command line params for all test programs
-     Modified Dec 2014 JHB, added support for IP addr, UDP port, and MAC addr entry (e.g. -Daa.bb.cc.dd:port:aa-bb-cc-dd-ee-ff-gg)
-     Modified Feb 2015 JHB, added support for multiple instances of some cmd line params.  Also fix problem with default values being overwritten
-     Modified Jul 2015 JHB, added support for multiple integer values, in format -option NN:NN:NN
-     Modified Jan 2017 CKJ, added support for x86 which doesn't require the same mandatories
-     Modified Aug 2017 JHB, added support for program sub mode as a suffix character at end of INTEGER entries
-     Modified Sep 2017 JHB, added a couple of exceptions for -L entry (log file), see comments
-     Modified Jul 2018 JHB, changed mandatory requirements to handle x86 and coCPU separately
-     Modified Dec 2019 JHB, fix bug in int value parsing, where suffix char code would strip off last a-f digit of hex values
+   Modified Nov 2014 JHB, fixed some naming to support multiple targets, unify/consolidate command line params for all test programs
+   Modified Dec 2014 JHB, added support for IP addr, UDP port, and MAC addr entry (e.g. -Daa.bb.cc.dd:port:aa-bb-cc-dd-ee-ff-gg)
+   Modified Feb 2015 JHB, added support for multiple instances of some cmd line params.  Also fix problem with default values being overwritten
+   Modified Jul 2015 JHB, added support for multiple integer values, in format -option NN:NN:NN
+   Modified Jan 2017 CKJ, added support for x86 which doesn't require the same mandatories
+   Modified Aug 2017 JHB, added support for program sub mode as a suffix character at end of INTEGER entries
+   Modified Sep 2017 JHB, added a couple of exceptions for -L entry (log file), see comments
+   Modified Jul 2018 JHB, changed mandatory requirements to handle x86 and coCPU separately
+   Modified Dec 2019 JHB, fix bug in int value parsing, where suffix char code would strip off last a-f digit of hex values
+   Modified Jan 2021 JHB, allow overloaded options, for example '-sN' integer for app type A, and '-sfilename' string for app type B. See comments below and in getUserInterface.cpp
 */
 
 #include <stdint.h>
@@ -28,6 +28,7 @@
 
 #include "cmdLineOpt.h"
 #include "alias.h"
+#include "userInfo.h"
 
 #define MAX_OPTIONS MAX_INPUT_LEN
 
@@ -68,22 +69,20 @@ char*      optionChar;
 char       optionString[MAX_OPTIONS*2];
 intptr_t   x;
 long long  llx;
-char*      p;
-char*      p2;
-char*      p3;
+char*      p, *p2, *p3;
 int        d[10] = {0,0,0,0,0,0,0,0,0,0};
 int        i;
 uint64_t   m[10] = {0,0,0,0,0,0,0,0,0,0};
 uint64_t   ulx;
 int        nInstances, nMultiple, valueSuffix;
 char       suffix;
-bool       x86;
+bool       x86, fNoOptionsFound;
+char       tmpstr[CMDOPT_MAX_INPUT_LEN];
 
 
    if (MAX_OPTIONS <= this->numOptions) {
 
-      cout << "CmdLineOpt::scanOptions: Cannot have more than "
-           << MAX_OPTIONS - 1 << "options." << endl;
+      cout << "CmdLineOpt::scanOptions: Cannot have more than " << MAX_OPTIONS - 1 << "options." << endl;
 
       rc = false;
    }
@@ -93,7 +92,7 @@ bool       x86;
       optionChar = optionString;
 
       for (optCounter=0; optCounter<this->numOptions; optCounter++) {
-         
+
          *optionChar++ = this->options[optCounter].option;
 
          if (BOOLEAN != this->options[optCounter].type) *optionChar++ = ':';
@@ -105,9 +104,11 @@ bool       x86;
 
    // Parse the command line string looking for the commands.
 
-      optionFound = getopt(argc, argv, optionString);
+      optionFound = getopt(argc, argv, optionString);  /* Linux API */
 
       while (-1 != optionFound && ':' != optionFound) {
+
+         fNoOptionsFound = true;
 
          for (optCounter=0; optCounter<this->numOptions; optCounter++) {
 
@@ -120,7 +121,8 @@ bool       x86;
                   case INTEGER:  /* usually accept entry in format -option NN, but also -option 0xNN and -option NN:NN:NN (up to 3 values) */
 
                      nMultiple = 0;
-                     p = optarg;
+                     strcpy(tmpstr, optarg);  /* temporary working buffer */
+                     p = tmpstr;
                      valueSuffix = -1;
 
                      do {
@@ -155,12 +157,14 @@ bool       x86;
 
                      } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
 
+                     fNoOptionsFound = false;
                      break;
 
                   case INT64:  /* 64-bit support, JHB Aug 2015 */
 
                      nMultiple = 0;
-                     p = optarg;
+                     strcpy(tmpstr, optarg);  /* temporary working buffer */
+                     p = tmpstr;
 
                      do {
 
@@ -178,11 +182,13 @@ bool       x86;
 
                      } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
 
+                     fNoOptionsFound = false;
                      break;
 
                   case IPADDR:  /* accept entry in format -Daa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm, where a, b, c, d, and port are decimal numbers, and mm are hex digits */
 
-                     p = strstr(optarg, ":");
+                     strcpy(tmpstr, optarg);
+                     p = strstr(tmpstr, ":");
 
                      if (p != NULL) {  /* get integer after ':' char */
    
@@ -223,11 +229,11 @@ bool       x86;
                         this->options[optCounter].value2[nInstances] = x;
                      }
 
-                     p = strstr(optarg, ".");  /* IP addr format */
+                     p = strstr(tmpstr, ".");  /* IP addr format */
 
                      if (p != NULL) {
 
-                        p2 = optarg;
+                        p2 = tmpstr;
                         i = 0;
 
                         while (p != NULL) {
@@ -245,27 +251,29 @@ bool       x86;
                         this->options[optCounter].value[nInstances][0] = (void*)x;
                      }
 
+                     fNoOptionsFound = false;
                      break;
 
                   case CHAR:
                      x = (intptr_t)optarg[0];
                      this->options[optCounter].value[nInstances][0] = (void*)x;
+                     fNoOptionsFound = false;
                      break;
 
                   case STRING:
                      if ((char)optionFound == 'L' && optarg == NULL) {}  /* if only -L is entered (with no string value), don't overwrite the default value in getUserInterface.cpp, JHB Sep2017 */
                      else this->options[optCounter].value[nInstances][0] = (void*)optarg;
+                     fNoOptionsFound = false;
                      break;
 
                   case BOOLEAN:
                      this->options[optCounter].value[nInstances][0] = (void*)true;
+                     fNoOptionsFound = false;
                      break;
 
                   default:
-                     cout << "Error in option -"
-                          << this->options[optCounter].description
-                          << ":" << endl;
-                     cout << "  Unknown option type." << endl;
+                     cout << "Error in option -" << this->options[optCounter].description << ":" << endl;
+                     cout << "  Unknown option type" << endl;
                      //this->printOptions( );
                      rc = false;
                      break;
@@ -275,13 +283,18 @@ bool       x86;
                   this->options[optCounter].nInstances++;
 // debug   printf("option = %s, optCounter = %d, count = %d\n", optarg, optCounter, this->options[optCounter].nInstances);
                }
+
+               #if 0  /* remove this break so all defined options will be checked vs. cmd line option found. This allows options to be overloaded (e.g. two 's' definitions, one integer for app type A, one string for app type B), JHB Jan 2021 */ 
                break;
+               #endif
             }
          }
 
-         if (optCounter == this->numOptions) {
-            rc = false;
-         }
+         #if 0
+         if (optCounter == this->numOptions && fNoOptionsFound) rc = false;  /* no matching options and types found, return false */
+         #else
+         if (optCounter == this->numOptions && fNoOptionsFound) cout << "Unrecognized option" << optionFound << endl;  /* no matching option and type found, but continue, JHB Jan2021 */
+         #endif
 
          if (!rc && '?' == optionFound) {
 
@@ -289,7 +302,7 @@ bool       x86;
             return false;
          }
 
-         optionFound = getopt(argc, argv, optionString);
+         optionFound = getopt(argc, argv, optionString);  /* Linux API, get next option */
       }
 
       /* Disable mandatories for x86 - CJ Jan2017 */
@@ -305,12 +318,10 @@ bool       x86;
       // Find out if any mandatory options were omitted
          for (optCounter=0; optCounter<this->numOptions; optCounter++) {
 
-            if (((this->options[optCounter].isMandatory == 1) || (this->options[optCounter].isMandatory == 2 && !x86)) &&
-                  this->options[optCounter].nInstances == 0) {
+            if (((this->options[optCounter].isMandatory == 1) || (this->options[optCounter].isMandatory == 2 && !x86)) && this->options[optCounter].nInstances == 0) {
 
                cout << "Error in options:" << endl;
-               cout << "  Option -" << this->options[optCounter].option
-                    << " is mandatory" << endl;
+               cout << "  Option -" << this->options[optCounter].option << " is mandatory" << endl;
     
                this->printOptions( );
                rc = false;
@@ -324,12 +335,12 @@ bool       x86;
 }
 
 //
-// isSpecified - Identify if a command line option was provided or not.
+// isSpecified - Identify if a command line option was provided or not
 //
 
 int CmdLineOpt::nInstances(char option) {
 
-Record *record = this->getOption(option);
+Record *record = this->getOption(option, -1);
 
    if (record) return record->nInstances;
 
@@ -341,60 +352,80 @@ Record *record = this->getOption(option);
 //
 int CmdLineOpt::getInt(char option, int nInstance, int nMultiple) {
 
-Record *record = this->getOption(option);
+Record *record = this->getOption(option, INTEGER);
 int value = 0;
 
+   #if 0
    if (record && record->type == INTEGER) {
       value = (intptr_t)record->value[nInstance][nMultiple];
    }
+   #else
+   if (record) value = (intptr_t)record->value[nInstance][nMultiple];
+   #endif
 
    return value;
 }
 
 long long CmdLineOpt::getInt64(char option, int nInstance) {
 
-Record *record = this->getOption(option);
+Record *record = this->getOption(option, INT64);
 long long value = 0;
 
+   #if 0
    if (record && record->type == INT64) {
       value = (long long)record->value3[nInstance];
    }
+   #else
+   if (record) value = (long long)record->value3[nInstance];
+   #endif
 
    return value;
 }
 
 unsigned int CmdLineOpt::getIpAddr(char option, int nInstance) {
 
-Record *record = this->getOption(option);
+Record *record = this->getOption(option, IPADDR);
 unsigned int value = 0;
 
+   #if 0
    if (record && record->type == IPADDR) {
       value = (intptr_t)record->value[nInstance][0];
    }
+   #else
+   if (record) value = (intptr_t)record->value[nInstance][0];
+   #endif
 
    return value;
 }
 
 unsigned int CmdLineOpt::getUdpPort(char option, int nInstance) {
 
-Record *record = this->getOption(option);
+Record *record = this->getOption(option, IPADDR);
 unsigned int value = 0;
 
+   #if 0
    if (record && record->type == IPADDR) {
       value = (intptr_t)record->value2[nInstance];
    }
+   #else
+   if (record) value = (intptr_t)record->value2[nInstance];
+   #endif
 
    return value;
 }
 
 uint64_t CmdLineOpt::getMacAddr(char option, int nInstance) {
 
-Record *record = this->getOption(option);
+Record *record = this->getOption(option, IPADDR);
 uint64_t value = 0;
 
+   #if 0
    if (record && record->type == IPADDR) {
       value = (uint64_t)record->value3[nInstance];
    }
+   #else
+   if (record) value = (uint64_t)record->value3[nInstance];
+   #endif
 
    return value;
 }
@@ -405,12 +436,16 @@ uint64_t value = 0;
 //
 char CmdLineOpt::getChar(char option, int nInstance) {
 
-Record *record = this->getOption(option);
+Record *record = this->getOption(option, CHAR);
 char value = '\0';
 
+   #if 0
    if (record && CHAR == record->type) {
       value = (char)(intptr_t)record->value[nInstance][0];
    }
+   #else
+   if (record) value = (char)(intptr_t)record->value[nInstance][0];
+   #endif
 
    return value;
 }
@@ -420,12 +455,16 @@ char value = '\0';
 //
 char* CmdLineOpt::getStr(char option, int nInstance) {
 
-Record *record = this->getOption(option);
+Record *record = this->getOption(option, STRING);
 char *value = NULL;
 
+   #if 0
    if (record && record->type == STRING) {
       value = (char*)record->value[nInstance][0];
    }
+   #else
+   if (record) value = (char*)record->value[nInstance][0];
+   #endif
 
    return value;
 }
@@ -435,12 +474,16 @@ char *value = NULL;
 //
 bool CmdLineOpt::getBool(char option, int nInstance) {
 
-Record *record = this->getOption(option);
+Record *record = this->getOption(option, BOOLEAN);
 bool value = false;
 
+   #if 0
    if (record && record->type == BOOLEAN) {
       value = record->value[nInstance][0] ? true:false;
    }
+   #else
+   if (record) value = record->value[nInstance][0] ? true:false;
+   #endif
 
    return value;
 }
@@ -537,28 +580,29 @@ char type[32];
             break;
       }
 
-      cout << "    -" << this->options[optCounter].option << " "
-           << setw( 11 );
+      cout << "    -" << this->options[optCounter].option << " " << setw( 11 );
       cout.setf( ios::right );    
-      cout << type << ":"
-           << (this->options[optCounter].isMandatory == 1 ? '!' : this->options[optCounter].isMandatory == 2 ? '+' : ' ')
-           << this->options[optCounter].description << endl;
+      cout << type << ":" << (this->options[optCounter].isMandatory == 1 ? '!' : this->options[optCounter].isMandatory == 2 ? '+' : ' ') << this->options[optCounter].description << endl;
    }
 }
 
 //
-// getOption - Retrieves options that were specified on the command line.
+// getOption - Retrieves options specified on the command line
 //
-CmdLineOpt::Record* CmdLineOpt::getOption(char option) {
+CmdLineOpt::Record* CmdLineOpt::getOption(char option, int type) {
 
 Record *record = NULL;
 int optCounter;
 
    for (optCounter=0; optCounter<this->numOptions; optCounter++) {
 
-       if (option == this->options[optCounter].option) {
-         record = this->options + optCounter;
-         break;
+      if (option == this->options[optCounter].option) {
+
+         if (type == -1 || type == (this->options + optCounter)->type) {  /* checking for type here allows options to be overloaded; e.g. two options for '-s' of different types can be defined and checked in getUserInfo(), but instead of first one found here being returned, it also has to match the type check before being returned, JHB Jan2021 */
+
+            record = this->options + optCounter;
+            break;
+         }
       }
    }
 

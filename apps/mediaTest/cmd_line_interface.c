@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/cmd_line_interface.c
 
- Copyright (C) Signalogic Inc. 2018-2020
+ Copyright (C) Signalogic Inc. 2018-2021
  
  Description
  
@@ -26,6 +26,7 @@
    Modified Nov 2019 JHB, add CSV and TEXT output file types (latter to support Kaldi ASR)
    Modified Dec 2019 JHB, add nJitterBufferParams to support jitter buffer target and max delay cmd line entry (-jN)
    Modified Jan 2020 JHB, add nRepeat to supper number of repeat times cmd line entry (-RN)
+   Modified Jan 2021 JHB, change references to AUDIO_FILE_TYPES to IS_AUDIO_FILE_TYPE, initialize outFileType2, USBAudioInput, and USBAudioOutput, allow pcap for output file type, add char szSDPFile[CMDOPT_MAX_INPUT_LEN] 
 */
 
 
@@ -55,7 +56,7 @@ unsigned int frameInterval[MAX_INPUT_STREAMS] = { 20 };
 
 /* global vars set here */
 
-unsigned int   inFileType, outFileType, outFileType2, USBAudioInput, USBAudioOutput;
+unsigned int   inFileType, outFileType, outFileType2 = 0, USBAudioInput = 0, USBAudioOutput = 0;
 char           executionMode[2] = { 'a', 'c' }; /* default is app execution mode, cmd line */
 int            debugMode = 0;
 int            performanceMeasurementMode = 0;
@@ -65,6 +66,7 @@ int            nSegmentInterval = 0;
 int            nAmplitude = 0;
 int            nJitterBufferParams = 0;
 int            nRepeat = 0;
+char           szSDPFile[CMDOPT_MAX_INPUT_LEN] = "";
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 
@@ -109,6 +111,7 @@ unsigned int cim_uFlags;
 
    cim_uFlags = CIM_GCL_DISABLE_MANDATORIES | CIM_GCL_SUPPRESS_STREAM_MSGS | CIM_GCL_FILLUSERIFS;
    if (uFlags & CLI_MEDIA_APPS) cim_uFlags |= CIM_GCL_MED;
+   if (uFlags & CLI_MEDIA_APPS_MEDIAMIN) cim_uFlags |= CIM_GCL_MEDIAMIN;
    
    cimGetCmdLine(argc, argv, &userIfs, cim_uFlags, &PlatformParams, &MediaParams);  /* run first with mandatories disabled, print-outs disabled */
 
@@ -116,6 +119,7 @@ unsigned int cim_uFlags;
 
       cim_uFlags = CIM_GCL_SUPPRESS_STREAM_MSGS | CIM_GCL_FILLUSERIFS | CIM_GCL_DEBUGPRINT;
       if (uFlags & CLI_MEDIA_APPS) cim_uFlags |= CIM_GCL_MED;
+      if (uFlags & CLI_MEDIA_APPS_MEDIAMIN) cim_uFlags |= CIM_GCL_MEDIAMIN;
 
       if (!cimGetCmdLine(argc, argv, &userIfs, cim_uFlags, &PlatformParams, &MediaParams)) return 0;  /* run again with everything enabled, report cmd line errors */
    }
@@ -144,13 +148,13 @@ unsigned int cim_uFlags;
 
    fCodedInputFile = inFileType == ENCODED;
    fPcapInputFile = inFileType == PCAP;
-   fAudioInputFile = AUDIO_FILE_TYPES(inFileType);
+   fAudioInputFile = IS_AUDIO_FILE_TYPE(inFileType);
    
    outFileType = get_file_type(MediaParams[0].Media.outputFilename, 1);
 
    fCodedOutputFile = outFileType == ENCODED;
    fPcapOutputFile = outFileType == PCAP;
-   fAudioOutputFile = AUDIO_FILE_TYPES(outFileType);
+   fAudioOutputFile = IS_AUDIO_FILE_TYPE(outFileType);
 
    fTextOutputFile = outFileType == TEXT;
    fCSVOutputFile = outFileType == CSV;
@@ -164,13 +168,13 @@ unsigned int cim_uFlags;
    
       outFileType2 = get_file_type(MediaParams[1].Media.outputFilename, 1);
 
-      if (AUDIO_FILE_TYPES(outFileType2)) {
+      if (IS_AUDIO_FILE_TYPE(outFileType2)) {
          fAudioOutputFile = true;
          outFileType |= outFileType2;
       }
    }
 
-   codec_test = ((fAudioInputFile || USBAudioInput || fCodedInputFile) && (fAudioOutputFile || USBAudioOutput || fCodedOutputFile));  /* codec mode = both I/O audio or compressed bitstream of some type (not pcap) */
+   codec_test = ((fAudioInputFile || USBAudioInput || fCodedInputFile) && (fAudioOutputFile || USBAudioOutput || fCodedOutputFile || fPcapOutputFile));  /* codec mode = both I/O audio or compressed bitstream of some type (also includes output pcap) */
    pcap_extract = (fPcapInputFile && fCodedOutputFile);
 
 // printf("codec_test = %d, pcap_extract = %d, pcap input file = %d\n", codec_test, pcap_extract, fPcapInputFile);
@@ -211,6 +215,7 @@ unsigned int cim_uFlags;
    nAmplitude = userIfs.nAmplitude;
    nJitterBufferParams = userIfs.nJitterBufferOptions;  /* lsbyte is target delay, next byte is max delay, JHB Dec2019 */
    nRepeat = (int)userIfs.nRepeatTimes;  /* -1 = no entry (no repeat), 0 = repeat forever, > 1 is repeat number of times, JHB Jan2020 */
+   if (strlen(userIfs.szSDPFile)) strcpy(szSDPFile, userIfs.szSDPFile);
 
 /* register signal handler to catch Ctrl-C signal and cleanly exit mediaTest, mediaMin, and other test programs */
 

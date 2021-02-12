@@ -5,7 +5,7 @@
  
   Projects: SigSRF, SigMRF, DirectCore
  
-  Copyright Signalogic Inc. 2016-2020
+  Copyright Signalogic Inc. 2016-2021
 
   Revision History:
   
@@ -24,6 +24,7 @@
    Modified Feb 2020 JHB, add DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY flag
    Modified Apr 2020 JHB, add DSGetLogTimeStamp() API. Initially this is used in mediaMin interactive keyboard debug info printouts, to make it easy to see uptime of ongoing tests that are not printing onscreen log output
    Modified May 2020 JHB, in STREAM_STATS struct, rename numRepair to numSIDRepair and add numMediaRepair
+   Modified Jan 2021 JHB, change loglevel param in Log_RT() from uint16_t to uint32_t
 */
 
 #ifndef _DIAGLIB_H_
@@ -38,7 +39,7 @@ extern "C" {
 
 /* SigSRF library logging function, applies to all libs */
 
-void Log_RT(uint16_t loglevel, const char *fmt, ...);  /* loglevel can be combined with DS_LOG_LEVEL_xxx flags, and also DS_EVENT_LOG__XXX_TIMESTAMPS flags, defined in shared_include/config.h */
+void Log_RT(uint32_t loglevel, const char *fmt, ...);  /* loglevel can be combined with DS_LOG_LEVEL_xxx flags, and also DS_EVENT_LOG__XXX_TIMESTAMPS flags, defined in shared_include/config.h */
 
 #define DS_LOG_LEVEL_UPTIME_TIMESTAMP     DS_EVENT_LOG_UPTIME_TIMESTAMPS
 #define DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP  DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS

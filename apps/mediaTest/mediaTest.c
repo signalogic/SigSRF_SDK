@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaTest.c
 
- Copyright (C) Signalogic Inc. 2015-2020
+ Copyright (C) Signalogic Inc. 2015-2021
  
  Description:
  
@@ -104,6 +104,9 @@
    Modified Aug 2018 JHB, command-line related items moved to cmd_line_interface.c
    Modified Jul 2019 JHB, removed XDAIS references (which were not used anyway).  See comments in x86_mediaTest.c
    Modified Sep 2019 JHB, change include folder for udp.h and ip.h from "linux" to "netinet" to fix -Wodr (one definition rule) warning with gcc 5.4.  Remove arpa/inet.h include (already in pktlib.h)
+   Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0, include minmax.h (for min/max functions)
+   Modified Jan 2021 JHB, improve error message output for invalid cmd line arguments, add some help text
+   Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
 */
 
 /* system header files */
@@ -114,14 +117,15 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
-/* Signalogic header files */
-
-#include "test_programs.h"   /* demo program support (command line entry, etc) */
-#include "keybd.h"           /* interactive key command support */
-
-/* mediaTest definitions (also includes DirectCore header and host/coCPU shared header files) */
+/* app support header files */
 
 #include "mediaTest.h"
+#include "test_programs.h"   /* demo program support (command line entry, etc) */
+#include "keybd.h"           /* interactive key command support */
+#include "minmax.h"
+
+/* SigSRF lib header files */
+
 #include "pktlib.h"
 #include "voplib.h"
 #include "diaglib.h"
@@ -1162,10 +1166,11 @@ char              pthread_created = 0;
 int               i;
 DWORD             dw_mainprobe_addr, main_probe;
 DWORD             dw_chipid_addr, chip_id;
+char              modestr[20], debugstr[100];
 
 /* code starts, display banner messages */
 
-  	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming test and measurement program for x86 and/or coCPU platforms, Rev 2.5, Copyright (C) Signalogic 2015-2019\n");
+  	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms, Rev 2.8, Copyright (C) Signalogic 2015-2021\n");
    printf("  Libraries in use: DirectCore v%s, pktlib v%s, streamlib v%s, voplib v%s, diaglib v%s, cimlib v%s", HWLIB_VERSION, PKTLIB_VERSION, STREAMLIB_VERSION, VOPLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
 #if defined(_ALSA_INSTALLED_)
    printf(", aviolib v%s", AVIOLIB_VERSION);
@@ -1185,20 +1190,28 @@ DWORD             dw_chipid_addr, chip_id;
 
 /* Verify test mode settings - any errors then exit the application (no cleanup is necessary at this point) */
 
-   if (CPU_mode & CPUMODE_C66X)
-   {
-      if (network_packet_test + cocpu_sim_test + cocpu_network_test + codec_test != 1)
-      {
-         printf ("Invalid test mode settings for c66x coCPU, please select only one coCPU test mode\n");
+   if (CPU_mode & CPUMODE_C66X) {
+
+      if (network_packet_test + cocpu_sim_test + cocpu_network_test + codec_test != 1) {
+
+         strcpy(modestr, "c66x coCPU");
+         sprintf(debugstr, "codec test = %d, cocpu sim test = %d, cocpu network test = %d, network packet test = %d", codec_test, cocpu_sim_test, cocpu_network_test, network_packet_test);
+
+cmd_err: printf("Invalid cmd line options for %s, make sure: \n", modestr);
+         printf("  one or more -i and -o (input and output) options are correctly specified \n");
+         printf("  one -C (config file) is correctly specified \n");
+         printf("  one -c option (platform type) is given and either none or only one -M (operating mode) option is given \n");
+         printf("  debug info:  %s \n", debugstr);
+         printf("To see the full list of cmd line options, run ./mediaTest -h \n");
          goto exit;
       }
    }
-   else
-   {
-      if (x86_frame_test + x86_pkt_test + codec_test + pcap_extract != 1)
-      {
-         printf ("Invalid test mode settings for x86, please select only one x86 test mode\n");
-         goto exit;
+   else {
+
+      if (x86_frame_test + x86_pkt_test + codec_test + pcap_extract != 1) {
+         strcpy(modestr, "x86");
+         sprintf(debugstr, "codec test = %d, x86 frame test = %d, x86 pkt test = %d, pcap extract = %d", codec_test, x86_frame_test, x86_pkt_test, pcap_extract);
+         goto cmd_err;
       }
    }
    

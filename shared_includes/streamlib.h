@@ -4,7 +4,7 @@
  Purpose:
    Header file for streamlib.c (streamlib.so) and streamlib.cpp used by x86 and c66x image processing
 
- Copyright (C) Signalogic Inc. 2014-2020
+ Copyright (C) Signalogic Inc. 2014-2021
 
  Revision History:
    Created Nov 2014 HP
@@ -39,6 +39,8 @@
                           -DSDeduplicateStreams(). Source is in audio_domain_processing.c; see also comments below
                           -audio data related APIs including DSGetStreamGroupContributorDataAvailable(), DSGetStreamGroupContributorFramesAvailable(), DSGetStreamGroupContributorFramesize(), and DSGetStreamGroupContributorDataPtr(). See comments below
    Modified Jul 2020 JHB, change all PLC references to FLC (frame loss concealment, where frame refers to non-packetized raw media data)
+   Modified Jan 2021 JHB, reduced MAX_GROUP_BUFFER_SIZE from 64000 to 32000 bytes, see comments
+   Modified Jan 2021 JHB, add MAX_GROUP_BUFFER_TIME_8KHZ definition, to make stream group buffer processing independent of output sampling rate. Units in msec
 */
 
 #ifndef _STREAMLIB_H_
@@ -332,14 +334,22 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
      For more information on merging algorithms, see DSMergeStreamAudio() and DSMergeStreamAudioEx() APIs in alglib
 */
 
-  #define MAX_STREAM_GROUPS      256     /* maximum number of stream groups supported */
-  #define MAX_MERGE_BUFFER_SIZE  32000L  /* maximum 4 sec at 8 kHz sampling rate (in samples) */
-  #define MAX_GROUPID_LEN        128
+  #define MAX_STREAM_GROUPS           256     /* max number of stream groups supported */
+  #define MAX_MERGE_BUFFER_SIZE       32000L  /* internal max merge buffer size, in samples (dual buffers per stream group, each 2 sec at 8 kHz Fs) */
+  #define MAX_GROUP_BUFFER_SIZE       32000L  /* stream group output max buffer size, in bytes (one buffer per stream group, 2 sec at 8 kHz Fs) */
+  
+  #define DEFAULT_GROUP_BUFFER_FS     8000
+  #define MAX_GROUP_BUFFER_TIME_8KHZ  (1.0*MAX_GROUP_BUFFER_SIZE/2/DEFAULT_GROUP_BUFFER_FS)  /* max stream group buffer time. Notes:
+                                                                                                 -2 sec at 8 kHz Fs, 1 sec at 16 kHz, etc. Use app value of stream group Fs instead of GROUP_DEFAULT_FS
+                                                                                                 -app stream group Fs can be controlled by group_term.sample_rate (see shared_include/session.h)
+                                                                                                 -apps can set/read stream group buffer time dynamically by applying DSSet/GetSessionInfo(DS_SESSION_INFO_GROUP_BUFFER_TIME) in pktlib.h to the stream group owner session, but this is not recommended
+                                                                                             */
+  #define MAX_GROUPID_LEN             128
 
 /* stream group flags:
 
    -apply only to group_term.group_mode (see TERMINATION_INFO struct in shared_include/session.h)
-   -should not be combined with group contributor flags, although they may not overlap in value at some point they might
+   -should not be combined with group contributor flags (although currently they may not overlap in value, at some point they might)
 */
 
   #define STREAM_GROUP_ENABLE_MERGING                                      0x1  /* merge all group contributors to generate "unified conversation" output and maintain stream alignment.  Contributors can opt in or out using the DS_MERGE_AUDIO_xx flags (alglib.h) in their termN.group_mode flags */
@@ -475,11 +485,11 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
    -see additional comments in audio_domain_processing.c
 */
 
-  int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int upf, int dnf, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge);
+  int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int16_t* delay_buffer, int sample_rate, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge);
 
 /* uFlags for DSProcessAudio() */
 
-  #define DS_PROCESS_AUDIO_STREAM_GROUP_INPUT      1  /* input audio frames (group_audio_buffer) are from the stream group indexed by idx */ 
+  #define DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT     1  /* input audio frames (group_audio_buffer) are from the stream group indexed by idx */ 
   #define DS_PROCESS_AUDIO_CONVERT_FS          0x100  /* convert sampling rate, upf and dnf specify up and down conversion multipliers */ 
   #define DS_PROCESS_AUDIO_APPLY_ASR           0x200  /* ASR should be applied to processe audio */
   #define DS_PROCESS_AUDIO_ENCODE            0x10000  /* encode audio */

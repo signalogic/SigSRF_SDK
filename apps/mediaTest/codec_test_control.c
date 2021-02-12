@@ -8,22 +8,23 @@
       - codec test params setup
       - codec test config file parsing
  
- Copyright (C) Signalogic Inc. 2016-2020
+ Copyright (C) Signalogic Inc. 2016-2021
 
- Revision History:
+ Revision History
  
    Created Jan 12016 CJ
    Modified Feb 2017 CJ, Made config file parsing support global
    Modified Mar 2017 JHB, edits for codec testing
    Modified May 2018 JHB, enforce limit size of codec_test_params write to c66x mem (see comments)
    Modified Dec 2018 CKJ, add encoded file extension ".BIT" to support AMR-WB+
-   Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0: include math.h (for min/max functions)
+   Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0, include minmax.h (for min/max functions)
+   Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
 */
 
-/* mediaTest definitions (also includes DirectCore header files) */
+/* app support header files */
 
-#include <math.h>
 #include "mediaTest.h"
+#include "minmax.h"
 
 /* init codec test by setting config params */
 

@@ -147,8 +147,8 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 				yum install gcc-c++
 			fi
 			
-         unrarInstalled=`type -p lsb_release`
-	      if [ ! $unrarInstalled ]; then
+         lsbReleaseInstalled=`type -p lsb_release`
+	      if [ ! $lsbReleaseInstalled ]; then
 		  		echo "lsb_release package is needed"
 				yum install redhat-lsb-core
 			fi
@@ -284,11 +284,11 @@ swInstall() {  # install Signalogic SW on specified path
 	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/DirectCore/apps/coCPU 
    fi
 
-	echo
-
 	if [ "$installOptions" = "coCPU" ]; then
 
-		echo "loading driver"
+		echo
+		echo "Loading coCPU driver ..."
+		echo
 
 		if [ "$target" = "Host" ]; then
 			#cd $installPath/Signalogic_*/DirectCore/hw_utils; make clean; make
@@ -315,15 +315,19 @@ swInstall() {  # install Signalogic SW on specified path
 			fi
 
 			make load;  # load driver -- note if already loaded then an error message is shown, but causes no problems, JHB Jan2021
+			echo
 
 			if lsmod | grep sig_mc_hw &> /dev/null ; then
-				echo "Signalogic Driver is loaded"
+				echo "coCPU driver is loaded"
+				echo
 			fi
 		elif [ "$target" = "VM" ]; then
-			cd $installPath/Signalogic/DirectCore/virt_driver; make load
+			cd $installPath/Signalogic/DirectCore/virt_driver;
+			make load;
+			echo
 		fi
 
-		echo  "Setting up autoload of Signalogic driver on boot"
+		echo "Setting up autoload of coCPU driver on boot"
 
 		if [ "$target" = "Host" ]; then
 			if [ ! -f /lib/modules/$kernel_version//sig_mc_hw.ko ]; then
@@ -460,7 +464,7 @@ unInstall() { # uninstall Signalogic SW completely
 			sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.local
 		fi
 	fi
-	
+
 	rm -rf /usr/lib/libcimlib*
 	rm -rf /usr/lib/libhwmgr*
 	rm -rf /usr/lib/libfilelib*
@@ -472,7 +476,7 @@ unInstall() { # uninstall Signalogic SW completely
 	rm -rf /usr/lib/libaviolib*
 	rm -rf /usr/lib/libdiaglib*
 	rm -rf /usr/lib/libstublib*
-	rm -rf /usr/lib/libtdmlib*.a
+	rm -rf /usr/lib/libtdmlib*
 
 	unset SIGNALOGIC_INSTALL_PATH
 	sed -i '/SIGNALOGIC_INSTALL_PATH*/d' /etc/environment
@@ -526,6 +530,9 @@ installCheckVerify() {
 
 	# Path check
 
+	echo
+	echo "Distro Info" | tee -a $diagReportFile
+	lsb_release -a | tee -a $diagReportFile
 	echo | tee -a $diagReportFile
 	echo "SigSRF Install Path and Options Check" | tee -a $diagReportFile
 	echo "Install path: $installPath" | tee -a $diagReportFile
@@ -535,7 +542,7 @@ installCheckVerify() {
 
       # Driver check
 
-		echo "SigSRF Driver Check" | tee -a $diagReportFile
+		echo "SigSRF coCPU Driver Check" | tee -a $diagReportFile
 
 		libfile="sig_mc_hw"; libname="sig_mc_hw";
 		if [ -c /dev/$libfile ]; then

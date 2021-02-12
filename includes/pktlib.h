@@ -6,7 +6,7 @@
  
   Projects: SigSRF, DirectCore
  
-  Copyright (C) Signalogic Inc. 2010-2020
+  Copyright (C) Signalogic Inc. 2010-2021
 
   Revision History:
   
@@ -17,8 +17,8 @@
    Modified Jul 2017 CJ, added support for cases where channel numbers in Pktlib do not match up with codec handles in Voplib
    Modified Jul 2017 CJ, added DS_SESSION_USER_MANAGED flag which includes session id in channel hash key
    Modified Jul 2017 CJ, added support for user app supplied log file handle and log write 
-   Modified Aug 2017 JHB, added FormatPkt struct definition and optional header pointer arg for DSFormatPacket() (replaces pyldType, which is now either looked up in session info using chnum arg,
-                          or given in the optional RTP header pointer).  Added DS_FMT_PKT_USER_xxx attributes to support use of the FormatPkt* arg
+   Modified Aug 2017 JHB, added FORMAT_PKT struct definition and optional header pointer arg for DSFormatPacket() (replaces pyldType, which is now either looked up in session info using chnum arg,
+                          or given in the optional RTP header pointer).  Added DS_FMT_PKT_USER_xxx attributes to support use of the FORMAT_PKT* arg
    Modified Aug 2017 JHB, modified DSConvertFsPacket() to take an input data length arg and return amount of valid output data.  If the input data length arg is given as -1, the API calculates input data length internally based on channel info specified by chnum
    Modified Aug 2017 CKJ, added DS_GET_ORDERED_PKT_ENABLE_DTX flag and DTX handling in DSGetOrderedPackets()
    Modified Aug 2017 JHB, added packet_info[] arg to DSGetOrderedPackets() and DSBufferPackets(), added DS_PKT_INFO_SID and related DS_PKT_INFO_xxx flags
@@ -69,6 +69,7 @@
    Modified May 2020 JHB, add DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP and DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME flags to DSGetJitterBufferInfo()
    Modified May 2020 JHB, move IsPmThread() here as static inline from pktlib.c. Define IsPmThread as IsPmThreadInline
    Modified Oct 2020 JHB, add limited pcapng format capability to DSOpenPcap() and DSReadPcap(). This was mainly done to support TraceWrangler output (pcap anonymizer tool). Support for pcapng format write is not currently planned
+   Modified Jan 2021 JHB, implement bit fields in RTPHeader struct for first 2 bytes (see comments), remove DSSet/ClearMarkerBit(), change definition of DS_FMT_PKT_STANDALONE to allow use of DSFormatPacket() with no reference to session / streams created via DSCreateSession()
  */
 
 #ifndef _PKTLIB_H_
@@ -86,7 +87,7 @@
 
 /* session and configuration struct and related definitions */
 
-#include "shared_include/session_cmd.h"
+#include "shared_include/session_cmd.h"  /* brings in shared_include/session.h */
 #include "shared_include/config.h"
 
 /* typedefs for various pktlib and voplib handles */
@@ -134,11 +135,29 @@ extern "C" {
 
   typedef struct {
 
+    #if 0
     uint16_t  BitFields;       /* Bit fields = Vers:2, pad:1 xind:1 Cc:4 marker:1 pyldtype:7 */
+    #else
+
+ /* Implemented as bit fields JHB Jan2021, Notes:
+
+    -this makes all RTP header fields defined in RFC 3550 directly accessible from C/C++ application code and avoids host vs. network byte ordering issues for first 2 bytes of the RTP header
+    -bit fields are in lsb order due to gcc limitations, so ordering within each byte is reversed from msb-first layout defined in RFC 3550
+ */
+ 
+ /* 1st byte of RTP header */
+    uint8_t   CC        : 4;   /* CSRC count */
+    uint8_t   ExtHeader : 1;   /* Extension header */
+    uint8_t   Padding   : 1;   /* Padding */
+    uint8_t   Version   : 2;   /* RTP version */
+ /* 2nd byte of RTP header */
+    uint8_t   PyldType  : 7;   /* Payload type */
+    uint8_t   Marker    : 1;   /* Marker bit */
+    #endif
     uint16_t  Sequence;        /* Sequence number */
     uint32_t  Timestamp;       /* Timestamp */
     uint32_t  SSRC;            /* SSRC */
-    uint32_t  CSRC[1];         /* Remainder of header */
+    uint32_t  CSRC[1];         /* remainder of header */
 
   } RTPHeader;
 
@@ -153,7 +172,7 @@ extern "C" {
 
   } UDPHeader;
 
-  /* FormatPkt struct, used in DSFormatPacket() API */
+  /* FORMAT_PKT struct, used in DSFormatPacket() API */
 
   typedef struct {
 
@@ -178,7 +197,7 @@ extern "C" {
 
     uint16_t   ptime;
 
-  } FormatPkt;
+  } FORMAT_PKT;
 
   /* basic IP, UDP, and RTP header lengths */
 
@@ -192,6 +211,9 @@ extern "C" {
   /* max RTP packet length, mediaTest has test cases consisting of ptimes up to 240 ms, G711 will require a 1994 byte packet for IPv6.  This definition also used in mediaMin */
 
   #define MAX_RTP_PACKET_LEN         (MAX_RAW_FRAME + MAX_IP_UDP_RTP_HEADER_LEN)
+
+  #define UDP_PROTOCOL     17
+  #define TCP_PROTOCOL      6
 
   /* thread level items */
 
@@ -386,7 +408,7 @@ extern "C" {
 
   HSESSION DSCreateSession(HDATAPLANE dpHandle, char* networkIfName, SESSION_DATA* pSessionData, unsigned int uFlags);  /* note -- SESSION_DATA struct defined in shared_include/session.h */
 
-  int DSTranscodeSession(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkts, unsigned int pkt_buf_len);
+  int DSTranscodeSession(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int pkt_buf_len);
 
   int DSDeleteSession(HSESSION sessionHandle);
 
@@ -406,7 +428,7 @@ extern "C" {
 
       -if DS_RECV_PKT_ADDTOJITTERBUFFER is given then received packets are also added to the SigSRF internal jitter buffer
 
-      -pkt_buf_len is the maximum size of the buffer pointed to by pkts
+      -pkt_buf_len is the maximum size of the buffer pointed to by pkt_buf
 
       -TODO: add interrupt based operation
 
@@ -416,7 +438,7 @@ extern "C" {
 
       -sessionHandle is a pointer to an array of session handles, of length numPkts
 
-      -pkts points to a buffer containing one or more packets.  Packets are stored consecutively in IP/UDP/RTP format, with no marker, tag or other intermediate values
+      -pkt_buf points to a buffer containing one or more packets.  Packets are stored consecutively in IP/UDP/RTP format, with no marker, tag or other intermediate values
 
       -numPkts is the number of packets to send
 
@@ -435,20 +457,20 @@ extern "C" {
 
       -the API increments timestamps and sequence numbers and generates an RTP header
 
-      -chnum can be determined by calling DSGetPacketInfo() with the DS_PKT_INFO_CHNUM flag (see reference source code).  If chnum is -1, then the FormatPkt* arg
+      -chnum can be determined by calling DSGetPacketInfo() with the DS_PKT_INFO_CHNUM flag (see reference source code).  If chnum is -1, then the FORMAT_PKT* arg
        (see next note) must specify *all* information about the packet's headers
 
-      -an optional (i.e. non-NULL) packet header struct pointer (FormatPkt*) can be given to specify IP, UDP, and/or RTP header items (see also the UDPHeader and
+      -an optional (i.e. non-NULL) packet header struct pointer (FORMAT_PKT*) can be given to specify IP, UDP, and/or RTP header items (see also the UDPHeader and
        RTPHeader structs).  Also some items that are "header related" are included, such as ptime.  Packet header items are specified with a combination of one or
        more DS_FMT_PKT_USER_xxx attributes given in uFlags (defined below). For a NULL pointer or any items not specified in uFlags, DSFormatPacket() will use
        internal Pktlib values
 */
 
-  int DSRecvPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkts, unsigned int pkt_buf_len, unsigned int* pkt_len, int numPkts);
+  int DSRecvPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int pkt_buf_len, unsigned int* pkt_len, int numPkts);
 
-  int DSSendPackets(HSESSION* sessionHandle, unsigned int uFlags, uint8_t* pkts, unsigned int* pkt_len, int numPkts);
+  int DSSendPackets(HSESSION* sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int* pkt_len, int numPkts);
 
-  int DSFormatPacket(unsigned int chnum, unsigned int uFlags, uint8_t* pyld, unsigned int pyldSize, FormatPkt* formatHdr, uint8_t* pkt);
+  int DSFormatPacket(int chnum, unsigned int uFlags, uint8_t* pyld, unsigned int pyldSize, FORMAT_PKT* formatHdr, uint8_t* pkt_buf);
 
 /* Jitter buffer APIs:
 
@@ -470,7 +492,7 @@ extern "C" {
       -returns the number of packets added.  A zero value can be returned for several reasons, including no packet match (hashing with existing sessions) and the
        packet timestamp is out of the current time window.  Returns -1 for an error condition
 
-      -multiple packets can be added.  On input pkt_buf_len[0] contains the overall number of bytes to process (i.e. max length of pkts[] data), on output
+      -multiple packets can be added.  On input pkt_buf_len[0] contains the overall number of bytes to process (i.e. max length of pkt_buf[] data), on output
        pkt_buf_len[] contains lengths of all packets found to be correctly formatted, meeting matching criteria, and added to the buffer
 
       -the DS_GETORD_PKT_FLUSH can be used to force any packets still in the buffer to be output.  Typically this is done prior to closing a session
@@ -484,7 +506,7 @@ extern "C" {
     -DSGetOrderedPackets() -- pull one or more packets from the SigSRF jitter buffer that are deliverable in the current time window.  Notes:
 
       -returns the number of packets pulled.  A zero value can be returned for several reasons, including no packets available in the current time window.  If more
-       than one packet is pulled, pkts[] will contain each packet consecutively and the pkt_buf_len[] array will contain the length of each packet.  If there is an
+       than one packet is pulled, pkt_buf[] will contain each packet consecutively and the pkt_buf_len[] array will contain the length of each packet.  If there is an
        error condition then -1 is returned
 
       -if the DS_GETORD_PKT_SESSION flag is given, sessionHandle must specify a currently active session. If the DS_GETORD_PKT_CHNUM flag is given, sessionHandle
@@ -508,9 +530,9 @@ extern "C" {
       -uTimestamp should be provided in usec (it's divided internally by 1000 to get msec). If uTimestamp is zero the API will generate its own timestamp, but this may cause timing variations between successive calls depending on intervening processing and its duration
 */
 
-  int DSBufferPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkts, unsigned int pkt_buf_len[], unsigned int payload_info[], int chnum[]);
+  int DSBufferPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int pkt_buf_len[], unsigned int payload_info[], int chnum[]);
 
-  int DSGetOrderedPackets(HSESSION sessionHandle, unsigned int uFlags, uint64_t uTimestamp, uint8_t* pkts, unsigned int pkt_buf_len[], unsigned int payload_info[], unsigned int* uInfo);
+  int DSGetOrderedPackets(HSESSION sessionHandle, unsigned int uFlags, uint64_t uTimestamp, uint8_t* pkt_buf, unsigned int pkt_buf_len[], unsigned int payload_info[], unsigned int* uInfo);
 
   int DSGetJitterBufferInfo(int chnum, unsigned int uFlags);
   int DSSetJitterBufferInfo(int chnum, unsigned int uFlags, int value);
@@ -686,7 +708,7 @@ extern "C" {
 
   typedef struct {
 
-    uint16_t vlan_id;
+    uint16_t id;
     uint16_t type;
 
   } vlan_hdr_t;
@@ -696,11 +718,13 @@ extern "C" {
   #define PCAP_LINK_LAYER_LEN_MASK  0xffff
 
   int DSOpenPcap(const char* pcap_file, FILE** fp_pcap, pcap_hdr_t* pcap_file_hdr, const char* errstr, unsigned int uFlags);
-  int DSReadPcapRecord(FILE* fp_in, uint8_t* pkt_buffer, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_length);
-  int DSWritePcapRecord(FILE* fp_out, uint8_t* pkt_buffer, pcaprec_hdr_t* pcap_pkt_hdr, struct ether_header* eth_hdr, TERMINATION_INFO* termInfo,  struct timespec* ts, int packet_length);
+  int DSReadPcapRecord(FILE* fp_in, uint8_t* pkt_buf, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_length);
+  int DSWritePcapRecord(FILE* fp_out, uint8_t* pkt_buf, pcaprec_hdr_t* pcap_pkt_hdr, struct ether_header* eth_hdr, TERMINATION_INFO* termInfo,  struct timespec* ts, int pkt_buf_len);
 
-   void DSSetMarkerBit(FormatPkt* formatPkt, unsigned int uFlags);
-   void DSClearMarkerBit(FormatPkt* formatPkt, unsigned int uFlags);
+  #if 0  /* the marker bit is now defined as a bit field in the RTPHeader struct and can be set/cleared directly, JHB Jan2021 */
+  void DSSetMarkerBit(FORMAT_PKT* formatPkt, unsigned int uFlags);
+  void DSClearMarkerBit(FORMAT_PKT* formatPkt, unsigned int uFlags);
+  #endif
 
 /* DSConfigMediaService() -- start the SigSRF media service as a process or some number of packet/media threads.  Notes:
 
@@ -740,7 +764,7 @@ extern "C" {
 
 /* DSPushPackets() and DSPullPackets() -- send and receive packets from the media service.  Notes:
 
-  -pktsPtr points to one or more pushed or pulled packets stored consecutively in memory
+  -pkt_buf points to one or more pushed or pulled packets stored consecutively in memory
 
   -for DSPushPackets() numPkts is the number of packets to push. The return value is (i) number of packets pushed, (ii) zero which means queue is full and the push should be re-tried, or (iii) -1 which indicates an error condition
 
@@ -758,14 +782,14 @@ extern "C" {
 
   -hSession:
   
-     -for DSPushPackets(), an array of session handles with a one-to-one relationship with packets pointed to by pktsPtr
+     -for DSPushPackets(), an array of session handles with a one-to-one relationship with packets pointed to by pkt_buf
      -for DSPullPackets(), a session handle that can be used to filter pullled packets by session.  If -1 is given, then all available packets for all active sessions are pulled, and per-packet session handles are stored in pktInfo[]
 
-  -pkt_buf_len is the maximum amount of buffer space pointed to by pktsPtr that DSPullPackets can write
+  -pkt_buf_len is the maximum amount of buffer space pointed to by pkt_buf that DSPullPackets can write
 */
 
-  int DSPushPackets(unsigned int uFlags, unsigned char* pktsPtr, unsigned int* len, HSESSION* hSession, unsigned int numPkts);
-  int DSPullPackets(unsigned int uFlags, unsigned char* pktsPtr, unsigned int* len, HSESSION hSession, uint64_t* pktInfo, unsigned int pkt_buf_len, int numPkts);
+  int DSPushPackets(unsigned int uFlags, unsigned char* pkt_buf, unsigned int* len, HSESSION* hSession, unsigned int numPkts);
+  int DSPullPackets(unsigned int uFlags, unsigned char* pkt_buf, unsigned int* len, HSESSION hSession, uint64_t* pktInfo, unsigned int pkt_buf_len, int numPkts);
 
   int DSGetDebugInfo(unsigned int uFlags, int, int*, int*);  /* for internal use only */
 
@@ -930,18 +954,20 @@ extern "C" {
 #define DS_PKT_INFO_RTP_SEQNUM                0x0800
 #define DS_PKT_INFO_RTP_TIMESTAMP             0x0900
 #define DS_PKT_INFO_RTP_SSRC                  0x0a00
-#define DS_PKT_INFO_RTP_PYLDOFS               0x0b00
+#define DS_PKT_INFO_RTP_PYLDOFS               0x0b00         /* retrieves offset to start of RTP payload data (assumes a UDP packet) */
 #define DS_PKT_INFO_RTP_PYLDLEN               0x0c00
 #define DS_PKT_INFO_RTP_PYLDSIZE              DS_PKT_INFO_RTP_PYLDLEN
-#define DS_PKT_INFO_RTP_PYLD_CONTENT          0x0d00
+#define DS_PKT_INFO_RTP_PYLD_CONTENT          0x0d00         /* retrieves content type, not payload data. Use either DS_PKT_INFO_PYLDOFS or DS_PKT_INFO_RTP_PYLDOFS to get offset to start of packet data, JHB Dec2020 */
 
 #define DS_PKT_INFO_RTP_HEADER                0xff00         /* returns whole RTP header in void* pInfo arg */
 
 #define DS_PKT_INFO_IP_HDRLEN                 0x1000         /* returns length of IP address headers (valid for IPv4 and IPv6) */
 #define DS_PKT_INFO_PKTLEN                    0x2000         /* returns total packet length, including IP, UDP, and RTP headers, and payload */
-#define DS_PKT_INFO_SRC_UDP_PORT              0x3000
-#define DS_PKT_INFO_DST_UDP_PORT              0x4000
+#define DS_PKT_INFO_SRC_PORT                  0x3000
+#define DS_PKT_INFO_DST_PORT                  0x4000
 #define DS_PKT_INFO_IP_VERSION                0x5000
+#define DS_PKT_INFO_PROTOCOL                  0x6000
+#define DS_PKT_INFO_PYLDOFS                   0x7000         /* retrieves offset to start of UDP or TCP payload data */
 
 #define DS_PKT_INFO_ITEM_MASK                 0xff00
 
@@ -978,7 +1004,7 @@ extern "C" {
 #define DS_SESSION_INFO_GROUP_TIMESTAMP       0x14           /* most recent time group packetization was done */
 #endif
 #define DS_SESSION_INFO_GROUP_ID              0x15
-#define DS_SESSION_INFO_MERGE_BUFFER_SIZE     0x16
+#define DS_SESSION_INFO_GROUP_BUFFER_TIME     0x16           /* get / set stream group buffer time in msec (affects both merge buffer and sample domain processing buffer sizes. Default is 260 msec, see comments in streamlib.h) */
 #define DS_SESSION_INFO_DELETE_STATUS         0x17
 #define DS_SESSION_INFO_THREAD                0x18           /* get index of thread to which session is assigned.  Packet/media thread indexes range from 0..MAX_PKTMEDIA_THREADS-1.  Index 0 always exists, even if all sessions are static (no dynamic sessions) */
 #define DS_SESSION_INFO_GROUP_PTIME           0x19
@@ -1049,9 +1075,11 @@ extern "C" {
 
 /* DSFormatPacket() definitions */
 
-#define DS_FMT_PKT_SEND                       0x0010
+#define DS_FMT_PKT_SEND                       0x0010         /* send the packet after formatting */
 
-#define DS_FMT_PKT_USER_PYLDTYPE              0x0100
+#define DS_FMT_PKT_STANDALONE                 0x0020         /* format packet separately from sessions created by pktlib DSCreateSession(). The chnum param of the DSFormatPacket() API is ignored, and otherwise no association is made with existing pktlib sessions */
+
+#define DS_FMT_PKT_USER_PYLDTYPE              0x0100         /* DS_FMT_PKT_USER_ITEM flags indicate that ITEM is being supplied in the FORMAT_PKT struct pointer param of the DSFormatPacket() API */ 
 #define DS_FMT_PKT_USER_MARKERBIT             0x0200
 #define DS_FMT_PKT_USER_SEQNUM                0x0400
 #define DS_FMT_PKT_USER_TIMESTAMP             0x0800
@@ -1061,9 +1089,10 @@ extern "C" {
 #define DS_FMT_PKT_USER_IPADDR_DST            0x8000
 #define DS_FMT_PKT_USER_UDPPORT_SRC           0x10000
 #define DS_FMT_PKT_USER_UDPPORT_DST           0x20000
-#define DS_FMT_PKT_DISABLE_IPV4_CHECKSUM      0x40000
+
+#define DS_FMT_PKT_DISABLE_IPV4_CHECKSUM      0x40000        /* disable IPV4 checksum calculation when formatting the packet */
 #define DS_FMT_PKT_RTP_EVENT                  0x80000
-#define DS_FMT_PKT_STANDALONE                 0x100000
+#define DS_FMT_PKT_NO_INC_CHNUM_TIMESTAMP     0x100000       /* do not increment chnum internal record timestamp (this flag is reserved, do not use) */
 
 #define DS_FMT_PKT_USER_HDRALL                DS_FMT_PKT_USER_IPADDR_SRC | DS_FMT_PKT_USER_IPADDR_DST | DS_FMT_PKT_USER_UDPPORT_SRC | DS_FMT_PKT_USER_UDPPORT_DST
 
@@ -1210,6 +1239,7 @@ extern CHANINFO_CORE ChanInfo_Core[];
 extern SESSION_CONTROL sessions[];
 extern int nPktMediaThreads;
 extern PACKETMEDIATHREADINFO packet_media_thread_info[];
+extern SESSION_INFO_THREAD session_info_thread[];  /* added Jan 2021, JHB */
 
 /* function to determine if current thread is an application thread (i.e. pktlib API is being called from a user app, not from a packet/media thread).  Returns true for app threads */
   
@@ -1834,10 +1864,10 @@ int in_use, delete_status;
 
          break;
 
-      case DS_SESSION_INFO_MERGE_BUFFER_SIZE:  /* note -- value of n is a don't care */
+      case DS_SESSION_INFO_GROUP_BUFFER_TIME:  /* note -- value of n is a don't care */
 
          if (uFlags & DS_SESSION_INFO_HANDLE) {
-            ret_val = sessions[sessionHandle].merge_buffer_size;
+            ret_val = sessions[sessionHandle].group_buffer_time;
          }
          else { n = -2; goto check_n; }
 
@@ -1863,7 +1893,7 @@ int in_use, delete_status;
          else if (session_id >= 0) {
 
             if (term_id == 1) memcpy(pInfo, (uint8_t*)&sessions[session_id].session_data.term1, sizeof(TERMINATION_INFO));
-            else if (term_id == 2) memcpy(pInfo, (uint8_t*)&sessions[session_id].session_data.term1 + sizeof(TERMINATION_INFO), sizeof(TERMINATION_INFO));  /* for this hack, see comments below in DSSetSessionInfo(), JHB Aug 2018 */
+            else if (term_id == 2) memcpy(pInfo, (uint8_t*)&sessions[session_id].session_data.term1 + sizeof(TERMINATION_INFO), sizeof(TERMINATION_INFO));  /* for this hack, see comments in DSSetSessionInfo() in pktlib.c, JHB Aug 2018 */
             else memcpy(pInfo, (uint8_t*)&sessions[session_id].session_data, sizeof(SESSION_DATA));
          }
          else if (term_id == 1) {

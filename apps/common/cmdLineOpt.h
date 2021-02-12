@@ -1,9 +1,9 @@
 /*
  $Header: /root/Signalogic/DirectCore/apps/common/cmdLineOpt.h
 
- Purpose:  keep track of any options specified on the command line
+ Purpose:  command line options parsing and handling
   
- (C) Signalogic Inc. 2005-2019
+ (C) Signalogic Inc. 2005-2021
 
  Revision History:
 
@@ -15,6 +15,7 @@
    Modified Jul 2015 JHB, add INT64 type to support 64-bit core list entries
    Modified Jul 2018 JHB, changed mandatory support to handle x86 and coCPU separately.  Changed isMandatory element in Record struct from bool to unsigned char
    Modified Sep 2019 JHB, add CLI_MEDIA_APPS flag
+   Modified Jan 2021 JHB, add CLI_MEDIA_APPS_MEDIAMIN flag, add type param to getOption()
 */
 
 #ifndef _CMDLINEOPT_H_
@@ -31,6 +32,9 @@
 
 #define CLI_DISABLE_MANDATORIES     1
 #define CLI_MEDIA_APPS              2  /* indicates that calling app is a media app (e.g. mediaMin or mediaTest). For example, for overloaded cmd line options, this specfies media app defaults */
+#define CLI_MEDIA_APPS_MEDIAMIN     4  /* add specific flag for mediaMin, JHB Jan2021 */
+
+/* flags used in CmdLineOpt class (Record options initialization in getUserInterface.cpp) */
 
 #define MANDATORY                   1
 #define MANDATORY_COCPU             2
@@ -89,7 +93,7 @@ public:
 
 private:
 
-   Record* getOption(char option);
+   Record* getOption(char option, int type);
 
    Record* options;
    int numOptions;

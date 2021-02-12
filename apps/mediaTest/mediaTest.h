@@ -3,7 +3,7 @@
 
   header file for mediaMin application and mediaTest test and measurement program
 
-  Copyright (C) Signalogic, 2015-2020
+  Copyright (C) Signalogic, 2015-2021
 
   Revision History
 
@@ -27,6 +27,7 @@
    Modified Apr 2020 JHB, add references for uLineCursorPos, isCursorMidLine, and pm_thread_printf
    Modified May 2020 JHB, add pm_sync[] reference. Currently this is only used for timing debug, see comments in mediaMin.c
    Modified Oct 2020 JHB, PCAP definition in I/O file type enum can be used with both pcap and pcapng formats
+   Modified Jan 2021 JHB, change AUDIO_FILE_TYPES macro to IS_AUDIO_FILE_TYPE, add extern reference for char szSDPFile[CMDOPT_MAX_INPUT_LEN]
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -182,6 +183,7 @@ extern int               nSegmentInterval;
 extern int               nAmplitude;
 extern int               nJitterBufferParams;
 extern int               nRepeat;
+extern char              szSDPFile[CMDOPT_MAX_INPUT_LEN];
 
 extern QWORD             nCoreList;                         /* bitwise core list given in command line */
 extern HCARD             hCard;
@@ -255,16 +257,12 @@ extern "C" {
      PCAP,           /* supports both pcap and pcapng formats, JHB Oct2020 */
      TEXT,
      CSV,
-#if 0
-     USB_AUDIO,
-#else
      USB_AUDIO = 0x100,  /* for output only, USB audio can be combined with audio file types */
-#endif
      INVALID
   };
 
   #define OUTFILETYPEMASK 0xff
-  #define AUDIO_FILE_TYPES(a) (((a) & OUTFILETYPEMASK) >= RAW_AUDIO && ((a) & OUTFILETYPEMASK) < ENCODED)
+  #define IS_AUDIO_FILE_TYPE(a) (((a) & OUTFILETYPEMASK) >= RAW_AUDIO && ((a) & OUTFILETYPEMASK) < ENCODED)
 
   static inline int array_sum(int array[], int length)
   {

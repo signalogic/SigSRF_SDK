@@ -1,26 +1,27 @@
 /*
-  $Header: /root/Signalogic/DirectCore/include/alias.h 2     10/10/05 12:32p
+ $Header: /root/Signalogic/DirectCore/include/alias.h 2     10/10/05 12:32p
 
-  Description: alias definitions and typedefs to allow unified support for Linux, Win32, and Win64
+ Description: alias definitions and typedefs to allow unified support for Linux, Win32, and Win64
 
-  Project: DirectCore lib and driver
+ Project: DirectCore lib and driver
 
-  Copyright Signalogic Inc. 1994-2020
+ Copyright Signalogic Inc. 1994-2020
 
-  Revision History
+ Revision History
 
-   2     10/10/05 12:32p
-   8 DSP support
+  2     10/10/05 12:32p
+  8 DSP support
   
-   1     8/24/05 7:13p
-   Clean up code and rebuild
+  1     8/24/05 7:13p
+  Clean up code and rebuild
  
-   Revised JHB Nov-Dec 2008, clean-up during SigC641x work
-   Revised JHB Jul 2010, clean up during SigC5561 work (rename msgbuf typedef to sig_msgbuf)
-   Revised JHB Jul 2014, moved _GCC_VERSION macro here, defined INT, typedef socket, etc.
-   Revised JHB Jun 2017, added bool type if __cplusplus is not defined
-   Revised JHB Aug 2017, protected some codes with #if __STDC_VERSION__ >= 199901L to allow compatibility with C90 sources (for example 3GPP codec sources)
-   Revised JHB Oct 2018, changed definition of "bool" for non C++ codes to uint8_t.  See comments
+  Revised Nov-Dec 2008 JHB, clean-up during SigC641x work
+  Revised Jul 2010 JHB, clean up during SigC5561 work (rename msgbuf typedef to sig_msgbuf)
+  Revised Jul 2014 JHB, moved _GCC_VERSION macro here, defined INT, typedef socket, etc.
+  Revised Jun 2017 JHB, added bool type if __cplusplus is not defined
+  Revised Aug 2017 JHB, protected some codes with #if __STDC_VERSION__ >= 199901L to allow compatibility with C90 sources (for example 3GPP codec sources)
+  Revised Oct 2018 JHB, changed definition of "bool" for non C++ codes to uint8_t. See comments
+  Modified Jan 2021 JHB, don't include minmax.h for C++ code using std::min and std::max
 */
 
  
@@ -49,7 +50,7 @@
    #define ROUND(x) floor(x + 0.5f)
 #endif
 
-#if defined (_LINUX_) && !defined (__KERNEL__)
+#if defined (_LINUX_) && !defined (__KERNEL__) && !defined (__cplusplus)
    #include "minmax.h"
 #endif
 

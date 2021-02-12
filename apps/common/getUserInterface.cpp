@@ -3,7 +3,7 @@
 
  Purpose: Defines help menu and collects command line options
 
- Copyright (C) Signalogic Inc. 1992-2020
+ Copyright (C) Signalogic Inc. 1992-2021
 
  Revision History
 
@@ -25,6 +25,7 @@
    Modified Sep 2019 JHB, check uFlags for CLI_MEDIA_APPS flag to handle input re-use, audio segmentation, and other cmd line options specific to mediaMin and mediaTest apps.  NB - because getUserInfo() is used by both apps and shared libs (e.g. cimlib.so) need to avoid build-time hard-codes.  Anything app-specific should be controlled by uFlags to allow run-time decisions
    Modified Dec 2019 JHB, add -jN cmd line entry for jitter buffer params (for mediaMin app usage), sets nJitterBufferOptions in userIfs (UserInterface struct in userInfo.h)
    Modified Jan 2020 JHB, add -RN cmd line entry for repeat number of times
+   Modified Jan 2021 JHB, add -s option specific to mediaMin to handle SDP file input on cmd line
 */
 
 #include <stdlib.h>
@@ -100,7 +101,9 @@ CmdLineOpt::Record options[] = {
    {'y', CmdLineOpt::INTEGER, NOTMANDATORY, 
           (char *)"y resolution (e.g. -x1080 for 1080 video height)", {{(void*)0}} },
 	{'s', CmdLineOpt::INTEGER, NOTMANDATORY,
-          (char *)"Streaming mode (e.g. -s0 for oneshot, -s1 for continuous)", {{(void*)0}} },
+          (char *)"Segmentation for mediaTest, streaming mode for streamTest (e.g. -s0 for oneshot, -s1 for continuous)", {{(void*)0}} },
+	{'s', CmdLineOpt::STRING, NOTMANDATORY,
+          (char *)"sdp file input for mediaMin" },
 	{'r', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Frame rate in frames per sec (default is 30 fps), or buffer add interval in msec (default is 20 msec)", {{(void*)-1}} },  /* changed to -1.  cimlib will set the default to 30 for streamTest and iaTest, JHB Sep2017 */
    {'D', CmdLineOpt::IPADDR, NOTMANDATORY,
@@ -139,6 +142,8 @@ CmdLineOpt::Record options[] = {
 	{'d', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Debug mode for most programs (enter as -dN, where N is mode value).  dkLen parameter for Scrypt Algorithm test program", {{(void*)-1}} },
 };
+
+/* global storage of cmd line options */
 
 CmdLineOpt cmdOpts( options, sizeof(options)/sizeof(options[0]) );
 
@@ -244,7 +249,8 @@ char tmpstr[CMDOPT_MAX_INPUT_LEN];
            for (i=0; i<instances; i++) userIfs->yres[i] = cmdOpts.getInt('y', i, 0);
 
          if (uFlags & CLI_MEDIA_APPS) {
-            userIfs->nSegmentation = cmdOpts.getInt('s', 0, 0);  /* added for mediaTest segmentation, silence detection, strip, chunk rewrite, etc.  JHB Jul 2019 */
+            if ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) && cmdOpts.getStr('s', 0) != NULL) strncpy(userIfs->szSDPFile, cmdOpts.getStr('s', 0), CMDOPT_MAX_INPUT_LEN);  /* added for mediaMin SDP file input, JHB Jul 2019 */
+            else userIfs->nSegmentation = cmdOpts.getInt('s', 0, 0);  /* added for mediaTest segmentation, silence detection, strip, chunk rewrite, etc, JHB Jul 2019 */
          }
          else {
             if ((instances = cmdOpts.nInstances('s')))

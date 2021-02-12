@@ -4,7 +4,7 @@
  *
  * Project: DirectCore, SigSRF
  *
- * Copyright Signalogic Inc. 1994-2020
+ * Copyright Signalogic Inc. 1994-2021
  * 
  * 2     10/10/05 12:32p
  * 8 DSP support.
@@ -24,6 +24,7 @@
    Modified Jul 2019 JHB, add #defines for nSegmentation, overloaded on inputType, and for nAmplitude, overloaded on baseAddr.  These are to support silence detection, strip, and chunk rewrite functionality in mediaTest (e.g. for Kaldi group users)
    Modified Dec 2019 JHB, add #define for nJitterBufferParams, for mediaMin app usage
    Modified Jan 2020 JHB, add #define for nRepeat, for mediaMin app usage
+   Modified Jan 2021 JHB, add #define for szSDPFile for mediaMin app SDP file input
 */
 
 #ifndef _USERINFO_H_
@@ -111,7 +112,7 @@ typedef struct {
    
 /* Scrypt algorithm parameters */
 
-   char      szScriptFile[CMDOPT_MAX_INPUT_LEN];
+   char      szScryptFile[CMDOPT_MAX_INPUT_LEN];
    char      szRmtIpAddr[CMDOPT_MAX_INPUT_LEN];
    //char decryptedFile[MAX_INPUT_LEN]; 
    char      scryptpasswd[CMDOPT_MAX_INPUT_LEN]; 	
@@ -136,7 +137,8 @@ typedef struct {
    #define   nInterval scryptParamr                /* mediaTest app usage of -I cmd line entry, JHB Jul2019 */
    #define   nAmplitude baseAddr                   /* mediaTest app usage of -A cmd line entry, JHB Jul2019 */
    #define   nJitterBufferOptions scryptParamp     /* mediaMin app usage of -j cmd line entry, JHB Dec2019 */ 
-   #define   nRepeatTimes scryptdklen              /* mediaMin app usasge of -R cmd line enry, JHB Jan2020 */
+   #define   nRepeatTimes scryptdklen              /* mediaMin app usasge of -R cmd line entry, JHB Jan2020 */
+   #define   szSDPFile szScryptFile                /* mediaMin app usasge of -s cmd line entry for SDP file input. Note that mediaTest uses -s for audio file segmentation JHB Jan2021 */
 
 } UserInterface;
 

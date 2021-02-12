@@ -1,0 +1,10 @@
+m=audio 9128 RTP/AVP 96 97 98 99 100
+a=rtpmap:96 AMR-WB/16000
+a=fmtp:96 mode-set=0,1,2; mode-change-period=2; mode-change-neighbor=1; max-red=0
+a=rtpmap:97 AMR/8000
+a=fmtp:97 mode-set=0,2,5,7; mode-change-period=2; mode-change-neighbor=1; max-red=0
+a=rtpmap:98 AMR/8000
+a=fmtp:98 mode-change-period=2; mode-change-neighbor=1; max-red=0
+a=rtpmap:99 telephone-event/8000
+a=rtpmap:100 telephone-event/16000
+a=rtpmap:109 EVS/16000

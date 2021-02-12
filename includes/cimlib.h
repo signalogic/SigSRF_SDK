@@ -1,25 +1,25 @@
 /*
   $Header: /root/Signalogic_YYYYvN/DirectCore/include/cimlib.h
- 
+
   Purpose:
- 
+
       CIM (Compute Intensive Multicore) Library API definition
       
         -high level CPU array management
         -x86 and CIM code generation support
         -support VoIP libraries (voplib, callmgr)
- 
-  Copyright (C) Signalogic Inc. 2008-2015
- 
-  Revision History:
- 
-    Created,  Sep08, JHB
-    Modified, Mar09-Apr09, XC, JHB
-    Modified, Jun09, JHB, prepare for shared lib format, eliminate extern vars used by host app
-    Modified, Nov09, JHB, add support for x86 server with no T1/E1 or T3 hardware installed
-    Modified, Jul10, JHB, create separate cimlib
-    Modified, Apr15, JHB, Rev 2 CIM code generation support, added cimRunHardware() API.  Modified Makefile to create two libs, cimlib and cimlib_emu.  The EMU version
-                          can be called by API programs (cimlib is built with _CIM flag)
+
+  Copyright (C) Signalogic Inc. 2008-2021
+
+  Revision History
+
+   Created Sep 2008, JHB
+   Modified Mar 2009 - Apr 2009 XC, JHB
+   Modified Jun 2009 JHB, prepare for shared lib format, eliminate extern vars used by host app
+   Modified Nov 2009 JHB, add support for x86 server with no T1/E1 or T3 hardware installed
+   Modified Jul 2010 JHB, create separate cimlib
+   Modified Apr 2015 JHB, Rev 2 CIM code generation support, added cimRunHardware() API.  Modified Makefile to create two libs, cimlib and cimlib_emu. The EMU version can be called by API programs (cimlib is built with _CIM flag)
+   Modified Jan 2021 JHB, add CIM_GCL_MEDIAMIN flag. See usage in getUserInfo() in getUserInterface.cpp
 */
 
 #ifndef _CIMLIB_H_
@@ -173,6 +173,7 @@ typedef CARDPARAMS* PCARDPARAMS;
 #define CIM_GCL_IA                         8
 #define CIM_GCL_MED                        0x10
 #define CIM_GCL_FFT                        0x20
+#define CIM_GCL_MEDIAMIN                   0x40
 #define CIM_GCL_CMDLINEMASK                0xff
 #define CIM_GCL_DEBUGPRINT                 DS_STC_DEBUGPRINT
 

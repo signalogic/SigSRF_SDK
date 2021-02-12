@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/packet_flow_media_proc.c
 
- Copyright (C) Signalogic Inc. 2017-2020
+ Copyright (C) Signalogic Inc. 2017-2021
 
  Description
 
@@ -64,7 +64,7 @@
    Modified Aug 2018 JHB, in pktlib thread build (__LIBRARYMODE__ defined), eliminate I/O related code and most global vars
    Modified Aug 2018 JHB, add initial support for on-the-fly session create/delete, including InitSession() and InitStream() functions
    Modified Aug 2018 JHB, add sub loop for cases where DSRecvPackets() returns more than one packet
-   Modified Sep 2018 JHB, implement "master buffer" scheme for stream audio merging.  This allows stream contributions at unequal and varying rates.  The default "allowable gap" for lagging streams is 1/4 sec, but can be set up to 8 sec via DS_SESSION_INFO_MERGE_BUFFER_SIZE
+   Modified Sep 2018 JHB, implement "master buffer" scheme for stream audio merging, allowing stream contributions at unequal and varying rates
    Modified Sep 2018 JHB, further refinement to stream audio merging (i) ensure exact time-alignment and start offset of all streams, and (ii) fill in missing contributions with audio zeros under certain conditions
    Modified Sep 2018 JHB, debug and test multiple merge groups. Add merge group initialization to InitSession()
    Modified Oct 2018 JHB, implement multiple packet/media threads. Modifications / optimizations include thread_index initialization, ManageSessions(), get_session_handle(), ThreadDebugOutput(), sig_printf(), isMasterThread references, etc
@@ -120,11 +120,15 @@
    Modified May 2020 JHB, add fFirstGroupContribution[] to fix ptime msec wobble in first contribution to a stream group. See comments near DSMergeStreamGroupContributors()
    Modified Oct 2020 JHB, include codec type and bitrate in run-time stats session description info, other minor changes to run-time stats output. Codec info uses DSGetCodecInfo() API added to voplib
    Modified Oct 2020 JHB, clarify stream change/resume log info message, include new channel in the message
+   Modified Jan 2021 JHB, change units of session_info_thread[hSession].merge_audio_chunk_size from size (bytes) to time (msec), part of change to make stream group processing independent of sampling rate
+   Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
 */
 
 #ifndef _GNU_SOURCE
   #define _GNU_SOURCE
 #endif
+
+/* Linux header files */
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -137,10 +141,12 @@
 #include <limits.h>
 #include <sched.h>
 #include <sys/syscall.h>  /* SYS_gettid() */
-#include "math.h"
-#include "errno.h"  /* errno and strerror */
+#include <errno.h>  /* errno and strerror */
+
+/* app support header files */
 
 #include "mediaTest.h"  /* application level defines and vars, including items used by cmd_line_interface.c */
+#include "minmax.h"
 
 /* DirectCore and SigSRF lib header files (all libs are .so format) */
 
@@ -151,6 +157,8 @@
 #include "alglib.h"
 #include "diaglib.h"
 #include "shared_include/streamlib.h"
+
+/* reserved for low level debug */
 
 //#define DEBUG_CONSISTENCY_MARKERS
 #ifdef DEBUG_CONSISTENCY_MARKERS
@@ -720,7 +728,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
    int in_media_sample_rate __attribute__ ((unused));
    int out_media_sample_rate __attribute__ ((unused));
    unsigned int sample_rate[MAX_INPUT_STREAMS] __attribute__ ((unused)) = { 0 };
-   FormatPkt formatPkt = { 0 };
+   FORMAT_PKT formatPkt = { 0 };
 
 #ifndef PKT_COUNTERS_GLOBAL  /* moved to global var, indexed by thread, to allow use as param in DSPktStatsWriteLogFile(), JHB Dec2019 */
    PKT_COUNTERS pkt_counters = { 0 };
@@ -751,7 +759,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
 
    DEBUG_CONFIG dbg_cfg = { 0 };
 
-   bool fPreemptOmit;
+   bool fPreemptAlarm;
 
    int nNumCleanupLoops = 0;
 
@@ -1492,7 +1500,7 @@ run_loop:
 
    /* measure and record thread CPU usage */
 
-      fPreemptOmit = false;
+      fPreemptAlarm = false;
       uint64_t elapsed_thread_time = 0;
       float last_decode_time, last_encode_time;
 
@@ -1511,12 +1519,12 @@ run_loop:
 
                -the main reason for this is that high capacity encode + decode total time can exceed ptime depending on sampling rate and number of streams with "complex" audio content, for example EVS wideband music. That's not a problem as long as it happens infrequently, due to jitter buffer and stream group FLC
                -this is imperfect for sure -- we could easily be preempted during encode or decode. Probably we need some sort of worst-case estimate so we know what to expect. But that's a little difficult, due to content as mentioned
-               -when set, fPreemptOmit omits most profiling, packet delta stats, anything else that expects normal timing
+               -when set, fPreemptAlarm omits most profiling, packet delta stats, anything else that expects normal timing
                -note that encode and decode times are always calculated, regardless of whether packet_media_thread_info[].fProfilingEnabled is set
             */
 
                if ((int64_t)elapsed_thread_time - (last_encode_time + last_decode_time) > 0.25*pktlib_gbl_cfg.uThreadPreemptionElapsedTimeAlarm*1000 ||
-                   elapsed_thread_time > (uint64_t)pktlib_gbl_cfg.uThreadPreemptionElapsedTimeAlarm*1500) fPreemptOmit = true;
+                   elapsed_thread_time > (uint64_t)pktlib_gbl_cfg.uThreadPreemptionElapsedTimeAlarm*1500) fPreemptAlarm = true;
             }
 
             packet_media_thread_info[thread_index].max_elapsed_time_thread_preempt = max(elapsed_thread_time, packet_media_thread_info[thread_index].max_elapsed_time_thread_preempt);  /* keep track of worst-case preemption time */
@@ -1534,7 +1542,7 @@ run_loop:
          }
          else packet_media_thread_info[thread_index].nChannelWavProc = 0;
 
-         if (!fPreemptOmit && fThreadInputActive && fAllSessionsDataAvailable && !fDebugPass) {
+         if (!fPreemptAlarm && fThreadInputActive && fAllSessionsDataAvailable && !fDebugPass) {
 
             packet_media_thread_info[thread_index].CPU_time_avg[packet_media_thread_info[thread_index].thread_stats_time_moving_avg_index] = elapsed_thread_time;
             packet_media_thread_info[thread_index].CPU_time_max = max(packet_media_thread_info[thread_index].CPU_time_max, elapsed_thread_time);
@@ -1543,7 +1551,7 @@ run_loop:
 
    /* was preemption alarm set ? */
 
-      if (fPreemptOmit) {
+      if (fPreemptAlarm) {
 
          sprintf(tmpstr, "WARNING: p/m thread %d has not run for %4.2f msec, may have been preempted, num sessions = %d", thread_index, 1.0*elapsed_thread_time/1000, numSessions);
 
@@ -1571,7 +1579,7 @@ run_loop:
          Log_RT(3, "%s \n", tmpstr);
       }
 
-      if (!fPreemptOmit && packet_media_thread_info[thread_index].fProfilingEnabled) {
+      if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
          packet_media_thread_info[thread_index].manage_time[packet_media_thread_info[thread_index].manage_time_index] = end_profile_time - start_profile_time;
          packet_media_thread_info[thread_index].manage_time_max = max(packet_media_thread_info[thread_index].manage_time_max, end_profile_time - start_profile_time);
@@ -1771,7 +1779,7 @@ get_pkt_info:
 
             if (numPkts && !fThreadInputActive) fThreadInputActive = true;  /* any packet for any session sets input active flag */
 
-            if (!fPreemptOmit && session_info_thread[hSession].fDataAvailable) { 
+            if (!fPreemptAlarm && session_info_thread[hSession].fDataAvailable) { 
 
                uint64_t elapsed_time = cur_time - last_packet_time[hSession];
 
@@ -1903,7 +1911,7 @@ get_pkt_info:
 
          /* input time profiling, if enabled */
 
-            if (!fPreemptOmit && packet_media_thread_info[thread_index].fProfilingEnabled) {
+            if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
                end_profile_time = get_time(USE_CLOCK_GETTIME);
                input_time += end_profile_time - start_profile_time;
@@ -2080,7 +2088,7 @@ debug:
                            pkt_counters[thread_index].pkt_add_to_jb_cnt += ret_val;
 
                            #ifdef PACKET_TIME_STATS  /* we wait until this point to record packet time stats because we need the chnum for either parent or child.  For a child we don't know it until created by DSBufferPackets() */
-                           if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS && !fPreemptOmit) RecordPacketTimeStats(chnum, pkt_ptr, packet_len[0], pkt_count[hSession], PACKET_TIME_STATS_INPUT);
+                           if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS && !fPreemptAlarm) RecordPacketTimeStats(chnum, pkt_ptr, packet_len[0], pkt_count[hSession], PACKET_TIME_STATS_INPUT);
                            #endif
 
                         /* mark session's ssrc state as live upon buffering a packet, record channel's most recent buffer time */
@@ -2243,7 +2251,7 @@ debug:
 
          /* buffer time profiling, if enabled */
 
-            if (!fPreemptOmit && packet_media_thread_info[thread_index].fProfilingEnabled) {
+            if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
                end_profile_time = get_time(USE_CLOCK_GETTIME);
                buffer_time += end_profile_time - start_profile_time;
@@ -2254,7 +2262,7 @@ next_session:
          }
       }  /* end of input/buffering loop */
 
-      if (!fPreemptOmit && packet_media_thread_info[thread_index].fProfilingEnabled) {
+      if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
          if (input_time > 0) {
             packet_media_thread_info[thread_index].input_time[packet_media_thread_info[thread_index].input_time_index] = input_time;
@@ -2468,7 +2476,7 @@ next_session:
             }
             #endif
 
-            if (!fPreemptOmit && packet_media_thread_info[thread_index].fProfilingEnabled) {
+            if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
                end_profile_time = get_time(USE_CLOCK_GETTIME);
                chan_time += end_profile_time - start_profile_time;
@@ -2755,7 +2763,7 @@ pull:
 
                /* pull time profiling, if enabled */
 
-                  if (!fPreemptOmit && packet_media_thread_info[thread_index].fProfilingEnabled) {
+                  if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
                      end_profile_time = get_time(USE_CLOCK_GETTIME);
                      pull_time += end_profile_time - start_profile_time;
@@ -2808,7 +2816,7 @@ pull:
                            if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_JITTER_BUFFER) DSLogPktTrace(hSession_flags, pkt_ptr, packet_len[j], thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_JITTER_BUFFER);
 
                            #ifdef PACKET_TIME_STATS
-                           if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS && !fPreemptOmit) RecordPacketTimeStats(chnum, pkt_ptr, packet_len[j], 0, PACKET_TIME_STATS_PULL);
+                           if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS && !fPreemptAlarm) RecordPacketTimeStats(chnum, pkt_ptr, packet_len[j], 0, PACKET_TIME_STATS_PULL);
                            #endif
 
                            pkt_pulled_cnt++;
@@ -3091,7 +3099,7 @@ pull:
 
                /* decode time profiling, if enabled */
 
-                  if (!fPreemptOmit
+                  if (!fPreemptAlarm
                   #if 0  /* encode and decode profiling times are always enabled, as they are the major drivers of thread capacity, and used for some capacity management related decisions, JHB Feb2020 */
                   && packet_media_thread_info[thread_index].fProfilingEnabled
                   #endif
@@ -3326,10 +3334,18 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
                         uFlags_format |= DS_FMT_PKT_USER_MARKERBIT;  /* tell DSFormatPackets() to read the marker bit from formatPkt and use it when formatting */
 
                         if (!fFirstXcodeOutputPkt[chnum]) {
+                           #if 0
                            DSSetMarkerBit(&formatPkt, uFlags_format);  /* if output stream is G711, set marker bit for first packet, per guidelines in RFC 3550/3551 */
+                           #else
+                           formatPkt.rtpHeader.Marker = 1;  /* if output stream is G711, set marker bit for first packet, per guidelines in RFC 3550/3551 */
+                           #endif
                            fFirstXcodeOutputPkt[chnum] = true;
                         }
+                        #if 0
                         else DSClearMarkerBit(&formatPkt, uFlags_format);  /* otherwise make sure the marker bit is cleared */
+                        #else
+                        else formatPkt.rtpHeader.Marker = 0;  /* otherwise make sure the marker bit is cleared */
+                        #endif
                      }
 
                      if (out_media_data_len && !session_info_thread[hSession].fUseJitterBuffer) {
@@ -3431,7 +3447,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                   /* encode time profiling, if enabled */
 
-                     if (!fPreemptOmit
+                     if (!fPreemptAlarm
                      #if 0  /* encode and decode profiling times are always enabled, as they are the major drivers of thread capacity, and used for some capacity management related decisions, JHB Feb2020 */
                      && packet_media_thread_info[thread_index].fProfilingEnabled
                      #endif
@@ -3481,7 +3497,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
                   -DSMergeStreamGroupContributors() is in streamlib.so. See shared_include/streamlib.h for more info.  hSession must be a group owner session
                   -merging includes gap compensation algorithm and FLC + digital signal processing to compensate for irregular packet rates, stream mis-alignment, and stream overrun/underrun
                   -optional wav file output for individual contributor and merge audio can be enabled using session creation constants defined in streamlib. This is considered a debug option, but can be used as needed
-                  -merge delay buffer size can be controlled using DSSetSessionInfo() with the DS_SESSION_INFO_MERGE_BUFFER_SIZE flag. Default buffer size is 2080 (in samples, which is 0.26 sec delay at 8000 kHz output rate)
+                  -stream group merge buffer time can be controlled using DSSetSessionInfo() with the DS_SESSION_INFO_GROUP_BUFFER_SIZE flag. Default buffer size is 2080 (in samples, which is 0.26 sec delay at 8000 kHz output rate)
                */
 
                   #ifdef FIRST_TIME_TIMING
@@ -3510,7 +3526,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                   if (ret_val == 2) fThreadOutputActive = true;  /* any output packet for any session sets output active flag */
 
-                  if (!fPreemptOmit && packet_media_thread_info[thread_index].fProfilingEnabled) {
+                  if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
                      end_profile_time = get_time(USE_CLOCK_GETTIME);
                      group_time += end_profile_time - start_profile_time;
@@ -3534,7 +3550,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
       usleep(VALGRIND_DELAY);
       #endif
 
-      if (!fPreemptOmit) {
+      if (!fPreemptAlarm) {
 
          if (decode_time > 0) {
             packet_media_thread_info[thread_index].decode_time[packet_media_thread_info[thread_index].decode_time_index] = decode_time;
@@ -3570,7 +3586,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
          }
       }
 
-      if (!fPreemptOmit && fThreadInputActive) {
+      if (!fPreemptAlarm && fThreadInputActive) {
 
          int stats_index = packet_media_thread_info[thread_index].thread_stats_time_moving_avg_index;
 
@@ -4483,10 +4499,14 @@ int session_state, j;
       else idx = DSGetStreamGroupInfo(hSession, DS_SESSION_INFO_USE_PKTLIB_SEM | DS_GETGROUPINFO_CHECK_ALLTERMS, NULL, NULL, NULL);
 #endif
 
-   /* following items could be indexed by stream group, and it is somewhat wasteful of mem to index by session.  However (i) it's safe to do so, because there is a 1:1 relationship between group owner sessions and stream group idx, and (ii) these items either are, or likely will be, needed in other places and session_info_thread[] is useful for that, JHB Sep2018 */
+   /* following items could be indexed by stream group, and it is somewhat wasteful to index by session. However (i) it's safe to do so, because there is a 1:1 relationship between group owner sessions and stream group idx, and (ii) these items either are, or likely will be, needed in other places and session_info_thread[] is useful for that, JHB Sep2018 */
 
+      #if 0
       session_info_thread[hSession].merge_audio_chunk_size = 2080; /* in samples.  Default buffer size is 0.26 sec, maximum can be up to MAX_MERGE_BUFFER_SIZE sec (defined in pktlib.h, figures assume 16-bit samples at 8 kHz output) */
 //      session_info_thread[hSession].merge_audio_chunk_size = 4160; /* in samples.  Default buffer size is 0.52 sec, maximum can be up to MAX_MERGE_BUFFER_SIZE sec (defined in pktlib.h, figures assume 16-bit samples at 8 kHz output) */
+      #else  /* changed to make independent of stream group output sampling rate (formerly assumed 16-bit samples at 8 kHz output) */
+      session_info_thread[hSession].stream_group_buffer_time = 260; /* default buffer time is 0.26 sec, maximum can be up to MAX_GROUP_BUFFER_TIME_8KHZ (defined in streamlib.h, in msec) */
+      #endif
 
       session_info_thread[hSession].fAllContributorsPresent = false;
 
@@ -4775,10 +4795,20 @@ get_num_sessions:
 
          if (state_clear_flags != (int)0xffffffffL) DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_STATE, state_clear_flags, NULL);  /* state_clear_flags needs to be an int so it will be extended to int64_t to match DSSetSessionInfo() prototype */
 
+         #if 0
+
       /* see if user app has modified merge buffer size (and other algorithm items that might be added later on) */
 
          uint32_t merge_buffer_size = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_MERGE_BUFFER_SIZE, 0, NULL);
          if (merge_buffer_size > 0) session_info_thread[hSession].merge_audio_chunk_size = merge_buffer_size;
+
+         #else  /* modified to use buffer time (in msec) instead of size, JHB Jan2021 */
+
+      /* see if user app has modified stream group buffer time (and other algorithm items that might be added later) */
+
+         uint32_t group_buffer_time = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_BUFFER_TIME, 0, NULL);
+         if (group_buffer_time > 0) session_info_thread[hSession].stream_group_buffer_time = group_buffer_time;
+         #endif
 
       /* update across-session flags */
 
@@ -5212,9 +5242,11 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
             pyld_len = DSCodecEncode(hCodec_link, 0, media_data_buffer, encoded_data_buffer, out_media_data_len, NULL);
 
-         /* write output packet */
+         /* format packet */
 
             packet_length = DSFormatPacket(chnum, 0, encoded_data_buffer, pyld_len, NULL, pkt_buffer);
+
+         /* write output packet */
 
             int pcap_index = get_pcap_index(i);  /* map codec handle to output pcap file index */
 
@@ -5730,11 +5762,17 @@ organize_by_ssrc:
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Resyncs (ch/num) underrun%s, overrun%s, timestamp gap%s, purges (ch/num)%s\n", jbundrstr, jboverstr, jbtgapstr, purgstr);
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Holdoffs (ch/num) adj%s, dlvr%s, zero pulls (ch/num)%s\n", jbhldadj, jbhlddel, jbzpstr);
 
-   /* include event log stats, to make it easier to see if anything happened to worry about. Note we use a few alternate characters to avoid this line turning up in manual or automated log searches for "warning", "error", etc, JHB May2020 */
+   /* include event log stats, to make it easier to see if anything happened to worry about, JHB May2020 */
+   
+      #if 0
+   /* Note we use a few alternate characters to avoid this line turning up false-positive hits in manual or automated log searches for "warning", "error", etc, JHB Sep2020 */
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Event log wàrnings, èrrors, crìtical %u, %u, %u\n", __sync_fetch_and_add(&event_log_warnings, 0), __sync_fetch_and_add(&event_log_errors, 0), __sync_fetch_and_add(&event_log_critical_errors, 0));
+      #else
+   /* Now we use DS_LOG_LEVEL_SUBSITUTE_WEC flag to avoid false-positive keyword search. See comments in shared_include/config.h, JHB Jan2021 */
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Event log warnings, errors, critical %u, %u, %u\n", __sync_fetch_and_add(&event_log_warnings, 0), __sync_fetch_and_add(&event_log_errors, 0), __sync_fetch_and_add(&event_log_critical_errors, 0));
+      #endif
 
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Event log w¨¡rnings, ¨¥rrors, cr¨ªtical %u, %u, %u\n", __sync_fetch_and_add(&event_log_warnings, 0), __sync_fetch_and_add(&event_log_errors, 0), __sync_fetch_and_add(&event_log_critical_errors, 0));
-
-      Log_RT(6 | DS_LOG_LEVEL_NO_API_CHECK, pkt_stats_str);  /* write packet stats string to event log file.  Note that we make a single Log_RT() call with a multi-line string to avoid interleaving with Log_RT() output from other threads */
+      Log_RT(6 | DS_LOG_LEVEL_NO_API_CHECK | DS_LOG_LEVEL_SUBSITUTE_WEC, pkt_stats_str);  /* write packet stats string to screen and event log file. Note that we make a single Log_RT() call with a multi-line string to avoid interleaving with Log_RT() output from other threads */
    }
 
    return num_ch_stats;

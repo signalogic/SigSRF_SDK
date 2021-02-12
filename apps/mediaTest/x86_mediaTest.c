@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/x86_mediaTest.c
 
- Copyright (C) Signalogic Inc. 2017-2020
+ Copyright (C) Signalogic Inc. 2017-2021
  
  Description
  
@@ -55,19 +55,25 @@
    Modified Dec 2018 JHB, adjust thread/core affinity for high capacity mediaTest -Et -tN mode testing (creates N mediaMin application threads)
    Modified Jul 2019 JHB, codecs now accessed via voplib API calls and CODEC_PARAMS struct.  XDAIS interface is now visibile from voplib and alglib but not applications
    Modified Mar 2020 JHB, handle name change of mediaThread_test_app.c to mediaMin.c
-   Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0: include math.h (for min/max functions), fix various security and "indentation" warnings
+   Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0: include minmax.h (for min/max functions), fix various security and "indentation" warnings
+   Modified Jan 2021 JHB, fix warning for sampleRate_codec used uninitialized (no idea why this suddenly popped up)
+   Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
 */
+
+/* Linux header files */
 
 #include <stdio.h>
 #include <sys/time.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <limits.h>
-#include <math.h>
+
+/* app support header files */
 
 #include "mediaTest.h"
+#include "minmax.h"
 
-/* lib header files (all libs are .so format) */
+/* SigSRF lib header files (all libs are .so format) */
 
 #include "voplib.h"
 #include "pktlib.h"
@@ -441,9 +447,9 @@ void x86_mediaTest(void) {
       char *config_file;
       int len;
       unsigned int inbuf_size;
-      uintptr_t addr;
+      uint8_t* addr;
       char key;
-      unsigned int sampleRate_input = 0, sampleRate_output, sampleRate_codec;
+      unsigned int sampleRate_input = 0, sampleRate_output, sampleRate_codec = 8000;
       int input_framesize;  /* in bytes, determined by input sampling rate and codec or pass-thru framesize */
       int coded_framesize = 0;
       unsigned int __attribute__((unused)) output_framesize;  /* currently not used unless _ALSA_INSTALLED_ is defined, but likely to be used in the future */
@@ -498,6 +504,20 @@ void x86_mediaTest(void) {
       FILE* fp_out_segment = NULL, *fp_out_concat = NULL, *fp_out_stripped = NULL;
       char* p;
 
+   /* items added to support pcap output, JHB Jan2021 */
+
+      TERMINATION_INFO term_info;
+      FORMAT_PKT format_pkt;
+      unsigned int uFlags_format_pkt;
+      uint16_t seq_num = 0;
+      uint32_t timestamp = 0;
+      uint32_t SSRC = 0x1235678;
+      int nMarkerBit = 1;
+      uint8_t pkt_buf[1024] = { 0 };
+      int pkt_len;
+      struct timespec ts_pcap;
+      uint64_t nsec_pcap = 0;
+
 
    /* start of code for codec test mode */
 
@@ -522,12 +542,16 @@ void x86_mediaTest(void) {
          }
          else {
 
-            fp_in = fopen(MediaParams[0].Media.inputFilename, "rb");
+            fp_in = fopen(MediaParams[0].Media.inputFilename, "rb");  /* can be .cod, .pcap, etc */
          }
 
-         if (fp_in) printf("Opened audio input file %s\n", MediaParams[0].Media.inputFilename);
+         char filestr[20] = "audio";
+         if (inFileType == ENCODED) strcpy(filestr, "encoded");
+         else if (inFileType == PCAP) strcpy(filestr, "pcap");
+
+         if (fp_in) printf("Opened %s input file %s\n", filestr, MediaParams[0].Media.inputFilename);
          else {
-            printf("Unable to open audio input file %s\n", MediaParams[0].Media.inputFilename);
+            printf("Unable to open %s input file %s\n", filestr, MediaParams[0].Media.inputFilename);
             goto codec_test_cleanup;
          }
 
@@ -761,7 +785,7 @@ void x86_mediaTest(void) {
 #ifdef _AMRWBPLUS_INSTALLED_
          case DS_VOICE_CODEC_TYPE_AMR_WB_PLUS:
          {
-            CodecParams.enc_params.samplingRate = codec_test_params.sample_rate;                                   /* in Hz */
+            CodecParams.enc_params.samplingRate = codec_test_params.sample_rate;                                        /* in Hz */
             CodecParams.enc_params.bitRate = (int)codec_test_params.mode == -1 ? codec_test_params.bitrate_plus : 0.0;  /* in bps */
             CodecParams.enc_params.mode = codec_test_params.mode;
             CodecParams.enc_params.isf = codec_test_params.isf;
@@ -1053,7 +1077,7 @@ void x86_mediaTest(void) {
             MediaInfoSegment.SampleWidth = AUDIO_SAMPLE_SIZE*CHAR_BIT;
             MediaInfoSegment.CompressionCode = DS_GWH_CC_PCM;
 
-            if (AUDIO_FILE_TYPES(outFileType2)) strcpy(tmpstr, MediaParams[1].Media.outputFilename);
+            if (IS_AUDIO_FILE_TYPE(outFileType2)) strcpy(tmpstr, MediaParams[1].Media.outputFilename);
             else strcpy(tmpstr, MediaParams[0].Media.outputFilename);
          }
 
@@ -1109,7 +1133,7 @@ void x86_mediaTest(void) {
       MediaInfo.SampleWidth = AUDIO_SAMPLE_SIZE*CHAR_BIT;
       MediaInfo.CompressionCode = DS_GWH_CC_PCM;  /* default is 16-bit PCM.  G711 uLaw and ALaw are also options */
 
-      if (outFileType == ENCODED) {
+      if (outFileType == ENCODED || outFileType == PCAP) {
 
          if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_EVS) MediaInfo.CompressionCode = DS_GWH_CC_EVS;
          else if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_MELPE)  MediaInfo.CompressionCode = DS_GWH_CC_MELPE;
@@ -1117,19 +1141,73 @@ void x86_mediaTest(void) {
          else if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB) MediaInfo.CompressionCode = DS_GWH_CC_GSM_AMRWB;
       }
 
-
-   /* open output file.  If output is .wav, DSSaveDataFile() uses MediaInfo[] elements to set the wav header */
+   /* open output file. If output is .wav, DSSaveDataFile() uses MediaInfo[] elements to set the wav header */
 
       if (outFileType != USB_AUDIO) {
 
-         if (AUDIO_FILE_TYPES(outFileType2)) strcpy(MediaInfo.szFilename, MediaParams[1].Media.outputFilename);
+         if (IS_AUDIO_FILE_TYPE(outFileType2)) strcpy(MediaInfo.szFilename, MediaParams[1].Media.outputFilename);
          else strcpy(MediaInfo.szFilename, MediaParams[0].Media.outputFilename);
 
-         ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, MediaInfo.szFilename, (uintptr_t)NULL, 0, DS_CREATE, &MediaInfo);  /* DSSaveDataFile returns bytes written, with DS_CREATE flag it returns header length (if any, depending on file type) */
+         if (outFileType == PCAP) {
 
-         if (fp_out) printf("Opened output audio file %s\n", MediaInfo.szFilename);
+            ret_val = DSOpenPcap(MediaInfo.szFilename, &fp_out, NULL, "", DS_WRITE | DS_OPEN_PCAP_WRITE_HEADER);
+
+            if (ret_val < 0) {
+               fprintf(stderr, "Failed to open output pcap file: %s, ret_val = %d\n", MediaInfo.szFilename, ret_val);
+               goto codec_test_cleanup;
+            }
+
+         /* one-time packet IP header and RTP header set-up. Notes
+
+            -DS_FMT_PKT_STANDALONE flag allows DSFormatPacket() pktlib API to be used without creating a session and streams (channels) via DSCreateSession()
+            -several hardcoded values for now, user-specified IP version, IP addr, UDP port, payload type, etc can be implemented later
+            -DS_FMT_PKT_USER_HDRALL specifies DS_FMT_PKT_USER_IPADDR_SRC, DS_FMT_PKT_USER_IPADDR_DST, DS_FMT_PKT_USER_UDPPORT_SRC, and DS_FMT_PKT_USER_UDPPORT_DST
+         */
+
+            uFlags_format_pkt = DS_FMT_PKT_STANDALONE | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_SEQNUM | DS_FMT_PKT_USER_TIMESTAMP | DS_FMT_PKT_USER_PYLDTYPE | DS_FMT_PKT_USER_SSRC | DS_FMT_PKT_USER_MARKERBIT;
+
+            #if 0
+            term_info.remote_ip.type = DS_IPV6;
+            term_info.local_ip.type = DS_IPV6;
+            memcpy(&term_info.local_ip.u.ipv6, xxx, DS_IPV6_ADDR_LEN);  /* DS_IPV6_ADDR_LEN defined in shared_include/session.h */
+            memcpy(&term_info.remote_ip.u.ipv6, xxx, DS_IPV6_ADDR_LEN);
+            #else
+            term_info.remote_ip.type = DS_IPV4;  /* defaults. IPv6 and user-specified IP addr and UDP port can be added later */
+            term_info.local_ip.type = DS_IPV4;
+            term_info.local_ip.u.ipv4 = htonl(0x0A000101);
+            term_info.remote_ip.u.ipv4 = htonl(0x0A000001);
+            #endif
+
+            term_info.local_port = 0xa0a0;
+            term_info.remote_port = 0xb0b0;
+            term_info.attr.voice_attr.rtp_payload_type = 109;
+
+            memcpy(&format_pkt.SrcAddr, &term_info.local_ip.u, DS_IPV4_ADDR_LEN);  /* DS_IPVn_ADDR_LEN defined in shared_include/session.h */
+            memcpy(&format_pkt.DstAddr, &term_info.remote_ip.u, DS_IPV4_ADDR_LEN);
+            format_pkt.IP_Version = term_info.local_ip.type;
+            format_pkt.udpHeader.SrcPort = term_info.local_port;
+            format_pkt.udpHeader.DestPort = term_info.remote_port;
+            #if 0
+            format_pkt.rtpHeader.BitFields = term_info.attr.voice_attr.rtp_payload_type;  /* set payload type (BitFields is 16-bit so we use network byte order. An alternative is to apply DS_FMT_PKT_HOST_BYTE_ORDER flag) */
+            #else
+            format_pkt.rtpHeader.PyldType = term_info.attr.voice_attr.rtp_payload_type;  /* set payload type */
+            #endif
+
+            clock_gettime(CLOCK_REALTIME, &ts_pcap);
+            nsec_pcap = ts_pcap.tv_sec*1000000000L + ts_pcap.tv_nsec;
+        }
+         else {  /* create output file for all file formats except for pcap */
+
+            ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, MediaInfo.szFilename, (uintptr_t)NULL, 0, DS_CREATE, &MediaInfo);  /* DSSaveDataFile returns bytes written, with DS_CREATE flag it returns header length (if any, depending on file type) */
+         }
+
+         char filestr[20] = "audio";
+         if (outFileType == ENCODED) strcpy(filestr, "encoded");
+         else if (outFileType == PCAP) strcpy(filestr, "pcap");
+
+         if (fp_out) printf("Opened output %s file %s\n", filestr, MediaInfo.szFilename);
          else {
-            printf("Failed to open output audio file %s, ret_val = %d\n", MediaInfo.szFilename, ret_val);
+            printf("Failed to open output %s file %s, ret_val = %d\n", filestr, MediaInfo.szFilename, ret_val);
             goto codec_test_cleanup;
          }
       }
@@ -1139,10 +1217,10 @@ void x86_mediaTest(void) {
       gettimeofday(&tv, NULL);
       t1 = (uint64_t)tv.tv_sec*1000000L + (uint64_t)tv.tv_usec;
 
-      if (encoder_handle && decoder_handle) printf("Running encoder-decoder test\n");
-      else if (encoder_handle) printf("Running encoder test\n");
-      else if (decoder_handle) printf("Running decoder test\n");
-      else printf("Running pass-thru test\n");
+      if (encoder_handle && decoder_handle) printf("Running encoder-decoder data flow ...\n");
+      else if (encoder_handle) printf("Running encoder ...\n");
+      else if (decoder_handle) printf("Running decoder ...\n");
+      else printf("Running pass-thru ...\n");
 
       while (run) {
 
@@ -1375,8 +1453,7 @@ PollBuffer:
             fflush(stdout);
          }
 
-         if (outFileType != ENCODED)
-         {
+         if (outFileType != ENCODED && outFileType != PCAP) {
 
          /* call codec decoder if needed */
 
@@ -1442,25 +1519,67 @@ PollBuffer:
                memcpy(out_buf, in_buf, len);
             }
 
-            addr = (uintptr_t)out_buf;
+            addr = out_buf;
          }
          else {
 
             len = coded_framesize;
-            addr = (uintptr_t)coded_buf;
+            addr = coded_buf;
          }
 
          if (outFileType != USB_AUDIO) {
 
-            ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, addr, len, DS_WRITE, &MediaInfo);   /* DSSaveDataFile() returns bytes written */
+            if (outFileType == PCAP) {
 
-            if (ret_val != len) 
-            {
-               printf("Error writing output wav file frame %d: tried to write %d bytes, wrote %d bytes\n", frame_count, len, ret_val);
-               goto codec_test_cleanup;
+               format_pkt.rtpHeader.Sequence = seq_num++;
+               format_pkt.rtpHeader.SSRC = SSRC;
+               format_pkt.rtpHeader.Timestamp = timestamp;
+               timestamp += 320;  /* hardcoded for now to wideband audio, need to set this based on codec type, JHB Jan2021 */
+
+               if (nMarkerBit >= 0) {
+                  #if 0
+                  if (nMarkerBit) DSSetMarkerBit(&format_pkt, uFlags_format_pkt);
+                  else DSClearMarkerBit(&format_pkt, uFlags_format_pkt);
+                  #else
+                  format_pkt.rtpHeader.Marker = nMarkerBit ? 1 : 0;
+                  #endif
+                  nMarkerBit--;
+               }
+
+            /* format packet including encoded data as payload, results are in pkt_buf */
+
+               pkt_len = DSFormatPacket(-1, uFlags_format_pkt, addr, len, &format_pkt, pkt_buf);
+
+               if (pkt_len <= 0) {
+                  fprintf(stderr, "ERROR: DSFormatPacket() returns %d error code \n", pkt_len);
+                  goto codec_test_cleanup;
+               }
+
+//   if (!ts->tv_sec) clock_gettime(CLOCK_REALTIME, p_ts);  /* if sec is uninitialized, then get current time */
+
+   ts_pcap.tv_sec = nsec_pcap / 1000000000L;
+   ts_pcap.tv_nsec = nsec_pcap % 1000000000L;
+   nsec_pcap += 20000000;  /* increment by 20 msec */
+
+               if ((ret_val = DSWritePcapRecord(fp_out, pkt_buf, NULL, NULL, &term_info, &ts_pcap, pkt_len)) < 0) {
+                  fprintf(stderr, "ERROR: WritePcapRecord() returns %d error code \n", ret_val);
+                  goto codec_test_cleanup;
+               }
             }
+            else {  /* write out data for all file formats except for pcap, using pointer to bytes (addr) and number of bytes (len) */
 
-         /* write out audio file segments, if specified in cmd line.  Use fixed or adjusted segment intervals, as specified by flags */
+               ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)addr, len, DS_WRITE, &MediaInfo);   /* DSSaveDataFile() returns bytes written */
+
+               if (ret_val != len) {
+                  printf("Error writing output wav file frame %d: tried to write %d bytes, wrote %d bytes\n", frame_count, len, ret_val);
+                  goto codec_test_cleanup;
+               }
+            }
+         }
+
+         if (IS_AUDIO_FILE_TYPE(outFileType)) {  /* segmented audio currently requires an audio output cmd line spec, but maybe in the future that's not the case, for example to strip silence before encoding to pcap, JHB Jan2021 */
+
+         /* write out audio file segments, if specified in cmd line. Use fixed or adjusted segment intervals, as specified by flags */
 
             if (nSegmentation & DS_SEGMENT_AUDIO) {
  
@@ -1541,7 +1660,11 @@ codec_test_cleanup:
          else fclose(fp_in);
       }
 
-      if (fp_out) DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)NULL, 0, DS_CLOSE, &MediaInfo);
+      if (fp_out) {
+         if (outFileType == PCAP) fclose(fp_out);
+         else DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)NULL, 0, DS_CLOSE, &MediaInfo);
+      }
+
       if (fp_out_segment) DSSaveDataFile(DS_GM_HOST_MEM, &fp_out_segment, NULL, (uintptr_t)NULL, 0, DS_CLOSE, &MediaInfoSegment);
       if (fp_out_concat) DSSaveDataFile(DS_GM_HOST_MEM, &fp_out_concat, NULL, (uintptr_t)NULL, 0, DS_CLOSE, &MediaInfoConcat);
       if (fp_out_stripped) DSSaveDataFile(DS_GM_HOST_MEM, &fp_out_stripped, NULL, (uintptr_t)NULL, 0, DS_CLOSE, &MediaInfoStripped);

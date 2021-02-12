@@ -3,7 +3,7 @@
 
   header file for mediaMin reference application including (i) simplified SigSRF push/pull interface and (ii) test and measurement program
   
-  Copyright (C) Signalogic, 2018-2020
+  Copyright (C) Signalogic, 2018-2021
 
   Revision History
 
@@ -14,10 +14,15 @@
    Modified Mar 2020 JHB, index fFirstGroupPull[], add first_packet_push_time[]
    Modified Apr 2020 JHB, add hSession to DYNAMICSESSIONSTATS struct, increase max number of dynamic session stats to allow for repeating tests with multiple cmd line inputs
    Modified Oct 2020 JHB, expand link_layer_len to int32_t to handle mods to DSOpenPcap() and DSReadPcap() (pktlib) made to support pcapng format. Note - still needs to be an int (not unint) because DSOpenPcap() returns values < 0 for error conditions
+   Modified Jan 2021 JHB, for SDP input file support, add rtpmaps and a few other items (see comments)
 */
 
 #ifndef _MEDIAMIN_H_
 #define _MEDIAMIN_H_
+
+#ifndef HAVE_SDP
+  #include <sdp/sdp.h>  /* include sdp.h if needed */
+#endif
 
 #define MAX_INPUT_REUSE  16  /* in practice, cmd line entry up to -N9 has been tested (reuse 10x) */
 
@@ -53,6 +58,7 @@ typedef struct {
    char codecstr[20];
    uint16_t bitrate;
    uint8_t payload_type;
+   uint32_t ssrc;
    
 } DYNAMICSESSIONSTATS;
 
@@ -108,6 +114,11 @@ typedef struct {
   uint64_t pkt_base_timestamp[MAX_INPUT_STREAMS];
   uint64_t initial_push_time[MAX_INPUT_STREAMS];
   uint64_t total_push_time[MAX_INPUT_STREAMS];
+
+  uint16_t num_rtpmaps;                  /* SDP items added JHB Jan2021 */
+  vector<sdp::Attribute*> rtpmaps;
+  bool fUnmatchedPyldTypeMsg;
+  bool fDisallowedPyldTypeMsg;
 
 } THREAD_INFO;
 

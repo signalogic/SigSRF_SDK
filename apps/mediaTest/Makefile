@@ -1,16 +1,16 @@
 # $Header: /install_path/apps/Signalogic/mediaTest/Makefile
 # 
-# Description:  Makefile for "mediaTest" test and measurement program
+# Description: Makefile for "mediaTest" test and measurement program
 #
-# Purpose:  (i) media transcoding and packet streaming / processing test program, (ii) example user application showing use of Pktlib and Voplib APIs, (iii) supports optional coCPU card(s) for very high server capacity
+# Purpose: (i) media transcoding and packet streaming / processing test program, (ii) example user application showing use of Pktlib and Voplib APIs, (iii) supports optional coCPU card(s) for very high server capacity
 # 
 # Makefile for mediaTest streaming, transcoding, and audio test and measurement program
 #
-# Copyright (C) Signalogic Inc. 2015-2020
+# Copyright (C) Signalogic Inc. 2015-2021
 #
 # Revision History
 #
-# Created Sep 2015 CJ
+#  Created Sep 2015 CJ
 #  Modified Jan 2017 CJ, added x86 support
 #  Modified Aug2017 JHB, edited SIG_LIBS var to include essential libs
 #  Modified Mar 2018 JHB, added aviolib to link (see SIG_LIBS var)
@@ -26,6 +26,11 @@
 #  Modified Jul 2019 JHB, add -flto linker option
 #  Modified Mar 2020 JHB, handle name change of mediaThread_test_app.c to mediaMin.c
 #  Modified Apr 2020 JHB, edit INCLUDES var to allow includes specified as "shared_include/xxx.h"
+#  Modified Jan 2021 JHB, change ALSA detection to look for /usr/include/alsa folder instead of /proc/asound. ALSA might be installed but not the dev version of ALSA, which has the header files
+#  Modified Jan 2021 JHB, add INSTALLPATH, add rpath linker options for version of Kaldi libs used by SigSRF and for ATLAS linear algebra / matrix lib (only if makefile detects Kaldi is installed)
+#  Modified Jan 2021 JHB, change c_mediamin_objects target to cpp_mediamin_objects, add cpp_sdp_objects target
+
+# check make cmd line for "no_codecs" option
 
 ifeq ($(no_codecs),1)
    no_melp = 1
@@ -36,83 +41,112 @@ ifeq ($(no_codecs),1)
    no_amrwbplus = 1
 endif
 
-# no_xxx indicates to forcibly exclude xxx from the build.  Otherwise we auto-discover whether xxx has been installed
+# set install path var, from mediaTest folder SigSRF software install path is 4 levels up
+INSTALLPATH=../../../..
+
+# auto-discover whether ALSA, codecs, Kaldi, etc are installed. no_xxx indicates an override to exclude xxx from the build
 
 ifeq ($(no_alsa),1)
-  ALSAPATH=xx
-else
-  ALSAPATH=/proc/asound
-endif
-ifeq ($(wildcard $(ALSAPATH)),$(ALSAPATH))
-  ALSA_INSTALLED = y
-else
   ALSA_INSTALLED = n
+else
+#  ALSAPATH=/proc/asound
+  ALSAPATH=/usr/include/alsa
+  ifeq ($(wildcard $(ALSAPATH)),$(ALSAPATH))
+    ALSA_INSTALLED = y
+  else
+    ALSA_INSTALLED = n
+  endif
 endif
 
 ifeq ($(no_melp),1)
-  MELPEPATH=xx
+  MELPE_INSTALLED = n
 else
   MELPEPATH=/usr/lib/libmelpe_sig.x86.so
-endif
-ifeq ($(wildcard $(MELPEPATH)),$(MELPEPATH))
-  MELPE_INSTALLED = y
-else
-  MELPE_INSTALLED = n
+  ifeq ($(wildcard $(MELPEPATH)),$(MELPEPATH))
+    MELPE_INSTALLED = y
+  else
+    MELPE_INSTALLED = n
+  endif
 endif
 
 ifeq ($(no_g729),1)
-  G729ABPATH=xx
+  G729AB_INSTALLED = n
 else
   G729ABPATH=/usr/lib/libg729ab_sig.x86.so
-endif
-ifeq ($(wildcard $(G729ABPATH)),$(G729ABPATH))
-  G729AB_INSTALLED = y
-else
-  G729AB_INSTALLED = n
+  ifeq ($(wildcard $(G729ABPATH)),$(G729ABPATH))
+    G729AB_INSTALLED = y
+  else
+    G729AB_INSTALLED = n
+  endif
 endif
 
 ifeq ($(no_g726),1)
-  G726PATH=xx
+  G726_INSTALLED = n
 else
   G726PATH=/usr/lib/libg726_sig.x86.so
-endif
-ifeq ($(wildcard $(G726PATH)),$(G726PATH))
-  G726_INSTALLED = y
-else
-  G726_INSTALLED = n
+  ifeq ($(wildcard $(G726PATH)),$(G726PATH))
+    G726_INSTALLED = y
+  else
+    G726_INSTALLED = n
+  endif
 endif
 
 ifeq ($(no_amrnb),1)
-  AMRPATH=xx
+  AMR_INSTALLED = n
 else
   AMRPATH=/usr/lib/libamrdec_sig.x86.so
-endif
-ifeq ($(wildcard $(AMRPATH)),$(AMRPATH))
-  AMR_INSTALLED = y
-else
-  AMR_INSTALLED = n
+  ifeq ($(wildcard $(AMRPATH)),$(AMRPATH))
+    AMR_INSTALLED = y
+  else
+    AMR_INSTALLED = n
+  endif
 endif
 
 ifeq ($(no_amrwb),1)
-  AMRWBPATH=xx
+  AMRWB_INSTALLED = n
 else
   AMRWBPATH=/usr/lib/libamrwbdec_sig.x86.so
-endif
-ifeq ($(wildcard $(AMRWBPATH)),$(AMRWBPATH))
-  AMRWB_INSTALLED = y
-else
-  AMRWB_INSTALLED = n
+  ifeq ($(wildcard $(AMRWBPATH)),$(AMRWBPATH))
+    AMRWB_INSTALLED = y
+  else
+    AMRWB_INSTALLED = n
+  endif
 endif
 
 ifeq ($(no_amrwbplus),1)
-  AMRWBPLUSPATH=xx
+  AMRWBPLUS_INSTALLED = n
 else
   AMRWBPLUSPATH=/usr/lib/libamrwbplusdec_sig.x86.so
+  ifeq ($(wildcard $(AMRWBPLUSPATH)),$(AMRWBPLUSPATH))
+    AMRWBPLUS_INSTALLED = y
+  else
+    AMRWBPLUS_INSTALLED = n
+  endif
 endif
-ifeq ($(wildcard $(AMRWBPLUSPATH)),$(AMRWBPLUSPATH))
-  AMRWBPLUS_INSTALLED = y
+
+# currently Kaldi and inference lib are not used by mediaTest. See mediaMin makefile 
+no_kaldiasr = 1
+
+ifeq ($(no_kaldiasr),1)
+  KALDIASR_INSTALLED = n
 else
-  AMRWBPLUS_INSTALLED = n
+  # check for any of several libkaldi-xx.so files
+  # try SigSRF install first
+  KALDIASRPATH=$(INSTALLPATH)/kaldi/lib
+  KALDIASRFILECHECK=$(KALDIASRPATH)/libkaldi-base.so
+
+  ifeq ($(wildcard $(KALDIASRFILECHECK)),$(KALDIASRFILECHECK))
+    KALDIASR_INSTALLED = y
+  else
+    # try system path
+    KALDIASRPATH=/usr/lib
+    KALDIASRFILECHECK=$(KALDIASRPATH)/libkaldi-base.so
+    ifeq ($(wildcard $(KALDIASRFILECHECK)),$(KALDIASRFILECHECK))
+      KALDIASR_INSTALLED = y
+    else
+      KALDIASR_INSTALLED = n
+    endif
+  endif
 endif
 
 # compiler path, g++ is required because some source codes are .cpp
@@ -122,7 +156,7 @@ ifneq ($(wildcard $(CC)),$(CC))
 endif
 
 # includes
-INCLUDES =  -I./ -I../../../include -I../../../.. -I../../../../shared_include -I../../common
+INCLUDES = -I./ -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/apps/common
 
 # compile flags
 CC_FLAGS = $(INCLUDES) 
@@ -165,7 +199,11 @@ ifeq ($(AMRWBPLUS_INSTALLED),y)
   CC_FLAGS += -D_AMRWBPLUS_INSTALLED_
 endif
 
-LINKER_INCLUDE = -L../../../lib -L/usr/lib
+ifeq ($(KALDIASR_INSTALLED),y)
+  CC_FLAGS += -D_KALDIASR_INSTALLED_
+endif
+
+LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L/usr/lib
 
 # codec libs, depending on install + configuration
 CODEC_LIBS = -levsenc_sig.x86 -levsdec_sig.x86 -levscom_sig.x86
@@ -213,21 +251,49 @@ endif
 
 AR_FLAGS += -flto -Xlinker -Map=mediaTest.map
 
+# if Kaldi ASR present on the system, link inferlib, Kaldi libs, and ATLAS and BLAS linear algebra libs. Notes:
+# -if not found stublib will fill in inferlib API stubs (which won't be called)
+# -inferlib calls kaldi libs which call ATLAS and BLAS libs
+
+ifeq ($(KALDIASR_INSTALLED),y)
+
+  SIG_LIBS += -linferlib
+  AR_FLAGS += -Wl,-rpath=$(KALDIASRPATH)
+
+  # try SigSRF install first
+  ATLASPATH=$(INSTALLPATH)/blas_atlas
+
+  ifeq ($(wildcard $(ATLASPATH)),$(ATLASPATH))
+    AR_FLAGS += -Wl,-rpath=$(ATLASPATH)
+  else
+
+    # try system folders (i.e. full download/install of ATLAS and BLAS)
+    ATLASPATH=/usr/lib/atlas-base
+    ifeq ($(wildcard $(ATLASPATH)),$(ATLASPATH))
+      AR_FLAGS += -Wl,-rpath=$(ATLASPATH)
+    endif
+  endif
+endif
+
 cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
 c_common_objects = keybd.o
-c_mediaMin_objects = mediaMin.o
+cpp_sdp_objects = types.o sdp.o utils.o reader.o writer.o 
+cpp_mediaMin_objects = mediaMin.o
 c_objects = sigMRF_init.o control_thread_task.o codec_thread_task.o transcoder_control.o codec_test_control.o host_c66x_xfer_control.o dummy_packet.o mediaTest.o cmd_line_interface.o packet_flow_media_proc.o x86_mediaTest.o
 
-# targets
-all: $(cpp_common_objects) $(c_common_objects) $(c_mediaMin_objects) $(c_objects) link
+# build targets
+all: $(cpp_common_objects) $(cpp_sdp_objects) $(c_common_objects) $(cpp_mediaMin_objects) $(c_objects) link
 
-$(cpp_common_objects): %.o: ../../common/%.cpp
+$(cpp_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.cpp
 	$(CC) $(CC_FLAGS) -c $< -o $@ 
 
-$(c_common_objects): %.o: ../../common/%.c
+$(cpp_sdp_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/sdp/%.cpp
 	$(CC) $(CC_FLAGS) -c $< -o $@ 
 
-$(c_mediaMin_objects): %.o: mediaMin/%.c
+$(c_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.c
+	$(CC) $(CC_FLAGS) -c $< -o $@ 
+
+$(cpp_mediaMin_objects): %.o: mediaMin/%.cpp
 	$(CC) $(CC_FLAGS) -c $< -o $@ 
 
 $(c_objects): %.o: %.c
@@ -235,7 +301,7 @@ $(c_objects): %.o: %.c
 
 # link object files, essential libs, and cimlib which provides cmd line handling
 link:
-	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(c_common_objects) $(c_objects) $(c_mediaMin_objects) $(LINKER_INCLUDE) -o ./mediaTest -lstdc++ $(SIG_LIBS) -ldl -lpthread -lcimlib -lstublib
+	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(c_common_objects) $(c_objects) $(cpp_mediaMin_objects) $(LINKER_INCLUDES) -o ./mediaTest -lstdc++ $(SIG_LIBS) -ldl -lpthread -lcimlib -lstublib
 
 .PHONY: clean all 
 clean:

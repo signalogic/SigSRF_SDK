@@ -5,9 +5,9 @@
  
   Projects: SigSRF, SigMRF, DirectCore
  
-  Copyright (C) Signalogic Inc. 2010-2020
+  Copyright (C) Signalogic Inc. 2010-2021
 
-  Revision History:
+  Revision History
   
    Created Mar 2017 Chris Johnson (some elements copied from legacy ds_vop.h)
    Modified May 2017 CJ, moved isEVSHeaderFullFormat from pktlib_priv.h
@@ -17,6 +17,7 @@
    Modified Oct 2018 JHB, removed #ifdef CODECXXX_INSTALLED references for codec header file includes.  The voplib Makefile no longer sets these, and the install script installs all codec header files (codec lib files are delivery dependent). stublib is used by mediaTest and mediaMin makefiles to link only the installed codecs
    Modified Jan 2019 JHB, remove uFlags param from DSCodecDelete() (it was never used, the codec handle links to internal info that contains flags if any)
    Modified Jul 2019 JHB, modify input struct ptr param and add flags for DSCodecCreate(), which is now used in both packet flow and codec test mode.  Flags include type of input struct data, and create encoder, decoder, or both
+   Modified Jul 2019 JHB, DSGetCodecFs() removed, use DSGetCodecSampleRate(hCodec) instead
    Modified Feb 2020 JHB, add DS_GET_NUMFRAMES flag in DSCodecDecode()
    Modified Oct 2020 JHB, add DSCodecGetInfo() API to pull all available encoder/decoder info as needed. First input param is codec handle or codec_type, depending on uFlags. Added codec_name, raw_frame_size, and coded_frame_size elements to CODEC_PARAMS struct support DSCodecGetInfo()
 */
@@ -184,24 +185,24 @@ extern "C" {
   void DSCodecDelete(HCODEC hCodec);
 
   int DSCodecEncode(HCODEC           hCodec,
-                    unsigned int     uFlags, 
+                    unsigned int     uFlags,
                     uint8_t*         inData, 
                     uint8_t*         outData,
                     uint32_t         in_frameSize,
                     CODEC_OUTARGS*   pOutArgs);
 
   int DSCodecDecode(HCODEC           hCodec,
-                    unsigned int     uFlags, 
+                    unsigned int     uFlags,
                     uint8_t*         inData,
                     uint8_t*         outData,
-                    uint32_t         in_frameSize,
+                    uint32_t         in_frameSize,  /* in bytes */
                     CODEC_OUTARGS*   pOutArgs);
 
   int DSCodecTranscode(HCODEC        hCodecSrc,
                        HCODEC        hCodecDst,
-                       unsigned int  uFlags, 
+                       unsigned int  uFlags,
                        uint8_t*      inData,
-                       uint32_t      in_frameSize, 
+                       uint32_t      in_frameSize,  /* in bytes */
                        uint8_t*      outData);
 
 #define DS_GET_NUMFRAMES  0x100  /* if specified in uFlags, DSCodecDecode() returns the number of frames in the payload.  No decoding is performed */
@@ -271,4 +272,4 @@ extern "C" {
 #define DS_CODEC_INFO_HANDLE    0x100
 #define DS_CODEC_INFO_TYPE      0x200
 
-#endif   /* _VOPLIB_H_ */
+#endif  /* _VOPLIB_H_ */

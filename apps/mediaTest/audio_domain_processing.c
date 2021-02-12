@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/audio_domain_processing.c
 
- Copyright (C) Signalogic Inc. 2018-2020
+ Copyright (C) Signalogic Inc. 2018-2021
 
  Description
 
@@ -18,7 +18,9 @@
 
    Created Nov 2019 JHB, separated out from streamlib.c
    Modified Feb 2020 JHB, move last_merge_output_time[] update from tail end of data flow in streamlib.c to here, after merge_gap_advance[] is handled. This is needed because DSProcessAudio() can be called from different places in streamlib
-   Modified Jun 2020 JHB, add DSDeduplicateStreams(). See comments
+   Modified Jun 2020 JHB, add DSDeduplicateStreams(). See function description comments
+   Modified Jan 2021 JHB, implement sampling rate conversion if applicable to audio input data (look for DSConvertFs()
+   Modified Jan 2021 JHB, integrate ASR (look for DS_PROCESS_AUDIO_APPLY_ASR flag)
 */
 
 
@@ -31,6 +33,7 @@
 #include "session.h"
 #include "voplib.h"
 #include "pktlib.h"
+#include "alglib.h"
 #include "diaglib.h"
 #include "streamlib.h"
 
@@ -49,31 +52,57 @@ extern sem_t pcap_write_sem;                              /* semaphore used to e
 extern uint32_t align_interval_count[MAX_STREAM_GROUPS][MAX_GROUP_CONTRIBUTORS];
 
 
-/* DSProcessGroupAudio, depending on uFlags options defined in streamlib.h:
+/* DSProcessGroupAudio() has a range of functionality, depending on uFlags options defined in streamlib.h:
 
-  1) apply sampling rate conversion, ASR, or other signal processing to output audio frames. This may involve non-audio output, for example .txt or .csv file output for ASR or diarization
-  2) packetize according to either (i) stream group owner session's termination (group_term) info or (ii) session's term2 (i or ii depends on idx input param).  Default encoding for stream groups is G711 but can be specified during session creation
+  1) apply sampling rate conversion, ASR, or other signal processing to one or more frames of audio data. This may involve non-audio output, for example .txt or .csv file output for ASR or diarization
+  2) packetize according to either (i) stream group owner session's termination (group_term) info or (ii) session's term2 (i or ii depends on idx input param). Default encoding for stream groups is G711 but can be specified in group term parameters during session creation
   3) input can be either (i) stream group 16-bit linear audio output or (ii) arbitrary session term2 audio output
   4) send output packets to applications
 
   Input params
 
-    -group_audio_buffer contains num_frames frames of audio data (audio data in 16-bit linear format)
+    -hSession - stream group owner session, if applicable. See uFlags
 
-    -frame_size is size of each frame (in bytes)
+    -group_audio_buffer - points to a buffer containing one or more audio data frames. Audio data is expected to be in 16-bit signed format
 
-    -if uFlags includes DS_PROCESS_AUDIO_STREAM_GROUP_INPUT:
-      -hSession is the stream group owner session
-      -idx is the stream group index
-      -either hSession or idx < 0 is an error condition
+    -num_frames - number of audio data frames contained within group_audio_buffer
 
-    -if uFlags do not include DS_PROCESS_AUDIO_STREAM_GROUP_INPUT:
-      -hSession >= 0 specifies the stream associated with the session's term2 endpoint
-      -hSession < 0 specifies arbitrary audio input data, with no associated session or stream 
+    -frame_size - size of each audio data frame (in bytes)
 
-    -if uFlags include DS_PROCESS_AUDIO_OUTPUT_PACKET:
-      -if a valid hSession is given, the codec associated with hSession's term2 endpoint is used to encode audio before packetization
-      -if nMarkerBit is 1, then the first output packet will have its RTP header "marker bit" set
+    -uFlags contains one or more flags specifying functionality, as follows:
+
+      -DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT
+        -hSession is the stream group owner session
+        -idx is the stream group index
+        -either hSession or idx < 0 is an error condition
+
+      -DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT not specified
+        -hSession >= 0 specifies the stream associated with the session's term2 endpoint
+        -hSession < 0 specifies arbitrary audio input data, with no associated session or stream
+        -idx is ignored
+
+      -DS_PROCESS_AUDIO_ENCODE
+        -encode each audio data frame. Sampling rate conversion is performed if needed by comparing sample_rate (below) with the encoding codec's sample rate
+
+      -DS_PROCESS_AUDIO_OUTPUT_PACKET
+        -if a valid hSession is given, the codec associated with hSession's term2 endpoint is used to encode audio before packetization
+        -if nMarkerBit is 1, then the first output packet will have its RTP header "marker bit" set
+
+    -idx - stream group index, if applicable. See uFlags
+
+    -nMarkerBit - reserved
+
+    -merge_cur_time - reserved
+
+    -delay_buffer - points to an FIR filter delay buffer used for sampling rate conversion. The buffer is expected to be persistent and dedicated to one audio stream (e.g. one stream group) and not used by other streams
+
+    -sample_rate - sampling rate of input audio data, in Hz
+
+    -pkt_group_cnt - reserved
+
+    -thread_index - reserved
+
+    -fp_out_pcap_merge - reserved
 
   Output params
 
@@ -94,7 +123,10 @@ extern uint32_t align_interval_count[MAX_STREAM_GROUPS][MAX_GROUP_CONTRIBUTORS];
     -the mediaMin (or other) application Makefile can be modified to include this function, allowing modified source to be incorporated into SigSRF operation as needed. At link-time the application version of the function will take precedence over the streamlib .so version
 */
 
-int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int upf, int dnf, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge) {
+static int asr_frame_count = 0;
+extern STREAM_GROUP stream_groups[];
+
+int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int16_t* delay_buffer, int sample_rate, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge) {
 
 TERMINATION_INFO output_term;
 uint8_t group_audio_encoded_frame[MAX_RAW_FRAME] = { 0 };  /* MAX_RAW_FRAME defined in voplib.h */
@@ -102,16 +134,16 @@ uint8_t group_audio_packet[MAX_RAW_FRAME + MAX_IP_UDP_RTP_HEADER_LEN] = { 0 };  
 HCODEC hCodec = (intptr_t)NULL;
 int ptime, j, chnum, ret_val = 2;
 
-FormatPkt mergeFormatPkt = { 0 };
+FORMAT_PKT groupFormatPkt = { 0 };
 int merge_uFlags_format, SSRC, timestamp, pyld_len = 0, packet_length = 0;
 unsigned short int seq_num;
+int codec_sample_rate = 0, up_factor = 1, down_factor = 1;
+HASRDECODER hASRDecoder;
 
-  (void)upf;  /* avoid compiler warnings until these vars are used */
-  (void)dnf;
 
    if (!*num_frames) return 0;  /* return zero if no frames */
 
-   if ((uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_INPUT) && (idx < 0 || hSession < 0)) {
+   if ((uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT) && (idx < 0 || hSession < 0)) {
       Log_RT(2, "ERROR: DSProcessAudio() says uFlags 0x%x specifies stream group audio input, but idx % or hSession % is < 0 \n", uFlags, idx, hSession);
       return -1;
    }
@@ -122,7 +154,7 @@ unsigned short int seq_num;
 
       if ((ret_val = DSGetTermChan(hSession, &chnum, 1, DS_CHECK_CHAN_DELETE_PENDING | DS_CHECK_CHAN_EXIST)) <= 0) return ret_val;  /* ret_val is < 0 for an error condition, and == 0 for a "not an error but don't send any data to the app" condition */
 
-      if (uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_INPUT) {  /* get input audio from stream group owner session's group_term */
+      if (uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT) {  /* get input audio from stream group owner session's group_term */
 
 #if 0
          hCodec = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_CODEC, 0, &output_term);
@@ -139,17 +171,31 @@ unsigned short int seq_num;
          ptime = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_PTIME, 2, NULL);
       }
 
+      if ((uFlags & DS_PROCESS_AUDIO_ENCODE) && hCodec) {
+
+      /* check if sampling rate conversion is needed prior to encoding */
+
+         codec_sample_rate = DSGetCodecSampleRate(hCodec);
+
+         if (sample_rate != codec_sample_rate) {
+
+            int fs_divisor = gcd(sample_rate, codec_sample_rate);
+            up_factor = codec_sample_rate / fs_divisor;
+            down_factor = sample_rate / fs_divisor;
+         }
+      }
+
       if (uFlags & DS_PROCESS_AUDIO_PACKET_OUTPUT) {
 
-      /* one-time output packet format setup */
+      /* one-time output packet format setup. Note that DS_FMT_PKT_USER_HDRALL specifies DS_FMT_PKT_USER_IPADDR_SRC, DS_FMT_PKT_USER_IPADDR_DST, DS_FMT_PKT_USER_UDPPORT_SRC, and DS_FMT_PKT_USER_UDPPORT_DST */
 
-         merge_uFlags_format = DS_FMT_PKT_USER_SEQNUM | DS_FMT_PKT_USER_TIMESTAMP | DS_FMT_PKT_STANDALONE | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_PYLDTYPE | DS_FMT_PKT_USER_SSRC | DS_FMT_PKT_USER_MARKERBIT;
-         memcpy(mergeFormatPkt.SrcAddr, &output_term.local_ip.u, DS_IPV6_ADDR_LEN);  /* DS_IPV6_ADDR_LEN defined in shared_include/session.h */
-         memcpy(mergeFormatPkt.DstAddr, &output_term.remote_ip.u, DS_IPV6_ADDR_LEN);
-         mergeFormatPkt.IP_Version = output_term.local_ip.type;
-         mergeFormatPkt.udpHeader.SrcPort = output_term.local_port;
-         mergeFormatPkt.udpHeader.DestPort = output_term.remote_port;
-         mergeFormatPkt.rtpHeader.BitFields = output_term.attr.voice_attr.rtp_payload_type;  /* set payload type */
+         merge_uFlags_format = DS_FMT_PKT_NO_INC_CHNUM_TIMESTAMP | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_SEQNUM | DS_FMT_PKT_USER_TIMESTAMP | DS_FMT_PKT_USER_PYLDTYPE | DS_FMT_PKT_USER_SSRC | DS_FMT_PKT_USER_MARKERBIT;
+         memcpy(groupFormatPkt.SrcAddr, &output_term.local_ip.u, DS_IPV6_ADDR_LEN);  /* DS_IPV6_ADDR_LEN defined in shared_include/session.h */
+         memcpy(groupFormatPkt.DstAddr, &output_term.remote_ip.u, DS_IPV6_ADDR_LEN);
+         groupFormatPkt.IP_Version = output_term.local_ip.type;
+         groupFormatPkt.udpHeader.SrcPort = output_term.local_port;
+         groupFormatPkt.udpHeader.DestPort = output_term.remote_port;
+         groupFormatPkt.rtpHeader.PyldType = output_term.attr.voice_attr.rtp_payload_type;  /* set payload type */
 
       /* check if there is a call on-hold or call waiting timestamp gap that needs to be accumulated, notes JHB Nov2019:
 
@@ -158,14 +204,14 @@ unsigned short int seq_num;
          -have seen a case (21161.0-ws) where gaps were accumulating after session was flushed (this is fixed in Mar2020 release, when session flush was moved up, just after end of input flow.  See comments in mediaMin source)
       */
   
-         if ((uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_INPUT) && merge_gap_advance[idx]) {
+         if ((uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT) && merge_gap_advance[idx]) {
 
             unsigned int group_flags = (unsigned int)DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_MODE, 0, NULL);  /* use term id 0 to get the group_term mode value */
             bool fRTPTimeStampAdvance_enabled = !(group_flags & STREAM_GROUP_RTP_TIMESTAMP_ONHOLD_ADVANCE_DISABLE);
 
             if (fRTPTimeStampAdvance_enabled) {  /* advance RTP timestamp unless disabled by group_mode flag in owner session's group_term (group_term.group_mode) */
 
-               int timestamp_advance = frame_size*((merge_cur_time - last_merge_output_time[idx] + 500)/(ptime*1000))/2;
+               int timestamp_advance = frame_size*up_factor/down_factor*((merge_cur_time - last_merge_output_time[idx] + 500)/(ptime*1000))/2;
                groupTimestampOffset[idx] += timestamp_advance;
 
                char szGroupName[MAX_GROUPID_LEN] = "";
@@ -185,21 +231,62 @@ unsigned short int seq_num;
 
    for (j=0; j<*num_frames; j++) {
 
+      uint8_t* pAudioBuffer = (uint8_t*)((intptr_t)group_audio_buffer + j*frame_size);  /* pointer to audio frame buffer */
+
    /* apply group audio output signal processing here, prior to codec encoding and packet output:
    
       -Kaldi ASR
-      -user-defined
+      -user-defined signal processing TBD
    */
 
-      if (uFlags & DS_PROCESS_AUDIO_APPLY_ASR) {
+      if ((uFlags & DS_PROCESS_AUDIO_APPLY_ASR) && (hASRDecoder = stream_groups[idx].hASRDecoder)) {
 
+         float asr_buf[16384] = { 0.0 };
+
+      /* convert from 16-bit signed int float, input length and return value are in samples */
+
+         int num_samples = DSConvertDataFormat(pAudioBuffer, asr_buf, DS_CONVERTDATA_SHORT | (DS_CONVERTDATA_FLOAT << 16), frame_size/2);
+ 
+      /* do ASR processing */
+
+         int ret_val = DSASRProcess(hASRDecoder, asr_buf, num_samples);
+
+//  static bool fOnce = false;
+//  if (!fOnce) { printf("\n num_samples = %d \n", num_samples); fOnce = true; }
+
+         if (ret_val != 0) Log_RT(2, "ERROR: DSProcessAudio() says DSASRProcess() returns error condition \n");
+
+      /* get ASR output text. Notes
+
+         -assumes 20 msec input data to Kaldi ASR
+         -number of frames processed has to be one more than frame count intervals specified, so frame_count is incremented afterwards. Otherwise GetLattice() in online-nnet3-decoding lib will show an error "You cannot get a lattice if you decoded no frames"
+      */
+
+//         if (asr_frame_count != 0 && (asr_frame_count % 25) == 0) DSASRGetText(hASRDecoder, DS_ASR_GET_TEXT_NEW_WORDS);  /* every 500 msec (assuming 20 msec buffers) */
+         if (asr_frame_count != 0 && (asr_frame_count % 200) == 0) DSASRGetText(hASRDecoder, DS_ASR_GET_TEXT_FULL);  /* every 4 sec */
+
+         asr_frame_count++;
       }
 
       if ((uFlags & DS_PROCESS_AUDIO_ENCODE) && hCodec) {
 
+      /* check if sampling rate conversion is needed */
+
+         if (sample_rate != codec_sample_rate) {
+
+         /* sampling rate conversion. Notes:
+
+            -conversion is in-place
+            -nothing is done if up_factor = down_factor
+            -input length and return value are in samples
+          */
+
+            DSConvertFs((int16_t*)pAudioBuffer, sample_rate, up_factor, down_factor, delay_buffer, frame_size/2, 1);  /* when calling DSConvertFs() directly, length is specified in samples (note: last param is num_chan, set for mono, JHB Jul2019) */
+         }
+
       /* encode audio */
 
-         pyld_len = DSCodecEncode(hCodec, 0, (uint8_t*)((intptr_t)group_audio_buffer + j*frame_size), group_audio_encoded_frame, frame_size, NULL);
+         pyld_len = DSCodecEncode(hCodec, 0, pAudioBuffer, group_audio_encoded_frame, frame_size*up_factor/down_factor, NULL);
 
          if (pyld_len < 0) {  /* if merge codec doesn't exist or has already been deleted */
             Log_RT(3, "WARNING: DSProcessGroupAudio() says DSCodecEncode() returns %d error code, hSession = %d, idx = %d \n", pyld_len, hSession, idx);
@@ -213,21 +300,25 @@ unsigned short int seq_num;
 
       /* format packet */
 
-         if (uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_INPUT) DSGetStreamGroupPacketInfo(idx, &seq_num, &timestamp, frame_size/2, &SSRC);  /* DSGetStreamGroupPacketInfo() increments timestamp by frame_size/2 and seq_num by 1.  Returns < 0 on error */
+         if (uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT) DSGetStreamGroupPacketInfo(idx, &seq_num, &timestamp, frame_size*up_factor/down_factor/2, &SSRC);  /* DSGetStreamGroupPacketInfo() increments timestamp by frame_size/2 and seq_num by 1.  Returns < 0 on error */
          else {};  /* to-do: needs a non stream group alternative */
 
-         mergeFormatPkt.rtpHeader.Sequence = seq_num;
-         mergeFormatPkt.rtpHeader.SSRC = SSRC;
-         mergeFormatPkt.rtpHeader.Timestamp = timestamp;
-         if (uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_INPUT) mergeFormatPkt.rtpHeader.Timestamp += groupTimestampOffset[idx];
+         groupFormatPkt.rtpHeader.Sequence = seq_num;
+         groupFormatPkt.rtpHeader.SSRC = SSRC;
+         groupFormatPkt.rtpHeader.Timestamp = timestamp;
+         if (uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT) groupFormatPkt.rtpHeader.Timestamp += groupTimestampOffset[idx];
 
          if (nMarkerBit >= 0) {
-            if (nMarkerBit) DSSetMarkerBit(&mergeFormatPkt, merge_uFlags_format);
-            else DSClearMarkerBit(&mergeFormatPkt, merge_uFlags_format);
+            #if 0
+            if (nMarkerBit) DSSetMarkerBit(&groupFormatPkt, merge_uFlags_format);
+            else DSClearMarkerBit(&groupFormatPkt, merge_uFlags_format);
+            #else
+            groupFormatPkt.rtpHeader.Marker = nMarkerBit ? 1 : 0;
+            #endif
             nMarkerBit--;
          }
 
-         packet_length = DSFormatPacket(chnum, merge_uFlags_format, group_audio_encoded_frame, pyld_len, &mergeFormatPkt, group_audio_packet);
+         packet_length = DSFormatPacket(chnum, merge_uFlags_format, group_audio_encoded_frame, pyld_len, &groupFormatPkt, group_audio_packet);
 
          if (packet_length <= 0) {
             Log_RT(3, "WARNING: DSProcessGroupAudio() says DSFormatPacket() returns %d error code, hSession = %d, idx = %d \n", (int)packet_length, hSession, idx);
@@ -296,7 +387,7 @@ send_group_packet:
       }
       else if ((uFlags & DS_PROCESS_AUDIO_ENCODE) && hCodec) {  /* stream audio input with no associated stream group.  Copy encoded audio over input (i.e. in-place processing) */
 
-         memcpy((uint8_t*)((intptr_t)group_audio_buffer + j*frame_size), group_audio_encoded_frame, pyld_len);
+         memcpy(pAudioBuffer, group_audio_encoded_frame, pyld_len);
       }
    }
 

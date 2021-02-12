@@ -13,7 +13,7 @@
   
     Support for c66x coCPU card PCIe and ATCA blade SRIO interfaces
 
-  Copyright (C) Signalogic, Inc, 2016-2020
+  Copyright (C) Signalogic, Inc, 2016-2021
 
     Add APIs to (i) encapsulate c66x PCIe and SRIO interfaces, and (ii) support x86-only or combined x86 and c66x server usage.  APIs are consistent between all use cases
 
@@ -99,6 +99,9 @@
 
     May 2020 JHB
       -define TERM_IGNORE_ARRIVAL_TIMING flag for situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc
+
+    Jan 2021 JHB
+      -re-define merge_audio_chunk_size to stream_group_buffer_time in SESSION_THREAD_INFO struct. See comments
 */
 
 #ifndef _SESSION_H_
@@ -505,6 +508,7 @@ struct video_attributes {
 #endif
 };
 
+#define DS_IPV4_ADDR_LEN 4
 #define DS_IPV6_ADDR_LEN 16
 
 enum ip_type {
@@ -732,9 +736,9 @@ typedef struct {
   bool fSSRC_change_active[MAX_TERMS];
   uint8_t ssrc_state[MAX_TERMS];
 
-/* merging related items */
+/* stream group related items */
 
-  int merge_audio_chunk_size;
+  int stream_group_buffer_time;  /* stream group buffer time, in msec. Changing this affects stream merging and sample domain processing. An integral number of stream group frames makes up a buffer, JHB Jan2021 */
   bool fAllContributorsPresent;
   unsigned int uMissingContributions[MAX_GROUP_CONTRIBUTORS];
   int nPrevMissingContributor[MAX_GROUP_CONTRIBUTORS];
