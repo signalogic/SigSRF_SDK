@@ -63,6 +63,7 @@ typedef struct {
 } DYNAMICSESSIONSTATS;
 
 #define MAX_DYNAMIC_SESSION_STATS  512
+#define MAX_DYN_PYLD_TYPES         32
 
 /* thread_info contains per-thread local vars.  If mediaMin is run from the cmd line then there is just one application thread, if mediaMin is run from mediaTest with -Et command line entry, then -tN entry determines how many application threads */
 
@@ -117,8 +118,8 @@ typedef struct {
 
   uint16_t num_rtpmaps;                  /* SDP items added JHB Jan2021 */
   vector<sdp::Attribute*> rtpmaps;
-  bool fUnmatchedPyldTypeMsg;
-  bool fDisallowedPyldTypeMsg;
+  bool fUnmatchedPyldTypeMsg[MAX_DYN_PYLD_TYPES];
+  bool fDisallowedPyldTypeMsg[MAX_DYN_PYLD_TYPES];
 
 } THREAD_INFO;
 

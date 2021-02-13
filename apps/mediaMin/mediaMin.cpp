@@ -1376,6 +1376,7 @@ uint8_t cat = 0;
 char errstr[200] = "", tmpstr[200], tmpstr2[200];
 int target_delay = 0,  max_delay = 0;
 bool fShowErrDebugInfo = false;
+static bool fPrevErr = false;
 
 /* add SDP related items, JHB Jan2021 */
 bool fSDPPyldTypeFound = false;
@@ -1433,9 +1434,10 @@ uint32_t sample_rate = 0;
                   break;
 
                default:
-                  if (!thread_info[thread_index].fUnmatchedPyldTypeMsg) {
+                  int pyld_type_index = min(max(pyld_type-96, 0), MAX_DYN_PYLD_TYPES-1);
+                  if (!thread_info[thread_index].fUnmatchedPyldTypeMsg[pyld_type_index]) {
                      Log_RT(3, "WARNING: create_dynamic_session() says SDP codec type %d unmatched to supported codecs \n", rtpmap->codec_type);
-                     thread_info[thread_index].fUnmatchedPyldTypeMsg = true;
+                     thread_info[thread_index].fUnmatchedPyldTypeMsg[pyld_type_index] = true;
                   }
                   break;
             }
@@ -1450,12 +1452,14 @@ uint32_t sample_rate = 0;
 
       if (!fSDPPyldTypeFound) {
 
-         if (!thread_info[thread_index].fDisallowedPyldTypeMsg) {
+         int pyld_type_index = min(max(pyld_type-96, 0), MAX_DYN_PYLD_TYPES-1);
+
+         if (!thread_info[thread_index].fDisallowedPyldTypeMsg[pyld_type_index]) {
             Log_RT(3, "WARNING: create_dynamic_session() says RTP packet with payload type %d found but not defined in SDP file %s, ignoring all RTP packets with this payload type \n", pyld_type, szSDPFile);
-            thread_info[thread_index].fDisallowedPyldTypeMsg = true;
+            thread_info[thread_index].fDisallowedPyldTypeMsg[pyld_type_index] = true;
          }
 
-         return 0;  /* ignore payload types effectively dis-allowed by SDP file */
+         return 0;  /* ignore payload types effectively disallowed by SDP file */
       }
    }
 
@@ -1506,10 +1510,15 @@ bad_packet:
       else sprintf(errstr, "DTMF packet found at start of new stream, DTMF packets dropped until after stream's first media packet");
 
 err_msg:
-      if (fShowErrDebugInfo) fprintf(stderr, "\n%s, IP ver %d, payload type %d, ssrc = 0x%x, seq num = %d, pkt len %d, RTP pyld size %d, cat %d, pyld[0] %d, pyld[1] %d, pyld[2] %d \n", errstr, ip_version, pyld_type, rtp_ssrc, rtp_seqnum, pkt_len_lib, rtp_pyld_len, cat, pkt[rtp_pyld_ofs], pkt[rtp_pyld_ofs+1], pkt[rtp_pyld_ofs+2]);
-      else fprintf(stderr, errstr);
+      if (fShowErrDebugInfo) {
+         fprintf(stderr, "%s%s, IP ver %d, payload type %d, ssrc = 0x%x, seq num = %d, pkt len %d, RTP pyld size %d, cat %d, pyld[0] %d, pyld[1] %d, pyld[2] %d \n", fPrevErr ? "" : "\n", errstr, ip_version, pyld_type, rtp_ssrc, rtp_seqnum, pkt_len_lib, rtp_pyld_len, cat, pkt[rtp_pyld_ofs], pkt[rtp_pyld_ofs+1], pkt[rtp_pyld_ofs+2]);
+         fPrevErr = true;
+      }
+      else fprintf(stderr, "%s \n", errstr);
       return -1;
    }
+
+   fPrevErr = false;
 
 /* detect_codec_type_and_bitrate() notes:
 
