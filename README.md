@@ -183,10 +183,12 @@ To download the install script and one or more rar files directly from Github (i
     wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2020v6.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2020v6.sh
     wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_distroNN_date.rar
 
-where "distroNN" is the Linux distro and version and "date" is the package date. To avoid entering the distro release version and .rar date, you can use one of the following wget commands:
+where "distroNN" is the Linux distro and version and "date" is the package date. To avoid entering the distro release version and .rar date, you can use one of the following wildcard format wget commands:
 
     wget -r -l7 --cut-dirs 6 -nH -N -A "*Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
     wget -r -l7 --cut-dirs 6 -nH -N -A "*CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
+
+The above wildcard format wget commands may download some non-rar files and then remove them and/or download the same rar file twice due to Github internal naming conventions (e.g. use of SHAs for subfolder naming), but the end result is correct.
 
 All .rar files and the install script should be downloaded to the same folder.
 
