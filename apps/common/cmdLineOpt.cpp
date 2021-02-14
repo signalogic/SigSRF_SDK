@@ -192,7 +192,7 @@ char       tmpstr[CMDOPT_MAX_INPUT_LEN];
 
                      if (p != NULL) {  /* get integer after ':' char */
    
-                        *p++ = NULL;
+                        *p++ = 0;
 
                         if (p != NULL) {
 
