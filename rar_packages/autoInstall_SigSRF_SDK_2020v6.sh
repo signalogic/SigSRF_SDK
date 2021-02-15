@@ -84,7 +84,12 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 		rarFile="Signalogic_sw_host_SigSRF_*Ubuntu*.rar"
 	fi
 
-	if [ ! -f $rarFile ]; then  # add check for .rar file not found, JHB Jan2021
+	rarFileNewest=""
+	for iFileName in `ls -tr $rarFile`; do  # unrar only most recent .rar file found (also this avoids unraring more than one file, due to wildcard), JHB Jan2021
+		rarFileNewest=$iFileName;
+	done;
+
+	if [ "$rarFileNewest" = "" ]; then  # add check for no .rar files found, JHB Jan2021
 		echo "Install package rar file not found"
       return 0
    fi
@@ -98,10 +103,6 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 		installPath="/usr/local"
 		echo "Default Install path (/) is chosen"
 	fi
-
-	for iFileName in `ls -tr $rarFile`; do  # unrar only most recent .rar file found (also this avoids unraring more than one file, due to wildcard), JHB Jan2021
-		rarFileNewest=$iFileName;
-	done;
 
 	unrar x -o+ $rarFileNewest $installPath/
 
@@ -666,7 +667,7 @@ do
 		break;;
 		"Install SigSRF Software with coCPU Option") if ! unrarCheck; then
 			if ! packageSetup; then
-				dependencyCheck; installOptions = "coCPU"; swInstall;
+				dependencyCheck; installOptions="coCPU"; swInstall;
 			fi
 		fi
 		break;;
