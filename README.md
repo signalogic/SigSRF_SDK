@@ -185,12 +185,19 @@ To download the install script and one or more rar files directly from Github (i
 
 where "distroNN" is the Linux distro and version and "date" is the package date. To avoid entering the distro release version and .rar date, you can use one of the following wildcard format wget commands:
 
-    wget -r -l7 --cut-dirs 6 -nH -N -A "*Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
-    wget -r -l7 --cut-dirs 6 -nH -N -A "*CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
+    wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
+    wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 
 The above wildcard format wget commands may download some non-rar files and then remove them and/or download the same rar file twice due to Github internal naming conventions (e.g. use of SHAs for subfolder naming), but the end result is correct.
 
-All .rar files and the install script should be downloaded to the same folder.
+For the ASR version of the SDK, the following commands can be used:
+
+    wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
+    wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
+
+The ASR version is separate because the .rar file size is substantially larger (approx 240 MB vs 65 MB).
+
+<i>Important Note</i> All .rar files and the install script should be downloaded to the same folder.
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
 
