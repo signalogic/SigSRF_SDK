@@ -119,7 +119,7 @@ The mediaTest codec + audio mode command lines below run on x86 platforms, showi
 The following command line applies the EVS encoder to a 3GPP reference audio file (WB sampling rate, 13.2 kbps), generating a compressed bitstream file:
 
 ```C
-./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.COD -Csession_config/codec_test_16kHz_13200bps_config
+./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_13200_16kHz_mime.COD -Csession_config/evs_16kHz_13200bps_config
 ```
 
 To compare with the relevant 3GPP reference bitstream file:
@@ -137,7 +137,7 @@ The following command line EVS encodes and then decodes a 3GPP reference audio f
 The following command line EVS encodes a 3GPP reference file audio (SWB sampling rate, 13.2 kbps) to a compressed bitstream file:
 
 ```C
-./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.COD -Csession_config/codec_test_32kHz_13200bps_config
+./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.COD -Csession_config/evs_32kHz_13200bps_config
 ```
 
 To compare with the relevant 3GPP reference bitstream file:
@@ -149,7 +149,7 @@ cmp reference_files/stv32c_13200_32kHz_mime_o3.COD test_files/stv32c_13200_32kHz
 The following command line EVS encodes and then decodes a 3GPP reference bitstream file (SWB sampling rate, 13.2 kbps), producing a .wav file:
 
 ```C
-./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.wav -Csession_config/codec_test_32kHz_13200bps_config
+./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.wav -Csession_config/evs_32kHz_13200bps_config
 ```
 <a name="coCPUCodecTesting"></a>
 ### coCPU Codec Testing
@@ -161,7 +161,7 @@ For transcoding, coCPU cores can be used to achieve extremely high capacity per 
 ```C
 ./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv16c.INP -otest_files/c6x16c_j.wav 
 
-./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv8c.INP -otest_files/c6x8c_j.wav -Csession_config/codec_test_8kHz_13200bps_config
+./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv8c.INP -otest_files/c6x8c_j.wav -Csession_config/evs_8kHz_13200bps_config
 ```
 Here are screen caps for the above two mediaTest commands (with frame count and run time highlighted):
 
@@ -212,7 +212,7 @@ The mediaTest command lines below show (i) USB audio acquisition of a stereo wav
 ```C
 ./mediaTest -cx86 -iusb0 -ousb_test.wav -Csession_config/wav_test_config_48kHz_2chan
 
-./mediaTest -cx86 -iusb0 -ousb_codec_output.wav -Csession_config/codec_test_16kHz_13200bps_config
+./mediaTest -cx86 -iusb0 -ousb_codec_output.wav -Csession_config/evs_16kHz_13200bps_config
 ```
 
 Below are waveform displays for a 1.5 kHz sine wave from the HP 33120A function generator, sampled by the Focusrite 2i2 at 48 kHz, downsampled to 16 kHz using a voplib API, and run through an EVS 13200 bps encode API:
