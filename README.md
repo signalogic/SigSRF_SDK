@@ -195,9 +195,9 @@ For the ASR version of the SDK, the following commands can be used:
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 
-The ASR version is separate because the .rar file size is substantially larger (approx 240 MB vs 65 MB).
+The ASR version is separated into .partN.rar files because the overall .rar file size is substantially larger (approx 240 MB vs 65 MB), and Github has a 100MB per file limit.
 
-<i>Important Note</i> All .rar files and the install script should be downloaded to the same folder.
+<i><b>Important Note:</b> all .rar files and the install script should be downloaded to the same folder.</i>
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
 
