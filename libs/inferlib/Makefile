@@ -31,7 +31,9 @@ KALDI_INCLUDE = -I/storage/kaldi/src/ -I/storage/kaldi/tools/openfst/include/ -I
 INCLUDE = -I../include -I../../include -I../../.. -I../../../shared_include -I../../../SIG_LIBS -I../voplib -I. -I../ -I../../apps/common -I../../lib/common $(KALDI_INCLUDE)
 
 # linked in libs
-KALDI_LIB = -Wl,-rpath=/storage/kaldi/tools/openfst/lib/libfst.so -lkaldi-online2 -lkaldi-ivector -lkaldi-nnet3 -lkaldi-chain -lkaldi-cudamatrix -lkaldi-decoder -lkaldi-lat -lkaldi-fstext -lkaldi-hmm -lkaldi-feat -lkaldi-transform -lkaldi-gmm -lkaldi-tree -lkaldi-util -lkaldi-matrix -lkaldi-base
+#KALDI_LIB = -Wl,-rpath=/storage/kaldi/tools/openfst/lib/libfst.so -lkaldi-online2 -lkaldi-ivector -lkaldi-nnet3 -lkaldi-chain -lkaldi-cudamatrix -lkaldi-decoder -lkaldi-lat -lkaldi-fstext -lkaldi-hmm -lkaldi-feat -lkaldi-transform -lkaldi-gmm -lkaldi-tree -lkaldi-util -lkaldi-matrix -lkaldi-base
+KALDI_LIB = -Wl,-rpath=../../../openfst/lib/libfst.so -Wl,-rpath=../../../kaldi/lib
+KALDI_LIB += -lkaldi-online2 -lkaldi-ivector -lkaldi-nnet3 -lkaldi-chain -lkaldi-cudamatrix -lkaldi-decoder -lkaldi-lat -lkaldi-fstext -lkaldi-hmm -lkaldi-feat -lkaldi-transform -lkaldi-gmm -lkaldi-tree -lkaldi-util -lkaldi-matrix -lkaldi-base
 
 cpp_objects = inferlib.o
 c_objects = 

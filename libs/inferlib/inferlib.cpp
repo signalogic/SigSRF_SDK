@@ -12,6 +12,7 @@
    Created Jan 2019 Chris Johnson, initial version based on based on Kaldi executable online2-wav-nnet3-latgen-faster
    Modified Jan 2021 JHB, add diaglib for error handling (Log_RT), initialize asr_handles, zero handle member values prior to use, make local data and functions static
    Modified Jan 2021 JHB, add DSASRConfig() to provide initialization ease-of-use and flexibility
+   Modified Feb 2021 JHB, make DSASRConfig() flexible on where it finds Kaldi .conf, .mdl, .fst, and other files
 */
 
 /* Kaldi includes */
@@ -428,6 +429,39 @@ static int SigOnline2WavNnet3LatgenFasterClose(HASRDECODER handle) {  /* note - 
    }
 }
 
+/* locate Kaldi file, currently we look for local development folder first, then SDK install folder, JHB Feb2021
+
+   -input: Kaldi file, including subfolder path
+   -output: actual path location (tmpstr)
+   -return value: true if found, false if not
+*/
+
+bool find_kaldi_file(char* tmpstr, const char* kaldi_file) {
+
+struct stat buffer;
+
+/* check for development folder first, if not found then check for executable and lib folders */
+
+   sprintf(tmpstr, "/storage/%s", kaldi_file);
+
+   if (stat(tmpstr, &buffer)) {  /* stat() returns 0 if file exists */
+
+      sprintf(tmpstr, "../../../../../%s", kaldi_file);  /* try executable folder */
+
+      if (stat(tmpstr, &buffer)) {
+
+         sprintf(tmpstr, "../../../%s", kaldi_file);  /* try lib folder */
+
+         if (stat(tmpstr, &buffer)) {
+
+            Log_RT(2, "ERROR: DSASRConfig() says cannot locate Kaldi file %s either on local development folder or SDK install folder \n", kaldi_file);
+            return false;
+         }
+      }
+   }
+
+   return true;
+}
 
 /* Notes
 
@@ -437,20 +471,42 @@ static int SigOnline2WavNnet3LatgenFasterClose(HASRDECODER handle) {  /* note - 
 
 int DSASRConfig(ASR_CONFIG* config, unsigned int uFlags, const char* utterance_id, int sample_rate) {
 
+/* Kaldi files we need, located either on local development folder, or SDK install folder, JHB Feb2021 */
+
+char mfcc_conf_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/mfcc.conf";
+char ivector_conf_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/ivector_extractor.conf";
+char mdl_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/final.mdl";
+char fst_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/HCLG.fst";
+char txt_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/words.txt";
+
+char tmpstr[256];
+
+  
    if (!config) return -1;  /* error condition */
 
    if (!config->feature_type) config->feature_type = strdup("mfcc");
-   if (!config->mfcc_config) config->mfcc_config = strdup("/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/mfcc.conf");
-   if (!config->ivector_config) config->ivector_config = strdup("/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/ivector_extractor.conf");;
+
+   if (!find_kaldi_file(tmpstr, mfcc_conf_str)) return -1;
+   if (!config->mfcc_config) config->mfcc_config = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/mfcc.conf");
+
+   if (!find_kaldi_file(tmpstr, ivector_conf_str)) return -1;
+   if (!config->ivector_config) config->ivector_config = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/ivector_extractor.conf");
+
    if (!config->frame_subsampling_factor) config->frame_subsampling_factor = 3;
    if (!config->acoustic_scale) config->acoustic_scale = 1.0;
    if (!config->beam) config->beam = 15.0;
    if (!config->max_active) config->max_active = 7000;
    if (!config->lattice_beam) config->lattice_beam = 6.0;
    if (!config->silence_phones) config->silence_phones = strdup("1:2:3:4:5:6:7:8:9:10");
-   if (!config->nnet3_rxfilename) config->nnet3_rxfilename = strdup("/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/final.mdl");
-   if (!config->fst_rxfilename) config->fst_rxfilename = strdup("/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/HCLG.fst");
-   if (!config->word_syms_filename) config->word_syms_filename = strdup("/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/words.txt");
+
+   if (!find_kaldi_file(tmpstr, mdl_str)) return -1;
+   if (!config->nnet3_rxfilename) config->nnet3_rxfilename = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/final.mdl");
+
+   if (!find_kaldi_file(tmpstr, fst_str)) return -1;
+   if (!config->fst_rxfilename) config->fst_rxfilename = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/HCLG.fst");
+
+   if (!find_kaldi_file(tmpstr, txt_str)) return -1;
+   if (!config->word_syms_filename) config->word_syms_filename = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/words.txt");
 
    if (uFlags & DS_ASR_CONFIG_DO_ENDPOINTING) config->do_endpointing = true;  /* default value is false, DSSessionCreate() in pktlik calls DSASRConfig() without this flag */
    if (uFlags & DS_ASR_CONFIG_ONLINE) config->online = true;  /* should be true for real-time operation, DSSessionCreate() in pktlib calls DSASRConfig() with this flag */

@@ -1,11 +1,11 @@
 /* keybd.h
-   kbhit, getch functions
+   kbhit, getkey functions
 
-   Copyright (C) Signalogic 2006-2020 unless otherwise specified   
+   Copyright (C) Signalogic 2006-2021
 
    Revision History
      Created Nov 2006
-     Modified Sep 2020, JHB change getkey() return to char to fix warning in gcc 9.3.0
+     Modified Sep 2020 JHB, change getkey() return to char to fix warning in gcc 9.3.0
 */
 
 #ifndef KEYBD_H

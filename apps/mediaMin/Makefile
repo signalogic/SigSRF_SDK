@@ -236,7 +236,7 @@ ifeq ($(ALSA_INSTALLED),y)
 endif
 
 # link flags
-AR_FLAGS = -flto -Xlinker -Map=mediaMin.map
+AR_FLAGS = -flto -Xlinker -Map=mediaMin.map -Wl,--disable-new-dtags  # get the RUNPATH crap out of there
 
 # if Kaldi ASR present on the system, link inferlib, Kaldi libs, and ATLAS and BLAS linear algebra libs. Notes:
 # -if not found stublib will fill in inferlib API stubs (which won't be called)
@@ -247,8 +247,8 @@ ifeq ($(KALDIASR_INSTALLED),y)
   SIG_LIBS += -linferlib
   AR_FLAGS += -Wl,-rpath=$(KALDIASRPATH)
 
-  # try SigSRF install first
-  ATLASPATH=$(INSTALLPATH)/blas_atlas
+  # ATLAS and BLAS: try SigSRF install first
+  ATLASPATH=$(INSTALLPATH)/blas_atlas/lib
 
   ifeq ($(wildcard $(ATLASPATH)),$(ATLASPATH))
     AR_FLAGS += -Wl,-rpath=$(ATLASPATH)
@@ -260,6 +260,35 @@ ifeq ($(KALDIASR_INSTALLED),y)
       AR_FLAGS += -Wl,-rpath=$(ATLASPATH)
     endif
   endif
+
+  # OpenFST: try SigSRF install first
+  OPENFSTPATH=$(INSTALLPATH)/openfst/lib
+
+  ifeq ($(wildcard $(OPENFSTPATH)),$(OPENFSTPATH))
+    AR_FLAGS += -Wl,-rpath=$(OPENFSTPATH)
+  else
+
+    # try system folders (i.e. full download/install of OpenFST)
+    OPENFSTPATH=/usr/lib/openfst
+    ifeq ($(wildcard $(OPENFSTPATH)),$(OPENFSTPATH))
+      AR_FLAGS += -Wl,-rpath=$(OPENFSTPATH)
+    endif
+  endif
+
+  # gfortran: try SigSRF install first
+  GFORTRANPATH=$(INSTALLPATH)/gfortran/lib
+
+  ifeq ($(wildcard $(GFORTRANPATH)),$(GFORTRANPATH))
+    AR_FLAGS += -Wl,-rpath=$(GFORTRANPATH)
+  else
+
+    # try system folders (i.e. full download/install of gfortran)
+    GFORTRANPATH=/usr/lib/gfortran
+    ifeq ($(wildcard $(GFORTRANPATH)),$(GFORTRANPATH))
+      AR_FLAGS += -Wl,-rpath=$(GFORTRANPATH)
+    endif
+  endif
+
 endif
 
 cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o 
