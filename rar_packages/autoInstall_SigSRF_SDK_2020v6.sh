@@ -27,6 +27,7 @@
 #  Modified Sep 2020 JHB, other minor fixes, such as removing "cd -" commands after non DirectCore/lib installs (which are in a loop). Test in Docker containers, including Ubuntu 12.04, 18.04, and 20.04
 #  Modified Jan 2021 JHB, fix minor issues in installCheckVerify(), add SIGNALOGIC_INSTALL_OPTIONS in /etc/environment, add preliminary check for valid .rar file
 #  Modified Jan 2021 JHB, unrar only most recent .rar file in case user has downloaded before, look for .rar that matches installed distro
+#  Modified Feb 2021 JHB, add ASR version to install options
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -73,15 +74,23 @@ unrarCheck() {
 
 packageSetup() { # check for .rar file and if found, prompt for Signalogic installation path, extract files
 
-   # match SigSRF .rar files by distro type, ignore the following:  JHB Jan2021
+   # match SigSRF .rar files by ASR version and distro type, ignore the following:  JHB Jan2021
    #  -SDK vs license
    #  -host vs target
    #  -distro version and date
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-		rarFile="Signalogic_sw_host_SigSRF_*CentOS*.rar"
+		if [ "$installOptions" = "ASR" ]; then
+			rarFile="Signalogic_sw_host_SigSRF_*_ASR_*CentOS*.rar"
+		else
+			rarFile="Signalogic_sw_host_SigSRF_*CentOS*.rar"
+		fi
 	else  # add other distro types later.  Currently Debian defaults to Ubuntu .rar, JHB Jan2021
-		rarFile="Signalogic_sw_host_SigSRF_*Ubuntu*.rar"
+		if [ "$installOptions" = "ASR" ]; then
+			rarFile="Signalogic_sw_host_SigSRF_*_ASR_*Ubuntu*.rar"
+		else
+			rarFile="Signalogic_sw_host_SigSRF_*Ubuntu*.rar"
+		fi
 	fi
 
 	rarFileNewest=""
@@ -121,16 +130,69 @@ depInstall() {
 	fi
 }
 
-dependencyCheck() {			# It will check for generic non-Signalogic SW packages and prompt for installation if not installed
+swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall()
+
+   # Set up environment vars, save install path and install options in env vars
+
+	export SIGNALOGIC_INSTALL_PATH=$installPath
+	sed -i '/SIGNALOGIC_INSTALL_PATH*/d' /etc/environment  # first remove any install paths already there, JHB Jan2021
+	echo "SIGNALOGIC_INSTALL_PATH=$installPath" >> /etc/environment
+	export SIGNALOGIC_INSTALL_OPTIONS=$installOptions
+	sed -i '/SIGNALOGIC_INSTALL_OPTIONS*/d' /etc/environment  # first remove any install options already there, JHB Jan2021
+	echo "SIGNALOGIC_INSTALL_OPTIONS=$installOptions" >> /etc/environment
 	
+	echo
+	echo "SigSRF software Installation will be performed..."
+	mv $installPath/Signalogic_*/etc/signalogic /etc
+	rm -rf $installPath/Signalogic*/etc
+	echo
+	kernel_version=`uname -r`
+	echo $kernel_version
+	echo
+	echo "Creating symlinks..."
+	
+	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+		if [ ! -L /usr/src/linux ]; then
+			ln -s /usr/src/kernels/$kernel_version /usr/src/linux
+		fi 
+	elif [ "$OS" = "Ubuntu" ]; then
+		if [ ! -L /usr/src/linux ]; then
+			ln -s /usr/src/linux-headers-$kernel_version /usr/src/linux
+		fi
+	fi
+
+   # Create symlinks. Assume _2xxx in the name, otherwise ln command might try to symlink the .rar file :-(
+
+   if [ ! -L $installPath/Signalogic ]; then
+	   ln -s $installPath/Signalogic_2* $installPath/Signalogic
+   fi
+
+   if [ ! -L $installPath/Signalogic/apps ]; then
+	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/apps
+   fi
+
+	if [ ! -L $installPath/Signalogic/DirectCore/apps/coCPU ]; then
+	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/DirectCore/apps/coCPU 
+   fi
+
+}
+
+dependencyCheck() {  # Check for generic sw packages and prompt for installation if not installed
+
+	echo
+	echo "Dependency check..."
+
 	DOTs='................................................................'
 	
-	if [ "$opt" = "Install SigSRF software" ]; then
+	if [[ "$opt" == "Install"* ]]; then  # to handle ASR and coCPU options, use wildcard to find first part of string (note -- didn't get white spaces working yet), JHB Feb2021
+
 		dependencyInstall="Dependency Check + Install"
-	elif [ "$opt" = "Dependency Check" ]; then
+
+	elif [ "$opt" = "Dependency Check" ]; then  # currently this is a deprecated install option
+
 		installPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
 		dependencyInstall="Dependency Check"
-		
+
 		if [ ! $installPath ]; then
 			echo 
 			echo "SigSRF software install path could not be found."
@@ -147,7 +209,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 			   echo -e "gcc compiler and toolchain is needed\n"
 				yum install gcc-c++
 			fi
-			
+
          lsbReleaseInstalled=`type -p lsb_release`
 	      if [ ! $lsbReleaseInstalled ]; then
 		  		echo "lsb_release package is needed"
@@ -190,14 +252,16 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 			package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
 			if [ ! $package ]; then
-				package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')
+				package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
 			fi
-			
+
 			if [ ! $package ]; then
 				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
 				unlink /usr/bin/gcc
 				unlink /usr/bin/g++
 			fi
+		else
+			package=""
 		fi
 
 		cd $installPath/Signalogic/installation_rpms/Ubuntu
@@ -207,32 +271,49 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 		do
 
 			d=$(sed 's/_.*//g' <<< $line)
-			package=$(dpkg -s $d 2>/dev/null | grep Status | awk ' {print $4} ')
+			if [[ "$d" == "make" ]]; then
+				g=$d
+			else
+				g=$(sed 's/-.*//g' <<< $line)  # search for "-" to set g with the generic package name
+			fi
+
+			package=$(dpkg -s $g 2>/dev/null | grep Status | awk ' {print $4} ')
+
+			if [[ "$g" == "libncurses"* && "$installOptions" != "coCPU" ]]; then  # libncurses only in memTest Makefile
+				package="not_needed"
+			fi
+
+			if [[ "$g" == "libexplain"* && "$installOptions" != "coCPU" ]]; then  # libexplain only in streamTest Makefile
+				package="not_needed"
+			fi
+
 			if [ ! $package ]; then
 				if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 					if [ ! $totalInstall ]; then
-						read -p "Do you wish to install $d packages? Please enter [Y]es, [N]o, [A]ll: " Dn
+						read -p "Do you wish to install $g package? Please enter [Y]es, [N]o, [A]ll: " Dn
 						if [[ ($Dn = "a") || ($Dn = "A") ]]; then
 							totalInstall=1
 						fi
 					fi
 					case $Dn in
-						[YyAa]* ) depInstall ; ;;
+						[YyAa]* ) depInstall ; ;;  # depInstall uses "line" var
 						[Nn]* ) ;;
 						* ) echo "Please retry with just y, n, or a";;
 					esac
 				elif [ "$dependencyInstall" = "Dependency Check" ]; then
-					printf "%s %s[ NOT INSTALLED ]\n" $d "${DOTs:${#d}}"
+					printf "%s %s[ NOT INSTALLED ]\n" $g "${DOTs:${#g}}"
 				fi
+			elif [ "$package" = "not_needed" ]; then
+				printf "%s %s[ NOT NEEDED ]\n" $g "${DOTs:${#g}}"
 			elif [ $package ]; then
-				printf "%s %s[ ALREADY INSTALLED ]\n" $d "${DOTs:${#d}}"
-			fi
+				printf "%s %s[ ALREADY INSTALLED ]\n" $g "${DOTs:${#g}}"
+		fi
 		done 3< "$filename"
 		
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 			# Dependencies gcc and g++ will be installed as gcc-4.8 and g++-4.8 so it is necessary to create a symmlink (gcc and g++) otherwise SW installation might fail
 			if [ ! -L  /usr/bin/gcc ]; then
-           	ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
+        	  	ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
          fi
 			if [ ! -L  /usr/bin/g++ ]; then
 				ln -s /usr/bin/g++-4.8 /usr/bin/g++
@@ -244,46 +325,7 @@ dependencyCheck() {			# It will check for generic non-Signalogic SW packages and
 
 swInstall() {  # install Signalogic SW on specified path
 
-	# Set up environment vars, save install path and install options in env vars
-	export SIGNALOGIC_INSTALL_PATH=$installPath
-	sed -i '/SIGNALOGIC_INSTALL_PATH*/d' /etc/environment  # first remove any install paths already there, JHB Jan2021
-	echo "SIGNALOGIC_INSTALL_PATH=$installPath" >> /etc/environment
-	export SIGNALOGIC_INSTALL_OPTIONS=$installOptions
-	sed -i '/SIGNALOGIC_INSTALL_OPTIONS*/d' /etc/environment  # first remove any install options already there, JHB Jan2021
-	echo "SIGNALOGIC_INSTALL_OPTIONS=$installOptions" >> /etc/environment
-	
-	echo
-	echo "SigSRF software Installation will be performed..."
-	mv $installPath/Signalogic_*/etc/signalogic /etc
-	rm -rf $installPath/Signalogic*/etc
-	echo
-	kernel_version=`uname -r`
-	echo $kernel_version
-	echo "Creating symlinks..."
-	
-	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
-		if [ ! -L /usr/src/linux ]; then
-			ln -s /usr/src/kernels/$kernel_version /usr/src/linux
-		fi 
-	elif [ "$OS" = "Ubuntu" ]; then
-		if [ ! -L /usr/src/linux ]; then
-			ln -s /usr/src/linux-headers-$kernel_version /usr/src/linux
-		fi
-	fi
-
-   # Create symlinks. Assume _2xxx in the name, otherwise ln command might try to symlink the .rar file :-(
-
-   if [ ! -L $installPath/Signalogic ]; then
-	   ln -s $installPath/Signalogic_2* $installPath/Signalogic
-   fi
-
-   if [ ! -L $installPath/Signalogic/apps ]; then
-	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/apps
-   fi
-
-	if [ ! -L $installPath/Signalogic/DirectCore/apps/coCPU ]; then
-	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/DirectCore/apps/coCPU 
-   fi
+# note -- assumes dependencyCheck() and swInstallSetup() have run
 
 	if [ "$installOptions" = "coCPU" ]; then
 
@@ -655,19 +697,25 @@ echo "*****************************************************"
 echo
 
 COLUMNS=1  # force single column menu, JHB Jan2021
-PS3="Please select install operation to perform [1-5]: "
-select opt in "Install SigSRF Software" "Install SigSRF Software with coCPU Option" "Uninstall SigSRF Software" "Check / Verify SigSRF Software Install" "Exit"
+PS3="Please select install operation to perform [1-6]: "
+select opt in "Install SigSRF Software" "Install SigSRF Software with ASR Option" "Install SigSRF Software with coCPU Option" "Uninstall SigSRF Software" "Check / Verify SigSRF Software Install" "Exit"
 do
    case $opt in
 		"Install SigSRF Software") if ! unrarCheck; then
 			if ! packageSetup; then
-				dependencyCheck; swInstall;
+				swInstallSetup; dependencyCheck; swInstall;
+			fi
+		fi
+		break;;
+		"Install SigSRF Software with ASR Option") if ! unrarCheck; then
+			if ! packageSetup; then
+				swInstallSetup; dependencyCheck; installOptions="ASR"; swInstall;
 			fi
 		fi
 		break;;
 		"Install SigSRF Software with coCPU Option") if ! unrarCheck; then
 			if ! packageSetup; then
-				dependencyCheck; installOptions="coCPU"; swInstall;
+				swInstallSetup; dependencyCheck; installOptions="coCPU"; swInstall;
 			fi
 		fi
 		break;;
