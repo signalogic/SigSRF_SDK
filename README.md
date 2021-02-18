@@ -221,8 +221,8 @@ Here are some additional notes:
      performance for one stream group per x86 core (a stream group may have up to 8 input stream
      contributors). Normally capacity is around 30 to 50 stream groups per core, including all packet
      handling, jitter buffer, codecs, stream group merging and signal processing. Enabling ASR reduces
-     this capacity greatly, as state-of-the-art ASR is heavily dependent on DNNs (deep neural networks)
-     and HMM/GMM acoustic modeling, and HCLG based finite state transducers
+     this capacity greatly, as state-of-the-art ASR is heavily dependent on DNNs (deep neural networks),
+     HMM/GMM acoustic modeling, and HCLG based finite state transducers
      
 SigSRF uses a Kaldi ASR implementation. In the SDK the Kaldi "mini-librispeech" model is used, which expects English speakers and has a vocabulary size around 200k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
 
