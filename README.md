@@ -241,7 +241,7 @@ Host is the default. Selecting VM causes additional resource management to be in
     6) Exit
     Please select install operation to perform [1-6]:
 
-If install operation 1) is selected, the script will prompt for an install path:
+If install operations 1) thru 3) are selected, the script will prompt for an install path:
 
     Enter the path for SigSRF software installation:
 
