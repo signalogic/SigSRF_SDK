@@ -1,0 +1,5 @@
+root = true
+
+[*.3]
+indent_style = tab
+tab_width = 3
