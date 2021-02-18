@@ -265,6 +265,8 @@ If no path is entered the default path is /usr/local. <i>Do not enter a path suc
   /root
 ```
 
+After entering an install path, you will be prompted for confirmation.  If at any time you want to abort the install and start over, press Ctrl-C.
+
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes. The Check / Verify option also generates screen output, here is an example:
 
 ```
