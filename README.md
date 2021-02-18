@@ -239,7 +239,7 @@ Host is the default. Selecting VM causes additional resource management to be in
     4) Uninstall SigSRF Software
     5) Check / Verify SigSRF Software Install
     6) Exit
-    Please select install operation to perform [1-4]:
+    Please select install operation to perform [1-6]:
 
 If install operation 1) is selected, the script will prompt for an install path:
 
