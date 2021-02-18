@@ -205,7 +205,7 @@ Note that the install script checks for the presence of the unrar package, and i
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
 
-To install the ASR version of the SDK, first follow the instructions in Install Notes, above, and then in Running the Install Script, below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install SigSRF Software with ASR Option" instead of item 1).
+To install the ASR version of the SDK, first follow the instructions in [Install Notes](#user-content-installnotes), above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install SigSRF Software with ASR Option" instead of item 1).
 
 Here are some additional notes:
 
@@ -227,6 +227,7 @@ SigSRF uses a Kaldi ASR implementation. In the SDK the Kaldi "mini-librispeech" 
 
 <i>Running the install script requires being logged in as root or as a user with sudo root privilege.</i>  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
+<a name="RunningTheInstallScript"></a>
 ### Running the Install Script
 
 To run the install script enter:
