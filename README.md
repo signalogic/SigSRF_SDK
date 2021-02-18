@@ -15,7 +15,7 @@
 [SDK Download](#user-content-sdkdownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-runnotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patest)<br/>
@@ -195,11 +195,24 @@ For the ASR version of the SDK, the following commands can be used:
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 
-The ASR version is separated into .partN.rar files because the overall .rar file size is substantially larger (approx 240 MB vs 65 MB), and Github has a 100MB per file limit.
+The ASR version is separated into .partN.rar files because the overall .rar file size is substantially larger (approx 240 MB vs 65 MB), and Github has a 100MB per file limit. See ASR Install Notes below for details about the ASR version SDK.
 
 <i><b>Important Note:</b> all .rar files and the install script should be downloaded to the same folder.</i>
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
+
+<a name="ASRInstallNotes"></a>
+### ASR Install Notes
+
+To install the ASR version of the SDK, first follow the instructions in Install Notes, above, and then in Running the Install Script, below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install SigSRF Software with ASR Option" instead of item 1). Here are some additional notes:
+
+    -downloading the ASR .rar files takes longer as the .rar size is substantially larger
+    
+    -performance of your system is crucial -- unless you are running at least a Xeon E5-25xx core you won't see real-time performance
+    
+    -the mediaMin page has command line examples of performing ASR on RTP encoded pcaps
+
+SigSRF uses a Kaldi ASR implementation. In the SDK the Kaldi "mini-librispeech" model is used, which expects English speakers and has a vocabulary size around 200k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488" Understanding kaldi recipes with mini-librispeech example</a>
 
 ### Sudo Privilege
 
@@ -220,10 +233,11 @@ The script will then prompt as follows:
 Host is the default. Selecting VM causes additional resource management to be installed that's needed if host and guest share DirectCore resources. If you are running in a container, either case still applies. After choosing either Host or VM, the script will next prompt for an install option:
 
     1) Install SigSRF Software
-    2) Install SigSRF Software with coCPU Option
-    3) Uninstall SigSRF Software
-    4) Check / Verify SigSRF Software Install
-    5) Exit
+    2) Install SigSRF Software with ASR Option
+    3) Install SigSRF Software with coCPU Option
+    4) Uninstall SigSRF Software
+    5) Check / Verify SigSRF Software Install
+    6) Exit
     Please select install operation to perform [1-4]:
 
 If install operation 1) is selected, the script will prompt for an install path:
