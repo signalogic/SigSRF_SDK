@@ -241,7 +241,7 @@ The script will then prompt as follows:
 
     1) Host
     2) VM
-    Please select target for coCPU software install [1-2]:
+    Please select target for SigSRF software install [1-2]:
 
 Host is the default. Selecting VM causes additional resource management to be installed that's needed if host and guest share DirectCore resources. If you are running in a container, either case still applies. After choosing either Host or VM, the script will next prompt for an install option:
 
