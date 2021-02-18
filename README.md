@@ -209,18 +209,21 @@ To install the ASR version of the SDK, first follow the instructions in [Install
 
 Here are some additional notes:
 
-    -downloading the ASR .rar files takes longer as the .rar size is
-     substantially larger. Also the install itself takes a little longer
+    -downloading the ASR .rar files takes longer as the .rar size is  substantially larger. Also the
+     install itself takes a little longer
     
-    -system performance is crucial -- unless you are running at least a
-     Xeon E5-25xx core you won't see real-time performance when ASR is
-     enabled
-     
-    -the mediaMin page has command line examples of performing ASR on RTP
-     encoded pcaps. mediaTest can be used to generate pcaps from USB input
-     or audio file (wav, au, etc). pcaps may be encoded with any of the
-     codecs supported in the SDK
+    -the mediaMin page has command line examples of performing ASR on RTP encoded pcaps. mediaTest
+     can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded
+     with any of the codecs supported in the SDK
 
+    -system performance is crucial -- unless you are running at least a Xeon E5-25xx core you won't
+     see real-time performance when ASR is enabled. Currently SigSRF attempts to maintain real-time
+     performance for one stream group per x86 core (a stream group may have up to 8 input stream
+     contributors). Normally capacity is around 30 to 50 stream groups per core, including all packet
+     handling, jitter buffer, codecs, stream group merging and signal processing. Current state-of-the-art
+     ASR is heavily dependent on DNNs (deep neural networks) and HMM/GMM acoustic modeling, and HCLG based
+     finite state transducers
+     
 SigSRF uses a Kaldi ASR implementation. In the SDK the Kaldi "mini-librispeech" model is used, which expects English speakers and has a vocabulary size around 200k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
 
 ### Sudo Privilege
