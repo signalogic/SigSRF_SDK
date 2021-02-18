@@ -2,16 +2,16 @@
 #================================================================================================
 # Bash script to install/uninstall SigSRF SDK
 # Copyright (C) Signalogic Inc 2017-2021
-# Rev 1.6
+# Rev 1.7
 
 # Requirements
-	# Internet connection
-	# Install unrar package -- handled automatically in unrarCheck() below, but if that fails ...
-		# For Ubuntu, use command:
-			# apt-get install unrar
-		# For RHEL/CentOS,
-			# yum -y install epel-release && rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm
-			# yum install unrar
+   # Internet connection
+   # Install unrar package -- handled automatically in unrarCheck() below, but if that fails ...
+      # For Ubuntu, use command:
+         # apt-get install unrar
+      # For RHEL/CentOS,
+         # yum -y install epel-release && rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm
+         # yum install unrar
 
 # Revision History
 #  Created Feb 2016 HP
@@ -49,27 +49,25 @@ unrarCheck() {
 			case $yn in
 #				[Yy]* ) apt-get install unrar; return 1; break;;
 				[Yy]* ) line_pkg="unrar"
-                    depInstall_wo_dpkg;
-                    if [[ $? > 0 ]]
-                    then
-                       echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
-                       sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
-                       depInstall_wo_dpkg;
-                       if [[ $? = 0 ]]
-                       then
-                          return 1
-                       fi;
-                    else
-                       return 1
-                    fi
-                    break;;
+						depInstall_wo_dpkg;
+						if [[ $? > 0 ]]; then
+							echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
+							sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
+							depInstall_wo_dpkg;
+							if [[ $? = 0 ]]; then
+								return 1
+							fi;
+						else
+							return 1
+						fi
+						break;;
 				[Nn]* ) return 0;;
 				* ) echo "Please enter y or n";;
 			esac
 		done
 	else
 		return 1
-   fi
+	fi
 }
 
 packageSetup() { # check for .rar file and if found, prompt for Signalogic installation path, extract files
@@ -100,8 +98,8 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 
 	if [ "$rarFileNewest" = "" ]; then  # add check for no .rar files found, JHB Jan2021
 		echo "Install package rar file not found"
-      return 0
-   fi
+		return 0
+	fi
 
 	while true; do
 
@@ -112,7 +110,7 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 			installPath="/usr/local"  # default if nothing entered
 		fi
 
- 		read -p "Please confirm install path $installPath  [Y] or [N] " Confirm
+		read -p "Please confirm install path $installPath  [Y] or [N] " Confirm
 
 		case $Confirm in
 			[Yy]* ) break;;
@@ -169,18 +167,17 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 
    # Create symlinks. Assume _2xxx in the name, otherwise ln command might try to symlink the .rar file :-(
 
-   if [ ! -L $installPath/Signalogic ]; then
-	   ln -s $installPath/Signalogic_2* $installPath/Signalogic
-   fi
+	if [ ! -L $installPath/Signalogic ]; then
+		ln -s $installPath/Signalogic_2* $installPath/Signalogic
+	fi
 
-   if [ ! -L $installPath/Signalogic/apps ]; then
-	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/apps
-   fi
+	if [ ! -L $installPath/Signalogic/apps ]; then
+		ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/apps
+	fi
 
 	if [ ! -L $installPath/Signalogic/DirectCore/apps/coCPU ]; then
-	   ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/DirectCore/apps/coCPU 
-   fi
-
+		ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/DirectCore/apps/coCPU 
+	fi
 }
 
 dependencyCheck() {  # Check for generic sw packages and prompt for installation if not installed
@@ -212,12 +209,12 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 			package=$(rpm -qa gcc-c++)
 			if [ ! $package ]; then
-			   echo -e "gcc compiler and toolchain is needed\n"
+				echo -e "gcc compiler and toolchain is needed\n"
 				yum install gcc-c++
 			fi
 
-         lsbReleaseInstalled=`type -p lsb_release`
-	      if [ ! $lsbReleaseInstalled ]; then
+			lsbReleaseInstalled=`type -p lsb_release`
+			if [ ! $lsbReleaseInstalled ]; then
 		  		echo "lsb_release package is needed"
 				yum install redhat-lsb-core
 			fi
@@ -319,11 +316,11 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 			# Dependencies gcc and g++ will be installed as gcc-4.8 and g++-4.8 so it is necessary to create a symmlink (gcc and g++) otherwise SW installation might fail
 			if [ ! -L  /usr/bin/gcc ]; then
-        	  	ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
-         fi
+		  	  	ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
+			fi
 			if [ ! -L  /usr/bin/g++ ]; then
 				ln -s /usr/bin/g++-4.8 /usr/bin/g++
-         fi
+			fi
 		fi
 	}
 	fi
@@ -432,7 +429,7 @@ swInstall() {  # install Signalogic SW on specified path
 	echo
 	echo "Building SigSRF applications..."
 
-   if [ "$installOptions" = "coCPU" ]; then
+	if [ "$installOptions" = "coCPU" ]; then
 
 		cd $installPath/Signalogic/apps/memTest
 		make clean; make all;
@@ -482,7 +479,7 @@ unInstall() { # uninstall Signalogic SW completely
 	rm -rf $unInstallPath/Signalogic*
 	rm -rf /etc/signalogic
 
-   if [ "$uninstallOptions" = "coCPU" ]; then
+	if [ "$uninstallOptions" = "coCPU" ]; then
 
 		rmmod sig_mc_hw
 		unlink /usr/src/linux
@@ -589,7 +586,7 @@ installCheckVerify() {
 
 	if [ "$installOptions" = "coCPU" ]; then
 
-      # Driver check
+		# Driver check
 
 		echo "SigSRF coCPU Driver Check" | tee -a $diagReportFile
 
@@ -664,7 +661,7 @@ installCheckVerify() {
 		printf "%s %s[ X ]\n" $appname "${line:${#appname}}" | tee -a $diagReportFile
 	fi
 
-   # Leftover /dev/shm hwlib files check
+	# Leftover /dev/shm hwlib files check
 
 	echo | tee -a $diagReportFile
 	echo "SigSRF Leftover hwlib Files Check" | tee -a $diagReportFile
@@ -706,7 +703,7 @@ COLUMNS=1  # force single column menu, JHB Jan2021
 PS3="Please select install operation to perform [1-6]: "
 select opt in "Install SigSRF Software" "Install SigSRF Software with ASR Option" "Install SigSRF Software with coCPU Option" "Uninstall SigSRF Software" "Check / Verify SigSRF Software Install" "Exit"
 do
-   case $opt in
+	case $opt in
 		"Install SigSRF Software") if ! unrarCheck; then
 			if ! packageSetup; then
 				swInstallSetup; dependencyCheck; swInstall;
@@ -728,6 +725,6 @@ do
 		"Uninstall SigSRF Software") unInstall; break;;
 		"Check / Verify SigSRF Software Install") installCheckVerify; break;;
 		"Exit") echo "Exiting..."; break;;
-      *) echo invalid option $opt;;
-   esac
+		*) echo invalid option $opt;;
+	esac
 done
