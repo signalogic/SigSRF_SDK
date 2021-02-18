@@ -27,7 +27,7 @@
 #  Modified Sep 2020 JHB, other minor fixes, such as removing "cd -" commands after non DirectCore/lib installs (which are in a loop). Test in Docker containers, including Ubuntu 12.04, 18.04, and 20.04
 #  Modified Jan 2021 JHB, fix minor issues in installCheckVerify(), add SIGNALOGIC_INSTALL_OPTIONS in /etc/environment, add preliminary check for valid .rar file
 #  Modified Jan 2021 JHB, unrar only most recent .rar file in case user has downloaded before, look for .rar that matches installed distro
-#  Modified Feb 2021 JHB, add ASR version to install options, add swInstallSetup(), fix problems in dependencyCheck()
+#  Modified Feb 2021 JHB, add ASR version to install options, add swInstallSetup(), fix problems in dependencyCheck(), add install path confirmation
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -103,15 +103,21 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
       return 0
    fi
 
-	echo "Enter path for SigSRF software and dependency package installation:"
+	while true; do
 
-	read installPath
-	if [ $installPath ]; then
-		echo "Install path: $installPath"
-	else
-		installPath="/usr/local"
-		echo "Default Install path (/) is chosen"
-	fi
+		echo "Enter path for SigSRF software and dependency package installation:"
+		read installPath
+
+		if [ ! $installPath ]; then
+			installPath="/usr/local"  # default if nothing entered
+		fi
+
+ 		read -p "Please confirm install path $installPath  [Y] or [N] " Confirm
+
+		case $Confirm in
+			[Yy]* ) break;;
+		esac
+	done
 
 	unrar x -o+ $rarFileNewest $installPath/
 
