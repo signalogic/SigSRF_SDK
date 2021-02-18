@@ -1,6 +1,6 @@
 #!/bin/bash
 #================================================================================================
-# Script to install/uninstall SigSRF SDK
+# Bash script to install/uninstall SigSRF SDK
 # Copyright (C) Signalogic Inc 2017-2021
 # Rev 1.6
 
@@ -27,7 +27,7 @@
 #  Modified Sep 2020 JHB, other minor fixes, such as removing "cd -" commands after non DirectCore/lib installs (which are in a loop). Test in Docker containers, including Ubuntu 12.04, 18.04, and 20.04
 #  Modified Jan 2021 JHB, fix minor issues in installCheckVerify(), add SIGNALOGIC_INSTALL_OPTIONS in /etc/environment, add preliminary check for valid .rar file
 #  Modified Jan 2021 JHB, unrar only most recent .rar file in case user has downloaded before, look for .rar that matches installed distro
-#  Modified Feb 2021 JHB, add ASR version to install options
+#  Modified Feb 2021 JHB, add ASR version to install options, add swInstallSetup(), fix problems in dependencyCheck()
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -399,14 +399,14 @@ swInstall() {  # install Signalogic SW on specified path
 	fi
 
 	echo
-	echo "Installing SigSRF pktlib, voplib, streamlib, diaglib, codecs, and other shared libraries..."
+	echo "Installing SigSRF libs for packet handling, stream group processing, inference, diagnostic, etc..."
 	cd $installPath/Signalogic/DirectCore/lib/
 	for d in *; do
-		cd $d; cp -p lib* /usr/lib; ldconfig; cd -
+		cd $d; cp -p lib* /usr/lib; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
 	done
 
 	echo
-	echo "Installing SigSRF codec shared libraries..."
+	echo "Installing SigSRF codec libs..."
 	cd $installPath/Signalogic/SIG_LIBS/Voice/AMR/lib 2>/dev/null
 	cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/AMR-WB/lib 2>/dev/null
