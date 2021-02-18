@@ -15,6 +15,7 @@
 [SDK Download](#user-content-sdkdownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-runnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatest)<br/>
@@ -195,16 +196,41 @@ For the ASR version of the SDK, the following commands can be used:
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 
-The ASR version is separated into .partN.rar files because the overall .rar file size is substantially larger (approx 240 MB vs 65 MB), and Github has a 100MB per file limit.
+The ASR version is separated into .partN.rar files because the overall .rar file size is substantially larger (approx 270 MB vs 65 MB), and Github has a 100MB per file limit. See [ASR Install Notes](#user-content-asrinstallnotes) below for details about the ASR version SDK.
 
 <i><b>Important Note:</b> all .rar files and the install script should be downloaded to the same folder.</i>
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
 
+<a name="ASRInstallNotes"></a>
+### ASR Install Notes
+
+To install the ASR version of the SDK, first follow the instructions in [Install Notes](#user-content-installnotes), above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install SigSRF Software with ASR Option" instead of item 1).
+
+Here are some additional notes:
+
+    -downloading the ASR .rar files takes longer as the .rar size is  substantially larger. Also the
+     install itself takes a little longer
+    
+    -the mediaMin page has command line examples of performing ASR on RTP encoded pcaps. mediaTest
+     can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded
+     with any of the codecs supported in the SDK
+
+    -system performance is crucial -- unless you are running at least a Xeon E5-25xx core you won't
+     see real-time performance when ASR is enabled. Currently SigSRF attempts to maintain real-time
+     performance for one stream group per x86 core (a stream group may have up to 8 input stream
+     contributors). Normally capacity is around 30 to 50 stream groups per core, including all packet
+     handling, jitter buffer, codecs, stream group merging and signal processing. Enabling ASR reduces
+     this capacity greatly, as state-of-the-art ASR is heavily dependent on DNNs (deep neural networks),
+     HMM/GMM acoustic modeling, and HCLG based finite state transducers
+     
+SigSRF uses a Kaldi ASR implementation. In the SDK the Kaldi "mini-librispeech" model is used, which expects English speakers and has a vocabulary size around 200k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
+
 ### Sudo Privilege
 
 <i>Running the install script requires being logged in as root or as a user with sudo root privilege.</i>  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
+<a name="RunningTheInstallScript"></a>
 ### Running the Install Script
 
 To run the install script enter:
@@ -220,13 +246,14 @@ The script will then prompt as follows:
 Host is the default. Selecting VM causes additional resource management to be installed that's needed if host and guest share DirectCore resources. If you are running in a container, either case still applies. After choosing either Host or VM, the script will next prompt for an install option:
 
     1) Install SigSRF Software
-    2) Install SigSRF Software with coCPU Option
-    3) Uninstall SigSRF Software
-    4) Check / Verify SigSRF Software Install
-    5) Exit
-    Please select install operation to perform [1-4]:
+    2) Install SigSRF Software with ASR Option
+    3) Install SigSRF Software with coCPU Option
+    4) Uninstall SigSRF Software
+    5) Check / Verify SigSRF Software Install
+    6) Exit
+    Please select install operation to perform [1-6]:
 
-If install operation 1) is selected, the script will prompt for an install path:
+If install operations 1) thru 3) are selected, the script will prompt for an install path:
 
     Enter the path for SigSRF software installation:
 
