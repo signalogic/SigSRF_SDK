@@ -708,11 +708,13 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 
 ./mediaTest -cx86 -iEVS_pcap_extracted2.cod -omediaTest_decoded_audio2.wav
 ```
+<a name="APIUsage"></a>
+## API Usage
 
-```C
+Below is source code example showing basic packet push/pull APIs.
+
+```cpp
 do {
-
-      if (fPause) continue;  /* skip to end of loop if pause is in effect */
 
       cur_time = get_time(USE_CLOCK_GETTIME); if (!base_time) base_time = cur_time;
 
@@ -736,7 +738,7 @@ do {
 
       FlushCheck(hSessions, cur_time, queue_check_time, thread_index);
 
-   /* update screen counters */
+   // update screen counters
 
       UpdateCounters(cur_time, thread_index);
 
