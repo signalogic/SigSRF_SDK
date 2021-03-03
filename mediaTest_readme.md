@@ -82,6 +82,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 [**3GPP Reference Code Notes**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
 &nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#user-content-verifyingevspcap)<br/>
+[**API Usage**](#user-content-apiusage)<br/>
 [**Wireshark Notes**](#user-content-wiresharknotes)<br/>
 &nbsp;&nbsp;&nbsp;[Playing Audio in Wireshark](#user-content-playingaudiowireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
@@ -711,9 +712,9 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 <a name="APIUsage"></a>
 ## API Usage
 
-Below is source code example showing basic packet push/pull APIs.
+Below is source code example showing basic packet push/pull APIs.  DSPushPackets() accepts both IP/UDP/RTP packets and encapsulated TCP/IP streams, for example HI3 intercept streams.
 
-```javascript
+```C
 do {
 
       cur_time = get_time(USE_CLOCK_GETTIME); if (!base_time) base_time = cur_time;
