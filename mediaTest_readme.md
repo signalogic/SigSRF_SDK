@@ -712,16 +712,20 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 <a name="APIUsage"></a>
 ## API Usage
 
-Below is source code example showing basic packet push/pull APIs.  DSPushPackets() accepts both IP/UDP/RTP packets and encapsulated TCP/IP streams, for example HI3 intercept streams.
+Below is source code example showing a basic packet processing loop with push/pull APIs.  PushPackets() accepts both IP/UDP/RTP packets and encapsulated TCP/IP streams, for example HI3 intercept streams.
 
 ```C
 do {
 
       cur_time = get_time(USE_CLOCK_GETTIME); if (!base_time) base_time = cur_time;
+  
+   /* if specified, push packets based on arrival time (for pcaps a push happens when elapsed time exceeds the packet's arrival timestamp) */
+  
+      if (Mode & USE_PACKET_ARRIVAL_TIMES) PushPackets(pkt_in_buf, hSessions, session_data, thread_info[thread_index].nSessionsCreated, cur_time, thread_index);
 
-      if (Mode & USE_PACKET_ARRIVAL_TIMES) PushPackets(pkt_in_buf, hSessions, session_data, thread_info[thread_index].nSessionsCreated, cur_time, thread_index);  /* in this mode packets are pushed based on arrival time (for pcaps a push happens when elapsed time exceeds the packet's arrival timestamp) */
-
-   /* otherwise we push packets according to a specified interval. Options include (i) pushing packets as fast as possible (-r0 cmd line entry), (ii) N msec intervals (cmd line entry -rN), and an average push rate based on output queue levels (the latter can be used with pcaps that don't have arrival timestamps) */
+   /* otherwise we push packets according to a specified interval. Options include (i) pushing packets as fast as possible (-r0 cmd line entry),
+      (ii) N msec intervals (cmd line entry -rN),
+      (iii) an average push rate based on output queue levels (the latter can be used with pcaps that don't have arrival timestamps) */
 
       if (cur_time - base_time < interval_count*frameInterval[0]*1000) continue; else interval_count++;  /* if the time interval has elapsed, push and pull packets and increment the interval. Comparison is in usec */
 
@@ -741,7 +745,7 @@ do {
 
       UpdateCounters(cur_time, thread_index);  /* update screen counters */
 
-   } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* process interactive keyboard commands */
+   } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* handle user input or other loop control */
 ```
 
 <a name="WiresharkNotes"></a>
