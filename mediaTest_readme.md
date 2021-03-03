@@ -713,7 +713,7 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 
 Below is source code example showing basic packet push/pull APIs.
 
-```cpp
+```ruby
 do {
 
       cur_time = get_time(USE_CLOCK_GETTIME); if (!base_time) base_time = cur_time;
@@ -738,13 +738,7 @@ do {
 
       FlushCheck(hSessions, cur_time, queue_check_time, thread_index);
 
-   // update screen counters
-
-      UpdateCounters(cur_time, thread_index);
-
-   /* update test conditions as needed. Note that repeating tests exit the push/pull loop here, after each thread detects end of input and flushes sessions. Also auto-quit (single app thread, no repeat) exits here */
-
-      if (!TestActions(hSessions, thread_index)) break;
+      UpdateCounters(cur_time, thread_index);  /* update screen counters */
 
    } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* process interactive keyboard commands */
 ```
