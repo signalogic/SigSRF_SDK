@@ -713,7 +713,7 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 
 Below is source code example showing basic packet push/pull APIs.
 
-```ruby
+```C
 do {
 
       cur_time = get_time(USE_CLOCK_GETTIME); if (!base_time) base_time = cur_time;
@@ -724,7 +724,7 @@ do {
 
       if (cur_time - base_time < interval_count*frameInterval[0]*1000) continue; else interval_count++;  /* if the time interval has elapsed, push and pull packets and increment the interval. Comparison is in usec */
 
-   /* read packets from input flows, push to packet/media threads */
+   <p style="color:green;">/* read packets from input flows, push to packet/media threads */</p>
 
       if (!(Mode & USE_PACKET_ARRIVAL_TIMES)) PushPackets(pkt_in_buf, hSessions, session_data, thread_info[thread_index].nSessionsCreated, cur_time, thread_index);
 
