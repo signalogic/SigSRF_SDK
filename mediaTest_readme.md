@@ -708,6 +708,45 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 
 ./mediaTest -cx86 -iEVS_pcap_extracted2.cod -omediaTest_decoded_audio2.wav
 ```
+
+```C
+do {
+
+      if (fPause) continue;  /* skip to end of loop if pause is in effect */
+
+      cur_time = get_time(USE_CLOCK_GETTIME); if (!base_time) base_time = cur_time;
+
+      if (Mode & USE_PACKET_ARRIVAL_TIMES) PushPackets(pkt_in_buf, hSessions, session_data, thread_info[thread_index].nSessionsCreated, cur_time, thread_index);  /* in this mode packets are pushed based on arrival time (for pcaps a push happens when elapsed time exceeds the packet's arrival timestamp) */
+
+   /* otherwise we push packets according to a specified interval. Options include (i) pushing packets as fast as possible (-r0 cmd line entry), (ii) N msec intervals (cmd line entry -rN), and an average push rate based on output queue levels (the latter can be used with pcaps that don't have arrival timestamps) */
+
+      if (cur_time - base_time < interval_count*frameInterval[0]*1000) continue; else interval_count++;  /* if the time interval has elapsed, push and pull packets and increment the interval. Comparison is in usec */
+
+   /* read packets from input flows, push to packet/media threads */
+
+      if (!(Mode & USE_PACKET_ARRIVAL_TIMES)) PushPackets(pkt_in_buf, hSessions, session_data, thread_info[thread_index].nSessionsCreated, cur_time, thread_index);
+
+   /* pull available packets from packet/media threads, write to output flows */
+
+      PullPackets(pkt_out_buf, hSessions, session_data, DS_PULLPACKETS_JITTER_BUFFER, sizeof(pkt_out_buf), thread_index);
+      PullPackets(pkt_out_buf, hSessions, session_data, DS_PULLPACKETS_TRANSCODED, sizeof(pkt_out_buf), thread_index);
+      PullPackets(pkt_out_buf, hSessions, session_data, DS_PULLPACKETS_STREAM_GROUP, sizeof(pkt_out_buf), thread_index);
+
+   /* check for end of input flows, end of output packet flows sent by packet/media threads, flush sessions if needed */
+
+      FlushCheck(hSessions, cur_time, queue_check_time, thread_index);
+
+   /* update screen counters */
+
+      UpdateCounters(cur_time, thread_index);
+
+   /* update test conditions as needed. Note that repeating tests exit the push/pull loop here, after each thread detects end of input and flushes sessions. Also auto-quit (single app thread, no repeat) exits here */
+
+      if (!TestActions(hSessions, thread_index)) break;
+
+   } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* process interactive keyboard commands */
+```
+
 <a name="WiresharkNotes"></a>
 ## Wireshark Notes
 
