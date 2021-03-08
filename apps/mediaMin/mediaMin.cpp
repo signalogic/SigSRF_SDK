@@ -97,6 +97,10 @@
    Modified Jan 2021 JHB, add SDP file parsing and management. See SDPSetup() below and apps/common/sdp folder for source code
    Modified Jan 2021 JHB, continued ASR integration and testing
    Modified Jan 2021 JHB, convert to .cpp, include <algorithm> and use namespace std
+   Modified Feb/Mar 2021 JHB, add DER encoded encapsulated stream handling, with full abstraction of DER encoded and aggregated packets
+                              -first tested on HI3 content in OpenLI captures
+                              -for API functionality and documentation see include/derlib.h, for implementation see lib/derlib
+                              -for app usage see source within ENABLE_DER_STREAM_DECODE below
 */
 
 
@@ -110,7 +114,7 @@
 #include <assert.h>
 #include <stdarg.h>
 
-#include <algorithm>  /* bring in std::min and std:: max */
+#include <algorithm>  /* bring in std::min and std::max */
 #include <fstream>
 using namespace std;
 
@@ -123,6 +127,7 @@ using namespace std;
 #include "pktlib.h"     /* packet push/pull and session management APIs. Pktlib includes packet/media threads, packet handling and formatting, jitter buffers, session handling */
 #include "voplib.h"     /* voplib provides an API interface to all codecs. Normally this is used by pktlib but can be accessed directly if needed */
 #include "diaglib.h"    /* diagnostics including event and packet logging. Event logging includes default stats and optional stats depending on cmd line entry. Packet logging includes detailed packet stats */
+#include "derlib.h"
 
 #include "shared_include/session.h"    /* session management structs and definitions */
 #include "shared_include/config.h"     /* configuration structs and definitions */
@@ -155,6 +160,7 @@ using namespace std;
 #define COMBINE_CALLS                         2  /* similar to DYNAMIC_CALL, but combine all cmd line input specs into one call (and if stream groups are enabled, combine all group output into one group) */
 #define ENABLE_STREAM_GROUP_DEDUPLICATION     4  /* applies a deduplication algorithm, which looks for similar content between stream group contributors and attempts to align similar streams. The objective is to reduce perceived reverb/echo due to duplicated streams. A typical scenario is a multipath (duplicated) endpoint with different latencies */
 #define ENABLE_STREAM_GROUP_ASR               8  /* enable ASR processing on stream group output */
+#define ENABLE_DER_STREAM_DECODE         0x1000
 
 #define USE_PACKET_ARRIVAL_TIMES           0x10  /* use arrival times (packet timestamps) in pcap records to control push rate (can be combined with other mode flags) */
 
@@ -189,8 +195,8 @@ using namespace std;
 
 #define ENABLE_PACKET_INPUT_ALARM       0x10000  /* enable packet input alarm -- if no packets are received by pktlib; i.e. no packets are pushed via DSPushPackets() API by an application (in this case by mediaMin) for some elapsed time, then pktlib will print a warning message in the event log */
 #define ENABLE_TIMING_MARKERS        0x08000000  /* inject 1 sec wall clock timing markers in stream group output.  This can be helpful in debugging timing issues, for example the app (in this case mediaMin) is not pulling packets fast enough, or not maintaining a consistent pull interval. Additional audio marker options can be specified with uDebugMode (see examples below in DebugSetup() and LoggingSetup(), see also DEBUG_CONFIG struct definitions in shared_include/config.h) */
-#define ENABLE_MERGE_DEBUG_STATS     0x10000000  /* enable packet/media thread internal audio merging debug stats */
-#define ENABLE_MERGE_DEBUG_STATS_L2  0x20000000  /* reserved */
+#define ENABLE_DEBUG_STATS           0x10000000  /* enable debug stats for (i) internal packet/media thread, (ii) audio merging, and (iii) DER stream decoding */
+#define ENABLE_DEBUG_STATS_L2        0x20000000  /* reserved */
 #define ENABLE_ALIGNMENT_MARKERS     0x40000000  /* when combined with the ENABLE_STREAM_GROUP_DEDUPLICATION flag, enables alignment markers to show the point at which streams were aligned (the deduplication algorithm uses cross correlation to align one or more streams) */
 #define ENABLE_MEM_STATS             0x80000000  /* show mem usage stats in the event log */
 
@@ -199,7 +205,7 @@ using namespace std;
 #define VALGRIND_DELAY 100  /* usleep delay value in usec for allowing valgrind to run multithreaded apps on the same core */
 #endif
 
-static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 2.9, Copyright (C) Signalogic 2018-2021\n";
+static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 2.9.1, Copyright (C) Signalogic 2018-2021\n";
 
 /* vars shared between app threads */
 
@@ -408,7 +414,7 @@ char tmpstr[MAX_APP_STR_LEN];
          if (Mode & ENABLE_WAV_OUTPUT) printf("  stream group wav file output enabled\n");
          if (Mode & ANALYTICS_MODE) printf("  Analytics mode with ptime push/pull rate enabled\n");
          if (Mode & ENABLE_STREAM_GROUP_ASR) printf("  stream group output ASR enabled\n");
-         if (Mode & ENABLE_MERGE_DEBUG_STATS) printf("  audio merge debug stats output enabled\n");
+         if (Mode & ENABLE_DEBUG_STATS) printf("  debug stats enabled\n");
          if (Mode & ENABLE_AUTO_ADJUST_PUSH_RATE) printf("  auto-adjust dynamic packet push rate\n");
          if (Mode & DISABLE_DTX_HANDLING) printf("  DTX handling disabled\n");
          if (Mode & DISABLE_FLC) printf("  FLC (frame loss concealment) on stream group output disabled\n");
@@ -443,7 +449,7 @@ char tmpstr[MAX_APP_STR_LEN];
 
       DebugSetup(&dbg_cfg);  /* set up debug items (see cmd line debug flags above) */
 
-   /* configure pktlib */
+   /* init and configure pktlib */
 
       DSConfigPktlib(&gbl_cfg, &dbg_cfg, DS_CP_INIT | DS_CP_DEBUGCONFIG | DS_CP_GLOBALCONFIG);
 
@@ -460,11 +466,15 @@ char tmpstr[MAX_APP_STR_LEN];
       DSConfigPktlib(NULL, &dbg_cfg, DS_CP_DEBUGCONFIG);  /* re-enable */
       #endif
 
-   /* configure voplib and streamlib */
-   
+   /* init configure voplib and streamlib */
+
       DSConfigVoplib(NULL, &dbg_cfg, DS_CV_INIT | DS_CV_DEBUGCONFIG);
 
       DSConfigStreamlib(NULL, &dbg_cfg, DS_CS_INIT | DS_CV_DEBUGCONFIG);
+
+   /* init and configure derlib if DER stream decoding specified in the cmd line */
+
+      if (Mode & ENABLE_DER_STREAM_DECODE) DSConfigDerlib(NULL, NULL, DS_CD_INIT);
 
    /* ask DirectCore lib for a platform handle */
 
@@ -687,15 +697,22 @@ cleanup:
       }
    }
 
-/* close input file descriptors */
+/* close input file descriptors and encapsulated stream decoding, if any*/
 
-   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) if (thread_info[thread_index].pcap_in[i]) { fclose(thread_info[thread_index].pcap_in[i]); thread_info[thread_index].pcap_in[i] = NULL; }
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) {
+   
+      if (thread_info[thread_index].pcap_in[i]) { fclose(thread_info[thread_index].pcap_in[i]); thread_info[thread_index].pcap_in[i] = NULL; }
+
+      if ((Mode & ENABLE_DER_STREAM_DECODE) && thread_info[thread_index].hDerStreams[i]) DSDeleteDerStream(thread_info[thread_index].hDerStreams[i]);
+   }
+
+/* close jitter buffer output file descriptors */
 
    for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) if (thread_info[thread_index].fp_pcap_jb[i]) { fclose(thread_info[thread_index].fp_pcap_jb[i]); thread_info[thread_index].fp_pcap_jb[i] = NULL; }
 
    if (!fExit && (Mode & CREATE_DELETE_TEST)) {
 
-      printf("Recreate test enabled, rerunning test from session create, total sessions created = %d\n", thread_info[thread_index].total_sessions_created);
+      printf("Recreate test enabled, re-running test from session create, total sessions created = %d\n", thread_info[thread_index].total_sessions_created);
 
       for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) {
          thread_info[thread_index].flush_state[i] = 0;
@@ -719,7 +736,11 @@ cleanup:
       goto session_create;
    }
 
+/* close transcoded output file descriptors */
+
    for (i=0; i<thread_info[thread_index].nOutPcapFiles; i++) if (thread_info[thread_index].pcap_out[i]) { fclose(thread_info[thread_index].pcap_out[i]); thread_info[thread_index].pcap_out[i] = NULL; }
+
+/* close stream group output file descriptors and other items */
 
    for (i=0; i<MAX_STREAM_GROUPS; i++) {
 
@@ -1039,8 +1060,8 @@ HSESSION hSession;
             session_data[i].term2.group_mode |= STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH;
          }
 
-         if (Mode & ENABLE_MERGE_DEBUG_STATS) session_data[i].group_term.group_mode |= STREAM_GROUP_DEBUG_STATS;
-         if (Mode & ENABLE_MERGE_DEBUG_STATS_L2) session_data[i].group_term.group_mode |= STREAM_GROUP_DEBUG_STATS_L2;
+         if (Mode & ENABLE_DEBUG_STATS) session_data[i].group_term.group_mode |= STREAM_GROUP_DEBUG_STATS;
+         if (Mode & ENABLE_DEBUG_STATS_L2) session_data[i].group_term.group_mode |= STREAM_GROUP_DEBUG_STATS_L2;
          if (Mode & DISABLE_FLC) session_data[i].group_term.group_mode |= STREAM_GROUP_FLC_DISABLE;
 
          if (!session_data[i].group_term.ptime) session_data[i].group_term.ptime = 20;
@@ -1559,7 +1580,7 @@ err_msg:
 
       struct ipv6hdr* ipv6hdr = (struct ipv6hdr*)pkt;
 
-      ip_hlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_IP_HDRLEN, pkt, pkt_len, NULL, NULL);  /* IPv6 header len normally fixed at 40, but we call pktlib API as customary practice. Note that DSGetPacketInfo() can be called for basic packet info items without a session handle (i.e. using -1 for session handle param) */
+      ip_hlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN, pkt, pkt_len, NULL, NULL);  /* IPv6 header len normally fixed at 40, but we call pktlib API as customary practice. Note that DSGetPacketInfo() can be called for basic packet info items without a session handle (i.e. using -1 for session handle param) */
 
       session->term1.remote_ip.type = DS_IPV6;
       session->term1.local_ip.type = DS_IPV6;
@@ -1816,8 +1837,8 @@ err_msg:
          }
       }
 
-      if (Mode & ENABLE_MERGE_DEBUG_STATS) session->group_term.group_mode |= STREAM_GROUP_DEBUG_STATS;
-      if (Mode & ENABLE_MERGE_DEBUG_STATS_L2) session->group_term.group_mode |= STREAM_GROUP_DEBUG_STATS_L2;
+      if (Mode & ENABLE_DEBUG_STATS) session->group_term.group_mode |= STREAM_GROUP_DEBUG_STATS;
+      if (Mode & ENABLE_DEBUG_STATS_L2) session->group_term.group_mode |= STREAM_GROUP_DEBUG_STATS_L2;
       if (Mode & DISABLE_FLC) session->group_term.group_mode |= STREAM_GROUP_FLC_DISABLE;
 
       strcpy(session->group_term.group_id, group_id);
@@ -1950,8 +1971,8 @@ void DeleteSession(HSESSION hSessions[], int nSessionIndex, int thread_index) {
 
 int PushPackets(uint8_t* pkt_in_buf, HSESSION hSessions[], SESSION_DATA session_data[], int nSessions, uint64_t cur_time, int thread_index) {
 
-int i, j, n, ret_val;
-unsigned int pkt_len, uFlags = !(Mode & DYNAMIC_CALL) ? DS_PUSHPACKETS_IP_PACKET | DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP : DS_PUSHPACKETS_IP_PACKET;
+int i, j, n, ret_val, pkt_len;
+unsigned int uFlags_push = !(Mode & DYNAMIC_CALL) ? DS_PUSHPACKETS_IP_PACKET | DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP : DS_PUSHPACKETS_IP_PACKET;
 int chnum, pyld_type, push_cnt = 0;
 int session_push_cnt[128] = { 0 };
 static uint8_t queue_full_warning[MAX_SESSIONS] = { 0 };
@@ -1994,7 +2015,59 @@ read_packet:
 
          pkt_len = DSReadPcapRecord(thread_info[thread_index].pcap_in[j], pkt_in_buf, 0, p_pcap_rec_hdr, thread_info[thread_index].link_layer_len[j]);
 
-         if (pkt_len == 0) {  /* pcap file ends - close (or rewind if input repeat or certain types of stress tests are enabled) */
+      /* DER encoded encapsulated stream processing, if enabled. Added Mar2021, JHB */
+
+         if (Mode & ENABLE_DER_STREAM_DECODE) {
+
+            if (!thread_info[thread_index].hDerStreams[j]) {  /* look for DER encoded stream */
+
+               char szInterceptPointId[256] = "";
+               uint16_t der_dest_port = 0;
+
+               if (DSIsDerStream(pkt_in_buf, DS_ISDER_INTERCEPTPOINTID | DS_ISDER_DSTPORT | DS_ISDER_PORT_MUST_BE_EVEN, szInterceptPointId, &der_dest_port)) {
+
+                  HDERSTREAM hDerStream = DSCreateDerStream(szInterceptPointId, der_dest_port, 0);
+                  if (hDerStream > 0) thread_info[thread_index].hDerStreams[j] = hDerStream;
+               }
+            }
+
+            if (thread_info[thread_index].hDerStreams[j]) {  /* process DER encoded stream */
+
+               HDERSTREAM hDerStream = thread_info[thread_index].hDerStreams[j];
+
+               uint8_t pkt_out_buf[MAX_RTP_PACKET_LEN] = { 0 };
+               HI3_DER_DECODE der_decode = { 0 };
+               int cc_pktlen;
+               bool fFoundCCPkt = false;
+
+            /* see if DSDecodeDerStream() finds a valid CC packet */
+
+               unsigned int uFlags = DS_DER_SEQNUM | DS_DER_TIMESTAMP | DS_DER_TIMESTAMPQUALIFIER | DS_DER_CC_PACKET;
+               if (Mode & ENABLE_DEBUG_STATS) uFlags |= DS_DECODE_DER_PRINT_DEBUG_INFO;
+
+               if ((cc_pktlen = DSDecodeDerStream(hDerStream, pkt_in_buf, pkt_out_buf, uFlags, &der_decode))) {
+
+                  pkt_len = cc_pktlen;  /* valid CC packet found, set pkt_len */
+                  fFoundCCPkt = true;
+
+                  memcpy(pkt_in_buf, pkt_out_buf, pkt_len);
+
+                  if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (der_decode.uList & DS_DER_TIMESTAMP)) {  /* if valid timestamp found in decoded DER stream, use for packet arrival time */
+                     p_pcap_rec_hdr->ts_sec = der_decode.timeStamp_sec.value;
+                     p_pcap_rec_hdr->ts_usec = der_decode.timeStamp_usec.value;
+                  }
+
+                  if (der_decode.asn_index != 0) fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* keep main stream packet until its encapsulated stream is consumed */
+
+//  uint64_t pkt_timestamp = (uint64_t)p_pcap_rec_hdr->ts_sec*1000000L + p_pcap_rec_hdr->ts_usec;
+//  if (pkt_index) printf("updating pkt index = %d, prev index = %d, timestamp = %llu \n", pkt_index, thread_info[thread_index].EncapsulatedStreamIndex[j], (unsigned long long)pkt_timestamp);
+               }
+
+               if (der_decode.uList && !fFoundCCPkt) continue;  /* found one or more DER items but not a CC packet, move to next socket or pcap stream */
+            }
+         }
+
+         if (pkt_len == 0) {  /* packete stream file ends - close (or rewind if input repeat or certain types of stress tests are enabled) */
 
             if (!(Mode & CREATE_DELETE_TEST_PCAP) && !(Mode & REPEAT_INPUTS)) {  /* check for input repeat */
 
@@ -2132,12 +2205,24 @@ read_packet:
             #endif
 
     printf(" ==== port 5060 packet, not processed \n");
-            goto read_packet;
+            goto read_packet;  /* stay on this stream, look at next packet */
          }
          else if (DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, pkt_len, NULL, NULL) == TCP_PROTOCOL) {
 
-    printf(" ==== TCP packet, not processed \n");
-            goto read_packet;  /* ignore non-SIP invite TCP/IP packets, JHB Dec2020 */
+            HDERSTREAM hDerStream;
+            uint16_t der_dest_port;
+
+            if ((hDerStream = thread_info[thread_index].hDerStreams[j])) der_dest_port = DSGetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT, NULL);
+
+            if (!hDerStream || dest_port == der_dest_port) {
+
+               int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, pkt_len, NULL, NULL);
+               char szDerStream[20] = "";
+               if (hDerStream) sprintf(szDerStream, "DER stream %d ", hDerStream);
+               printf(" ==== %sTCP packet, not processed, pyld len = %d, dst port = %u \n", szDerStream, pyld_len, dest_port);
+            }
+
+            goto read_packet;  /* stay on this stream, ignore TCP/IP packets other than SIP invites, JHB Dec2020 */
          }
 
          #define FILTER_RTCP_PACKETS_IF_rN_TIMING
@@ -2180,7 +2265,7 @@ check_for_duplicated_headers:
                                                                                 2) also increment SSRC to avoid packet/media thread "dormant SSRC" detection (SSRC is not part of key that mediaMin uses to keep track of unique sessions)
                                                                              */
 
-               unsigned int src_udp_port, dst_udp_port, ip_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_IP_HDRLEN, pkt_in_buf, pkt_len, NULL, NULL);
+               unsigned int src_udp_port, dst_udp_port, ip_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN, pkt_in_buf, pkt_len, NULL, NULL);
 
                memcpy(&src_udp_port, &pkt_in_buf[ip_hdr_len], 2);
                memcpy(&dst_udp_port, &pkt_in_buf[ip_hdr_len+2], 2);
@@ -2281,7 +2366,7 @@ check_for_duplicated_headers:
                   #endif
 
 push:
-                  ret_val = DSPushPackets(uFlags, pkt_in_buf, &pkt_len, &hSessions[i], 1);  /* push packet to packet/media thread queue */
+                  ret_val = DSPushPackets(uFlags_push, pkt_in_buf, &pkt_len, &hSessions[i], 1);  /* push packet to packet/media thread queue */
 
                   if (!(Mode & DYNAMIC_CALL) && (ret_val & DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP)) goto read_packet;  /* duplicate packet, read next packet */
 
@@ -2391,7 +2476,7 @@ int PullPackets(uint8_t* pkt_out_buf, HSESSION hSessions[], SESSION_DATA session
 
 int j, num_pkts = 0, i = 0, num_pkts_total = 0, numPkts;
 FILE* fp = NULL;
-unsigned int packet_out_len[1024];  /* These sizes should handle the maximum number of packets that fit into pkt_buf_len amount of space.  That will vary from app to app depending on codec types, max ptimes, etc.  MAXSPACEDEBUG can be used below to look at the worst case.  JHB Aug 2018 */
+int packet_out_len[1024];  /* These sizes should handle the maximum number of packets that fit into pkt_buf_len amount of space.  That will vary from app to app depending on codec types, max ptimes, etc.  MAXSPACEDEBUG can be used below to look at the worst case.  JHB Aug 2018 */
 uint64_t packet_info[1024];
 uint8_t* pkt_out_ptr;
 char errstr[20];
@@ -3366,7 +3451,7 @@ void DebugSetup(DEBUG_CONFIG* dbg_cfg) {
    dbg_cfg->uDebugMode |= DS_INJECT_GROUP_OUTPUT_MARKERS;  /* optional stream group output buffer boundary markers (currently no mediaMin cmd line -dN flag for this) */
    #endif
 
-   if (Mode & ENABLE_MERGE_DEBUG_STATS) {
+   if (Mode & ENABLE_DEBUG_STATS) {
    
       dbg_cfg->uDebugMode |= DS_ENABLE_GROUP_MODE_STATS;  /* equivalent to creating a stream group with STREAM_GROUP_DEBUG_STATS in its group term group_mode flags, but this method applies to all stream groups and can be enabled/disabled at run-time by calling DSConfigPktlib() or DSConfigStreamlib() with DS_CP_DEBUGCONFIG or DS_CP_STREAMLIB */ 
       dbg_cfg->uDebugMode |= DS_ENABLE_EXTRA_PACKET_STATS;

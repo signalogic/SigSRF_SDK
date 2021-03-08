@@ -15,6 +15,7 @@
    Modified Apr 2020 JHB, add hSession to DYNAMICSESSIONSTATS struct, increase max number of dynamic session stats to allow for repeating tests with multiple cmd line inputs
    Modified Oct 2020 JHB, expand link_layer_len to int32_t to handle mods to DSOpenPcap() and DSReadPcap() (pktlib) made to support pcapng format. Note - still needs to be an int (not unint) because DSOpenPcap() returns values < 0 for error conditions
    Modified Jan 2021 JHB, for SDP input file support, add rtpmaps and a few other items (see comments)
+   Modified Mar 2021 JHB, add hDeStreams[] to support DER encoded encapsulated streams
 */
 
 #ifndef _MEDIAMIN_H_
@@ -116,10 +117,12 @@ typedef struct {
   uint64_t initial_push_time[MAX_INPUT_STREAMS];
   uint64_t total_push_time[MAX_INPUT_STREAMS];
 
-  uint16_t num_rtpmaps;                  /* SDP items added JHB Jan2021 */
+  uint16_t num_rtpmaps;                  /* SDP items, added JHB Jan2021 */
   vector<sdp::Attribute*> rtpmaps;
   bool fUnmatchedPyldTypeMsg[MAX_DYN_PYLD_TYPES];
   bool fDisallowedPyldTypeMsg[MAX_DYN_PYLD_TYPES];
+
+  HDERSTREAM hDerStreams[MAX_INPUT_STREAMS];  /* DER stream handles, added JHB Mar2021 */
 
 } THREAD_INFO;
 

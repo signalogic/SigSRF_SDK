@@ -85,7 +85,7 @@ void check_for_host_to_c66x_xfer()
 
 //static int recv_count = 0;
 
-static void check_for_single_dsp_dp_xfer(uint32_t chip_id, uint32_t core_id, int (*process_buffer)(unsigned char *, unsigned int))
+static void check_for_single_dsp_dp_xfer(uint32_t chip_id, uint32_t core_id, int (*process_buffer)(unsigned char *, int))
 {
    fp_buffers_t *ptr;
    uint32_t length, processed_length;
@@ -124,7 +124,7 @@ static void check_for_single_dsp_dp_xfer(uint32_t chip_id, uint32_t core_id, int
    }
 }
 
-void check_for_c66x_to_host_xfer(int (*process_buffer)(unsigned char *, unsigned int))
+void check_for_c66x_to_host_xfer(int (*process_buffer)(unsigned char *, int))
 {
    uint32_t i;
    QWORD nCoreList_temp = nCoreList;
@@ -133,4 +133,3 @@ void check_for_c66x_to_host_xfer(int (*process_buffer)(unsigned char *, unsigned
       if (nCoreList & (1 << i))
          check_for_single_dsp_dp_xfer(i/8, i%8, process_buffer);
 }
-

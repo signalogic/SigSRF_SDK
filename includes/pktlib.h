@@ -70,6 +70,8 @@
    Modified May 2020 JHB, move IsPmThread() here as static inline from pktlib.c. Define IsPmThread as IsPmThreadInline
    Modified Oct 2020 JHB, add limited pcapng format capability to DSOpenPcap() and DSReadPcap(). This was mainly done to support TraceWrangler output (pcap anonymizer tool). Support for pcapng format write is not currently planned
    Modified Jan 2021 JHB, implement bit fields in RTPHeader struct for first 2 bytes (see comments), remove DSSet/ClearMarkerBit(), change definition of DS_FMT_PKT_STANDALONE to allow use of DSFormatPacket() with no reference to session / streams created via DSCreateSession()
+   Modified Feb 2021 JHB, added DS_PKT_INFO_PYLDLEN option to DSGetPacketInfo()
+   Modified Feb 2021 JHB, changed len[] param in DSPushPackets(), DSPullPackets(), DSRecvPackets(), DSSendPackets(), DSGetOrderedPackets(), and DSBufferPackets() from unsigned int* to int*. Any packet length with -1 value should be interpreted as an error condition independent of other packets in the array
  */
 
 #ifndef _PKTLIB_H_
@@ -201,10 +203,10 @@ extern "C" {
 
   /* basic IP, UDP, and RTP header lengths */
 
-  #define IPV4_HEADER_LEN  20
-  #define IPV6_HEADER_LEN  40
-  #define UDP_HEADER_LEN    8
-  #define RTP_HEADER_LEN   12
+  #define IPV4_HEADER_LEN            20
+  #define IPV6_HEADER_LEN            40
+  #define UDP_HEADER_LEN             8
+  #define RTP_HEADER_LEN             12
 
   #define MAX_IP_UDP_RTP_HEADER_LEN  (IPV6_HEADER_LEN + UDP_HEADER_LEN + RTP_HEADER_LEN)
 
@@ -212,8 +214,8 @@ extern "C" {
 
   #define MAX_RTP_PACKET_LEN         (MAX_RAW_FRAME + MAX_IP_UDP_RTP_HEADER_LEN)
 
-  #define UDP_PROTOCOL     17
-  #define TCP_PROTOCOL      6
+  #define UDP_PROTOCOL               17
+  #define TCP_PROTOCOL               6
 
   /* thread level items */
 
@@ -466,9 +468,9 @@ extern "C" {
        internal Pktlib values
 */
 
-  int DSRecvPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int pkt_buf_len, unsigned int* pkt_len, int numPkts);
+  int DSRecvPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int pkt_buf_len, int* pkt_len, int numPkts);
 
-  int DSSendPackets(HSESSION* sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int* pkt_len, int numPkts);
+  int DSSendPackets(HSESSION* sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int* pkt_len, int numPkts);
 
   int DSFormatPacket(int chnum, unsigned int uFlags, uint8_t* pyld, unsigned int pyldSize, FORMAT_PKT* formatHdr, uint8_t* pkt_buf);
 
@@ -530,9 +532,9 @@ extern "C" {
       -uTimestamp should be provided in usec (it's divided internally by 1000 to get msec). If uTimestamp is zero the API will generate its own timestamp, but this may cause timing variations between successive calls depending on intervening processing and its duration
 */
 
-  int DSBufferPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int pkt_buf_len[], unsigned int payload_info[], int chnum[]);
+  int DSBufferPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int pkt_buf_len[], unsigned int payload_info[], int chnum[]);
 
-  int DSGetOrderedPackets(HSESSION sessionHandle, unsigned int uFlags, uint64_t uTimestamp, uint8_t* pkt_buf, unsigned int pkt_buf_len[], unsigned int payload_info[], unsigned int* uInfo);
+  int DSGetOrderedPackets(HSESSION sessionHandle, unsigned int uFlags, uint64_t uTimestamp, uint8_t* pkt_buf, int pkt_buf_len[], unsigned int payload_info[], unsigned int* uInfo);
 
   int DSGetJitterBufferInfo(int chnum, unsigned int uFlags);
   int DSSetJitterBufferInfo(int chnum, unsigned int uFlags, int value);
@@ -788,8 +790,8 @@ extern "C" {
   -pkt_buf_len is the maximum amount of buffer space pointed to by pkt_buf that DSPullPackets can write
 */
 
-  int DSPushPackets(unsigned int uFlags, unsigned char* pkt_buf, unsigned int* len, HSESSION* hSession, unsigned int numPkts);
-  int DSPullPackets(unsigned int uFlags, unsigned char* pkt_buf, unsigned int* len, HSESSION hSession, uint64_t* pktInfo, unsigned int pkt_buf_len, int numPkts);
+  int DSPushPackets(unsigned int uFlags, unsigned char* pkt_buf, int* len, HSESSION* hSession, unsigned int numPkts);
+  int DSPullPackets(unsigned int uFlags, unsigned char* pkt_buf, int* len, HSESSION hSession, uint64_t* pktInfo, unsigned int pkt_buf_len, int numPkts);
 
   int DSGetDebugInfo(unsigned int uFlags, int, int*, int*);  /* for internal use only */
 
@@ -961,13 +963,14 @@ extern "C" {
 
 #define DS_PKT_INFO_RTP_HEADER                0xff00         /* returns whole RTP header in void* pInfo arg */
 
-#define DS_PKT_INFO_IP_HDRLEN                 0x1000         /* returns length of IP address headers (valid for IPv4 and IPv6) */
+#define DS_PKT_INFO_HDRLEN                    0x1000         /* returns length of IP address headers (valid for IPv4 and IPv6) */
 #define DS_PKT_INFO_PKTLEN                    0x2000         /* returns total packet length, including IP, UDP, and RTP headers, and payload */
 #define DS_PKT_INFO_SRC_PORT                  0x3000
 #define DS_PKT_INFO_DST_PORT                  0x4000
 #define DS_PKT_INFO_IP_VERSION                0x5000
 #define DS_PKT_INFO_PROTOCOL                  0x6000
-#define DS_PKT_INFO_PYLDOFS                   0x7000         /* retrieves offset to start of UDP or TCP payload data */
+#define DS_PKT_INFO_PYLDOFS                   0x7000         /* returns offset to start of UDP or TCP payload data */
+#define DS_PKT_INFO_PYLDLEN                   0x8000         /* returns size of packet payload (for UDP this is "Length" field in UDP header, for TCP this is packet length excluding IP and TCP headers) */
 
 #define DS_PKT_INFO_ITEM_MASK                 0xff00
 
@@ -1203,8 +1206,8 @@ extern "C" {
 #ifdef USE_PKTLIB_INLINES
 
 #include <semaphore.h>
-#include "transcoding.h"
-#include "lib_priv.h"
+#include "shared_include/transcoding.h"
+#include "common/lib_priv.h"
 
 #ifndef _USE_CM_  /* set defines needed for call.h struct alignment */
   #define _USE_CM_
@@ -1215,11 +1218,11 @@ extern "C" {
 #ifndef _MAVMOD_UAG_
   #define _MAVMOD_UAG_
 #endif
-#include "call.h"
+#include "pktlib/call.h"
 #include "diaglib.h"
 #include "streamlib.h"
-#include "rtp_defs.h"
-#include "rtp.h"
+#include "pktlib/rtp_defs.h"
+#include "pktlib/rtp.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -429,7 +429,7 @@ static int SigOnline2WavNnet3LatgenFasterClose(HASRDECODER handle) {  /* note - 
    }
 }
 
-/* locate Kaldi file, currently we look for local development folder first, then SDK install folder, JHB Feb2021
+/* locate Kaldi file, currently we look for local development folder first, then SigSRF executable and lib folders, JHB Feb2021
 
    -input: Kaldi file, including subfolder path
    -output: actual path location (tmpstr)

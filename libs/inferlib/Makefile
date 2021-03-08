@@ -1,39 +1,45 @@
 # $Header: /root/Signalogic_YYYYvNN/DirectCore/lib/inferlib/Makefile
 #
-#  Copyright (C) Signalogic Inc. 2019-2021
+# Copyright (C) Signalogic Inc. 2019-2021
 #
-#  Description:  Makefile for packet library
+# Description:  Makefile for packet library
 #
-#  Purpose:      API interface to parsing and processing network packets, including audio, video, and data analytics
+# Purpose:      API interface to parsing and processing network packets, including audio, video, and data analytics
 #
-#  Target:       generic x86 or MPC7447A/7448, PowerPC P2020
+# Target:       generic x86 or MPC7447A/7448, PowerPC P2020
 #
-#  Linux:        Ubuntu, CentOS, Redhat, Gentoo, WindRiver Linux 4.3 (based on Fedora)
+# Linux:        Ubuntu, CentOS, Redhat, Gentoo, WindRiver Linux 4.3 (based on Fedora)
 #
-#  Kernel Ver:   2.4, 2.6.9, 2.6.24, 2.6.25, 2.6.34.9, 3.2
+# Kernel Ver:   2.4, 2.6.9, 2.6.24, 2.6.25, 2.6.34.9, 3.2
 #
-#  Revision History
+# Revision History
 #
-#    Created Jan 2019 CJ
-#    Modified Jan 2021 JHB, create AR_FLAGs (and add -flto), add shared_include to includes, rename top-level source to inferlib.cpp
+#  Created Jan 2019 CJ
+#  Modified Jan 2021 JHB, create AR_FLAGs (and add -flto), add shared_include to includes, rename top-level source to inferlib.cpp
+#  Modified Mar 2021 JHB, add INSTALLPATH to allow builds on relative folder structure, remove unncessary -I include paths
+
+# set install path var, from lib/inferlib folder SigSRF software install path is 3 levels up
+INSTALLPATH=../../..
 
 WRLPATH=/opt/WindRiver/wrlinux-4
 
 ifeq ($(wildcard $(WRLPATH)),$(WRLPATH))
   export PATH := /opt/WindRiver/wrlinux-4/sysroots/adsp2-glibc_small/x86-linux2/:/opt/WindRiver/wrlinux-4/layers/wrll-toolchain-4.4a-341/powerpc/toolchain/x86-linux2/bin:$(PATH)
   CC = /opt/WindRiver/wrlinux-4/sysroots/adsp2-glibc_small/x86-linux2/powerpc-wrs-linux-gnu-ppc_e500v2-glibc_small-gcc
+  DEFINES = -D_WRL_
 else
   CC = /usr/bin/g++  # x86 build
+  DEFINES = -D_X86
 endif
 
 # include paths
-KALDI_INCLUDE = -I/storage/kaldi/src/ -I/storage/kaldi/tools/openfst/include/ -I/storage/kaldi/tools/portaudio/install/include/
-INCLUDE = -I../include -I../../include -I../../.. -I../../../shared_include -I../../../SIG_LIBS -I../voplib -I. -I../ -I../../apps/common -I../../lib/common $(KALDI_INCLUDE)
+INCLUDES = -I$(INSTALLPATH)/DirectCore/include -I../../.. -I$(INSTALLPATH)/shared_include $(KALDI_INCLUDES)
+KALDI_INCLUDES = -I/storage/kaldi/src/ -I/storage/kaldi/tools/openfst/include/ -I/storage/kaldi/tools/portaudio/install/include/
 
 # linked in libs
-#KALDI_LIB = -Wl,-rpath=/storage/kaldi/tools/openfst/lib/libfst.so -lkaldi-online2 -lkaldi-ivector -lkaldi-nnet3 -lkaldi-chain -lkaldi-cudamatrix -lkaldi-decoder -lkaldi-lat -lkaldi-fstext -lkaldi-hmm -lkaldi-feat -lkaldi-transform -lkaldi-gmm -lkaldi-tree -lkaldi-util -lkaldi-matrix -lkaldi-base
-KALDI_LIB = -Wl,-rpath=../../../openfst/lib/libfst.so -Wl,-rpath=../../../kaldi/lib
-KALDI_LIB += -lkaldi-online2 -lkaldi-ivector -lkaldi-nnet3 -lkaldi-chain -lkaldi-cudamatrix -lkaldi-decoder -lkaldi-lat -lkaldi-fstext -lkaldi-hmm -lkaldi-feat -lkaldi-transform -lkaldi-gmm -lkaldi-tree -lkaldi-util -lkaldi-matrix -lkaldi-base
+#KALDI_LIBS = -Wl,-rpath=/storage/kaldi/tools/openfst/lib/libfst.so -lkaldi-online2 -lkaldi-ivector -lkaldi-nnet3 -lkaldi-chain -lkaldi-cudamatrix -lkaldi-decoder -lkaldi-lat -lkaldi-fstext -lkaldi-hmm -lkaldi-feat -lkaldi-transform -lkaldi-gmm -lkaldi-tree -lkaldi-util -lkaldi-matrix -lkaldi-base
+KALDI_LIBS = -Wl,-rpath=../../../openfst/lib/libfst.so -Wl,-rpath=../../../kaldi/lib
+KALDI_LIBS += -lkaldi-online2 -lkaldi-ivector -lkaldi-nnet3 -lkaldi-chain -lkaldi-cudamatrix -lkaldi-decoder -lkaldi-lat -lkaldi-fstext -lkaldi-hmm -lkaldi-feat -lkaldi-transform -lkaldi-gmm -lkaldi-tree -lkaldi-util -lkaldi-matrix -lkaldi-base
 
 cpp_objects = inferlib.o
 c_objects = 
@@ -49,12 +55,12 @@ endif
 
 #defines
 KALDI_DEFINES = -DKALDI_DOUBLEPRECISION=0 -DHAVE_EXECINFO_H=1 -DHAVE_CXXABI_H -DHAVE_ATLAS
-DEFINES = -D_X86 -D_USE_CM_ -D_MAVMOD_UAG_ -D_SIGMOD_RTAFv5_ -D_SIGRT -D_MAV_DYNAMIC_JITTER_ $(KALDI_DEFINES)
+DEFINES += -D_LINUX_ -D_SIGRT $(KALDI_DEFINES)
 
 # compile flags
-CC_FLAGS = $(INCLUDE)
+CC_FLAGS = $(INCLUDES)
 CC_FLAGS += $(DBGFLAGS)
-CC_FLAGS += -std=c++11 -Wall -Wno-sign-compare -Wno-unused-local-typedefs -Wno-deprecated-declarations -Winit-self -c -fPIC -pthread -nostartfiles -D_LINUX_ -D__LIBRARYMODE__ -D__UNIFIEDMODE__ -D_DIRECTCORE_ -D_DIRECTCOREV5_ $(DEFINES)
+CC_FLAGS += -std=c++11 -Wall -Wno-sign-compare -Wno-unused-local-typedefs -Wno-deprecated-declarations -Winit-self -c -fPIC -pthread -nostartfiles $(DEFINES)
 
 ifeq ($(wildcard $(WRLPATH)),$(WRLPATH))
 CC_FLAGS += -D_WRL_
@@ -73,7 +79,7 @@ $(c_objects): %.o: %.c
 
 link:
 	ar -rcsu libinferlib.a $(cpp_objects) $(c_objects)
-	g++ $(AR_FLAGS) $(cpp_objects) $(c_objects) $(KALDI_LIB) -lrt -o libinferlib.so
+	g++ $(AR_FLAGS) $(cpp_objects) $(c_objects) $(KALDI_LIBS) -lrt -o libinferlib.so
 
 ifeq ($(wildcard $(WRLPATH)),$(WRLPATH))
 	# PPC link

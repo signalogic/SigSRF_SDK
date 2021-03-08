@@ -25,6 +25,7 @@
 #  Modified Jan 2021 JHB, add INSTALLPATH, add rpath linker options for version of Kaldi libs used by SigSRF and for ATLAS linear algebra / matrix lib (only if makefile detects Kaldi is installed)
 #  Modified Jan 2021 JHB, break out link flags from CC_FLAGS into AR_FLAGS, add -rpath linker options
 #  Modified Jan 2021 JHB, add cpp_objects target
+#  Modified Mar 2021 JHB, add derlib (DER decoding lib) to SIG_LIBS var
 
 # check make cmd line for "no_codecs" option
 
@@ -228,7 +229,7 @@ ifeq ($(AMRWBPLUS_INSTALLED),y)
 endif
 
 # essential libs for user apps (pktlib = packet handling, voplib = voice-over-packet (including codec interface), CODEC_LIBS (variable, depending on which codecs are installed), diaglib = diagnostics, hwlib = DirectCore, streamlib = stream groups and merging
-SIG_LIBS = -lvoplib $(CODEC_LIBS) -lpktlib -ldiaglib -lhwlib -lalglib -lstreamlib
+SIG_LIBS = -lvoplib $(CODEC_LIBS) -lpktlib -ldiaglib -lhwlib -lalglib -lstreamlib -lderlib
 
 # add aviolib lib if ALSA present on the system (USB audio I/O support)
 ifeq ($(ALSA_INSTALLED),y)

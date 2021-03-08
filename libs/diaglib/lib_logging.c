@@ -24,6 +24,7 @@
    Modified Mar 2020 JHB, implement uLineCursorPos and isCursorMidLine in screen output handling; isCursorPosMidLine determines leading \n decisions. uLineCursorPos records line cursor position
    Modified Apr 2020 JHB, implement DSGetLogTimeStamp() API
    Modified Jan 2021 JHB, include string.h with _GNU_SOURCE defined, change loglevel param in Log_RT() from uint16_t to uint32_t, implement DS_LOG_LEVEL_SUBSITUTE_WEC flag (config.h). See comments
+   Modified Mar 2021 JHB, minor adjustments to removal of unncessary Makefile defines, add DIAGLIB_STANDALONE #define option to build without IsPmThread()
 */
 
 /* Linux and/or other OS includes */
@@ -34,12 +35,20 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 
 /* Sig public includes */
 
-#include "pktlib.h"
+#ifndef DIAGLIB_STANDLONE
+  #define __LIBRARYMODE__
+  #include "pktlib.h"
+  #undef __LIBRARYMODE__
+#endif
+
 #include "diaglib.h"
-#include "config.h"
+#include "shared_include/config.h"
 
 /* Sig private includes */
 
@@ -369,7 +378,9 @@ create_log_file_if_needed:
             -race conditions in determining when the cursor is mid-line can still occur, but they are greatly reduced
           */
 
-            if (IsPmThread(-1, &thread_index)) __sync_or_and_fetch(&pm_thread_printf, 1 << thread_index);  /* if this is a p/m thread, set corresponding bit in pm_thread_printf. IsPmThread() is in pktlib; if pktlib is not used then this call can be stubbed out in a placeholder .so to always return 0 */
+            #ifndef DIAGLIB_STANDALONE
+            if (IsPmThread(-1, &thread_index)) __sync_or_and_fetch(&pm_thread_printf, 1 << thread_index);  /* if this is a p/m thread, set corresponding bit in pm_thread_printf. IsPmThread() is in pktlib.h; if pktlib is not used then this call can be stubbed out in a placeholder .so to always return 0 */
+            #endif
 
             if (!(loglevel & DS_LOG_LEVEL_IGNORE_LINE_CURSOR_POS) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) fNextLine = true;  /* fNextLine reflects leading \n decision */
             else if (log_string[slen-1] != '\n') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);

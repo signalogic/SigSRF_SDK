@@ -362,7 +362,7 @@ send_group_packet:
             if (pkt_len <= 0) Log_RT(4, " ================ pkt_len <= 0 inside SendMerge, j = %d, hSession = %d, idx = %d, chnum = %d, num_frames = %d, packet_length = %d, ret_val = %d \n", j, hSession, idx, chnum, num_frames, packet_length, ret_val);
             #endif
 
-            int ret_val_send = DSSendPackets(&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_STREAM_GROUP, group_audio_packet, (unsigned int*)&packet_length, 1);  /* send merged packet */
+            int ret_val_send = DSSendPackets(&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_STREAM_GROUP, group_audio_packet, &packet_length, 1);  /* send merged packet */
 
             if (ret_val_send < 0) {
                Log_RT(2, "ERROR: DSProcessGroupAudio() says DSSendPackets() failed, hSession = %d, idx = %d, chnum = %d, j = %d, num_frames = %d, packet_length = %d \n", hSession, idx, chnum, j, *num_frames, packet_length);

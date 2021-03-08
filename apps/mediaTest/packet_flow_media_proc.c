@@ -475,7 +475,7 @@ static inline int get_session_handle(HSESSION[], int, int);
 static inline int get_channels(HSESSION, int[], int[], int);
 static inline unsigned int uFlags_session(HSESSION);
 
-static inline int CheckForSSRCChange(HSESSION, int[], uint8_t*, unsigned int*, int, unsigned int, unsigned int, unsigned int[], int);
+static inline int CheckForSSRCChange(HSESSION, int[], uint8_t*, int*, int, unsigned int, unsigned int, unsigned int[], int);
 static inline int CheckForDormantSSRC(HSESSION, int num_chan, int chan_nums[], int, int, HSESSION[], uint64_t cur_time, int thread_index);
 static inline int CheckForOnHoldFlush(HSESSION hSession, int num_chan, int chan_nums[]);
 static inline int CheckForPacketLossFlush(HSESSION hSession, int num_chan, int chan_nums[], uint64_t cur_time, int thread_index);
@@ -683,8 +683,8 @@ void* packet_flow_media_proc(void* pExecutionMode) {
    HSESSION hSessions_t[MAX_SESSIONS] = { -1 };
    SESSION_DATA session_data_t[MAX_SESSIONS] = {{ 0 }};
 
-   unsigned int packet_length, pyld_len, data_length;
-   unsigned int packet_len[256], payload_info[256];
+   int pyld_len, data_length, packet_length, packet_len[256];
+   unsigned payload_info[256];
    uint8_t *pkt_ptr, *pyld_ptr;
 
    int recv_len = 0, send_len = 0;
@@ -750,7 +750,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
 
    #endif
 
-   unsigned int pkt_len[512];
+   int pkt_len[512];
    int numPkts = 0, numPkts_matched;
    int pyld_type;
    bool fFTRTInUse = false;
@@ -2208,7 +2208,7 @@ debug:
 
                      /* add packet stats entry */
 
-                        int num_stats = DSPktStatsAddEntries(input_pkts[chnum].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_ptr, &pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                        int num_stats = DSPktStatsAddEntries(input_pkts[chnum].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_ptr, (unsigned int*)&pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
                         pkt_counters[thread_index].num_input_pkts += num_stats;
 
                         manage_pkt_stats_mem(input_pkts, chnum, num_stats);
@@ -2225,7 +2225,7 @@ debug:
 
                      /* add packet stats entry */
 
-                        pkt_counters[thread_index].num_input_pkts += DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_ptr, &pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                        pkt_counters[thread_index].num_input_pkts += DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_ptr, (unsigned int*)&pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
 
                         if (pkt_counters[thread_index].num_input_pkts >= MAX_PKT_STATS) {
                            Log_RT(4, "INFO: input packet stats array exceeds %d packets, packet log will likely show missing SSRCs and/or packets \n", MAX_PKT_STATS);
@@ -2388,7 +2388,7 @@ next_session:
 
             /* add packet stats entry */
 
-               int num_stats = DSPktStatsAddEntries(input_pkts[NCORECHAN].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_in_buf, packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
+               int num_stats = DSPktStatsAddEntries(input_pkts[NCORECHAN].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_in_buf, (unsigned int*)packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
 
                pkt_counters[thread_index].num_input_pkts += num_stats;
                manage_pkt_stats_mem(input_pkts, NCORECHAN, num_stats);
@@ -2406,7 +2406,7 @@ next_session:
 
             /* add packet stats entry */
 
-               pkt_counters[thread_index].num_input_pkts += DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_in_buf, packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
+               pkt_counters[thread_index].num_input_pkts += DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_in_buf, (unsigned int*)packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
                if (pkt_counters[thread_index].num_input_pkts >= MAX_PKT_STATS) pkt_counters[thread_index].num_input_pkts = 0;
          #endif
             }
@@ -2850,7 +2850,7 @@ pull:
 
                            /* add packet stats entry */
 
-                              pkt_counters[thread_index].num_pulled_pkts += DSPktStatsAddEntries(&pulled_pkts[pkt_counters[thread_index].num_pulled_pkts], 1, pkt_ptr, &packet_len[j], &payload_info[j], uFlags_info);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                              pkt_counters[thread_index].num_pulled_pkts += DSPktStatsAddEntries(&pulled_pkts[pkt_counters[thread_index].num_pulled_pkts], 1, pkt_ptr, (unsigned int*)&packet_len[j], &payload_info[j], uFlags_info);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
 
                               if (pkt_counters[thread_index].num_pulled_pkts >= MAX_PKT_STATS) {
                                  Log_RT(4, "INFO: pulled packet stats array exceeds %d packets, packet log will likely show missing SSRCs and/or packets \n", MAX_PKT_STATS);
@@ -3995,7 +3995,7 @@ char errstr[50];
 
 /* check for an SSRC transition within a session's packet stream. This is part of pktlib support for RFC8108 */
 
-int CheckForSSRCChange(HSESSION hSession, int chnum[], uint8_t* pkt_in_buf, unsigned int packet_len[], int num_pkts, unsigned int uFlags_info, unsigned int uFlags_session, unsigned int pkt_counters[], int thread_index) {
+int CheckForSSRCChange(HSESSION hSession, int chnum[], uint8_t* pkt_in_buf, int packet_len[], int num_pkts, unsigned int uFlags_info, unsigned int uFlags_session, unsigned int pkt_counters[], int thread_index) {
 
 int j, k, rtp_SSRC, term;
 unsigned int offset = 0;
@@ -5328,7 +5328,7 @@ struct udphdr *udp_hdr;
       return 0;
    }
 
-   udp_hdr = (struct udphdr *)&pkt_buffer[DSGetPacketInfo(hSession, DS_PKT_INFO_IP_HDRLEN | DS_BUFFER_PKT_IP_PACKET, pkt_buffer, packet_length, NULL, NULL)];
+   udp_hdr = (struct udphdr *)&pkt_buffer[DSGetPacketInfo(hSession, DS_PKT_INFO_HDRLEN | DS_BUFFER_PKT_IP_PACKET, pkt_buffer, packet_length, NULL, NULL)];
    udp_hdr->source = session_data->term1.remote_port;
    udp_hdr->dest = session_data->term1.local_port;
 

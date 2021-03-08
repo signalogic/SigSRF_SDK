@@ -1,6 +1,6 @@
 # $Header: /root/Signalogic_YYYYvNN/DirectCore/lib/diaglib/Makefile
 #
-# Copyright (C) Signalogic Inc. 2017-2020
+# Copyright (C) Signalogic Inc. 2017-2021
 #
 # Description:  Makefile for diagnostics library
 #
@@ -21,6 +21,10 @@
 #  Modified Jan 2020 JHB, add -pthread flag
 #  Modified May 2020 JHB, add -Wextra compiler flag
 #  Modified Jul 2020 JHB, add -Wl,-soname,libdiaglib.so.major.minor.internal to link target. MAJOR is incremented for API changes (existing APIs or global vars are removed or existing API params are changed). MINOR is incremented for new APIs or global vars. INTERNAL is incremented for bug fixes or other internal modifications with no effect on the ABI
+#  Modified Mar 2021 JHB, add INSTALLPATH to allow builds on relative folder structure, remove unnecessary defines
+
+# set install path var, from lib/diaglib folder SigSRF software install path is 3 levels up
+INSTALLPATH=../../..
 
 WRLPATH=/opt/WindRiver/wrlinux-4
 
@@ -36,7 +40,7 @@ else
 endif
 
 # include paths
-INCLUDE = -I../include -I../../include -I../../lib/hwlib -I../../.. -I../../../shared_include -I../pktlib -I../../lib/common
+INCLUDE = -I$(INSTALLPATH) -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/lib
 
 cpp_objects =
 c_objects = diaglib.o lib_logging.o
@@ -51,12 +55,12 @@ else
 endif
 
 #defines
-DEFINES += -D_USE_CM_ -D_MAVMOD_UAG_ -D_SIGMOD_RTAFv5_ -D_SIGRT
+DEFINES += -D_LINUX_ -D_SIGRT
 
 # compiler flags
 CC_FLAGS = $(INCLUDE)
 CC_FLAGS += $(DBGFLAGS)
-CC_FLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 -D_LINUX_ -D__LIBRARYMODE__ -D__UNIFIEDMODE__ -D_DIRECTCORE_ -D_DIRECTCOREV5_ $(DEFINES)
+CC_FLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 $(DEFINES)
 
 CC_FLAGS += -Wextra -Wno-missing-field-initializers
 

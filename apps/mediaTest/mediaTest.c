@@ -251,9 +251,9 @@ void send_packet(uint8_t *packet, uint32_t length)
    /*printf("send_count = %d, packet length = %d, total length = %d\n",send_count, length, send_length);*/
 }
 
-static int process_transcoded_packet(unsigned char *packet, unsigned int length)
+static int process_transcoded_packet(unsigned char *packet, int length)
 {
-   unsigned int packet_length;
+   int packet_length;
    struct iphdr *ip_hdr = (struct iphdr *)packet;
    struct udphdr *udp_hdr = (struct udphdr *)(packet + ip_hdr->ihl * 4);
    int term_id = (ntohs(udp_hdr->dest) - inc_src_port_base)/2;
@@ -415,7 +415,7 @@ static void send_dum_buf()
    seq_num++;
 }
 
-static int process_transcoded_dummy_packet(unsigned char *packet, unsigned int length)
+static int process_transcoded_dummy_packet(unsigned char *packet, int length)
 {
    static pcaprec_hdr_t pcaprec_hdr = {0, 0, 214, 214};
    struct timeval tv;

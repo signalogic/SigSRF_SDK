@@ -8,7 +8,7 @@
  
   Project: DirectCore, SigMRF, SigSRF
  
-  Copyright Signalogic Inc. 2017-2020
+  Copyright Signalogic Inc. 2017-2021
 
   Revision History:
   
@@ -42,19 +42,22 @@
    Modified Mar 2020 JHB, in analysis_and_stats() (inp vs output packet analysis), add brief info printout for timestamp mismatches as they occur, similar to packet drops.  This saves time when debugging timestamp alignment issues in pktlib
    Modified Apr 2020 JHB, fix bug in timestamp mismatch output where output sequence number didn't include wrap count
    Modified May 2020 JHB, implement STREAM_STATS struct changes to rename numRepair to numSIDRepair and add numMediaRepair
+   Modified Mar 2021 JHB, add DIAGLIB_STANDALONE #define option to build without DirectCore header file
 */
 
 /* Linux includes */
 
 #include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <errno.h>
+#include <stdlib.h>
 
 /* Sig includes */
 
 #include "diaglib.h"
 #include "pktlib.h"
+
+#ifndef DIAGLIB_STANDALONE
+  #include "hwlib.h"  /* DirectCore header file, used here for get_time(), define STANDALONE to use getimeofday() and omit hwlib.h */
+#endif
 
 extern DEBUG_CONFIG lib_dbg_cfg;  /* in lib_logging.c */
 
@@ -952,7 +955,13 @@ unsigned long long t1, t2;
    InputStreamStats = calloc(MAX_SSRCS, sizeof(STREAM_STATS));
    OutputStreamStats = calloc(MAX_SSRCS, sizeof(STREAM_STATS));
 
+   #ifndef DIAGLIB_STANDALONE
    t1 = get_time(USE_CLOCK_GETTIME);
+   #else
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   t1 = tv.tv_sec * 1000000L + tv.tv_usec;
+   #endif
 
    fprintf(fp_log, "** Packet Ingress Stats **\n\n");
 
@@ -1072,7 +1081,14 @@ unsigned long long t1, t2;
 
       out_ssrc_groups = DSPktStatsLogSeqnums(fp_log, uFlags, output_pkts, output_idx, "Jitter Buffer", out_ssrcs, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats);
 
+      #ifndef DIAGLIB_STANDALONE
       t2 = get_time(USE_CLOCK_GETTIME);
+      #else
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      t2 = tv.tv_sec * 1000000L + tv.tv_usec;
+      #endif
+
       char tstr[] = "msec";
       float ltime = (t2-t1)/1000.0;
       if (ltime > 100) { ltime = (t2-t1)/1000000.0; strcpy(tstr, "sec"); }
@@ -1182,7 +1198,14 @@ unsigned long long t1, t2;
    fprintf(fp_log, "Total packets output to network socket = %d\n", pkt_counters->pkt_output_cnt);
    fprintf(fp_log, "Total packets decoded and written to wav file = %d\n", pkt_counters->frame_write_cnt);
 
+   #ifndef DIAGLIB_STANDALONE
    t2 = get_time(USE_CLOCK_GETTIME);
+   #else
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   t2 = tv.tv_sec * 1000000L + tv.tv_usec;
+   #endif
+
    char tstr[] = "msec";
    float ltime = (t2-t1)/1000.0;
    if (ltime > 100) { ltime = (t2-t1)/1000000.0; strcpy(tstr, "sec"); }

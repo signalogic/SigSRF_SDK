@@ -236,7 +236,7 @@ ifeq ($(AMRWBPLUS_INSTALLED),y)
 endif
 
 # essential libs for user apps (pktlib = packet handling, voplib = voice-over-packet (including codecs), diaglib = diagnostics, hwlib = DirectCore, streamlib = stream groups and merging
-SIG_LIBS = -lvoplib $(CODEC_LIBS) -lpktlib -ldiaglib -lhwlib -lalglib -lstreamlib
+SIG_LIBS = -lvoplib $(CODEC_LIBS) -lpktlib -ldiaglib -lhwlib -lalglib -lstreamlib -lderlib
 
 # add aviolib lib if ALSA present on the system (USB audio I/O)
 ifeq ($(ALSA_INSTALLED),y)

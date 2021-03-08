@@ -227,7 +227,7 @@ int init_codec_test(PMEDIAPARAMS, codec_test_params_t*);
 
 void fill_pcie_buffer(uint8_t *buffer, int length, uint32_t chip_id, uint32_t core_id);
 void check_for_host_to_c66x_xfer();
-void check_for_c66x_to_host_xfer(int (*process_buffer)(unsigned char *, unsigned int));
+void check_for_c66x_to_host_xfer(int (*process_buffer)(unsigned char *, int));
 
 extern volatile int send_sock_fd;
 void send_packet(uint8_t *packet, uint32_t length);
