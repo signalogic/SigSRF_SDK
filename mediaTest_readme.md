@@ -59,7 +59,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)</br>
 
-&nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**)](#user-content-dynamicsessioncreation)<br/>
+&nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**](#user-content-dynamicsessioncreation)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
 &nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams)<br/>
