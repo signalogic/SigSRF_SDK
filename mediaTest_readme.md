@@ -57,13 +57,16 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 [**mediaMin**](#user-content-mediamin)<br/>
 
-&nbsp;&nbsp;&nbsp;[Real-Time Streaming and Packet Flow](#user-content-realtimestreaming)</br>
+&nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)</br>
+
+&nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**)](#user-content-dynamicsessioncreation)<br/>
+
 &nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 
-&nbsp;&nbsp;&nbsp;[Session Configuration](#user-content-sessionconfig)<br/>
+&nbsp;&nbsp;&nbsp;[**Static Session Configuration**](#user-content-staticsessionconfig)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 
 [**mediaTest**](#user-content-mediatest)<br/>
@@ -83,6 +86,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 &nbsp;&nbsp;&nbsp;[Variable Ptimes](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[DTMF Handling](#user-content-dtmfhandling)<br/>
+
 [**Jitter Buffer**](#user-content-jitterbuffer)<br/>
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**Media Processing Insertion Point**](#user-content-mediaprocessing)<br/>
@@ -388,8 +392,8 @@ RFC7198 is a method to address packet loss that does not incur unbounded delay, 
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L
 ```
 
-<a name="SessionConfig"></a>
-### Session Configuration
+<a name="StaticSessionConfig"></a>
+### Static Session Configuration
 
 Session configuration can be handled programmatically using the DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or using a session configuration text file to set the struct elements.  The latter method is implemented by mediaTest (see transcoder.c).  For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
 
