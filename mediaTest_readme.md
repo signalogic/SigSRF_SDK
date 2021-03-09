@@ -1,6 +1,6 @@
-# mediaTest Demo
+# mediaMin and mediaTest Demo
 
-After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), this page gives example command lines and basic documentation for mediaTest, including:
+After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), this page gives example command lines and basic documentation for mediaMin and mediaTest, including:
 
  - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs
 
@@ -60,6 +60,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)</br>
 
 &nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**)](#user-content-dynamicsessioncreation)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
 &nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams)<br/>
@@ -70,6 +71,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 
 [**mediaTest**](#user-content-mediatest)<br/>
+
 &nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Testing](#user-content-x86codectesting)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Testing](#user-content-cocpucodectesting)<br/>
@@ -100,6 +102,143 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[Playing Audio in Wireshark](#user-content-playingaudiowireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
 
+<a name="mediaMin"></a>
+# mediaMin
+
+mediaMin processes multiple concurrent packet streams, performing static or dynamic session creation, packet handling, DTX, media decoding, stream group signal processing including audio quality enhancement and stream merging, speech recognition, real-time encoded RTP output, and event and packet logging and statistics.  Packet handling includes jitter buffer, SID and media packet re-ordering and repair, and intermediate packet output.
+
+mediaMin is designed for high-capacity, robust processing of real-time packet streams, using "analytics mode" (when packet timestamps are missing or problematic) "telecom mode" (e.g. SBC transcoding), or a hybrid mode. Typical application examples including SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to stream groups, which can be formed on the basis of IP addr/port values or arbitrarily as needed.
+
+Static session creation is supported, (including encode, decode, and transcoding) based on parameters in a ["session configuration file"](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#SessionConfig).  mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6).  Pktlib APIs in mediaMin source code examples include session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating), and more.
+
+<a name="RealTimeStreaming"></a>
+## Real-Time Streaming and Packet Flow
+
+SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
+
+Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#JitterBuffer)).
+
+[Additional signal processing](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#MediaProcessing) can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
+
+Below are some command line examples (using the EVS codec).  The first command does the following:
+
+* reads IP/UDP/RTP packets from the specified input pcap files
+* listens for all UDP ports (on any network interface)
+* sends transcoded packets over the network
+
+The second command line is similar, but also does the following:
+
+* writes each output stream to the corresponding output .pcap file given on the command line
+* sends over the network any additional streams beyond the number of output files given
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L
+
+./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -Csession_config/pcap_file_test_config -L
+```
+The screencap below shows mediaTest output after the second command line.
+
+![mediaTest pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
+
+<a name="DynamicSessionCreation"></a>
+## Dynamic Session Creation
+
+<a name="SDPSupport"></a>
+### SDP Support
+
+<a name="MultipleRTPStreams"></a>
+## Multiple RTP Streams (RFC 8108)
+
+RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically, in order to maintain separate and contiguous content for each stream.  This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+
+Here is the mediaTest command line example included in the demo for multiple RTP streams:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC8108_IPv6.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config -L
+```
+
+Here is a screen capture showing output for the above command line, with RTP stream transitions highlighted:
+
+![mediaTest multiple RTP stream command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaTest multiple RTP stream command line example")
+
+The packet stats log file produced by the above command (evs_16khz_13200bps_CH_RFC8108_IPv6_g711.txt) shows how the SigSRF Pktlib jitter buffer correctly collates and treats each stream separately, while still resolving out-of-order packets.  For a log file excerpt, see "Packet Stats and Logging" below.
+
+<a name="DuplicatedRTPStreams"></a>
+## Duplicated RTP Streams (RFC 7198)
+
+RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams.  Here is the mediaTest command line example included in the demo for RFC7198:
+
+```C
+./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L
+```
+
+<a name="StaticSessionConfig"></a>
+## Static Session Configuration
+
+Session configuration can be handled programmatically using the DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or using a session configuration text file to set the struct elements.  The latter method is implemented by mediaTest (see transcoder.c).  For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
+
+Structs defined in shared_include/session.h include SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
+
+Here is a look inside a typical session configuration file, similar to those used in the above command lines:
+
+```CoffeeScript
+# Session 1
+[start_of_session_data]
+
+term1.remote_ip = d01:5d2::11:123:5201  # IPv6 format
+term1.remote_port = 6170
+term1.local_ip = fd01:5d2::11:123:5222
+term1.local_port = 18446
+term1.media_type = "voice"
+term1.codec_type = "G711_ULAW"
+term1.bitrate = 64000  # in bps
+term1.ptime = 20  # in msec
+term1.rtp_payload_type = 0
+term1.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term1 -> term2 direction, forward DTMF events for term2 -> term1 direction
+term1.dtmf_payload_type = "NONE"  # A value should be given depending on the dtmf_type field
+term1.sample_rate = 8000   # in Hz (note for fixed rate codecs this field is descriptive only)
+## term1.dtx_handling = -1  # -1 disables DTX handling
+
+term2.remote_ip = 192.16.0.130  # IPv4 format
+term2.remote_port = 10242
+term2.local_ip = 192.16.0.16
+term2.local_port = 6154
+term2.media_type = "voice"
+term2.codec_type = "EVS"
+term2.bitrate = 13200  # in bps
+term2.ptime = 20  # in msec
+term2.rtp_payload_type = 127
+term2.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term2 -> term1 direction, forward DTMF events for term1 -> term2 direction
+term2.dtmf_payload_type = "NONE"
+term2.sample_rate = 16000   # in Hz
+term2.header_format = 1  # Header format, applies to some codecs (EVS, AMR), 0 = CH (Compact Header), 1 = FH (Full Header)
+## term2.dtx_handling = -1  # -1 disables DTX handling
+
+[end_of_session_data]
+
+# Session 2
+[start_of_session_data]
+
+...more session definitions ...
+
+```
+
+Note that each session typically has one or two "terminations", or endpoints (term1 and term2).  A session with only term1 can accept and send streaming data with one endpoint, and perform processing on the data required by the endpoint, by the server running mediaTest, or both.  A session with term1 and term2 can exchange streaming data between endpoints, and perform intermediate processing, such as transcoding, speech recognition, overlaying or adding data to the streams, etc.  The number of sessions defined is limited only by the performance of the platform.
+
+<a name="SessionConfigDiagram"></a>
+### Session Endpoint Flow Diagram
+
+As described Session Configuration above, "remote" IP addr and UDP port values refer to stream source, and "local" values refer to stream destination, where a "stream" is a network socket or pcap.  Rx traffic (i.e. received by the user application or mediaTest app) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, or sent by the user application or mediaTest app) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
+
+![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
+
+Although terminations can be defined in any order, in general term1 remote should match incoming source values, and term1 local should match incoming destination values. If an outgoing stream is simply a pcap file or a UDP port that nobody is listening to, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
+
+<a name="mediaTest"></a>
+# mediaTest
+
+A key objective of mediaTEst is to provide tools to measure encode, decode, and transcoding performance for a wide range of codecs.
+  
 <a name="CodecAudioMode"></a>
 ## Codec + Audio Mode
 
@@ -331,129 +470,6 @@ The following mediaTest command line converts a wav file to pcap:
 ```C
 ./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/amrwb_16kHz_12650bps_config
 ```
-
-<a name="PacketMode"></a>
-## Packet Mode
-
-Packet mode performs encode, decode, or transcoding in real-time (or at a specified rate) based on parameters in a ["session configuration file"](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#SessionConfig) given in the command line.  Packet mode reads/writes IP/UDP/RTP packet streams from/to network interfaces or pcap files.  Both IPv4 and IPv6 format streams are supported.  Pktlib APIs in mediaTest source code examples include session creation, packet Rx and parsing, packet formatting and Tx, jitter buffer, ptime handling (transrating), and more.  The main objectives are to measure transcoding performance with full packet flow, including real-world media framework elements.
-
-<a name="RealTimeStreaming"></a>
-### Real-Time Streaming and Packet Flow
-
-SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
-
-Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#JitterBuffer)).
-
-[Additional signal processing](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#MediaProcessing) can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
-
-Below are some command line examples (using the EVS codec).  The first command does the following:
-
-* reads IP/UDP/RTP packets from the specified input pcap files
-* listens for all UDP ports (on any network interface)
-* sends transcoded packets over the network
-
-The second command line is similar, but also does the following:
-
-* writes each output stream to the corresponding output .pcap file given on the command line
-* sends over the network any additional streams beyond the number of output files given
-
-```C
-./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L
-
-./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -Csession_config/pcap_file_test_config -L
-```
-The screencap below shows mediaTest output after the second command line.
-
-![mediaTest pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
-
-<a name="MultipleRTPStreams"></a>
-### Multiple RTP Streams (RFC 8108)
-
-RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically, in order to maintain separate and contiguous content for each stream.  This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
-
-Here is the mediaTest command line example included in the demo for multiple RTP streams:
-
-```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC8108_IPv6.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config -L
-```
-
-Here is a screen capture showing output for the above command line, with RTP stream transitions highlighted:
-
-![mediaTest multiple RTP stream command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaTest multiple RTP stream command line example")
-
-The packet stats log file produced by the above command (evs_16khz_13200bps_CH_RFC8108_IPv6_g711.txt) shows how the SigSRF Pktlib jitter buffer correctly collates and treats each stream separately, while still resolving out-of-order packets.  For a log file excerpt, see "Packet Stats and Logging" below.
-
-<a name="DuplicatedRTPStreams"></a>
-### Duplicated RTP Streams (RFC 7198)
-
-RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams.  Here is the mediaTest command line example included in the demo for RFC7198:
-
-```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L
-```
-
-<a name="StaticSessionConfig"></a>
-### Static Session Configuration
-
-Session configuration can be handled programmatically using the DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or using a session configuration text file to set the struct elements.  The latter method is implemented by mediaTest (see transcoder.c).  For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
-
-Structs defined in shared_include/session.h include SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
-
-Here is a look inside a typical session configuration file, similar to those used in the above command lines:
-
-```CoffeeScript
-# Session 1
-[start_of_session_data]
-
-term1.remote_ip = d01:5d2::11:123:5201  # IPv6 format
-term1.remote_port = 6170
-term1.local_ip = fd01:5d2::11:123:5222
-term1.local_port = 18446
-term1.media_type = "voice"
-term1.codec_type = "G711_ULAW"
-term1.bitrate = 64000  # in bps
-term1.ptime = 20  # in msec
-term1.rtp_payload_type = 0
-term1.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term1 -> term2 direction, forward DTMF events for term2 -> term1 direction
-term1.dtmf_payload_type = "NONE"  # A value should be given depending on the dtmf_type field
-term1.sample_rate = 8000   # in Hz (note for fixed rate codecs this field is descriptive only)
-## term1.dtx_handling = -1  # -1 disables DTX handling
-
-term2.remote_ip = 192.16.0.130  # IPv4 format
-term2.remote_port = 10242
-term2.local_ip = 192.16.0.16
-term2.local_port = 6154
-term2.media_type = "voice"
-term2.codec_type = "EVS"
-term2.bitrate = 13200  # in bps
-term2.ptime = 20  # in msec
-term2.rtp_payload_type = 127
-term2.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term2 -> term1 direction, forward DTMF events for term1 -> term2 direction
-term2.dtmf_payload_type = "NONE"
-term2.sample_rate = 16000   # in Hz
-term2.header_format = 1  # Header format, applies to some codecs (EVS, AMR), 0 = CH (Compact Header), 1 = FH (Full Header)
-## term2.dtx_handling = -1  # -1 disables DTX handling
-
-[end_of_session_data]
-
-# Session 2
-[start_of_session_data]
-
-...more session definitions ...
-
-```
-
-Note that each session typically has one or two "terminations", or endpoints (term1 and term2).  A session with only term1 can accept and send streaming data with one endpoint, and perform processing on the data required by the endpoint, by the server running mediaTest, or both.  A session with term1 and term2 can exchange streaming data between endpoints, and perform intermediate processing, such as transcoding, speech recognition, overlaying or adding data to the streams, etc.  The number of sessions defined is limited only by the performance of the platform.
-
-<a name="SessionConfigDiagram"></a>
-#### Session Endpoint Flow Diagram
-
-As described Session Configuration above, "remote" IP addr and UDP port values refer to stream source, and "local" values refer to stream destination, where a "stream" is a network socket or pcap.  Rx traffic (i.e. received by the user application or mediaTest app) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, or sent by the user application or mediaTest app) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
-
-![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
-
-Although terminations can be defined in any order, in general term1 remote should match incoming source values, and term1 local should match incoming destination values. If an outgoing stream is simply a pcap file or a UDP port that nobody is listening to, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
-
 <a name="Transcoding"></a>
 ## Transcoding
 
