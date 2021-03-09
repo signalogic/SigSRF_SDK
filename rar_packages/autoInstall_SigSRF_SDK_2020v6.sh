@@ -91,8 +91,11 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 		fi
 	fi
 
+   # unrar only most recent .rar file found (also this avoids unraring more than one file, due to wildcard), JHB Jan2021
+   # notes - Github doesn't support last-modified headers (has been that way for years), so wget and curl are unable to preserve the file date. But we still search for the most recent .rar as it's good practice
+
 	rarFileNewest=""
-	for iFileName in `ls -tr $rarFile`; do  # unrar only most recent .rar file found (also this avoids unraring more than one file, due to wildcard), JHB Jan2021
+	for iFileName in `ls -tr $rarFile`; do
 		rarFileNewest=$iFileName;
 	done;
 
