@@ -1,17 +1,25 @@
 /*
-  $Header: /root/Signalogic/DirectCore/include/inferlib.h
- 
-  Description: Header file for inferlib - library handling neural network inferencing-type functions e.g. automatic speech recognition (ASR) decoding
- 
-  Projects: SigSRF, DirectCore
- 
-  Copyright (C) Signalogic Inc. 2018-2021
+ $Header: /root/Signalogic/DirectCore/include/inferlib.h
 
-  Revision History
-   
-   Created Jan 2019 Chris Johnson
-   Modified Jan 2021 JHB, add extern C declarations, API comments
-   Modified Jan 2021 JHB, add DSASRConfig() to provide initialization ease-of-use and flexibility, add DS_ASR_CONFIG_xx flags
+ Copyright (C) Signalogic Inc. 2018-2021
+
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
+ Description
+
+  Header file for inferlib - library handling neural network inferencing-type functions e.g. automatic speech recognition (ASR) decoding
+
+ Projects
+
+  SigSRF, DirectCore
+
+ Revision History
+
+  Created Jan 2019 Chris Johnson
+  Modified Jan 2021 JHB, add extern C declarations, API comments
+  Modified Jan 2021 JHB, add DSASRConfig() to provide initialization ease-of-use and flexibility, add DS_ASR_CONFIG_xx flags
 */
 
 #ifndef _INFERLIB_H_

@@ -1,17 +1,23 @@
 /*
-  $Header: /root/Signalogic/DirectCore/include/derlib.h
+ $Header: /root/Signalogic/DirectCore/include/derlib.h
  
-  Description:  DER decoding library header file
- 
-  Purpose: support ETSI LI HI2 and HI3 DER encoded data per ASN.1 format
+ Copyright (C) Signalogic Inc. 2021
 
-  Projects: SigSRF, DirectCore
- 
-  Copyright (C) Signalogic Inc. 2021
+ License
 
-  Revision History
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
+ Description
+
+  DER decoding library API header file to support ETSI LI HI2 and HI3 DER encoded data per ASN.1 format
+
+ Projects
+
+   SigSRF, DirectCore
+ 
+ Revision History
   
-   Created Feb 2021 JHB
+  Created Feb 2021 JHB
 */
  
 #ifndef _DERLIB_H_
@@ -41,6 +47,8 @@
 
 #define DS_DER_INFO_DSTPORT            0x100
 #define DS_DER_INFO_INTERCEPTPOINTID   0x200
+#define DS_DER_INFO_ASN_INDEX          0x300
+#define DS_DER_INFO_CC_PKT_COUNT       0x400
 
 #define DS_DER_INFO_ITEM_MASK          0xff00
 
@@ -107,11 +115,11 @@ extern "C" {
 
   } HI3_DER_DECODE;
 
-  /* DSConfigDerLib() initializes derlib
+  /* DSConfigDerLib() initializes and configures derlib
 
      -has to be called once at app init time, by only one thread
      -uFlags options given by DS_CD_XX items above
-    -return value < 0 indicates an error condition
+     -return value < 0 indicates an error condition
   */
 
   int DSConfigDerlib(GLOBAL_CONFIG* pGlobalConfig, DEBUG_CONFIG* pDebugConfig, unsigned int uFlags);
@@ -135,11 +143,18 @@ extern "C" {
 
   HDERSTREAM DSCreateDerStream(const char* szInterceptPointId, uint16_t intercept_dest_port, unsigned int uFlags);
 
+  /* DSGetDerStreamInfo() retrieves DER stream info
+
+     -hDerStream must be a DER stream handle created by a prior call to DSCreateDerStream()
+     -uFlags options given by DS_DER_INFO_XX items above
+     -return value < 0 indicates an error condition
+  */
+
   int64_t DSGetDerStreamInfo(HDERSTREAM hDerStream, unsigned int uFlags, void* pInfo);
 
   /* DSDecodeDerStream() decodes a DER encoded stream, returning one or more decoded items
 
-     -hDerStream is a DER stream handle created by a prior call to DSCreateDerStream()
+     -hDerStream must be a DER stream handle created by a prior call to DSCreateDerStream()
      -pkt_in_buf should contain a standard IPv4 or IPv6 TCP/IP packet, including header(s) and payload
      -uFlags options given by DS_DER_XX items above
      -der_decode should point to a HI3_DER_DECODE struct to be filled in with decoded items
@@ -150,6 +165,7 @@ extern "C" {
 
   /* DSDeleteDerStream() deletes a DER stream
 
+     -hDerStream must be a DER stream handle created by a prior call to DSCreateDerStream()
      -return value < 0 indicates an error condition
   */
 

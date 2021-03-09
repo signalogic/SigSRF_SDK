@@ -1,77 +1,84 @@
 /*
-  $Header: /root/Signalogic/DirectCore/include/pktlib.h
- 
-  Description: Packet flow and streaming management library -- API for creating and managing network
-               traffic sessions and for sending/receiving packets to/from Pktlib processing buffers
- 
-  Projects: SigSRF, DirectCore
- 
-  Copyright (C) Signalogic Inc. 2010-2021
+ $Header: /root/Signalogic/DirectCore/include/pktlib.h
 
-  Revision History:
+ Copyright (C) Signalogic Inc. 2010-2021
+
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+ 
+ Description
+
+  Packet flow and streaming management library -- APIs for creating and managing network traffic sessions and for sending/receiving packets to/from Pktlib processing buffers
+ 
+ Projects
+
+  SigSRF, DirectCore
+
+ Revision History
   
-   Created Mar 2017 Chris Johnson, (some elements copied from legacy ds_vop.h)
-   Modified Jun 2017 JHB, added RTP packet info items for use with DSGetPacketInfo()
-   Modified Jun 2017 JHB, added DS_BUFFER_PKT_DISABLE_PROBATION, DS_BUFFER_PKT_FLUSH, and DS_BUFFER_PKT_RATECONTROL flags
-   Modified Jul 2017 CJ, added pcap file related structs and functions
-   Modified Jul 2017 CJ, added support for cases where channel numbers in Pktlib do not match up with codec handles in Voplib
-   Modified Jul 2017 CJ, added DS_SESSION_USER_MANAGED flag which includes session id in channel hash key
-   Modified Jul 2017 CJ, added support for user app supplied log file handle and log write 
-   Modified Aug 2017 JHB, added FORMAT_PKT struct definition and optional header pointer arg for DSFormatPacket() (replaces pyldType, which is now either looked up in session info using chnum arg,
-                          or given in the optional RTP header pointer).  Added DS_FMT_PKT_USER_xxx attributes to support use of the FORMAT_PKT* arg
-   Modified Aug 2017 JHB, modified DSConvertFsPacket() to take an input data length arg and return amount of valid output data.  If the input data length arg is given as -1, the API calculates input data length internally based on channel info specified by chnum
-   Modified Aug 2017 CKJ, added DS_GET_ORDERED_PKT_ENABLE_DTX flag and DTX handling in DSGetOrderedPackets()
-   Modified Aug 2017 JHB, added packet_info[] arg to DSGetOrderedPackets() and DSBufferPackets(), added DS_PKT_INFO_SID and related DS_PKT_INFO_xxx flags
-   Modified Sep 2017 JHB, added DSGetSessionStatus() API and status / error codes
-   Modified Sep 2017 CKJ, added DS_PKT_PYLD_CONTENT_DTMF and DSGetDTMFInfo() API (references dtmf_event struct, defined in alarms.h)
-   Modified Sep 2017 JHB, added DS_GETORD_PKT_ENABLE_SINGLE_PKT_LKAHD and DS_GETORD_PKT_ENABLE_DTMF flags
-   Modified Sep 2017 CKJ, added DSStoreStreamData() and DSGetStreamData() to support variable ptime (unequal endpoint ptimes) and algorithm / signal processing insertion point
-   Modified Mar 2018 JHB, moved PKTLIB_VERSION global var inside extern "C" (https://stackoverflow.com/questions/38141390/extern-and-extern-c-for-variables)
-   Modified May-Jun 2018 CKJ, add stream group APIs, first use is for stream merging
-   Modified Jul 2018 CKJ, add APIs and flag definitions to support running a media service as a thread or process, including DSConfigMediaService(), DSPushPackets(), and DSPullPackets()
-   Modified Jul 2018 JHB, remove uFlags param from DSDeleteSession()
-   Modified Jul 2018 JHB, add DSGetPacketInfo() uFlag DS_PKT_INFO_CHNUM_PARENT to support SSRC change detection when incoming packets are interleaved between sessions or otherwise in a random sequence, which can happen when receiving packets via DSRecvPackets()
-   Modified Aug 2018 JHB, add entry function for thread based packet flow and media processing, void* packet_flow_media_proc(void* pExecutionMode)
-   Modified Aug 2018 JHB, add DSGetPacketInfo() uFlags DS_PKT_INFO_CODEC_TYPE and DS_PKT_INFO_CODEC_TYPE_LINK, add DSGetSessionInfo() uFlag DS_SESSION_INFO_CODEC_TYPE
-   Modified Aug 2018 JHB, add packet buffer length to DSPullPackets()
-   Modified Aug 2018 CJK, new DSGetSessionInfo() flags to support enhanced stream groups (new method that uses a session definition third term, or "group term"
-   Modified Aug 2018 JHB, new definition of DSConfigMediaService() and additional uFlags definitions
-   Modified Aug 2018 CKJ, implement more flags in DSFormatPacket()
-   Modified Aug 2018 JHB, additional DS_SESSION_INFO_xxx flags, including thread Id and channel parent
-   Modified Sep 2018 JHB, increase max number of stream group contributors to 8
-   Modified Oct 2018 JHB, change DSGetSessionInfo() return value from int to int64_t, change term_id param in DSGetSessionInfo() and DSSetSessionInfo() from int to int64_t.  This supports new session info, including 64-bit thread ID values
-   Modified Oct 2018 JHB, add numPkts param to DSPullPackets(), to allow a specific number of packet to be pulled.  A -1 value indicates to pull all packets (which was the default operation prior to this mod)
-   Modified Nov 2018 JHB, move all stream group and stream merging definitions and APIs to streamlib.h (streamlib.so must be included in mediaTest and mediaMin builds)
-   Modified Dec 2018 JHB, add DS_CONFIG_MEDIASERVICE_SET_NICENESS flag to allow control over packet/media thread priority and niceness
-   Modified Dec 2018 JHB, add uFlags element to PACKETMEDIATHREADINFO struct
-   Modified Jan 2019 JHB, add DSGetThreadInfo()
-   Modified Feb 2019 JHB, add profiling time items to PACKETMEDIATHREADINFO struct definition.  Items are labeled xxx_max", for example manage_time_max, input_time_max, decode_time_max, encode_time_max, etc.  Packet/media thread profiling can be turned on/off  
-                          by calling DSConfigMediaService() with the thread index and DS_CONFIG_MEDIASERVICE_ENABLE_THREAD_PROFILING and DS_CONFIG_MEDIASERVICE_DISABLE_THREAD_PROFILING flags
-   Modified Feb 2019 JHB, add DS_GETORD_PKT_ENABLE_SID_REPAIR uFlag for DSGetOrderedPackets().  Add DSGetJitterBufferInfo() and DSSetJitterBufferInfo() APIs.  Add DS_SESSION_INFO_TERM_FLAGS, DS_SESSION_INFO_MAX_LOSS_PTIMES, and DS_SESSION_INFO_DYNAMIC_CHANNELS uFlags for DSGetSessionInfo()
-   Modified Mar 2019 JHB, add DSGetJitterBufferInfo() and DSSetJitterBufferInfo() APIs and associated definitions
-   Modified May 2019 JHB, add DS_PKT_PYLD_CONTENT_DTMF_SESSION payload content type, which is returned by DSGetOrderedPackets() when returning DTMF packets matching a session-defined DTMF payload type.  Otherwise the generic DS_PKT_PYLD_CONTENT_DTMF content type is returned
-   Modified Aug 2019 JHB, removed #ifdef USE_PKTLIB_INLINES around extern C definition of DSGetSessionInfo()
-   Modified Aug 2019 JHB, DSPullPackets() hSession param changed from unsigned int to HSESSION
-   Modified Sep 2019 JHB, change include folder for if_ether.h from "linux" to "netinet" to fix -Wodr (one definition rule) warning with gcc 5.4
-   Modified Oct 2019 JHB, add DS_JITTER_BUFFER_INFO_SID_FILL definition
-   Modified Nov 2019 JHB, add DS_JITTER_BUFFER_INFO_NUM_PKT_LOSS_FLUSH and DS_JITTER_BUFFER_INFO_NUM_PASTDUE_FLUSH flags to DSGetJitterBufferInfo()
-   Modified Dec 2019 JHB, add DSWritePacketLogStats() API, can be called either with session handle or packet/media thread index
-   Modified Dec 2019 JHB, DS_JITTER_BUFFER_INFO_xx flags to support run-time packet stats calculation added to pktlib
-   Modified Jan 2020 JHB, add optional chnum param to DSBufferPackets() and DSGetPacketInfo() to return channel numbers of matched packets.  This includes parent or child as applicable, and can save time by avoiding subsequent calls to specifically ask for parent or child chnum
-   Modified Jan 2020 JHB, implement elapsed time alarm debug option inside DSPushPackets(). See uPushPacketsElapsedTime and DS_ENABLE_PUSHPACKETS_ELAPSED_TIME_ALARM in shared_include/config.h
-   Modified Mar 2020 JHB, deprecate DS_GETORD_PKT_ENABLE_DTX and DS_GETORD_PKT_ENABLE_SID_REPAIR flags. Instead of these flags, DTX handling and SID repair should be controlled by TERM_DTX_ENABLE and TERM_SID_REPAIR_ENABLE flags in TERMINATION_INFO struct uFlags element (shared_include/session.h). The deprecated flags can still be applied to force DTX handling / SID repair on a case-by-case basis, but it's not recommended
-   Modified Mar 2020 JHB, add DS_JITTER_BUFFER_INFO_TERM_FLAGS and DS_JITTER_BUFFER_INFO_NUM_PURGES flags in DSGetJitterBufferInfo()
-   Modified Mar 2020 JHB, implement DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP flag for DSPushPackets(), which is useful for cases without packet timestamps (e.g. static session config or regular interval push rate)
-   Modified Apr 2020 JHB, add DS_JITTER_BUFFER_INFO_NUM_xxx_DUPLICATE_PKTS, DS_JITTER_BUFFER_INFO_xxx_RESYNC_COUNT, and DS_JITTER_BUFFER_INFO_NUM_OUTPUT_xxx flags
-   Modified Apr 2020 JHB, add DS_GETORD_ADV_TIMESTAMP flag
-   Modified May 2020 JHB, add uTimestamp and uInfo params to DSGetOrderedPackets(). See comments
-   Modified May 2020 JHB, add DS_JITTER_BUFFER_INFO_NUM_OUTPUT_DROP_PKTS, DS_JITTER_BUFFER_INFO_HOLDOFF_COUNT, and DS_JITTER_BUFFER_INFO_NUM_HOLDOFF_xxx items to DSGetJitterBufferInfo()
-   Modified May 2020 JHB, add DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP and DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME flags to DSGetJitterBufferInfo()
-   Modified May 2020 JHB, move IsPmThread() here as static inline from pktlib.c. Define IsPmThread as IsPmThreadInline
-   Modified Oct 2020 JHB, add limited pcapng format capability to DSOpenPcap() and DSReadPcap(). This was mainly done to support TraceWrangler output (pcap anonymizer tool). Support for pcapng format write is not currently planned
-   Modified Jan 2021 JHB, implement bit fields in RTPHeader struct for first 2 bytes (see comments), remove DSSet/ClearMarkerBit(), change definition of DS_FMT_PKT_STANDALONE to allow use of DSFormatPacket() with no reference to session / streams created via DSCreateSession()
-   Modified Feb 2021 JHB, added DS_PKT_INFO_PYLDLEN option to DSGetPacketInfo()
-   Modified Feb 2021 JHB, changed len[] param in DSPushPackets(), DSPullPackets(), DSRecvPackets(), DSSendPackets(), DSGetOrderedPackets(), and DSBufferPackets() from unsigned int* to int*. Any packet length with -1 value should be interpreted as an error condition independent of other packets in the array
+  Created Mar 2017 Chris Johnson, (some elements copied from legacy ds_vop.h)
+  Modified Jun 2017 JHB, added RTP packet info items for use with DSGetPacketInfo()
+  Modified Jun 2017 JHB, added DS_BUFFER_PKT_DISABLE_PROBATION, DS_BUFFER_PKT_FLUSH, and DS_BUFFER_PKT_RATECONTROL flags
+  Modified Jul 2017 CJ, added pcap file related structs and functions
+  Modified Jul 2017 CJ, added support for cases where channel numbers in Pktlib do not match up with codec handles in Voplib
+  Modified Jul 2017 CJ, added DS_SESSION_USER_MANAGED flag which includes session id in channel hash key
+  Modified Jul 2017 CJ, added support for user app supplied log file handle and log write 
+  Modified Aug 2017 JHB, added FORMAT_PKT struct definition and optional header pointer arg for DSFormatPacket() (replaces pyldType, which is now either looked up in session info using chnum arg,
+                         or given in the optional RTP header pointer).  Added DS_FMT_PKT_USER_xxx attributes to support use of the FORMAT_PKT* arg
+  Modified Aug 2017 JHB, modified DSConvertFsPacket() to take an input data length arg and return amount of valid output data.  If the input data length arg is given as -1, the API calculates input data length internally based on channel info specified by chnum
+  Modified Aug 2017 CKJ, added DS_GET_ORDERED_PKT_ENABLE_DTX flag and DTX handling in DSGetOrderedPackets()
+  Modified Aug 2017 JHB, added packet_info[] arg to DSGetOrderedPackets() and DSBufferPackets(), added DS_PKT_INFO_SID and related DS_PKT_INFO_xxx flags
+  Modified Sep 2017 JHB, added DSGetSessionStatus() API and status / error codes
+  Modified Sep 2017 CKJ, added DS_PKT_PYLD_CONTENT_DTMF and DSGetDTMFInfo() API (references dtmf_event struct, defined in alarms.h)
+  Modified Sep 2017 JHB, added DS_GETORD_PKT_ENABLE_SINGLE_PKT_LKAHD and DS_GETORD_PKT_ENABLE_DTMF flags
+  Modified Sep 2017 CKJ, added DSStoreStreamData() and DSGetStreamData() to support variable ptime (unequal endpoint ptimes) and algorithm / signal processing insertion point
+  Modified Mar 2018 JHB, moved PKTLIB_VERSION global var inside extern "C" (https://stackoverflow.com/questions/38141390/extern-and-extern-c-for-variables)
+  Modified May-Jun 2018 CKJ, add stream group APIs, first use is for stream merging
+  Modified Jul 2018 CKJ, add APIs and flag definitions to support running a media service as a thread or process, including DSConfigMediaService(), DSPushPackets(), and DSPullPackets()
+  Modified Jul 2018 JHB, remove uFlags param from DSDeleteSession()
+  Modified Jul 2018 JHB, add DSGetPacketInfo() uFlag DS_PKT_INFO_CHNUM_PARENT to support SSRC change detection when incoming packets are interleaved between sessions or otherwise in a random sequence, which can happen when receiving packets via DSRecvPackets()
+  Modified Aug 2018 JHB, add entry function for thread based packet flow and media processing, void* packet_flow_media_proc(void* pExecutionMode)
+  Modified Aug 2018 JHB, add DSGetPacketInfo() uFlags DS_PKT_INFO_CODEC_TYPE and DS_PKT_INFO_CODEC_TYPE_LINK, add DSGetSessionInfo() uFlag DS_SESSION_INFO_CODEC_TYPE
+  Modified Aug 2018 JHB, add packet buffer length to DSPullPackets()
+  Modified Aug 2018 CJK, new DSGetSessionInfo() flags to support enhanced stream groups (new method that uses a session definition third term, or "group term"
+  Modified Aug 2018 JHB, new definition of DSConfigMediaService() and additional uFlags definitions
+  Modified Aug 2018 CKJ, implement more flags in DSFormatPacket()
+  Modified Aug 2018 JHB, additional DS_SESSION_INFO_xxx flags, including thread Id and channel parent
+  Modified Sep 2018 JHB, increase max number of stream group contributors to 8
+  Modified Oct 2018 JHB, change DSGetSessionInfo() return value from int to int64_t, change term_id param in DSGetSessionInfo() and DSSetSessionInfo() from int to int64_t.  This supports new session info, including 64-bit thread ID values
+  Modified Oct 2018 JHB, add numPkts param to DSPullPackets(), to allow a specific number of packet to be pulled.  A -1 value indicates to pull all packets (which was the default operation prior to this mod)
+  Modified Nov 2018 JHB, move all stream group and stream merging definitions and APIs to streamlib.h (streamlib.so must be included in mediaTest and mediaMin builds)
+  Modified Dec 2018 JHB, add DS_CONFIG_MEDIASERVICE_SET_NICENESS flag to allow control over packet/media thread priority and niceness
+  Modified Dec 2018 JHB, add uFlags element to PACKETMEDIATHREADINFO struct
+  Modified Jan 2019 JHB, add DSGetThreadInfo()
+  Modified Feb 2019 JHB, add profiling time items to PACKETMEDIATHREADINFO struct definition.  Items are labeled xxx_max", for example manage_time_max, input_time_max, decode_time_max, encode_time_max, etc.  Packet/media thread profiling can be turned on/off  
+                         by calling DSConfigMediaService() with the thread index and DS_CONFIG_MEDIASERVICE_ENABLE_THREAD_PROFILING and DS_CONFIG_MEDIASERVICE_DISABLE_THREAD_PROFILING flags
+  Modified Feb 2019 JHB, add DS_GETORD_PKT_ENABLE_SID_REPAIR uFlag for DSGetOrderedPackets().  Add DSGetJitterBufferInfo() and DSSetJitterBufferInfo() APIs.  Add DS_SESSION_INFO_TERM_FLAGS, DS_SESSION_INFO_MAX_LOSS_PTIMES, and DS_SESSION_INFO_DYNAMIC_CHANNELS uFlags for DSGetSessionInfo()
+  Modified Mar 2019 JHB, add DSGetJitterBufferInfo() and DSSetJitterBufferInfo() APIs and associated definitions
+  Modified May 2019 JHB, add DS_PKT_PYLD_CONTENT_DTMF_SESSION payload content type, which is returned by DSGetOrderedPackets() when returning DTMF packets matching a session-defined DTMF payload type.  Otherwise the generic DS_PKT_PYLD_CONTENT_DTMF content type is returned
+  Modified Aug 2019 JHB, removed #ifdef USE_PKTLIB_INLINES around extern C definition of DSGetSessionInfo()
+  Modified Aug 2019 JHB, DSPullPackets() hSession param changed from unsigned int to HSESSION
+  Modified Sep 2019 JHB, change include folder for if_ether.h from "linux" to "netinet" to fix -Wodr (one definition rule) warning with gcc 5.4
+  Modified Oct 2019 JHB, add DS_JITTER_BUFFER_INFO_SID_FILL definition
+  Modified Nov 2019 JHB, add DS_JITTER_BUFFER_INFO_NUM_PKT_LOSS_FLUSH and DS_JITTER_BUFFER_INFO_NUM_PASTDUE_FLUSH flags to DSGetJitterBufferInfo()
+  Modified Dec 2019 JHB, add DSWritePacketLogStats() API, can be called either with session handle or packet/media thread index
+  Modified Dec 2019 JHB, DS_JITTER_BUFFER_INFO_xx flags to support run-time packet stats calculation added to pktlib
+  Modified Jan 2020 JHB, add optional chnum param to DSBufferPackets() and DSGetPacketInfo() to return channel numbers of matched packets.  This includes parent or child as applicable, and can save time by avoiding subsequent calls to specifically ask for parent or child chnum
+  Modified Jan 2020 JHB, implement elapsed time alarm debug option inside DSPushPackets(). See uPushPacketsElapsedTime and DS_ENABLE_PUSHPACKETS_ELAPSED_TIME_ALARM in shared_include/config.h
+  Modified Mar 2020 JHB, deprecate DS_GETORD_PKT_ENABLE_DTX and DS_GETORD_PKT_ENABLE_SID_REPAIR flags. Instead of these flags, DTX handling and SID repair should be controlled by TERM_DTX_ENABLE and TERM_SID_REPAIR_ENABLE flags in TERMINATION_INFO struct uFlags element (shared_include/session.h). The deprecated flags can still be applied to force DTX handling / SID repair on a case-by-case basis, but it's not recommended
+  Modified Mar 2020 JHB, add DS_JITTER_BUFFER_INFO_TERM_FLAGS and DS_JITTER_BUFFER_INFO_NUM_PURGES flags in DSGetJitterBufferInfo()
+  Modified Mar 2020 JHB, implement DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP flag for DSPushPackets(), which is useful for cases without packet timestamps (e.g. static session config or regular interval push rate)
+  Modified Apr 2020 JHB, add DS_JITTER_BUFFER_INFO_NUM_xxx_DUPLICATE_PKTS, DS_JITTER_BUFFER_INFO_xxx_RESYNC_COUNT, and DS_JITTER_BUFFER_INFO_NUM_OUTPUT_xxx flags
+  Modified Apr 2020 JHB, add DS_GETORD_ADV_TIMESTAMP flag
+  Modified May 2020 JHB, add uTimestamp and uInfo params to DSGetOrderedPackets(). See comments
+  Modified May 2020 JHB, add DS_JITTER_BUFFER_INFO_NUM_OUTPUT_DROP_PKTS, DS_JITTER_BUFFER_INFO_HOLDOFF_COUNT, and DS_JITTER_BUFFER_INFO_NUM_HOLDOFF_xxx items to DSGetJitterBufferInfo()
+  Modified May 2020 JHB, add DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP and DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME flags to DSGetJitterBufferInfo()
+  Modified May 2020 JHB, move IsPmThread() here as static inline from pktlib.c. Define IsPmThread as IsPmThreadInline
+  Modified Oct 2020 JHB, add limited pcapng format capability to DSOpenPcap() and DSReadPcap(). This was mainly done to support TraceWrangler output (pcap anonymizer tool). Support for pcapng format write is not currently planned
+  Modified Jan 2021 JHB, implement bit fields in RTPHeader struct for first 2 bytes (see comments), remove DSSet/ClearMarkerBit(), change definition of DS_FMT_PKT_STANDALONE to allow use of DSFormatPacket() with no reference to session / streams created via DSCreateSession()
+  Modified Feb 2021 JHB, added DS_PKT_INFO_PYLDLEN option to DSGetPacketInfo()
+  Modified Feb 2021 JHB, changed len[] param in DSPushPackets(), DSPullPackets(), DSRecvPackets(), DSSendPackets(), DSGetOrderedPackets(), and DSBufferPackets() from unsigned int* to int*. Any packet length with -1 value should be interpreted as an error condition independent of other packets in the array
  */
 
 #ifndef _PKTLIB_H_

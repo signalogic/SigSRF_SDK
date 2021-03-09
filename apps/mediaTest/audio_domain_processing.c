@@ -3,24 +3,29 @@
 
  Copyright (C) Signalogic Inc. 2018-2021
 
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
  Description
 
-   Source code for audio domain processing, with options for sampling rate conversion, ASR, packet output. Currently contains:
-     DSProcessAudio()
-     DSDeduplicateStreams()
+  Source code for audio domain processing, with options for sampling rate conversion, ASR, packet output. Currently contains:
 
- Purpose
+   DSProcessAudio()
+   DSDeduplicateStreams()
 
-   Make available insertion points for signal processing used inside SigSRF, including audio processing for merging, stream deduplication, and ASR
-   By adding these functions to application build source, if names are identical they will take precedence over functions inside streamlib.so
+ Purposes
+
+  Make available insertion points for signal processing used inside SigSRF, including audio processing for merging, stream deduplication, and ASR
+  (By adding these functions to application build source, if names are identical they will take link order precedence over functions inside streamlib.so)
 
  Revision History
 
-   Created Nov 2019 JHB, separated out from streamlib.c
-   Modified Feb 2020 JHB, move last_merge_output_time[] update from tail end of data flow in streamlib.c to here, after merge_gap_advance[] is handled. This is needed because DSProcessAudio() can be called from different places in streamlib
-   Modified Jun 2020 JHB, add DSDeduplicateStreams(). See function description comments
-   Modified Jan 2021 JHB, implement sampling rate conversion if applicable to audio input data (look for DSConvertFs()
-   Modified Jan 2021 JHB, integrate ASR (look for DS_PROCESS_AUDIO_APPLY_ASR flag)
+  Created Nov 2019 JHB, separated out from streamlib.c
+  Modified Feb 2020 JHB, move last_merge_output_time[] update from tail end of data flow in streamlib.c to here, after merge_gap_advance[] is handled. This is needed because DSProcessAudio() can be called from different places in streamlib
+  Modified Jun 2020 JHB, add DSDeduplicateStreams(). See function description comments
+  Modified Jan 2021 JHB, implement sampling rate conversion if applicable to audio input data (look for DSConvertFs()
+  Modified Jan 2021 JHB, integrate ASR (look for DS_PROCESS_AUDIO_APPLY_ASR flag)
 */
 
 

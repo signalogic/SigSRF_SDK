@@ -3,17 +3,21 @@
 
  Copyright (C) Signalogic Inc. 2021
 
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
  Description
 
-   DER decoding library, supporting:
+  DER decoding library and APIs, supporting:
 
-   -full abstraction of DER encoded and aggregated packets, no requirement for look-ahead or batch processing. Only need to provide TCP/IP packets as they are received
-   -multiple concurrent streams with no spinlocks outside of DSCreateDerStream() and DSDeleteDerStream()
-   -DER encoded packet timestamps can be missing or wrong. In that case use mediaMin's "analytics mode"
+  -full abstraction of DER encoded and aggregated packets, no requirement for look-ahead or batch processing. Only need to provide TCP/IP packets as they are received
+  -multiple concurrent streams with no spinlocks outside of DSCreateDerStream() and DSDeleteDerStream()
+  -DER encoded packet timestamps can be missing or wrong. In that case use mediaMin's "analytics mode"
 
  Purpose
  
-   Support ETSI LI HI2 and HI3 DER encoded streams per ASN.1 format
+  Support ETSI LI HI2 and HI3 DER encoded streams per ASN.1 format
  
  Revision History
 

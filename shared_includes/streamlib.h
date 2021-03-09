@@ -1,46 +1,52 @@
 /*
  $Header: /root/Signalogic/DirectCore/apps/SigC641x_C667x/streamTest/streamlib.h
 
- Purpose:
-   Header file for streamlib.c (streamlib.so) and streamlib.cpp used by x86 and c66x image processing
-
  Copyright (C) Signalogic Inc. 2014-2021
 
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
+ Purpose
+
+  API header file for streamlib shared library used in x86 and c66x media processing
+
  Revision History:
-   Created Nov 2014 HP
-   Modified Jan 2015 JHB, HANDLE passed by pointer to streamRead()
-   Modified Apr 2015 JHB, additional constants and formatting changes required to support use in CIM programs
-   Modified Apr 2015 AKM, converted to shared header file, host and target CPUs
-   Modified Apr 2015 JHB, add STREAM_CODEC_xx and STREAM_FORMAT_xx definitions
-   Modified Jul 2015 CKJ, add STREAM_ENDPOINT_ALG_xx constants to specify endpoint algorithms (e.g. an endpoint does video streaming or image analytics)
-   Modified Jul 2015 JHB, add STREAM_ENDPOINT_BUFFERMEM and NICMASK items, added aligned(n) attribute for x86 struct items < 4 bytes
-   Modified Nov 2018 JHB, moved stream group and stream merging definitions and APIs here (from pktlib.c and packet_flow_media_proc.c in pktlib.so build). Create new DSMergeGroupContributors() and DSInitMergeGroup() APIs
-   Modified Nov 2018 JHB, add DSResetMergeBuffers() API. This is used to maintain merging stream alignment when one stream has SSRC transitions and another one does not, for example B places A on hold, B then plays music-on-hold from a media server (new SSRC), and when B resumes (starts sending RTP again), it's out of sync
-   Modified Nov 2018 JHB, change "merge" references to "group" or "stream" where it doesn't involve actual merging.  In preparation for other stream group operations, including speech recognition.  See also comments in session.h
-   Modified Dec 2018 JHB, move MAX_GROUPID_LEN define here (was internal).  Add WHOLE_GROUP_THREAD_ALLOCATE flag (see comments below)
-   Modified Jan 2019 JHB, increase MAX_STREAM_GROUPS from 128 to 256.  This allows higher group capacity with sessions that are 2-3 calls each
-   Modified May 2019 JHB, changed stream_id parameters to int for DSAttachStreamToGroup and DSDeleteStreamFromGroup(), changed chnum to int for DSStoreGroupData() and DSGetGroupData()
-   Modified May 2019 JHB, add GROUP_MODE_WAV_OUT_STREAM_MONO and GROUP_MODE_WAV_OUT_STREAM_MULTICHANNEL flags, to allow N-channel wav file format for group contributors in addition to per-stream mono wav file for each contributor
-   Modified Sep 2019 JHB, add contrib_ch param to DSMergeGroupContributors(), used for error condition reporting
-   Modified Oct 2019 JHB, add GROUP_MODE_OVERRUN_xx flags
-   Modified Dec 2019 JHB, add DSProcessAudio() and DS_PROCESS_AUDIO_xx flags
-   Modified Jan 2020 JHB, add DSGetChanGroup()
-   Modified Jan 2020 JHB, rename GROUP_MODE_OVERRUN_STOP_CONTRIBUTOR_ON_DETECTION to GROUP_MODE_OVERFLOW_STOP_CONTRIBUTOR_ON_DETECTION
-                          -overrun refers to a manageable condition in contributor buffers that prevents overflow from occurring, controlled by GROUP_MODE_OVERRUN_xx flags
-                          -overflow refers to buffer wrap with undefined amount of lost data, which can happen when overrun management is disabled
-                          -in event logs "overflow" indicates a problem situation, and "overrun" normal operation
-   Modified Feb 2020 JHB, add DS_GETGROUPINFO_HANDLE_IDX flag which allows an idx to be passed to DSGetStreamGroupInfo() as the hSession param
-   Modified Mar 2020 JHB, add STREAM_GROUP_ENABLE_DEUPLICATION flag
-   Modified Apr 2020 JHB, removed session_info_thread[] param from DSMergeContributors(). See comment in packet_flow_media_proc.c
-   Modified May 2020 JHB, API rework:
-                          -rename several APIs to add "Contributor", make clear distinction between APIs that operate on stream groups and ones that operate on individual contributors
-                          -remove DSGetChanGroup(), add equivalent functionality in DSGetStreamGroupInfo() with DS_GETGROUPINFO_HANDLE_CHNUM flag
-   Modified Jun 2020 JHB, new APIs added:
-                          -DSDeduplicateStreams(). Source is in audio_domain_processing.c; see also comments below
-                          -audio data related APIs including DSGetStreamGroupContributorDataAvailable(), DSGetStreamGroupContributorFramesAvailable(), DSGetStreamGroupContributorFramesize(), and DSGetStreamGroupContributorDataPtr(). See comments below
-   Modified Jul 2020 JHB, change all PLC references to FLC (frame loss concealment, where frame refers to non-packetized raw media data)
-   Modified Jan 2021 JHB, reduced MAX_GROUP_BUFFER_SIZE from 64000 to 32000 bytes, see comments
-   Modified Jan 2021 JHB, add MAX_GROUP_BUFFER_TIME_8KHZ definition, to make stream group buffer processing independent of output sampling rate. Units in msec
+
+  Created Nov 2014 HP
+  Modified Jan 2015 JHB, HANDLE passed by pointer to streamRead()
+  Modified Apr 2015 JHB, additional constants and formatting changes required to support use in CIM programs
+  Modified Apr 2015 AKM, converted to shared header file, host and target CPUs
+  Modified Apr 2015 JHB, add STREAM_CODEC_xx and STREAM_FORMAT_xx definitions
+  Modified Jul 2015 CKJ, add STREAM_ENDPOINT_ALG_xx constants to specify endpoint algorithms (e.g. an endpoint does video streaming or image analytics)
+  Modified Jul 2015 JHB, add STREAM_ENDPOINT_BUFFERMEM and NICMASK items, added aligned(n) attribute for x86 struct items < 4 bytes
+  Modified Nov 2018 JHB, moved stream group and stream merging definitions and APIs here (from pktlib.c and packet_flow_media_proc.c in pktlib.so build). Create new DSMergeGroupContributors() and DSInitMergeGroup() APIs
+  Modified Nov 2018 JHB, add DSResetMergeBuffers() API. This is used to maintain merging stream alignment when one stream has SSRC transitions and another one does not, for example B places A on hold, B then plays music-on-hold from a media server (new SSRC), and when B resumes (starts sending RTP again), it's out of sync
+  Modified Nov 2018 JHB, change "merge" references to "group" or "stream" where it doesn't involve actual merging.  In preparation for other stream group operations, including speech recognition.  See also comments in session.h
+  Modified Dec 2018 JHB, move MAX_GROUPID_LEN define here (was internal).  Add WHOLE_GROUP_THREAD_ALLOCATE flag (see comments below)
+  Modified Jan 2019 JHB, increase MAX_STREAM_GROUPS from 128 to 256.  This allows higher group capacity with sessions that are 2-3 calls each
+  Modified May 2019 JHB, changed stream_id parameters to int for DSAttachStreamToGroup and DSDeleteStreamFromGroup(), changed chnum to int for DSStoreGroupData() and DSGetGroupData()
+  Modified May 2019 JHB, add GROUP_MODE_WAV_OUT_STREAM_MONO and GROUP_MODE_WAV_OUT_STREAM_MULTICHANNEL flags, to allow N-channel wav file format for group contributors in addition to per-stream mono wav file for each contributor
+  Modified Sep 2019 JHB, add contrib_ch param to DSMergeGroupContributors(), used for error condition reporting
+  Modified Oct 2019 JHB, add GROUP_MODE_OVERRUN_xx flags
+  Modified Dec 2019 JHB, add DSProcessAudio() and DS_PROCESS_AUDIO_xx flags
+  Modified Jan 2020 JHB, add DSGetChanGroup()
+  Modified Jan 2020 JHB, rename GROUP_MODE_OVERRUN_STOP_CONTRIBUTOR_ON_DETECTION to GROUP_MODE_OVERFLOW_STOP_CONTRIBUTOR_ON_DETECTION
+                         -overrun refers to a manageable condition in contributor buffers that prevents overflow from occurring, controlled by GROUP_MODE_OVERRUN_xx flags
+                         -overflow refers to buffer wrap with undefined amount of lost data, which can happen when overrun management is disabled
+                         -in event logs "overflow" indicates a problem situation, and "overrun" normal operation
+  Modified Feb 2020 JHB, add DS_GETGROUPINFO_HANDLE_IDX flag which allows an idx to be passed to DSGetStreamGroupInfo() as the hSession param
+  Modified Mar 2020 JHB, add STREAM_GROUP_ENABLE_DEUPLICATION flag
+  Modified Apr 2020 JHB, removed session_info_thread[] param from DSMergeContributors(). See comment in packet_flow_media_proc.c
+  Modified May 2020 JHB, API rework:
+                         -rename several APIs to add "Contributor", make clear distinction between APIs that operate on stream groups and ones that operate on individual contributors
+                         -remove DSGetChanGroup(), add equivalent functionality in DSGetStreamGroupInfo() with DS_GETGROUPINFO_HANDLE_CHNUM flag
+  Modified Jun 2020 JHB, new APIs added:
+                         -DSDeduplicateStreams(). Source is in audio_domain_processing.c; see also comments below
+                         -audio data related APIs including DSGetStreamGroupContributorDataAvailable(), DSGetStreamGroupContributorFramesAvailable(), DSGetStreamGroupContributorFramesize(), and DSGetStreamGroupContributorDataPtr(). See comments below
+  Modified Jul 2020 JHB, change all PLC references to FLC (frame loss concealment, where frame refers to non-packetized raw media data)
+  Modified Jan 2021 JHB, reduced MAX_GROUP_BUFFER_SIZE from 64000 to 32000 bytes, see comments
+  Modified Jan 2021 JHB, add MAX_GROUP_BUFFER_TIME_8KHZ definition, to make stream group buffer processing independent of output sampling rate. Units in msec
 */
 
 #ifndef _STREAMLIB_H_

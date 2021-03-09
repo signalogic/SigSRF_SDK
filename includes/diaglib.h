@@ -1,30 +1,38 @@
 /*
-  $Header: /root/Signalogic/DirectCore/include/diaglib.h
+ $Header: /root/Signalogic/DirectCore/include/diaglib.h
  
-  Description: Diagnostic library, including packet stats history and logging APIs, status and error code APIs, memory diagnostics, and more
- 
-  Projects: SigSRF, SigMRF, DirectCore
- 
-  Copyright Signalogic Inc. 2016-2021
+ Copyright Signalogic Inc. 2016-2021
 
-  Revision History:
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
+ Description
+
+  Packet diagnostic library API, including packet stats history and logging APIs, status and error code APIs, memory diagnostics, and more
+ 
+ Projects
+
+  SigSRF, DirectCore
+ 
+ Revision History
   
-   Created Aug 2017 Jeff Brower, based on original c66x diagnostics APIs, created Oct-Dec 2016
-   Modified Sep 2017 JHB, added DSFindSSRCGroups() API
-   Modified Sep 2017 CKJ, added DSGetAPIStatus() API
-   Modified Sep 2017 JHB, added DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE flag
-   Modified Mar 2018 JHB, moved DIAGLIB_VERSION global var inside extern "C" (https://stackoverflow.com/questions/38141390/extern-and-extern-c-for-variables)
-   Modified Jul 2018 CKJ, add constants used by Log_RT() (and LOG_OUTPUT define in example apps)
-   Modified Feb 2019 JHB, add LOG_SET_API_CODES flag, removed HSESSION param from DSPktStatsAddEntries()
-   Modified Aug 2019 JHB, remove include for session.h
-   Modified Oct 2019 JHB, add DS_PKTSTATS_LOG_EXTENDED_RTP_SEQNUMS flag
-   Modified Dec 2019 JHB, add STREAM_STATS struct, modify DSPktStatsLogSeqnums() to return stats info in a STREAM_STATS struct ptr
-   Modified Dec 2019 JHB, add hSession and idx to PKT_STATS struct, see comments
-   Modified Jan 2020 JHB, implement DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS flag
-   Modified Feb 2020 JHB, add DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY flag
-   Modified Apr 2020 JHB, add DSGetLogTimeStamp() API. Initially this is used in mediaMin interactive keyboard debug info printouts, to make it easy to see uptime of ongoing tests that are not printing onscreen log output
-   Modified May 2020 JHB, in STREAM_STATS struct, rename numRepair to numSIDRepair and add numMediaRepair
-   Modified Jan 2021 JHB, change loglevel param in Log_RT() from uint16_t to uint32_t
+  Created Aug 2017 Jeff Brower, based on original c66x diagnostics APIs, created Oct-Dec 2016
+  Modified Sep 2017 JHB, added DSFindSSRCGroups() API
+  Modified Sep 2017 CKJ, added DSGetAPIStatus() API
+  Modified Sep 2017 JHB, added DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE flag
+  Modified Mar 2018 JHB, moved DIAGLIB_VERSION global var inside extern "C" (https://stackoverflow.com/questions/38141390/extern-and-extern-c-for-variables)
+  Modified Jul 2018 CKJ, add constants used by Log_RT() (and LOG_OUTPUT define in example apps)
+  Modified Feb 2019 JHB, add LOG_SET_API_CODES flag, removed HSESSION param from DSPktStatsAddEntries()
+  Modified Aug 2019 JHB, remove include for session.h
+  Modified Oct 2019 JHB, add DS_PKTSTATS_LOG_EXTENDED_RTP_SEQNUMS flag
+  Modified Dec 2019 JHB, add STREAM_STATS struct, modify DSPktStatsLogSeqnums() to return stats info in a STREAM_STATS struct ptr
+  Modified Dec 2019 JHB, add hSession and idx to PKT_STATS struct, see comments
+  Modified Jan 2020 JHB, implement DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS flag
+  Modified Feb 2020 JHB, add DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY flag
+  Modified Apr 2020 JHB, add DSGetLogTimeStamp() API. Initially this is used in mediaMin interactive keyboard debug info printouts, to make it easy to see uptime of ongoing tests that are not printing onscreen log output
+  Modified May 2020 JHB, in STREAM_STATS struct, rename numRepair to numSIDRepair and add numMediaRepair
+  Modified Jan 2021 JHB, change loglevel param in Log_RT() from uint16_t to uint32_t
 */
 
 #ifndef _DIAGLIB_H_

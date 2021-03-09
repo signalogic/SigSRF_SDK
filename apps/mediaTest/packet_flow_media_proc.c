@@ -3,32 +3,36 @@
 
  Copyright (C) Signalogic Inc. 2017-2021
 
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
  Description
 
-   Source code for "packet / media thread" packet and media processing
+  Source code for packet/media thread processing
 
  Purposes
 
-   1) Provide multithread capability in SigSRF software, enabling fully concurrent multiple packet streams, codecs, and jitter buffers
+  1) Provide multithread capability in SigSRF software, enabling fully concurrent multiple packet streams, codecs, and jitter buffers
 
-   2) Per thread, implement SigSRF library APIs to provide packet flow/media processing functionality, test, and measurement, and transcoding, including:
+  2) Per thread, implement SigSRF library APIs to provide packet flow/media processing functionality, test, and measurement, and transcoding, including:
 
-      -multiple RFC compliant packet flow, advanced jitter buffer, DTX handling, DTMF event handling, multichannel packets, ptime conversion, and more
-      -measurements, including:
-        -x86 server performance
-        -verify bitexactness for codecs, measure audio quality.  Interoperate at encoded bitstream level with 3GPP test vectors and reference codes
-        -packet loss and other packet statistics
+     -multiple RFC compliant packet flow, advanced jitter buffer, DTX handling, DTMF event handling, multichannel packets, ptime conversion, and more
+     -measurements, including:
+       -x86 server performance
+       -verify bitexactness for codecs, measure audio quality.  Interoperate at encoded bitstream level with 3GPP test vectors and reference codes
+       -packet loss and other packet statistics
 
-   3) Implement push/pull packet queues to allow applications, including mediaMin, to use only a small, minimal subset of the SigSRF API
+  3) Implement push/pull packet queues to allow applications, including mediaMin, to use only a small, minimal subset of the SigSRF API
 
-      -support stress and capacity testing by applications by providing a cmd line option to open multiple mediaMin app threads
-      -support UDP network socket packet data flow both directly and via push/pull queues
+     -support stress and capacity testing by applications by providing a cmd line option to open multiple mediaMin app threads
+     -support UDP network socket packet data flow both directly and via push/pull queues
 
-   4) Implement insertion points for application and user-defined signal processing and deep learning
+  4) Implement insertion points for application and user-defined signal processing and deep learning
 
-   5) Act as key source code component of the SigSRF SDK, providing API source code examples, including correct transcoding data flow and API usage for SigSRF libs including pktlib, voplib, streamlib, diaglib, and aviolib
+  5) Act as key source code component of the SigSRF SDK, providing API source code examples, including correct transcoding data flow and API usage for SigSRF libs including pktlib, voplib, streamlib, diaglib, and aviolib
 
-   6) Provide basis for limited, demo/eval version available on Github
+  6) Provide basis for limited, demo/eval version available on Github
 
  Revision History
 

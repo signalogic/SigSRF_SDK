@@ -1,48 +1,57 @@
 /*
-  $Header: /root/Signalogic/DirectCore/lib/diaglib/diaglib.c
- 
-  Description: API for:
+ $Header: /root/Signalogic/DirectCore/lib/diaglib/diaglib.c
 
-    -packet history diagnostics, including statistics, input vs. jitter buffer output analysis, and logging
-    -memory diagnostics for coCPU, including heap tracking and DDR3 memory error detection
- 
-  Project: DirectCore, SigMRF, SigSRF
- 
-  Copyright Signalogic Inc. 2017-2021
+ Copyright Signalogic Inc. 2017-2021
 
-  Revision History:
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+ 
+ Description
+
+  packet diagnostic library with APIs for:
+
+  -packet tracing and history logging
+  -packet statistics, including ooo (out-of-order), DTX, packet loss and gaps, timestamp integrity, etc.
+  -packet analysis, including input vs. jitter buffer output analysis
+
+ Project
+
+  DirectCore, SigSRF
+
+ Revision History
   
-   Created Aug 2017 Jeff Brower, (based on original c66x diagnostics APIs, created Oct-Dec 2016)
-   Modified Aug 2017 JHB, display SID, SID Reuse, and SID NoData packet types, account for SID reuse packets when comparing input / buffered packets with output / pulled packets
-   Modified Sep 2017 JHB, improve SID reuse handling for multiple SSRC streams
-   Modified Sep 2017 JHB, implement DS_PKTSTATS_LOG_COLLATE_STREAMS flag in DSFindSSRCGroups() to add stream collation option
-   Modified Sep 2017 JHB, modified DSPktStatsLogSeqnums() to handle duplicated packets, in particular DTMF event packets which may give several consecutive packets with identical seq numbers and timestamps
-   Modified Sep 2017 JHB, added DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE flag
-   Modified Jul 2018 JHB, modify input vs. output SSRC group comparison / analysis to account for possible different ordering of input vs. output SSRC groups (added a "mapping" between in/out SSRCs)
-   Modified Jul 2018 JHB, add optional label param to DSPktStatsLogSeqnums()
-   Modified Jul 2018 JHB, clearly label three main packet groups in log file, input, jitter buffer output, and analysis
-   Modified Sep 2018 JHB, modified DSFindSSRCGroups() and DSPktStatsWriteLogFile() to use calloc instead of about 4.3 MB of stack usage (see comments in the function declarations)
-   Modified Jan 2019 JHB, changed io_map_ssrcs and used_map_ssrcs usage and mallocs to int from short int.  gdb was indicating an intermittent crash when freeing these two
-   Modified Feb 2019 JHB, fix crash case where "i_out" was -1 (due to an error situation, but still cannot be allowed)
-   Modified Feb 2019 JHB, remove hSession param from DSPktStatsAddEntries() API.  All DSGetPacketInfo() calls inside the API do not need a session handle (do not need session/channel hashing and lookup)
-   Modified Feb 2019 JHB, fix sorting bug that caused "orphan of one" in SSRC group sorting and collation.  See comments below
-   Modified Mar 2019 JHB, remove references to DEMOBUILD and libbuild.h
-   Modified Sep-Oct 2019 JHB, handle RTP sequence number wraps.  Look for seq_wrap[], in_seq_wrap[], and out_seq_wrap[]
-   Modified Oct 2019 JHB, modify first stage "SSRC discovery" in DSFindSSRCGroups() to be more efficient and minimize initial SSRC groups found
-   Modified Oct 2019 JHB, add ssrcs, pkt index, and rtp seq num arrays to DSPktStatsLogSeqnums(), and return number of ssrcs found.  This cuts in half number of calls to DSFindSSRCGroups() in DSPktStatsWriteLogFile()
-   Modified Dec 2019 JHB, STREAM_STATS struct added in diaglib.h, modify DSPktStatsLogSeqnums() to return stats info in a STREAM_STATS struct ptr
-   Modified Dec 2019 JHB, upgrade "analysis and stats" printout section:
-                          -implement new DS_PKTSTATS_ORGANIZE_BY_SSRC, DS_PKTSTATS_ORGANIZE_BY_CHNUM, and DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP flags in diaglib.h
-                          -add optional hSession and idx info to PKT_STATS struct which are referenced in analysis and stats depending on new flags (and if set to valid values)
-                          -include for each SSRC in printout % packet loss, % ooo, max ooo, total input and output packets, number of missing seq numbers, and max consec missing seq numbers
-                          -see analysis_and_stats() + comments
-   Modified Jan 2020 JHB, fix sequence number wrap bug in DSPktStatsLogSeqnums(), display "Stream n" as channel number in analysis_and_stats() if DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP flag set
-   Modified Jan 2020 JHB, make DSFindSSRCGroups() faster (see if !fCollate), fix problem in finding end seq number
-   Modified Jan 2020 JHB, fix bugs in organizing-by-stream group, see "GroupMap" struct method
-   Modified Mar 2020 JHB, in analysis_and_stats() (inp vs output packet analysis), add brief info printout for timestamp mismatches as they occur, similar to packet drops.  This saves time when debugging timestamp alignment issues in pktlib
-   Modified Apr 2020 JHB, fix bug in timestamp mismatch output where output sequence number didn't include wrap count
-   Modified May 2020 JHB, implement STREAM_STATS struct changes to rename numRepair to numSIDRepair and add numMediaRepair
-   Modified Mar 2021 JHB, add DIAGLIB_STANDALONE #define option to build without DirectCore header file
+  Created Aug 2017 Jeff Brower, (based on original c66x diagnostics APIs, created Oct-Dec 2016)
+  Modified Aug 2017 JHB, display SID, SID Reuse, and SID NoData packet types, account for SID reuse packets when comparing input / buffered packets with output / pulled packets
+  Modified Sep 2017 JHB, improve SID reuse handling for multiple SSRC streams
+  Modified Sep 2017 JHB, implement DS_PKTSTATS_LOG_COLLATE_STREAMS flag in DSFindSSRCGroups() to add stream collation option
+  Modified Sep 2017 JHB, modified DSPktStatsLogSeqnums() to handle duplicated packets, in particular DTMF event packets which may give several consecutive packets with identical seq numbers and timestamps
+  Modified Sep 2017 JHB, added DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE flag
+  Modified Jul 2018 JHB, modify input vs. output SSRC group comparison / analysis to account for possible different ordering of input vs. output SSRC groups (added a "mapping" between in/out SSRCs)
+  Modified Jul 2018 JHB, add optional label param to DSPktStatsLogSeqnums()
+  Modified Jul 2018 JHB, clearly label three main packet groups in log file, input, jitter buffer output, and analysis
+  Modified Sep 2018 JHB, modified DSFindSSRCGroups() and DSPktStatsWriteLogFile() to use calloc instead of about 4.3 MB of stack usage (see comments in the function declarations)
+  Modified Jan 2019 JHB, changed io_map_ssrcs and used_map_ssrcs usage and mallocs to int from short int.  gdb was indicating an intermittent crash when freeing these two
+  Modified Feb 2019 JHB, fix crash case where "i_out" was -1 (due to an error situation, but still cannot be allowed)
+  Modified Feb 2019 JHB, remove hSession param from DSPktStatsAddEntries() API.  All DSGetPacketInfo() calls inside the API do not need a session handle (do not need session/channel hashing and lookup)
+  Modified Feb 2019 JHB, fix sorting bug that caused "orphan of one" in SSRC group sorting and collation.  See comments below
+  Modified Mar 2019 JHB, remove references to DEMOBUILD and libbuild.h
+  Modified Sep-Oct 2019 JHB, handle RTP sequence number wraps.  Look for seq_wrap[], in_seq_wrap[], and out_seq_wrap[]
+  Modified Oct 2019 JHB, modify first stage "SSRC discovery" in DSFindSSRCGroups() to be more efficient and minimize initial SSRC groups found
+  Modified Oct 2019 JHB, add ssrcs, pkt index, and rtp seq num arrays to DSPktStatsLogSeqnums(), and return number of ssrcs found.  This cuts in half number of calls to DSFindSSRCGroups() in DSPktStatsWriteLogFile()
+  Modified Dec 2019 JHB, STREAM_STATS struct added in diaglib.h, modify DSPktStatsLogSeqnums() to return stats info in a STREAM_STATS struct ptr
+  Modified Dec 2019 JHB, upgrade "analysis and stats" printout section:
+                         -implement new DS_PKTSTATS_ORGANIZE_BY_SSRC, DS_PKTSTATS_ORGANIZE_BY_CHNUM, and DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP flags in diaglib.h
+                         -add optional hSession and idx info to PKT_STATS struct which are referenced in analysis and stats depending on new flags (and if set to valid values)
+                         -include for each SSRC in printout % packet loss, % ooo, max ooo, total input and output packets, number of missing seq numbers, and max consec missing seq numbers
+                         -see analysis_and_stats() + comments
+  Modified Jan 2020 JHB, fix sequence number wrap bug in DSPktStatsLogSeqnums(), display "Stream n" as channel number in analysis_and_stats() if DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP flag set
+  Modified Jan 2020 JHB, make DSFindSSRCGroups() faster (see if !fCollate), fix problem in finding end seq number
+  Modified Jan 2020 JHB, fix bugs in organizing-by-stream group, see "GroupMap" struct method
+  Modified Mar 2020 JHB, in analysis_and_stats() (inp vs output packet analysis), add brief info printout for timestamp mismatches as they occur, similar to packet drops.  This saves time when debugging timestamp alignment issues in pktlib
+  Modified Apr 2020 JHB, fix bug in timestamp mismatch output where output sequence number didn't include wrap count
+  Modified May 2020 JHB, implement STREAM_STATS struct changes to rename numRepair to numSIDRepair and add numMediaRepair
+  Modified Mar 2021 JHB, add DIAGLIB_STANDALONE #define option to build without DirectCore header file
 */
 
 /* Linux includes */

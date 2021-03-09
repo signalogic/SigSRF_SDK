@@ -1,36 +1,38 @@
 /*
-  $Header: /root/Signalogic/DirectCore/include/hwlib.h   10/13/05 9:29p
- 
-  Description: API include file for DirectCore software
- 
-  Project: DirectCore
- 
-  Copyright (C) Signalogic Inc. 1994-2020
-  
-  3     10/13/05 9:29p
-  Added SDRAM sanity check.
-  
-  2     10/10/05 12:32p
-  8 DSP support.
-  
-  1     8/24/05 7:13p
-  Clean up code and rebuild.
+ $Header: /root/Signalogic/DirectCore/include/hwlib.h
 
-  Revision History
-  
-   Created 1994 JHB
-   Modified 2002-2013 JHB
-   Modified Jan-May 2013 CJ, JHB, multicore CPU support, additional APIs
-   Modified May 2014 JHB, adding DS_GCI_DRIVERHANDLE
-   Modified Nov 2014 JHB, continued updates to support multiple target types
-   Modified Apr 2015 JHB, added DSInitRTAF(), DSSyncTargetCPU(), and DSWriteAppProperties() APIs, additional error/status codes
-   Modified Aug 2015 JHB, increased MAXCPUS to 128
-   Modified Sep 2015 CJ, added support for allocating contiguous host memory and mapping it to C66x addresses
-   Modified Mar 2017 JHB, added DSAssignDataPlane and DSFreeDataPlane APIs (based on DSAssignCard and DSFreeCard)
-   Modified Jul-Aug 2019 JHB, add static inline get_time() and TSC monitoring.  get_time() default operation is clock_gettime(CLOCK_MONOTONIC)
-   Modified Sep 2019 JHB, use __builtin_ia32_rdtscp() and __builtin_ia32_rdtsc() to avoid including x86intrin.h, which seems to have gcc version (and maybe Linux version) compatibility issues
-   Modified Jan 2020 JHB, add DS_DATAFILE_USESEM flag for use with DSSaveDataFile() and DSLoadDataFile()
-   Modified Sep 2020 JHB, fix #pragma GCC diagnostic ignored "-pedantic", should be "-Wpedantic". This was causing a warning in gcc 9.3.0
+ Copyright (C) Signalogic Inc. 1994-2020
+
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
+ Description
+
+  DirectCore API header file for SigSRF and user apps
+
+ Projects
+
+  SigSRF, DirectCore
+
+ Revision History
+
+  Created 1994 JHB
+  3     10/13/05 9:29p Added SDRAM sanity check.
+  2     10/10/05 12:32p 8 DSP support.
+  1     8/24/05 7:13p Clean up code and rebuild.
+  Modified 2002-2013 JHB
+  Modified Jan-May 2013 CJ, JHB, multicore CPU support, additional APIs
+  Modified May 2014 JHB, adding DS_GCI_DRIVERHANDLE
+  Modified Nov 2014 JHB, continued updates to support multiple target types
+  Modified Apr 2015 JHB, added DSInitRTAF(), DSSyncTargetCPU(), and DSWriteAppProperties() APIs, additional error/status codes
+  Modified Aug 2015 JHB, increased MAXCPUS to 128
+  Modified Sep 2015 CJ, added support for allocating contiguous host memory and mapping it to C66x addresses
+  Modified Mar 2017 JHB, added DSAssignDataPlane and DSFreeDataPlane APIs (based on DSAssignCard and DSFreeCard)
+  Modified Jul-Aug 2019 JHB, add static inline get_time() and TSC monitoring.  get_time() default operation is clock_gettime(CLOCK_MONOTONIC)
+  Modified Sep 2019 JHB, use __builtin_ia32_rdtscp() and __builtin_ia32_rdtsc() to avoid including x86intrin.h, which seems to have gcc version (and maybe Linux version) compatibility issues
+  Modified Jan 2020 JHB, add DS_DATAFILE_USESEM flag for use with DSSaveDataFile() and DSLoadDataFile()
+  Modified Sep 2020 JHB, fix #pragma GCC diagnostic ignored "-pedantic", should be "-Wpedantic". This was causing a warning in gcc 9.3.0
 */
  
 #ifndef _HWLIB_H_

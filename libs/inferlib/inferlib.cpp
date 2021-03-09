@@ -1,18 +1,26 @@
 /*
-  $Header: /root/Signalogic/DirectCore/lib/inferlib/inferlib.cpp
+ $Header: /root/Signalogic/DirectCore/lib/inferlib/inferlib.cpp
 
-  Description: Inference library including automatic speech recognition (ASR) decoder
+ Copyright (C) Signalogic Inc. 2018-2021
 
-  Projects: SigSRF, DirectCore
+ License
 
-  Copyright (C) Signalogic Inc. 2018-2021
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
 
-  Revision History
+ Description
 
-   Created Jan 2019 Chris Johnson, initial version based on based on Kaldi executable online2-wav-nnet3-latgen-faster
-   Modified Jan 2021 JHB, add diaglib for error handling (Log_RT), initialize asr_handles, zero handle member values prior to use, make local data and functions static
-   Modified Jan 2021 JHB, add DSASRConfig() to provide initialization ease-of-use and flexibility
-   Modified Feb 2021 JHB, make DSASRConfig() flexible on where it finds Kaldi .conf, .mdl, .fst, and other files
+  Inference library including automatic speech recognition (ASR) decoder
+
+ Projects
+
+  SigSRF, DirectCore
+
+ Revision History
+
+  Created Jan 2019 Chris Johnson, initial version based on based on Kaldi executable online2-wav-nnet3-latgen-faster
+  Modified Jan 2021 JHB, add diaglib for error handling (Log_RT), initialize asr_handles, zero handle member values prior to use, make local data and functions static
+  Modified Jan 2021 JHB, add DSASRConfig() to provide initialization ease-of-use and flexibility
+  Modified Feb 2021 JHB, make DSASRConfig() flexible on where it finds Kaldi .conf, .mdl, .fst, and other files
 */
 
 /* Kaldi includes */

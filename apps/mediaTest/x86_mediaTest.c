@@ -3,61 +3,63 @@
 
  Copyright (C) Signalogic Inc. 2017-2021
  
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
  Description
  
-   Source code for mediaTest x86 platform (see mediaTest.c for coCPU functionality)
+  Source code for mediaTest x86 platform (see mediaTest.c for coCPU functionality)
 
  Purposes
  
-   1) Implementation, test, and measurement for codecs and transcoding including multiple RFC compliant packet flow, advanced jitter buffer, DTX handling, DTMF event handling, multichannel packets, ptime conversion, and more.  Measurements include:
+  1) Implementation, test, and measurement for codecs and transcoding including multiple RFC compliant packet flow, advanced jitter buffer, DTX handling, DTMF event handling, multichannel packets, ptime conversion, and more.  Measurements include:
    
-     -x86 server performance
-
-     -verify bitexactness for codecs, measure audio quality.  Interoperate at encoded bitstream level with 3GPP test vectors and reference codes
-
-     -packet loss and other packet statistics
+    -x86 server performance
+    -verify bitexactness for codecs, measure audio quality.  Interoperate at encoded bitstream level with 3GPP test vectors and reference codes
+    -packet loss and other packet statistics
    
-   2) Support RTP streaming for network sockets and pcap I/O
+  2) Support RTP streaming for network sockets and pcap I/O
 
-   3) Provide file I/O support for .wav, .tim, raw audio, encoded bitstream (e.g. .cod), and other file formats
+  3) Provide file I/O support for .wav, .tim, raw audio, encoded bitstream (e.g. .cod), and other file formats
    
-   4) Support multithreading, background process, and multiple concurrent codec instances
+  4) Support multithreading, background process, and multiple concurrent codec instances
 
-   5) Demonstrate signal processing and deep learning insertion points
+  5) Demonstrate signal processing and deep learning insertion points
    
-   6) Provide user application source code examples, including correct transcoding data flow and API usage for Pktlib, Voplib, Diaglib, and Aviolib
+  6) Provide user application source code examples, including correct transcoding data flow and API usage for Pktlib, Voplib, Diaglib, and Aviolib
 
-   7) Provide basis for limited, demo/eval version available on Github
+  7) Provide basis for limited, demo/eval version available on Github
 
  Revision History
 
-   Created Jan 2017 CKJ
-   Modified Mar 2017 JHB - edits for codec testing
-   Modified May 2017 CKJ
-      - All config file parsing code is now in transcoder_control.c
-      - frame test mode 
-         - will now display the total encoded and decode frame counts while running
-         - encode thread will also now adjust the filename extension based on the codec type (default is .coded)
-      - packet test mode
-         - updated mediaTest source to check for the magic number in any input pcap files, display a message if it's an unexpected value and skip over that input file
-      - The dependency on libpcap/libpcap-devel has been removed
-      - ctrl-c signal is handled to exit x86 test modes cleanly
-   Modified May CKJ 2017, added pcap extract mode - supports EVS only
-   Modified Mar 2018 JHB, added USB audio input, tested with a Focusrite 2i2 unit.  Significant mods made to (i) x86_mediaTest.c and mediaTest.c, (ii) aviolib (audio video I/O lib) which uses Alsa "asound" lib, and (iii) mediaTest Makefile (modified to link aviolib)
-   Modified Mar 2018 JHB, modified codec test mode to support (i) .wav file input (using DSLoadDataFile), (ii) USB audio input input, and (iii) pass-thru (codec type = NONE), in which case no encoding/decoding is performed (e.g. save USB audio to wav file, convert raw audio to wav file)
-   Modified Mar-Apr 2018 JHB, CKJ, add support for MELPe codec
-   Modified May 2018 CKJ, add support for G729 and G726 codecs
-   Modified May-Jun 2018 CKJ - add support for AMR and AMR WB codecs
-   Modified Jun 2018 JHB, integrate USB audio output
-   Modified Jul 2018 JHB, packet_flow_media_proc(executionMode) function moved to separate file to support media thread and process execution.  executionMode can be app, thread, or process.  See also DSConfigMediaService() and its uControl and uFlags definitions in pktlib.h
-   Modified Oct 2018 JHB, add sample rate conversion for USB audio output, independent of waveform or USB audio input prior to codec processing.  Calculate separate period and buffer size parameters not dependent on those used for USB audio input.  Note that many USB audio devices, such as the Focusrite 2i2 used in Sig lab testing, support a minimum sample rate of 44.1 kHz.  For codec support, it helps a lot of the device supports 48 kHz
-   Modified Dec 2018 CKJ, add support for AMR-WB+ codec, including ".BIT" coded data file extension, variable encoder input framesize.  Pass &encOutArgs to DSCodecEncode() function
-   Modified Dec 2018 JHB, adjust thread/core affinity for high capacity mediaTest -Et -tN mode testing (creates N mediaMin application threads)
-   Modified Jul 2019 JHB, codecs now accessed via voplib API calls and CODEC_PARAMS struct.  XDAIS interface is now visibile from voplib and alglib but not applications
-   Modified Mar 2020 JHB, handle name change of mediaThread_test_app.c to mediaMin.c
-   Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0: include minmax.h (for min/max functions), fix various security and "indentation" warnings
-   Modified Jan 2021 JHB, fix warning for sampleRate_codec used uninitialized (no idea why this suddenly popped up)
-   Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
+  Created Jan 2017 CKJ
+  Modified Mar 2017 JHB - edits for codec testing
+  Modified May 2017 CKJ
+   - All config file parsing code is now in transcoder_control.c
+   - frame test mode 
+      - will now display the total encoded and decode frame counts while running
+      - encode thread will also now adjust the filename extension based on the codec type (default is .coded)
+   - packet test mode
+      - updated mediaTest source to check for the magic number in any input pcap files, display a message if it's an unexpected value and skip over that input file
+   - Dependency on libpcap/libpcap-devel has been removed
+   - ctrl-c signal is handled to exit x86 test modes cleanly
+  Modified May CKJ 2017, added pcap extract mode - supports EVS only
+  Modified Mar 2018 JHB, added USB audio input, tested with a Focusrite 2i2 unit.  Significant mods made to (i) x86_mediaTest.c and mediaTest.c, (ii) aviolib (audio video I/O lib) which uses Alsa "asound" lib, and (iii) mediaTest Makefile (modified to link aviolib)
+  Modified Mar 2018 JHB, modified codec test mode to support (i) .wav file input (using DSLoadDataFile), (ii) USB audio input input, and (iii) pass-thru (codec type = NONE), in which case no encoding/decoding is performed (e.g. save USB audio to wav file, convert raw audio to wav file)
+  Modified Mar-Apr 2018 JHB, CKJ, add support for MELPe codec
+  Modified May 2018 CKJ, add support for G729 and G726 codecs
+  Modified May-Jun 2018 CKJ - add support for AMR and AMR WB codecs
+  Modified Jun 2018 JHB, integrate USB audio output
+  Modified Jul 2018 JHB, packet_flow_media_proc(executionMode) function moved to separate file to support media thread and process execution.  executionMode can be app, thread, or process.  See also DSConfigMediaService() and its uControl and uFlags definitions in pktlib.h
+  Modified Oct 2018 JHB, add sample rate conversion for USB audio output, independent of waveform or USB audio input prior to codec processing.  Calculate separate period and buffer size parameters not dependent on those used for USB audio input.  Note that many USB audio devices, such as the Focusrite 2i2 used in Sig lab testing, support a minimum sample rate of 44.1 kHz.  For codec support, it helps a lot of the device supports 48 kHz
+  Modified Dec 2018 CKJ, add support for AMR-WB+ codec, including ".BIT" coded data file extension, variable encoder input framesize.  Pass &encOutArgs to DSCodecEncode() function
+  Modified Dec 2018 JHB, adjust thread/core affinity for high capacity mediaTest -Et -tN mode testing (creates N mediaMin application threads)
+  Modified Jul 2019 JHB, codecs now accessed via voplib API calls and CODEC_PARAMS struct.  XDAIS interface is now visibile from voplib and alglib but not applications
+  Modified Mar 2020 JHB, handle name change of mediaThread_test_app.c to mediaMin.c
+  Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0: include minmax.h (for min/max functions), fix various security and "indentation" warnings
+  Modified Jan 2021 JHB, fix warning for sampleRate_codec used uninitialized (no idea why this suddenly popped up)
+  Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
 */
 
 /* Linux header files */

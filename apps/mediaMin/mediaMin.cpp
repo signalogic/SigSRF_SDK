@@ -3,38 +3,42 @@
 
  Copyright (C) Signalogic Inc. 2018-2021
 
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
  Description
 
-   Application source code for packet + media processing, including:
+  Application source code for packet + media processing, including:
 
-     -telecom and analytics applications, e.g. SBC, lawful interception, ASR
+   -telecom and analytics applications, e.g. SBC, lawful interception, ASR
 
-     -standard operating mode
+   -standard operating mode
 
-       -basic API interface to SigSRF pktlib, including packet push/pull queues, session create/delete and session get/set info
-       -SigSRF pktlib packet/media thread usage, including multiple threads
-       -static session creation based on session config files
-       -dynamic session creation based on packet contents ("dynamic call mode"), supporting multistream pcaps and UDP flow ("dynamic call" mode)
-       -support for pcaps with/without packet timestamps (wall clock packet arrival times)
-       -SigSRF lib event logging, packet logging, packet time and loss stats
+     -basic API interface to SigSRF pktlib, including packet push/pull queues, session create/delete and session get/set info
+     -SigSRF pktlib packet/media thread usage, including multiple threads
+     -static session creation based on session config files
+     -dynamic session creation based on packet contents ("dynamic call mode"), supporting multistream pcaps and UDP flow ("dynamic call" mode)
+     -support for pcaps with/without packet timestamps (wall clock packet arrival times)
+     -SigSRF lib event logging, packet logging, packet time and loss stats
 
-     -capacity measurement and test modes
+   -capacity measurement and test modes
 
-       -multiple application threads, including all above SOP functionality per thread 
-       -functional test
-       -stress test
+     -multiple application threads, including all above SOP functionality per thread 
+     -functional test
+     -stress test
 
-  Documentation
+ Documentation
 
-    ftp://ftp.signalogic.com/documentation/SigSRF
+  ftp://ftp.signalogic.com/documentation/SigSRF
 
-    (as of Oct 2019, most recent doc is ftp://ftp.signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+  (as of Oct 2019, most recent doc is ftp://ftp.signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
 
-  Source Code Notes
+ Source Code Notes
  
-   mediaMin.cpp is primarily a C file, but does contain some C++ code and more is being added
+  mediaMin.cpp is primarily a C file, but does contain some C++ code and more is being added
 
-  Revision History
+ Revision History
 
    Created Jul 2018 JHB, see also revision history in x86_mediaTest.c and packet_flow_media_proc.c
    Modified Jul 2018 CKJ, add pcap file I/O for testing

@@ -1,25 +1,33 @@
 /*
-  $Header: /root/Signalogic/DirectCore/include/voplib.h
- 
-  Description: voice and video over packet library -- APIs for creating and managing streaming and transcoding instances
- 
-  Projects: SigSRF, SigMRF, DirectCore
- 
-  Copyright (C) Signalogic Inc. 2010-2021
+ $Header: /root/Signalogic/DirectCore/include/voplib.h
 
-  Revision History
-  
-   Created Mar 2017 Chris Johnson (some elements copied from legacy ds_vop.h)
-   Modified May 2017 CJ, moved isEVSHeaderFullFormat from pktlib_priv.h
-   Modified Aug 2017 CJ, moved EVS helper functions from mediaTest
-   Modified Mar 2018 JHB, moved VOPLIB_VERSION global var inside extern "C" (https://stackoverflow.com/questions/38141390/extern-and-extern-c-for-variables)
-   Modified Jun 2018 JHB, moved DSConvertFs to alglib
-   Modified Oct 2018 JHB, removed #ifdef CODECXXX_INSTALLED references for codec header file includes.  The voplib Makefile no longer sets these, and the install script installs all codec header files (codec lib files are delivery dependent). stublib is used by mediaTest and mediaMin makefiles to link only the installed codecs
-   Modified Jan 2019 JHB, remove uFlags param from DSCodecDelete() (it was never used, the codec handle links to internal info that contains flags if any)
-   Modified Jul 2019 JHB, modify input struct ptr param and add flags for DSCodecCreate(), which is now used in both packet flow and codec test mode.  Flags include type of input struct data, and create encoder, decoder, or both
-   Modified Jul 2019 JHB, DSGetCodecFs() removed, use DSGetCodecSampleRate(hCodec) instead
-   Modified Feb 2020 JHB, add DS_GET_NUMFRAMES flag in DSCodecDecode()
-   Modified Oct 2020 JHB, add DSCodecGetInfo() API to pull all available encoder/decoder info as needed. First input param is codec handle or codec_type, depending on uFlags. Added codec_name, raw_frame_size, and coded_frame_size elements to CODEC_PARAMS struct support DSCodecGetInfo()
+ Copyright (C) Signalogic Inc. 2010-2021
+
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
+ Description
+
+  Voice and video over packet library -- APIs for creating and managing streaming and transcoding instances
+
+ Projects
+
+  SigSRF, DirectCore
+ 
+ Revision History
+
+  Created Mar 2017 Chris Johnson (some elements copied from legacy ds_vop.h)
+  Modified May 2017 CJ, moved isEVSHeaderFullFormat from pktlib_priv.h
+  Modified Aug 2017 CJ, moved EVS helper functions from mediaTest
+  Modified Mar 2018 JHB, moved VOPLIB_VERSION global var inside extern "C" (https://stackoverflow.com/questions/38141390/extern-and-extern-c-for-variables)
+  Modified Jun 2018 JHB, moved DSConvertFs to alglib
+  Modified Oct 2018 JHB, removed #ifdef CODECXXX_INSTALLED references for codec header file includes.  The voplib Makefile no longer sets these, and the install script installs all codec header files (codec lib files are delivery dependent). stublib is used by mediaTest and mediaMin makefiles to link only the installed codecs
+  Modified Jan 2019 JHB, remove uFlags param from DSCodecDelete() (it was never used, the codec handle links to internal info that contains flags if any)
+  Modified Jul 2019 JHB, modify input struct ptr param and add flags for DSCodecCreate(), which is now used in both packet flow and codec test mode.  Flags include type of input struct data, and create encoder, decoder, or both
+  Modified Jul 2019 JHB, DSGetCodecFs() removed, use DSGetCodecSampleRate(hCodec) instead
+  Modified Feb 2020 JHB, add DS_GET_NUMFRAMES flag in DSCodecDecode()
+  Modified Oct 2020 JHB, add DSCodecGetInfo() API to pull all available encoder/decoder info as needed. First input param is codec handle or codec_type, depending on uFlags. Added codec_name, raw_frame_size, and coded_frame_size elements to CODEC_PARAMS struct support DSCodecGetInfo()
 */
  
 #ifndef _VOPLIB_H_
