@@ -12,6 +12,8 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+1Q 2021 - encapsulated stream support, tested with OpenLI pcaps containing DER encoded HI3 intercept streams, per ETSI LI and ASN.1 standards
+
 1Q 2021 - real-time ASR option added to mediaMin command line. Kaldi ASR works on stream group outputs, after RTP decoding, stream merging and other signal processing. All codecs supported
 
 1Q 2021 - sdp file option added to mediaMin command line. SDP info can be used to override mediaMin auto-detection or in application-specific cases
@@ -53,25 +55,32 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 # Table of Contents
 
-[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
-&nbsp;&nbsp;&nbsp;[x86 Codec Testing](#user-content-x86codectesting)<br/>
-&nbsp;&nbsp;&nbsp;[coCPU Codec Testing](#user-content-cocpucodectesting)<br/>
-&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
-[**Frame Mode**](#user-content-framemode)<br/>
-&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#user-content-convertingpcaps2wav)<br/>
-&nbsp;&nbsp;&nbsp;[EVS Player](#user-content-evsplayer)</br>
-&nbsp;&nbsp;&nbsp;[AMR Player](#user-content-amrplayer)</br>
-&nbsp;&nbsp;&nbsp;[Converting Wav to Pcaps](#user-content-convertingwav2pcaps)<br/>
-&nbsp;&nbsp;&nbsp;[EVS Pcap Generation](#user-content-evspcapgenerator)</br>
-&nbsp;&nbsp;&nbsp;[AMR Pcap Generation](#user-content-amrpcapgenerator)</br>
-[**Packet Mode**](#user-content-packetmode)<br/>
+[**mediaMin**](#user-content-mediamin)<br/>
+
 &nbsp;&nbsp;&nbsp;[Real-Time Streaming and Packet Flow](#user-content-realtimestreaming)</br>
 &nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams)<br/>
+
+&nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
+
 &nbsp;&nbsp;&nbsp;[Session Configuration](#user-content-sessionconfig)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
-[**Transcoding**](#user-content-transcoding)<br/>
-&nbsp;&nbsp;&nbsp;[DTX Handling](#user-content-dtxhandling)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
+
+[**mediaTest**](#user-content-mediatest)<br/>
+&nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Testing](#user-content-x86codectesting)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Testing](#user-content-cocpucodectesting)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
+&nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#user-content-convertingpcaps2wav)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS Player](#user-content-evsplayer)</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Player](#user-content-amrplayer)</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Wav to Pcaps](#user-content-convertingwav2pcaps)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS Pcap Generation](#user-content-evspcapgenerator)</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Pcap Generation](#user-content-amrpcapgenerator)</br>
+&nbsp;&nbsp;&nbsp;[**Transcoding**](#user-content-transcoding)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTX Handling](#user-content-dtxhandling)<br/>
+
 &nbsp;&nbsp;&nbsp;[Variable Ptimes](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[DTMF Handling](#user-content-dtmfhandling)<br/>
 [**Jitter Buffer**](#user-content-jitterbuffer)<br/>
@@ -310,7 +319,7 @@ The following mediaTest command line converts a wav file to pcap:
 
 A similar command line can be used with other audio format files. The config file allows EVS bitrate, header format, and other options to be specified. mediaTest automatically performs sample rate conversion if the wav file Fs is different than the sample rate specified in the config file.
 
-<a name="AMRPcaPGenerator"></a>
+<a name="AMRPcapGenerator"></a>
 ### AMR Player
 
 The following mediaTest command line converts a wav file to pcap:
