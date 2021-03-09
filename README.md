@@ -8,6 +8,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode](#user-content-analyticsmode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode Data Flow Diagram](#user-content-analyticsmodedataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Stream Groups](#user-content-streamgroups)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Encapsulated Streams](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#user-content-multithreaded)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
@@ -85,6 +86,13 @@ Analytics mode is defined as indirect handling of IP/UDP/RTP traffic, where traf
 ## Stream Groups
 
 SigSRF supports the concept of "stream groups", allowing multiple streams to be grouped together for additional processing.  Examples including merging conversations for Lawful Intercept applications, conferencing, and identifying and tagging different individuals in a conversation (sometimes referred to as "diarization").
+
+<a name="EncapsulatedStreams"></a>
+## Encapsulated Streams
+
+SigSRF supports encapsulated streams, specifically ASN.1 DER encoded HI3 intercept streams. Additional encapsulated stream support is planned.
+
+For information on HI3 intercept decoding with OpenLI example pcaps, see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>.
 
 <a name="Multithreaded"></a>
 ## Multithreaded for High Performance
