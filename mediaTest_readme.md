@@ -86,9 +86,8 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[**Transcoding**](#user-content-transcoding)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTX Handling](#user-content-dtxhandling)<br/>
 
-&nbsp;&nbsp;&nbsp;[Variable Ptimes](#user-content-variableptimes)<br/>
-&nbsp;&nbsp;&nbsp;[DTMF Handling](#user-content-dtmfhandling)<br/>
-
+[**Variable Ptimes**](#user-content-variableptimes)<br/>
+[**DTMF Handling**](#user-content-dtmfhandling)<br/>
 [**Jitter Buffer**](#user-content-jitterbuffer)<br/>
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**Media Processing Insertion Point**](#user-content-mediaprocessing)<br/>
