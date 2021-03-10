@@ -92,7 +92,9 @@ SigSRF supports the concept of "stream groups", allowing multiple streams to be 
 
 SigSRF supports encapsulated streams, specifically ASN.1 DER encoded HI3 intercept streams. Additional encapsulated stream support is planned.
 
-For information on HI3 intercept decoding with <a href="https://openli.nz" target="_blank">OpenLI</a> example pcaps, see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>.
+For information on HI3 intercept decoding with <a href="https://openli.nz" target="_blank">OpenLI</a> example pcaps, see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-encapsulatedstreams">Encapsulated Streams section</a> on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>.
+
+https://github.com/signalogic/SigSRF_SDK/blob/master/README.md#user-content-encapsulatedstreams
 
 <a name="Multithreaded"></a>
 ## Multithreaded for High Performance
