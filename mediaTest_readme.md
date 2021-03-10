@@ -179,7 +179,7 @@ mediaMin utilizes the <a href="https://github.com/signalogic/SigSRF_SDK/tree/mas
 <a name="OpenLISupport"></a>
 ### OpenLI Support
 
-After downloading the SigSRF SDK, below are a <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcap examples you can run:
+After downloading the SigSRF SDK, below are <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcap examples you can run:
 
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
  
