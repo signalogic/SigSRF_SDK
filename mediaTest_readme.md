@@ -203,9 +203,11 @@ After loading stream group outputs in Wireshark (openli-voip-example_group0_am.p
 
 ![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example2_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
 
-In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. Clicking on the :arrow_forward: button should play stream group output audio, formed by combining all input stream contributors. Wav files for stream group output and individual contributors are also available.
+In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. Clicking on the :arrow_forward: button should play stream group output audio, formed by combining all input stream contributors.
 
 In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF pktlib and streamlib module processing prioritize stability of this metric, as well as accurate time-alginment of individual stream contributors relative to each other.
+
+mediaMin also generates stream group output .wav files and individual contributor .wav files, which may be needed depending on the application. However, from an audio quality perspective, wav files may obscure audio delays/gaps and interstream alignment issues. Analyzing audio quality on a packet basis includes accurate timing information, and gives a more reliable view of output integrity.
 
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
