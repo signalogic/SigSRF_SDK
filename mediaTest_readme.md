@@ -179,7 +179,7 @@ mediaMin utilizes the <a href="https://github.com/signalogic/SigSRF_SDK/tree/mas
 <a name="OpenLISupport"></a>
 ### OpenLI Support
 
-After downloading the SigSRF SDK, below are a <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcap command line examples you can run:
+After downloading the SigSRF SDK, below are a <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcap examples you can run:
 
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
  
@@ -191,11 +191,11 @@ Notes
 
 2) In the first example, run-time stats should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
 
-3) In these OpenLI examples, for some reason the DER encoded packet timestamps do not increment smoothly at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine a packet push rate. As in telecom mode, RTP timestamps are processed by pktlib and streamlib to handle packet repair and interstream alignment.
+3) In these OpenLI examples, the DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine packet push rates. As in telecom mode, RTP timestamps are processed by pktlib and streamlib to handle packet repair and interstream alignment.
 
 4) The mediaMin command line has DER stream detection enabled (0x1000 bit in the -dN argument).
 
-5) Dynamic session creation is enabled (0x1 bit in the -dN argument); i.e. no static session config file is supplied on the command line. To create sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and then auto-detects the codec type.
+5) Dynamic session creation is enabled on the mediaMin command line (0x1 bit in the -dN argument); i.e. no static session config file is supplied. When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type.
 
 When displaying stream group output in Wireshark you should see the following waveform displays:
 
