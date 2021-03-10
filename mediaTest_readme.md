@@ -174,7 +174,7 @@ RFC7198 is a method to address packet loss that does not incur unbounded delay, 
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
 
-mediaMin supports encapsulated streams, for example HI3 intercept streams with IP/UDP/RTP packets encapsulated within a TCP/IP stream. After downloading the SigSRF SDK, below are command line examples you can run showing <a href="https://openli.nz" target="_blank">OpenLI</a> pcaps with DER encoded intercept streams formatted per ETSI LI and ASN.1 standards:
+mediaMin supports encapsulated streams, for example HI3 intercept streams with IP/UDP/RTP packets encapsulated within a TCP/IP stream. After downloading the SigSRF SDK, below are command line examples you can run showing <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcaps with DER encoded intercept streams formatted per ETSI LI and ASN.1 standards:
 
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
  
