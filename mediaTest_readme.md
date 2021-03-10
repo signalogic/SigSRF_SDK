@@ -194,9 +194,9 @@ Notes
 
 When displaying stream group output in Wireshark you should see the following waveform displays.
 
-![OpenLI HI3 intercept processing, stream group output in Wireshark](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_example1_stream_group_output.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark")
+![OpenLI HI3 intercept processing, stream group output in Wireshark](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example1_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark")
 
-![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_example1_stream_group_output.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
+![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example1_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
 
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
