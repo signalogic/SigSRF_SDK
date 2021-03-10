@@ -191,7 +191,7 @@ Notes
 
 2) In the first example, run-time stats should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
 
-3) In these OpenLI examples, the DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine packet push rates. As in telecom mode, RTP timestamps are processed by pktlib and streamlib to handle packet repair and interstream alignment.
+3) In these OpenLI examples, the DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine packet push rates. In both analytics and telecom modes, the pktlib and streamlib modules examine RTP timestamps during packet repair and interstream alignment.
 
 4) The mediaMin command line has DER stream detection enabled (0x1000 bit in the -dN argument).
 
@@ -203,9 +203,9 @@ When displaying stream group output in Wireshark you should see the following wa
 
 ![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example2_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
 
-In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. Clicking on the :arrow_forward: button should play stream group output audio, formed by combining -- accurately in time relative to other contributors -- all input stream contributors. Wav files for stream group output and individual contributors are also available.
+In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. Clicking on the :arrow_forward: button should play stream group output audio, formed by combining all input stream contributors. Wav files for stream group output and individual contributors are also available.
 
-In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF pktlib and streamlib module processing prioritizes this metric.
+In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF pktlib and streamlib module processing prioritize stability of this metric, as well as accurate time-alginment of individual stream contributors relative to each other.
 
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
