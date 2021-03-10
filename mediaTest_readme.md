@@ -200,6 +200,8 @@ When displaying stream group output in Wireshark you should see the following wa
 
 In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. Clicking on the :arrow_forward: button should play stream group output audio, formed by combining input stream contributors. Wav files for stream group output and individual contributors are also available.
 
+In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF pktlib and streamlib module processing prioritizes this metric.
+
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
 
