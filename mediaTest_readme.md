@@ -198,6 +198,8 @@ When displaying stream group output in Wireshark you should see the following wa
 
 ![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example2_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
 
+Clicking on the :arrow_forward: button should play stream group output audio, where the stream group is formedf by combining input stream contributors. Wav files for stream group output and individual contributors is also available.
+
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
 
