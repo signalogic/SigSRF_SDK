@@ -174,7 +174,7 @@ RFC7198 is a method to address packet loss that does not incur unbounded delay, 
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
 
-mediaMin supports encapsulated streams, for example HI3 intercept streams with IP/UDP/RTP packets encapsulated within a TCP/IP stream. Below are command line examples showing <a href="https:openli.nz" target="_blank">OpenLI</a> pcaps with DER encoded intercept streams organized per ETSI LI and ASN.1 standards.
+mediaMin supports encapsulated streams, for example HI3 intercept streams with IP/UDP/RTP packets encapsulated within a TCP/IP stream. After downloading the SigSRF SDK, below are command line examples you can run showing <a href="https:openli.nz" target="_blank">OpenLI</a> pcaps with DER encoded intercept streams formatted per ETSI LI and ASN.1 standards:
 
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
  
@@ -182,13 +182,15 @@ mediaMin supports encapsulated streams, for example HI3 intercept streams with I
 
 Notes
 
-1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child channels (per RFC8108). In the final run-time stats shown by mediaMin, there should be no stream group output FLC (frame loss concealment), packet logs should be clean, and no warnings or errors in the event log. You can listen to the combined stream group audio by loading openli-voip-example_group0_am.pcap (or openli-voip-example2_group0_am.pcap) in Wireshark or playing the generated .wav files.
+1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108). In the final run-time stats shown by mediaMin, there should be no stream group output FLC (frame loss concealment), packet logs should be clean, and no warnings or errors in the event log. You can listen to the combined stream group audio by loading openli-voip-example_group0_am.pcap (or openli-voip-example2_group0_am.pcap) in Wireshark or playing the generated .wav files.
 
-2) In the first example, run-time status should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
+2) In the first example, run-time stats should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
 
-3) In the OpenLI examples, for some reason the DER encoded packet timestamps do not increment smoothly at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument).
+3) In these OpenLI examples, for some reason the DER encoded packet timestamps do not increment smoothly at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine a packet push rate. As in telecom mode, RTP timestamps are processed by pktlib and streamlib to handle packet repair and interstream alignment.
 
 4) The mediaMin command line has DER stream detection enabled (0x1000 bit in the -dN argument).
+
+5) Dynamic session creation is enabled (0x1 bit in the -dN argument); i.e. no static session config file is supplied on the command line. To create sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and then auto-detects the codec type.
 
 When displaying stream group output in Wireshark you should see the following waveform displays.
 
