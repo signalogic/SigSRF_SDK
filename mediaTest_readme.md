@@ -1,6 +1,6 @@
 # mediaMin and mediaTest Demo
 
-After installing the [SigSRF SDK eval](https://github.com/signalogic/SigSRF_SDK), this page gives example command lines and basic documentation for mediaMin and mediaTest, including:
+After installing the [SigSRF SDK](https://github.com/signalogic/SigSRF_SDK), this page gives example command lines and basic documentation for mediaMin and mediaTest, including:
 
  - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs
 
