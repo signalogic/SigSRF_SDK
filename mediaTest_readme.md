@@ -171,6 +171,31 @@ RFC7198 is a method to address packet loss that does not incur unbounded delay, 
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L
 ```
 
+<a name="EncapsulatedStreams"></a>
+## Encapsulated Streams
+
+mediaMin supports encapsulated streams, for example HI3 intercept streams with IP/UDP/RTP packets encapsulated within a TCP/IP stream. Below are command line examples showing <a href="https:openli.nz" target="_blank">OpenLI</a> pcaps with DER encoded intercept streams organized per ETSI LI and ASN.1 standards.
+
+    ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
+ 
+    ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example2.pcap -L -d0x000c1c01 -r20
+
+Notes
+
+1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child channels (per RFC8108). In the final run-time stats shown by mediaMin, there should be no stream group output FLC (frame loss concealment), packet logs should be clean, and no warnings or errors in the event log. You can listen to the combined stream group audio by loading openli-voip-example_group0_am.pcap (or openli-voip-example2_group0_am.pcap) in Wireshark or playing the generated .wav files.
+
+2) In the first example, run-time status should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
+
+3) In the OpenLI examples, for some reason the DER encoded packet timestamps do not increment smoothly at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument).
+
+4) The mediaMin command line has DER stream detection enabled (0x1000 bit in the -dN argument).
+
+When displaying stream group output in Wireshark you should see the following waveform displays.
+
+![OpenLI HI3 intercept processing, stream group output in Wireshark](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_example1_stream_group_output.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark")
+
+![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_example1_stream_group_output.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
+
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
 
