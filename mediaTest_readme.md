@@ -174,7 +174,7 @@ RFC7198 is a method to address packet loss that does not incur unbounded delay, 
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
 
-mediaMin utilizes the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib module</a> to support encapsulated streams, for example HI3 intercept streams with DER encoded contents formatted per ETSI LI and ASN.1 standards. DER encoding stands for Distinguished Encoding Rules, a subset of <a href="https://en.wikipedia.org/wiki/X.690" target="_blank">X.690</a>. DER encoding allows a variety of information to be encapsulated within a TCP/IP stream, including fully formed UDP/IP RTP packets (referred to as CC, or Content of Communication, packets in HI3 intercept streams).
+mediaMin utilizes the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib module</a> to support encapsulated streams, for example HI3 intercept streams with DER encoded contents formatted per ETSI LI and ASN.1 standards. DER encoding stands for Distinguished Encoding Rules, a subset of <a href="https://en.wikipedia.org/wiki/X.690" target="_blank">X.690</a>. DER encoding allows a variety of information to be encapsulated within a TCP/IP stream, including fully formed UDP/IP RTP packets (in HI3 intercept streams these are referred to as CC, or Content of Communication, packets).
 
 <a name="OpenLISupport"></a>
 ### OpenLI Support
