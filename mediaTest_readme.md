@@ -192,13 +192,13 @@ Notes
 
 5) Dynamic session creation is enabled (0x1 bit in the -dN argument); i.e. no static session config file is supplied on the command line. To create sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and then auto-detects the codec type.
 
-When displaying stream group output in Wireshark you should see the following waveform displays.
+When displaying stream group output in Wireshark you should see the following waveform displays:
 
 ![OpenLI HI3 intercept processing, stream group output in Wireshark](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark")
 
 ![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example2_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
 
-In the second example, the child streams contain early media (early media), which appear as "rectangular bursts" in the above waveform display. Clicking on the :arrow_forward: button should play stream group output audio, formed by combining input stream contributors. Wav files for stream group output and individual contributors are also available.
+In the second example, the child streams contain early media (ringing), which appears as "rectangular bursts" in the above waveform display. Clicking on the :arrow_forward: button should play stream group output audio, formed by combining input stream contributors. Wav files for stream group output and individual contributors are also available.
 
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
