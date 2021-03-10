@@ -66,6 +66,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[OpenLI Support](#user-content-openlisupport)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Static Session Configuration**](#user-content-staticsessionconfig)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
@@ -170,11 +171,15 @@ RFC7198 is a method to address packet loss that does not incur unbounded delay, 
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L
 ```
-
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
 
-mediaMin supports encapsulated streams, for example HI3 intercept streams with IP/UDP/RTP packets encapsulated within a TCP/IP stream. After downloading the SigSRF SDK, below are command line examples you can run showing <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcaps with DER encoded intercept streams formatted per ETSI LI and ASN.1 standards:
+mediaMin utilizes the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib module</a> to supports encapsulated streams, for example HI3 intercept streams with DER encoded contents formatted per ETSI LI and ASN.1 standards. DER encoding stands for Distinguished Encoding Rules, a subset of <a href="https://en.wikipedia.org/wiki/X.690#BER_encoding" target="_blank">X.690</a>. DER encoding allows a variety of information to be encapsulated within a TCP/IP stream, including UDP/IP RTP packets (referred to as CC, or Content of Communication, packets in HI3 intercept streams).
+
+<a name="OpenLISupport"></a>
+### OpenLI Support
+
+After downloading the SigSRF SDK, below are a <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcap command line examples you can run:
 
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
  
