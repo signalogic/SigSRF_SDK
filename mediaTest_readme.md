@@ -212,7 +212,7 @@ In the second example, the child streams contain early media (ring tones), which
 
 In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF pktlib and streamlib module processing prioritize stability of this metric, as well as accurate time-alignment of individual stream contributors relative to each other.
 
-mediaMin also generates stream group output .wav files and individual contributor .wav files, which may be needed depending on the application, but should not be used to measure or authenticate audio quality (see [Audio Quality Notes](#user-content-audioqualitynotes) below).
+mediaMin also generates stream group output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
 
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
@@ -876,11 +876,10 @@ When .au format is given to Wireshark, it performs uLaw or ALaw conversion inter
 <a name="AudioQualityNotes"></a>
 ## Audio Quality Notes
 
-1) When measuring audio quality for a customer (for example in lawful intercept applications), wav files, although convenient, can obscure audio delays/gaps and interstream alignment issues because they assume a linear sampling rate and do not encode sampling points. This is why packet audio should always be used for accurate audio quality analysis.
+1) Wav files are fine for basic audio quality measurements -- amplitude, background noise, intelligibility. However, when authenticating audio content for a customer application in which it's important to know precisely which audio audio occurred when (for example in lawful intercept applications), wav files, although convenient, should not be used. Wav files assume a linear sampling rate and do not encode sampling points, and can thus obscure audio delays/gaps and interstream alignment issues. This is why packet audio should always be used for audio content authentication purposes. 
 
 2) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained "chime markers" with very specific timing and tonal content.
 
 ![Audio quality frequency domain analysis, chime markers, zoom in](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_chimes.png?raw=true "Audio quality frequency domain analysis, chime markers, zoom in")
 
 ![Audio quality frequency domain analysis, chime markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_overall.png?raw=true "Audio quality frequency domain analysis, chime markers")
-
