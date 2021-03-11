@@ -106,13 +106,15 @@ Audio Quality Notes
 <a name="mediaMin"></a>
 # mediaMin
 
-The mediaMin reference application processes multiple concurrent packet streams, performing static or dynamic session creation, packet handling, DTX, media decoding, stream group signal processing including audio quality enhancement and stream merging, speech recognition, real-time encoded RTP output, and event and packet logging and statistics.  Packet handling includes jitter buffer, SID and media packet re-ordering and repair, and intermediate packet output.
+The mediaMin reference application runs optimized, high capacity media packet streaming on x86 servers <sup>[1]</sup>. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams, performing static or dynamic session creation, packet handling, DTX, media decoding, stream group signal processing including audio quality enhancement and stream merging, speech recognition, real-time encoded RTP output, and event and packet logging and statistics.  Packet handling includes jitter buffer, SID and media packet re-ordering and repair, and intermediate packet output.
 
 mediaMin is intended to show how to use pktlib, voplib, streamlib, and other SigSRF library modules for high-capacity, robust processing of real-time packet streams, using "analytics mode" (when packet timestamps are missing or problematic) "telecom mode", or a hybrid mode. Typical application examples including SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to stream groups, which can be formed on the basis of IP addr/port values or arbitrarily as needed.
 
-mediaMin handles Dynamic Session Creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to handle packet flow for the stream. Static session creation is also supported, (including encode, decode, and transcoding) based on parameters in a [session configuration file](#user-content-staticsessionconfig).  mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6).
+mediaMin handles Dynamic Session Creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to handle packet flow for the stream. Static session creation is also supported, (including encode, decode, and transcoding) based on parameters in a [session configuration file](#user-content-staticsessionconfig).
 
 <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a> demonstrates use of pktlib APIs for session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating). <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source</a> code used by pktlib is available to show use of voplib and streamlib APIs.  
+
+<sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. 
 
 <a name="RealTimeStreaming"></a>
 ## Real-Time Streaming and Packet Flow
