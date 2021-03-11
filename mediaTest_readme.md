@@ -101,6 +101,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 [**Wireshark Notes**](#user-content-wiresharknotes)<br/>
 &nbsp;&nbsp;&nbsp;[Playing Audio in Wireshark](#user-content-playingaudiowireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
+Audio Quality Notes
 
 <a name="mediaMin"></a>
 # mediaMin
@@ -193,7 +194,7 @@ Here are some notes about the above command lines and what to look for after the
 
 2) In the first example, run-time stats should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
 
-3) In these OpenLI examples, the DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine packet push rates. In both analytics and telecom modes, the pktlib and streamlib modules examine RTP timestamps during packet repair and interstream alignment.
+3) In these OpenLI examples, the DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine packet push rates. In both analytics and telecom modes, the pktlib and streamlib modules make use of RTP timestamps during packet repair and interstream alignment.
 
 4) The mediaMin command line has DER stream detection enabled (0x1000 bit in the -dN argument).
 
@@ -207,11 +208,11 @@ After loading stream group outputs in Wireshark (openli-voip-example_group0_am.p
 
 ![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example2_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
 
-In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. Clicking on the :arrow_forward: button should play stream group output audio, formed by combining all input stream contributors.
+In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. To play stream group output audio, formed by combining all input stream contributors, click on the :arrow_forward: button.
 
-In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF pktlib and streamlib module processing prioritize stability of this metric, as well as accurate time-alginment of individual stream contributors relative to each other.
+In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF pktlib and streamlib module processing prioritize stability of this metric, as well as accurate time-alignment of individual stream contributors relative to each other.
 
-mediaMin also generates stream group output .wav files and individual contributor .wav files, which may be needed depending on the application. However, from an audio quality perspective, wav files can obscure audio delays/gaps and interstream alignment issues. Unlike wav data, which assumes a linear sampling rate and doesn't encode sampling points, packet audio includes timing information, providing additional insight into audio integrity.
+mediaMin also generates stream group output .wav files and individual contributor .wav files, which may be needed depending on the application, but should not be used to measure or authenticate audio quality.
 
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
@@ -871,3 +872,8 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 When .au format is given to Wireshark, it performs uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples.  If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, or other conversion program.  If that doesn't match the mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
 
 *Note: the above instructions apply to Wireshark version 2.2.6.*
+
+<a name="AudioQualityNotes"></a>
+## Audio Quality Notes
+
+1) When measuring audio quality for a customer (for example in lawful intercept applications), wav files, although convenient, can obscure audio delays/gaps and interstream alignment issues. Wav data assumes a linear sampling rate and does not encode sampling points, which is why packet audio should always be used for accurate audio quality analysis.
