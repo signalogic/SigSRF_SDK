@@ -212,7 +212,7 @@ In the second example, the child streams contain early media (ring tones), which
 
 In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF pktlib and streamlib module processing prioritize stability of this metric, as well as accurate time-alignment of individual stream contributors relative to each other.
 
-mediaMin also generates stream group output .wav files and individual contributor .wav files, which may be needed depending on the application, but should not be used to measure or authenticate audio quality.
+mediaMin also generates stream group output .wav files and individual contributor .wav files, which may be needed depending on the application, but should not be used to measure or authenticate audio quality (see [Audio Quality Notes](#user-content-audioqualitynotes) below).
 
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
@@ -742,7 +742,7 @@ Packet stats logging is part of the Diaglib module, which includes several flags
 3) Comparison results are bit-exact if the cmp command gives no messages
 4) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media, VLC, or other player
 5) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header and with FH formatted frames (i.e. every frame includes a ToC byte). This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line.  See examples in the "Using the 3GPP Decoder" section below.
-6) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the [Session Configuration](#SessionConfig) above.
+6) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the [Static Session Configuration](#user-content-staticsessionconfig) above.
 7) Transcoding in frame mode tests is not yet supported.
 
 <a name="3GPPNotes"></a>
@@ -876,4 +876,6 @@ When .au format is given to Wireshark, it performs uLaw or ALaw conversion inter
 <a name="AudioQualityNotes"></a>
 ## Audio Quality Notes
 
-1) When measuring audio quality for a customer (for example in lawful intercept applications), wav files, although convenient, can obscure audio delays/gaps and interstream alignment issues. Wav data assumes a linear sampling rate and does not encode sampling points, which is why packet audio should always be used for accurate audio quality analysis.
+1) When measuring audio quality for a customer (for example in lawful intercept applications), wav files, although convenient, can obscure audio delays/gaps and interstream alignment issues because they assume a linear sampling rate and do not encode sampling points. This is why packet audio should always be used for accurate audio quality analysis.
+
+2) Audio quality measurement should also include frequency domain analysis, as shown in 
