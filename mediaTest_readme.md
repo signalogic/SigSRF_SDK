@@ -110,11 +110,12 @@ The mediaMin reference application runs optimized, high-capacity media packet st
 
 mediaMin operates in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to stream groups, which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packdet output.
 
-In addition to providing a ready-to-use application, <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a> demonstrates use of pktlib APIs for session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating). <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source</a> code used by pktlib is also available to show use of voplib and streamlib APIs.  
+In addition to providing a ready-to-use application, <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a> demonstrates use of pktlib APIs <sup>[2]</sup> for session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating). <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source</a> code used by pktlib is also available to show use of voplib and streamlib APIs <sup>[2]</sup>.  
 
 mediaMin handles [dynamic session creation](#user-content-dynamicsessioncreation), recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to handle subsequent packet flow in the stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config files supplied on the command line.
 
-<sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. 
+<sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. Stress testing includes concurrent session counts up to 50 per x86 core, with sustained test durations over 1400 hrs.
+<sup>2</sup> pktlib, voplib, and streamlib are SigSRF library modules, as shown in the SigSRF <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">software architecture diagram</a>.
 
 <a name="RealTimeStreaming"></a>
 ## Real-Time Streaming and Packet Flow
