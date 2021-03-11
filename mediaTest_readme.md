@@ -878,4 +878,5 @@ When .au format is given to Wireshark, it performs uLaw or ALaw conversion inter
 
 1) When measuring audio quality for a customer (for example in lawful intercept applications), wav files, although convenient, can obscure audio delays/gaps and interstream alignment issues because they assume a linear sampling rate and do not encode sampling points. This is why packet audio should always be used for accurate audio quality analysis.
 
-2) Audio quality measurement should also include frequency domain analysis, as shown in 
+2) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained "chime markers" with very specific timing and tonal content.
+
