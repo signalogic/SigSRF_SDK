@@ -58,6 +58,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 [**mediaMin**](#user-content-mediamin)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Decoding and Transcoding**](#user-content-decodingandtranscoding)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**](#user-content-dynamicsessioncreation)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
@@ -84,7 +85,6 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Wav to Pcaps](#user-content-convertingwav2pcaps)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS Pcap Generation](#user-content-evspcapgenerator)</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Pcap Generation](#user-content-amrpcapgenerator)</br>
-&nbsp;&nbsp;&nbsp;[**Transcoding**](#user-content-transcoding)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTX Handling](#user-content-dtxhandling)<br/>
 
 [**Variable Ptimes**](#user-content-variableptimes)<br/>
@@ -92,7 +92,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 [**Jitter Buffer**](#user-content-jitterbuffer)<br/>
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**Media Processing Insertion Point**](#user-content-mediaprocessing)<br/>
-[**Packet Stats Logging**](#user-content-packetstatslogging)<br/>
+[**Packet Stats and History Logging**](#user-content-packetstatsandhistorylogging)<br/>
 [**mediaTest Notes**](#user-content-mediatestnotes)<br/>
 [**3GPP Reference Code Notes**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
@@ -106,11 +106,13 @@ Audio Quality Notes
 <a name="mediaMin"></a>
 # mediaMin
 
-mediaMin processes multiple concurrent packet streams, performing static or dynamic session creation, packet handling, DTX, media decoding, stream group signal processing including audio quality enhancement and stream merging, speech recognition, real-time encoded RTP output, and event and packet logging and statistics.  Packet handling includes jitter buffer, SID and media packet re-ordering and repair, and intermediate packet output.
+The mediaMin reference application processes multiple concurrent packet streams, performing static or dynamic session creation, packet handling, DTX, media decoding, stream group signal processing including audio quality enhancement and stream merging, speech recognition, real-time encoded RTP output, and event and packet logging and statistics.  Packet handling includes jitter buffer, SID and media packet re-ordering and repair, and intermediate packet output.
 
-mediaMin is designed for high-capacity, robust processing of real-time packet streams, using "analytics mode" (when packet timestamps are missing or problematic) "telecom mode" (e.g. SBC transcoding), or a hybrid mode. Typical application examples including SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to stream groups, which can be formed on the basis of IP addr/port values or arbitrarily as needed.
+mediaMin is intended to show how to use pktlib, voplib, streamlib, and other SigSRF library modules for high-capacity, robust processing of real-time packet streams, using "analytics mode" (when packet timestamps are missing or problematic) "telecom mode", or a hybrid mode. Typical application examples including SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to stream groups, which can be formed on the basis of IP addr/port values or arbitrarily as needed.
 
-Static session creation is supported, (including encode, decode, and transcoding) based on parameters in a ["session configuration file"](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#SessionConfig).  mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6).  Pktlib APIs in mediaMin source code examples include session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating), and more.
+mediaMin handles Dynamic Session Creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to handle packet flow for the stream. Static session creation is also supported, (including encode, decode, and transcoding) based on parameters in a [session configuration file](#user-content-staticsessionconfig).  mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6).
+
+<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a> demonstrates use of pktlib APIs for session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating). <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source</a> code used by pktlib is available to show use of voplib and streamlib APIs.  
 
 <a name="RealTimeStreaming"></a>
 ## Real-Time Streaming and Packet Flow
@@ -121,7 +123,12 @@ Buffering ("backpressure" in data analytics terminology) is handled using an adv
 
 [Additional signal processing](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#MediaProcessing) can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
 
-Below are some command line examples (using the EVS codec).  The first command does the following:
+<a name="DecodingAndTranscoding"></a>
+### Decoding and Transcoding
+
+The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see lists on this page), as is intermediate wav file output from the decoded endpoint. A single command line format includes I/O, operating mode and options, packet and event logging, SDP support, and more.  A static session config file is optional.
+
+Below are some transcoding command line examples. The first command does the following:
 
 * reads IP/UDP/RTP packets from the specified input pcap files
 * listens for all UDP ports (on any network interface)
@@ -219,7 +226,7 @@ mediaMin also generates stream group output .wav files and individual contributo
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
 
-Session configuration can be handled programmatically using the DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or using a session configuration text file to set the struct elements.  The latter method is implemented by mediaTest (see transcoder.c).  For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
+Static session configuration can be handled programmatically using the DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or using a session configuration text file to set the struct elements.  The latter method is implemented by mediaTest (see transcoder.c).  For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
 
 Structs defined in shared_include/session.h include SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
 
@@ -294,7 +301,7 @@ Codec + audio mode allows testing with flexible and interchangeable audio I/O, i
 
 * a wide range of audio I/O, including waveform file formats, compressed bitstream file types, and USB audio
 
-Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and Pktlib APIs are not used (for single command real-time streaming packet flow and transcoding, see Packet Mode below).
+Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and pktlib APIs are not used (for real-time streaming packet flow and transcoding, see [mediaMin](#user-content-mediamin) above).
 
 Codec + audio mode supports the following functionality:
 
@@ -441,8 +448,6 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 
 Simple mediaTest command lines can be used to convert Pcaps to wav file, listen to Pcaps over USB audio, or both.
 
-These commands can be run either in Frame Mode, or [Packet Mode](#PacketModeOperation).
-
 <a name="EVSPlayer"></a>
 ### EVS Player
 
@@ -464,11 +469,7 @@ The above command lines will work on any EVS pcap, including full header, compac
 
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
 
-Unlike the frame mode test examples above, where an -M0 mode argument is entered, the -M4 mode argument (packet mode) enables jitter buffering and handling of out-of-order packets, DTX packets, and SSRC changes.
-
-An output pcap filename could also be added to the above command lines, i.e. decode audio to wav file, and also encode the audio to G711 or other codec.
-
-Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see [Session Configuration](#SessionConfig) below).
+Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see [Static Session Configuration](#user-content-staticsessionconfig) above).
 
 <a name="AMRPlayer"></a>
 ### AMR Player
@@ -517,15 +518,9 @@ The following mediaTest command line converts a wav file to pcap:
 <a name="Transcoding"></a>
 ## Transcoding
 
-mediaTest can perform transcoding in two ways:
+mediaTest can perform transcoding by encoding from an audio input (see list above in "Codec + Audio Mode") to a compressed bitstream file, and decoding the bitstream file to an audio output. Two command lines are required, and framesize (e.g. 20 msec, 25 msec, etc) must match between codecs.
 
-* in packet mode, decoding packet streams in real-time (or at a specified rate) from a combination of network sockets and pcap files, and encoding to a network stream and/or pcap file
-
-* in codec + audio mode, encoding from an audio input (see list above in "Codec + Audio Mode") to a compressed bitstream file, and decoding the bitstream file to an audio output
-
-In packet mode, mediaTest handles all aspects of transcoding and transrating, including mismatched codec framesizes, variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, and more. Numerous RFCs are supported (see lists on this page), as is intermediate wav file output from the decoded endpoint.  A single command line specifies I/O and a session config file including endpoint definitions, packet parameters, and streaming parameters
-
-In codec + audio mode, two command lines are required, and it's up to the user to ensure that framesize duration (e.g. 20 msec, 25 msec, etc) matches between the codecs.
+The [mediaMin](#user-content-mediamin) section above describes real-time transcoding between input and output packet streams (either socket or pcap I/O).
 
 <a name="DTXHandling"></a>
 ### DTX Handling
@@ -599,7 +594,7 @@ The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets i
 ./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L -r0
 ```
 
-specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see [Session Configuration](#SessionConfig) above).
+specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see [Static Session Configuration](#user-content-staticsessionconfig) above).
 
 <a name="SupportedRFCs"></a>
 ## RFCs
@@ -625,18 +620,18 @@ Examples of media processing include speech and sound recognition, image analyti
 
 In the mediaTest source code examples, look for the APIs DSSaveStreamData(), which saves ordered / extracted / decoded payload data, and DSGetStreamData(), which retrieves payload data.  These APIs allow user-defined algorithms to control buffer timing between endpoints, depending on application objectives -- minimizing latency (real-time applications), maximizing bandwidth, matching or transrating endpoint timing, or otherwise as needed.
 
-<a name="PacketStatsLogging"></a>
-## Packet Stats Logging
+<a name="PacketStatsandHistoryLogging"></a>
+## Packet Stats and History Logging
 
-mediaTest includes packet statistics logging for:
+mediaMin includes packet statistics logging for:
 
   * incoming packets (network input, pcap file)
   * jitter buffer output
   * outgoing packets (network output, pcap file)
 
-In the above command lines, the -L entry activates packet logging, with the first output filename found taken as the log filename but replaced with a ".txt" extension.  If -Lxxx is given then xxx becomes the log filename.
+In example mediaMin command lines above, the -L entry activates packet logging, with the first output filename found taken as the log filename but replaced with a ".txt" extension.  If -Lxxx is given then xxx becomes the log filename.
 
-Statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated.  Statistics are calculated separately for each SSRC (see Multiple RTP Streams section above), with individual packet entries showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID CNG, DTMF Event, etc).  Here is a packet stats log file excerpt:
+Statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated.  Statistics are calculated separately for each SSRC (see Multiple RTP Streams section above), with individual packet entries showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID CNG, DTMF Event, etc). Here is a packet stats log file excerpt:
 
 ```CoffeeScript
 Packet info for SSRC = 353707 (cont), first seq num = 685, last seq num = 872 ...
@@ -739,7 +734,7 @@ Packet stats logging is part of the Diaglib module, which includes several flags
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
 
-1) In the command line filenames above, CH = Compact Header, FH = Full Header, PTnnn = Payload Type nn.  Some filenames contain values indicating sampling rate and bitrate (denoted by NNkhz and NNbps).  Some pcap filenames contain packets organized according to a specific RFC (denoted by RFCnnnn).
+1) In mediaTest command lines above, input filenames following a naming convention where CH = Compact Header, FH = Full Header, PTnnn = Payload Type nn.  Some filenames contain values indicating sampling rate and bitrate (denoted by NNkhz and NNbps).  Some pcap filenames contain packets organized according to a specific RFC (denoted by RFCnnnn).
 2) NB = Narrowband (8 kHz sampling rate), WB = Wideband (16 kHz), SWB = Super Wideband (32 kHz)
 3) Comparison results are bit-exact if the cmp command gives no messages
 4) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media, VLC, or other player
