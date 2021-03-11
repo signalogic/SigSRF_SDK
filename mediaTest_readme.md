@@ -198,7 +198,7 @@ Here are some notes about the above command lines and what to look for after the
 
 4) The mediaMin command line has DER stream detection enabled (0x1000 bit in the -dN argument).
 
-5) Dynamic session creation is enabled on the mediaMin command line (0x1 bit in the -dN argument); i.e. no static session config file is supplied. When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type. HI3 DER stream detection, dynamic session creation, and codec auto-detection are highlighted in the mediaMin run-time output screen capture below.
+5) Dynamic session creation is enabled on the mediaMin command line (0x1 bit in the -dN argument); i.e. no static session config file is supplied. When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type. HI3 DER stream detection, dynamic session creation, and codec auto-detection are highlighted in the mediaMin run-time screen capture below.
 
 ![OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_DER_stream_detection_session_creation.png?raw=true "OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection")
 
