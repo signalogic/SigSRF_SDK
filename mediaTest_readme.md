@@ -876,9 +876,9 @@ When .au format is given to Wireshark, it performs uLaw or ALaw conversion inter
 <a name="AudioQualityNotes"></a>
 ## Audio Quality Notes
 
-1) Wav files are fine for basic audio quality measurements -- amplitude, background noise, intelligibility. However, when authenticating audio content for a customer application in which it's important to know precisely which audio audio occurred when (for example in lawful intercept applications), wav files, although convenient, should not be used. Wav files assume a linear sampling rate and do not encode sampling points, and can thus obscure audio delays/gaps and interstream alignment issues. This is why packet audio should always be used for audio content authentication purposes. 
+1) Wav files are fine for basic audio quality measurements -- amplitude, background noise, intelligibility. However, when authenticating audio quality for a customer application in which it's important to know precisely which audio audio occurred when (for example in lawful intercept applications), wav files, although convenient, should not be used alone. Wav files assume a linear sampling rate and do not encode sampling points, and can thus obscure audio delays/gaps and interstream alignment issues. This is why packet audio should always be included for audio quality authentication purposes. 
 
-2) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained "chime markers" with very specific timing and tonal content.
+2) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained embedded "chime markers" with very specific timing and tonal content.
 
 ![Audio quality frequency domain analysis, chime markers, zoom in](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_chimes.png?raw=true "Audio quality frequency domain analysis, chime markers, zoom in")
 
