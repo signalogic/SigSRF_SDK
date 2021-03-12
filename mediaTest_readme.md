@@ -205,9 +205,9 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 <a name="MultipleRTPStreams"></a>
 ## Multiple RTP Streams (RFC 8108)
 
-RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically, in order to maintain separate and contiguous content for each stream.  This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions. The SigSRF pktlib library module supports RFC8108, creating new RTP streams on-the-fly (dynamically) and resuming previous ones. When a new RTP stream is created, new encoder and decoder instances are also created, in order to maintain separate and contiguous content for each stream. This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
 
-Here are mediaMin command line examplesfor testing multiple RTP streams:
+Here are mediaMin command line examples for testing multiple RTP streams:
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
  
