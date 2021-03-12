@@ -126,9 +126,9 @@ Buffering ("backpressure" in data analytics terminology) is handled using an adv
 
 User-defined media processing can be inserted into packet/media data flow in two (2) places:
 
-> In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>
+> 1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>
 > 
-> In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">audio_domain_processing.c source code</a>
+> 2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">audio_domain_processing.c source code</a>
 
 See [User-Defined Signal Processing Insertion Points](#user-content-userdefinedsignalprocessinginsertionpoints) below for more information.
 
@@ -168,8 +168,8 @@ mediaMin supports dynamic session creation, recognizing packet streams with uniq
 
 mediaMin supports SDP (<a href="https://en.wikipedia.org/wiki/Session_Description_Protocol" target="_blank">Session Description Portocol</a>) input to moderate dynamic session creation, allowing applications to
 
-    1) override codec auto-detection
-    2) ignore one or more payload types, in effect ignoring the stream
+> 1) override codec auto-detection
+> 2) ignore one or more payload types, in effect ignoring the stream
 
 SDP input can be given as a command line argument with an "-s" option, as shown in the following command line example:
 
