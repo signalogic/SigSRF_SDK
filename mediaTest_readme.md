@@ -59,12 +59,16 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer)](#user-content-jitterbuffer)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**](#user-content-dynamicsessioncreation)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
-&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams)<br/>
-&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams)<br/>
+&nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality Processing](#user-content-audioqualityprocessing)<br/
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Stream Alignment](#user-content-streamalignment)<br/
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[OpenLI Support](#user-content-openlisupport)<br/>
@@ -160,6 +164,36 @@ The screencap below shows mediaTest output after the second command line.
 
 ![mediaMin pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaMin pcap I/O command line example")
 
+<a name="MultipleRTPStreams"></a>
+### Multiple RTP Streams (RFC 8108)
+
+RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions. The SigSRF pktlib library module supports RFC8108, creating new RTP streams on-the-fly (dynamically) and resuming previous ones. When a new RTP stream is created, new encoder and decoder instances are also created, in order to maintain separate and contiguous content for each stream. This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+
+Here are mediaMin command line examples for testing multiple RTP streams:
+
+    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
+ 
+    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/EVS_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
+
+The first command line above uses dynamic session creation, analytics mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
+
+Below is a screen capture showing output for the second command line above, with RTP stream transitions highlighted:
+
+![mediaMin multiple RTP streams example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaMin multiple RTP streams example")
+
+The packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Stats and History Logging](#user-content-packetstatsandhistorylogging) below.
+
+<a name="DuplicatedRTPStreams"></a>
+### Duplicated RTP Streams (RFC 7198)
+
+RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Here are mediaMin command line examples included in the SigSRF SDK for RFC7198:
+
+    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
+
+    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6.wav -C../session_config/EVS_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
+
+The first command line above uses dynamic session creation, telecom mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
+
 <a name="DynamicSessionCreation"></a>
 ## Dynamic Session Creation
 
@@ -210,35 +244,14 @@ a=rtpmap:100 telephone-event/16000
 
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
 
-<a name="MultipleRTPStreams"></a>
-## Multiple RTP Streams (RFC 8108)
+<a name="StreamGroups"></a>
+## Stream Groups
 
-RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions. The SigSRF pktlib library module supports RFC8108, creating new RTP streams on-the-fly (dynamically) and resuming previous ones. When a new RTP stream is created, new encoder and decoder instances are also created, in order to maintain separate and contiguous content for each stream. This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+<a name="AudioQualityProcessing"></a>
+### Audio Quality Processing
 
-Here are mediaMin command line examples for testing multiple RTP streams:
-
-    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
- 
-    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/EVS_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
-
-The first command line above uses dynamic session creation, analytics mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
-
-Below is a screen capture showing output for the second command line above, with RTP stream transitions highlighted:
-
-![mediaMin multiple RTP streams example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaMin multiple RTP streams example")
-
-The packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Stats and History Logging](#user-content-packetstatsandhistorylogging) below.
-
-<a name="DuplicatedRTPStreams"></a>
-## Duplicated RTP Streams (RFC 7198)
-
-RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Here are mediaMin command line examples included in the SigSRF SDK for RFC7198:
-
-    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
-
-    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6.wav -C../session_config/EVS_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
-
-The first command line above uses dynamic session creation, telecom mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
+<a name="StreamAlignment"></a>
+### Stream Alignment
 
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
