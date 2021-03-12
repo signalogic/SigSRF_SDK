@@ -112,7 +112,7 @@ mediaMin operates in "analytics mode" (when packet timestamps are missing or pro
 
 In addition to providing a ready-to-use application, <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a> demonstrates use of pktlib APIs <sup>[2]</sup> for session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating). <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source</a> code used by pktlib is also available to show use of voplib and streamlib APIs <sup>[2]</sup>.  
 
-mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreation), recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to process subsequent packet flow in the stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config files supplied on the command line.
+mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreation), recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to process subsequent packet flow in the stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.
 
 <sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. Stress testing includes concurrent session counts up to 50 per x86 core, with sustained test durations over 1400 hrs.</br>
 <sup>2</sup> pktlib, voplib, and streamlib are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
@@ -155,7 +155,7 @@ The screencap below shows mediaTest output after the second command line.
 <a name="DynamicSessionCreation"></a>
 ## Dynamic Session Creation
 
-mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreation), recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream it finds. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config files supplied on the command line.
+mediaMin supports dynamic session creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream it finds. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.
 
 <a name="SDPSupport"></a>
 ### SDP Support
@@ -165,7 +165,7 @@ mediaMin supports SDP (<a href="https://en.wikipedia.org/wiki/Session_Descriptio
     1) override auto-detection
     2) ignore one or more streams (or codecs)
 
-SDP input can be given as a command line argument with an "-s" option:
+SDP input can be given as a command line argument with an "-s" option, as shown in the following command line example:
 
     ./mediaMin -M0 -cx86 -i../pcaps/input.pcapng -L -d0x100c0c01 -r20 -sexample.sdp
 
