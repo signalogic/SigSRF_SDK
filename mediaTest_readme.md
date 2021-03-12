@@ -8,7 +8,7 @@ After installing the [SigSRF SDK](https://github.com/signalogic/SigSRF_SDK), thi
 
  - an example application, including source code, showing how to use Pktlib and Voplib APIs (see architecture diagram on the SigSRF page)
 
-Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav); the example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the demo.  The demo is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams.  The commercial software has no limitations for concurrency or multiuser, for either bare metal or VM operation.
+Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav); the example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the SigSRF SDK.  SDK capacity is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams. The commercial software has no limitations for concurrency or multiuser, for bare metal, VM, container, or other supported platforms.
 
 # News and Updates
 
@@ -39,7 +39,7 @@ Here are some new features added recently:
 <a name="DemoLimits"></a>
 # Demo Limits
 
-mediaTest demo functionality is limited as follows:
+mediaMin and mediaTest demo functionality is limited as follows:
 
    1) Data limit.  Processing is limited to 3000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
 
@@ -230,7 +230,7 @@ The packet stats and history log files produced by the above commands (mediaplay
 <a name="DuplicatedRTPStreams"></a>
 ## Duplicated RTP Streams (RFC 7198)
 
-RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams.  Here is the mediaTest command line example included in the demo for RFC7198:
+RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams.  Here is the mediaTest command line example included in the SigSRF SDK for RFC7198:
 
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L
@@ -429,7 +429,7 @@ Here are screen caps for the above two mediaTest commands (with frame count and 
 
 ![mediaTest display for EVS NB coCPU test](https://github.com/signalogic/SigSRF_SDK/blob/master/images/evs_nb_codec_test_cocpu_screencap.png?raw=true "mediaTest display for EVS NB test using coCPU card")
 
-In the above command lines, eight (8) coCPU cores are specified, although the free demo is limited to one coCPU core per instance.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).  Depending on which coCPU card you have, up to 64 coCPU cores can be specified.  Multiple instances of mediaTest can make use of more cards.
+In the above command lines, eight (8) coCPU cores are specified, although the SigSRF SDK demo is limited to one coCPU core per instance.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).  Depending on which coCPU card you have, up to 64 coCPU cores can be specified.  Multiple instances of mediaTest can make use of more cards.
 
 Below is a screen capture showing overlay comparison of the NB output with the 3GPP reference waveform:
 
@@ -596,37 +596,37 @@ If DTX handling is enabled with the SigSRF background process, then the user pro
 <a name="VariablePtimes"></a>
 ### Variable Ptimes
 
-Variable ptimes refers to endpoints that have unequal payload times (ptimes); for example one endpoint might be sending/receiving media every 20 msec and another endpoint every 40 msec.  The mediaTest demo includes examples that match, or "transrate" timing between endpoints with unequal ptimes.
+Variable ptimes refers to endpoints that have unequal payload times (ptimes); for example one endpoint might be sending/receiving media every 20 msec and another endpoint every 40 msec. SigSRF SDK mediaMin reference app examples include command lines that match, or "transrate" timing between endpoints with unequal ptimes.
 
-Here are demo command lines that convert incoming pcaps with 20 msec ptime to outgoing pcaps with 40 msec ptime:
+Here are mediaMin command lines that convert incoming pcaps with 20 msec ptime to outgoing pcaps with 40 msec ptime:
 
 ```C
-./mediaTest -cx86 -M0 -Csession_config/g711_20ptime_g711_40ptime_test_config -ipcaps/pcmutest.pcap -opcmutest_40ptime.pcap -opcmutest_40ptime.wav -L
+./mediaMin -cx86 -M0 -C../session_config/g711_20ptime_g711_40ptime_test_config -i../pcaps/pcmutest.pcap -opcmutest_40ptime.pcap -opcmutest_40ptime.wav -L
 ```
 
 ```C
-./mediaTest -cx86 -M0 -C session_config/evs_20ptime_g711_40ptime_test_config -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ovptime_test1.pcap -L
+./mediaMin -cx86 -M0 -C../session_config/evs_20ptime_g711_40ptime_test_config -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ovptime_test1.pcap -L
 ```
 
 For the above command lines, note in the mediaTest displayed statistics counters, the number of transcoded frames is half of the number of buffered / pulled frames, because of the 20 to 40 msec ptime conversion.
 
-Here is a demo command line that converts an incoming pcap with 240 msec ptime to 20 msec:
+Here is a mediaMin command line that converts an incoming pcap with 240 msec ptime to 20 msec:
 
 ```C
-./mediaTest -cx86 -M0 -Csession_config/evs_240ptime_g711_20ptime_test_config -ipcaps/evs_16khz_16400bps_ptime240_FH_IPv4.pcap -ovptime_test2.pcap -ovptime_test2.wav -L
+./mediaMin -cx86 -M0 -C../session_config/evs_240ptime_g711_20ptime_test_config -i../pcaps/evs_16khz_16400bps_ptime240_FH_IPv4.pcap -ovptime_test2.pcap -ovptime_test2.wav -L
 ```
 
-Note however that 240 msec is a very large ptime more suited to unidirectional media streams.  For a bidirectional real-time media stream, for example a 2-way voice conversation, large ptimes would cause excessive delay and difficulty for the endpoints to understand each other.
+Note however that 240 msec is a very large ptime more suited to unidirectional media streams. For a bidirectional real-time media stream, for example a 2-way voice conversation, large ptimes would cause excessive delay and intelligibility problems between endpoints.
 
 <a name ="DTMFHandling"></a>
 ### DTMF Handling
 
-DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the Pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  Complete DTMF handling examples are shown in C/C++ source codes included with the demo.
+DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the Pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  Complete DTMF handling examples are shown in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>.
 
-Here is a demo command line that processes a pcap (included in the demo) containing DTMF event packets:
+Here is a mediaMin command line that processes a pcap containing DTMF event packets:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -Csession_config/g711_dtmfevent_config -L
+./mediaMin -M0 -cx86 -i../pcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
 ```
 A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in "Packet Stats Logging", below.
 
@@ -665,7 +665,7 @@ Some of the RFCs supported by Pktlib include:
 * RFC 3551, 3558, 4788, 5188, 5391, 5993, 6716
 * RFC 8130 (payload format for MELPe / STANAG 4591) <sup> 1</sup>
  
- <sup>1 </sup>In progress, not yet in the demo
+ <sup>1 </sup>In progress, not yet in the SigSRF SDK
 
 <a name="UserDefinedSignalProcessingInsertionPoints"></a>
 ## User-Defined Signal Processing Insertion Points
@@ -678,7 +678,7 @@ Pktlib and streamlib source codes in the SigSRF SDK include "user-defined code i
 
 The default source codes listed above include sampling rate conversion and encoding (depending on required RTP packet output), speech recognition, stream deduplication, and other processing.
 
-Examples of possible user-defined processing include advanced speech and sound recognition, speaker identification, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to other processes, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries, or to a voice analytics process.  The alglib library (not included in the demo) contains FFT, convolution, correlation, and other optimized, high performance signal processing functions.  Alglib supports both x86 and coCPU&trade; cores, and is used by the [SigDL deep learning framework](https://github.com/signalogic/SigDL).
+Examples of possible user-defined processing include advanced speech and sound recognition, speaker identification, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to other processes, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries, or to a voice analytics process.  The alglib library contains sampling rate conversion, FFT, convolution, correlation, and other optimized, high performance signal processing functions. Alglib supports both x86 and coCPU&trade; cores, and is used by the [SigDL deep learning framework](https://github.com/signalogic/SigDL).
 
 In addition to the above mentioned In SigSRF source codes, look also for the APIs DSSaveStreamData(), which saves ordered / extracted / decoded payload data, and DSGetStreamData(), which retrieves payload data. These APIs allow user-defined algorithms to control buffer timing between endpoints, depending on application objectives -- minimizing latency (real-time applications), maximizing bandwidth, matching or transrating endpoint timing, or otherwise as needed.
 
@@ -787,7 +787,7 @@ Seq num 275              timestamp = 48400, pkt len = 160
 :
 ```
 
-Packet stats logging is part of the Diaglib module, which includes several flags (see the diaglib.h header file included with the demo).  Some of the more notable flags include:
+Packet stats logging is part of the Diaglib module, which includes several flags (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/diaglib.h" target="_blank">diaglib.h header file</a>). Some of the more notable flags include:
 
   - DS_PKTSTATS_LOG_COLLATE_STREAMS, collate and sort packet logs by RTP stream (i.e. using SSRC values)
   - DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from Diaglib analysis sections
@@ -799,8 +799,8 @@ Packet stats logging is part of the Diaglib module, which includes several flags
 1) In mediaTest command lines above, input filenames following a naming convention where CH = Compact Header, FH = Full Header, PTnnn = Payload Type nn.  Some filenames contain values indicating sampling rate and bitrate (denoted by NNkhz and NNbps).  Some pcap filenames contain packets organized according to a specific RFC (denoted by RFCnnnn).
 2) NB = Narrowband (8 kHz sampling rate), WB = Wideband (16 kHz), SWB = Super Wideband (32 kHz)
 3) Comparison results are bit-exact if the cmp command gives no messages
-4) The demo will store .wav files in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media, VLC, or other player
-5) The demo stores EVS compressed bitstream files in ".cod" format, with a MIME header and with FH formatted frames (i.e. every frame includes a ToC byte). This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line.  See examples in the "Using the 3GPP Decoder" section below.
+4) .wav files are stored in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media, VLC, or other player
+5) Codec compressed bitstreams are stored in files in ".cod" format, with a MIME header and with FH formatted frames (i.e. every frame includes a ToC byte). This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line.  See examples in the "Using the 3GPP Decoder" section below.
 6) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the [Static Session Configuration](#user-content-staticsessionconfig) above.
 7) Transcoding in frame mode tests is not yet supported.
 
