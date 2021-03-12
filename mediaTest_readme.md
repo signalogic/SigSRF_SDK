@@ -149,14 +149,14 @@ The second command line is similar, but also does the following:
 * sends over the network any additional streams beyond the number of output files given
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L
+./mediaMin -M0 -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L
 
-./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -Csession_config/pcap_file_test_config -L
+./mediaMin -M0 -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -C../session_config/pcap_file_test_config -L
 ```
 
 The screencap below shows mediaTest output after the second command line.
 
-![mediaTest pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
+![mediaMin pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaMin pcap I/O command line example")
 
 <a name="DynamicSessionCreation"></a>
 ## Dynamic Session Creation
@@ -230,11 +230,14 @@ The packet stats and history log files produced by the above commands (mediaplay
 <a name="DuplicatedRTPStreams"></a>
 ## Duplicated RTP Streams (RFC 7198)
 
-RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams.  Here is the mediaTest command line example included in the SigSRF SDK for RFC7198:
+RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Here are mediaMin command line examples included in the SigSRF SDK for RFC7198:
 
-```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC7198_IPv6.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC7198_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L
-```
+    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
+
+    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6.wav -C../session_config/EVS_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
+
+The first command line above uses dynamic session creation, telecom mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
+
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
 
@@ -672,9 +675,9 @@ Some of the RFCs supported by Pktlib include:
 
 Pktlib and streamlib source codes in the SigSRF SDK include "user-defined code insert points" for signal processing and other algorithms to process media data, either or both (i) after extraction from ordered payloads and/or decoding, and (ii) after stream group processing. For these two (2) locations, the specific source codes are:
 
-    1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a/ href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c", target="_blank">packet/media thread source code</a>
- 
-    2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">audio_domain_processing.c source code </a>
+> 1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c", target="_blank">packet/media thread source code</a>
+> 
+> 2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">audio_domain_processing.c source code</a>
 
 The default source codes listed above include sampling rate conversion and encoding (depending on required RTP packet output), speech recognition, stream deduplication, and other processing.
 
