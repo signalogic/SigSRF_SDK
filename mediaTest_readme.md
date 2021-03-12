@@ -112,7 +112,7 @@ mediaMin operates in "analytics mode" (when packet timestamps are missing or pro
 
 In addition to providing a ready-to-use application, <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a> demonstrates use of pktlib APIs <sup>[2]</sup> for session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating). <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source</a> code used by pktlib is also available to show use of voplib and streamlib APIs <sup>[2]</sup>.  
 
-mediaMin handles [dynamic session creation](#user-content-dynamicsessioncreation), recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to handle subsequent packet flow in the stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config files supplied on the command line.
+mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreation), recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to process subsequent packet flow in the stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config files supplied on the command line.
 
 <sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. Stress testing includes concurrent session counts up to 50 per x86 core, with sustained test durations over 1400 hrs.</br>
 <sup>2</sup> pktlib, voplib, and streamlib are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
@@ -147,6 +147,7 @@ The second command line is similar, but also does the following:
 
 ./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -Csession_config/pcap_file_test_config -L
 ```
+
 The screencap below shows mediaTest output after the second command line.
 
 ![mediaTest pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaTest pcap I/O command line example")
@@ -154,8 +155,50 @@ The screencap below shows mediaTest output after the second command line.
 <a name="DynamicSessionCreation"></a>
 ## Dynamic Session Creation
 
+mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreation), recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream it finds. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config files supplied on the command line.
+
 <a name="SDPSupport"></a>
 ### SDP Support
+
+mediaMin supports SDP input to moderate dynamic session creation, allowing applications to
+
+    -override auto-detection
+    -ignore one or more streams (or codecs)
+
+SDP input can be given as a command line argument with an "-s" option:
+
+    ./mediaMin -M0 -cx86 -i../pcaps/input.pcapng -L -d0x100c0c01 -r20 -sexample.sdp
+
+or as a contents of a TCP/IP packet in the incoming packet flow. In the latter case, SDP info should appear before stream(s) start in order to take effect.
+
+```coffeescript
+# Example SDP file for use in mediaMin cmd line. Signalogic, Jan2021
+#
+# mediaMin cmd line syntax:
+#
+#   -sfilepath.sdp
+#
+# Notes:
+#   1) mediaMin will show messages for payload types found in incoming packet flow when either (i) the payload type is unmatched to a supported codec, or (ii) the payload type is not specified in the SDP file
+#      In both cases, one message for each payload type will be shown
+#   2) Dynamic payload types must be >= 96 and <= 127, per IETF guidelines (https://tools.ietf.org/id/draft-wu-avtcore-dynamic-pt-usage-02.html). mediaMin will ignore payload type values outside this range
+#   3) # can be used as comment delineator. Starting with this symbol, the line, or remainder of the line, is ignored
+
+m=audio 41970 RTP/AVP 96 97 98 99 100
+a=rtpmap:96 AMR-WB/16000
+a=fmtp:96 mode-set=0,1,2; mode-change-period=2; mode-change-neighbor=1; max-red=0
+a=rtpmap:97 AMR/8000
+a=fmtp:97 mode-set=0,2,5,7; mode-change-period=2; mode-change-neighbor=1; max-red=0
+a=rtpmap:98 AMR/8000
+a=fmtp:98 mode-change-period=2; mode-change-neighbor=1; max-red=0
+a=rtpmap:99 telephone-event/8000
+a=rtpmap:100 telephone-event/16000
+
+# more rtmaps, uncomment to enable
+
+# a=rtpmap:109 EVS/16000
+# a=rtpmap:112 AMR-WB/16000
+```
 
 <a name="MultipleRTPStreams"></a>
 ## Multiple RTP Streams (RFC 8108)
