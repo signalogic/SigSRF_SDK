@@ -671,13 +671,13 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 <a name="PacketPushRateControl"></a>
 ### Packet Push Rate Control
 
-mediaMin supports a "-rN" command line options to control packet push rate, where N is given in msec. For example typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for analytics applications, or for offline purposes (testing, analysis, speech recognition training, measurement, etc), it might be needed to operate "faster than real-time", or as fast as possible. The command line below includes -r0 (same as no entry) to specify a fast-as-possible push rate:
+mediaMin supports a "-rN" command line options to control packet push rate, where N is given in msec. For example typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for analytics applications, or for offline purposes (testing, analysis, speech recognition training, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line below includes -r0 (same as no entry) to specify a fast-as-possible push rate:
 
     ./mediaMin -M0 -cx86 -i../pcaps/pcmutest.pcap -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
 
 In addition to this level of control, mediaMin also implements an average packet push rate algorithm, which can be applied when pktlib is operating in analytics mode. The average push rate algorithm enable is the 0x80000 flag in the mediaMin -dN command line argument, and analytics mode is the 0x40000 flag.
 
-Note that entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, the session config ptime value is used instead (see [Static Session Configuration](#user-content-staticsessionconfig) above).
+Note that entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above).
 
 <a name="SupportedRFCs"></a>
 ## RFCs
