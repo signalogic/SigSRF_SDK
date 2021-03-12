@@ -162,8 +162,8 @@ mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreatio
 
 mediaMin supports SDP input to moderate dynamic session creation, allowing applications to
 
-    -override auto-detection
-    -ignore one or more streams (or codecs)
+    1) override auto-detection
+    2) ignore one or more streams (or codecs)
 
 SDP input can be given as a command line argument with an "-s" option:
 
