@@ -94,6 +94,8 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 [**Variable Ptimes**](#user-content-variableptimes)<br/>
 [**DTMF Handling**](#user-content-dtmfhandling)<br/>
 [**Jitter Buffer**](#user-content-jitterbuffer)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Push Rate Control](#user-content-packetpushratecontrol)<br/>
+
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
 [**Packet Stats and History Logging**](#user-content-packetstatsandhistorylogging)<br/>
@@ -201,7 +203,7 @@ Below are mediaMin command line examples showing how to control jitter buffer de
 
 
 
-See [Jitter Buffer](#user-content-jitterbuffer) for information on underlying jitter buffer operation and functionality.
+See [Jitter Buffer](#user-content-jitterbuffer) below for information on underlying jitter buffer operation and functionality.
 
 <a name="DynamicSessionCreation"></a>
 ## Dynamic Session Creation
@@ -284,15 +286,15 @@ Here are some notes about the above command lines and what to look for after the
 
 2) In the first example, run-time stats should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
 
-3) In these OpenLI examples, the DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 bits set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine packet push rates. In both analytics and telecom modes, the pktlib and streamlib modules use RTP timestamps to help with packet repair and interstream alignment.
+3) In these OpenLI examples, the DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 flags set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine packet push rates. In both analytics and telecom modes, the pktlib and streamlib modules use RTP timestamps to help with packet repair and interstream alignment.
 
-4) The mediaMin command line has DER stream detection enabled (0x1000 bit in the -dN argument).
+4) The mediaMin command line has DER stream detection enabled (0x1000 flag in the -dN argument).
 
-5) Dynamic session creation is enabled on the mediaMin command line (0x1 bit in the -dN argument); i.e. no static session config file is supplied. When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type. HI3 DER stream detection, dynamic session creation, and codec auto-detection are highlighted in the mediaMin run-time screen capture below.
+5) Dynamic session creation is enabled on the mediaMin command line (0x1 flag in the -dN argument); i.e. no static session config file is supplied. When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type. HI3 DER stream detection, dynamic session creation, and codec auto-detection are highlighted in the mediaMin run-time screen capture below.
 
 ![OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_DER_stream_detection_session_creation.png?raw=true "OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection")
 
-6) The mediaMin command line has stream groups enabled (0x400 bit in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be enabled for stream group output.
+6) The mediaMin command line has stream groups enabled (0x400 flag in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be enabled for stream group output.
 
 After loading stream group outputs in Wireshark (openli-voip-example_group0_am.pcap and openli-voip-example2_group0_am.pcap) you should see the following waveform displays:
 
@@ -496,11 +498,10 @@ The next command line includes a config file to control sampling rate and number
 Note that various USB devices have different capabilities and options for sampling rate and number of channels.  For example, the Focusrite 2i2 supports four (4) rates from 44.1 to 192 kHz.  In codec + audio mode, mediaTest selects a device rate that is the "nearest integer multiplier" (or nearest integer divisor, or combination of multiplier and divisor) to the test rate, and performs sampling rate conversion as needed.  As one typical example, when testing a narrowband codec (8 kHz sampling rate), mediaTest will select a device rate of 48 kHz, apply lowpass filtering, and then decimate by 1/6.
 
 The mediaTest command lines below show (i) USB audio acquisition of a stereo wav file at 48 kHz, and (ii) processing USB audio with the EVS codec at 16 kHz sampling rate.
-```C
-./mediaTest -cx86 -iusb0 -ousb_test.wav -Csession_config/wav_test_config_48kHz_2chan
 
-./mediaTest -cx86 -iusb0 -ousb_codec_output.wav -Csession_config/evs_16kHz_13200bps_config
-```
+    ./mediaTest -cx86 -iusb0 -ousb_test.wav -Csession_config/wav_test_config_48kHz_2chan
+
+    ./mediaTest -cx86 -iusb0 -ousb_codec_output.wav -Csession_config/evs_16kHz_13200bps_config
 
 Below are waveform displays for a 1.5 kHz sine wave from the HP 33120A function generator, sampled by the Focusrite 2i2 at 48 kHz, downsampled to 16 kHz using a voplib API, and run through an EVS 13200 bps encode API:
 
@@ -515,11 +516,9 @@ Note that EVS -- unlike older codecs that rely only on a vocal tract model -- is
 
 Frame mode performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  Voplib APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
 
-```C
-./mediaTest -cx86 -M4 -Csession_config/frame_test_config -L
+    ./mediaTest -cx86 -M4 -Csession_config/frame_test_config -L
 
-./mediaTest -cx86 -M4 -Csession_config/frame_test_config_wav_output -L
-```
+    ./mediaTest -cx86 -M4 -Csession_config/frame_test_config_wav_output -L
 
 Below is a frame mode command line that reads a pcap file and outputs to wav file.  No jitter buffering is done, so any out-of-order packets, DTX packets, or SSRC changes are not handled.  The wav file sampling rate is determined from the session config file.
 
@@ -584,9 +583,7 @@ Simple mediaTest command lines can be used to convert wav and other audio format
 
 The following mediaTest command line converts a wav file to pcap:
 
-```C
-./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/evs_16kHz_13200bps_config
-```
+    ./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/evs_16kHz_13200bps_config
 
 A similar command line can be used with other audio format files. The config file allows EVS bitrate, header format, and other options to be specified. mediaTest automatically performs sample rate conversion if the wav file Fs is different than the sample rate specified in the config file.
 
@@ -662,22 +659,25 @@ If DTMF handling is enabled with the SigSRF background process, then DTMF events
 <a name="JitterBuffer"></a>
 ## Jitter Buffer
 
-As part of the SigSRF software, with its emphasis on high performance streaming, the Pktlib jitter buffer provides several advanced features, including:
+In line with SigSRF's emphasis on high performance streaming, the pktlib library module implements a jitter buffer with advanced features, including:
 
-* Handles out-of-order packets, including packet swaps
+* Re-ordering of ooo (out-of-order) packets, including an optional automatic "holdoff" feature that dynamically adjusts jitter buffer depth to account for ooo outliers
 * Accepts incoming packets in real-time, unlimited rate (i.e. as fast as possible), or user-specified rate
 * Maximum buffer depth (or backpressure limit) can be specified on per-session basis
-* Dynamic channel creation to support multiple RTP streams per session (see Multiple RTP Streams / RFC 8108 section above)
-* Dynamic delay and depth adjustment options
-* Statistics API, logging, and several options such as overrun control, probation control, flush, and bypass modes
+* Dynamic channel creation to support multiple RTP streams per session (see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) above)
+* Dynamic delay and depth adjustment control through APIs and command line options
+* Statistics APIs, logging, and several options such as overrun control, probation control, flush, and bypass modes
 
-The DS_GETORD_PKT_FTRT flag (in pktlib.h) can be used to pull buffered packets in "faster than real-time" (FTRT) mode.  The packet mode command lines on this page can be used in FTRT mode by adding "-rN", where N is the packet add interval in msec.  For example adding -r0 to the basic packet mode command line above:
+<a name="PacketPushRateControl"></a>
+### Packet Push Rate Control
 
-```C
-./mediaTest -M0 -cx86 -ipcaps/pcmutest.pcap -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -Csession_config/pcap_file_test_config -L -r0
-```
+mediaMin supports a "-rN" command line options to control packet push rate, where N is given in msec. For example typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for analytics applications, or for offline purposes (testing, analysis, speech recognition training, measurement, etc), it might be needed to operate "faster than real-time", or as fast as possible. The command line below includes -r0 (same to no entry) to specify a fast-as-possible push rate:
 
-specifies a packet add interval of zero, or as fast as possible.  -r10 would specify an add interval of 10 msec, -r5 5 msec, etc.  If no -rN entry is given (the default), then the "ptime" value in the session config definition is used as the add interval (see [Static Session Configuration](#user-content-staticsessionconfig) above).
+    ./mediaMin -M0 -cx86 -i../pcaps/pcmutest.pcap -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -r0
+
+In addition to this level of control, mediaMin also implements an average packet push rate algorithm, which can be applied when pktlib is operating in analytics mode. The average push rate algorithm enable is the 0x80000 flag in mediaMin -dN command line argument, and analytics mode is the 0x40000 flag.
+
+Note that if no -rN entry is given, and a session configuration file is given on the command line that contains a "ptime" value, the session config value is used instead (see [Static Session Configuration](#user-content-staticsessionconfig) above).
 
 <a name="SupportedRFCs"></a>
 ## RFCs
