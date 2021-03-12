@@ -124,7 +124,13 @@ SigSRF software processes streams from/to network sockets or pcap files, applyin
 
 Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#JitterBuffer)).
 
-[Additional signal processing](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#MediaProcessing) can be inserted into the media data flow, for example after decoding, but prior to sampling rate conversion and encoding.
+[Additional signal processing](#user-content-mediaprocessing) can be inserted into packet/media data flow in two (2) places:
+
+    1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a/ href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c", target="_blank">packet/media thread source code</a>
+ 
+    2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">audio_domain_processing.c source code </a>
+
+Both of these are considered "user-defined code insertion points".
 
 <a name="DecodingAndTranscoding"></a>
 ### Decoding and Transcoding
