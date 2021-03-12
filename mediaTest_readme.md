@@ -207,17 +207,19 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 
 RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions.  The mediaTest demo includes an example showing SSRC transition detections, both for creating new RTP streams on the fly (dynamically) and resuming previous ones.  When a new RTP stream is created, new encoder and decoder instances are also created dynamically, in order to maintain separate and contiguous content for each stream.  This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
 
-Here is the mediaTest command line example included in the demo for multiple RTP streams:
+Here are mediaMin command line examplesfor testing multiple RTP streams:
 
-```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_RFC8108_IPv6.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6_g711.pcap -oevs_16khz_13200bps_CH_RFC8108_IPv6.wav -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config -L
-```
+    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
+ 
+    ./mediaMin -M0 -cx86 -i../pcaps/evs_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/EVS_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
 
-Here is a screen capture showing output for the above command line, with RTP stream transitions highlighted:
+The first command line above uses dynamic session creation, analytics mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are not correct.
 
-![mediaTest multiple RTP stream command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaTest multiple RTP stream command line example")
+Below is a screen capture showing output for the second command line above, with RTP stream transitions highlighted:
 
-The packet stats log file produced by the above command (evs_16khz_13200bps_CH_RFC8108_IPv6_g711.txt) shows how the SigSRF Pktlib jitter buffer correctly collates and treats each stream separately, while still resolving out-of-order packets.  For a log file excerpt, see "Packet Stats and Logging" below.
+![mediaMin multiple RTP streams example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaMin multiple RTP streams example")
+
+The packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Stats and History Logging](#user-content-packetstatsandhistorylogging) below.
 
 <a name="DuplicatedRTPStreams"></a>
 ## Duplicated RTP Streams (RFC 7198)
