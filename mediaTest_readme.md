@@ -160,7 +160,7 @@ mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreatio
 <a name="SDPSupport"></a>
 ### SDP Support
 
-mediaMin supports SDP input to moderate dynamic session creation, allowing applications to
+mediaMin supports SDP (<a href="https://en.wikipedia.org/wiki/Session_Description_Protocol" target="_blank">Session Description Portocol</a>) input to moderate dynamic session creation, allowing applications to
 
     1) override auto-detection
     2) ignore one or more streams (or codecs)
@@ -169,7 +169,7 @@ SDP input can be given as a command line argument with an "-s" option:
 
     ./mediaMin -M0 -cx86 -i../pcaps/input.pcapng -L -d0x100c0c01 -r20 -sexample.sdp
 
-or as a contents of a TCP/IP packet in the incoming packet flow. In the latter case, SDP info should appear before stream(s) start in order to take effect.
+or as a contents of SIP TCP/IP packets in the incoming packet flow. In the latter case, SDP info should appear before stream(s) start in order to take effect.
 
 ```coffeescript
 # Example SDP file for use in mediaMin cmd line. Signalogic, Jan2021
