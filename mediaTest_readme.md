@@ -67,8 +67,8 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality Processing](#user-content-audioqualityprocessing)<br/
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Stream Alignment](#user-content-streamalignment)<br/
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality Processing](#user-content-audioqualityprocessing)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Stream Alignment](#user-content-streamalignment)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[OpenLI Support](#user-content-openlisupport)<br/>
