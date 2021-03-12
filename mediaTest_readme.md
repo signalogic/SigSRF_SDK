@@ -58,7 +58,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 [**mediaMin**](#user-content-mediamin)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Decoding and Transcoding**](#user-content-decodingandtranscoding)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**](#user-content-dynamicsessioncreation)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
@@ -91,7 +91,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 [**DTMF Handling**](#user-content-dtmfhandling)<br/>
 [**Jitter Buffer**](#user-content-jitterbuffer)<br/>
 [**RFCs**](#user-content-supportedrfcs)<br/>
-[**Media Processing Insertion Point**](#user-content-mediaprocessing)<br/>
+[**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
 [**Packet Stats and History Logging**](#user-content-packetstatsandhistorylogging)<br/>
 [**mediaTest Notes**](#user-content-mediatestnotes)<br/>
 [**3GPP Reference Code Notes**](#user-content-3gppnotes)<br/>
@@ -124,13 +124,13 @@ SigSRF software processes streams from/to network sockets or pcap files, applyin
 
 Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#JitterBuffer)).
 
-[Additional signal processing](#user-content-mediaprocessing) can be inserted into packet/media data flow in two (2) places:
+User-defined media processing can be inserted into packet/media data flow in two (2) places:
 
     1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a/ href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c", target="_blank">packet/media thread source code</a>
  
     2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">audio_domain_processing.c source code </a>
 
-Both of these are considered "user-defined code insertion points".
+See [User-Defined Signal Processing Insertion Points](#user-content-userdefinedsignalprocessinginsertionpoints) for more information.
 
 <a name="DecodingAndTranscoding"></a>
 ### Decoding and Transcoding
@@ -667,14 +667,20 @@ Some of the RFCs supported by Pktlib include:
  
  <sup>1 </sup>In progress, not yet in the demo
 
-<a name="MediaProcessing"></a>
-## Media Processing Insertion Point
+<a name="UserDefinedSignalProcessingInsertionPoints"></a>
+## User-Defined Signal Processing Insertion Points
 
-The mediaTest source codes included with the demo show where to insert signal processing and other algorithms to process media data, after extraction from ordered payloads and/or decoding.  The example source code files perform sampling rate conversion and encoding (depending on session configuration), but other algorithms can also be applied.
+Pktlib and streamlib source codes in the SigSRF SDK include "user-defined code insert points" for signal processing and other algorithms to process media data, either or both (i) after extraction from ordered payloads and/or decoding, and (ii) after stream group processing. For these two (2) locations, the specific source codes are:
 
-Examples of media processing include speech and sound recognition, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to other processes, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries, or to a voice analytics process.  The alglib library (not included in the demo) contains FFT, convolution, correlation, and other optimized, high performance signal processing functions.  Alglib supports both x86 and coCPU&trade; cores, and is used by the [SigDL deep learning framework](https://github.com/signalogic/SigDL).
+    1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a/ href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c", target="_blank">packet/media thread source code</a>
+ 
+    2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">audio_domain_processing.c source code </a>
 
-In the mediaTest source code examples, look for the APIs DSSaveStreamData(), which saves ordered / extracted / decoded payload data, and DSGetStreamData(), which retrieves payload data.  These APIs allow user-defined algorithms to control buffer timing between endpoints, depending on application objectives -- minimizing latency (real-time applications), maximizing bandwidth, matching or transrating endpoint timing, or otherwise as needed.
+The default source codes listed above include sampling rate conversion and encoding (depending on required RTP packet output), speech recognition, stream deduplication, and other processing.
+
+Examples of possible user-defined processing include advanced speech and sound recognition, speaker identification, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to other processes, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries, or to a voice analytics process.  The alglib library (not included in the demo) contains FFT, convolution, correlation, and other optimized, high performance signal processing functions.  Alglib supports both x86 and coCPU&trade; cores, and is used by the [SigDL deep learning framework](https://github.com/signalogic/SigDL).
+
+In addition to the above mentioned In SigSRF source codes, look also for the APIs DSSaveStreamData(), which saves ordered / extracted / decoded payload data, and DSGetStreamData(), which retrieves payload data. These APIs allow user-defined algorithms to control buffer timing between endpoints, depending on application objectives -- minimizing latency (real-time applications), maximizing bandwidth, matching or transrating endpoint timing, or otherwise as needed.
 
 <a name="PacketStatsandHistoryLogging"></a>
 ## Packet Stats and History Logging
