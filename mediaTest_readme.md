@@ -660,7 +660,7 @@ specifies a packet add interval of zero, or as fast as possible.  -r10 would spe
 <a name="SupportedRFCs"></a>
 ## RFCs
 
-Some of the RFCs supported by Pktlib include:
+Some of the RFCs supported by pktlib and voplib include:
 
 * RFC 3550 (real-time transport protocol)
 * RFC 2833 and 4733 (DTMF)
@@ -669,6 +669,7 @@ Some of the RFCs supported by Pktlib include:
 * RFC 8108 (multiple RTP streams)
 * RFC 3551, 3558, 4788, 5188, 5391, 5993, 6716
 * RFC 8130 (payload format for MELPe / STANAG 4591) <sup> 1</sup>
+* RFC 4566 (SDP: Session Description Protocol)
  
  <sup>1 </sup>In progress, not yet in the SigSRF SDK
 
