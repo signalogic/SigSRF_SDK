@@ -211,9 +211,9 @@ Here are mediaMin command line examples for testing multiple RTP streams:
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
  
-    ./mediaMin -M0 -cx86 -i../pcaps/evs_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/EVS_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
+    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/EVS_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
 
-The first command line above uses dynamic session creation, analytics mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are not correct.
+The first command line above uses dynamic session creation, analytics mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
 
 Below is a screen capture showing output for the second command line above, with RTP stream transitions highlighted:
 
