@@ -200,6 +200,8 @@ a=rtpmap:100 telephone-event/16000
 # a=rtpmap:112 AMR-WB/16000
 ```
 
+Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
+
 <a name="MultipleRTPStreams"></a>
 ## Multiple RTP Streams (RFC 8108)
 
