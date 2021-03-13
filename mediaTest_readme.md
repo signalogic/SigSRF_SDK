@@ -286,7 +286,7 @@ Here are some notes about the above command lines and what to look for after the
 
 2) In the first example, run-time stats should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
 
-3) In these OpenLI examples, the DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 flags set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above example) to dynamically determine packet push rates. In both analytics and telecom modes, the pktlib and streamlib modules use RTP timestamps to help with packet repair and interstream alignment.
+3) In these OpenLI examples, DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 flags set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above examples) to dynamically determine packet push rates. In both analytics and telecom modes, the pktlib and streamlib modules use RTP timestamps to help with packet repair and interstream alignment.
 
 4) The mediaMin command line has DER stream detection enabled (0x1000 flag in the -dN argument).
 
