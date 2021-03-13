@@ -280,7 +280,7 @@ After downloading the SigSRF SDK, below are <a href="https://openli.nz" target="
 
 Here are some notes about the above command lines and what to look for after they run:
 
-1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108), as highlighted in red in the mediaMin run-time stats screen capture below. There should be no stream group output FLC (frame loss concealment), packet logs should be clean, and no warnings or errors in the event log (highlighted in green).
+1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) above), as highlighted in red in the mediaMin run-time stats screen capture below. There should be no stream group output FLC (frame loss concealment), packet logs should be clean, and no warnings or errors in the event log (highlighted in green).
 
 ![OpenLI HI3 intercept processing, mediaMin run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_run-time_stats.png?raw=true "OpenLI HI3 intercept processing, mediaMin run-time stats")
 
