@@ -57,8 +57,8 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 [**mediaMin**](#user-content-mediamin)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreamingcmdline)</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding Cmd Line Examples](#user-content-decodingandtranscodingcmdline)<br/>
+&nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding Cmd Line Examples](#user-content-decodingandtranscoding)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108) Cmd Line Examples](#user-content-multiplertpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198) Cmd Line Examples](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
@@ -131,7 +131,7 @@ mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreatio
 <sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. Stress testing includes concurrent session counts up to 50 per x86 core, with sustained test durations over 1400 hrs.</br>
 <sup>2</sup> pktlib, voplib, and streamlib are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
 
-<a name="RealTimeStreamingCmdLine"></a>
+<a name="RealTimeStreaming"></a>
 ## Real-Time Streaming and Packet Flow Command Line Examples
 
 SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
@@ -146,7 +146,7 @@ User-defined media processing can be inserted into packet/media data flow in two
 
 See [User-Defined Signal Processing Insertion Points](#user-content-userdefinedsignalprocessinginsertionpoints) below for more information.
 
-<a name="DecodingAndTranscodingCmdLine"></a>
+<a name="DecodingAndTranscoding"></a>
 ### Decoding and Transcoding Cmd Line Examples
 
 The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is intermediate pcap and wav file output from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, SDP support, and more.  A static session config file is optional.
@@ -173,7 +173,7 @@ The screencap below shows mediaTest output after the second command line.
 ![mediaMin pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaMin pcap I/O command line example")
 
 <a name="MultipleRTPStreamsCmdLine"></a>
-### Multiple RTP Streams (RFC 8108) Cmd Line Examples
+### Multiple RTP Streams (RFC 8108)
 
 As explained in [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below, [pktlib](#user-content-pktlib) implements RFC8108, which specifies multiple RTP streams within a session, created and switching based on SSRC transitions. Below are mediaMin command line examples for testing multiple RTP streams:
 
@@ -190,9 +190,9 @@ Below is a screen capture showing output for the second command line above, with
 Packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Log](#user-content-packetlog) below.
 
 <a name="DuplicatedRTPStreamsCmdLine"></a>
-### Duplicated RTP Streams (RFC 7198) Cmd Line Examples
+### Duplicated RTP Streams (RFC 7198)
 
-[pktlib](#user-content-pktlib) implements RFC7198, a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Here are mediaMin command line examples included in the SigSRF SDK for RFC7198:
+As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams) below, [pktlib](#user-content-pktlib) implements RFC7198, a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Below are mediaMin command line examples included in the SigSRF SDK for RFC7198:
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
 
