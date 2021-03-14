@@ -76,8 +76,9 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[**Static Session Configuration**](#user-content-staticsessionconfig)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 
-[**Event Log**](#user-content-eventlog)<br/>
-[**Packet Stats and History Log**](#user-content-packetstatsandhistorylog)<br/>
+&nbsp;&nbsp;&nbsp;[**Event Log**](#user-content-eventlog)<br/>
+
+&nbsp;&nbsp;&nbsp;[**Packet Stats and History Log**](#user-content-packetstatsandhistorylog)<br/>
 
 [**mediaTest**](#user-content-mediatest)<br/>
 
@@ -185,7 +186,7 @@ Below is a screen capture showing output for the second command line above, with
 
 ![mediaMin multiple RTP streams example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaMin multiple RTP streams example")
 
-The packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Stats and History Log](#user-content-packetstatsandhistorylog) below.
+Packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Stats and History Log](#user-content-packetstatsandhistorylog) below.
 
 <a name="DuplicatedRTPStreams"></a>
 ### Duplicated RTP Streams (RFC 7198)
@@ -732,7 +733,7 @@ DTX (Discontinuous Transmission) handling can be enabled/disabled on per session
   
 From this point, the media encoder specified for the session can be used normally, and outgoing packets can be formatted for transmission either with the DSFormatPacket() API or a user-defined method.
 
-A log file example showing incoming SID packets and buffer output DTX expansion is included in [Packet Stats and History Log](#user-content-packetstatsandhistorylog) below.
+A log file example showing incoming SID packets and buffer output DTX expansion is included in [Packet Stats and History Log](#user-content-packetstatsandhistorylog) above.
 
 If DTX handling is enabled with the SigSRF background process, then the user program does not need to call APIs or make any other intervention.
 
@@ -771,7 +772,7 @@ Here is a mediaMin command line that processes a pcap containing DTMF event pack
 ```C
 ./mediaMin -M0 -cx86 -i../pcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
 ```
-A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in [Packet Stats and History Log](#user-content-packetstatsandhistorylog) below.
+A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in [Packet Stats and History Log](#user-content-packetstatsandhistorylog) above.
 
 If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
 
