@@ -210,6 +210,8 @@ See [Jitter Buffer](#user-content-jitterbuffer) below for information on underly
 
 mediaMin supports dynamic session creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream it finds. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.
 
+In cases where input streams have a definitive end, for instance one or more command line input pcaps, mediaMin will automatically do session cleanup and delete.
+
 <a name="SDPSupport"></a>
 ### SDP Support
 
