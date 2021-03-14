@@ -90,6 +90,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS Pcap Generation](#user-content-evspcapgenerator)</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Pcap Generation](#user-content-amrpcapgenerator)</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTX Handling](#user-content-dtxhandling)<br/>
+&nbsp;&nbsp;&nbsp;[**mediaTest Notes**](#user-content-mediatestnotes)<br/>
 
 [**pktlib**](#user-content-pktlib)<br/>
 
@@ -103,7 +104,6 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
-[**mediaTest Notes**](#user-content-mediatestnotes)<br/>
 [**3GPP Reference Code Notes**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
 &nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#user-content-verifyingevspcap)<br/>
