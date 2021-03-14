@@ -76,6 +76,9 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[**Static Session Configuration**](#user-content-staticsessionconfig)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 
+[**Event Log**](#user-content-eventlog)<br/>
+[**Packet Stats and History Log**](#user-content-packetstatsandhistorylog)<br/>
+
 [**mediaTest**](#user-content-mediatest)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
@@ -98,7 +101,6 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
-[**Packet Stats and History Logging**](#user-content-packetstatsandhistorylogging)<br/>
 [**mediaTest Notes**](#user-content-mediatestnotes)<br/>
 [**3GPP Reference Code Notes**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
@@ -183,7 +185,7 @@ Below is a screen capture showing output for the second command line above, with
 
 ![mediaMin multiple RTP streams example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaMin multiple RTP streams example")
 
-The packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Stats and History Logging](#user-content-packetstatsandhistorylogging) below.
+The packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Stats and History Log](#user-content-packetstatsandhistorylog) below.
 
 <a name="DuplicatedRTPStreams"></a>
 ### Duplicated RTP Streams (RFC 7198)
@@ -372,7 +374,122 @@ As described Session Configuration above, "remote" IP addr and UDP port values r
 
 Although terminations can be defined in any order, in general term1 remote should match incoming source values, and term1 local should match incoming destination values. If an outgoing stream is simply a pcap file or a UDP port that nobody is listening to, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
 
+<a name="EventLog"></a>
+## Event Log
+
+<a name="PacketStatsandHistoryLog"></a>
+## Packet Stats and History Log
+
+mediaMin includes packet statistics and history logging for:
+
+  * incoming packets (network input, pcap file)
+  * jitter buffer output
+  * outgoing packets (network output, pcap file)
+
+In example mediaMin command lines above, the -L entry activates packet logging, with the first output filename found taken as the log filename but replaced with a ".txt" extension.  If -Lxxx is given then xxx becomes the log filename.
+
+Statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated.  Statistics are calculated separately for each SSRC (see Multiple RTP Streams section above), with individual packet entries showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID CNG, DTMF Event, etc). Here is a packet stats log file excerpt:
+
+```CoffeeScript
+Packet info for SSRC = 353707 (cont), first seq num = 685, last seq num = 872 ...
+
+Seq num 685              timestamp = 547104, pkt len = 33
+Seq num 686              timestamp = 547424, pkt len = 33
+Seq num 688 ooo 687      timestamp = 548064, pkt len = 33
+Seq num 687 ooo 688      timestamp = 547744, pkt len = 33
+Seq num 690 ooo 689      timestamp = 548704, pkt len = 33
+Seq num 689 ooo 690      timestamp = 548384, pkt len = 33
+Seq num 691              timestamp = 549024, pkt len = 33
+Seq num 692              timestamp = 549344, pkt len = 6 (DTX)
+:
+:
+```
+
+Here is an excerpt from a stream summary:
+
+```CoffeeScript
+:
+:
+Seq num 10001            timestamp = 451024, pkt len = 33
+Seq num 10002            timestamp = 451344, pkt len = 6 (DTX)
+Seq num 10003            timestamp = 453904, pkt len = 6 (DTX)
+Seq num 10004            timestamp = 456464, pkt len = 6 (DTX)
+
+Out-of-order seq numbers = 0, missing seq numbers = 22, number of DTX packets = 78
+
+Total packets dropped = 0
+Total packets duplicated = 0
+```
+
+As mentioned in "DTX Handling" above, here is a log file example, first showing incoming SID packets...
+
+```CoffeeScript
+:
+:
+Seq num 22              timestamp = 107024, pkt len = 33
+Seq num 23              timestamp = 107344, pkt len = 33
+Seq num 24              timestamp = 107664, pkt len = 6 (SID)
+Seq num 25              timestamp = 110224, pkt len = 6 (SID)
+Seq num 26              timestamp = 112144, pkt len = 33
+Seq num 27              timestamp = 112464, pkt len = 33
+:
+:
+```
+
+... and corresponding outgoing SID and SID comfort noise packets:
+
+
+```CoffeeScript
+:
+:
+Seq num 22              timestamp = 107024, pkt len = 33
+Seq num 23              timestamp = 107344, pkt len = 33
+Seq num 24              timestamp = 107664, pkt len = 6 (SID)
+Seq num 25              timestamp = 107984, pkt len = 6 (SID CNG-R)
+Seq num 26              timestamp = 108304, pkt len = 6 (SID CNG-R)
+Seq num 27              timestamp = 108624, pkt len = 6 (SID CNG-R)
+Seq num 28              timestamp = 108944, pkt len = 6 (SID CNG-R)
+Seq num 29              timestamp = 109264, pkt len = 6 (SID CNG-R)
+Seq num 30              timestamp = 109584, pkt len = 6 (SID CNG-R)
+Seq num 31              timestamp = 109904, pkt len = 6 (SID CNG-R)
+Seq num 32              timestamp = 110224, pkt len = 6 (SID)
+Seq num 33              timestamp = 110544, pkt len = 6 (SID CNG-R)
+Seq num 34              timestamp = 110864, pkt len = 6 (SID CNG-R)
+Seq num 35              timestamp = 111184, pkt len = 6 (SID CNG-R)
+Seq num 36              timestamp = 111504, pkt len = 6 (SID CNG-R)
+Seq num 37              timestamp = 111824, pkt len = 6 (SID CNG-R)
+Seq num 38              timestamp = 112144, pkt len = 33
+Seq num 39              timestamp = 112464, pkt len = 33
+:
+:
+```
+
+As mentioned in "DTMF Handling" above, here is a log file example showing incoming DTMF event packets.  Note that per RFC 4733, one or more packets within the event may have duplicated sequence numbers and timestamps.  The packet logging APIs included with SigSRF can optionally mark these as duplicated if needed.
+
+```CoffeeScript
+:
+:
+Seq num 269              timestamp = 47600, pkt len = 160
+Seq num 270              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 271              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 272              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 273              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
+Seq num 275              timestamp = 48400, pkt len = 160
+:
+:
+```
+
+Packet stats logging is part of the Diaglib module, which includes several flags (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/diaglib.h" target="_blank">diaglib.h header file</a>). Some of the more notable flags include:
+
+  - DS_PKTSTATS_LOG_COLLATE_STREAMS, collate and sort packet logs by RTP stream (i.e. using SSRC values)
+  - DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from Diaglib analysis sections
+  - DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from Diaglib analysis sections
+
 <a name="mediaTest"></a>
+
 # mediaTest
 
 A key objective of mediaTEst is to provide tools to measure encode, decode, and transcoding performance for a wide range of codecs.
@@ -615,7 +732,7 @@ DTX (Discontinuous Transmission) handling can be enabled/disabled on per session
   
 From this point, the media encoder specified for the session can be used normally, and outgoing packets can be formatted for transmission either with the DSFormatPacket() API or a user-defined method.
 
-A log file example showing incoming SID packets and buffer output DTX expansion is included in "Packet Stats Logging", below.
+A log file example showing incoming SID packets and buffer output DTX expansion is included in [Packet Stats and History Log](#user-content-packetstatsandhistorylog) below.
 
 If DTX handling is enabled with the SigSRF background process, then the user program does not need to call APIs or make any other intervention.
 
@@ -654,7 +771,7 @@ Here is a mediaMin command line that processes a pcap containing DTMF event pack
 ```C
 ./mediaMin -M0 -cx86 -i../pcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
 ```
-A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in "Packet Stats Logging", below.
+A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in [Packet Stats and History Log](#user-content-packetstatsandhistorylog) below.
 
 If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
 
@@ -711,117 +828,6 @@ The default source codes listed above include sampling rate conversion and encod
 Examples of possible user-defined processing include advanced speech and sound recognition, speaker identification, image analytics, and augmented reality (overlaying information on video data).  Data buffers filled by SigSRF can be handed off to other processes, for instance to a Spark process for parsing / formatting of unstructured data and subsequent processing by machine learning libraries, or to a voice analytics process.  The alglib library contains sampling rate conversion, FFT, convolution, correlation, and other optimized, high performance signal processing functions. Alglib supports both x86 and coCPU&trade; cores, and is used by the [SigDL deep learning framework](https://github.com/signalogic/SigDL).
 
 In addition to the above mentioned In SigSRF source codes, look also for the APIs DSSaveStreamData(), which saves ordered / extracted / decoded payload data, and DSGetStreamData(), which retrieves payload data. These APIs allow user-defined algorithms to control buffer timing between endpoints, depending on application objectives -- minimizing latency (real-time applications), maximizing bandwidth, matching or transrating endpoint timing, or otherwise as needed.
-
-<a name="PacketStatsandHistoryLogging"></a>
-## Packet Stats and History Logging
-
-mediaMin includes packet statistics logging for:
-
-  * incoming packets (network input, pcap file)
-  * jitter buffer output
-  * outgoing packets (network output, pcap file)
-
-In example mediaMin command lines above, the -L entry activates packet logging, with the first output filename found taken as the log filename but replaced with a ".txt" extension.  If -Lxxx is given then xxx becomes the log filename.
-
-Statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated.  Statistics are calculated separately for each SSRC (see Multiple RTP Streams section above), with individual packet entries showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID CNG, DTMF Event, etc). Here is a packet stats log file excerpt:
-
-```CoffeeScript
-Packet info for SSRC = 353707 (cont), first seq num = 685, last seq num = 872 ...
-
-Seq num 685              timestamp = 547104, pkt len = 33
-Seq num 686              timestamp = 547424, pkt len = 33
-Seq num 688 ooo 687      timestamp = 548064, pkt len = 33
-Seq num 687 ooo 688      timestamp = 547744, pkt len = 33
-Seq num 690 ooo 689      timestamp = 548704, pkt len = 33
-Seq num 689 ooo 690      timestamp = 548384, pkt len = 33
-Seq num 691              timestamp = 549024, pkt len = 33
-Seq num 692              timestamp = 549344, pkt len = 6 (DTX)
-:
-:
-```
-
-Here is an excerpt from a stream summary:
-
-```CoffeeScript
-:
-:
-Seq num 10001            timestamp = 451024, pkt len = 33
-Seq num 10002            timestamp = 451344, pkt len = 6 (DTX)
-Seq num 10003            timestamp = 453904, pkt len = 6 (DTX)
-Seq num 10004            timestamp = 456464, pkt len = 6 (DTX)
-
-Out-of-order seq numbers = 0, missing seq numbers = 22, number of DTX packets = 78
-
-Total packets dropped = 0
-Total packets duplicated = 0
-```
-
-As mentioned in "DTX Handling" above, here is a log file example, first showing incoming SID packets...
-
-```CoffeeScript
-:
-:
-Seq num 22              timestamp = 107024, pkt len = 33
-Seq num 23              timestamp = 107344, pkt len = 33
-Seq num 24              timestamp = 107664, pkt len = 6 (SID)
-Seq num 25              timestamp = 110224, pkt len = 6 (SID)
-Seq num 26              timestamp = 112144, pkt len = 33
-Seq num 27              timestamp = 112464, pkt len = 33
-:
-:
-```
-
-... and corresponding outgoing SID and SID comfort noise packets:
-
-
-```CoffeeScript
-:
-:
-Seq num 22              timestamp = 107024, pkt len = 33
-Seq num 23              timestamp = 107344, pkt len = 33
-Seq num 24              timestamp = 107664, pkt len = 6 (SID)
-Seq num 25              timestamp = 107984, pkt len = 6 (SID CNG-R)
-Seq num 26              timestamp = 108304, pkt len = 6 (SID CNG-R)
-Seq num 27              timestamp = 108624, pkt len = 6 (SID CNG-R)
-Seq num 28              timestamp = 108944, pkt len = 6 (SID CNG-R)
-Seq num 29              timestamp = 109264, pkt len = 6 (SID CNG-R)
-Seq num 30              timestamp = 109584, pkt len = 6 (SID CNG-R)
-Seq num 31              timestamp = 109904, pkt len = 6 (SID CNG-R)
-Seq num 32              timestamp = 110224, pkt len = 6 (SID)
-Seq num 33              timestamp = 110544, pkt len = 6 (SID CNG-R)
-Seq num 34              timestamp = 110864, pkt len = 6 (SID CNG-R)
-Seq num 35              timestamp = 111184, pkt len = 6 (SID CNG-R)
-Seq num 36              timestamp = 111504, pkt len = 6 (SID CNG-R)
-Seq num 37              timestamp = 111824, pkt len = 6 (SID CNG-R)
-Seq num 38              timestamp = 112144, pkt len = 33
-Seq num 39              timestamp = 112464, pkt len = 33
-:
-:
-```
-
-As mentioned in "DTMF Handling" above, here is a log file example showing incoming DTMF event packets.  Note that per RFC 4733, one or more packets within the event may have duplicated sequence numbers and timestamps.  The packet logging APIs included with SigSRF can optionally mark these as duplicated if needed.
-
-```CoffeeScript
-:
-:
-Seq num 269              timestamp = 47600, pkt len = 160
-Seq num 270              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 271              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 272              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 273              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 275              timestamp = 48400, pkt len = 160
-:
-:
-```
-
-Packet stats logging is part of the Diaglib module, which includes several flags (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/diaglib.h" target="_blank">diaglib.h header file</a>). Some of the more notable flags include:
-
-  - DS_PKTSTATS_LOG_COLLATE_STREAMS, collate and sort packet logs by RTP stream (i.e. using SSRC values)
-  - DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from Diaglib analysis sections
-  - DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from Diaglib analysis sections
 
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
