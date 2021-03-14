@@ -57,10 +57,10 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 
 [**mediaMin**](#user-content-mediamin)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams)<br/>
+&nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreamingcmdline)</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding Cmd Line Examples](#user-content-decodingandtranscodingcmdline)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108) Cmd Line Examples](#user-content-multiplertpstreamscmdline)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198) Cmd Line Examples](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**](#user-content-dynamicsessioncreation)<br/>
@@ -98,6 +98,8 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandling)<br/>
 &nbsp;&nbsp;&nbsp;[**Jitter Buffer**](#user-content-jitterbuffer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Push Rate Control](#user-content-packetpushratecontrol)<br/>
+&nbsp;&nbsp;&nbsp;[**Multiple RTP Streams (RFC8108)**](#user-content-multiplertpstreams)<br/>
+&nbsp;&nbsp;&nbsp;[**Duplicated RTP Streams (RFC7198)**](#user-content-duplicatedrtpstreams)<br/>
 
 [**Event Log**](#user-content-eventlog)<br/>
 [**Packet Log**](#user-content-packetlog)<br/>
@@ -129,8 +131,8 @@ mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreatio
 <sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. Stress testing includes concurrent session counts up to 50 per x86 core, with sustained test durations over 1400 hrs.</br>
 <sup>2</sup> pktlib, voplib, and streamlib are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
 
-<a name="RealTimeStreaming"></a>
-## Real-Time Streaming and Packet Flow
+<a name="RealTimeStreamingCmdLine"></a>
+## Real-Time Streaming and Packet Flow Command Line Examples
 
 SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
 
@@ -144,8 +146,8 @@ User-defined media processing can be inserted into packet/media data flow in two
 
 See [User-Defined Signal Processing Insertion Points](#user-content-userdefinedsignalprocessinginsertionpoints) below for more information.
 
-<a name="DecodingAndTranscoding"></a>
-### Decoding and Transcoding
+<a name="DecodingAndTranscodingCmdLine"></a>
+### Decoding and Transcoding Cmd Line Examples
 
 The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is intermediate pcap and wav file output from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, SDP support, and more.  A static session config file is optional.
 
@@ -170,12 +172,10 @@ The screencap below shows mediaTest output after the second command line.
 
 ![mediaMin pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaMin pcap I/O command line example")
 
-<a name="MultipleRTPStreams"></a>
-### Multiple RTP Streams (RFC 8108)
+<a name="MultipleRTPStreamsCmdLine"></a>
+### Multiple RTP Streams (RFC 8108) Cmd Line Examples
 
-[pktlib](#user-content-pktlib) implements RFC8108, which although not yet ratified, is widely used to allow multiple RTP streams per session, based on SSRC value transitions. pktlib allows creation of new RTP streams on-the-fly (dynamically) and resumption of prior streams. When pktlib creates a new RTP stream, it also creates new media encoder and decoder instances, in order to maintain separate and contiguous content for each stream. This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
-
-Here are mediaMin command line examples for testing multiple RTP streams:
+As explained in [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below, [pktlib](#user-content-pktlib) implements RFC8108, which specifies multiple RTP streams within a session, created and switching based on SSRC transitions. Below are mediaMin command line examples for testing multiple RTP streams:
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
  
@@ -189,8 +189,8 @@ Below is a screen capture showing output for the second command line above, with
 
 Packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Log](#user-content-packetlog) below.
 
-<a name="DuplicatedRTPStreams"></a>
-### Duplicated RTP Streams (RFC 7198)
+<a name="DuplicatedRTPStreamsCmdLine"></a>
+### Duplicated RTP Streams (RFC 7198) Cmd Line Examples
 
 [pktlib](#user-content-pktlib) implements RFC7198, a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Here are mediaMin command line examples included in the SigSRF SDK for RFC7198:
 
@@ -698,6 +698,15 @@ mediaMin supports a "-rN" command line options to control packet push rate, wher
 In addition to this level of control, mediaMin also implements an average packet push rate algorithm, which can be applied when pktlib is operating in analytics mode. The average push rate algorithm enable is the 0x80000 flag in the mediaMin -dN command line argument, and analytics mode is the 0x40000 flag.
 
 Note that entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above).
+
+<a name="MultipleRTPStreams"></a>
+## Multiple RTP Streams (RFC 8108)
+
+[pktlib](#user-content-pktlib) implements RFC8108, which although not yet ratified, is widely used to allow multiple RTP streams per session, based on SSRC value transitions. pktlib allows creation of new RTP streams on-the-fly (dynamically) and resumption of prior streams. When pktlib creates a new RTP stream, it also creates new media encoder and decoder instances, in order to maintain separate and contiguous content for each stream. This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+
+<a name="DuplicatedRTPStreams"></a>
+## Duplicated RTP Streams (RFC 7198)
+
 
 <a name="EventLog"></a>
 # Event Log
