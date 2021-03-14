@@ -92,6 +92,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTX Handling](#user-content-dtxhandling)<br/>
 
 [**pktlib**](#user-content-pktlib)<br/>
+
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandling)<br/>
 &nbsp;&nbsp;&nbsp;[**Jitter Buffer**](#user-content-jitterbuffer)<br/>
@@ -701,20 +702,23 @@ Note that entering a session configuration file on the command line that contain
 <a name="EventLog"></a>
 # Event Log
 
-The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides an event logging API, which is used by the mediaMin and mediaTest reference apps and also available for user-defined applications.
+The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by the mediaMin and mediaTest reference apps and also available for user-defined applications.
 
 <a name="PacketLog"></a>
 # Packet Log
 
-The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides an event logging API, which is used by the mediaMin and mediaTest reference apps and also available for user-defined applications. diaglib APIs include packet statistics and history logging for:
+The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides packet stats and history logging APIs, which are used by the mediaMin and mediaTest reference apps and also available for user-defined applications. diaglib APIs include packet statistics and history logging for:
 
   * incoming packets (network input, pcap file)
   * jitter buffer output
   * outgoing packets (network output, pcap file)
+  * analysis / comparison between incoming packets and jitter buffer output
 
 In example mediaMin command lines above, the -L entry activates packet logging, with the first output filename found taken as the log filename but replaced with a ".txt" extension.  If -Lxxx is given then xxx becomes the log filename.
 
-Statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated.  Statistics are calculated separately for each SSRC (see Multiple RTP Streams section above), with individual packet entries showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID CNG, DTMF Event, etc). Here is a packet stats log file excerpt:
+Packet statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated. Statistics are calculated separately for each SSRC, with individual packet entries showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID CNG, DTMF Event, etc).
+
+Below is a packet stats log file excerpt:
 
 ```CoffeeScript
 Packet info for SSRC = 353707 (cont), first seq num = 685, last seq num = 872 ...
