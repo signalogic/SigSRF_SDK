@@ -116,9 +116,9 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 <a name="mediaMin"></a>
 # mediaMin
 
-The mediaMin reference application runs optimized, high-capacity media packet streaming on x86 servers <sup>[1]</sup>. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams with packet handling, DTX, media decoding, stream group processing, and event and packet logging and statistics.
+The mediaMin reference application runs optimized, high-capacity media packet streaming on x86 servers <sup>[1]</sup>. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams, with packet handling, DTX, media decoding, stream group processing, and event and packet logging and statistics.
 
-Underneath mediaMin are SigSRF libraries, including pktlib (packet handling and high-capacity media/packet thread workers), voplib (voice-over-packet interface), streamlib (streaming media signal processing), and others. Pktlib includes jitter buffer, SID and media packet re-ordering and repair, packet formatting, packet stats and history logging, and more.
+Underneath mediaMin are SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet thread workers), voplib (voice-over-packet interface), streamlib (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.
 
 mediaMin command line options instruct pktlib to operate in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to stream groups, which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packdet output.
 
@@ -173,7 +173,7 @@ The screencap below shows mediaTest output after the second command line.
 <a name="MultipleRTPStreams"></a>
 ### Multiple RTP Streams (RFC 8108)
 
-RFC8108 is not yet ratified, but lays out compelling scenarios for multiple RTP streams per session, based on SSRC value transitions. The SigSRF pktlib library module supports RFC8108, creating new RTP streams on-the-fly (dynamically) and resuming previous ones. When a new RTP stream is created, new encoder and decoder instances are also created, in order to maintain separate and contiguous content for each stream. This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+[pktlib](#user-content-pktlib) implements RFC8108, which although not yet ratified, is widely used to allow multiple RTP streams per session, based on SSRC value transitions. pktlib allows creation of new RTP streams on-the-fly (dynamically) and resumption of prior streams. When pktlib creates a new RTP stream, it also creates new media encoder and decoder instances, in order to maintain separate and contiguous content for each stream. This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
 
 Here are mediaMin command line examples for testing multiple RTP streams:
 
@@ -192,7 +192,7 @@ Packet stats and history log files produced by the above commands (mediaplayout_
 <a name="DuplicatedRTPStreams"></a>
 ### Duplicated RTP Streams (RFC 7198)
 
-RFC7198 is a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Here are mediaMin command line examples included in the SigSRF SDK for RFC7198:
+[pktlib](#user-content-pktlib) implements RFC7198, a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Here are mediaMin command line examples included in the SigSRF SDK for RFC7198:
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
 
