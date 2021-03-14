@@ -136,7 +136,7 @@ User-defined media processing can be inserted into packet/media data flow in two
 
 > 1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>
 > 
-> 2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">audio_domain_processing.c source code</a>
+> 2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">media domain processing source code</a>
 
 See [User-Defined Signal Processing Insertion Points](#user-content-userdefinedsignalprocessinginsertionpoints) below for more information.
 
@@ -702,7 +702,7 @@ Pktlib and streamlib source codes in the SigSRF SDK include "user-defined code i
 
 > 1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>
 > 
-> 2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">audio_domain_processing.c source code</a>
+> 2) In stream group output processing, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">media domain processing source code</a>
 
 The default source codes listed above include sampling rate conversion and encoding (depending on required RTP packet output), speech recognition, stream deduplication, and other processing.
 
