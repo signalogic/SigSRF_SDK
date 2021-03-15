@@ -294,6 +294,15 @@ The screen captures show [run-time stats](#user-content-runtimestats) with strea
 <a name="StreamAlignment"></a>
 ### Stream Alignment
 
+When a stream group's members have a time relationship to each other, for example different legs of a conference call, stream alignment becomes crucial. During a call one or more streams may exhibit:
+
+    underrun - gaps due to lost packets or call drop-outs
+    overrun - bursts where packets arrive faster than the expected ptime
+    
+In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or encapsulated streams sent TCP/IP or inaccurate packet timestamps.
+
+Regardless of what packet flow problems are encountered, streams must stay in time-alignment true to their origin in order to maintain overall call audio accuracy and intelligibility. The SigSRF streamlib module implements several algorithms to deal with gap management and stream alignment.
+
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
 
