@@ -67,8 +67,8 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality Processing](#user-content-audioqualityprocessing)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Stream Alignment](#user-content-streamalignment)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality Processing](#user-content-audioqualityprocessing)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[OpenLI Support](#user-content-openlisupport)<br/>
@@ -272,6 +272,8 @@ Stream groups are groupings of input streams, related by call participants, anal
 3) Improve output quality (conceal frame loss)
 4) Apply media domain signal processing (examples include speech recognition, FFT, sound detection)
 
+"Stream Groups" and "Media Domain Processing" blocks show the above processing in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">telecom mode</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-analyticsmodedataflowdiagram">analytics mode</a> data flow diagrams.
+ 
 mediaMin enables stream groups with the 0x400 flag in the command line -dN options. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
 
 The mediaMin command below processes an input pcap containing two (2) AMR-WB 12650 bps RTP streams, of which the first stream creates three (3) additional dynamic RTP streams, for a total of five (5) RTP streams.
@@ -288,20 +290,20 @@ The screen captures show [run-time stats](#user-content-runtimestats) with strea
 
 ![Multiple AMR-WB stream group Audacity wav display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_audacity_wav.png?raw=true "Multiple AMR-WB stream group Audacity wav display")
 
-<a name="AudioQualityProcessing"></a>
-### Audio Quality Processing
-
 <a name="StreamAlignment"></a>
 ### Stream Alignment
 
 When a stream group's members have a time relationship to each other, for example different legs of a conference call, stream alignment becomes crucial. During a call one or more streams may exhibit:
 
     underrun - gaps due to lost packets or call drop-outs
-    overrun - bursts where packets arrive faster than the expected ptime
+    overrun - bursts where packets arrive faster than expected
     
-In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or encapsulated streams sent TCP/IP or inaccurate packet timestamps.
+Both underrun and overrun may substantially exceed the expected packet rate (i.e. expected ptime interval for individual stream group contributors). In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or encapsulated streams sent TCP/IP or inaccurate packet timestamps.
 
-Regardless of what packet flow problems are encountered, streams must stay in time-alignment true to their origin in order to maintain overall call audio accuracy and intelligibility. The SigSRF streamlib module implements several algorithms to deal with gap management and stream alignment.
+Regardless of what packet flow problems are encountered, streams must stay in time-alignment true to their origin in order to maintain overall call audio accuracy and intelligibility. The SigSRF streamlib module implements several algorithms to deal with gap management and stream alignment. Streamlib handles up to 20% sustained underrun and overrun conditions.
+
+<a name="AudioQualityProcessing"></a>
+### Audio Quality Processing
 
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
