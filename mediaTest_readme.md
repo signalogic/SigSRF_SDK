@@ -295,13 +295,13 @@ Here are some notes about the above command lines and what to look for after the
 
 3) In these OpenLI examples, DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 flags set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above examples) to dynamically determine packet push rates. In both analytics and telecom modes, the pktlib and streamlib modules use RTP timestamps to help with packet repair and interstream alignment.
 
-4) The mediaMin command line has DER stream detection enabled (0x1000 flag in the -dN argument).
+4) The above mediaMin command lines have DER stream detection enabled (0x1000 flag in the -dN argument).
 
 5) Dynamic session creation is enabled on the mediaMin command line (0x1 flag in the -dN argument); i.e. no static session config file is supplied. When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type. HI3 DER stream detection, dynamic session creation, and codec auto-detection are highlighted in the mediaMin run-time screen capture below.
 
 ![OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_DER_stream_detection_session_creation.png?raw=true "OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection")
 
-6) The mediaMin command line has stream groups enabled (0x400 flag in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be enabled for stream group output.
+6) The above mediaMin command lines have stream groups enabled (0x400 flag in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be enabled for stream group output.
 
 After loading stream group outputs in Wireshark (openli-voip-example_group0_am.pcap and openli-voip-example2_group0_am.pcap) you should see the following waveform displays:
 
