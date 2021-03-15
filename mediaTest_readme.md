@@ -265,7 +265,7 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 <a name="StreamGroups"></a>
 ## Stream Groups
 
-Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. Each stream group consists of up to eight (8) "contributors" that may be added and deleted from the group at any time, and which have no packet flow start and stop restrictions. The SigSRF streamlib module performs the following stream group processing:
+Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. Each stream group consists of up to eight (8) "contributors" that may be added and deleted from the group at any time, and for which packet flow may start and stop at any time. The SigSRF streamlib module performs the following stream group processing:
 
 1) Maintain contributor integrity (manage stream gaps and alignment)
 2) Group actions (merge, conference, deduplicate streams, etc)
