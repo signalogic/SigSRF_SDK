@@ -265,6 +265,25 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 <a name="StreamGroups"></a>
 ## Stream Groups
 
+Stream groups are groupings of input streams, related by call participants, analytics criteria, or otherwise. Each stream group consists of up to eight (8) "contributors" that may be added and deleted from the group at any time. Contributor packet flow has no start and stop restrictions. The SigSRF streamlib module performes three (3) types of stream group processing:
+
+    first to maintain contributor integrity (manage stream gaps and alignment)
+    group actions (merge, conference, deduplicate streams, etc)
+    improve output quality (conceal frame loss)
+    apply media domain signal processing (examples include speech recognition, FFT, sound detection)
+
+mediaMin supports stream groups on its command line (the 0x400 flag in -dN options). When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to the same group.  Other command line options can be used to modify this.
+
+The mediaMin command below processes an input cap containing two (2) AMR-WB 12650 bps RTP streams, of which the first stream creates three (3) additional dynamic RTP streams, for a total of five (5).
+
+    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0xc0c01 -r20
+
+Note the command line also enables wav file outputs for the stream group and its contributors (the 0x800 flag in -dN options).
+
+The screen captures below highlight stream group related stats and display stream group output audio in Wireshark.
+
+![Multiple AMR-WB stream group run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png?raw=true "Multiple AMR-WB stream group run-time stats")
+
 <a name="AudioQualityProcessing"></a>
 ### Audio Quality Processing
 
