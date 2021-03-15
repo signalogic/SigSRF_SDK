@@ -299,7 +299,7 @@ Here are some notes about the above command lines and what to look for after the
 
  ![OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_DER_stream_detection_session_creation.png?raw=true "OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection")
 
-   Note that [Static session configuration](#user-content-staticsessionconfig), using a session config file supplied on the command line, is also available, depending on application needs.
+<pre>    Note that [Static session configuration](#user-content-staticsessionconfig), using a session config file supplied on the command line, is also available, depending on application needs.</pre>
 
 5) The above mediaMin command lines have [stream groups](#user-content-streamgroups) enabled (0x400 flag in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be enabled for stream group output.
 
