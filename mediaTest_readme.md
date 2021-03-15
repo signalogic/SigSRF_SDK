@@ -66,9 +66,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**](#user-content-dynamicsessioncreation)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Stream Alignment](#user-content-streamalignment)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality Processing](#user-content-audioqualityprocessing)<br/>
+&nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroupscmdline)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[OpenLI Support](#user-content-openlisupport)<br/>
@@ -100,6 +98,12 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Push Rate Control](#user-content-packetpushratecontrol)<br/>
 &nbsp;&nbsp;&nbsp;[**Multiple RTP Streams (RFC8108)**](#user-content-multiplertpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[**Duplicated RTP Streams (RFC7198)**](#user-content-duplicatedrtpstreams)<br/>
+
+[**streamlib**](#user-content-streamlib)<br/>
+
+&nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Stream Alignment](#user-content-streamalignment)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality Processing](#user-content-audioqualityprocessing)<br/>
 
 [**Run-Time Stats**](#user-content-runtimestats)<br/>
 [**Event Log**](#user-content-eventlog)<br/>
@@ -262,19 +266,12 @@ a=rtpmap:100 telephone-event/16000
 
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
 
-<a name="StreamGroups"></a>
+<a name="StreamGroupsCmdLine"></a>
 ## Stream Groups
 
-Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. Each stream group consists of up to eight (8) "contributors" that may be added and deleted from the group at any time, and for which packet flow may start and stop at any time. The SigSRF streamlib module performs the following stream group processing:
-
-1) Maintain contributor integrity (manage stream gaps and alignment)
-2) Group actions (merge, conference, deduplicate streams, etc)
-3) Improve output quality (conceal frame loss)
-4) Apply media domain signal processing (examples include speech recognition, FFT, sound detection)
-
-The above processing is shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> "Stream Groups" and "Media Domain Processing" blocks.
+[Stream groups](#user-content-streamgroups) are groupings of input streams, related by call participants, analytics criteria, or other association.
  
-mediaMin enables stream groups with the 0x400 flag in the command line -dN options. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
+mediaMin enables stream groups with the 0x400 flag in the command line -dN options argument. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
 
 The mediaMin command below processes an input pcap containing two (2) AMR-WB 12650 bps RTP streams, of which the first stream creates three (3) additional dynamic RTP streams, for a total of five (5) RTP streams.
 
@@ -290,20 +287,7 @@ The screen captures show [run-time stats](#user-content-runtimestats) with strea
 
 ![Multiple AMR-WB stream group Audacity wav display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_audacity_wav.png?raw=true "Multiple AMR-WB stream group Audacity wav display")
 
-<a name="StreamAlignment"></a>
-### Stream Alignment
-
-When a stream group's members have a time relationship to each other, for example different legs of a conference call, stream alignment becomes crucial. During a call one or more streams may exhibit:
-
-    underrun - gaps due to lost packets or call drop-outs
-    overrun - bursts where packets arrive faster than expected
-    
-Both underrun and overrun may substantially exceed the expected packet rate (i.e. expected ptime interval for individual stream group contributors). In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or encapsulated streams sent TCP/IP or inaccurate packet timestamps.
-
-Regardless of what packet flow problems are encountered, streams must stay in time-alignment true to their origin in order to maintain overall call audio accuracy and intelligibility. The SigSRF streamlib module implements several algorithms to deal with gap management and stream alignment, and can handle up to 20% sustained underrun and overrun conditions.
-
-<a name="AudioQualityProcessing"></a>
-### Audio Quality Processing
+See [Stream Groups](#user-content-streamgroups) below for detailed information information on stream groups.
 
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
@@ -743,6 +727,36 @@ Note that entering a session configuration file on the command line that contain
 ## Duplicated RTP Streams (RFC 7198)
  
 [pktlib](#user-content-pktlib) implements RFC7198, a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Pktlib detects and unpacks streams with packets duplicated per RFC7198. [Run-time stats](#user-content-runtimestats) invoked and printed onscreen or in the event log by mediaMin or user-defined apps show duplicated packet counts in the "RFC7198 duplicates" field (under the "Packet Stats" subheading).
+
+<a name="streamlib"></a>
+# streamlib
+
+<a name="StreamGroups"></a>
+## Stream Groups
+
+Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. Each stream group consists of up to eight (8) "contributors" that may be added and deleted from the group at any time, and for which packet flow may start and stop at any time. The SigSRF streamlib module performs the following stream group processing:
+
+1) Maintain contributor integrity (manage stream gaps and alignment)
+2) Group actions (merge, conference, deduplicate streams, etc)
+3) Improve output quality (conceal frame loss)
+4) Apply media domain signal processing (examples include speech recognition, FFT, sound detection)
+
+The above processing is shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> "Stream Groups" and "Media Domain Processing" blocks.
+
+<a name="StreamAlignment"></a>
+### Stream Alignment
+
+When a stream group's members have a time relationship to each other, for example different legs of a conference call, stream alignment becomes crucial. During a call one or more streams may exhibit:
+
+    underrun - gaps due to lost packets or call drop-outs
+    overrun - bursts where packets arrive faster than expected
+    
+Both underrun and overrun may substantially exceed the expected packet rate (i.e. expected ptime interval for individual stream group contributors). In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or encapsulated streams sent TCP/IP or inaccurate packet timestamps.
+
+Regardless of what packet flow problems are encountered, streams must stay in time-alignment true to their origin in order to maintain overall call audio accuracy and intelligibility. The SigSRF streamlib module implements several algorithms to deal with gap management and stream alignment, and can handle up to 20% sustained underrun and overrun conditions.
+
+<a name="AudioQualityProcessing"></a>
+### Audio Quality Processing
 
 <a name="RunTimeStats"></a>
 # Run-Time Stats
