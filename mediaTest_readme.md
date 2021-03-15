@@ -280,9 +280,12 @@ The mediaMin command below processes an input pcap containing two (2) AMR-WB 126
 
 Note the above command line also enables wav file outputs for the stream group and its contributors (the 0x800 flag in -dN options).
 
-The screen captures show run-time status with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
+The screen captures show [run-time stats](#user-content-runtimestats) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
 ![Multiple AMR-WB stream group run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png?raw=true "Multiple AMR-WB stream group run-time stats")
+
+![Multiple AMR-WB stream group Wireshark waveform display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_Wireshark_waveform_display.png?raw=true "Multiple AMR-WB stream group Wireshark waveform display")
+
 
 <a name="AudioQualityProcessing"></a>
 ### Audio Quality Processing
