@@ -287,7 +287,7 @@ The screen captures show [run-time stats](#user-content-runtimestats) with strea
 
 ![Multiple AMR-WB stream group Audacity wav display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_audacity_wav.png?raw=true "Multiple AMR-WB stream group Audacity wav display")
 
-See [Stream Groups](#user-content-streamgroups) below for detailed information information on stream groups.
+See [Stream Groups](#user-content-streamgroups) below for more detailed information.
 
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
