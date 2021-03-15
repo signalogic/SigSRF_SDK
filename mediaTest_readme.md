@@ -101,6 +101,7 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 &nbsp;&nbsp;&nbsp;[**Multiple RTP Streams (RFC8108)**](#user-content-multiplertpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[**Duplicated RTP Streams (RFC7198)**](#user-content-duplicatedrtpstreams)<br/>
 
+[**Run-Time Stats**](#user-content-runtimestats)<br/>
 [**Event Log**](#user-content-eventlog)<br/>
 [**Packet Log**](#user-content-packetlog)<br/>
 
@@ -192,7 +193,7 @@ Packet stats and history log files produced by the above commands (mediaplayout_
 <a name="DuplicatedRTPStreamsCmdLine"></a>
 ### Duplicated RTP Streams (RFC 7198)
 
-As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams) below, [pktlib](#user-content-pktlib) implements RFC7198, a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Below are mediaMin command line examples included in the SigSRF SDK for RFC7198:
+As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams) below, [pktlib](#user-content-pktlib) implements RFC7198 in order to detect and deal withstreams with packets duplicated for redundancy. Below are mediaMin command line examples included in the SigSRF SDK for RFC7198:
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
 
@@ -286,11 +287,11 @@ After downloading the SigSRF SDK, below are <a href="https://openli.nz" target="
 
 Here are some notes about the above command lines and what to look for after they run:
 
-1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) above), as highlighted in red in the mediaMin run-time stats screen capture below. There should be no stream group output FLC (frame loss concealment), packet logs should be clean, and no warnings or errors in the event log (highlighted in green).
+1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) above), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats) screen capture below. There should be no stream group output FLC (frame loss concealment), packet logs should be clean, and no warnings or errors in the event log (highlighted in green).
 
 ![OpenLI HI3 intercept processing, mediaMin run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_run-time_stats.png?raw=true "OpenLI HI3 intercept processing, mediaMin run-time stats")
 
-2) In the first example, run-time stats should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
+2) In the first example, [run-time stats](#user-content-runtimestats) should show a small amount of packet loss (9 packets) in the second stream. The stats should also show these as repaired.
 
 3) In these OpenLI examples, DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines have "analytics mode" enabled (0xc0000 flags set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above examples) to dynamically determine packet push rates. In both analytics and telecom modes, the pktlib and streamlib modules use RTP timestamps to help with packet repair and interstream alignment.
 
@@ -706,7 +707,11 @@ Note that entering a session configuration file on the command line that contain
 
 <a name="DuplicatedRTPStreams"></a>
 ## Duplicated RTP Streams (RFC 7198)
+ 
+[pktlib](#user-content-pktlib) implements RFC7198, a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Pktlib detects and unpacks streams with packets duplicated per RFC7198. [Run-time stats](#user-content-runtimestats) invoked and printed onscreen or in the event log by mediaMin or user-defined apps show duplicated packet counts in the "RFC7198 duplicates" field (under the "Packet Stats" subheading).
 
+<a name="RunTimeStats"></a>
+# Run-Time Stats
 
 <a name="EventLog"></a>
 # Event Log
@@ -716,7 +721,7 @@ The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/di
 <a name="PacketLog"></a>
 # Packet Log
 
-The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides packet stats and history logging APIs, which are used by the mediaMin and mediaTest reference apps and also available for user-defined applications. diaglib APIs include packet statistics and history logging for:
+The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides packet stats and history logging APIs, which are used by the mediaMin and mediaTest reference apps and also available for user-defined applications. Diaglib APIs include packet statistics and history logging for:
 
   * incoming packets (network input, pcap file)
   * jitter buffer output
