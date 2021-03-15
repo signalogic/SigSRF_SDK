@@ -301,7 +301,7 @@ Here are some notes about the above command lines and what to look for after the
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Note that [static session configuration](#user-content-staticsessionconfig), using a session config file supplied on the command line, is also available, depending on application needs.
 
-5) The above mediaMin command lines have [stream groups](#user-content-streamgroups) enabled (0x400 flag in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be enabled for stream group output.
+5) The above mediaMin command lines have [stream groups](#user-content-streamgroups) enabled (0x400 flag in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be applied to stream group output.
 
 After loading stream group outputs in Wireshark (openli-voip-example_group0_am.pcap and openli-voip-example2_group0_am.pcap) you should see the following waveform displays:
 
