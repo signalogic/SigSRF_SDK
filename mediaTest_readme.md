@@ -267,20 +267,20 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 
 Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. Each stream group consists of up to eight (8) "contributors" that may be added and deleted from the group at any time, and which have no packet flow start and stop restrictions. The SigSRF streamlib module performs the following stream group processing:
 
-    first to maintain contributor integrity (manage stream gaps and alignment)
-    group actions (merge, conference, deduplicate streams, etc)
-    improve output quality (conceal frame loss)
-    apply media domain signal processing (examples include speech recognition, FFT, sound detection)
+1) Maintain contributor integrity (manage stream gaps and alignment)
+2) Group actions (merge, conference, deduplicate streams, etc)
+3) Improve output quality (conceal frame loss)
+4) Apply media domain signal processing (examples include speech recognition, FFT, sound detection)
 
-mediaMin supports stream groups on its command line (the 0x400 flag in -dN options). When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to the same group.  Other command line options can be used to modify this.
+mediaMin enables stream groups with the 0x400 flag in the command line -dN options. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
 
-The mediaMin command below processes an input cap containing two (2) AMR-WB 12650 bps RTP streams, of which the first stream creates three (3) additional dynamic RTP streams, for a total of five (5).
+The mediaMin command below processes an input pcap containing two (2) AMR-WB 12650 bps RTP streams, of which the first stream creates three (3) additional dynamic RTP streams, for a total of five (5) RTP streams.
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0xc0c01 -r20
 
-Note the command line also enables wav file outputs for the stream group and its contributors (the 0x800 flag in -dN options).
+Note the above command line also enables wav file outputs for the stream group and its contributors (the 0x800 flag in -dN options).
 
-The screen captures below highlight stream group related stats and display stream group output audio in Wireshark.
+The screen captures show run-time status with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
 ![Multiple AMR-WB stream group run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png?raw=true "Multiple AMR-WB stream group run-time stats")
 
