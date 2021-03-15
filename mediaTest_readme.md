@@ -286,6 +286,7 @@ The screen captures show [run-time stats](#user-content-runtimestats) with strea
 
 ![Multiple AMR-WB stream group Wireshark waveform display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_Wireshark_waveform_display.png?raw=true "Multiple AMR-WB stream group Wireshark waveform display")
 
+![Multiple AMR-WB stream group Audacity wav display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_audacity_wav.png?raw=true "Multiple AMR-WB stream group Audacity wav display")
 
 <a name="AudioQualityProcessing"></a>
 ### Audio Quality Processing
