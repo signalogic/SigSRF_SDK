@@ -71,7 +71,7 @@ Telecom mode is defined as direct handling of IP/UDP/RTP traffic.  This mode is 
 <a name="TelecomModeDataFlowDiagram"></a>
 ### Telecom Mode Data Flow Diagram
 
-![SigSRF software telecom mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_telecom_mode_RevA7.png?raw=true "SigSRF telecom mode data flow diagram")
+![SigSRF software telecom mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_telecom_mode_RevA9.png?raw=true "SigSRF telecom mode data flow diagram")
 
 <a name="AnalyticsMode"></a>
 ## Analytics Mode
@@ -81,7 +81,7 @@ Analytics mode is defined as indirect handling of IP/UDP/RTP traffic, where traf
 <a name="AnalyticsModeDataFlowDiagram"></a>
 ### Analytics Mode Data Flow Diagram
 
-![SigSRF software analytics mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_analytics_mode_RevA7.png?raw=true "SigSRF analytics mode data flow diagram")
+![SigSRF software analytics mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_analytics_mode_RevA9.png?raw=true "SigSRF analytics mode data flow diagram")
 
 <a name="StreamGroups"></a>
 ## Stream Groups
