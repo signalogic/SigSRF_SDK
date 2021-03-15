@@ -272,7 +272,7 @@ Stream groups are groupings of input streams, related by call participants, anal
 3) Improve output quality (conceal frame loss)
 4) Apply media domain signal processing (examples include speech recognition, FFT, sound detection)
 
-"Stream Groups" and "Media Domain Processing" blocks show the above processing in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">telecom mode</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-analyticsmodedataflowdiagram">analytics mode</a> data flow diagrams.
+The above processing is shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> "Stream Groups" and "Media Domain Processing" blocks.
  
 mediaMin enables stream groups with the 0x400 flag in the command line -dN options. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
 
