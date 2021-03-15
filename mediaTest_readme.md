@@ -102,8 +102,8 @@ If you need an evaluation demo with an increased limit for a trial period, [cont
 [**streamlib**](#user-content-streamlib)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Stream Alignment](#user-content-streamalignment)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality Processing](#user-content-audioqualityprocessing)<br/>
+&nbsp;&nbsp;&nbsp;[**Stream Alignment**](#user-content-streamalignment)<br/>
+&nbsp;&nbsp;&nbsp;[**Audio Quality Processing**](#user-content-audioqualityprocessing)<br/>
 
 [**Run-Time Stats**](#user-content-runtimestats)<br/>
 [**Event Log**](#user-content-eventlog)<br/>
@@ -744,7 +744,7 @@ Stream groups are groupings of input streams, related by call participants, anal
 The above processing is shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> "Stream Groups" and "Media Domain Processing" blocks.
 
 <a name="StreamAlignment"></a>
-### Stream Alignment
+## Stream Alignment
 
 When a stream group's members have a time relationship to each other, for example different legs of a conference call, stream alignment becomes crucial. During a call one or more streams may exhibit:
 
@@ -756,7 +756,7 @@ Both underrun and overrun may substantially exceed the expected packet rate (i.e
 Regardless of what packet flow problems are encountered, streams must stay in time-alignment true to their origin in order to maintain overall call audio accuracy and intelligibility. The SigSRF streamlib module implements several algorithms to deal with gap management and stream alignment, and can handle up to 20% sustained underrun and overrun conditions.
 
 <a name="AudioQualityProcessing"></a>
-### Audio Quality Processing
+## Audio Quality Processing
 
 <a name="RunTimeStats"></a>
 # Run-Time Stats
