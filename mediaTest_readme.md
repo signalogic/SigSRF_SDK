@@ -384,12 +384,12 @@ term2.header_format = 1  # Header format, applies to some codecs (EVS, AMR), 0 =
 
 ```
 
-Note that each session typically has one or two "terminations", or endpoints (term1 and term2).  A session with only term1 can accept and send streaming data with one endpoint, and perform processing on the data required by the endpoint, by the server running mediaTest, or both.  A session with term1 and term2 can exchange streaming data between endpoints, and perform intermediate processing, such as transcoding, speech recognition, overlaying or adding data to the streams, etc.  The number of sessions defined is limited only by the performance of the platform.
+Note that each session typically has one or two "terminations", or endpoints (term1 and term2). A session with only term1 can accept and send streaming data with one endpoint, and perform processing on the data required by the endpoint, by the server running mediaMin, or both.  A session with term1 and term2 can exchange streaming data between endpoints, and perform intermediate processing, such as transcoding, speech recognition, overlaying or adding data to the streams, etc.  The number of sessions defined is limited only by the performance of the platform.
 
 <a name="SessionConfigDiagram"></a>
 ### Session Endpoint Flow Diagram
 
-As described Session Configuration above, "remote" IP addr and UDP port values refer to stream source, and "local" values refer to stream destination, where a "stream" is a network socket or pcap.  Rx traffic (i.e. received by the user application or mediaTest app) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, or sent by the user application or mediaTest app) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
+As described Session Configuration above, "remote" IP addr and UDP port values refer to stream source, and "local" values refer to stream destination, where a "stream" is a network socket or pcap.  Rx traffic (i.e. received by the user application or mediaMin reference app) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, or sent by the user application or mediaMin app) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
 
 ![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
 
@@ -671,7 +671,7 @@ Here are mediaMin command lines that convert incoming pcaps with 20 msec ptime t
 ./mediaMin -cx86 -M0 -C../session_config/evs_20ptime_g711_40ptime_test_config -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ovptime_test1.pcap -L
 ```
 
-For the above command lines, note in the mediaTest displayed statistics counters, the number of transcoded frames is half of the number of buffered / pulled frames, because of the 20 to 40 msec ptime conversion.
+For the above command lines, note in the [run-time stats](#user-content-runtimestats) displayed by mediaMin, the number of transcoded frames is half of the number of buffered / pulled frames, because of the 20 to 40 msec ptime conversion.
 
 Here is a mediaMin command line that converts an incoming pcap with 240 msec ptime to 20 msec:
 
@@ -926,12 +926,12 @@ The 3GPP decoder can be used as the "gold standard" reference for debug and comp
 <a name="VerifyingEVSpcap"></a>
 ### Verifying an EVS pcap
 
-In some cases, maybe due to unintelligble audio output, questions about pcap format or capture method, SDP descriptor options used for EVS encoding, etc, you may want to simply take a pcap, extract its EVS RTP payload stream, and copy to a .cod file with MIME header suitable for 3GPP decoder input.  The mediaTest command line can do this, here are two examples:
+In some cases, maybe due to unintelligble audio output, questions about pcap format or capture method, SDP descriptor options used for EVS encoding, etc, you may want to simply take a pcap, extract its EVS RTP payload stream, and copy to a .cod file with MIME header suitable for 3GPP decoder input. The mediaTest command line can do this, here are two examples:
 
 ```C
-./mediaTest -cx86 -ipcaps/evs_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_pcap_extracted1.cod
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_pcap_extracted1.cod
 
-./mediaTest -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oEVS_pcap_extracted2.cod
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_pcap_extracted2.cod
 ```
 Next, run the 3GPP decoder:
 
@@ -993,12 +993,16 @@ do {
 <a name="PlayingAudioWireshark"></a>
 ### Playing Audio in Wireshark
 
-As a quick reference, the basic procedure for playing audio from G711 encoded caps from within Wireshark is given here.  These instructions are for pcaps containing one RTP stream (not multiple streams).
+*Note -- comments in this section apply to packet audio, and not to wav file outputs generated by mediaMin and mediaTest, which are typically 16-bit with 16 kHz Fs (wideband audio).*
 
-1. First, when you run mediaTest, make sure your session config file has the correct payload type set for either G711 uLaw or ALaw.
+As a quick reference, the basic procedure for playing audio from G711 encoded caps from within Wireshark is given here. These instructions are for pcaps containing one RTP stream (not multiple streams).
+
+1. First, if you run the mediaMin app with static session configuation, make sure your session config file has the correct payload type set for either G711 uLaw or ALaw.
 
  - Session config payload type values should be 0 (zero) for uLaw and 8 (eight) for ALaw
  - this is the "termN.rtp_payload_type" field in the session config file (see above), where N is 1 or 2, depending on which endpoint is G711
+
+For the mediaTest app, this applies when generating pcaps from input USB audio or wav or other audio file. If you run mediaMin with [dynamic session creation](#user-content-dynamicsessioncreation) and [stream groups](#user-content-streamgroups) enabled, then stream group output packet audio is set to G711u by default (a user option). Per stream transcoded intermediate packet audio outputs generated by mediaMin are also set to G711a by default, unless specified in a static session creation file.
 
 2. Second, Wireshark must "see" the stream in RTP format:
 
@@ -1018,9 +1022,9 @@ After doing this, the protocol field in the main Wireshark window for the releva
 <a name="SavingAudioWireshark"></a>
 ### Saving Audio to File in Wireshark
 
-The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above.  Here are additional instructions to save the audio data to .au file format, and then use the Linux "sox" program to convert to .wav format.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
+The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above. Here are additional instructions to save the audio data to .au file format, and then use the Linux "sox" program to convert to .wav format.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
 
-1. First, follow steps 1. and 2. in the "Playing Audio" notes above.
+1. First, follow steps 1. and 2. in the "Playing Audio in Wireshark" notes above.
 
 2. Second, save to .au file from Wireshark:
 
@@ -1037,7 +1041,7 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
   sox audio_file.au audio_file.wav
  ```
 
-When .au format is given to Wireshark, it performs uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples.  If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, or other conversion program.  If that doesn't match the mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
+When .au save format is specified as shown in step 2, Wireshark performs uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples. If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, or other conversion program.  If that doesn't match the mediaMin or mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
 
 *Note: the above instructions apply to Wireshark version 2.2.6.*
 
