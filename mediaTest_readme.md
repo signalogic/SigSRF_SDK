@@ -777,30 +777,30 @@ Run-time stats include the following main categories:
 
 Below is a run-time stats example from a mediaMin screen cap.
 
->00:02:24.417.743 Stream Info + Stats, stream group "mediaplayout_music_1malespeaker_5xAMRWB_notimestamps", grp 0, p/m thread 0, num packets 7359
->  Sessions (hSession/ch/codec/bitrate[,ch...]) 0(grp owner)/0/AMR-WB/12650,4,5,6 1/2/AMR-WB/12650
->  SSRCs (ch/ssrc) 0/0x63337c03 4/0xd9913891 5/0xa97bef88 6/0xa034a9d2 2/0x545d19db
->  Overrun (ch/frames dropped) 0/0 2/0, (ch/max %) 0/17.36 2/12.50
->  Underrun (grp/missed intervals/FLCs) 0/0/0
->  Pkt flush (ch/num) loss 0/0 4/0 5/11 6/74 2/0, pastdue 0/0 4/0 5/0 6/0 2/0, level 0/0 4/2 5/0 6/0 2/0
->  Packet Stats
->    Input (ch/pkts) 0/181 4/1463 5/2230 6/983 2/2502, RFC7198 duplicates 0/0 4/0 5/0 6/0 2/0, bursts 0/0 4/0 5/0 6/0 2/0
->    Loss (ch/%) 0/0.000 4/0.205 5/0.000 6/0.000 2/0.000, missing seq (ch/num) 0/0 4/3 5/0 6/0 2/0, max consec missing seq 0/0 4/2 5/0 6/0 2/0
->    Ooo (ch/pkts) 0/0 4/43 5/0 6/0 2/58, max 0/0 4/2 5/0 6/0 2/1
->    Avg stats calcs (ch/num) 0/0.00 4/8.17 5/0.00 6/0.00 2/3.32
->    Delta avg (ch/msec) media 0/20.00 4/29.13 5/20.56 6/25.61 2/28.90, SID 0/-nan 4/88.38 5/19.98 6/89.83 2/210.66
->    Delta max (ch/msec/pkt) media 0/20.35/38 4/497.59/2236 5/957.47/3514 6/497.35/6744 2/517.75/3052, SID 0/0.00/0 4/839.68/3054 5/20.15/3591 6/480.00/7253 2/46237.48/5734, overall 0/20.35/38 4/839.68/3054 5/957.47/3514 6/660.02/5979 2/46237.48/5734
->    Cumulative input times         (sec) (ch/inp/rtp) 0/3.60/3.58 4/60.34/64.22 5/45.80/45.98 6/31.14/29.54 2/137.83/140.66
->    Cumulative jitter buffer times (sec) (ch/out/rtp) 0/3.64/3.58 4/61.36/64.36 5/45.28/45.98 6/30.88/29.54 2/137.75/140.66
->  Packet Repair
->    SID repair (ch/num) instance 0/0 4/1 5/0 6/0 2/0, total 0/0 4/8 5/0 6/0 2/0
->    Timestamp repair (ch/num) SID 0/0 4/0 5/0 6/0 2/63, media 0/0 4/2 5/0 6/0 2/0
->  Jitter Buffer
->    Output (ch/pkts) 0/181 4/3219 5/2300 6/1478 2/4723, max 0/11 4/11 5/11 6/11 2/11, residual 0/0 4/0 5/0 6/0 2/0, bursts 0/0 4/0 5/0 6/0 2/0
->    Ooo (ch/pkts) 0/0 4/0 5/0 6/0 2/0, max 0/0 4/0 5/0 6/0 2/0, drops 0/0 4/0 5/0 6/0 2/0, duplicates 0/0 4/0 5/0 6/0 2/0
->    Resyncs (ch/num) underrun 0/0 4/0 5/1 6/7 2/0, overrun 0/0 4/0 5/0 6/0 2/0, timestamp gap 0/0 4/0 5/0 6/0 2/1, purges (ch/num) 0/0 4/0 5/0 6/0 2/0
->    Holdoffs (ch/num) adj 0/0 4/0 5/0 6/0 2/0, dlvr 0/0 4/0 5/0 6/0 2/0, zero pulls (ch/num) 0/4763 4/3299 5/1068 6/74 2/10
->  Event log warnings, errors, critical 0, 0, 0
+> 00:02:24.417.743 Stream Info + Stats, stream group "mediaplayout_music_1malespeaker_5xAMRWB_notimestamps", grp 0, p/m thread 0, num packets 7359
+>   Sessions (hSession/ch/codec/bitrate[,ch...]) 0(grp owner)/0/AMR-WB/12650,4,5,6 1/2/AMR-WB/12650
+>   SSRCs (ch/ssrc) 0/0x63337c03 4/0xd9913891 5/0xa97bef88 6/0xa034a9d2 2/0x545d19db
+>   Overrun (ch/frames dropped) 0/0 2/0, (ch/max %) 0/17.36 2/12.50
+>   Underrun (grp/missed intervals/FLCs) 0/0/0
+>   Pkt flush (ch/num) loss 0/0 4/0 5/11 6/74 2/0, pastdue 0/0 4/0 5/0 6/0 2/0, level 0/0 4/2 5/0 6/0 2/0
+>   Packet Stats
+>      Input (ch/pkts) 0/181 4/1463 5/2230 6/983 2/2502, RFC7198 duplicates 0/0 4/0 5/0 6/0 2/0, bursts 0/0 4/0 5/0 6/0 2/0
+>     Loss (ch/%) 0/0.000 4/0.205 5/0.000 6/0.000 2/0.000, missing seq (ch/num) 0/0 4/3 5/0 6/0 2/0, max consec missing seq 0/0 4/2 5/0 6/0 2/0
+>     Ooo (ch/pkts) 0/0 4/43 5/0 6/0 2/58, max 0/0 4/2 5/0 6/0 2/1
+>     Avg stats calcs (ch/num) 0/0.00 4/8.17 5/0.00 6/0.00 2/3.32
+>     Delta avg (ch/msec) media 0/20.00 4/29.13 5/20.56 6/25.61 2/28.90, SID 0/-nan 4/88.38 5/19.98 6/89.83 2/210.66
+>     Delta max (ch/msec/pkt) media 0/20.35/38 4/497.59/2236 5/957.47/3514 6/497.35/6744 2/517.75/3052, SID 0/0.00/0 4/839.68/3054 5/20.15/3591 6/480.00/7253 2/46237.48/5734, overall 0/20.35/38 4/839.68/3054 5/957.47/3514 6/660.02/5979 2/46237.48/5734
+>     Cumulative input times         (sec) (ch/inp/rtp) 0/3.60/3.58 4/60.34/64.22 5/45.80/45.98 6/31.14/29.54 2/137.83/140.66
+>     Cumulative jitter buffer times (sec) (ch/out/rtp) 0/3.64/3.58 4/61.36/64.36 5/45.28/45.98 6/30.88/29.54 2/137.75/140.66
+>   Packet Repair
+>     SID repair (ch/num) instance 0/0 4/1 5/0 6/0 2/0, total 0/0 4/8 5/0 6/0 2/0
+>     Timestamp repair (ch/num) SID 0/0 4/0 5/0 6/0 2/63, media 0/0 4/2 5/0 6/0 2/0
+>   Jitter Buffer
+>     Output (ch/pkts) 0/181 4/3219 5/2300 6/1478 2/4723, max 0/11 4/11 5/11 6/11 2/11, residual 0/0 4/0 5/0 6/0 2/0, bursts 0/0 4/0 5/0 6/0 2/0
+>     Ooo (ch/pkts) 0/0 4/0 5/0 6/0 2/0, max 0/0 4/0 5/0 6/0 2/0, drops 0/0 4/0 5/0 6/0 2/0, duplicates 0/0 4/0 5/0 6/0 2/0
+>     Resyncs (ch/num) underrun 0/0 4/0 5/1 6/7 2/0, overrun 0/0 4/0 5/0 6/0 2/0, timestamp gap 0/0 4/0 5/0 6/0 2/1, purges (ch/num) 0/0 4/0 5/0 6/0 2/0
+>     Holdoffs (ch/num) adj 0/0 4/0 5/0 6/0 2/0, dlvr 0/0 4/0 5/0 6/0 2/0, zero pulls (ch/num) 0/4763 4/3299 5/1068 6/74 2/10
+>   Event log warnings, errors, critical 0, 0, 0
 
 <a name="EventLog"></a>
 # Event Log
