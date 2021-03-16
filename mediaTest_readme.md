@@ -758,6 +758,8 @@ Regardless of what packet flow problems are encountered, streams must stay in ti
 <a name="AudioQualityProcessing"></a>
 ## Audio Quality Processing
 
+In addition to gap management and stream alignment mentioned above, streamlib continuously monitors stream group output for quality, applying FLC (frame loss concealment), amplitude wrap detection, discontinuity smoothing, etc. In part this processing is intended to produce high quality audio output, but also many applications have real-time output requirements, where packet audio must be sent to a "recorder" or real-time devices of some type that are highly sensitive to gaps or other packet problems.
+
 <a name="RunTimeStats"></a>
 # Run-Time Stats
 
