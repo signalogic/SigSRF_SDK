@@ -778,7 +778,7 @@ Run-time stats include the following main categories:
 * Packet Stats
 * Packet Repair
 * Jitter Buffer
-* Event Log warnings , errors
+* Summary of event log warnings and errors
 
 Below is a run-time stats example from a mediaMin screen cap.
 
