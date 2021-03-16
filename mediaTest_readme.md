@@ -45,7 +45,7 @@ pktlib, voplib, and streamlib versions in the SDK are functionally limited as fo
 
    2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
 
-If you need an evaluation demo with relaxed limits for a trial period, [contact us](https://github.com/signalogic/SigSRF_SDK#DocumentationSupport).
+If you need an evaluation SDK with relaxed functional limits for a trial period, [contact us](https://github.com/signalogic/SigSRF_SDK#DocumentationSupport).
 
 # Other Demos
 
