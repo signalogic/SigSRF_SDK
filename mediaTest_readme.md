@@ -763,7 +763,12 @@ In addition to gap management and stream alignment mentioned above, streamlib co
 <a name="RunTimeStats"></a>
 # Run-Time Stats
 
-Run-time stats are displayed onscreen and in the event log, either as a result of calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API from user-defined applications, or when running mediaMin, which sets up a default mode for packet/media threads (<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">source code</a>) to display run-time status when the last session of a stream group closes.
+Run-time stats are displayed onscreen and in the event log, either as a result of calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API from user-defined applications, or when running mediaMin, which sets up a default mode for packet/media threads (<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">source code</a>) to call DSLogRunTimeStats() when:
+
+  * the last session of a stream group closes
+  * stream groups are not active and a session closes
+
+Although mediaMin waits until sessions are closed, run-time stats can be displayed / printed to the event log at any time. It's probably not wise to do so often, as each instance takes a bit of processing time and log (or screen) space.
 
 Run-time stats include the following main categories:
 
