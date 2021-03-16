@@ -184,7 +184,7 @@ As explained in [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstream
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
  
-    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/EVS_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
+    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
 
 The first command line above uses dynamic session creation, analytics mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
 
@@ -201,7 +201,7 @@ As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpst
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
 
-    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6.wav -C../session_config/EVS_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
+    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6.wav -C../session_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
 
 The first command line above uses dynamic session creation, telecom mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
 
@@ -548,7 +548,7 @@ Frame mode performs encode, decode, or transcoding based on specifications in a 
 Below is a frame mode command line that reads a pcap file and outputs to wav file.  No jitter buffering is done, so any out-of-order packets, DTX packets, or SSRC changes are not handled.  The wav file sampling rate is determined from the session config file.
 
 ```C
-./mediaTest -M4 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
+./mediaTest -M4 -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
 ```
 <a name="ConvertingPcaps2Wav"></a>
 ### Converting Pcaps to Wav and Playing Pcaps
@@ -561,15 +561,15 @@ Simple mediaTest command lines can be used to convert Pcaps to wav file, listen 
 The following mediaTest command lines convert EVS pcaps to wav files:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -oevs_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
+./mediaTest -M0 -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
 
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_CH_PT127_IPv4.pcap -oevs_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config -L
+./mediaTest -M0 -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config -L
 ```
 
 The following command line will play an EVS pcap over USB audio:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/evs_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/pcap_file_test_config -L
+./mediaTest -M0 -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/pcap_file_test_config -L
 ```
 
 The above command lines will work on any EVS pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes mediaTest an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
@@ -586,7 +586,7 @@ The following mediaTest command lines convert AMR pcaps to wav files:
 ```C
 ./mediaTest -M0 -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -oamr_WB_23850bps.wav -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
 
-./mediaTest -M0 -cx86 -ipcaps/AMR-12.2kbps-20ms_bw.pcap -oevs_16khz_13200bps_CH_PT127_IPv4.wav -Camr_packet_test_config_AMR-12.2kbps-20ms_bw -L
+./mediaTest -M0 -cx86 -ipcaps/AMR-12.2kbps-20ms_bw.pcap -oAMR-12.2kbps-20ms_bw.wav -Camr_packet_test_config_AMR-12.2kbps-20ms_bw -L
 ```
 
 The following command line will play an AMR pcap over USB audio:
@@ -676,7 +676,7 @@ For the above command lines, note in the [run-time stats](#user-content-runtimes
 Here is a mediaMin command line that converts an incoming pcap with 240 msec ptime to 20 msec:
 
 ```C
-./mediaMin -cx86 -M0 -C../session_config/evs_240ptime_g711_20ptime_test_config -i../pcaps/evs_16khz_16400bps_ptime240_FH_IPv4.pcap -ovptime_test2.pcap -ovptime_test2.wav -L
+./mediaMin -cx86 -M0 -C../session_config/evs_240ptime_g711_20ptime_test_config -i../pcaps/EVS_16khz_16400bps_ptime240_FH_IPv4.pcap -ovptime_test2.pcap -ovptime_test2.wav -L
 ```
 
 Note however that 240 msec is a very large ptime more suited to unidirectional media streams. For a bidirectional real-time media stream, for example a 2-way voice conversation, large ptimes would cause excessive delay and intelligibility problems between endpoints.
@@ -712,7 +712,7 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 
 mediaMin supports a "-rN" command line options to control packet push rate, where N is given in msec. For example typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for analytics applications, or for offline purposes (testing, analysis, speech recognition training, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line below includes -r0 (same as no entry) to specify a fast-as-possible push rate:
 
-    ./mediaMin -M0 -cx86 -i../pcaps/pcmutest.pcap -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
+    ./mediaMin -M0 -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
 
 In addition to this level of control, mediaMin also implements an average packet push rate algorithm, which can be applied when pktlib is operating in analytics mode. The average push rate algorithm enable is the 0x80000 flag in the mediaMin -dN command line argument, and analytics mode is the 0x40000 flag.
 
