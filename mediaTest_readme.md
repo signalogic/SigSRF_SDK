@@ -305,7 +305,7 @@ After downloading the SigSRF SDK, below are <a href="https://openli.nz" target="
 
 Here are some notes about the above command lines and what to look for after they run:
 
-1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) above), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats) screen capture below. In the [stream group](#user-content-streamgroups) output, there should be no underrun (labeled as FLC, or frame loss concealment, in the [run-time stats](#user-content-runtimestats)), packet logs should be clean, and with no event log warnings or errors (highlighted in green).
+1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats) screen capture below. In the [stream group](#user-content-streamgroups) output, there should be no underrun (labeled as FLC, or frame loss concealment, in the [run-time stats](#user-content-runtimestats)), packet logs should be clean, and with no event log warnings or errors (highlighted in green).
 
 ![OpenLI HI3 intercept processing, mediaMin run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_run-time_stats.png?raw=true "OpenLI HI3 intercept processing, mediaMin run-time stats")
 
@@ -336,11 +336,11 @@ mediaMin also generates [stream group](#user-content-streamgroups) output .wav f
 <a name="StaticSessionConfig"></a>
 ## Static Session Configuration
 
-Static session configuration can be handled programmatically using the DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or using a session configuration text file to set the struct elements.  The latter method is implemented by mediaTest (see transcoder.c).  For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
+Static session configuration can be handled programmatically using the [pktlib](#user-content-pktlib) DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or parsing a session configuration text file to set the struct elements. The latter method is implemented by both mediaTest and mediaMin (look for ReadSessionConfig() and StaticSessionCreate() inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
 
-Structs defined in shared_include/session.h include SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
+Structs used in session related APIs are defined in shared_include/session.h, look for SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
 
-Here is a look inside a typical session configuration file, similar to those used in the above command lines:
+Here is a look inside a typical session configuration file, similar to those used in the example command lines shown on this page:
 
 ```CoffeeScript
 # Session 1
