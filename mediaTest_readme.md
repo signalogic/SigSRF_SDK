@@ -6,9 +6,9 @@ After installing the [SigSRF SDK](https://github.com/signalogic/SigSRF_SDK), thi
 
  - test and measurement, including codec audio quality and performance, media RFC verification, and transcoding
 
- - an example application, including source code, showing how to use Pktlib and Voplib APIs (see architecture diagram on the SigSRF page)
+ - application examples, including source code, showing how to use [pktlib](#user-content-pktlib) and voplib APIs (see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram">architecture diagram</a> on the SigSRF page)
 
-Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav); the example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the SigSRF SDK.  SDK capacity is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams. The commercial software has no limitations for concurrency or multiuser, for bare metal, VM, container, or other supported platforms.
+Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav). Example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the SigSRF SDK. SDK capacity is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams. The commercial software has no limitations for concurrency or multiuser, for bare metal, VM, container, or other supported platforms.
 
 # News and Updates
 
@@ -36,16 +36,16 @@ Here are some new features added recently:
 
 1Q 2018:  SigSRF and mediaTest software reached a milestone, now in use or deployed with more than 20 customers.
 
-<a name="DemoLimits"></a>
-# Demo Limits
+<a name="SDKFunctionalLimits"></a>
+# SDK Functional Limits
 
-mediaMin and mediaTest demo functionality is limited as follows:
+pktlib, voplib, and streamlib versions in the SDK are functionally limited as follows:
 
-   1) Data limit.  Processing is limited to 3000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
+   1) Data limit. Processing is limited to 30000 frames / payloads of data. There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
 
    2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
 
-If you need an evaluation demo with an increased limit for a trial period, [contact us](https://github.com/signalogic/SigSRF_SDK#DocumentationSupport).
+If you need an evaluation demo with relaxed limits for a trial period, [contact us](https://github.com/signalogic/SigSRF_SDK#DocumentationSupport).
 
 # Other Demos
 
