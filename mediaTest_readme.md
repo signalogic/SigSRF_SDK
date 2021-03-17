@@ -916,14 +916,14 @@ mediaMin event log entries use the above labeling convention but prefaced with "
 
 To verify a clean event log, the following keywords should not appear:
 
->> bad
->> critical
->> error
->> exceed
->> fail
->> invalid
->> overflow
->> queue full
+>> bad  
+>> critical  
+>> error  
+>> exceed  
+>> fail  
+>> invalid  
+>> overflow  
+>> queue full  
 
 <a name="PacketLog"></a>
 # Packet Log
