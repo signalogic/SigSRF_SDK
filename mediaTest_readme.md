@@ -121,6 +121,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[Playing Audio in Wireshark](#user-content-playingaudiowireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
 [**Audio Quality Notes**](#user-content-audioqualitynotes)<br/>
+[**Real-Time Performance**](#user-content-realtimeperformance)<br/>
 
 <a name="mediaMin"></a>
 # mediaMin
@@ -939,7 +940,7 @@ To verify a clean event log, the following keywords should not appear:
 <a name="PacketLogSummary"></a>
 ## Packet Log Summary
 
-Before mediaMin closes, it calls the DSPktStatsWriteLogFile() API in <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> to write collected packet history and stats to a [packet log](#user-content-packetlog). mediaMin specifies an option in this API to print a summary to the event log, as a convenient indicator of packet integrity separate from the detailed presentation in the packet log.
+Before mediaMin closes, it calls the DSPktStatsWriteLogFile() API in <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> to write collected packet history and stats to a [packet log](#user-content-packetlog). In addition, mediaMin specifies an option in this API to print a summary to the event log, as a convenient indicator of packet integrity separate from the detailed presentation in the packet log.
 
 In the [event log example](#user-content-eventlog) above, here is the packet log summary section:
 
@@ -961,7 +962,7 @@ In the [event log example](#user-content-eventlog) above, here is the packet log
 00:00:01.417.368 INFO: DSPktStatsWriteLogFile() says packet log analysis completed in 38.2 msec, packet log file = EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt
 </pre>
 
-Note especially the "Packets dropped" and "Timestamp mismatches" stats, which should both be zero. If not there may be packet flow integrity issues that need to be addressed.
+Note especially the "Packets dropped" and "Timestamp mismatches" stats, which should both be zero. If not there may be packet flow integrity issues that should be addressed.
 
 <a name="PacketLog"></a>
 # Packet Log
@@ -1254,3 +1255,23 @@ When .au save format is specified as shown in step 2, Wireshark performs uLaw or
 ![Audio quality frequency domain analysis, chime markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_overall.png?raw=true "Audio quality frequency domain analysis, chime markers")
 
 In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right relative to other streams in time (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
+
+<a name="AudioQualityNotes"></a>
+## Audio Quality Notes
+
+There are a number of complex factors involved in real-time performance, for detailed coverage see section 5, High Capacity Operation, in <a href="ftp://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf" target="_blank">SigSRF Software Documentation</a>.
+
+For purposes of the SigSRF SDK github page, here is a summary of important points:
+
+1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="ftp://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf" target="_blank">SigSRF Software Documentation</a>).
+
+2. Packet/media threads should not be preempted. Linux is notorious for running what it wants when it wants, regardless of application real-time needs. There are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries use, some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face reality with computation intensive chips needed for future AI and machine learning applications.
+
+Pktlib imiplements a "preemption alarm" that shows a warning in the event log when triggered. Here is an example:
+
+> 00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 
+src 0xb6ef05cc 
+
+A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
+
+3. CPU performance is crucial. Atom and other low power CPUs are not likely to provide real-time performance for more than a few packet/media threads. Specs published for SigSRF software assume *at minimum* E5-2660 Xeon core running at 2.2 GHz.
