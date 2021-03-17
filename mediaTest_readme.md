@@ -928,7 +928,7 @@ To verify a clean event log, the following keywords should not appear:
 >> queue full  
 >> wrap  
 
-** with exception of configuration info printed by the DSConfigPktlib() API, which normally appears at event log start
+** with exception of configuration info printed by the DSConfigPktlib() API, which normally appears once at event log start
 
 <a name="PacketLog"></a>
 # Packet Log
