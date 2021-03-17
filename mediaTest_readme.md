@@ -1259,11 +1259,11 @@ In this case customer expectations were (i) the stream with embedded chime marke
 <a name="RealTimePerformance"></a>
 ## Real-Time Performance
 
-There are a number of complex factors involved in real-time performance, for detailed coverage see section 5, High Capacity Operation, in <a href="ftp://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf" target="_blank">SigSRF Software Documentation</a>.
+There are a number of complex factors involved in real-time performance, for detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
 
 For purposes of the SigSRF SDK github page, here is a summary of important points:
 
-1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="ftp://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf" target="_blank">SigSRF Software Documentation</a>).
+1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).
 
 2. Packet/media threads should not be preempted. Linux is notorious for running what it wants when it wants, regardless of application real-time needs. There are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries use, some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face reality with computation intensive chips needed for future AI and machine learning applications.
 
