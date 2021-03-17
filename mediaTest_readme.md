@@ -1269,7 +1269,7 @@ For purposes of the SigSRF SDK github page, here is a summary of important point
  - run a clean platform. For a server, don't run other applications, even housekeeping applications, unless absolutely necessary.  If SigSRF software is running in a container or VM, then consider the larger picture of what is running outside the VM (other VMs?) or outside the containers 
  - run a clean Linux. No GUI, no extra applications, etc.
  
-<p style="margin-left: 40px">Linux is notorious for running what it wants when it wants, regardless of application real-time needs. To optimize thread performance, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face the reality of modifying a 25-year old OS design to accommodate computation intensive chips needed for HPC, AI and machine learning applications.</p>
+ Linux is notorious for running what it wants when it wants, regardless of application real-time needs. To optimize thread performance, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face the reality of modifying a 25-year old OS design to accommodate computation intensive chips needed for HPC, AI and machine learning applications.
 
 To monitor for preemption by Linux or other apps, pktlib implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
 
@@ -1278,7 +1278,7 @@ To monitor for preemption by Linux or other apps, pktlib implements a "thread pr
 src 0xb6ef05cc 
 </pre>
 
-A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
+ A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
 
 3. CPU performance is crucial. Atom and other low power CPUs are unlikely to provide real-time performance for more than a few packet/media threads. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
 
@@ -1286,4 +1286,4 @@ A clean log should contain no preemption warnings, regardless of how many packet
 
 ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
 
-See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) above for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
+ See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) above for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
