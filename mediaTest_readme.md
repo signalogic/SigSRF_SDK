@@ -1260,14 +1260,14 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
 There are a number of complex factors involved in real-time performance and its flip side, high capacity operation. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
 
-For purposes of the SigSRF SDK github page, here is a summary of important points in obtaining and verifying real-time performance:
+For purposes of the SigSRF SDK github page, here is a summary of important points in achieving and maintaining real-time performance:
 
 1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).  For DSConfigMediaService() usage see StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
 
 2. Packet/media threads should not be preempted. To safeguard against this, there are two (2) basic guidelines to follow:
 
  - run a clean platform. For a server, don't run other applications, even housekeeping applications, unless absolutely necessary.  If SigSRF software is running in a container or VM, then consider the larger picture of what is running outside the VM (other VMs?) or outside the container
- - run a minimal Linux. No GUI, no extra applications, etc. Linux housekeeping tasks that run every hour or every day should temporarily disabled 
+ - run a minimal Linux. No GUI, no extra applications, etc. Linux housekeeping tasks that run every hour or every day should temporarily be disabled 
  
     Linux is notorious for running what it wants when it wants, regardless of application real-time needs. To optimize thread performance, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face the reality of modifying a 25-year old OS design to accommodate computation intensive chips needed for HPC, AI and machine learning applications.
 
@@ -1277,7 +1277,7 @@ For purposes of the SigSRF SDK github page, here is a summary of important point
 
     A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
 
-3. CPU performance is crucial. Atom and other low power CPUs are unlikely to provide real-time performance for more than a few packet/media threads. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
+3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few packet/media threads. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
 
 4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow CPU performance can cause packet delta stats to fluctuate, even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both audio quality and real-time performance; any deviation is problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
 
