@@ -1221,4 +1221,4 @@ When .au save format is specified as shown in step 2, Wireshark performs uLaw or
 
 ![Audio quality frequency domain analysis, chime markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_overall.png?raw=true "Audio quality frequency domain analysis, chime markers")
 
-In this case the customer expectation was the stream with embedded chime markers would not "slip" left or right relative to other streams in time (i.e. correct time alignment between streams would be maintained) and (ii) the 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding moderate packet loss, out-of-order packets, and other stream integrity issues.
+In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right relative to other streams in time (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
