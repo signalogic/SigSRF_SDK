@@ -1263,15 +1263,17 @@ There are a number of complex factors involved in real-time performance, for det
 
 For purposes of the SigSRF SDK github page, here is a summary of important points:
 
-1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).
+1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).  For DSConfigMediaService() usage see StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
 
-2. Packet/media threads should not be preempted. Linux is notorious for running what it wants when it wants, regardless of application real-time needs. There are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries use, some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face reality with computation intensive chips needed for future AI and machine learning applications.
+2. Packet/media threads should not be preempted. Linux is notorious for running what it wants when it wants, regardless of application real-time needs. There are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries use, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face reality with computation intensive chips needed for HPC, AI and machine learning applications.
 
-Pktlib imiplements a "preemption alarm" that shows a warning in the event log when triggered. Here is an example:
+Pktlib implements a "thread preemption alarm" that shows a warning in the event log when triggered. Here is an example:
 
-> 00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 
+<pre>
+00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 
 src 0xb6ef05cc 
+</pre>
 
 A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
 
-3. CPU performance is crucial. Atom and other low power CPUs are not likely to provide real-time performance for more than a few packet/media threads. Specs published for SigSRF software assume *at minimum* E5-2660 Xeon core running at 2.2 GHz.
+3. CPU performance is crucial. Atom and other low power CPUs are unlikely to provide real-time performance for more than a few packet/media threads. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
