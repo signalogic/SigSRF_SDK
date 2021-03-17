@@ -763,7 +763,7 @@ In addition to gap management and stream alignment mentioned above, streamlib co
 <a name="RunTimeStats"></a>
 # Run-Time Stats
 
-Run-time stats are displayed onscreen and/or in the event log by calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API from user-defined applications. Also mediaMin displays run-time stats when:
+Run-time stats are displayed onscreen and/or in the event log by calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API for a session or range of sessions from user-defined applications. Also mediaMin displays run-time stats when:
 
   * the last session of a stream group closes
   * stream groups are not active and a session closes
@@ -775,7 +775,7 @@ Although mediaMin waits until sessions are closed, run-time stats can be display
 Run-time stats include the following main categories:
 
 * Sessions
-* SSRCs (also includes [RFC8108 RTP streams](#user-content-multiplertpstreams)
+* SSRCs (also includes [RFC8108 RTP streams](#user-content-multiplertpstreams))
 * Overrun and Underrun (applicable when stream groups are enabled)
 * Packet Stats
 * Packet Repair
@@ -813,16 +813,25 @@ Below is a run-time stats example from a mediaMin screen capture.
 
 Here are some notational conventions used in run-time stats formatting:
 
-1. At sub-category level, stats are separated by a comma, followed by a new sub-category description. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ..., max 0/0 4/2 ...which indicates number of ooo packets followed by max ooo packets 
-2. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ... indicating channel 0 has no ooo packets,. channel 4 has 43, etc
-3. Input vs. output jitter buffer times are vertically aligned to make comparison easier
-4. hSession (session), ch (channel), and grp (stream group) values range from 0 to max allowed (depending on version of SigSRF software)
-5. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
+1. Stats are given only for sessions listed in "Sessions"
+2. At sub-category level, stats are separated by a comma, followed by a new sub-category description. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ..., max 0/0 4/2 ...which indicates number of ooo packets followed by max ooo packets 
+3. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ... indicating channel 0 has no ooo packets,. channel 4 has 43, etc
+4. Input vs. output jitter buffer times are vertically aligned to make comparison easier
+5. hSession (session), ch (channel), and grp (stream group) values range from 0 to max allowed (depending on version of SigSRF software)
+6. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
 
 <a name="EventLog"></a>
 # Event Log
 
 The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by the mediaMin and mediaTest reference apps and also available for user-defined applications.
+
+Event logs are .txt files, updated continuously by packet/media threads with informational events, status, warnings, and errors, with each entry prefixed by a timestamp (different timestamp formats may be specified, including absolute and relative time). Event log filenames use the following notation:
+
+    filename_log_MM.txt
+  
+where filename is a user-specified name based on inputs, stream groups, or other naming convention (for the mediaMin behavior on this look for szEventLogFile in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>), and MM is the mode of operation (none or "tm" for telecom mode, "am" for analytics mode).
+
+Below is an example event log.
 
 <pre>
 00:00:00.000.003 INFO: DSConfigPktlib() uflags = 0x7 
@@ -871,7 +880,7 @@ The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/di
 00:00:01.356.545 mediaMin INFO: Deleting 1 session [index] hSession/flush state [0] 0/3 
 00:00:01.356.598 INFO: Marking session 0 for deletion 
         :
-        :  run-time stats edited out, see [Run-Time Stats](#user-content-runtimestats) above
+        :  run-time stats edited out, see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-runtimestats">Run-Time Stats</a> above
         :
 00:00:01.357.337 INFO: Deleting session 0 
 00:00:01.357.403 INFO: DSDeleteSession() deleted group "", owner session = 0
