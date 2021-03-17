@@ -917,17 +917,17 @@ mediaMin event log entries use the above labeling convention but prefaced with "
 
 To verify a clean event log, the following keywords should not appear:
 
->> alarm  **  
->> bad  
->> critical  
->> error  
->> exceed  
->> fail  
->> invalid  
->> overflow  
->> preempt  **  
->> queue full  
->> wrap  
+> alarm  **  
+> bad  
+> critical  
+> error  
+> exceed  
+> fail  
+> invalid  
+> overflow  
+> preempt  **  
+> queue full  
+> wrap  
 
 ** with exception of configuration info printed by the DSConfigPktlib() API, which normally appears once at event log start
 
