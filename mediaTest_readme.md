@@ -774,7 +774,7 @@ Although mediaMin waits until sessions are closed, run-time stats can be display
 
 Run-time stats include the following main categories:
 
-* Sessions
+* Sessions (list of sessions and channels for which stats are displayed)
 * SSRCs (also includes [RFC8108 RTP streams](#user-content-multiplertpstreams))
 * Overrun and Underrun (applicable when stream groups are enabled)
 * Packet Stats
@@ -813,12 +813,11 @@ Below is a run-time stats example from a mediaMin screen capture.
 
 Here are some notational conventions used in run-time stats formatting:
 
-1. Stats are given only for sessions listed in "Sessions"
-2. At sub-category level, stats are separated by a comma, followed by a new sub-category description. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ..., max 0/0 4/2 ...which indicates number of ooo packets followed by max ooo packets 
-3. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ... indicating channel 0 has no ooo packets,. channel 4 has 43, etc
-4. Input vs. output jitter buffer times are vertically aligned to make comparison easier
-5. hSession (session), ch (channel), and grp (stream group) values range from 0 to max allowed (depending on version of SigSRF software)
-6. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
+1. At sub-category level, stats are separated by a comma, followed by a new sub-category description. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ..., max 0/0 4/2 ...which indicates number of ooo packets followed by max ooo packets 
+2. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ... indicating channel 0 has no ooo packets,. channel 4 has 43, etc
+3. Input vs. output jitter buffer times are vertically aligned to make comparison easier
+4. hSession (session), ch (channel), and grp (stream group) values range from 0 to max allowed (depending on version of SigSRF software)
+5. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
 
 <a name="EventLog"></a>
 # Event Log
@@ -827,7 +826,7 @@ The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/di
 
 Event logs are .txt files, updated continuously by packet/media threads with informational events, status, warnings, and errors, with each entry prefixed by a timestamp (different timestamp formats may be specified, including absolute and relative time). Event log filenames use the following notation:
 
-    filename_log_MM.txt
+    filename_event_log_MM.txt
   
 where filename is a user-specified name based on inputs, stream groups, or other naming convention (for the mediaMin behavior on this look for szEventLogFile in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>), and MM is the mode of operation (none or "tm" for telecom mode, "am" for analytics mode).
 
@@ -884,7 +883,7 @@ Below is an example event log.
         :
 00:00:01.357.337 INFO: Deleting session 0 
 00:00:01.357.403 INFO: DSDeleteSession() deleted group "", owner session = 0
-00:00:01.357.566 INFO: purged 0 packets from jitter buffer for ch N deletion  (repeated multiple times for different channels)
+00:00:01.357.566 INFO: purged 0 packets from jitter buffer for ch n deletion  (repeated for N <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-channels">channels</a>)
 00:00:01.360.665 INFO: Deleted session 0
 00:00:01.360.857 INFO: master p/m thread says writing input and jitter buffer output packet stats to packet log file EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt, streams found for all sessions = 3 (collate streams enabled), total input pkts = 1814, total jb pkts = 2162... 
 00:00:01.379.205 INFO: DSPktStatsWriteLogFile() says 3 input SSRC streams with 1814 total packets and 3 output SSRC streams with 2162 total packets logged in 17.9 msec, now analyzing...
@@ -905,6 +904,26 @@ Below is an example event log.
 	Missed stream group intervals = 0 
 	Marginal stream group pulls = 0 
 </pre>
+
+[pktlib](#user-content-pktlib) event log entries use the following labeling convention:
+
+* "INFO" indicates normal operation events, progress, and status
+* "WARNING" indicates an unusual event, something that may be a problem and needs attention
+* "ERROR" indicates a problem that could mean incorrect software operation, data, or results
+* "CRITICAL" indicates a serious problem that could lead to a software stop or corrupted results
+
+mediaMin event log entries use the above labeling convention but prefaced with "mediaMin", for example "mediaMin INFO".
+
+To verify a clean event log, the following keywords should not appear:
+
+>> bad
+>> critical
+>> error
+>> exceed
+>> fail
+>> invalid
+>> overflow
+>> queue full
 
 <a name="PacketLog"></a>
 # Packet Log
