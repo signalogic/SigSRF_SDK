@@ -108,8 +108,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**Run-Time Stats**](#user-content-runtimestats)<br/>
 [**Event Log**](#user-content-eventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Verfying a Clean Event Log](#user-content-verifyingcleaneventlog)<br/>
-[**Packet Log**](#user-content-packetlog)<br/>
 &nbsp;&nbsp;&nbsp;[Packet Log Summary](#user-content-packetlogsummary)<br/>
+[**Packet Log**](#user-content-packetlog)<br/>
 
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
