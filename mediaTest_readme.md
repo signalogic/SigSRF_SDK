@@ -1256,8 +1256,8 @@ When .au save format is specified as shown in step 2, Wireshark performs uLaw or
 
 In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right relative to other streams in time (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
 
-<a name="AudioQualityNotes"></a>
-## Audio Quality Notes
+<a name="RealTimePerformance"></a>
+## Real-Time Performance
 
 There are a number of complex factors involved in real-time performance, for detailed coverage see section 5, High Capacity Operation, in <a href="ftp://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf" target="_blank">SigSRF Software Documentation</a>.
 
