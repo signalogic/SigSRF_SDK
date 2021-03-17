@@ -770,7 +770,7 @@ Run-time stats are displayed onscreen and/or in the event log by calling the DSL
 
 mediaMin sets up a default mode for packet/media threads to call DSLogRunTimeStats() (look for the API in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>).
 
-Although mediaMin waits until sessions are closed, run-time stats can be displayed and/or printed to the event log at any time. It's probably not wise to do so often, as each instance takes some processing time and log (or screen) space.
+Although mediaMin waits until sessions are closed, run-time stats can be displayed and/or printed to the event log at any time. It's probably not wise to do so often, as each instance takes some processing time and a chunk of log (or screen) space.
 
 Run-time stats include the following main categories:
 
@@ -809,6 +809,14 @@ Below is a run-time stats example from a mediaMin screen capture.
     Holdoffs (ch/num) adj 0/0 4/0 5/0 6/0 2/0, dlvr 0/0 4/0 5/0 6/0 2/0, zero pulls (ch/num) 0/4763 4/3299 5/1068 6/74 2/10
   Event log warnings, errors, critical 0, 0, 0
 </pre>
+
+Here are some notational conventions used in run-time stats formatting:
+
+1. At sub-category level, stats are separated by a comma, followed by a new sub-category description. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ..., max 0/0 4/2 ...which indicates number of ooo packets followed by max ooo packets 
+2. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ... indicating channel 0 has no ooo packets,. channel 4 has 43, etc
+3. Input vs. output jitter buffer times are vertically aligned to make comparison easier
+4. hSession (session), ch (channel), and grp (stream group) values range from 0 to max allowed (depending on version of SigSRF software)
+5. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
 
 <a name="EventLog"></a>
 # Event Log
