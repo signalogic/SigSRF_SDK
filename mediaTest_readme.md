@@ -107,7 +107,9 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 [**Run-Time Stats**](#user-content-runtimestats)<br/>
 [**Event Log**](#user-content-eventlog)<br/>
+&nbsp;&nbsp;&nbsp;[Verfying a Clean Event Log](#user-content-verifyingcleaneventlog)<br/>
 [**Packet Log**](#user-content-packetlog)<br/>
+&nbsp;&nbsp;&nbsp;[Packet Log Summary](#user-content-packetlogsummary)<br/>
 
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
@@ -910,10 +912,13 @@ Below is an example event log.
 
 * "INFO" indicates normal operation events, progress, and status
 * "WARNING" indicates an unusual event, something that may be a problem and needs attention
-* "ERROR" indicates a problem that could mean incorrect software operation, data, or results
+* "ERROR" indicates a problem that could mean incorrect data, results, or software usage (for example API parameter issue)
 * "CRITICAL" indicates a serious problem that could lead to a software stop or corrupted results
 
 mediaMin event log entries use the above labeling convention but prefaced with "mediaMin", for example "mediaMin INFO".
+
+<a name="VerifyingCleanEventLog"></a>
+## Verifying a Clean Event Log
 
 To verify a clean event log, the following keywords should not appear:
 
@@ -930,6 +935,33 @@ To verify a clean event log, the following keywords should not appear:
 > wrap  
 
 ** with exception of configuration info printed by the DSConfigPktlib() API, which normally appears once at event log start
+
+<a name="PacketLogSummary"></a>
+## Packet Log Summary
+
+Before mediaMin closes, it calls the DSPktStatsWriteLogFile() API in <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> to write collected packet history and stats to a [packet log](#user-content-packetlog). mediaMin specifies an option in this API to print a summary to the event log, as a convenient indicator of packet integrity separate from the detailed presentation in the packet log.
+
+In the [event log example](#user-content-eventlog) above, here is the packet log summary section:
+
+<pre>
+00:00:01.360.857 INFO: master p/m thread says writing input and jitter buffer output packet stats to packet log file EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt, streams found for all sessions = 3 (collate streams enabled), total input pkts = 1814, total jb pkts = 2162... 
+00:00:01.379.205 INFO: DSPktStatsWriteLogFile() says 3 input SSRC streams with 1814 total packets and 3 output SSRC streams with 2162 total packets logged in 17.9 msec, now analyzing...
+00:00:01.381.857 INFO: DSPktStatsWriteLogFile() packet history analysis summary for stream 0, SSRC = 0x49cc7510, 283 input pkts, 283 output pkts
+00:00:01.381.929     Packets dropped by jitter buffer = 0
+00:00:01.381.985     Packets duplicated by jitter buffer = 0
+00:00:01.382.043     Timestamp mismatches = 0
+00:00:01.405.211 INFO: DSPktStatsWriteLogFile() packet history analysis summary for stream 1, SSRC = 0x35f8b4, 857 input pkts, 1172 output pkts
+00:00:01.405.258     Packets dropped by jitter buffer = 0
+00:00:01.405.297     Packets duplicated by jitter buffer = 0
+00:00:01.405.332     Timestamp mismatches = 0
+00:00:01.417.214 INFO: DSPktStatsWriteLogFile() packet history analysis summary for stream 2, SSRC = 0x47686605, 674 input pkts, 707 output pkts
+00:00:01.417.261     Packets dropped by jitter buffer = 0
+00:00:01.417.297     Packets duplicated by jitter buffer = 0
+00:00:01.417.331     Timestamp mismatches = 0
+00:00:01.417.368 INFO: DSPktStatsWriteLogFile() says packet log analysis completed in 38.2 msec, packet log file = EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt
+</pre>
+
+Note especially the "Packets dropped" and "Timestamp mismatches" stats, which should both be zero. If not there may be packet flow integrity issues that need to be addressed.
 
 <a name="PacketLog"></a>
 # Packet Log
