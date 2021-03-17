@@ -1269,7 +1269,7 @@ For purposes of the SigSRF SDK github page, here is a summary of important point
  - run a clean platform. For a server, don't run other applications, even housekeeping applications, unless absolutely necessary.  If SigSRF software is running in a container or VM, then consider the larger picture of what is running outside the VM (other VMs?) or outside the containers 
  - run a clean Linux. No GUI, no extra applications, etc.
  
-Linux is notorious for running what it wants when it wants, regardless of application real-time needs. To optimize thread performance, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face the reality of modifying a 25-year old OS design to accommodate computation intensive chips needed for HPC, AI and machine learning applications.
+<p style="margin-left: 40px">Linux is notorious for running what it wants when it wants, regardless of application real-time needs. To optimize thread performance, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face the reality of modifying a 25-year old OS design to accommodate computation intensive chips needed for HPC, AI and machine learning applications.</p>
 
 To monitor for preemption by Linux or other apps, pktlib implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
 
