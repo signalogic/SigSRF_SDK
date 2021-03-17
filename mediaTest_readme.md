@@ -1278,7 +1278,7 @@ For purposes of the SigSRF SDK github page, here is a summary of important point
 src 0xb6ef05cc 
 </pre>
 
-&nbsp;&nbsp;&nbsp;A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
+3\. A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
 
 3. CPU performance is crucial. Atom and other low power CPUs are unlikely to provide real-time performance for more than a few packet/media threads. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
 
