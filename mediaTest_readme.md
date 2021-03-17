@@ -1266,24 +1266,24 @@ For purposes of the SigSRF SDK github page, here is a summary of important point
 
 2. Packet/media threads should not be preempted. To safeguard against this, there are two (2) basic guidelines to follow:
 
- - run a clean platform. For a server, don't run other applications, even housekeeping applications, unless absolutely necessary.  If SigSRF software is running in a container or VM, then consider the larger picture of what is running outside the VM (other VMs?) or outside the containers 
- - run a clean Linux. No GUI, no extra applications, etc.
+ - run a clean platform. For a server, don't run other applications, even housekeeping applications, unless absolutely necessary.  If SigSRF software is running in a container or VM, then consider the larger picture of what is running outside the VM (other VMs?) or outside the container
+ - run a minimal Linux. No GUI, no extra applications, etc. Linux housekeeping tasks that run every hour or every day should temporarily disabled 
  
-  Linux is notorious for running what it wants when it wants, regardless of application real-time needs. To optimize thread performance, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face the reality of modifying a 25-year old OS design to accommodate computation intensive chips needed for HPC, AI and machine learning applications.
+    Linux is notorious for running what it wants when it wants, regardless of application real-time needs. To optimize thread performance, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face the reality of modifying a 25-year old OS design to accommodate computation intensive chips needed for HPC, AI and machine learning applications.
 
-  To monitor for preemption by Linux or other apps, pktlib implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
+    To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
 
-<pre>
+    <pre>
 00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 
 src 0xb6ef05cc 
 </pre>
 
-  A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
+    A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
 
 3. CPU performance is crucial. Atom and other low power CPUs are unlikely to provide real-time performance for more than a few packet/media threads. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
 
 4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow CPU performance can cause packet delta stats to fluctuate, even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both audio quality and real-time performance; any deviation is problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
 
-![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
+    ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
 
- See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) above for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
+    See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) above for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
