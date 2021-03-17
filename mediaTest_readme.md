@@ -125,7 +125,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 The mediaMin reference application runs optimized, high-capacity media packet streaming on x86 servers <sup>[1]</sup> used in bare-metal, VM, or container platforms. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams, with packet handling, DTX, media decoding, stream group processing, and event and packet logging and statistics.
 
-For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet thread workers), voplib (voice-over-packet interface), streamlib (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
+For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet thread workers), voplib (voice-over-packet interface), [streamlib](#user-content-streamlib) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
 
 To provide a simple, ready-to-use interface, mediaMin provides additional functionality. mediaMin command line options instruct pktlib to operate in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to [stream groups](#user-content-streamgroups), which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packdet output.
 
@@ -134,7 +134,8 @@ In addition to providing a ready-to-use application, <a href="https://github.com
 mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreation), recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to process subsequent packet flow in the stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.
 
 <sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. Stress testing includes concurrent session counts up to 50 per x86 core, with sustained test durations over 1400 hrs.</br>
-<sup>2</sup> pktlib, voplib, and streamlib are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
+</br>
+<sup>2</sup> [pktlib](#user-content-pktlib), voplib, and [streamlib](#user-content-streamlib) are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
 
 <a name="RealTimeStreaming"></a>
 ## Real-Time Streaming and Packet Flow
@@ -822,7 +823,7 @@ Here are some notational conventions used in run-time stats formatting:
 <a name="EventLog"></a>
 # Event Log
 
-The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by SigSRF libraries including [pktlib](#user-content-pktlib), voplib, and streamlib, and also by mediaMin and mediaTest reference apps. All diaglib APIs are also available for user-defined applications.
+The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by SigSRF libraries including [pktlib](#user-content-pktlib), voplib, and [streamlib](#user-content-streamlib), and also by mediaMin and mediaTest reference apps. All diaglib APIs are also available for user-defined applications.
 
 Event logs are .txt files, updated continuously by packet/media threads with informational events, status, warnings, and errors, with each entry prefixed by a timestamp (different timestamp formats may be specified, including absolute and relative time). Event log filenames use the following notation:
 
@@ -905,7 +906,7 @@ Below is an example event log.
 	Marginal stream group pulls = 0 
 </pre>
 
-[pktlib](#user-content-pktlib), voplib, and streamlib event log entries follow a labeling convention:
+[pktlib](#user-content-pktlib), voplib, and [streamlib](#user-content-streamlib) event log entries follow a labeling convention:
 
 * "INFO" indicates normal operation events, progress, and status
 * "WARNING" indicates an unusual event, something that may be a problem and needs attention
@@ -1063,7 +1064,7 @@ Some of the RFCs supported by pktlib and voplib include:
 <a name="UserDefinedSignalProcessingInsertionPoints"></a>
 ## User-Defined Signal Processing Insertion Points
 
-Pktlib and streamlib source codes in the SigSRF SDK include "user-defined code insert points" for signal processing and other algorithms to process media data, either or both (i) after extraction from ordered payloads and/or decoding, and (ii) after [stream group](#user-content-streamgroups) processing. For these two (2) locations, the specific source codes are:
+[Pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) source codes in the SigSRF SDK include "user-defined code insert points" for signal processing and other algorithms to process media data, either or both (i) after extraction from ordered payloads and/or decoding, and (ii) after [stream group](#user-content-streamgroups) processing. For these two (2) locations, the specific source codes are:
 
 > 1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>
 > 
