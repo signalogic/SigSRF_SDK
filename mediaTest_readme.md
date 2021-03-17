@@ -477,7 +477,7 @@ For transcoding, coCPU cores can be used to achieve extremely high capacity per 
 
 ./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv8c.INP -otest_files/c6x8c_j.wav -Csession_config/evs_8kHz_13200bps_config
 ```
-Here are screen caps for the above two mediaTest commands (with frame count and run time highlighted):
+Here are screen captures for the above two mediaTest commands (with frame count and run time highlighted):
 
 ![mediaTest display for EVS WB coCPU test](https://github.com/signalogic/SigSRF_SDK/blob/master/images/evs_wb_codec_test_cocpu_screencap.png?raw=true "mediaTest display for EVS WB test using coCPU card")
 
@@ -763,24 +763,25 @@ In addition to gap management and stream alignment mentioned above, streamlib co
 <a name="RunTimeStats"></a>
 # Run-Time Stats
 
-Run-time stats are displayed onscreen and in the event log, either as a result of calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API from user-defined applications, or when running mediaMin, which sets up a default mode for packet/media threads (<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">source code</a>) to call DSLogRunTimeStats() when:
+Run-time stats are displayed onscreen and/or in the event log by calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API from user-defined applications. Also mediaMin displays run-time stats when:
 
   * the last session of a stream group closes
   * stream groups are not active and a session closes
 
-Although mediaMin waits until sessions are closed, run-time stats can be displayed / printed to the event log at any time. It's probably not wise to do so often, as each instance takes a bit of processing time and log (or screen) space.
+mediaMin sets up a default mode for packet/media threads to call DSLogRunTimeStats() (look for the API in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>).
+
+Although mediaMin waits until sessions are closed, run-time stats can be displayed and/or printed to the event log at any time. It's probably not wise to do so often, as each instance takes some processing time and log (or screen) space.
 
 Run-time stats include the following main categories:
 
 * Sessions
-* Overrun
-* Underrun
+* Overrun and Underrun (applicable when stream groups are enabled)
 * Packet Stats
 * Packet Repair
 * Jitter Buffer
 * Summary of event log warnings and errors
 
-Below is a run-time stats example from a mediaMin screen cap.
+Below is a run-time stats example from a mediaMin screen capture.
 
 <pre>
 00:02:24.417.743 Stream Info + Stats, stream group "mediaplayout_music_1malespeaker_5xAMRWB_notimestamps", grp 0, p/m thread 0, num packets 7359
