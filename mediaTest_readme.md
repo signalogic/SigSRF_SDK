@@ -905,7 +905,7 @@ Below is an example event log.
 	Marginal stream group pulls = 0 
 </pre>
 
-[pktlib](#user-content-pktlib) event log entries use the following labeling convention:
+[pktlib](#user-content-pktlib), voplib, and streamlib event log entries follow a labeling convention:
 
 * "INFO" indicates normal operation events, progress, and status
 * "WARNING" indicates an unusual event, something that may be a problem and needs attention
@@ -916,6 +916,7 @@ mediaMin event log entries use the above labeling convention but prefaced with "
 
 To verify a clean event log, the following keywords should not appear:
 
+>> alarm  **  
 >> bad  
 >> critical  
 >> error  
@@ -923,7 +924,11 @@ To verify a clean event log, the following keywords should not appear:
 >> fail  
 >> invalid  
 >> overflow  
+>> preempt  **  
 >> queue full  
+>> wrap  
+
+** with exception of configuration info printed by the DSConfigPktlib() API, which normally appears at event log start
 
 <a name="PacketLog"></a>
 # Packet Log
