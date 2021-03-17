@@ -775,6 +775,7 @@ Although mediaMin waits until sessions are closed, run-time stats can be display
 Run-time stats include the following main categories:
 
 * Sessions
+* SSRCs (also includes [RFC8108 RTP streams](#user-content-multiplertpstreams)
 * Overrun and Underrun (applicable when stream groups are enabled)
 * Packet Stats
 * Packet Repair
@@ -822,6 +823,79 @@ Here are some notational conventions used in run-time stats formatting:
 # Event Log
 
 The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by the mediaMin and mediaTest reference apps and also available for user-defined applications.
+
+<pre>
+00:00:00.000.003 INFO: DSConfigPktlib() uflags = 0x7 
+  P/M thread capacity  max sessions = 51, max groups = 17
+  Event log            path = EVS_16khz_13200bps_CH_RFC8108_IPv6_event_log_am.txt, uLogLevel = 8, uEventLogMode = 0x32, flush size = 1024, max size not set
+  Debug                uDebugMode = 0x0, uPktStatsLogging = 0xd, uEnableDataObjectStats = 0x1
+  Screen output        uPrintfLevel = 5, uPrintfControl = 0
+  Energy saver         p/m thread energy saver inactivity time = 30000 msec, sleep time = 1000 usec
+  Alarms               DSPushPackets packet cutoff alarm elapsed time not set, p/m thread preemption alarm elapsed time = 40 (msec)
+00:00:00.000.207 mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 2.9.1, Copyright (C) Signalogic 2018-2021
+00:00:00.000.218 mediaMin INFO: event log setup complete, log file EVS_16khz_13200bps_CH_RFC8108_IPv6_event_log_am.txt, log level = 8 
+00:00:00.001.080 INFO: DSConfigVoplib() voplib and codecs initialized, flags = 0x19 
+00:00:00.001.175 INFO: DSConfigStreamlib() stream groups initialized 
+00:00:00.001.358 INFO: DSAssignPlatform() system CPU architecture supports rdtscp instruction, TSC integrity monitoring enabled 
+00:00:00.001.788 INFO: DSOpenPcap() opened pcap input file: ../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap 
+00:00:00.003.123 INFO: DSCreateSession() created stream group "", idx = -1, owner session = 0, status = 1 
+00:00:00.003.224 INFO: DSCreateSession() has assigned session 0 with flags 0xf02 and term1/2 flags 0x4f/0xf to p/m thread 0 (which has 1 session and 1 stream group) 
+00:00:00.003.446 INFO: DSOpenPcap() opened pcap output file: EVS_16khz_13200bps_CH_RFC8108_IPv6_jb0.pcap 
+00:00:00.003.912 INFO: first packet/media thread running, lib versions DirectCore v4.1.1 DEMO, pktlib v3.1.0 DEMO, streamlib v1.9.0 DEMO, voplib v1.3.3 DEMO, alglib v1.2.1, diaglib v1.5.0 
+00:00:00.003.987 INFO: DSConfigMediaService() says pthread_setaffinity_np() set core 0 affinity for pkt/media thread 0 (thread id 0x7fa148251700), num online cores found = 2, uFlags = 0x1180101, pktlib.c:8718 
+00:00:00.004.040 INFO: DSConfigMediaService() says setpriority() set Niceness to -15 for pkt/media thread 0 
+00:00:00.004.098 INFO: initializing packet/media thread 0, uFlags = 0x1180101, threadid = 0x7fa148251700, total num pkt/med threads = 1
+00:00:00.004.228 INFO: Initializing session 0 
+00:00:00.004.342 INFO: First thread session input check, p/m thread = 0, fMediaThread = 1, i = 0, numSessions = 1
+00:00:00.054.388 Received first packet for ch 0, p/m thread = 0 
+00:00:00.054.437 	SSRC = 0x49cc7510, SeqNum = 34881, TimeStamp = 2473967478 
+00:00:00.054.477 INFO:  Chan 0 dynamic jitter buffer received parameters (packet count): min = 2, target = 10, max = 14 
+00:00:00.054.513 INFO: Dynamic jitter buffer calculated values (sample count): min = 640, target = 3200, max = 4480 
+00:00:00.213.726 INFO: creating dynamic (child) channel 2 for hSession 0, parent ch 0 
+00:00:00.213.973 Received first packet for ch 2, p/m thread = 0 
+00:00:00.214.034 	SSRC = 0x35f8b4, SeqNum = 15, TimeStamp = 10672 
+00:00:00.214.103 INFO: (child) chan 2 dynamic jitter buffer received parameters (packet count): min = 2, target = 10, max = 14 
+00:00:00.214.159 INFO: Dynamic jitter buffer calculated values (sample count): min = 640, target = 3200, max = 4480 
+00:00:00.214.211 INFO: stream change #1 for hSession 0 ch 0 SSRC 0x49cc7510, starting RTP stream ch 2 SSRC 0x35f8b4 @ pkt 284 
+00:00:00.214.268 INFO: ch 2 waiting for parent ch 0 with 9 pkts remaining 
+00:00:00.672.029 INFO: creating dynamic (child) channel 3 for hSession 0, parent ch 0 
+00:00:00.672.174 Received first packet for ch 3, p/m thread = 0 
+00:00:00.672.209 	SSRC = 0x47686605, SeqNum = 11430, TimeStamp = 2391927402 
+00:00:00.672.246 INFO: (child) chan 3 dynamic jitter buffer received parameters (packet count): min = 2, target = 10, max = 14 
+00:00:00.672.282 INFO: Dynamic jitter buffer calculated values (sample count): min = 640, target = 3200, max = 4480 
+00:00:00.672.332 INFO: stream change #2 for hSession 0 ch 0 SSRC 0x35f8b4, starting RTP stream ch 3 SSRC 0x47686605 @ pkt 944 
+00:00:00.672.419 INFO: ch 3 waiting for sibling ch 2 with 9 pkts remaining 
+00:00:01.150.673 INFO: stream change #3 for hSession 0 ch 0 SSRC 0x47686605, resuming RTP stream ch 2 SSRC 0x35f8b4 @ pkt 1618 
+00:00:01.150.868 INFO: ch 2 waiting for sibling ch 3 with 9 pkts remaining 
+00:00:01.285.184 mediaMin INFO: Flushing 1 session 0 
+00:00:01.356.545 mediaMin INFO: Deleting 1 session [index] hSession/flush state [0] 0/3 
+00:00:01.356.598 INFO: Marking session 0 for deletion 
+        :
+        :  run-time stats edited out, see [Run-Time Stats](#user-content-runtimestats) above
+        :
+00:00:01.357.337 INFO: Deleting session 0 
+00:00:01.357.403 INFO: DSDeleteSession() deleted group "", owner session = 0
+00:00:01.357.566 INFO: purged 0 packets from jitter buffer for ch N deletion  (repeated multiple times for different channels)
+00:00:01.360.665 INFO: Deleted session 0
+00:00:01.360.857 INFO: master p/m thread says writing input and jitter buffer output packet stats to packet log file EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt, streams found for all sessions = 3 (collate streams enabled), total input pkts = 1814, total jb pkts = 2162... 
+00:00:01.379.205 INFO: DSPktStatsWriteLogFile() says 3 input SSRC streams with 1814 total packets and 3 output SSRC streams with 2162 total packets logged in 17.9 msec, now analyzing...
+00:00:01.381.857 INFO: DSPktStatsWriteLogFile() packet history analysis summary for stream 0, SSRC = 0x49cc7510, 283 input pkts, 283 output pkts
+00:00:01.381.929     Packets dropped by jitter buffer = 0
+00:00:01.381.985     Packets duplicated by jitter buffer = 0
+00:00:01.382.043     Timestamp mismatches = 0
+00:00:01.405.211 INFO: DSPktStatsWriteLogFile() packet history analysis summary for stream 1, SSRC = 0x35f8b4, 857 input pkts, 1172 output pkts
+00:00:01.405.258     Packets dropped by jitter buffer = 0
+00:00:01.405.297     Packets duplicated by jitter buffer = 0
+00:00:01.405.332     Timestamp mismatches = 0
+00:00:01.417.214 INFO: DSPktStatsWriteLogFile() packet history analysis summary for stream 2, SSRC = 0x47686605, 674 input pkts, 707 output pkts
+00:00:01.417.261     Packets dropped by jitter buffer = 0
+00:00:01.417.297     Packets duplicated by jitter buffer = 0
+00:00:01.417.331     Timestamp mismatches = 0
+00:00:01.417.368 INFO: DSPktStatsWriteLogFile() says packet log analysis completed in 38.2 msec, packet log file = EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt
+00:00:01.611.148 ===== mediaMin stats
+	Missed stream group intervals = 0 
+	Marginal stream group pulls = 0 
+</pre>
 
 <a name="PacketLog"></a>
 # Packet Log
