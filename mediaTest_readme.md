@@ -822,7 +822,7 @@ Here are some notational conventions used in run-time stats formatting:
 <a name="EventLog"></a>
 # Event Log
 
-The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by the mediaMin and mediaTest reference apps and also available for user-defined applications.
+The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by SigSRF libraries including [pktlib](#user-content-pktlib), voplib, and streamlib, and also by mediaMin and mediaTest reference apps. All diaglib APIs are also available for user-defined applications.
 
 Event logs are .txt files, updated continuously by packet/media threads with informational events, status, warnings, and errors, with each entry prefixed by a timestamp (different timestamp formats may be specified, including absolute and relative time). Event log filenames use the following notation:
 
