@@ -1273,10 +1273,7 @@ For purposes of the SigSRF SDK github page, here is a summary of important point
 
     To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
 
-    <pre>
-00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 
-src 0xb6ef05cc 
-    </pre>
+    <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
 
     A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
 
