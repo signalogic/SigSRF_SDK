@@ -1228,7 +1228,7 @@ As a quick reference, basic procedures for analyzing and playing packet audio fr
  - Click "Analyze" in the "RTP Streams" pop-up window
  - To play RTP audio, click "Play Streams" in the "RTP Stream Analysis" pop-up window, and click the :arrow_forward: button in the "RTP Player" pop-up window
 
-    For more detailed information on packet audio analysis and timing, see [Audio Quality Notes](#usercontent-audioqualitynotes) and [Real-Time Performance](#usercontent-realtimeperformance) below.
+    For more detailed information on packet audio analysis and timing, see [Audio Quality Notes](#user-content-audioqualitynotes) and [Real-Time Performance](#user-content-realtimeperformance) below.
 
 <a name="SavingAudioWireshark"></a>
 ### Saving Audio to File in Wireshark
