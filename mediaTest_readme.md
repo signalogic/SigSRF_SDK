@@ -1282,10 +1282,13 @@ For purposes of this SigSRF SDK github page, here is a summary of important poin
 
 2. Packet/media threads should not be preempted. To safeguard against this, there are two (2) basic guidelines to follow:
 
-    - run a clean platform. For a server, don't run other applications, even housekeeping applications, unless absolutely necessary.  If SigSRF software is running in a container or VM, then consider the larger picture of what is running outside the VM (other VMs?) or outside the container
-    - run a minimal Linux. No GUI, no extra applications, etc. Linux housekeeping tasks that run every hour or every day should temporarily be disabled 
+    - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, consider the larger picture of what is running outside the VM or container
+    - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run every hour or every day should temporarily be disabled 
+    - network I/O should be limited to packet flow handled by pktlib and/or applications using pktlib
  
-    Linux is notorious for running what it wants when it wants, regardless of application real-time needs. To optimize thread performance, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face the reality of modifying a 25-year old OS design to accommodate computation intensive chips needed for HPC, AI and machine learning applications.
+    All non-deterministic OS are notorious for running what it wants when it wants, and Linux is no exception. Signalogic has seen cases where max capacity stress tests running 24/7 on carefully optimized systems showed a burst of thread preemption messages repeating at intervals. In one case, messages appeared every 1 hour, like clockwork, and it took days of sleuthing to figure out what was the cause. There were no obvious Linux scheduled task or maintenance, or installed application task, advertising the one hour interval.
+    
+    To mitigate such cases, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward. This is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide core subclasses with their own limited and/or minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited OS interaction -- similar in a basic way to DPDK, but far more advanced, easier to use, and considered mainstream. This will be essential to support future computation intensive cores under development for HPC, AI and machine learning applications.
 
     To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
 
