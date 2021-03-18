@@ -107,7 +107,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 [**Run-Time Stats**](#user-content-runtimestats)<br/>
 [**Event Log**](#user-content-eventlog)<br/>
-&nbsp;&nbsp;&nbsp;[Verfying a Clean Event Log](#user-content-verifyingcleaneventlog)<br/>
+&nbsp;&nbsp;&nbsp;[Verifying a Clean Event Log](#user-content-verifyingcleaneventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Packet Log Summary](#user-content-packetlogsummary)<br/>
 [**Packet Log**](#user-content-packetlog)<br/>
 
