@@ -1210,7 +1210,7 @@ As a quick reference, basic procedures for analyzing and playing packet audio fr
     - "termN.codec_type" set to G711 uLaw/ALaw, AMR, or other codec for which Wireshark has built-in decoding
     - "termN.rtp_payload_type" field should be set to  0 (zero) for uLaw, 8 (eight) for ALaw, or a dynamic payload type for AMR
 
-    N should be 1 or 2, depending on which endpoint is the desired output endpoint
+    For termN, N should be 1 or 2, depending on which endpoint is the desired output. See [Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram) above
 
 3. If you run mediaTest to generate pcaps from input USB audio or wav or other audio file, make sure the "codec_type" field in your config file is set as noted in step 2.
     
