@@ -1239,15 +1239,15 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
 2. Second, save to .au file from Wireshark:
 
- - In the menu bar, go to Telephony > RTP > RTP Streams
- - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
- - Click Analyze in the "RTP Streams" pop-up window
- - Click Save > Forward Audio Stream to save (this will give .au and .raw options)
- - Enter in filename and choose the location to save, then click Save
+    - In the menu bar, go to Telephony > RTP > RTP Streams
+    - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
+    - Click Analyze in the "RTP Streams" pop-up window
+    - Click Save > Forward Audio Stream to save (this will give .au and .raw options)
+    - Enter in filename and choose the location to save, then click Save
 
 3. Last, convert the .au file to .wav format:
 
- - Enter the following Linux command:
+    - Enter the following Linux command:
     ```C 
     sox audio_file.au audio_file.wav
     ```
@@ -1282,8 +1282,8 @@ For purposes of the SigSRF SDK github page, here is a summary of important point
 
 2. Packet/media threads should not be preempted. To safeguard against this, there are two (2) basic guidelines to follow:
 
- - run a clean platform. For a server, don't run other applications, even housekeeping applications, unless absolutely necessary.  If SigSRF software is running in a container or VM, then consider the larger picture of what is running outside the VM (other VMs?) or outside the container
- - run a minimal Linux. No GUI, no extra applications, etc. Linux housekeeping tasks that run every hour or every day should temporarily be disabled 
+    - run a clean platform. For a server, don't run other applications, even housekeeping applications, unless absolutely necessary.  If SigSRF software is running in a container or VM, then consider the larger picture of what is running outside the VM (other VMs?) or outside the container
+    - run a minimal Linux. No GUI, no extra applications, etc. Linux housekeeping tasks that run every hour or every day should temporarily be disabled 
  
     Linux is notorious for running what it wants when it wants, regardless of application real-time needs. To optimize thread performance, there are various methods to prioritize threads and avoid interaction with the OS (e.g. don't use semaphores), some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward as Linux developers face the reality of modifying a 25-year old OS design to accommodate computation intensive chips needed for HPC, AI and machine learning applications.
 
