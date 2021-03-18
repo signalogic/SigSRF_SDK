@@ -1207,8 +1207,8 @@ As a quick reference, basic procedures for analyzing and playing packet audio fr
 
 2. If you run mediaMin with static session configuation, make sure your session config file has:
 
- - "termN.codec_type" set to G711 uLaw/ALaw, AMR, or other codec for which Wireshark has built-in decoding<br/>
- - "termN.rtp_payload_type" field should be set to  0 (zero) for uLaw, 8 (eight) for ALaw, or a dynamic payload type for AMR<br/>
+    - "termN.codec_type" set to G711 uLaw/ALaw, AMR, or other codec for which Wireshark has built-in decoding
+    - "termN.rtp_payload_type" field should be set to  0 (zero) for uLaw, 8 (eight) for ALaw, or a dynamic payload type for AMR
 
     N should be 1 or 2, depending on which endpoint is the desired output endpoint
 
@@ -1216,17 +1216,17 @@ As a quick reference, basic procedures for analyzing and playing packet audio fr
     
 4. After loading a relevant output pcap (as outlined in steps 1-3) into Wireshark, make sure Wireshark can "see" the stream in RTP format:
 
- - Right click a packet in the stream and select "decode as"
- - Under 'Current' select "RTP"
+    - Right click a packet in the stream and select "decode as"
+    - Under 'Current' select "RTP"
 
     After doing this, the protocol field in the main Wireshark window for the relevant packets should display "RTP".
 
 5. Analyzing packet streams:
 
- - In the menu bar, go to Telephony -> RTP -> RTP Streams
- - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
- - Click "Analyze" in the "RTP Streams" pop-up window
- - To play RTP audio, click "Play Streams" in the "RTP Stream Analysis" pop-up window, and click the :arrow_forward: button in the "RTP Player" pop-up window
+    - In the menu bar, go to Telephony -> RTP -> RTP Streams
+    - Select the relevant RTP stream in the now displayed "RTP Streams" pop-up window
+    - Click "Analyze" in the "RTP Streams" pop-up window
+    - To play RTP audio, click "Play Streams" in the "RTP Stream Analysis" pop-up window, and click the :arrow_forward: button in the "RTP Player" pop-up window
 
     For more detailed information on packet audio analysis and timing, see [Audio Quality Notes](#user-content-audioqualitynotes) and [Real-Time Performance](#user-content-realtimeperformance) below.
 
