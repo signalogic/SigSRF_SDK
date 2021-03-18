@@ -1203,7 +1203,7 @@ do {
 
 As a quick reference, basic procedures for analyzing and playing packet audio from within Wireshark is given here.
 
-1. If you run mediaMin with [dynamic session creation](#user-content-dynamicsessioncreation) and [stream groups](#user-content-streamgroups) enabled, then you can load stream group output in Wireshark; output file naming convention used by mediaMin is explained in [Stream Groups](#user-content-streamgroupscmdline> above. Note that stream group output packet audio is set to G711u by default (this can be modified if needed). *Note - mediaMin also allows per stream transcoded packet audio outputs to be specified on the cmd line using "-o" (output) specs. These are also set to G711u by default, unless specified otherwise in a static session config file (or modified in mediamin source code).*
+1. If you run mediaMin with [dynamic session creation](#user-content-dynamicsessioncreation) and [stream groups](#user-content-streamgroups) enabled, then you can load stream group packet audio output in Wireshark. Stream group output file naming convention is explained in [Stream Groups](#user-content-streamgroupscmdline) above. Note that stream group output packet audio is set to G711u by default (this can be modified if needed). *Note - mediaMin also allows per stream transcoded packet audio outputs to be specified on the cmd line using "-o" (output) specs. These are also set to G711u by default, unless specified otherwise in a static session config file (or modified in mediamin source code).*
 
 2. If you run mediaMin with static session configuation, make sure your session config file has:
 
