@@ -1207,8 +1207,8 @@ As a quick reference, basic procedures for analyzing and playing packet audio fr
 
 2. If you run mediaMin with static session configuation, make sure your session config file has:
 
- - "termN.codec_type" set to G711 uLaw/ALaw, AMR, or other codec for which Wireshark has built-in decoding  
- - "termN.rtp_payload_type" field should be set to  0 (zero) for uLaw, 8 (eight) for ALaw, or a dynamic payload type for AMR  
+ - "termN.codec_type" set to G711 uLaw/ALaw, AMR, or other codec for which Wireshark has built-in decoding<br/>
+ - "termN.rtp_payload_type" field should be set to  0 (zero) for uLaw, 8 (eight) for ALaw, or a dynamic payload type for AMR<br/>
 
     N should be 1 or 2, depending on which endpoint is the desired output endpoint
 
