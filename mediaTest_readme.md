@@ -1295,7 +1295,7 @@ For purposes of this SigSRF SDK github page, here is a summary of important poin
 
 3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few packet/media threads. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
 
-4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow CPU performance can cause packet delta stats to fluctuate, even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both audio quality and real-time performance; any deviation is problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
+4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow CPU performance can cause packet delta stats to fluctuate, even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both real-time performance and audio quality, and any deviation is considered problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
 
     ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
 
