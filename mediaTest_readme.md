@@ -204,7 +204,7 @@ As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpst
 
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
 
-    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6.wav -C../session_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
+    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -C../session_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
 
 The first command line above uses dynamic session creation, telecom mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
 
@@ -486,9 +486,9 @@ As explained on the SigSRF page, coCPU refers to Texas Instruments, FPGA, neural
 For transcoding, coCPU cores can be used to achieve extremely high capacity per box, for example in applications where power consumption and/or box size is constrained.  The following command lines specify Texas Insstruments c66x coCPU cores <sup>1</sup>.  The first one does the same EVS WB test as above, and the second one does an EVS NB test.  Both produce .wav files that contain a variety of speech, music, and other sounds that demonstrate fidelity and high definition achieved by wideband EVS encoding:
 
 ```C
-./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv16c.INP -otest_files/c6x16c_j.wav 
+./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv16c.INP -otest_files/c6x16c_test.wav 
 
-./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv8c.INP -otest_files/c6x8c_j.wav -Csession_config/evs_8kHz_13200bps_config
+./mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv8c.INP -otest_files/c6x8c_test.wav -Csession_config/evs_8kHz_13200bps_config
 ```
 Here are screen captures for the above two mediaTest commands (with frame count and run time highlighted):
 
