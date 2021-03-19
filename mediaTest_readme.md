@@ -3,9 +3,8 @@
 After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-content-installnotes), this page gives example command lines and basic documentation for the mediaMin and mediaTest reference applications, including:
 
  - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs
-
+ - high capacity transcoding, stream merging, and audio enhancement processing
  - test and measurement, including codec audio quality and performance, media RFC verification, and transcoding
-
  - application examples, including source code, showing how to use [pktlib](#user-content-pktlib) and voplib APIs (see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram">architecture diagram</a> on the SigSRF page)
 
 Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav). Example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the [SigSRF SDK](https://github.com/signalogic/SigSRF_SDK). SDK capacity is limited to two (2) concurrent transcoding streams, and two (2) concurrent instances (one instance = console window), for a total of four (4) streams. The commercial software has no limitations for concurrency or multiuser, for bare metal, VM, container, or other supported platforms.
