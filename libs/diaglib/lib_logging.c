@@ -262,7 +262,7 @@ int slen, fmt_start = 0;
 
    /* output to log file and/or screen */
 
-      if ((lib_dbg_cfg.uEventLogMode & LOG_MODE_MASK) != LOG_SCREEN_ONLY) {
+      if (((lib_dbg_cfg.uEventLogMode & LOG_MODE_MASK) != LOG_SCREEN_ONLY) && !(loglevel & DS_LOG_LEVEL_DISPLAY_ONLY)) {
 
          bool fOpenWriteOnly = false;
 

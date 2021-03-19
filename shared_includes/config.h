@@ -59,6 +59,9 @@
 
    Modified Jan 2021 JHB
       -add DS_LOG_LEVEL_SUBSITUTE_WEC flag. See comments
+
+   Modified Jan 2021 JHB
+      -add DS_LOG_LEVEL_DISPLAY_ONLY flag. See comments
 */
 
 #ifndef _CONFIG_H_
@@ -185,10 +188,11 @@ enum EVENT_LOG_MODE {  /* uEventLogMode enums, these are in addition to LOG_xx c
   DS_EVENT_LOG_WARN_ERROR_ONLY = 0x80          /* set event log to level 3 output and below.  Intended for temporary purposes, for example file or screen I/O is taking a lot of system time */
 };
 
-#define DS_LOG_LEVEL_MASK                 0x1f       /* up to 15 log levels supported */
+#define DS_LOG_LEVEL_MASK                 0x1f       /* up to 15 event log levels supported */
 #define DS_LOG_LEVEL_NO_API_CHECK         0x1000
 #define DS_LOG_LEVEL_NO_TIMESTAMP         0x2000
-#define DS_LOG_LEVEL_FILE_ONLY            0x4000
+#define DS_LOG_LEVEL_FILE_ONLY            0x4000     /* Log_RT() message written to event log file only */
+#define DS_LOG_LEVEL_DISPLAY_ONLY         0x80000    /* Log_RT() message output to console only */
 #define DS_LOG_LEVEL_APPEND_STRING        0x8000     /* append Log_RT() output, including timestamps if configured, to its string param contents up to first specifier. Note this should be used carefully as it assumes a valid string has been passed to Log_RT() */
 #define DS_LOG_LEVEL_DONT_ADD_NEWLINE     0x10000    /* don't add newline to end of Log_RT() strings if one not already there */
 #define DS_LOG_LEVEL_IGNORE_LINE_CURSOR_POS 0x20000  /* ignore line cursor position for screen output. No effect on event log file output */

@@ -92,7 +92,7 @@ int DSConfigDerlib(GLOBAL_CONFIG* pGlobalConfig, DEBUG_CONFIG* pDebugConfig, uns
 
    if (uFlags & DS_CD_INIT) {      
 
-      if (!derlib_sem_init) {
+      if (!derlib_sem_init) {  /* initialize derlib semaphore if needed */
          sem_init(&derlib_sem, 0, 1);
          derlib_sem_init = true;
       }
@@ -153,7 +153,7 @@ HDERSTREAM DSCreateDerStream(const char* szInterceptPointId, uint16_t dest_port,
 
 /* check for error conditions */
 
-   if (!derlib_sem_init) return -1;
+   if (!derlib_sem_init) return -1;  /* derlib semaphore used by get_next_stream_id() */
    if (!szInterceptPointId || !strlen(szInterceptPointId)) return -1;
    if (!dest_port) return -1;
 
@@ -177,13 +177,13 @@ int DSDeleteDerStream(HDERSTREAM hDerStream) {  /* delete DER stream */
    if (--hDerStream < 0) return -1;
    if (!derlib_sem_init) return -1;
 
-   sem_wait(&derlib_sem);
+   sem_wait(&derlib_sem);  /* obtain semaphore */
 
    if (der_streams[hDerStream].packet_save) free(der_streams[hDerStream].packet_save);
 
    memset(&der_streams[hDerStream], 0, sizeof(DER_STREAM));  /* clear der_streams[] struct, including in_use */
 
-   sem_post(&derlib_sem);
+   sem_post(&derlib_sem);  /* release semaphore */
 
    return 1;
 }
@@ -294,7 +294,7 @@ int i = 1, j;
 
    if (--hDerStream < 0) return -1;
 
-   if (!derlib_sem_init) return -1;
+   if (!derlib_sem_init) return -1;  /* we don't need the derlib semaphore when decoding, but the app should not be attempting decode unless derlib has been initialized first, so we return an error condition */
 
    strcpy(szInterceptPointId, der_streams[hDerStream].szInterceptPointId);
    dest_port = der_streams[hDerStream].dest_port; 
@@ -539,7 +539,7 @@ next_byte:
       /* handle aggregated packets, notes:
 
          -assume this is an aggregated packet after some arbitrarily large amount of data (i.e. a lot larger than even large codec packet with multiple ptimes)
-         -if we don't land on exactly on end, we need to save data and insert at start of next packet
+         -if we don't land exactly on end of payload, we need to save data and insert at start of next packet
       */
 
          if (asn_index > pyld_len - 500 && asn_index < pyld_len) {
@@ -581,8 +581,8 @@ ret:
 
    if (der_decode) {
 
-      if (!der_decode->uList) der_streams[hDerStream].asn_index = 0;
-      der_decode->asn_index = der_streams[hDerStream].asn_index;
+      if (!der_decode->uList) der_streams[hDerStream].asn_index = 0;  /* if nothing found, reset the asn index */
+      der_decode->asn_index = der_streams[hDerStream].asn_index;  /* save asn index */
    }
 
    if (uFlags & DS_DECODE_DER_PRINT_DEBUG_INFO) {

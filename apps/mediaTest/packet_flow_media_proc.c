@@ -95,7 +95,7 @@
    Modified Oct 2019 JHB, implement pastdue in CheckForPacketLossFlush()
    Modified Oct 2019 JHB, act on STREAM_GROUP_OVERFLOW_STOP_GROUP_ON_DETECTION flag (one of overrun compensation related flags added to shared_include/streamlib.h). More detailed info in warning message if DSStoreStreamGroupContributorData() returns -1
    Modified Dec 2019 JHB, make pkt_counters[] global (needed in packet.c), include chnum and idx information in PKT_STATS collection (see DSGetStreamGroupInfo() with DS_GETGROUPINFO_HANDLE_CHNUM flag)
-   Modified Dec 2019 JHB, implement DSWritePacketStatsHistoryLog() and DSLogPacketTimeLossStats() APIs.  The latter collates, formats, and prints run-time packet stats to the event log
+   Modified Dec 2019 JHB, implement DSWritePacketStatsHistoryLog() and DSLogRunTimeStats() APIs.  The latter collates, formats, and prints run-time packet stats to the event log
    Modified Jan 2020 JHB, use DSGetStreamGroupInfo() when collecting packet history stats (PKT_STATS), ensure run-time packet stats are not logged twice for same session prior to deletion
    Modified Jan 2020 JHB, define SECONDARY_THREADS_DEPRECATED, which deprecates old "secondary thread" code.  Since early 2018, packet_flow_media_proc() is thread-safe and allows multiple packet/media "worker" threads.  Multiple app threads are implemented using mediaTest -Et ant -tN cmd line options, which invoke one or more mediaMin application threads
    Modified Jan 2020 JHB, call DSCreateFilelibThread() in p/m thread initialization. See comments in filelib.h and filemgr.cpp
@@ -126,6 +126,7 @@
    Modified Oct 2020 JHB, clarify stream change/resume log info message, include new channel in the message
    Modified Jan 2021 JHB, change units of session_info_thread[hSession].merge_audio_chunk_size from size (bytes) to time (msec), part of change to make stream group processing independent of sampling rate
    Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
+   Modified Mar 2021 JHB, change DSLogPacketTimeLossStats() to DSLogRunTimeStats(), incorporate use of DS_LOG_RUNTIME_STATS_XX flags
 */
 
 #ifndef _GNU_SOURCE
@@ -365,7 +366,7 @@ extern uint8_t uShowGroupContributorAmounts[MAX_SESSIONS];  /* streamlib */
 int num_missed_interval_index[MAX_STREAM_GROUPS] = { 0 };  /* referenced in streamlib.so */
 int num_flc_applied[MAX_STREAM_GROUPS] = { 0 };
 uint32_t uFramesDropped[NCORECHAN] = { 0 };
-int nMaxStreamDataAvailable[NCORECHAN] = { 0 };  /* per contributor max data available, used as a run-time stat in DSLogPacketTimeLossStats(). Updated by DSStoreStreamData() in streamlib */
+int nMaxStreamDataAvailable[NCORECHAN] = { 0 };  /* per contributor max data available, used as a run-time stat in DSLogRunTimeStats(). Updated by DSStoreStreamData() in streamlib */
 
 #ifndef __LIBRARYMODE__  /* global vars in cmd line build, but not in thread build (pktlib) */
 
@@ -4770,7 +4771,10 @@ get_num_sessions:
 
                DSPostProcessStreamGroup(hSession, thread_index);
 
-               if ((lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS) || (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS)) DSLogPacketTimeLossStats(hSession, DS_LOG_PKT_STATS_ORGANIZE_BY_STREAM_GROUP | DS_LOG_PKT_STATS_SUPPRESS_ERROR_MSG);
+               if ((lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS) || (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS)) {
+               
+                  DSLogRunTimeStats(hSession, DS_LOG_RUNTIME_STATS_ORGANIZE_BY_STREAM_GROUP | DS_LOG_RUNTIME_STATS_SUPPRESS_ERROR_MSG | DS_LOG_RUNTIME_STATS_DISPLAY | DS_LOG_RUNTIME_STATS_EVENTLOG);
+               }
 
                CleanSession(hSession, thread_index);  /* clear p/m thread level items */
 
@@ -5502,9 +5506,9 @@ extern uint32_t event_log_critical_errors;  /* in diagalib.so */
 extern uint32_t event_log_errors;
 extern uint32_t event_log_warnings;
 
-/* DSLogPacketTimeLossStats() is called by ManageSessions before sessions are deleted, depending on uPktStatsLogging enables (DEBUG_CONFIG struct in config.h).  Can also be called by applications as needed */
+/* DSLogRunTimeStats() is called by ManageSessions before sessions are deleted, depending on uPktStatsLogging enables (DEBUG_CONFIG struct in config.h).  Can also be called by applications as needed */
 
-int DSLogPacketTimeLossStats(HSESSION hSession, unsigned int uFlags) {
+int DSLogRunTimeStats(HSESSION hSession, unsigned int uFlags) {
 
 #define MAX_CHAN_TRACKED 64  /* max channels per session counted for stats.  This should be an out-of-reach number in real world processing, it would be 60+ child channels in one session */
 int thread_index;
@@ -5522,30 +5526,30 @@ char iptstr[MAX_STATS_STRLEN] = "", jbptstr[MAX_STATS_STRLEN] = "", jbrpstr[MAX_
      jbmxooostr[MAX_STATS_STRLEN] = "", jbdropstr[MAX_STATS_STRLEN] = "", jbdupstr[MAX_STATS_STRLEN] = "", jbtgapstr[MAX_STATS_STRLEN] = "", mxovrnstr[MAX_STATS_STRLEN] = "", mxnpktstr[MAX_STATS_STRLEN] = "", noutpkts[MAX_STATS_STRLEN] = "",
      jbhldadj[MAX_STATS_STRLEN] = "", jbhlddel[MAX_STATS_STRLEN] = "", pobrststr[MAX_STATS_STRLEN] = "", lvflstr[MAX_STATS_STRLEN] = "";
 
-   if (uFlags & DS_LOG_PKT_STATS_ORGANIZE_BY_STREAM_GROUP) {
+   if (uFlags & DS_LOG_RUNTIME_STATS_ORGANIZE_BY_STREAM_GROUP) {
 
       hSessionGroupOwner = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_OWNER, 0, NULL);
 
       if (hSessionGroupOwner == -2) {
-         Log_RT(3, "WARNING: DSLogPacketTimeLossStats() says invalid hSession %d \n", hSession);
+         Log_RT(3, "WARNING: DSLogRunTimeStats() says invalid hSession %d \n", hSession);
          return -1;
       }
 
       if (hSessionGroupOwner == -1) {
 
-         if (!(uFlags & DS_LOG_PKT_STATS_SUPPRESS_ERROR_MSG)) Log_RT(3, "WARNING: DSLogPacketTimeLossStats() says hSession %d not a stream group member \n", hSession);
+         if (!(uFlags & DS_LOG_RUNTIME_STATS_SUPPRESS_ERROR_MSG)) Log_RT(3, "WARNING: DSLogRunTimeStats() says hSession %d not a stream group member \n", hSession);
          goto organize_by_ssrc;  /* hSession is not a group member */
       }
 
       idx = DSGetStreamGroupInfo(hSessionGroupOwner, DS_GETGROUPINFO_CHECK_ALLTERMS, &nContributors, ch_list, szGroupId);
 
       if (idx < 0) {
-         Log_RT(3, "WARNING: DSLogPacketTimeLossStats() says invalid stream group index %d \n", idx);
+         Log_RT(3, "WARNING: DSLogRunTimeStats() says invalid stream group index %d \n", idx);
          return -1;
       }
 
       if (!nContributors) {
-         Log_RT(3, "WARNING: DSLogPacketTimeLossStats() says stream group %d has no active contributors \n", idx);
+         Log_RT(3, "WARNING: DSLogRunTimeStats() says stream group %d has no active contributors \n", idx);
          return 0;
       }
 
@@ -5563,7 +5567,7 @@ organize_by_ssrc:
    }
 
    if (thread_index < 0) {
-      Log_RT(3, "WARNING: DSLogPacketTimeLossStats() says invalid p/m thread index found for hSession %d \n", fOrganizeByStreamGroup ? hSessionGroupOwner : hSession);
+      Log_RT(3, "WARNING: DSLogRunTimeStats() says invalid p/m thread index found for hSession %d \n", fOrganizeByStreamGroup ? hSessionGroupOwner : hSession);
       return -1;
    }
 
@@ -5582,7 +5586,7 @@ organize_by_ssrc:
          int ret_val = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, j+1, NULL);
 
          if (ret_val < 0) {
-            Log_RT(2, "ERROR: DSLogPacketTimeLossStats() reports DSGetSessionInfo() error code %d, possibly invalid session handle %d \n", ret_val, hSession);
+            Log_RT(2, "ERROR: DSLogRunTimeStats() reports DSGetSessionInfo() error code %d, possibly invalid session handle %d \n", ret_val, hSession);
             return ret_val;
          }
 
@@ -5776,7 +5780,14 @@ organize_by_ssrc:
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Event log warnings, errors, critical %u, %u, %u\n", __sync_fetch_and_add(&event_log_warnings, 0), __sync_fetch_and_add(&event_log_errors, 0), __sync_fetch_and_add(&event_log_critical_errors, 0));
       #endif
 
-      Log_RT(6 | DS_LOG_LEVEL_NO_API_CHECK | DS_LOG_LEVEL_SUBSITUTE_WEC, pkt_stats_str);  /* write packet stats string to screen and event log file. Note that we make a single Log_RT() call with a multi-line string to avoid interleaving with Log_RT() output from other threads */
+      if ((uFlags & (DS_LOG_RUNTIME_STATS_EVENTLOG | DS_LOG_RUNTIME_STATS_DISPLAY))) {  /* output if either flag set, JHB Mar2021 */
+
+         unsigned int uFlags_LogRT = DS_LOG_LEVEL_NO_API_CHECK | DS_LOG_LEVEL_SUBSITUTE_WEC;  /* default flags */
+         if ((uFlags & DS_LOG_RUNTIME_STATS_EVENTLOG) && !(uFlags & DS_LOG_RUNTIME_STATS_DISPLAY)) uFlags_LogRT |= DS_LOG_LEVEL_FILE_ONLY;  /* set DS_LOG_LEVEL_XX flags for screen or file only, if applicable. JHB Mar2021 */
+         if (!(uFlags & DS_LOG_RUNTIME_STATS_EVENTLOG) && (uFlags & DS_LOG_RUNTIME_STATS_DISPLAY)) uFlags_LogRT |= DS_LOG_LEVEL_DISPLAY_ONLY;
+
+         Log_RT(6 | uFlags_LogRT, pkt_stats_str);  /* write packet stats string to screen and event log file. Note that we make a single Log_RT() call with a multi-line string to avoid interleaving with Log_RT() output from other threads */
+      }
    }
 
    return num_ch_stats;

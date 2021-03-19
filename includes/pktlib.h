@@ -79,7 +79,8 @@
   Modified Jan 2021 JHB, implement bit fields in RTPHeader struct for first 2 bytes (see comments), remove DSSet/ClearMarkerBit(), change definition of DS_FMT_PKT_STANDALONE to allow use of DSFormatPacket() with no reference to session / streams created via DSCreateSession()
   Modified Feb 2021 JHB, added DS_PKT_INFO_PYLDLEN option to DSGetPacketInfo()
   Modified Feb 2021 JHB, changed len[] param in DSPushPackets(), DSPullPackets(), DSRecvPackets(), DSSendPackets(), DSGetOrderedPackets(), and DSBufferPackets() from unsigned int* to int*. Any packet length with -1 value should be interpreted as an error condition independent of other packets in the array
- */
+  Modified Mar 2021 JHB, change DSLogPacketTimeLossStats() to DSLogRunTimeStats(), add DS_LOG_RUNTIME_STATS_XX flags
+*/
 
 #ifndef _PKTLIB_H_
 #define _PKTLIB_H_
@@ -814,7 +815,7 @@ extern "C" {
 
 /* write run-time packet time and loss stats to event log using session handle.  DSConfigPktlib() can be used to set DS_ENABLE_PACKET_TIME_STATS and/or DS_ENABLE_PACKET_LOSS_STATS flags in the DEBUG_CONFIG struct uPktStatsLogging item (see shared_include/config.h) */
 
-  int DSLogPacketTimeLossStats(HSESSION hSession, unsigned int uFlags);
+  int DSLogRunTimeStats(HSESSION hSession, unsigned int uFlags);
 
 #ifdef __cplusplus
 }
@@ -1181,10 +1182,12 @@ extern "C" {
 #define DS_WRITE_PKT_STATS_HISTORY_LOG_THREAD_INDEX    0x10000000  /* treat hSession param as a thread index (0 .. N-1 where N is number of currently active packet/media threads) */
 #define DS_WRITE_PKT_STATS_HISTORY_LOG_RESET_STATS     0x20000000  /* reset packet stats and counters */
 
-/* DSLogPacketTimeLossStats() flags */
+/* DSLogRunTimeStats() flags */
 
-#define DS_LOG_PKT_STATS_ORGANIZE_BY_STREAM_GROUP      1
-#define DS_LOG_PKT_STATS_SUPPRESS_ERROR_MSG            0x40000000L
+#define DS_LOG_RUNTIME_STATS_DISPLAY                       1     /* display run-time stats onscreen */
+#define DS_LOG_RUNTIME_STATS_EVENTLOG                      2     /* print run-time stats to event log */
+#define DS_LOG_RUNTIME_STATS_ORGANIZE_BY_STREAM_GROUP      0x10
+#define DS_LOG_RUNTIME_STATS_SUPPRESS_ERROR_MSG            0x40000000L
 
 /* DSDisplayThreadDebugInfo() flags */
 
