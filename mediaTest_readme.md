@@ -273,7 +273,7 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 <a name="StreamGroupsCmdLine"></a>
 ## Stream Groups
 
-Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. For detailed information about how stream groups function and how [streamlib](#user-content-streamgroups) operates, see [Stream groups](#user-content-streamgroups) below. 
+Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. For detailed information about how stream groups function and how [streamlib](#user-content-streamgroups) operates, see [Stream Groups](#user-content-streamgroups) below. 
  
 mediaMin enables stream groups with the 0x400 flag in the command line -dN options argument. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
 
