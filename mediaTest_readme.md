@@ -287,11 +287,11 @@ Stream group output for the above command is
     
 In general, mediaMin uses the following naming convention for stream group output:
 
-  groupID_groupNN_TT_MM.pcap
+> groupID_groupNN_TT_MM.pcap
 
 where groupID is typically taken from the first input spec on the command line ("-i" spec), NN is the stream group index, TT is the mediaMin application thread index, and MM is the mode (none or "tm" for telecom mode, "am" for analytics mode).  If only one mediaMin thread is active, then TT is omitted.
 
-Note the above command line also enables wav file outputs for the stream group and its contributors (the 0x800 flag in -dN options).
+Note the above command line also enables wav file outputs for the stream group and its individual contributors (the 0x800 flag in -dN options). An N-channel wav file is also created.
 
 The screen captures show [run-time stats](#user-content-runtimestats) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
