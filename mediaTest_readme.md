@@ -1283,7 +1283,7 @@ For purposes of this SigSRF SDK github page, here is a summary of important poin
 2. Packet/media threads should not be preempted. To safeguard against this, the following basic guidelines are recommended:
 
     - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, consider the larger picture of what is running outside the VM or container
-    - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run every hour or every day should temporarily be disabled 
+    - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run at regular intervals should temporarily be disabled 
     - network I/O should be limited to packet flow handled by pktlib and/or applications using pktlib
  
     Non-deterministic OS are notorious for running what they want when they want, and Linux and its myriad of 3rd party install packages is no exception. Signalogic has seen cases where max capacity stress tests running 24/7 showed bursts of thread preemption messages repeating at intervals. In one case, on a Ubuntu system that was thought to be a minimal installation, messages appeared every 1 hour, like clockwork. It took days of sleuthing to figure out the cause. There were no obvious Linux scheduled tasks or maintenance, or installed application tasks, advertising the one hour interval.
