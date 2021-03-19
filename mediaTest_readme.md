@@ -1282,7 +1282,7 @@ For purposes of this SigSRF SDK github page, here is a summary of important poin
 
 2. Packet/media threads should not be preempted. To safeguard against this, the following basic guidelines are recommended:
 
-    - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, consider the larger picture of what is running outside the VM or container
+    - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, also consider the larger picture of what is running outside the VM or container
     - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run at regular intervals should temporarily be disabled 
     - network I/O should be limited to packet flow handled by pktlib and/or applications using pktlib
  
