@@ -660,7 +660,7 @@ Pktlib is a SigSRF library module providing high-capacity media/packet worker th
 
    - used by the mediaMin and mediaTest reference apps and can be modified to change the behavior of these apps
    - a reference for the full range of pktlib, voplib, and streamlib APIs
-   - proven in production deployments and can be incorporated by user-defined applications for reliable high-capacity operation
+   - proven in production deployments and can be incorporated by user-defined applications that need reliable high-capacity operation
   
 <a name="DTXHandling"></a>
 ## DTX Handling
