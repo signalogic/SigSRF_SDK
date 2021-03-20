@@ -656,11 +656,11 @@ The [mediaMin](#user-content-mediamin) section above describes real-time transco
 
 Pktlib is a SigSRF library module providing high-capacity media/packet worker threads, analytics and telecom operating modes, jitter buffer, DTX (discontinuous transmission) and variable ptime handling, packet re-ordering and repair (both SID and media packets), packet formatting, and packet tracing and stats collection. Pktlib also interfaces to voplib for media decoding and encoding, and to streamlib for [stream group](#user-content-streamgroups) processing.
 
-<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source code</a> is
+<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Source code for packet/media threads</a> is available for reference and application purposes. This source
 
-   - used by the mediaMin and mediaTest reference apps and can be modified to change their behavior
-   - a reference for the full range of pktlib, voplib, streamlib, and diaglib APIs
-   - proven in production deployments and can be incorporated by user-defined applications that need reliable high-capacity operation
+   - is used by the mediaMin and mediaTest reference apps and can be modified to change their behavior
+   - demonstrates the full range of pktlib, voplib, streamlib, and diaglib APIs
+   - is proven in production deployments and can be incorporated by user-defined applications that need reliable high-capacity operation
   
 <a name="DTXHandling"></a>
 ## DTX Handling
