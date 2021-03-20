@@ -127,7 +127,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 The mediaMin reference application runs optimized, high-capacity media packet streaming on x86 servers <sup>[1]</sup> used in bare-metal, VM, or container platforms. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams, with packet handling, DTX, media decoding, stream group processing, and event and packet logging and statistics.
 
-For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet thread workers), voplib (voice-over-packet interface), [streamlib](#user-content-streamlib) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
+For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet worker threads), voplib (voice-over-packet interface), [streamlib](#user-content-streamlib) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
 
 To provide a simple, ready-to-use interface, mediaMin provides additional functionality. mediaMin command line options instruct pktlib to operate in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to [stream groups](#user-content-streamgroups), which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packdet output.
 
@@ -654,6 +654,14 @@ The [mediaMin](#user-content-mediamin) section above describes real-time transco
 <a name="pktlib"></a>
 # pktlib
 
+Pktlib is a SigSRF library module providing high-capacity media/packet worker threads, analytics and telecom operating modes, jitter buffer, DTX (discontinuous transmission) handling, packet re-ordering and repair (both SID and media packets), packet formatting, and packet tracing and stats collection. Pktlib also interfaces to voplib for media decoding and encoding, and to streamlib for [stream group](#user-content-streamgroups)processing.
+
+<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source code</a> is available and:
+
+    - is used by the mediaMin and mediaTest reference apps and can be modified to change the behavior of these apps
+    - demonstrates the full range of pktlib, voplib, and streamlib APIs
+    - is already proven in production deployments and can be incorporated by user-defined applications for reliable high-capacity operation
+  
 <a name="DTXHandling"></a>
 ## DTX Handling
 
