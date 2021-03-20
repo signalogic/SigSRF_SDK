@@ -411,7 +411,7 @@ Although terminations can be defined in any order, in general term1 remote shoul
 <a name="mediaTest"></a>
 # mediaTest
 
-A key objective of mediaTEst is to provide tools to measure encode, decode, and transcoding performance for a wide range of codecs.
+mediaTest is a command line interface tool for codec testing and measurement, conversion between audio file formats and I/O (e.g USB audio), pcap generation, preparation of audio data for speech recognition training, and more. mediaTest supports a wide range of codecs, including G7xx, AMR, EVS, and MELPe.
   
 <a name="CodecAudioMode"></a>
 ## Codec + Audio Mode
