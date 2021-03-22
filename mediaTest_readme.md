@@ -755,30 +755,33 @@ Note that entering a session configuration file on the command line that contain
 Streamlib is a SigSRF library module responsible for constructing, enhancing, and post-processing stream groups. Stream group construction includes:
 
  - underrun (gap) management
- - stream time-alignment (alignment between streams, or interstream alignment)
+ - alignment of individual streams in time (i.e. interstream alignment)
  - overrun management (in cases where packet rates exceed expected ptime)
  - sampling rate conversion for indvidual stream contributors (if needed)
+ - insertion of timing and event markers, if specified in streamlib debug / measurement options
  
 Stream group output enhancement includes:
 
  - frame loss concealment (FLC)
  - amplitude limiting and automatic gain control (AGC)
- - digital filtering (e.g. glitch or other discontinuity)
+ - digital filtering (e.g. smoothing of glitches or other discontinuities)
 
 Stream group output post-processing includes:
 
- - sampling rate conversion if needed for encoding, speech recognition, or other post-processing
- - insertion of timing and event markers, if specified in streamlib debug / measurement options
- - encoding, e.g. G711, AMR, EVS, etc to generate RTP packet audio (by making voplib API calls)
+ - sampling rate conversion, if needed for encoding, speech recognition, or other post-processing
+ - encoding, e.g. G711, AMR, EVS, etc. to generate RTP packet audio (by making voplib API calls)
  - speech recognition (by making inferlib API calls)
  - stream deduplication
+ - user-defined signal processing
 
-As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram" target="_blank">telecom and analytics mode data flow diagrams</a>, streamlib source code is divided into two sub-blocks:
+As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram" target="_blank">telecom and analytics mode data flow diagrams</a>, streamlib is divided into two sub-blocks:
 
  - stream group
  - media domain processing
  
-The second sub-block includes post-processing listed above, and its <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">source code</a> can be modified as needed.
+The second sub-block, media domain processing, includes post-processing listed above, and its <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">source code</a> can be modified as needed.
+
+Note that all processing in streamlib, in both the stream group and media domain processing sub-blocks, operates on sampled audio or video data, already-decoded from packet flow. Streamlib does no packet operations other than formatting and queuing of RTP packets for stream group output, if needed.
 
 <a name="StreamGroups"></a>
 ## Stream Groups
