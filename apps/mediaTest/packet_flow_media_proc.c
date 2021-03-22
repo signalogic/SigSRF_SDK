@@ -74,7 +74,7 @@
    Modified Oct 2018 JHB, implement multiple packet/media threads. Modifications / optimizations include thread_index initialization, ManageSessions(), get_session_handle(), ThreadDebugOutput(), sig_printf(), isMasterThread references, etc
    Modified Oct 2018 JHB, additional error checking for cases when asynchronous pkt/media threads may be concurrently processing same stream groups
    Modified Oct 2018 JHB, optimize usage of DSGetStreamData(). This also fixed a crash case with multiple pkt/media threads "seeing" each other's active channels.  See USE_CHAN_NUMS define and associated comments
-   Modified Nov 2018 JHB, move merging related codes to streamlib.so (streamlib.c).  streamlib API calls here include DSInitMergeGroup() and DSMergeStreamGroupContributors()
+   Modified Nov 2018 JHB, move merging related codes to streamlib.so (streamlib.c).  streamlib API calls here include DSInitMergeGroup() and DSProcessStreamGroupContributors()
    Modified Nov 2018 JHB, add CheckForDormantSSRC() to detect and flush channels with dormant SSRCs that are "taken over" by another channel, for example due to call-waiting or on-hold situations
    Modified Dec 2018 JHB, add packet/media thread energy saver mode (see fThreadInputActive and fThreadOutputActive flags and comments below about CPU usage)
    Modified Dec 2018 JHB, improve ThreadDebugOutput() to show group info for any thread sessions attached to a group.  Notes:
@@ -121,7 +121,7 @@
    Modified May 2020 JHB, in ManageSessions() fix integer-out-of-range problem with state_clear_flags that was causing DSSetSessionInfo() with DS_SESSION_INFO_STATE flag to be called every time, even if session state flags had not changed (they change rarely)
    Modified May 2020 JHB, add pm_sync[] flag toggle in pm thread loop
    Modified May 2020 JHB, after call to DSGetOrderedPackets(), implement telecom mode packet loss flush, based on cumulative time vs. cumulative timestamp
-   Modified May 2020 JHB, add fFirstGroupContribution[] to fix ptime msec wobble in first contribution to a stream group. See comments near DSMergeStreamGroupContributors()
+   Modified May 2020 JHB, add fFirstGroupContribution[] to fix ptime msec wobble in first contribution to a stream group. See comments near DSProcessStreamGroupContributors()
    Modified Oct 2020 JHB, include codec type and bitrate in run-time stats session description info, other minor changes to run-time stats output. Codec info uses DSGetCodecInfo() API added to voplib
    Modified Oct 2020 JHB, clarify stream change/resume log info message, include new channel in the message
    Modified Jan 2021 JHB, change units of session_info_thread[hSession].merge_audio_chunk_size from size (bytes) to time (msec), part of change to make stream group processing independent of sampling rate
@@ -584,7 +584,7 @@ static int progress_var[MAX_SESSIONS] = { 0 };
 
 static uint8_t nDormantChanFlush[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 static uint8_t nOnHoldChanFlush[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
-extern short int nOnHoldChan[MAX_SESSIONS][MAX_TERMS];  /* declared in streamlib.so, referenced by DSMergeStreamGroupContributors() */
+extern short int nOnHoldChan[MAX_SESSIONS][MAX_TERMS];  /* declared in streamlib.so, referenced by DSProcesstreamGroupContributors() */
 
 static int8_t input_buffer_interval[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 static int8_t output_buffer_interval[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
@@ -3475,9 +3475,9 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                else {  /* group channel -- note that current hSession is a group owner session; see get_channels() */
 
-               /* if no contributions yet, don't allow timing internal to DSMergeContributors() to initialize, otherwise a stream group's first contribution can have a ptime msec wobble, JHB May2020:
+               /* if no contributions yet, don't allow timing internal to DSProcessStreamGroupContributors() to initialize, otherwise a stream group's first contribution can have a ptime msec wobble, JHB May2020:
 
-                  -without this the error case is the group has no contributions yet, and the interval timing in DSMergeContributor() has just transitioned to a new ptime interval, then the first contribution is unnecessarily delayed to the next ptime interval. With this no intervval transitions happen until there is at least one group contribution
+                  -without this the error case is the group has no contributions yet, and the interval timing in DSProcessStreamGroupContributors() has just transitioned to a new ptime interval, then the first contribution is unnecessarily delayed to the next ptime interval. With this no intervval transitions happen until there is at least one group contribution
                   -note that debug codes gated with FIRST_TIME_TIMING can be enabled to measure initial timing for first push (in mediaMin.c), buffer, pull, group contribution, and merge group contributors (below)
                   -use test cases 13572.0 and 2922.0, which are extremely sensitive to what happens in the first 1 sec, and verify repeatability in run-time stats, especially PLCs, resynsc, holdoffs, and max packets. Monitor timestamps on "first appears @ pkt N" log messages generated by streamlib
                */      
@@ -3499,7 +3499,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                /* Merge stream group contributors and output stream group queue packets.  Notes:
 
-                  -DSMergeStreamGroupContributors() is in streamlib.so. See shared_include/streamlib.h for more info.  hSession must be a group owner session
+                  -DSProcessStreamGroupContributors() is in streamlib.so. See shared_include/streamlib.h for more info.  hSession must be a group owner session
                   -merging includes gap compensation algorithm and FLC + digital signal processing to compensate for irregular packet rates, stream mis-alignment, and stream overrun/underrun
                   -optional wav file output for individual contributor and merge audio can be enabled using session creation constants defined in streamlib. This is considered a debug option, but can be used as needed
                   -stream group merge buffer time can be controlled using DSSetSessionInfo() with the DS_SESSION_INFO_GROUP_BUFFER_SIZE flag. Default buffer size is 2080 (in samples, which is 0.26 sec delay at 8000 kHz output rate)
@@ -3510,14 +3510,14 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
                   if (!fOnce && first_contribute_time) { Log_RT(4, "\n === time from first pull to first group process %llu \n", (unsigned long long)(get_time(USE_CLOCK_GETTIME) - first_contribute_time)); fOnce = true; }
                   #endif
 
-                  ret_val = DSMergeStreamGroupContributors(hSession, fp_out_pcap_merge, fp_out_wav_merge,  pMediaInfo_merge, szMissingContributors, &pkt_group_cnt, &num_thread_group_contributions, cur_time, (void*)&pkt_counters, thread_index, &contrib_ch);
+                  ret_val = DSProcessStreamGroupContributors(hSession, fp_out_pcap_merge, fp_out_wav_merge,  pMediaInfo_merge, szMissingContributors, &pkt_group_cnt, &num_thread_group_contributions, cur_time, (void*)&pkt_counters, thread_index, &contrib_ch);
 
                   if (ret_val < 0) {
 
                      char group_name[MAX_GROUPID_LEN] = "";
                      int idx = DSGetStreamGroupInfo(hSession, (intptr_t)NULL, NULL, NULL, group_name);
 
-                     sprintf(tmpstr, "WARNING: DSMergeStreamGroupContributors() returns error condition ");
+                     sprintf(tmpstr, "WARNING: DSProcessStreamGroupContributors() returns error condition ");
 
                      if (ret_val == -2) {
                         HSESSION hSessionContrib = DSGetSessionInfo(contrib_ch, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_SESSION | DS_SESSION_INFO_SUPPRESS_ERROR_MSG, 0, NULL);
@@ -4187,7 +4187,7 @@ int ch[32];
 
                   nOnHoldChanFlush[hSession][i] = numpkts;  /* start the flush countdown */
 
-               /* hSession is a group owner by definition (nOnHoldChan[][] is set in DSMergeStreamGroupContributors() in streamlib), so we can get the group mode and check for flags, JHB Nov2019 */
+               /* hSession is a group owner by definition (nOnHoldChan[][] is set in DSProcessStreamGroupContributors() in streamlib), so we can get the group mode and check for flags, JHB Nov2019 */
 
                   bool fDebugStats = (DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_MODE, 0, NULL) & STREAM_GROUP_DEBUG_STATS) || (lib_dbg_cfg.uDebugMode & DS_ENABLE_GROUP_MODE_STATS);
                   if (fDebugStats) Log_RT(4, "INFO: on-hold flush for hSession %d ch %d, num avail packets = %d \n", hSession, ch[0], numpkts);

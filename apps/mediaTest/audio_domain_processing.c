@@ -47,7 +47,7 @@ extern DEBUG_CONFIG lib_dbg_cfg;  /* in diaglib, set by calls to DSConfigPktlib(
 /* extern items in streamlib */
 
 extern PACKETMEDIATHREADINFO packet_media_thread_info[];  /* array of thread handles in pktlib.so, zero indicates no thread.  MAX_PKTMEDIA_THREADS is defined in pktlib.h */
-extern unsigned long long last_merge_output_time[];       /* set by DSMergeGroupContributors() (in streamlib) */
+extern unsigned long long last_merge_output_time[];       /* set by DSProcessGroupContributors() (in streamlib) */
 extern uint8_t merge_gap_advance[];                       /*    ""   */
 extern int groupTimestampOffset[];                        /*    ""   */
 extern sem_t pcap_write_sem;                              /* semaphore used to ensure no more than 1 thread writes to a particular output file at a time */
@@ -120,7 +120,7 @@ extern uint32_t align_interval_count[MAX_STREAM_GROUPS][MAX_GROUP_CONTRIBUTORS];
 
   Calling references
 
-    -called by DSMergeGroupContributors() in streamlib, which is called by packet/media thread function packet_flow_media_proc() in packet_flow_media_proc.c
+    -called by DSProcessGroupContributors() in streamlib, which is called by packet/media thread function packet_flow_media_proc() in packet_flow_media_proc.c
 
   Build notes
 
@@ -425,7 +425,7 @@ send_group_packet:
 
   Calling references
 
-    -called by DSMergeGroupContributors() in streamlib, which is called by packet/media thread function packet_flow_media_proc() in packet_flow_media_proc.c
+    -called by DSProcessGroupContributors() in streamlib, which is called by packet/media thread function packet_flow_media_proc() in packet_flow_media_proc.c
 
   Build notes
 

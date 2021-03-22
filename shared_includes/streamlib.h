@@ -20,14 +20,14 @@
   Modified Apr 2015 JHB, add STREAM_CODEC_xx and STREAM_FORMAT_xx definitions
   Modified Jul 2015 CKJ, add STREAM_ENDPOINT_ALG_xx constants to specify endpoint algorithms (e.g. an endpoint does video streaming or image analytics)
   Modified Jul 2015 JHB, add STREAM_ENDPOINT_BUFFERMEM and NICMASK items, added aligned(n) attribute for x86 struct items < 4 bytes
-  Modified Nov 2018 JHB, moved stream group and stream merging definitions and APIs here (from pktlib.c and packet_flow_media_proc.c in pktlib.so build). Create new DSMergeGroupContributors() and DSInitMergeGroup() APIs
+  Modified Nov 2018 JHB, moved stream group and stream merging definitions and APIs here (from pktlib.c and packet_flow_media_proc.c in pktlib.so build). Create new DSProcessStreamGroupContributors() and DSInitMergeGroup() APIs
   Modified Nov 2018 JHB, add DSResetMergeBuffers() API. This is used to maintain merging stream alignment when one stream has SSRC transitions and another one does not, for example B places A on hold, B then plays music-on-hold from a media server (new SSRC), and when B resumes (starts sending RTP again), it's out of sync
   Modified Nov 2018 JHB, change "merge" references to "group" or "stream" where it doesn't involve actual merging.  In preparation for other stream group operations, including speech recognition.  See also comments in session.h
   Modified Dec 2018 JHB, move MAX_GROUPID_LEN define here (was internal).  Add WHOLE_GROUP_THREAD_ALLOCATE flag (see comments below)
   Modified Jan 2019 JHB, increase MAX_STREAM_GROUPS from 128 to 256.  This allows higher group capacity with sessions that are 2-3 calls each
   Modified May 2019 JHB, changed stream_id parameters to int for DSAttachStreamToGroup and DSDeleteStreamFromGroup(), changed chnum to int for DSStoreGroupData() and DSGetGroupData()
   Modified May 2019 JHB, add GROUP_MODE_WAV_OUT_STREAM_MONO and GROUP_MODE_WAV_OUT_STREAM_MULTICHANNEL flags, to allow N-channel wav file format for group contributors in addition to per-stream mono wav file for each contributor
-  Modified Sep 2019 JHB, add contrib_ch param to DSMergeGroupContributors(), used for error condition reporting
+  Modified Sep 2019 JHB, add contrib_ch param to DSStreamGroupContributors(), used for error condition reporting
   Modified Oct 2019 JHB, add GROUP_MODE_OVERRUN_xx flags
   Modified Dec 2019 JHB, add DSProcessAudio() and DS_PROCESS_AUDIO_xx flags
   Modified Jan 2020 JHB, add DSGetChanGroup()
@@ -37,7 +37,7 @@
                          -in event logs "overflow" indicates a problem situation, and "overrun" normal operation
   Modified Feb 2020 JHB, add DS_GETGROUPINFO_HANDLE_IDX flag which allows an idx to be passed to DSGetStreamGroupInfo() as the hSession param
   Modified Mar 2020 JHB, add STREAM_GROUP_ENABLE_DEUPLICATION flag
-  Modified Apr 2020 JHB, removed session_info_thread[] param from DSMergeContributors(). See comment in packet_flow_media_proc.c
+  Modified Apr 2020 JHB, removed session_info_thread[] param from DSStreamGroupContributors(). See comment in packet_flow_media_proc.c
   Modified May 2020 JHB, API rework:
                          -rename several APIs to add "Contributor", make clear distinction between APIs that operate on stream groups and ones that operate on individual contributors
                          -remove DSGetChanGroup(), add equivalent functionality in DSGetStreamGroupInfo() with DS_GETGROUPINFO_HANDLE_CHNUM flag
@@ -47,6 +47,7 @@
   Modified Jul 2020 JHB, change all PLC references to FLC (frame loss concealment, where frame refers to non-packetized raw media data)
   Modified Jan 2021 JHB, reduced MAX_GROUP_BUFFER_SIZE from 64000 to 32000 bytes, see comments
   Modified Jan 2021 JHB, add MAX_GROUP_BUFFER_TIME_8KHZ definition, to make stream group buffer processing independent of output sampling rate. Units in msec
+  Modified Mar 2021 JHB, change DSMergeStreamGroupContributors() API to DSProcessStreamGroupContributors()
 */
 
 #ifndef _STREAMLIB_H_
@@ -479,9 +480,9 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
 
   int DSResetContributorBuffer(HSESSION hSessionOwner, int chnum);
 
-/* DSMergeGroupContributors() handles individual stream overrun/underrun, and merges stream contributors into stream group output */
+/* DSProcessStreamGroupContributors() handles individual stream overrun/underrun, and merges stream contributors into stream group output */
 
-  int DSMergeStreamGroupContributors(HSESSION hSession, FILE* fp_out_pcap_merge, FILE* fp_out_wav_merge,  MEDIAINFO* MediaInfo_merge, char* szMissingContributors, int* pkt_group_cnt, int* num_thread_merge_contributions, unsigned long long cur_time, void* p_pkt_counters, int thread_index, int* contrib_ch);
+  int DSProcessStreamGroupContributors(HSESSION hSession, FILE* fp_out_pcap_merge, FILE* fp_out_wav_merge,  MEDIAINFO* MediaInfo_merge, char* szMissingContributors, int* pkt_group_cnt, int* num_thread_merge_contributions, unsigned long long cur_time, void* p_pkt_counters, int thread_index, int* contrib_ch);
 
 /* DSProcessAudio() performs audio domain processing, with options for sampling rate conversion, ASR, user-defined signal processing, and packet output
 
