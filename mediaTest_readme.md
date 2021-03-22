@@ -752,6 +752,34 @@ Note that entering a session configuration file on the command line that contain
 <a name="streamlib"></a>
 # streamlib
 
+Streamlib is a SigSRF library module responsible for constructing, enhancing, and post-processing stream groups. Stream group construction includes:
+
+ - underrun (gap) management
+ - stream time-alignment (alignment between streams, or interstream alignment)
+ - overrun management (in cases where packet rates exceed expected ptime)
+ - sampling rate conversion for indvidual stream contributors (if needed)
+ 
+Stream group output enhancement includes:
+
+ - frame loss concealment (FLC)
+ - amplitude limiting and automatic gain control (AGC)
+ - digital filtering (e.g. glitch or other discontinuity)
+
+Stream group output post-processing includes:
+
+ - sampling rate conversion if needed for encoding, speech recognition, or other post-processing
+ - insertion of timing and event markers, if specified in streamlib debug / measurement options
+ - encoding, e.g. G711, AMR, EVS, etc to generate RTP packet audio (by making voplib API calls)
+ - speech recognition (by making inferlib API calls)
+ - stream deduplication
+
+As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram" target="_blank">telecom and analytics mode data flow diagrams</a>, streamlib source code is divided into two sub-blocks:
+
+ - stream group
+ - media domain processing
+ 
+The second sub-block includes post-processing listed above, and its <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">source code</a> can be modified as needed.
+
 <a name="StreamGroups"></a>
 ## Stream Groups
 
