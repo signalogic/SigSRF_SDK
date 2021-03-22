@@ -806,9 +806,9 @@ When a stream group's members have a time relationship to each other, for exampl
     underrun - gaps due to lost packets or call drop-outs
     overrun - bursts or sustained rate mismatches where packets arrive faster than expected
     
-Both underrun and overrun may substantially exceed the expected packet rate (i.e. expected ptime interval for individual stream group contributors). In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or encapsulated streams sent TCP/IP or inaccurate packet timestamps.
+Both underrun and overrun may substantially mis-match the expected packet rate (i.e. expected ptime interval for individual stream group contributors). In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or encapsulated streams sent TCP/IP or inaccurate packet timestamps.
 
-Regardless of what packet flow problems are encountered, streams must stay in time-alignment true to their origin in order to maintain overall call audio accuracy and intelligibility. The SigSRF streamlib module implements several algorithms to deal with gap management and stream alignment, and can handle up to 20% sustained underrun and overrun conditions.
+Regardless of what packet flow problems are encountered, streams must stay in time-alignment true to their origin in order to maintain overall call audio accuracy and intelligibility. The SigSRF streamlib module implements several algorithms to deal with underrun, overrun, and stream alignment, and can handle up to 20% sustained underrun and overrun conditions.
 
 <a name="AudioQualityProcessing"></a>
 ## Audio Quality Processing
