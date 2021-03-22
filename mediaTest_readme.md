@@ -819,7 +819,7 @@ In addition to gap management and stream alignment mentioned above, streamlib co
 <a name="FrameLossConcealment"></a>
 ### Frame Loss Concealment (FLC)
 
-Frame loss concealment (FLC) occurs when, after all individual stream contributor management, merging, and other processing is complete, stream group ouptut will incur a gap and be unable to meet continuous real-time output requirements. Typically this occurs due to simultaneous packet loss in all stream group inputs, but not always, it can also happen due to anomalies in stream alignment. When an output gap is inevitable, streamlib applies an algorithm to conceal the frame gap, using interpolation, prior stream group output history, and other factors.
+FLC occurs when, after all individual stream contributor management, merging, and other processing is complete, stream group ouptut will incur a gap and be unable to meet continuous real-time output requirements. Typically this occurs due to simultaneous packet loss in all stream group inputs, but not always, it can also happen due to anomalies in alignment between inputs. When an output gap is inevitable, streamlib applies an algorithm to conceal the frame gap, based on interpolation, prior stream group output history, and other factors.
 
 <a name="RunTimeStats"></a>
 # Run-Time Stats
