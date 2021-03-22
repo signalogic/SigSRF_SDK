@@ -759,6 +759,7 @@ Streamlib is a SigSRF library module responsible for constructing, enhancing, an
  - alignment of individual streams in time (i.e. interstream alignment)
  - sampling rate conversion for indvidual stream contributors (if needed)
  - insertion of timing and event markers, if specified in streamlib debug / measurement options
+ - stream merging or conferencing, if specified
  
 Stream group output enhancement includes:
 
