@@ -754,8 +754,8 @@ Note that entering a session configuration file on the command line that contain
 
 Streamlib is a SigSRF library module responsible for constructing, enhancing, and post-processing [stream groups](#user-content-streamgroups). Stream group construction includes:
 
- - underrun (gap) management
- - overrun management (in cases where packet rates exceed expected ptime)
+ - per-stream underrun (gap) management
+ - per-stream overrun management (in cases where packet rates <sup>[1]</sup> exceed expected ptime)
  - alignment of individual streams in time (i.e. interstream alignment)
  - sampling rate conversion for indvidual stream contributors (if needed)
  - insertion of timing and event markers, if specified in streamlib debug / measurement options
@@ -783,6 +783,8 @@ As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telec
 The second sub-block, media domain processing, includes post-processing listed above, and its <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">source code</a> can be modified as needed.
 
 Note that all processing in streamlib, in both the stream group and media domain processing sub-blocks, operates on sampled audio or video data, arriving there after  jitter buffer, decoding, and other packet flow in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread processing</a> (look for DSProcessStreamGroupContributors() API call). Streamlib does no packet operations other than formatting and queuing of RTP packets for stream group output, if needed.
+
+<sup>[1] </sup> This is actually "frame rate", since as noted above streamlib deals in already-decoded packet data. But the root cause of overrun is higher-than-expected rate of incoming packets.
 
 <a name="StreamGroups"></a>
 ## Stream Groups
