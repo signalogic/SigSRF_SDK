@@ -752,7 +752,7 @@ Note that entering a session configuration file on the command line that contain
 <a name="streamlib"></a>
 # streamlib
 
-Streamlib is a SigSRF library module responsible for constructing, enhancing, and post-processing stream groups. Stream group construction includes:
+Streamlib is a SigSRF library module responsible for constructing, enhancing, and post-processing [stream groups](#user-content-streamgroups). Stream group construction includes:
 
  - underrun (gap) management
  - overrun management (in cases where packet rates exceed expected ptime)
