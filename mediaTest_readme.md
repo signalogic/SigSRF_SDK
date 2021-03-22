@@ -821,6 +821,8 @@ In addition to gap management and stream alignment mentioned above, streamlib co
 
 FLC occurs when, after all individual stream contributor management, merging, and other processing is complete, stream group ouptut will incur a gap and be unable to meet continuous real-time output requirements. Typically this occurs due to simultaneous packet loss in all stream group inputs, but not always, it can also happen due to anomalies in alignment between inputs. When an output gap is inevitable, streamlib applies an algorithm to conceal the frame gap, based on interpolation, prior stream group output history, and other factors.
 
+Note that FLC is similar, but not the same to PLC (Packet Loss Concealment), which is implemented by pktlib as part of [packet repair](#user-content-packetrepair), due to media or SID packet loss.
+
 <a name="RunTimeStats"></a>
 # Run-Time Stats
 
