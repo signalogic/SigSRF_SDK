@@ -120,6 +120,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
 [**Audio Quality Notes**](#user-content-audioqualitynotes)<br/>
+&nbsp;&nbsp;&nbsp;[Frame Loss Concealment](#user-content-framelossconcealment><br/>
 [**Real-Time Performance**](#user-content-realtimeperformance)<br/>
 
 <a name="mediaMin"></a>
@@ -757,7 +758,7 @@ Streamlib is a SigSRF library module responsible for constructing, enhancing, an
  - per-stream underrun (gap) management
  - per-stream overrun management (in cases where packet rates <sup>[1]</sup> exceed expected ptime)
  - alignment of individual streams in time (i.e. interstream alignment)
- - sampling rate conversion for indvidual stream contributors (if needed)
+ - sampling rate conversion for individual stream contributors (if needed)
  - insertion of timing and event markers, if specified in streamlib debug / measurement options
  - stream merging or conferencing, if specified
  
@@ -782,7 +783,7 @@ As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telec
  
 The second sub-block, media domain processing, includes post-processing listed above, and its <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">source code</a> can be modified as needed.
 
-Note that all processing in streamlib, in both the stream group and media domain processing sub-blocks, operates on sampled audio or video data, arriving there after  jitter buffer, decoding, and other packet flow in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread processing</a> (look for DSProcessStreamGroupContributors() API call). Streamlib does no packet operations other than formatting and queuing of RTP packets for stream group output, if needed.
+Note that all processing in streamlib, in both the stream group and media domain processing sub-blocks, operates on sampled audio or video data, arriving there after  jitter buffer, decoding, and other packet flow in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread processing</a> (look for DSProcessStreamGroupContributors() API call). Streamlib does no packet operations other than formatting and queuing of RTP packets for output, if needed.
 
 <sup>[1] </sup> This is actually "frame rate", since as noted above streamlib deals in already-decoded packet data. But the root cause of overrun is higher-than-expected rate of incoming packets.
 
@@ -814,6 +815,11 @@ Regardless of what packet flow problems are encountered, streams must stay in ti
 ## Audio Quality Processing
 
 In addition to gap management and stream alignment mentioned above, streamlib continuously monitors stream group output for quality, applying FLC (frame loss concealment), amplitude wrap detection, discontinuity smoothing, etc. In part this processing is intended to produce high quality audio output, but also many applications have real-time output requirements, where packet audio must be sent to a "recorder" or real-time devices of some type that are highly sensitive to gaps or other packet problems.
+
+<a name="FrameLossConcealment"></a>
+### FLC
+
+Frame loss concealment (FLC) occurs when, after all individual stream contributor management, merging, and other processing is complete, stream group ouptut will incur a gap and be unable to meet continuous real-time output requirements. Typically this occurs due to simultaneous packet loss in all stream group inputs, but not always, it can also happen due to anomalies in stream alignment. When an output gap is inevitable, streamlib applies an algorithm to conceal the frame gap, using interpolation, prior stream group output history, and other factors.
 
 <a name="RunTimeStats"></a>
 # Run-Time Stats
