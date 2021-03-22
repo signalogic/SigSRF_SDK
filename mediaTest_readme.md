@@ -781,7 +781,7 @@ As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telec
  
 The second sub-block, media domain processing, includes post-processing listed above, and its <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/audio_domain_processing.c" target="_blank">source code</a> can be modified as needed.
 
-Note that all processing in streamlib, in both the stream group and media domain processing sub-blocks, operates on sampled audio or video data, already-decoded from packet flow. Streamlib does no packet operations other than formatting and queuing of RTP packets for stream group output, if needed.
+Note that all processing in streamlib, in both the stream group and media domain processing sub-blocks, operates on sampled audio or video data, already decoded from packet flow in packe/media thread processing (look for DSProcessStreamGroupContributors() API call). Streamlib does no packet operations other than formatting and queuing of RTP packets for stream group output, if needed.
 
 <a name="StreamGroups"></a>
 ## Stream Groups
