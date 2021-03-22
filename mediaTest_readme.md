@@ -755,8 +755,8 @@ Note that entering a session configuration file on the command line that contain
 Streamlib is a SigSRF library module responsible for constructing, enhancing, and post-processing stream groups. Stream group construction includes:
 
  - underrun (gap) management
- - alignment of individual streams in time (i.e. interstream alignment)
  - overrun management (in cases where packet rates exceed expected ptime)
+ - alignment of individual streams in time (i.e. interstream alignment)
  - sampling rate conversion for indvidual stream contributors (if needed)
  - insertion of timing and event markers, if specified in streamlib debug / measurement options
  
