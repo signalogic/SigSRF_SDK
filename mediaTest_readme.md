@@ -23,11 +23,11 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 Here are some new features added recently:
 
-* USB audio support.  There are some pics below showing the Focusrite 2i2 in action
+* USB audio support. ALSA compatible devices are supported. As one example, there are some pics below showing the Focusrite 2i2 in action
 
 * Codecs now include EVS, AMR-NB, AMR-WB, AMR-WB+, G729AB, G726, G711, and MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
 
-* integrated, real-time Kaldi speech recognition (Kaldi guys refer to this as "online decoding")
+* integration of real-time Kaldi speech recognition (Kaldi guys refer to this as "online decoding")
 
 1Q 2019:  SigSRF software deployed in G7 country equivalent to FBI, providing single server high capacity (500+ concurrent sessions)
 
