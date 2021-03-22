@@ -804,7 +804,7 @@ The above processing is shown in <a href="https://github.com/signalogic/SigSRF_S
 When a stream group's members have a time relationship to each other, for example different legs of a conference call, stream alignment becomes crucial. During a call one or more streams may exhibit:
 
     underrun - gaps due to lost packets or call drop-outs
-    overrun - bursts where packets arrive faster than expected
+    overrun - bursts or sustained rate mismatches where packets arrive faster than expected
     
 Both underrun and overrun may substantially exceed the expected packet rate (i.e. expected ptime interval for individual stream group contributors). In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or encapsulated streams sent TCP/IP or inaccurate packet timestamps.
 
