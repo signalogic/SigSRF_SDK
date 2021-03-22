@@ -13,7 +13,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 1Q 2021 - encapsulated stream support, tested with OpenLI pcaps containing DER encoded HI3 intercept streams, per ETSI LI and ASN.1 standards
 
-1Q 2021 - real-time ASR option added to mediaMin command line. Kaldi ASR works on stream group outputs, after RTP decoding, stream merging and other signal processing. All codecs supported
+1Q 2021 - real-time ASR option added to mediaMin command line. Kaldi ASR works on stream group outputs, after RTP decoding, stream merging and other signal processing. All codecs supported (narrowband codecs are up-sampled prior to ASR)
 
 1Q 2021 - sdp file option added to mediaMin command line. SDP info can be used to override mediaMin auto-detection or in application-specific cases
 
