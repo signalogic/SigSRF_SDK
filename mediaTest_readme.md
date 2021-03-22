@@ -120,7 +120,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
 [**Audio Quality Notes**](#user-content-audioqualitynotes)<br/>
-&nbsp;&nbsp;&nbsp;[Frame Loss Concealment](#user-content-framelossconcealment)<br/>
+&nbsp;&nbsp;&nbsp;[Frame Loss Concealment (FLC)](#user-content-framelossconcealment)<br/>
 [**Real-Time Performance**](#user-content-realtimeperformance)<br/>
 
 <a name="mediaMin"></a>
@@ -817,7 +817,7 @@ Regardless of what packet flow problems are encountered, streams must stay in ti
 In addition to gap management and stream alignment mentioned above, streamlib continuously monitors stream group output for quality, applying FLC (frame loss concealment), amplitude wrap detection, discontinuity smoothing, etc. In part this processing is intended to produce high quality audio output, but also many applications have real-time output requirements, where packet audio must be sent to a "recorder" or real-time devices of some type that are highly sensitive to gaps or other packet problems.
 
 <a name="FrameLossConcealment"></a>
-### FLC
+### Frame Loss Concealment (FLC)
 
 Frame loss concealment (FLC) occurs when, after all individual stream contributor management, merging, and other processing is complete, stream group ouptut will incur a gap and be unable to meet continuous real-time output requirements. Typically this occurs due to simultaneous packet loss in all stream group inputs, but not always, it can also happen due to anomalies in stream alignment. When an output gap is inevitable, streamlib applies an algorithm to conceal the frame gap, using interpolation, prior stream group output history, and other factors.
 
