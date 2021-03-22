@@ -770,9 +770,9 @@ Stream group output enhancement includes:
 Stream group output post-processing includes:
 
  - sampling rate conversion, if needed for encoding, speech recognition, or other post-processing
- - encoding, e.g. G711, AMR, EVS, etc. to generate RTP packet audio (by making voplib API calls)
- - speech recognition (by making inferlib API calls)
- - stream deduplication
+ - encoding, if specified (e.g. G711, AMR, EVS, etc. by making voplib API calls), and formatting and queuing RTP packet output (by making pktlib API calls)
+ - speech recognition, if specified (by making inferlib API calls)
+ - stream deduplication, if specified
  - user-defined signal processing
 
 As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram" target="_blank">telecom and analytics mode data flow diagrams</a>, streamlib is divided into two sub-blocks:
