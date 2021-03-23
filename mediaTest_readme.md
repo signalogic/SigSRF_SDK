@@ -758,7 +758,7 @@ Note that N is a 16-bit value accepting two (2) 8-bit values, one for max depth 
 
 The [packet history log](#user-content-packetlog) details exactly which packets were repaired, and also provides overall repair stats for each SSRC. In addition, [run-time stats](#user-content-runtimestats) displays packet repair information. The run-time stats screen capture below shows channel 4 (SSRC 0xd9913891) with one (1) instance of SID repair and channel 2 (SSRC 0x545d19db) with 63 timestamps repairs.
 
-![Run-Time stats showing packet repairs](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png?raw=true "Run-time stats showing packet repairs")
+![Run-Time stats showing packet repairs](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats_packet_repair.png?raw=true "Run-time stats showing packet repairs")
 
 <a name="MultipleRTPStreams"></a>
 ## Multiple RTP Streams (RFC 8108)
