@@ -295,7 +295,7 @@ where groupID is typically taken from the first input spec on the command line (
 
 Note the above command line also enables wav file outputs for the stream group and its individual contributors (the 0x800 flag in -dN options). An N-channel wav file is also created.
 
-The screen captures show [run-time stats](#user-content-runtimestats) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
+Screen captures below show [run-time stats](#user-content-runtimestats) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
 ![Multiple AMR-WB stream group run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png?raw=true "Multiple AMR-WB stream group run-time stats")
 
@@ -754,10 +754,11 @@ Note that N is a 16-bit value accepting two (2) 8-bit values, one for max depth 
 <a name="PacketRepair"></a>
 ### Packet Repair
 
-By default the [pktlib](#user-content-pktlib) jitter buffer repairs both media and SID packets, unless disabled by session configuration flags. Media packets are repaired using a packet loss concealment (PLC) algorithm based on interpolation, prior stream packet input history, and other factors. SID packets are repaired using a SID re-use algorithm. In both cases packet history, RTP timestamp, and packet re-ordering are factored into the repair.
+By default the [pktlib](#user-content-pktlib) jitter buffer repairs both media and SID packets, unless disabled by session configuration flags. Media packets are repaired using a packet loss concealment (PLC) algorithm based on interpolation, prior stream packet input history, and other factors. SID packets are repaired using a SID re-use algorithm. In both cases packet history, RTP timestamp, and packet re-ordering are factored into repairs.
 
-The [packet history log](#user-content-packetlog) details exactly which packets were repaired, and also provides overall repair stats for each SSRC. In addition, run-time stats display packet repair information.
+The [packet history log](#user-content-packetlog) details exactly which packets were repaired, and also provides overall repair stats for each SSRC. In addition, [run-time stats](#user-content-runtimestats) displays packet repair information. The run-time stats screen capture below shows one (1) instance of SID repair for stream N and 63 media packet repairs for stream 5.
 
+![Run-Time stats showing packet repairs](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png?raw=true "Run-time stats showing packet repairs")
 
 <a name="MultipleRTPStreams"></a>
 ## Multiple RTP Streams (RFC 8108)
