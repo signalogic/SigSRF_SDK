@@ -745,14 +745,18 @@ Note that entering a session configuration file on the command line that contain
 <a name="DepthControl"></a>
 ### Depth Control
 
-The pktlib jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. mediaMin supports a "-jN" command line option, where N specifies depth as number of packets. For example, using the OpenLI example command line shown above, the jitter buffer depth could be specified as having max depth of 12 and target depth of 7:
+The [pktlib](#user-content-pktlib) jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. mediaMin supports a "-jN" command line option, where N specifies depth as number of packets. For example, using the OpenLI example command line shown above, the jitter buffer depth could be specified as having max depth of 12 and target depth of 7:
 
-  ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20 -j0x0c07
+    ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20 -j0x0c07
   
 Note that N is a 16-bit value accepting two (2) 8-bit values, one for max depth and one for target depth (for this reason N is normally given as a hex value, but it's not necessary).
 
 <a name="PacketRepair"></a>
 ### Packet Repair
+
+By default the [pktlib](#user-content-pktlib) jitter buffer repairs both media and SID packets, unless disabled by session configuration flags. Media packets are repaired using a packet loss concealment (PLC) algorithm based on interpolation, prior stream packet input history, and other factors. SID packets are repaired using a SID re-use algorithm. In both cases packet history, RTP timestamp, and packet re-ordering are factored into the repair.
+
+The [packet history log](#user-content-packetlog) details exactly which packets were repaired, and also provides overall repair stats for each SSRC. In addition, run-time stats display packet repair information.
 
 
 <a name="MultipleRTPStreams"></a>
