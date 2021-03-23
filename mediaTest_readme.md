@@ -95,6 +95,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandling)<br/>
 &nbsp;&nbsp;&nbsp;[**Jitter Buffer**](#user-content-jitterbuffer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Push Rate Control](#user-content-packetpushratecontrol)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Depth Control](#user-content-depthcontrol)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Repair](#user-content-packetrepair)<br/>
 &nbsp;&nbsp;&nbsp;[**Multiple RTP Streams (RFC8108)**](#user-content-multiplertpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[**Duplicated RTP Streams (RFC7198)**](#user-content-duplicatedrtpstreams)<br/>
 
@@ -739,6 +741,19 @@ mediaMin supports a "-rN" command line options to control packet push rate, wher
 In addition to this level of control, mediaMin also implements an average packet push rate algorithm, which can be applied when pktlib is operating in analytics mode. The average push rate algorithm enable is the 0x80000 flag in the mediaMin -dN command line argument, and analytics mode is the 0x40000 flag.
 
 Note that entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above).
+
+<a name="DepthControl"></a>
+### Depth Control
+
+The pktlib jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. mediaMin supports a "-jN" command line option, where N specifies depth as number of packets. For example, using the OpenLI example command line shown above, the jitter buffer depth could be specified as having max depth of 12 and target depth of 7:
+
+  ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20 -j0x0c07
+  
+Note that N is a 16-bit value accepting two (2) 8-bit values, one for max depth and one for target depth (for this reason N is normally given as a hex value, but it's not necessary).
+
+<a name="PacketRepair"></a>
+### Packet Repair
+
 
 <a name="MultipleRTPStreams"></a>
 ## Multiple RTP Streams (RFC 8108)
