@@ -313,7 +313,7 @@ mediaMin utilizes the <a href="https://github.com/signalogic/SigSRF_SDK/tree/mas
 <a name="OpenLISupport"></a>
 ### OpenLI Support
 
-After downloading the SigSRF SDK, below are <a href="https://openli.nz" target="_blank">OpenLI</a> generated encapsulated stream pcap examples you can run:
+After <a href="https://github.com/signalogic/SigSRF_SDK#user-content-sdkdownload" target="_blank">downloading the SigSRF SDK</a>, below are <a href="https://openli.nz" target="_blank">OpenLI</a> generated encapsulated stream pcap examples you can run:
 
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
  
@@ -1012,6 +1012,7 @@ To verify a clean event log, the following keywords should not appear:
 > overflow  
 > preempt  **  
 > queue full  
+> warning  
 > wrap  
 
 ** with exception of configuration info printed by the DSConfigPktlib() API, which normally appears once at event log start
