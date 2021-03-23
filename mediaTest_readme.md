@@ -754,9 +754,9 @@ Note that N is a 16-bit value accepting two (2) 8-bit values, one for max depth 
 <a name="PacketRepair"></a>
 ### Packet Repair
 
-By default the [pktlib](#user-content-pktlib) jitter buffer repairs both media and SID packets, unless disabled by session configuration flags. Media packets are repaired using a packet loss concealment (PLC) algorithm based on interpolation, prior stream packet input history, and other factors. SID packets are repaired using a SID re-use algorithm. In both cases packet history, RTP timestamp, and packet re-ordering are factored into repairs.
+[Pktlib](#user-content-pktlib) jitter buffer default behavior to repair both media and SID packets, unless disabled by session configuration flags. Media packets are repaired using a packet loss concealment (PLC) algorithm based on interpolation, prior stream packet input history, and other factors. SID packets are repaired using a SID re-use algorithm. In both cases packet history, RTP timestamp, and packet re-ordering are factored into repairs.
 
-The [packet history log](#user-content-packetlog) details exactly which packets were repaired, and also provides overall repair stats for each SSRC. In addition, [run-time stats](#user-content-runtimestats) displays packet repair information. The run-time stats screen capture below shows one (1) instance of SID repair for stream N and 63 media packet repairs for stream 5.
+The [packet history log](#user-content-packetlog) details exactly which packets were repaired, and also provides overall repair stats for each SSRC. In addition, [run-time stats](#user-content-runtimestats) displays packet repair information. The run-time stats screen capture below shows channel 4 (SSRC 0xd9913891) with one (1) instance of SID repair and channel 2 (SSRC 0x545d19db) with 63 timestamps repairs.
 
 ![Run-Time stats showing packet repairs](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png?raw=true "Run-time stats showing packet repairs")
 
