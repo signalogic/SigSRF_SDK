@@ -160,7 +160,7 @@ See [User-Defined Signal Processing Insertion Points](#user-content-userdefineds
 <a name="DecodingAndTranscoding"></a>
 ### Decoding and Transcoding
 
-The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is intermediate pcap and wav file output from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, SDP support, and more.  A static session config file is optional.
+The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is intermediate pcap and wav file output from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, [SDP support](#user-content-sdpsupport), and more. A static session config file is optional.
 
 Below are some transcoding command line examples. The first command does the following:
 
@@ -271,6 +271,8 @@ a=rtpmap:100 telephone-event/16000
 ```
 
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
+
+The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp folder path</a>.
 
 <a name="StreamGroupsCmdLine"></a>
 ## Stream Groups
