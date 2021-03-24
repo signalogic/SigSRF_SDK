@@ -1240,9 +1240,13 @@ Packet stats logging is part of the Diaglib module, which includes several flags
 * DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS, show RTP sequence numbers with wrapping.  Typically this makes it harder to detect missing and ooo packets.  The default is to show sequence numbers without wrapping, for example the sequence 65534, 65535, 0, 1 becomes 65534, 65535, 65536, 65537.  For spreadsheet analysis and other packet math, this can be helpful
 * DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY, print to event log a brief summary for each stream analyzed
 
+Formatting and organization flags:
+
 * DS_PKTSTATS_ORGANIZE_BY_SSRC, organize analysis and stats by SSRC
 * DS_PKTSTATS_ORGANIZE_BY_CHNUM, organize analysis and stats by channel
 * DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP, organize analysis and stats by stream group
+
+Debug flags:
 
 * DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from Diaglib analysis sections
 * DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from Diaglib analysis sections
