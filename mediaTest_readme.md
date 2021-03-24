@@ -1154,6 +1154,86 @@ Seq num 275              timestamp = 48400, pkt len = 160
 :
 ```
 
+Below is an example of the Packet Stats and Analysis section of a packet log. Note the stats for packet loss (missing sequence numbers, and max consecutive missing sequence numbers), repaired media and SID packets, and timestamp mismatches.
+
+```CoffeeScript
+** Packet Stats and Analysis **
+
+Stream groups found = 1, group indexes = 0
+
+Stream group 0, 5 streams
+
+  Stream 0, channel 0, SSRC = 0x63337c03, 181 input pkts, 181 output pkts
+
+    Input packets = 181, ooo packets = 0, SID packets = 0, seq numbers = 0..180, missing seq numbers = 0, max consec missing seq numbers = 0
+    Input packet loss = 0.000%
+    Input ooo = 0.000%, max ooo = 0
+
+    Output packets = 181, ooo packets = 0, seq numbers = 0..180, missing seq numbers = 0, max consec missing seq numbers = 0, SID packets = 0, SID R packets = 0, repaired SID packets = 0, repaired media packets = 0
+    Output packet loss = 0.000%
+    Output ooo = 0.000%, max ooo = 0
+
+    Packets dropped by jitter buffer = 0
+    Packets duplicated by jitter buffer = 0
+    Timestamp mismatches = 0
+
+  Stream 1, channel 2, SSRC = 0x545d19db, 2502 input pkts, 4723 output pkts
+
+    Input packets = 2502, ooo packets = 264, SID packets = 480, seq numbers = 86..2587, missing seq numbers = 0, max consec missing seq numbers = 0
+    Input packet loss = 0.000%
+    Input ooo = 5.276%, max ooo = 1
+
+    Output packets = 4723, ooo packets = 0, seq numbers = 86..4808, missing seq numbers = 0, max consec missing seq numbers = 0, SID packets = 480, SID R packets = 2221, repaired SID packets = 0, repaired media packets = 0
+    Output packet loss = 0.000%
+    Output ooo = 0.000%, max ooo = 0
+
+    Packets dropped by jitter buffer = 0
+    Packets duplicated by jitter buffer = 0
+    Timestamp mismatches = 0
+
+  Stream 2, channel 4, SSRC = 0xd9913891, 1463 input pkts, 3219 output pkts
+
+    Input packets = 1463, ooo packets = 363, SID packets = 365, seq numbers = 14..1479, missing seq numbers = 3, max consec missing seq numbers = 2
+    Input packet loss = 0.205%
+    Input ooo = 12.406%, max ooo = 2
+
+    Output packets = 3219, ooo packets = 0, seq numbers = 14..3232, missing seq numbers = 0, max consec missing seq numbers = 0, SID packets = 366, SID R packets = 1753, repaired SID packets = 1, repaired media packets = 2
+    Output packet loss = 0.000%
+    Output ooo = 0.000%, max ooo = 0
+
+    Packets dropped by jitter buffer = 0
+    Packets duplicated by jitter buffer = 0
+    Timestamp mismatches = 0
+
+  Stream 3, channel 5, SSRC = 0xa97bef88, 2230 input pkts, 2300 output pkts
+
+    Input packets = 2230, ooo packets = 0, SID packets = 17, seq numbers = 5524..7753, missing seq numbers = 0, max consec missing seq numbers = 0
+    Input packet loss = 0.000%
+    Input ooo = 0.000%, max ooo = 0
+
+    Output packets = 2300, ooo packets = 0, seq numbers = 5524..7823, missing seq numbers = 0, max consec missing seq numbers = 0, SID packets = 17, SID R packets = 70, repaired SID packets = 0, repaired media packets = 0
+    Output packet loss = 0.000%
+    Output ooo = 0.000%, max ooo = 0
+
+    Packets dropped by jitter buffer = 0
+    Packets duplicated by jitter buffer = 0
+    Timestamp mismatches = 0
+
+  Stream 4, channel 6, SSRC = 0xa034a9d2, 983 input pkts, 1478 output pkts
+
+    Input packets = 983, ooo packets = 0, SID packets = 96, seq numbers = 18630..19612, missing seq numbers = 0, max consec missing seq numbers = 0
+    Input packet loss = 0.000%
+    Input ooo = 0.000%, max ooo = 0
+
+    Output packets = 1478, ooo packets = 0, seq numbers = 18630..20107, missing seq numbers = 0, max consec missing seq numbers = 0, SID packets = 96, SID R packets = 495, repaired SID packets = 0, repaired media packets = 0
+    Output packet loss = 0.000%
+    Output ooo = 0.000%, max ooo = 0
+
+    Packets dropped by jitter buffer = 0
+    Packets duplicated by jitter buffer = 0
+    Timestamp mismatches = 0
+```
+
 Packet stats logging is part of the Diaglib module, which includes several flags (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/diaglib.h" target="_blank">diaglib.h header file</a>). Some of the more notable flags include:
 
   - DS_PKTSTATS_LOG_COLLATE_STREAMS, collate and sort packet logs by RTP stream (i.e. using SSRC values)
