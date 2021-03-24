@@ -1237,7 +1237,7 @@ Stream group 0, 5 streams
 Packet stats logging is part of the Diaglib module, which includes several flags (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/diaglib.h" target="_blank">diaglib.h header file</a>). Some of the more notable flags include:
 
 * DS_PKTSTATS_LOG_COLLATE_STREAMS, collate and sort packet logs by RTP stream (i.e. using SSRC values)
-* DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS, show RTP sequence numbers with wrapping.  Typically this makes it harder to detect missing and ooo packets.  The default is to show sequence numbers without wrapping, for example the sequence 65534, 65535, 0, 1 becomes 65534, 65535, 65536, 65537.  For spreadsheet analysis and other packet math, this can be helpful
+* DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS, show RTP sequence numbers with wrapping. Typically this makes it harder to do text searches for specific lost or ooo packets.  The default is to show sequence numbers without wrapping, for example the sequence 65534, 65535, 0, 1 becomes 65534, 65535, 65536, 65537. For searches and spreadsheet analysis and other packet math, this can be helpful
 * DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY, print to event log a brief summary for each stream analyzed
 
 Formatting and organization flags:
@@ -1248,8 +1248,8 @@ Formatting and organization flags:
 
 Debug flags:
 
-* DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from Diaglib analysis sections
-* DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from Diaglib analysis sections
+* DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from analysis and stats section
+* DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from analysis and stats section
 
 <a name="SupportedRFCs"></a>
 ## RFCs
