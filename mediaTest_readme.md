@@ -281,7 +281,7 @@ a=rtpmap:100 telephone-event/16000
 
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
 
-The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp folder path</a>.
+The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path.
 
 <a name="StreamGroupsCmdLine"></a>
 ## Stream Groups
