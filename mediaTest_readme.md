@@ -239,11 +239,14 @@ SDP input is processed by mediaMin in two (2) ways
 
 1) As a command line argument with an "-s" option, as shown in the following command line example:
 
+    ```C
     ./mediaMin -M0 -cx86 -i../pcaps/input.pcapng -L -d0x100c0c01 -r20 -sexample.sdp
-
-.sdp files should be basic text files, with either CR line endings (typical for Linux) or CRLF (typical for Windows).
+    ```
+    .sdp files should be basic text files, with either CR line endings (typical for Linux) or CRLF (typical for Windows).
 
 2) As contents of SIP TCP/IP packets in the incoming packet flow. In the latter case, SDP info should appear before stream(s) start in order to take effect.
+
+Below is the example.sdp file included in the SDK download:
 
 ```coffeescript
 # Example SDP file for use in mediaMin cmd line. Signalogic, Jan2021
