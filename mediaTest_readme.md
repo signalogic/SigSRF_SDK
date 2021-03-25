@@ -235,11 +235,15 @@ mediaMin supports SDP (<a href="https://en.wikipedia.org/wiki/Session_Descriptio
 > 1) override codec auto-detection
 > 2) ignore one or more payload types, in effect ignoring the stream
 
-SDP input can be given as a command line argument with an "-s" option, as shown in the following command line example:
+SDP input is processed by mediaMin in two (2) ways
+
+1) As a command line argument with an "-s" option, as shown in the following command line example:
 
     ./mediaMin -M0 -cx86 -i../pcaps/input.pcapng -L -d0x100c0c01 -r20 -sexample.sdp
 
-or as contents of SIP TCP/IP packets in the incoming packet flow. In the latter case, SDP info should appear before stream(s) start in order to take effect.
+.sdp files should be basic text files, with either CR line endings (typical for Linux) or CRLF (typical for Windows).
+
+2) As contents of SIP TCP/IP packets in the incoming packet flow. In the latter case, SDP info should appear before stream(s) start in order to take effect.
 
 ```coffeescript
 # Example SDP file for use in mediaMin cmd line. Signalogic, Jan2021
