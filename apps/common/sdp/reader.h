@@ -8,7 +8,7 @@
 
   Revision History
     Modified Jan 2021 JHB, add Line::readCodecType() for a=rtpmap attribute support
-    Modified Mar 2021 JHB, add num_chan to struct AttributeRTP (see types.h)
+    Modified Mar 2021 JHB, add error reporting option to Line.readInt()
 */
 
 #ifndef SDP_READER_H
