@@ -8,6 +8,7 @@
 
   Revision History
     Modified Jan 2021 JHB, add a=rtpmap attribute support, see struct AttributeRTP
+    Modified Mar 2021 JHB, add num_chan to struct AttributeRTP
 */
 
 /*
@@ -152,7 +153,7 @@ namespace sdp {
   struct Origin : public Node {
     Origin();
 
-    std::string username;                /* users login, or "-" if you dont support user ids. */
+    std::string username;                /* users login, or "-" if user IDs are not supported */
     std::string sess_id;                 /* numeric string that is used as unique identifier, e.g. timestamp, e.g. "621762799816690644" */
     uint64_t sess_version;               /* version number of this SDP, e.g. "1"  */
     NetType net_type;                    /* SDP_IN */
@@ -236,12 +237,13 @@ namespace sdp {
     std::string connection_address;
   };
 
-  /* e.g. a=rtpmap:96 AMR-WB/16000 */
+  /* e.g. a=rtpmap:96 AMR-WB/16000, a=rtpmap:109 EVS/16000/1, etc. */
   struct AttributeRTP : public Attribute {
     AttributeRTP();
     uint16_t pyld_type;
     CodecType codec_type;
-    uint32_t sample_rate;
+    uint32_t clock_rate;
+    uint16_t num_chan;
   };
 
   /* e.g. a=candidate:4252876256 1 udp 2122260223 192.168.0.194 59976 typ host generation 0 */                                                                                                                                                                                                                                                                                     

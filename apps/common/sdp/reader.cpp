@@ -8,7 +8,8 @@
 
   Revision History
     Modified Jan 2021 JHB, add a=rtpmap attribute support
-    Modified Feb 2021 JHB, add support for # comment delineator in SDP file lines. See parseLine() below and example.sdp for examples and more notes 
+    Modified Feb 2021 JHB, add support for # comment delineator in SDP file lines. See parseLine() below and example.sdp for examples and more notes
+    Modified Mar 2021 JHB, fix problem with possible trailing '/' after rtpmap clock rate, add reading of optional number of channels
 */
 
 #include <sdp/reader.h>
@@ -119,21 +120,22 @@ namespace sdp {
       return t.toString();
    }
 
-   int Line::readInt(char until) {
+   int Line::readInt(char until, bool fReportError) {  /* add error reporting option, JHB Mar2021 */
 
       Token t = getToken(until);
 
-      if (t.size() == 0) {
+      if (t.size() == 0 && fReportError) {
          throw ParseException("Int token is empty");
          return 0;
       }
 
-      if (!t.isNumeric()) {
+      if (t.size() && !t.isNumeric()) {
          throw ParseException("Int token is not numeric");
          return 0;
       }
 
-      return t.toInt();
+      if (t.size()) return t.toInt();
+      else return 0;  /* no int found, JHB Mar2021 */
    }
 
    uint64_t Line::readU64(char until) {
@@ -625,7 +627,8 @@ namespace sdp {
             node = (Attribute*) attr;
             attr->pyld_type = line.readInt();
             attr->codec_type = line.readCodecType();
-            attr->sample_rate = line.readInt();
+            attr->clock_rate = line.readInt('/');  /* note the possibility of a trailing /, which if present would be followed by a number-of-channels value, JHB Mar2021 */
+            attr->num_chan = std::max(line.readInt('/', false), 1);  /* number of channels may or may not be there, JHB Mar2021 */
             node->attr_type = SDP_ATTR_RTPMAP;
          }
 

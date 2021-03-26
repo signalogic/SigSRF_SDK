@@ -8,6 +8,7 @@
 
   Revision History
     Modified Jan 2021 JHB, add Line::readCodecType() for a=rtpmap attribute support
+    Modified Mar 2021 JHB, add num_chan to struct AttributeRTP (see types.h)
 */
 
 #ifndef SDP_READER_H
@@ -21,7 +22,7 @@
 
 namespace sdp { 
 
-  /* our parse exception */
+  /* parse exception */
   struct ParseException : public std::exception {
     std::string s;
     ParseException(std::string s):s(s) {}
@@ -59,7 +60,7 @@ namespace sdp {
     Line(std::string src);
 
     /* generic parse functions */
-    void skip(char until);                                  /* skip some characters until you find the given character */
+    void skip(char until);                                  /* skip some characters until given character is found */
     void ltrim();                                           /* trim whitespace from left from current index */
     Token getToken(char until = ' ');                       /* read part of a sdp line until the given character */
     char operator[](unsigned int);
@@ -67,7 +68,7 @@ namespace sdp {
     /* read the next token as a specific type */
     bool        readType(char type);                        /* read until the type element (e.g. o=, v=, a=) and return true when the line is the given type */
     std::string readString(char until = ' ');               /* read a string from the next token */
-    int         readInt(char until = ' ');                  /* read an integer value from the next token */
+    int         readInt(char until = ' ', bool fReportError = true);  /* read an integer value from the next token */
     uint64_t    readU64(char until = ' ');                  /* read an integer (u64) */
     AddrType    readAddrType(char until = ' ');             /* read an AddrType */
     NetType     readNetType(char until = ' ');              /* read a NetType */

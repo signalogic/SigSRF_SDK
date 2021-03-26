@@ -1405,7 +1405,7 @@ static bool fPrevErr = false;
 
 /* add SDP related items, JHB Jan2021 */
 bool fSDPPyldTypeFound = false;
-uint32_t sample_rate = 0;
+uint32_t clock_rate = 0;
 
 /* perform thorough packet validation */
 
@@ -1468,7 +1468,7 @@ uint32_t sample_rate = 0;
             }
 
             if (codec_type) {
-               sample_rate = rtpmap->sample_rate;
+               clock_rate = rtpmap->clock_rate;
                fSDPPyldTypeFound = true;  /* set flag indicating at least one valid rtpmap found, for later use if needed */
                break;  /* break out of the search */
             }
@@ -1724,7 +1724,7 @@ err_msg:
 
       /* for EVS also set incoming sample rate (i.e. rate used by remote end encoder), as it can be independent from decode output Fs. For static sessions termN.input_sample_rate may be read from session config file. Use SDP specified sample rate if found, JHB Jan2021 */
   
-         session->term1.input_sample_rate = (fSDPPyldTypeFound && sample_rate != 0) ? sample_rate : 16000;
+         session->term1.input_sample_rate = (fSDPPyldTypeFound && clock_rate != 0) ? clock_rate : 16000;
 
       /* set bitrate */
 
@@ -2797,6 +2797,8 @@ bool SDPSetup(int thread_index) {
    sdp::Media* audio = NULL;
    vector<sdp::Attribute*> rtpmaps = {};  /* init to zero */
 
+/* #define PRINTSDPDEBUG // turn on for SDP parsing debug */
+
 /* parse input SDP file into an sdp::SDP session */
 
   reader.parse(sdpstr, &session);
@@ -2816,7 +2818,7 @@ bool SDPSetup(int thread_index) {
             sdp::AttributeRTP* rtpmap __attribute__ ((unused)) = (sdp::AttributeRTP*)rtpmaps[i];  /* map RTP attribute onto generic attribute in order to do something useful with it ... */
 
             #ifdef PRINTSDPDEBUG
-            printf("%s rtpmap[%d], pyld type = %d, codec type = %d, sample rate = %d \n", !i ? "\n" : "", i, rtpmap->pyld_type, rtpmap->codec_type, rtpmap->sample_rate);
+            printf("%s rtpmap[%d], pyld type = %d, codec type = %d, sample rate = %d, num chan = %d \n", !i ? "\n" : "", i, rtpmap->pyld_type, rtpmap->codec_type, rtpmap->clock_rate, rtpmap->num_chan);
             #endif
          }
  
