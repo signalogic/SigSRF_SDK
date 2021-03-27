@@ -27,7 +27,7 @@ Here are some new features added recently:
 
 * Codecs now include EVS, AMR-NB, AMR-WB, AMR-WB+, G729AB, G726, G711, and MELPe (gov/mil standard for 2400, 1200, and 600 bps, also known as STANAG 4591)
 
-* integration of real-time Kaldi speech recognition (Kaldi guys refer to this as "online decoding")
+* Integration of real-time Kaldi speech recognition (Kaldi guys refer to this as "online decoding")
 
 1Q 2019:  SigSRF software deployed in G7 country equivalent to FBI, providing single server high capacity (500+ concurrent sessions)
 
