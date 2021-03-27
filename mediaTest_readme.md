@@ -15,7 +15,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 1Q 2021 - real-time ASR option added to mediaMin command line. Kaldi ASR works on stream group outputs, after RTP decoding, stream merging and other signal processing. All codecs supported (narrowband codecs are up-sampled prior to ASR)
 
-1Q 2021 - sdp file option added to mediaMin command line. SDP info can be used to override mediaMin auto-detection or in application-specific cases
+1Q 2021 - SDP info added to mediaMin. Input can be either command line .sdp file or incoming TCP/IP packet flow. SDP info can be used to override mediaMin auto-detection, ignore specific payload types, or otherwise as needed in application-specific cases
 
 4Q 2020 - mediaTest generates encoded pcaps from wav and other audio format files. All codecs supported
 
