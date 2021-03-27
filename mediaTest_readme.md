@@ -1408,9 +1408,9 @@ As a quick reference, basic procedures for analyzing and playing packet audio fr
 <a name="SavingAudioWireshark"></a>
 ### Saving Audio to File in Wireshark
 
-The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above. Here are additional instructions to save the audio data to .au file format, and then use the Linux "sox" program to convert to .wav format.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
+The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above. Here are additional instructions to save audio data to .au file format, and then use the Linux "sox" program to convert to .wav format.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
 
-1. First, follow steps 1. and 2. in the "Analyzing Packet Media in Wireshark" notes above.
+1. First, follow steps 1. and 2. above in "Analyzing Packet Media in Wireshark".
 
 2. Second, save to .au file from Wireshark:
 
@@ -1427,7 +1427,7 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
     sox audio_file.au audio_file.wav
     ```
 
-    When .au save format is specified as shown in step 2, Wireshark performs uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples. If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, or other conversion program.  If that doesn't match the mediaMin or mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
+    When .au save format is specified as shown in step 2, Wireshark performs uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples. If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, Hypersignal, or other conversion program.  If that doesn't match the mediaMin or mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
 
     *Note: the above instructions apply to Wireshark version 2.2.6.*
 
