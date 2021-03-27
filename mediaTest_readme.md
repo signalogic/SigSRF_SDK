@@ -276,7 +276,10 @@ a=rtpmap:100 telephone-event/16000
 # more rtmaps, uncomment to enable
 
 # a=rtpmap:109 EVS/16000
-# a=rtpmap:112 AMR-WB/16000
+# a=rtpmap:112 AMR-WB/16000/1
+
+# m=audio 49230 RTP/AVP 98
+# a=rtpmap:98 L16/11025/2
 ```
 
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
