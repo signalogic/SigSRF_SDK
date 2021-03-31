@@ -103,6 +103,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**streamlib**](#user-content-streamlib)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Packet Output](#user-content-realtimepacketoutput)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Wav File Output](#user-content-wavfileoutput)<br/>
 &nbsp;&nbsp;&nbsp;[**Stream Alignment**](#user-content-streamalignment)<br/>
 &nbsp;&nbsp;&nbsp;[**Audio Quality Processing**](#user-content-audioqualityprocessing)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Frame Loss Concealment (FLC)](#user-content-framelossconcealment)<br/>
@@ -832,6 +834,14 @@ Stream groups are groupings of input streams, related by call participants, anal
 4) Apply media domain signal processing (examples include speech recognition, FFT, sound detection)
 
 The above processing is shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> "Stream Groups" and "Media Domain Processing" blocks.
+
+<a name="RealTimePacketOutput"></a>
+## Real-Time Packet Output
+
+<a name="WavFileOutput"></a>
+## Wav File Output
+
+Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag set in the -dN options argument enables wav file outputs for stream groups, their individual contributors and an N-channel wav file. Using pktlib session creation APIs, these wav file outputs can be specified separately or in combination.
 
 <a name="StreamAlignment"></a>
 ## Stream Alignment
