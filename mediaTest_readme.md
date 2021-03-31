@@ -836,10 +836,10 @@ Stream groups are groupings of input streams, related by call participants, anal
 The above processing is shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> "Stream Groups" and "Media Domain Processing" blocks.
 
 <a name="RealTimePacketOutput"></a>
-## Real-Time Packet Output
+### Real-Time Packet Output
 
 <a name="WavFileOutput"></a>
-## Wav File Output
+### Wav File Output
 
 Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag in the -dN options argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using pktlib session creation APIs, these wav file outputs can be specified separately or in combination.
 
