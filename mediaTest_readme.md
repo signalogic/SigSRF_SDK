@@ -309,7 +309,7 @@ In general, mediaMin uses the following naming convention for stream group outpu
 
 where groupID is typically taken from the first input spec on the command line ("-i" spec), NN is the stream group index, TT is the mediaMin application thread index, and MM is the mode (none or "tm" for telecom mode, "am" for analytics mode).  If only one mediaMin thread is active, then TT is omitted.
 
-Note the above command line also enables wav file outputs for the stream group and its individual contributors (the 0x800 flag in -dN options). An N-channel wav file is also created.
+Note the above command line also enables wav file outputs for the stream group and its individual contributors (the 0x800 flag in -dN options). An N-channel wav file is also created (where N is the number of group contributors).
 
 Screen captures below show [run-time stats](#user-content-runtimestats) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
@@ -841,7 +841,7 @@ The above processing is shown in <a href="https://github.com/signalogic/SigSRF_S
 <a name="WavFileOutput"></a>
 ## Wav File Output
 
-Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag set in the -dN options argument enables wav file outputs for stream groups, their individual contributors and an N-channel wav file. Using pktlib session creation APIs, these wav file outputs can be specified separately or in combination.
+Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag in the -dN options argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using pktlib session creation APIs, these wav file outputs can be specified separately or in combination.
 
 <a name="StreamAlignment"></a>
 ## Stream Alignment
