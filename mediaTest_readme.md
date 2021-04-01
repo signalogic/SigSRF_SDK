@@ -838,10 +838,14 @@ The above processing is shown in <a href="https://github.com/signalogic/SigSRF_S
 <a name="RealTimePacketOutput"></a>
 ### Real-Time Packet Output
 
+As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">SigSRF data flow diagrams</a>, [streamlib](#user-content-streamlib) default behavior is to generate G711 packet audio output. Other codecs can be used for stream group output encoding by customizing the SESSION_DATA struct "group_term.codec_type" element (and other related element) in application source. To see use of SESSION_DATA, TERMINATION_INFO, and media attributes structs in the mediaMin reference app, look inside create_dynamic_session() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
+
 <a name="WavFileOutput"></a>
 ### Wav File Output
 
-Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag in the -dN options argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using pktlib session creation APIs, these wav file outputs can be specified separately or in combination.
+Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag in the -dN options argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using [pktlib](#user-content-pktlib) session creation APIs, these wav file outputs can be specified separately or in combination, per application needs.
+
+Note that [streamlib](#user-content-streamlib) handles wav file output, which means packet/media threads handle wav file output concurrently. This provides the best possible combination of audio quality and real-time performance.
 
 <a name="StreamAlignment"></a>
 ## Stream Alignment
