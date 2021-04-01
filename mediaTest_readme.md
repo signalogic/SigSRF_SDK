@@ -246,9 +246,9 @@ SDP input is processed by mediaMin in two (2) ways
     ```
     .sdp files should be basic text files, with either CR line endings (typical for Linux) or CRLF (typical for Windows).
 
-2) As contents of SIP TCP/IP packets in the incoming packet flow. This also works for [encapsulated streams](#user-content-encapsulatedstreams).
+2) As contents of SIP invite packets within input packet flow. This also works for [encapsulated streams](#user-content-encapsulatedstreams).
 
-In the latter case, SDP info should appear before stream(s) start in order to take effect.
+Command line SDP input applies to all pcaps or UDP inputs, so the .sdp file should cover all expected payload types and configurations. Packet SDP input applies only to the input packet flow in which SIP invite packets are received, and should appear before input stream(s) start in order to take effect.
 
 Below is the example.sdp file included in the SDK download:
 
