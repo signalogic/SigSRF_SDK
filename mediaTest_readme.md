@@ -162,7 +162,7 @@ See [User-Defined Signal Processing Insertion Points](#user-content-userdefineds
 <a name="DecodingAndTranscoding"></a>
 ### Decoding and Transcoding
 
-The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is intermediate pcap and wav file output from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, [SDP support](#user-content-sdpsupport), and more. A static session config file is optional.
+The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is intermediate pcap and [wav file output](#user-content-wavfileoutput) from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, [SDP support](#user-content-sdpsupport), and more. A static session config file is optional.
 
 Below are some transcoding command line examples. The first command does the following:
 
@@ -309,7 +309,7 @@ In general, mediaMin uses the following naming convention for stream group outpu
 
 where groupID is typically taken from the first input spec on the command line ("-i" spec), NN is the stream group index, TT is the mediaMin application thread index, and MM is the mode (none or "tm" for telecom mode, "am" for analytics mode).  If only one mediaMin thread is active, then TT is omitted.
 
-Note the above command line also enables wav file outputs for the stream group and its individual contributors (the 0x800 flag in -dN options). An N-channel wav file is also created (where N is the number of group contributors).
+Note the above command line also enables [wav file outputs](#user-content-wavfileoutput) for the stream group and its individual contributors (the 0x800 flag in -dN options). An N-channel wav file is also created (where N is the number of group contributors).
 
 Screen captures below show [run-time stats](#user-content-runtimestats) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
@@ -845,7 +845,7 @@ As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telec
 
 Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag in the -dN options argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using [pktlib](#user-content-pktlib) session creation APIs, these wav file outputs can be specified separately or in combination, per application needs.
 
-Note that [streamlib](#user-content-streamlib) handles wav file output, which means packet/media threads handle wav file output concurrently. This provides the best possible combination of audio quality and real-time performance.
+Note that [streamlib](#user-content-streamlib) handles the mechanics of wav file output, which means packet/media threads are able to generate wav file output concurrently. This provides the best possible combination of audio quality and real-time performance.
 
 <a name="StreamAlignment"></a>
 ## Stream Alignment
