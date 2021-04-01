@@ -838,7 +838,7 @@ The above processing is shown in <a href="https://github.com/signalogic/SigSRF_S
 <a name="RealTimePacketOutput"></a>
 ### Real-Time Packet Output
 
-As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">SigSRF data flow diagrams</a>, [streamlib](#user-content-streamlib) default behavior is to generate G711 packet audio output. Other codecs can be used for stream group output encoding by customizing the SESSION_DATA struct "group_term.codec_type" element (and other related element) in application source. To see use of SESSION_DATA, TERMINATION_INFO, and media attributes structs in the mediaMin reference app, look inside create_dynamic_session() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
+As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">SigSRF data flow diagrams</a>, [streamlib](#user-content-streamlib) default behavior is to generate G711 packet audio for stream group output. Other codecs can be used for encoding by customizing the SESSION_DATA struct "group_term.codec_type" element (and other related elements) in application source. To see use of SESSION_DATA, TERMINATION_INFO, and media attributes structs in the mediaMin reference app, look inside create_dynamic_session() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
 
 <a name="WavFileOutput"></a>
 ### Wav File Output
