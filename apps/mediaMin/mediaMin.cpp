@@ -2164,9 +2164,11 @@ read_packet:
             }
          }
 
-      /* look for SIP invite packets */
+      /* mediaMin SDK version is currently ignoring TCP/IP packets other than encapsulated DER streams and SIP invites */
+  
+         if (DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL) == TCP_PROTOCOL) {
 
-         if (!fFoundEncapsulatedCCPkt && DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL) == TCP_PROTOCOL) {  /* mediaMin SDK version is currently ignoring TCP/IP packets other than encapsulated DER streams and SIP invites */
+         /* look for SIP invite packets */
 
             bool fSIPInvite = FindSIPInvite(pkt_in_buf, j, thread_index);
 
@@ -2184,9 +2186,9 @@ read_packet:
                   if (hDerStream) sprintf(szDerStream, "DER stream %d ", hDerStream);
                   app_printf(APP_PRINTF_NEWLINE, thread_index, " ==== %sTCP packet, not processed, pyld len = %d, dst port = %u \n", szDerStream, pyld_len, dest_port);
                }
-
-               goto read_packet;  /* stay with this input, JHB Dec2020 */
             }
+
+            goto read_packet;  /* continue reading from this input, JHB Dec2020 */
          }
 
          thread_info[thread_index].num_packets_in[j]++;
