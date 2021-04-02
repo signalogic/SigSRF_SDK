@@ -638,16 +638,16 @@ Simple mediaTest command lines can be used to convert wav and other audio format
 <a name="EVSPcapGenerator"></a>
 ### EVS Pcap Generator
 
-The following mediaTest command line converts a wav file to pcap:
+The following mediaTest command line converts a wav file to EVS wideband pcap:
 
     ./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/evs_16kHz_13200bps_config
 
 A similar command line can be used with other audio format files. The config file allows EVS bitrate, header format, and other options to be specified. mediaTest automatically performs sample rate conversion if the wav file Fs is different than the sample rate specified in the config file.
 
 <a name="AMRPcapGenerator"></a>
-### AMR Player
+### AMR Pcap Generator
 
-The following mediaTest command line converts a wav file to pcap:
+The following mediaTest command line converts a wav file to AMR-WB pcap:
 
 ```C
 ./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/amrwb_16kHz_12650bps_config
