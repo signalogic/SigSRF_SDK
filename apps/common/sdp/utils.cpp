@@ -1,13 +1,14 @@
 /*
-  SDP parsing and management
+ SDP parsing and management
 
-  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
-  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
+ Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
+ License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
-  Copyright (c) 2021 Signalogic, Dallas, Texas
+ Copyright (c) 2021 Signalogic, Dallas, Texas
 
-  Revision History
-    Modified Jan 2021 JHB, add a=rtpmap attribute support
+ Revision History
+  Modified Jan 2021 JHB, add a=rtpmap attribute support
+  Modified Mar 2021 JHB, more codec types
 */
 
 #include <sdp/utils.h>
@@ -58,7 +59,19 @@ namespace sdp {
       return false;
     }
 
-    if (input == "AMR" || input == "AMR-NB") {
+    if (input == "PCMU") {
+      result = SDP_G711U;
+    }
+    else if (input == "PCMA") {
+      result = SDP_G711A;
+    }
+    else if (input == "G722") {
+      result = SDP_G722;
+    }
+    else if (input == "G729") {
+      result = SDP_G729;
+    }
+    else if (input == "AMR" || input == "AMR-NB") {
       result = SDP_AMRNB;
     }
     else if (input == "AMR-WB") {
@@ -66,6 +79,9 @@ namespace sdp {
     }
     else if (input == "EVS") {
       result = SDP_EVS;
+    }
+    else if (input == "H264") {
+      result = SDP_H264;
     }
     else if (input == "telephone-event") {
       result = SDP_TELEPHONE_EVENT;
@@ -172,7 +188,11 @@ namespace sdp {
 
   std::string codec_type_to_string(CodecType type) {
     switch (type) {
-      case SDP_AMRNB: { return "AMR-NB"; } 
+      case SDP_G711U: { return "PCMU"; } 
+      case SDP_G711A: { return "PCMA"; } 
+      case SDP_G722: { return "G722"; } 
+      case SDP_G729: { return "G729"; } 
+      case SDP_AMRNB: { return "AMR"; } 
       case SDP_AMRWB: { return "AMR-WB"; } 
       case SDP_EVS: { return "EVS"; } 
       case SDP_TELEPHONE_EVENT: { return "telephone-event"; } 

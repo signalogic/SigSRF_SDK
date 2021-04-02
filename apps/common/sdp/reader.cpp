@@ -1,15 +1,17 @@
 /*
-  SDP parsing and management
+ SDP parsing and management
 
-  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
-  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
+ Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
+ License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
-  Copyright (c) 2021 Signalogic, Dallas, Texas
+ Copyright (c) 2021 Signalogic, Dallas, Texas
 
-  Revision History
-    Modified Jan 2021 JHB, add a=rtpmap attribute support
-    Modified Feb 2021 JHB, add support for # comment delineator in SDP file lines. See parseLine() below and example.sdp for examples and more notes
-    Modified Mar 2021 JHB, fix problem with possible trailing '/' after rtpmap clock rate, add reading of optional number of channels
+ Revision History
+  Modified Jan 2021 JHB, add a=rtpmap attribute support
+  Modified Feb 2021 JHB, add support for # comment delineator in SDP file lines. See parseLine() below and example.sdp for examples and more notes
+  Modified Mar 2021 JHB, fix problem with possible trailing '/' after rtpmap clock rate, add reading of optional number of channels
+  Modified Mar 2021 JHB, for "not numeric" error messages, include bad part of token. Always try to give users some idea of what's wrong
+  Modified Mar 2021 JHB, in getToken() handle Win style CRLF line endings
 */
 
 #include <sdp/reader.h>
@@ -130,7 +132,18 @@ namespace sdp {
       }
 
       if (t.size() && !t.isNumeric()) {
-         throw ParseException("Int token is not numeric");
+
+         char errstr[100];
+         sprintf(errstr, "Int token %s is not numeric~~", t.toString().c_str());
+
+         int i = 0;
+         while (!(errstr[i] == '~' && errstr[i+1] == '~')) {
+            if (errstr[i] < 0x20 || (unsigned char)errstr[i] > 127) errstr[i] = 127;  /* show non-printable chars as a block char */
+            i++;
+         }
+         errstr[i] = 0;  
+
+         throw ParseException(errstr);
          return 0;
       }
 
@@ -148,7 +161,18 @@ namespace sdp {
       }
 
       if (!t.isNumeric()) {
-         throw ParseException("U64 token is not numeric");
+
+         char errstr[100];
+         sprintf(errstr, "U64 token %s is not numeric~~", t.toString().c_str());
+
+         int i = 0;
+         while (!(errstr[i] == '~' && errstr[i+1] == '~')) {
+            if (errstr[i] < 0x20 || (unsigned char)errstr[i] > 127) errstr[i] = 127;  /* show non-printable chars as a block char */
+            i++;
+         }
+         errstr[i] = 0;  
+
+         throw ParseException(errstr);
          return 0;
       }
 
@@ -258,7 +282,7 @@ namespace sdp {
 
       for (size_t i = index; i < value.size(); ++i) {
          index++;
-         if (value[i] == until) {
+         if (value[i] == until || value[i] == 0x0d) {  /* look for line Win style CRLF line breaks, in which case C++ leaves in 0x0d. For some reason Diedrick didn't handle this, JHB Mar2021 */
             break;
          }
          result.push_back(value[i]);
@@ -340,6 +364,7 @@ namespace sdp {
          case 't': { return parseTiming(l);              }
          case 'm': { return parseMedia(l);               }
          case 'a': { return parseAttribute(l);           }
+         case 'b': { return parseBandwidth(l);           }
 
          /* unhandled line */
          default: {
@@ -452,6 +477,7 @@ namespace sdp {
       try {
          node->uri = line.readString();
       }
+
       catch(std::exception& e) {
          printf("Error: %s\n", e.what());
          delete node;
@@ -473,6 +499,7 @@ namespace sdp {
       try {
          node->email_address = line.readString();
       }
+
       catch(std::exception& e) {
          printf("Error: %s\n", e.what());
          delete node;
@@ -516,6 +543,7 @@ namespace sdp {
          node->addr_type           = line.readAddrType();
          node->connection_address  = line.readString();
       }
+
       catch(std::exception& e) {
          printf("Error: %s\n", e.what());
          delete node;
@@ -538,6 +566,7 @@ namespace sdp {
          node->start_time = line.readU64();
          node->stop_time  = line.readU64();
       }
+
       catch(std::exception& e) {
          printf("Error: %s\n", e.what());
          delete node;
@@ -562,6 +591,7 @@ namespace sdp {
          node->proto = line.readMediaProto();
          node->fmt = line.readInt();
       }
+
       catch(std::exception& e) {
          printf("Error: %s\n", e.what());
          delete node;
@@ -642,12 +672,37 @@ namespace sdp {
             }
          }
       }
+
       catch(std::exception& e) {
          printf("Error: %s\n", e.what());
          if (node) {
             delete node;
             node = NULL;
          }
+      }
+
+      return node;
+   }
+
+   /* b= */
+   Bandwidth* Reader::parseBandwidth(Line& line) {
+
+      if (!line.readType('b')) {
+         return NULL;
+      }
+
+      Bandwidth* node = new Bandwidth();
+
+      try {
+         node->total_bandwidth_type = line.readString(':');
+         line.ltrim();
+         node->bandwidth = line.readInt();
+      }
+
+      catch(std::exception& e) {
+         printf("Error: %s\n", e.what());
+         delete node;
+         node = NULL;
       }
 
       return node;

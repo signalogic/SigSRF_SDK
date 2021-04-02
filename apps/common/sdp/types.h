@@ -1,14 +1,16 @@
 /*
-  SDP parsing and management
+ SDP parsing and management
 
-  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
-  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
+ Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
+ License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
-  Copyright (c) 2021 Signalogic, Dallas, Texas
+ Copyright (c) 2021 Signalogic, Dallas, Texas
 
-  Revision History
-    Modified Jan 2021 JHB, add a=rtpmap attribute support, see struct AttributeRTP
-    Modified Mar 2021 JHB, add num_chan to struct AttributeRTP
+ Revision History
+  Modified Jan 2021 JHB, add a=rtpmap attribute support, see struct AttributeRTP
+  Modified Mar 2021 JHB, add num_chan to struct AttributeRTP
+  Modified Mar 2021 JHB, add more codec types
+  Modified Mar 2021 JHB, add SDP_MEDIA_ANY for use in media element find()
 */
 
 /*
@@ -43,7 +45,8 @@ namespace sdp {
     SDP_TIMING,
     SDP_MEDIA,
     SDP_CANDIDATE,
-    SDP_ATTRIBUTE
+    SDP_ATTRIBUTE,
+    SDP_BANDWIDTH
   };
 
   enum NetType {
@@ -59,6 +62,7 @@ namespace sdp {
 
   enum MediaType {
     SDP_MEDIATYPE_NONE,
+    SDP_MEDIA_ANY,
     SDP_VIDEO,
     SDP_AUDIO,
     SDP_TEXT,
@@ -76,9 +80,14 @@ namespace sdp {
 
   enum CodecType {
     SDP_CODECTYPE_NONE,
+    SDP_G711U,
+    SDP_G711A,
+    SDP_G722,
+    SDP_G729,
     SDP_AMRNB,
     SDP_AMRWB,
     SDP_EVS,
+    SDP_H264,
     SDP_TELEPHONE_EVENT
   };
 
@@ -128,15 +137,17 @@ namespace sdp {
   struct AttributeRTCP;
   struct AttributeCandidate;
   struct AttributeRTP;
+  struct Bandwidth;
 
   struct Node {
   public:
     Node(Type t);
     void addNode(Node* n);
-    bool find(Type t, std::vector<Node*>& result);            /* try to find a child node for the given type */
-    bool find(MediaType t, Media** result);                   /* sets result to the first found media element of the given media type */
-    bool find(AttrType t, Attribute** result);                /* sets result to the first occurence of the attribute type */
-    int find(AttrType t, std::vector<Attribute*>& result);   /* find all attributes for the given type */
+    int print(int* node);
+    int find(Type t, std::vector<Node*>& result, int* node);             /* try to find a child node for the given type */
+    bool find(MediaType t, Media** result, int* node);                   /* sets result to the first found media element of the given media type */
+    bool find(AttrType t, Attribute** result, int* node);                /* sets result to the first occurence of the attribute type */
+    int find(AttrType t, std::vector<Attribute*>& result, int* node);    /* find all attributes for the given type */
 
   public:
     Type type;
@@ -261,6 +272,12 @@ namespace sdp {
     uint16_t rel_port;    
   };
 
+  /* b= */
+  struct Bandwidth : public Node {
+    Bandwidth();
+    std::string total_bandwidth_type;
+    uint32_t bandwidth;
+  };
 };
 
 #endif

@@ -1,8 +1,14 @@
 /*
-  SDP parsing and management
+ SDP parsing and management
 
-  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
-  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
+ Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
+ License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
+
+ Copyright (c) 2021 Signalogic, Dallas, Texas
+ 
+ Revision History
+ 
+  Modified Mar 2021 JHB, add bandwidth field support
 */
 
 #include <sdp/writer.h>
@@ -31,6 +37,7 @@ namespace sdp {
       case SDP_TIMING:       { result += toString(static_cast<Timing*>(node));         break; } 
       case SDP_MEDIA:        { result += toString(static_cast<Media*>(node));          break; }
       case SDP_ATTRIBUTE:    { result += toString(static_cast<Attribute*>(node));      break; }
+      case SDP_BANDWIDTH:    { result += toString(static_cast<Bandwidth*>(node));      break; }
       default: {
         printf("Error: cannot convert node type to string: %d \n", node->type);
         break;
@@ -127,7 +134,7 @@ namespace sdp {
         return toString(static_cast<AttributeCandidate*>(a));
       }
 
-      /* unknown/unhandled. */
+      /* unknown/unhandled */
       default: {
         printf("Error: cannot convert attribute type to a string: %d\n", a->attr_type);
         return "";
@@ -149,6 +156,16 @@ namespace sdp {
        << "typ "
        << sdp::cand_type_to_string(c->cand_type)
        << "\r\n";
+
+    return ss.str();
+  }
+
+  /* b=  */
+  std::string Writer::toString(Bandwidth* b) {
+    std::stringstream ss;
+
+    ss << "b="
+       << b->total_bandwidth_type << ":" << b->bandwidth << "\r\n";
 
     return ss.str();
   }

@@ -98,13 +98,14 @@
    Modified Jun 2020 JHB, add ENABLE_ALIGNMENT_MARKERS -dN cmd line option, to support visual inspection when deduplication algorithm is active (ENABLE_STREAM_GROUP_DEDUPLICATION flag)
    Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0, fix various security and "indentation" warnings
    Modified Oct 2020 JHB, tested with .pcapng input files after support added to pktlib for reading pcapng file format
-   Modified Jan 2021 JHB, add SDP file parsing and management. See SDPSetup() below and apps/common/sdp folder for source code
+   Modified Jan 2021 JHB, add cmd line SDP file parsing and management. See SDPAdd() below and apps/common/sdp folder for source code
    Modified Jan 2021 JHB, continued ASR integration and testing
    Modified Jan 2021 JHB, convert to .cpp, include <algorithm> and use namespace std
    Modified Feb/Mar 2021 JHB, add DER encoded encapsulated stream handling, with full abstraction of DER encoded and aggregated packets
                               -first tested on HI3 content in OpenLI captures
                               -for API functionality and documentation see include/derlib.h, for implementation see lib/derlib
                               -for app usage see source within ENABLE_DER_STREAM_DECODE below
+   Modified Mar 2021 JHB, modify SDP info to add from TCP/IP SIP invite packets, in addition to cmd line .sdp file. Multiple SDP info can be added at any time, in any sequence. See comments for SDPAdd()
 */
 
 
@@ -209,7 +210,7 @@ using namespace std;
 #define VALGRIND_DELAY 100  /* usleep delay value in usec for allowing valgrind to run multithreaded apps on the same core */
 #endif
 
-static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 2.9.1, Copyright (C) Signalogic 2018-2021\n";
+static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 2.9.3, Copyright (C) Signalogic 2018-2021\n";
 
 /* vars shared between app threads */
 
@@ -297,7 +298,13 @@ int StaticSessionCreate(HSESSION hSessions[], SESSION_DATA session_data[], int n
 void SetIntervalTiming(SESSION_DATA session_data[]);
 void reset_dynamic_session_info(int);
 unsigned int GetSessionFlags();
-bool SDPSetup(int);
+bool FindSIPInvite(uint8_t* pkt_in_buf, int nInput, int thread_index);
+
+#define SDP_ADD_FILE    1
+#define SDP_ADD_STRING  2
+
+bool SDPAdd(const char* szInvite, unsigned int uFlags, int nInput, int thread_index);
+void SDPSetup(const char* szSDPFile, int thread_index);
 
 /* stress test helper functions */
 
@@ -418,6 +425,7 @@ char tmpstr[MAX_APP_STR_LEN];
          if (Mode & ENABLE_WAV_OUTPUT) printf("  stream group wav file output enabled\n");
          if (Mode & ANALYTICS_MODE) printf("  Analytics mode with ptime push/pull rate enabled\n");
          if (Mode & ENABLE_STREAM_GROUP_ASR) printf("  stream group output ASR enabled\n");
+         if (Mode & ENABLE_DER_STREAM_DECODE) printf("  encapsulated DER stream detection and decoding enabled\n");
          if (Mode & ENABLE_DEBUG_STATS) printf("  debug stats enabled\n");
          if (Mode & ENABLE_AUTO_ADJUST_PUSH_RATE) printf("  auto-adjust dynamic packet push rate\n");
          if (Mode & DISABLE_DTX_HANDLING) printf("  DTX handling disabled\n");
@@ -503,11 +511,17 @@ start:  /* note - label used only if test mode repeats are enabled */
       if (!nSessionsConfigured) goto cleanup;
    }
 
-   if (strlen(szSDPFile)) SDPSetup(thread_index);
+/* set up inputs and transcoded outputs */
    
    InputSetup(thread_index);
 
    TranscodedOutputSetup(thread_index);
+
+/* set up SDP info from command line .sdp entry, if any */
+
+   SDPSetup(szSDPFile, thread_index);
+
+/* check for any setup errors */
 
    if (thread_info[thread_index].init_err && !fThreadSync2) goto cleanup;  /* setup error occurred.  If this is first time through we clean up and exit, if not, then the user can see which threads / repeat runs have the error and quit as needed */
 
@@ -1222,6 +1236,8 @@ void reset_dynamic_session_info(int thread_index) {
 enum {
   G711U = 1,
   G711A,
+  G722,
+  G729,
   AMR,
   AMR_WB,
   EVS
@@ -1438,39 +1454,57 @@ uint32_t clock_rate = 0;
 
    if (thread_info[thread_index].num_rtpmaps) {
 
-   /* search through rtpmap payload types previously parsed and recorded by SDPSetup() */
+   /* search through rtpmap payload types previously parsed and recorded by SDPAdd() */
 
-      for (i=0; i<thread_info[thread_index].num_rtpmaps; i++) {
+      for (i=0; i<thread_info[thread_index].num_rtpmaps[nInput]; i++) {
 
-         sdp::AttributeRTP* rtpmap = (sdp::AttributeRTP*)thread_info[thread_index].rtpmaps[i];
+         sdp::AttributeRTP* rtpmap = (sdp::AttributeRTP*)thread_info[thread_index].rtpmaps[nInput][i];
 
          if (pyld_type == rtpmap->pyld_type) {  /* if found set codec type and sample rate */
 
+            int found_codec_type = 0;
+
             switch (rtpmap->codec_type) {  /* set codec_type to one of enums listed above */
 
+               case sdp::SDP_G711U:
+                  found_codec_type = G711U;
+                  break;
+               case sdp::SDP_G711A:
+                  found_codec_type = G711A;
+                  break;
+               case sdp::SDP_G722:
+                  found_codec_type = G722;
+                  break;
+               case sdp::SDP_G729:
+                  found_codec_type = G729;
+                  break;
                case sdp::SDP_AMRNB:
-                  codec_type = AMR;
+                  found_codec_type = AMR;
                   break;
                case sdp::SDP_AMRWB:
-                  codec_type = AMR_WB;
+                  found_codec_type = AMR_WB;
                   break;
                case sdp::SDP_EVS:
-                  codec_type = EVS;
+                  found_codec_type = EVS;
                   break;
 
                default:
                   int pyld_type_index = min(max(pyld_type-96, 0), MAX_DYN_PYLD_TYPES-1);
-                  if (!thread_info[thread_index].fUnmatchedPyldTypeMsg[pyld_type_index]) {
-                     Log_RT(3, "WARNING: create_dynamic_session() says SDP codec type %d unmatched to supported codecs \n", rtpmap->codec_type);
-                     thread_info[thread_index].fUnmatchedPyldTypeMsg[pyld_type_index] = true;
+                  if (!thread_info[thread_index].fUnmatchedPyldTypeMsg[pyld_type_index][nInput]) {
+                     Log_RT(3, "mediaMin WARNING: create_dynamic_session() says SDP codec type %d for input %d unmatched to supported codecs \n", nInput, rtpmap->codec_type);
+                     thread_info[thread_index].fUnmatchedPyldTypeMsg[pyld_type_index][nInput] = true;
                   }
                   break;
             }
 
-            if (codec_type) {
+            if (found_codec_type) {
+               codec_type = found_codec_type;
                clock_rate = rtpmap->clock_rate;
-               fSDPPyldTypeFound = true;  /* set flag indicating at least one valid rtpmap found, for later use if needed */
+               fSDPPyldTypeFound = true;  /* set function-wide flag indicating at least one valid rtpmap found */
+
+               #if 0  /* note - currently search continues, so most recent matching rtpmap will be used. To use first matching rtpmap, break out of the search */
                break;  /* break out of the search */
+               #endif
             }
          }
       }
@@ -1479,9 +1513,11 @@ uint32_t clock_rate = 0;
 
          int pyld_type_index = min(max(pyld_type-96, 0), MAX_DYN_PYLD_TYPES-1);
 
-         if (!thread_info[thread_index].fDisallowedPyldTypeMsg[pyld_type_index]) {
-            Log_RT(3, "WARNING: create_dynamic_session() says RTP packet with payload type %d found but not defined in SDP file %s, ignoring all RTP packets with this payload type \n", pyld_type, szSDPFile);
-            thread_info[thread_index].fDisallowedPyldTypeMsg[pyld_type_index] = true;
+         if (!thread_info[thread_index].fDisallowedPyldTypeMsg[pyld_type_index][nInput]) {
+            char fileinfo[256] = "";
+            if (strlen(szSDPFile)) sprintf(fileinfo, "file %s or ", szSDPFile);
+            Log_RT(3, "mediaMin WARNING: create_dynamic_session() says RTP packet with payload type %d found but not defined in SDP %packet info for input %d, ignoring all RTP packets with this payload type \n", pyld_type, fileinfo, nInput);
+            thread_info[thread_index].fDisallowedPyldTypeMsg[pyld_type_index][nInput] = true;
          }
 
          return 0;  /* ignore payload types effectively disallowed by SDP file */
@@ -2019,59 +2055,7 @@ read_packet:
 
          pkt_len = DSReadPcapRecord(thread_info[thread_index].pcap_in[j], pkt_in_buf, 0, p_pcap_rec_hdr, thread_info[thread_index].link_layer_len[j]);
 
-      /* DER encoded encapsulated stream processing, if enabled. Added Mar2021, JHB */
-
-         if (Mode & ENABLE_DER_STREAM_DECODE) {
-
-            if (!thread_info[thread_index].hDerStreams[j]) {  /* look for DER encoded stream */
-
-               char szInterceptPointId[256] = "";
-               uint16_t der_dest_port = 0;
-
-               if (DSIsDerStream(pkt_in_buf, DS_ISDER_INTERCEPTPOINTID | DS_ISDER_DSTPORT | DS_ISDER_PORT_MUST_BE_EVEN, szInterceptPointId, &der_dest_port)) {
-
-                  HDERSTREAM hDerStream = DSCreateDerStream(szInterceptPointId, der_dest_port, 0);
-                  if (hDerStream > 0) thread_info[thread_index].hDerStreams[j] = hDerStream;
-               }
-            }
-
-            if (thread_info[thread_index].hDerStreams[j]) {  /* process DER encoded stream */
-
-               HDERSTREAM hDerStream = thread_info[thread_index].hDerStreams[j];
-
-               uint8_t pkt_out_buf[MAX_RTP_PACKET_LEN] = { 0 };
-               HI3_DER_DECODE der_decode = { 0 };
-               int cc_pktlen;
-               bool fFoundCCPkt = false;
-
-            /* see if DSDecodeDerStream() finds a valid CC packet */
-
-               unsigned int uFlags = DS_DER_SEQNUM | DS_DER_TIMESTAMP | DS_DER_TIMESTAMPQUALIFIER | DS_DER_CC_PACKET;
-               if (Mode & ENABLE_DEBUG_STATS) uFlags |= DS_DECODE_DER_PRINT_DEBUG_INFO;
-
-               if ((cc_pktlen = DSDecodeDerStream(hDerStream, pkt_in_buf, pkt_out_buf, uFlags, &der_decode))) {
-
-                  pkt_len = cc_pktlen;  /* valid CC packet found, set pkt_len */
-                  fFoundCCPkt = true;
-
-                  memcpy(pkt_in_buf, pkt_out_buf, pkt_len);
-
-                  if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (der_decode.uList & DS_DER_TIMESTAMP)) {  /* if valid timestamp found in decoded DER stream, use for packet arrival time */
-                     p_pcap_rec_hdr->ts_sec = der_decode.timeStamp_sec.value;
-                     p_pcap_rec_hdr->ts_usec = der_decode.timeStamp_usec.value;
-                  }
-
-                  if (der_decode.asn_index != 0) fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* keep main stream packet until its encapsulated stream is consumed */
-
-//  uint64_t pkt_timestamp = (uint64_t)p_pcap_rec_hdr->ts_sec*1000000L + p_pcap_rec_hdr->ts_usec;
-//  if (pkt_index) printf("updating pkt index = %d, prev index = %d, timestamp = %llu \n", pkt_index, thread_info[thread_index].EncapsulatedStreamIndex[j], (unsigned long long)pkt_timestamp);
-               }
-
-               if (der_decode.uList && !fFoundCCPkt) continue;  /* found one or more DER items but not a CC packet, move to next socket or pcap stream */
-            }
-         }
-
-         if (pkt_len == 0) {  /* packete stream file ends - close (or rewind if input repeat or certain types of stress tests are enabled) */
+         if (pkt_len == 0) {  /* packet stream file ends - close (or rewind if input repeat or certain types of stress tests are enabled) */
 
             if (!(Mode & CREATE_DELETE_TEST_PCAP) && !(Mode & REPEAT_INPUTS)) {  /* check for input repeat */
 
@@ -2126,6 +2110,83 @@ read_packet:
             int nSessionIndex;
             for (i=0; i<thread_info[thread_index].nSessions[j]; i++) if ((nSessionIndex = thread_info[thread_index].nSessionIndex[j][i]) >= 0) DSPushPackets(DS_PUSHPACKETS_PAUSE_INPUT, NULL, NULL, &hSessions[nSessionIndex], 1);
             continue;
+         }
+
+         bool fFoundEncapsulatedCCPkt = false;
+
+      /* DER encoded encapsulated stream processing, if enabled, JHB Mar2021 */
+
+         if (Mode & ENABLE_DER_STREAM_DECODE) {
+
+            if (!thread_info[thread_index].hDerStreams[j]) {  /* look for DER encoded stream */
+
+               char szInterceptPointId[256] = "";
+               uint16_t der_dest_port = 0;
+
+               if (DSIsDerStream(pkt_in_buf, DS_ISDER_INTERCEPTPOINTID | DS_ISDER_DSTPORT | DS_ISDER_PORT_MUST_BE_EVEN, szInterceptPointId, &der_dest_port)) {
+
+                  HDERSTREAM hDerStream = DSCreateDerStream(szInterceptPointId, der_dest_port, 0);
+                  if (hDerStream > 0) thread_info[thread_index].hDerStreams[j] = hDerStream;
+               }
+            }
+
+            if (thread_info[thread_index].hDerStreams[j]) {  /* process DER encoded stream */
+
+               HDERSTREAM hDerStream = thread_info[thread_index].hDerStreams[j];
+
+               uint8_t pkt_out_buf[MAX_RTP_PACKET_LEN] = { 0 };
+               HI3_DER_DECODE der_decode = { 0 };
+               int cc_pktlen;
+
+            /* see if DSDecodeDerStream() finds a valid CC packet */
+
+               unsigned int uFlags = DS_DER_SEQNUM | DS_DER_TIMESTAMP | DS_DER_TIMESTAMPQUALIFIER | DS_DER_CC_PACKET;
+               if (Mode & ENABLE_DEBUG_STATS) uFlags |= DS_DECODE_DER_PRINT_DEBUG_INFO;
+
+               if ((cc_pktlen = DSDecodeDerStream(hDerStream, pkt_in_buf, pkt_out_buf, uFlags, &der_decode))) {
+
+                  pkt_len = cc_pktlen;  /* valid CC packet found, overwrite pkt_len, packet */
+                  memcpy(pkt_in_buf, pkt_out_buf, pkt_len);
+                  fFoundEncapsulatedCCPkt = true;
+
+                  if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (der_decode.uList & DS_DER_TIMESTAMP)) {  /* if valid timestamp found in decoded DER stream, use for packet arrival time */
+                     p_pcap_rec_hdr->ts_sec = der_decode.timeStamp_sec.value;
+                     p_pcap_rec_hdr->ts_usec = der_decode.timeStamp_usec.value;
+                  }
+
+                  if (der_decode.asn_index != 0) fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* keep main stream packet until its encapsulated stream is consumed */
+
+//  uint64_t pkt_timestamp = (uint64_t)p_pcap_rec_hdr->ts_sec*1000000L + p_pcap_rec_hdr->ts_usec;
+//  if (pkt_index) printf("updating pkt index = %d, prev index = %d, timestamp = %llu \n", pkt_index, thread_info[thread_index].EncapsulatedStreamIndex[j], (unsigned long long)pkt_timestamp);
+               }
+
+               if (der_decode.uList && !fFoundEncapsulatedCCPkt) continue;  /* found one or more DER items but not a CC packet, move to next input (socket or pcap) */
+            }
+         }
+
+      /* look for SIP invite packets */
+
+         if (!fFoundEncapsulatedCCPkt && DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL) == TCP_PROTOCOL) {  /* mediaMin SDK version is currently ignoring TCP/IP packets other than encapsulated DER streams and SIP invites */
+
+            bool fSIPInvite = FindSIPInvite(pkt_in_buf, j, thread_index);
+
+            if (!fSIPInvite) {
+
+               uint16_t der_dest_port, dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL);
+               HDERSTREAM hDerStream;
+
+               if ((hDerStream = thread_info[thread_index].hDerStreams[j])) der_dest_port = DSGetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT, NULL);
+
+               if (!hDerStream || dest_port == der_dest_port) {
+
+                  int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, pkt_len, NULL, NULL);
+                  char szDerStream[20] = "";
+                  if (hDerStream) sprintf(szDerStream, "DER stream %d ", hDerStream);
+                  app_printf(APP_PRINTF_NEWLINE, thread_index, " ==== %sTCP packet, not processed, pyld len = %d, dst port = %u \n", szDerStream, pyld_len, dest_port);
+               }
+
+               goto read_packet;  /* stay with this input, JHB Dec2020 */
+            }
          }
 
          thread_info[thread_index].num_packets_in[j]++;
@@ -2189,46 +2250,6 @@ read_packet:
 //  static int push_cnt = 0;
 //  printf("pushing a packet if possible %d \n", push_cnt++);
 
-      /* look for SIP protocol packets */
-
-         unsigned short int dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, pkt_len, NULL, NULL);
-
-         if (dest_port >= 5060 && dest_port <= 5070) {
-
-            #if 1
-            unsigned int pkt_data_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, pkt_len, NULL, NULL);
-
-            if (strstr((const char*)&pkt_in_buf[pkt_data_ofs], "INVITE")) {  /* look for SIP invite packet, and if found attempt to create a new session */
-
-               char sip_invite_str[500] = "";
-               unsigned char prot = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, pkt_len, NULL, NULL);
-
-               strncpy(sip_invite_str, (const char*)&pkt_in_buf[pkt_data_ofs], pkt_len - pkt_data_ofs);
-               printf("\n found SIP invite, pkt type = %s, payload data len = %d \n", prot == UDP_PROTOCOL ? "UDP" : "TCP", pkt_len - pkt_data_ofs);
-            }
-            #endif
-
-    printf(" ==== port 5060 packet, not processed \n");
-            goto read_packet;  /* stay on this stream, look at next packet */
-         }
-         else if (DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, pkt_len, NULL, NULL) == TCP_PROTOCOL) {
-
-            HDERSTREAM hDerStream;
-            uint16_t der_dest_port;
-
-            if ((hDerStream = thread_info[thread_index].hDerStreams[j])) der_dest_port = DSGetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT, NULL);
-
-            if (!hDerStream || dest_port == der_dest_port) {
-
-               int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, pkt_len, NULL, NULL);
-               char szDerStream[20] = "";
-               if (hDerStream) sprintf(szDerStream, "DER stream %d ", hDerStream);
-               printf(" ==== %sTCP packet, not processed, pyld len = %d, dst port = %u \n", szDerStream, pyld_len, dest_port);
-            }
-
-            goto read_packet;  /* stay on this stream, ignore TCP/IP packets other than SIP invites, JHB Dec2020 */
-         }
-
          #define FILTER_RTCP_PACKETS_IF_rN_TIMING
          #ifdef FILTER_RTCP_PACKETS_IF_rN_TIMING  /* RTCP packets are already filtered by packet/media threads but if the push rate is 2 msec or slower then we filter them here to avoid FlushCheck() prematurely seeing empty queues and flushing the session.  Notes:
 
@@ -2241,7 +2262,7 @@ read_packet:
 
          if (pyld_type < 0) {
 
-   printf("\n dest port = %d \n", dest_port);
+//   printf("\n dest port = %d \n", dest_port);
    
             Log_RT(3, "mediaMin WARNING: PushPackets() says DSGetPacketInfo(DS_PKT_INFO_RTP_PYLDTYPE) returns error value, not checking for new session tupple, not pushing packet, pkt len = %d \n", pkt_len);
             goto read_packet;
@@ -2772,18 +2793,33 @@ unsigned int GetSessionFlags() {
 }
 
 
-bool SDPSetup(int thread_index) {
+/* SDPAdd
 
-/* read SDP file */
+  -add SDP info to thread data, for reference during dynamic session creation
+  -SDP info can be from command line .sdp file or SIP invite packet text data. SDP info can contain multiple Media elements, multiple rtpmap attributes
+  -SDP info can be added at any time, in any sequence (cmd line .sdp file, if one, is added first)
+  -currently duplicate media elements and rtpmap attributes are not filtered out. It's application dependent on whether first or latest matching rtpmap is used
+*/
+ 
+bool SDPAdd(const char* szInvite, unsigned int uFlags, int nInput, int thread_index) {
 
-   std::ifstream ifs(szSDPFile, std::ios::in);  /* note - ifs is an RAII object so ifstream will be closed when function exits */
+std::string sdpstr;
 
-   if (!ifs.is_open()) {
-      Log_RT(2, "ERROR: mediaMin cmd line -s arg, SDP file %s not found \n", szSDPFile);
-      return false;
+   if (uFlags & SDP_ADD_STRING) sdpstr = szInvite;
+   else {
+
+   /* invite string NULL, read command line SDP file */
+
+      std::ifstream ifs(szInvite, std::ios::in);  /* note - ifs is an RAII object so ifstream will be closed when function exits */
+
+      if (!ifs.is_open()) {
+         Log_RT(2, "mediaMin ERROR: SDPAdd() file %s not found \n", szInvite);
+         return false;
+      }
+
+      std::string temp_sdpstr( (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>() );  /* ignore the extra (), it's a case of Most Vexing Parse (https://en.wikipedia.org/wiki/Most_vexing_parse) */
+      sdpstr = temp_sdpstr;
    }
-
-   std::string sdpstr( (std::istreambuf_iterator<char>(ifs)) , std::istreambuf_iterator<char>());
 
    #ifdef PRINTSDPDEBUG
    printf("\n sdp file = \n%s \n", sdpstr.c_str());  /* print all lines of sdp file */
@@ -2791,29 +2827,45 @@ bool SDPSetup(int thread_index) {
 
 /* create SDP related items */
 
-   sdp::SDP session;
+   sdp::SDP sdp_session;
    sdp::Reader reader;
 //   sdp::Writer writer;
-   sdp::Media* audio = NULL;
-   vector<sdp::Attribute*> rtpmaps = {};  /* init to zero */
+   sdp::Media* media = NULL;
+   int node = 0;
 
-/* #define PRINTSDPDEBUG // turn on for SDP parsing debug */
+// #define PRINTSDPDEBUG  /* turn on for SDP parsing debug */
 
 /* parse input SDP file into an sdp::SDP session */
 
-  reader.parse(sdpstr, &session);
+  reader.parse(sdpstr, &sdp_session);
 
-/* retrieve first audio Media element ("m=audio") */
+/* retrieve Media elements ("m=audio, m=video") */
 
-   if (session.find(sdp::SDP_AUDIO, &audio)) {
+   #ifdef PRINTSDPDEBUG
+   sdp_session.print(NULL);
+   #endif
 
-      if (int num_rtpmaps = audio->find(sdp::SDP_ATTR_RTPMAP, rtpmaps)) {  /* retrieve all rtpmap attributes ("a=rtpmap:") */
+   while (sdp_session.find(sdp::SDP_AUDIO, &media, &node)  /* find next audio Media element */
+          #if 0  /* uncomment to parse video Media elements */
+          || sdp_session.find(sdp::SDP_VIDEO, &media, &node)
+          #endif
+         ) {
+
+      #ifdef PRINTSDPDEBUG
+      printf(" + media found, media_node = %d \n", node);
+      #endif
+
+      node++;  /* increment node index, in case there are more Media elements */
+
+      vector<sdp::Attribute*> rtpmaps = {};  /* create an rtpmap vector, init to zero */
+
+      if (int num_rtpmaps = media->find(sdp::SDP_ATTR_RTPMAP, rtpmaps, NULL)) {  /* retrieve rtpmap attributes ("a=rtpmap:") for this Media element. Attribute nodes are children of Media element nodes, so starting node is always zero */
 
          #ifdef PRINTSDPDEBUG
-         printf("\n found %d rtpmaps \n", num_rtpmaps);
+         printf(" + num rtpmaps %d \n", num_rtpmaps);
          #endif
 
-         for (int i=0; i<num_rtpmaps; i++) {  /* loop through found rtpmap attributes */
+         for (int i=0; i<num_rtpmaps; i++) {  /* loop through rtpmap attributes */
 
             sdp::AttributeRTP* rtpmap __attribute__ ((unused)) = (sdp::AttributeRTP*)rtpmaps[i];  /* map RTP attribute onto generic attribute in order to do something useful with it ... */
 
@@ -2822,14 +2874,46 @@ bool SDPSetup(int thread_index) {
             #endif
          }
  
-      /* save found rtmpaps in thread_info[]. Currently these are used in create_dynamic_session() */
-   
-         thread_info[thread_index].rtpmaps = rtpmaps;
-         thread_info[thread_index].num_rtpmaps = num_rtpmaps;
+      /* save found rtmpaps in thread_info[] for reference in create_dynamic_session() */
+
+         if (!thread_info[thread_index].num_rtpmaps) thread_info[thread_index].rtpmaps[nInput] = rtpmaps;  /* first SDP info */
+         else {
+            vector<sdp::Attribute*> th_rtpmaps = thread_info[thread_index].rtpmaps[nInput];  /* append additional SDP info */
+            th_rtpmaps.insert( th_rtpmaps.end(), rtpmaps.begin(), rtpmaps.end() );
+            thread_info[thread_index].rtpmaps[nInput] = th_rtpmaps;
+         }
+
+         thread_info[thread_index].num_rtpmaps[nInput] += num_rtpmaps;  /* increment number of rtpmaps */
       }
    }
 
    return true;
+}
+
+
+/* add SDP info from cmd line file, if any. Notes:
+
+   -cmd line SDP info applies to all inputs
+   -SDP info extracted from SIP invite packets applies only to input receiving the invite packets
+   -SDPAdd() adds SDP info text, extracted from either a file or SIP invite packets
+*/
+
+void SDPSetup(const char* szSDPFile, int thread_index) {
+
+int i;
+
+   if (szSDPFile && strlen(szSDPFile)) {
+
+      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) {
+         if (SDPAdd(szSDPFile, SDP_ADD_FILE, i, thread_index)) {
+            if (i == 0) Log_RT(4, "mediaMin INFO: cmd line SDP file %s processed \n", szSDPFile);
+         }
+         else {
+            Log_RT(2, "mediaMin ERROR: cmd line -s arg, SDP file %s not found \n", szSDPFile);
+            break;
+         }
+      }
+   }
 }
 
 
@@ -3062,6 +3146,77 @@ unsigned int uFlags;
    }
 }
 
+
+bool FindSIPInvite(uint8_t* pkt_in_buf, int nInput, int thread_index) {
+
+   int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL);
+   int pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL);
+
+   if (thread_info[thread_index].sip_save_len[nInput]) {
+
+      memmove(&pkt_in_buf[pyld_ofs + thread_info[thread_index].sip_save_len[nInput]], &pkt_in_buf[pyld_ofs], pyld_len);
+      memcpy(&pkt_in_buf[pyld_ofs], thread_info[thread_index].sip_save[nInput], thread_info[thread_index].sip_save_len[nInput]);
+      pyld_len += thread_info[thread_index].sip_save_len[nInput];
+      thread_info[thread_index].sip_save_len[nInput] = 0;
+      free(thread_info[thread_index].sip_save[nInput]);
+   }
+
+   bool fSIPInvite = false;
+   int index = 0;
+
+invite_check:
+
+   char search_str[50] = "a=rtpmap";
+   uint8_t* p;
+
+// if (index > pyld_len) fprintf(stderr, " ==== index %d > pyld_len %d \n", index, pyld_len);
+
+   if (pyld_len > index && (p = (uint8_t*)memmem(&pkt_in_buf[pyld_ofs+index], pyld_len-index, search_str, strlen(search_str)))) {  /* first find rtpmap, then back up and look for Length: */
+
+      strcpy(search_str, "Length:");
+
+      if ((p = (uint8_t*)memmem(&pkt_in_buf[pyld_ofs+index], (uint16_t)(p - &pkt_in_buf[index]), search_str, strlen(search_str)))) {
+
+         fSIPInvite = true;
+         uint8_t* p_ofs = p;
+
+         p += strlen(search_str);
+         int i = 0;
+         while (p[i] >= 0x20) i++;
+         p[i] = 0;
+         int len = atoi((const char*)p);
+         while (p[i] < 0x20) i++;
+         int start = i;
+
+         int rem = pyld_len - (&p[start] - &pkt_in_buf[pyld_ofs]);
+
+         if (len > rem) {  /* save partial SIP invite, starting with "Length:" */
+
+            thread_info[thread_index].sip_save_len[nInput] = pyld_len - (p_ofs - &pkt_in_buf[pyld_ofs]);
+            thread_info[thread_index].sip_save[nInput] = (uint8_t*)malloc(thread_info[thread_index].sip_save_len[nInput]);
+            memcpy(thread_info[thread_index].sip_save[nInput], p_ofs, thread_info[thread_index].sip_save_len[nInput]);
+         }
+         else {  /* complete SIP invite found, extract SDP info and add to thread data */
+
+            char szInvite[1024];
+            memcpy(szInvite, &p[start], len);
+            szInvite[len] = 0;
+
+            #if 1
+            uint16_t dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL);
+            Log_RT(4, "mediaMin INFO: SIP invite found, dst port = %u, pyld len = %d, len = %d, rem = %d, start = %d, index = %d \n%s", dest_port, pyld_len, len, rem, start, index, szInvite);
+            #endif
+
+            SDPAdd(szInvite, SDP_ADD_STRING, nInput, thread_index);  /* add SDP info to thread data */
+
+            index = &p[start] - &pkt_in_buf[pyld_ofs] + len;
+            goto invite_check;  /* look for more SIP invites in this packet */
+         }
+      }
+   }
+
+   return fSIPInvite;
+}
 
 /* update screen counters */
 

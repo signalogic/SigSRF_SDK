@@ -1,14 +1,15 @@
 /*
-  SDP parsing and management
+ SDP parsing and management
 
-  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
-  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
+ Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
+ License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
-  Copyright (c) 2021 Signalogic, Dallas, Texas
+ Copyright (c) 2021 Signalogic, Dallas, Texas
 
-  Revision History
-    Modified Jan 2021 JHB, add Line::readCodecType() for a=rtpmap attribute support
-    Modified Mar 2021 JHB, add error reporting option to Line.readInt()
+ Revision History
+  Modified Jan 2021 JHB, add Line::readCodecType() for a=rtpmap attribute support
+  Modified Mar 2021 JHB, add error reporting option to Line.readInt()
+  Modified Mar 2021 JHB, add bandwidth field support (b= )
 */
 
 #ifndef SDP_READER_H
@@ -100,6 +101,7 @@ namespace sdp {
     Timing*             parseTiming(Line& line);                 /* t= */
     Media*              parseMedia(Line& line);                  /* m= */
     Attribute*          parseAttribute(Line& line);              /* a= */
+    Bandwidth*          parseBandwidth(Line& line);              /* b= */
   };
 
 }

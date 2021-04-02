@@ -1,13 +1,13 @@
 /*
-  SDP parsing and management
+ SDP parsing and management
 
-  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
-  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
+ Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
+ License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
-  Copyright (c) 2021 Signalogic, Dallas, Texas
+ Copyright (c) 2021 Signalogic, Dallas, Texas
 
-  Revision History
-    Modified Jan 2021 JHB, add a=rtpmap attribute support
+ Revision History
+  Modified Jan 2021 JHB, add a=rtpmap attribute support
 */
 
 #ifndef SDP_UTILS_H
@@ -54,7 +54,7 @@ namespace sdp {
     return ltrim(rtrim (str, t) , t);
   }
 
-  /* tokenizes the input on the given character. */
+  /* tokenize input until given character */
   inline int tokenize(std::string input, char delim, std::vector<std::string>& output) {
 
     std::stringstream ss(input);
@@ -72,7 +72,7 @@ namespace sdp {
 
   };
 
-  /* check if the given value is numeric */
+  /* check if value is numeric */
   inline bool is_numeric(std::string s) {
     std::string::const_iterator it = s.begin();
     while (it != s.end() && std::isdigit(*it)) {
@@ -81,7 +81,7 @@ namespace sdp {
     return !s.empty() && it == s.end();
   }
 
-  /* converts the given string to another type */
+  /* convert string to another type */
   template<class T> T convert(std::string value) {
     T result;
     std::stringstream ss(value);
