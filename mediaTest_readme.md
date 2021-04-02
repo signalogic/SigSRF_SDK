@@ -1458,7 +1458,7 @@ Below are some items to keep in mind when measuring audio quality of both indivi
 
     ![Stream group output with 1 sec audio markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/DeepLI_1sec_timing_marker_example.png?raw=true "Stream group output with 1 sec audio markers")
     
-    Any "flexing" in audio marker spacing indicates timing issues -- frame loss (possibly resulting from packet loss or out-of-order), packet overrun or underrun, etc.
+    Any "flexing" in audio marker spacing indicates timing issues -- frame loss (possibly resulting from packet loss or out-of-order packdets), packet rate overrun or underrun, etc.
 
 3) Continuous, real-time packet repair is crucial to achieving high quality audio. Both missing (lost) SID and media packets must be repaired. [Pktlib](#user-content-pktlib) uses a variety of methods, including packet re-ordering (due to out-of-order, or ooo, packets), packet loss concealment, SID insertion, and more. To identify packet loss and ooo problems, pktlib looks at missing sequence numbers, mismatched timestamps, and packet delta (rate). When verifying / measuring audio quality, you can look at both [run-time stats](#user-content-runtimestats) and [packet logs](#user-content-packetlog) for anomalies that might indicate audio quality problems. Even issues that may not be perceptible when listening can be identified this way; for example, during long periods of silence or background noise there may be packet flow issues unidentifiable by listening.
 
