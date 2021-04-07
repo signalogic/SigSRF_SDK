@@ -76,8 +76,11 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**mediaTest**](#user-content-mediatest)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Testing](#user-content-x86codectesting)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Testing](#user-content-cocpucodectesting)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Test & Measurement](#user-content-x86codectestmeasurement)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS](#user-content-x86codecevs)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR](#user-content-x86codecamr)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MELPe](#user-content-x86codecmelpe)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
 &nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#user-content-convertingpcaps2wav)<br/>
@@ -457,10 +460,13 @@ Codec + audio mode supports the following functionality:
 
 * sampling rate conversion is applied whenever input sampling rate does not match the specified codec (or pass-thru) rate
 
-<a name="x86CodecTesting"></a>
-### x86 Codec Testing
+<a name="x86CodecTestMeasurement"></a>
+### x86 Codec Test & Measurement
 
 The mediaTest codec + audio mode command lines below run on x86 platforms, showing examples of encoding, decoding, and back-to-back encode and decode.
+
+<a name="x86CodecEVS"></a>
+#### EVS
 
 The following command line applies the EVS encoder to a 3GPP reference audio file (WB sampling rate, 13.2 kbps), generating a compressed bitstream file:
 
@@ -497,8 +503,37 @@ The following command line EVS encodes and then decodes a 3GPP reference bitstre
 ```C
 ./mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.wav -Csession_config/evs_32kHz_13200bps_config
 ```
-<a name="coCPUCodecTesting"></a>
-### coCPU Codec Testing
+
+<a name="x86CodecAMR"></a>
+#### AMR
+
+The following mediaTest command line does back-to-back AMR encode/decode; i.e. audio input, audio output:
+
+```C
+./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_amr_23850_16kHz_mime.wav -Csession_config/amrwb_codec_test_config
+```
+
+The following command lines first encode audio to .amr or .awb coded data file format, and then decode those files to audio. The examples include both bandwidth efficient and octet aligned formats:
+
+```C
+./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_amr_23850_16kHz_mime.awb -Csession_config/amrwb_codec_test_config
+
+./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_amr_23850_16kHz_mime.awb -Csession_config/amrwb_octet_aligned_codec_test_config
+```
+
+Decoding from .amr and .awb file to audio:
+
+```C
+  ./mediaTest -cx86 -itest_files/stv16c_amr_23850_16kHz_mime.awb -otest_files/stv16c_amr_23850_16kHz_mime.wav -Csession_config/amrwb_codec_test_config
+
+  ./mediaTest -cx86 -itest_files/stv16c_amr_23850_16kHz_mime.awb -otest_files/stv16c_amr_23850_16kHz_mime.wav -Csession_config/amrwb_octet_aligned_codec_test_config
+```
+
+<a name="x86CodecMELPe"></a>
+#### MELPe
+
+<a name="coCPUCodecTestMeasurement"></a>
+### coCPU Codec Test & Measurement
 
 As explained on the SigSRF page, coCPU refers to Texas Instruments, FPGA, neural net, or other non x86 CPUs available in a server, typically on a PCIe card.  coCPUs are typically used to (i) "front" incoming network or USB data and perform real-time, latency-sensitive processing, or (ii) accelerate computationally intensive operations (e.g. convolutions in a deep learning application).
 
