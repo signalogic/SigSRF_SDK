@@ -474,13 +474,9 @@ SigSRF x86 codecs are designed for concurrent, high capacity operation. They are
     
 Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
 
-[paTest Demo (Predictive Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md)
-
-    -mediaTest reference application ([x86_mediaTest.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c))
-    -testing [Jitter Buffer](#user-content-jitterbuffer)
-    -pktlib packet/media thread processing ([packet_flow_media_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)), which is used indirectly by the mediaMin reference application, via pktlib
-
-testing <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c" target="_blank">x86_mediaTest.c</a>
+1) mediaTest reference application ([x86_mediaTest.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c))
+2) testing [Jitter Buffer](#user-content-jitterbuffer)
+3) pktlib packet/media thread processing ([packet_flow_media_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)), which is used indirectly by the mediaMin reference application, via pktlib
 
 <a name="x86CodecEVS"></a>
 #### EVS
