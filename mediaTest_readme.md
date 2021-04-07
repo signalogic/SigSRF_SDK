@@ -469,7 +469,7 @@ SigSRF x86 codecs are designed for concurrent, high capacity operation. They are
     
     -thread safe
     -optimized for high performance, aimed at high cap or real-time applications
-    -follow the XDAIS standard for resource sharing, memory allocation
+    -follow the XDAIS standard for resource sharing, memory allocation, and low-level API structure
     -implemented as Linux shared libraries
     
 Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
