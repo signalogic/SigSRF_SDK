@@ -28,6 +28,7 @@
    Modified May 2020 JHB, add pm_sync[] reference. Currently this is only used for timing debug, see comments in mediaMin.c
    Modified Oct 2020 JHB, PCAP definition in I/O file type enum can be used with both pcap and pcapng formats
    Modified Jan 2021 JHB, change AUDIO_FILE_TYPES macro to IS_AUDIO_FILE_TYPE, add extern reference for char szSDPFile[CMDOPT_MAX_INPUT_LEN]
+   Modified Apr 2021 JHB, add "header_format" to codec_test_params_t struct
 */
 
 #ifndef _MEDIA_TEST_H_
