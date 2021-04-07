@@ -520,6 +520,17 @@ The following command lines first encode audio to .amr or .awb coded data file f
 
 ./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_amr_23850_16kHz_mime.awb -Csession_config/amrwb_octet_aligned_codec_test_config
 ```
+Here is the codec configuration file used in the above commands:
+
+```CoffeeScript
+codec_type=AMR_WB
+bitrate=23850
+sample_rate=16000
+vad=1
+octet_align=1  # comment out or set to zero for bandwidth efficient format
+```
+
+The "codec_type" field can be set to AMR_NB or AMR for AMR narrowband, and the bitrate field changed as needed.
 
 Decoding from .amr and .awb file to audio:
 
