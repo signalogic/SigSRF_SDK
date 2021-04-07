@@ -472,7 +472,7 @@ SigSRF x86 codecs are designed for concurrent, high capacity operation. They are
     -follow the XDAIS standard for resource sharing, memory allocation, and low-level API structure
     -implemented as Linux shared libraries
     
-Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
+Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
 
     -mediaTest reference application (<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c" target="_blank">x86_mediaTest.c</a>)
     -pktlib packet/media thread processing (<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet_flow_media_proc.c</a>), which is used indirectly by the mediaMin reference application, via pktlib
