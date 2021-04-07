@@ -463,7 +463,19 @@ Codec + audio mode supports the following functionality:
 <a name="x86CodecTestMeasurement"></a>
 ### x86 Codec Test & Measurement
 
-The mediaTest codec + audio mode command lines below run on x86 platforms, showing examples of encoding, decoding, and back-to-back encode and decode.
+Several mediaTest codec + audio mode command lines are given below, showing examples of encoding, decoding, and back-to-back encode and decode. These commands run on x86 servers, with no coCPU, GPU, or other hardware required.
+
+SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
+    
+    -thread safe
+    -optimized for high performance, aimed at high cap or real-time applications
+    -follow the XDAIS standard for resource sharing, memory allocation
+    -implemented as Linux shared libraries
+    
+Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
+
+    -mediaTest reference application (<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c" target="_blank">x86_mediaTest.c</a>)
+    -pktlib packet/media thread processing (<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank"">packet_flow_media_proc.c</a>), which is used indirectly by the mediaMin reference application, via pktlib
 
 <a name="x86CodecEVS"></a>
 #### EVS
