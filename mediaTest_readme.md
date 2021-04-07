@@ -530,7 +530,7 @@ vad=1
 octet_align=1  # comment out or set to zero for bandwidth efficient format
 ```
 
-The "codec_type" field can be set to AMR_NB or AMR for AMR narrowband, and the bitrate field changed as needed.
+The "codec_type" field can be set to AMR_NB or AMR for AMR narrowband (be sure to also change sample_rate to 8000), and the bitrate field changed as needed.
 
 Here are the mediaTest commands for decoding from .amr and .awb file to audio:
 
