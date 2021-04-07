@@ -1,33 +1,34 @@
 /*
- $Header: /root/Signalogic/DirectCore/apps/SigC641x_C667x/mediaTest/transcoder_control.c
+$Header: /root/Signalogic/DirectCore/apps/SigC641x_C667x/mediaTest/transcoder_control.c
 
- Description:
+Description:
 
-   Functions for controlling transcoder, include:
-      - transcoder initialization
-      - session set up
-      - session tear down
-      - additional control plane message passing
+  Functions for controlling transcoder, include:
+    - transcoder initialization
+    - session set up
+    - session tear down
+    - additional control plane message passing
 
- Copyright (C) Signalogic Inc. 2015-2020
+ Copyright (C) Signalogic Inc. 2015-2021
 
  Revision History
  
-   Created Sep 2015, CJ
-   Modified 2016 SC, added session_data.ha_index=0. Might need to change it when standby case is being tested 
-   Modified Jun 2016 JHB, modified dtmf_type() to accept dsp_tester-style numeric format entries
-   Modified May 2017 CJ, Unix, Windows, and Legacy Mac formatted config files are now supported 
-   Modified Aug 2017 CJ, use str_remove_whitespace() in all cases after getting config file value to relax restrictions on config file format
-   Modified Aug 2017 JHB, remove case sensitivity for value entry (not fields, values only)
-   Modified Mar 2018 JHB, use _X86 instead of _X86_ (to be consistent with shared_include / coCPU usage)
-   Modified Mar 2018 JHB, modify parse_codec_test_data() to handle "codec_type" field.  Modify parse_codec_test_params() to default to EVS if codec_type field not given
-   Modified Apr 2018 JHB, add MELPe to codec_type()
-   Modified Aug 2018 CKJ, add session configuration file parsing for merge term
-   Modified Sep 2018 JHB, add delay item to TERMINATION_INFO struct (in msec)
-   Modified Sep 2018 JHB, use strtoul() for merge_mode entry, as these values can be 0x100001 or 0x300001 or similar combinations of MERGE_MODE_xxx flags in pktlib.c
-   Modified Nov 2018 JHB, change "merge_term" field to "group_term", add "output_buffer_interval" field
-   Modified Dec 2018 CKJ, add codec config file fields to support AMR-WB+, including "limiter", "low_complexity", "isf", "mode", and "bitrate_plus"
-   Modified Jan 2020 JHB, add default settings for TERM_PKT_REPAIR_ENABLE and max_pkt_repair_ptimes
+  Created Sep 2015, CJ
+  Modified 2016 SC, added session_data.ha_index=0. Might need to change it when standby case is being tested 
+  Modified Jun 2016 JHB, modified dtmf_type() to accept dsp_tester-style numeric format entries
+  Modified May 2017 CJ, Unix, Windows, and Legacy Mac formatted config files are now supported 
+  Modified Aug 2017 CJ, use str_remove_whitespace() in all cases after getting config file value to relax restrictions on config file format
+  Modified Aug 2017 JHB, remove case sensitivity for value entry (not fields, values only)
+  Modified Mar 2018 JHB, use _X86 instead of _X86_ (to be consistent with shared_include / coCPU usage)
+  Modified Mar 2018 JHB, modify parse_codec_test_data() to handle "codec_type" field.  Modify parse_codec_test_params() to default to EVS if codec_type field not given
+  Modified Apr 2018 JHB, add MELPe to codec_type()
+  Modified Aug 2018 CKJ, add session configuration file parsing for merge term
+  Modified Sep 2018 JHB, add delay item to TERMINATION_INFO struct (in msec)
+  Modified Sep 2018 JHB, use strtoul() for merge_mode entry, as these values can be 0x100001 or 0x300001 or similar combinations of MERGE_MODE_xxx flags in pktlib.c
+  Modified Nov 2018 JHB, change "merge_term" field to "group_term", add "output_buffer_interval" field
+  Modified Dec 2018 CKJ, add codec config file fields to support AMR-WB+, including "limiter", "low_complexity", "isf", "mode", and "bitrate_plus"
+  Modified Jan 2020 JHB, add default settings for TERM_PKT_REPAIR_ENABLE and max_pkt_repair_ptimes
+  Modified Apr 2021 JHB, add parsing of "header_format" for codec config files. This currently applies to AMR and EVS
 */
 
 #include "mediaTest.h"
@@ -923,6 +924,17 @@ static void parse_codec_test_data(char *name, char *value, codec_test_params_t *
    {
       params->bitrate_plus = (float)atof(value);
       params->bitrate = params->bitrate_plus*1000;
+   }
+/* add header formats, JHB Apr 2021 */
+   else if (strstr(name, "header_full"))  /* EVS header full */
+      params->header_format = atoi(value);
+   else if (strstr(name, "header_compact")) {
+      params->header_format = !atoi(value);
+   }
+   else if (strstr(name, "octet_align"))  /* AMR octet aligned */
+      params->header_format = atoi(value);
+   else if (strstr(name, "bandwidth_efficient")) {
+      params->header_format = !atoi(value);
    }
 }
 

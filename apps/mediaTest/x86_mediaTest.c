@@ -60,6 +60,11 @@
   Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0: include minmax.h (for min/max functions), fix various security and "indentation" warnings
   Modified Jan 2021 JHB, fix warning for sampleRate_codec used uninitialized (no idea why this suddenly popped up)
   Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
+  Modified Apr 2021 JHB, fix AMR problem with sequence of encoding audio to .amr or .awb, then decoding .amr or .awb to audio. Notes:
+                         -see comments near AMR handling of bitRate_code, also see variable fAMROctetAligned
+                         -applies to both AMR-NB and AMR-WB
+                         -tested with bandwidth efficient and octet aligned coded file format
+                         -bug did not affect back-to-back encode/decode (i.e. audio to audio)
 */
 
 /* Linux header files */
@@ -772,7 +777,7 @@ void x86_mediaTest(void) {
             CodecParams.enc_params.samplingRate = 16000;                 /* in Hz */
             CodecParams.enc_params.bitRate = codec_test_params.bitrate;  /* in bps */
             CodecParams.enc_params.dtx.vad = codec_test_params.vad;
-//            CodecParams.enc_params.rtp_pyld_hdr_format.oct_align = codec_test_params.header_format;
+            CodecParams.enc_params.rtp_pyld_hdr_format.oct_align = codec_test_params.header_format;
 
             CodecParams.dec_params.samplingRate = 16000;
             CodecParams.dec_params.bitRate = codec_test_params.bitrate;  /* we set this to avoid param validation error in DSCodecCreate().  At run-time AMR-WB codec determines bitrate from compressed bitstream info */
@@ -1041,6 +1046,8 @@ void x86_mediaTest(void) {
       }
 #endif
 
+// #define AMR_DEBUG /* turn on for AMR encode/decode debug */
+
    /* adjust encoded input file offset, if needed */
 
       if (inFileType == ENCODED) {
@@ -1048,8 +1055,14 @@ void x86_mediaTest(void) {
          if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_NB)
             fseek(fp_in, 6, SEEK_SET);  /* for input COD file, skip AMR MIME header (only used for file i/o operations with decoder) */
 
-         if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB)
+         if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB) {
+
+            #ifdef AMR_DEBUG
+            printf(" AMR-WB seek header 9 \n");
+            #endif
+
             fseek(fp_in, 9, SEEK_SET);  /* for input COD file, skip AMR MIME header (only used for file i/o operations with decoder) */
+         }
 
          if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_EVS) {
  
@@ -1296,7 +1309,7 @@ PollBuffer:
                   for (i = ret_val; i < input_framesize*numChan; i++) in_buf[i] = 0;
                }
                else {
-                  segmenter(SEGMENTER_CLEANUP, frame_count, codec_frame_duration, uStripFrame, 0, 0, &fp_out_segment, &MediaInfoSegment, &fp_out_concat, &MediaInfoConcat, &fp_out_stripped, &MediaInfoStripped);  /* clean up segmentation, if active */
+                  segmenter(SEGMENTER_CLEANUP, frame_count, codec_frame_duration, uStripFrame, 0, 0, &fp_out_segment, &MediaInfoSegment, &fp_out_concat, &MediaInfoConcat, &fp_out_stripped, &MediaInfoStripped);  /* clean up segmentation, if active. Note - segmenter() will return immediately if input segmentation is not active, JHB Apr2021 */
                   break;  /* exit while loop */
                }
                #else
@@ -1372,12 +1385,29 @@ PollBuffer:
          else {  /* encoded input */
 
             int bitRate_code = 0, offset = 0;
+            bool fAMROctetAligned = false;
 
             if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_NB || codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB) {
 
-               if ((ret_val = fread(coded_buf, sizeof(char), 1, fp_in)) != 1) break;  /* read ToC byte from .cod file (see pcap extract mode below for notes about .cod file format) */
-               bitRate_code = (coded_buf[0] >> 3) & 0xf;  /* bitrate code is a bitfield within ToC byte */
-               offset = 1;
+               if ((ret_val = fread(coded_buf, sizeof(char), 2, fp_in)) != 2) {  /* read payload header bytes from .amr or .awb file */
+
+                  #ifdef AMR_DEBUG
+                  printf(" break after ToC read, coded_buf[0] = 0x%x \n", coded_buf[0]);
+                  #endif
+
+                  break;
+               }
+
+               fseek(fp_in, -2L, SEEK_CUR);  /* restore file pointer */
+
+               fAMROctetAligned = coded_buf[0] == 0xf0 && (coded_buf[1] & 3) == 0;  /* added Apr 2021, JHB */
+
+               if (fAMROctetAligned) bitRate_code = (coded_buf[1] >> 3) & 0x0f;  /* bitrate code is a 4-bit field within 2nd byte for octet aligned format, and split across first two bytes for bandwidth efficient format. The field is labeled "FT" in RFC4867, JHB Apr2021 */
+               else bitRate_code = ((coded_buf[0] & 7) << 1) | (coded_buf[1] >> 7);
+
+               #ifdef AMR_DEBUG
+               if (frame_count < 30) printf(" file pos = %d, in buf[0,1] = 0x%x, 0x%x, bitRate_code = 0x%x \n", (int)ftell(fp_in), coded_buf[0], coded_buf[1], bitRate_code);
+               #endif
             }
 
             if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_EVS) {
@@ -1393,9 +1423,13 @@ PollBuffer:
                offset = 0;
             }
 
+         /* determine coded data frame size */
+
             if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB_PLUS) {
+
                int i, break_out = 0;
                offset = 0;
+
                for (i = 0; i < 4; i++) /* read in 4 20ms frames to pass 1 80ms super frame to the decoder */
                {
                   if ((ret_val = _fread(coded_buf + offset, sizeof(char), 2, fp_in)) != 2) {break_out = 1; break;}
@@ -1413,8 +1447,20 @@ PollBuffer:
                }
                if (break_out) break;
             }
+            else {  /* all codecs except for AMR-WB+ */
+            
+               frame_size = DSGetPayloadSize(codec_test_params.codec_type, bitRate_code); /* voplib API to get payload size */
 
-            if (!(codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB_PLUS)) frame_size = DSGetPayloadSize(codec_test_params.codec_type, bitRate_code); /* get payload size */
+               if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_NB || codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB) {
+
+                  frame_size++;  /* account for CMR information in both bandwidth efficient and octet aligned formats. This is somewhat similar to ToC byte used by EVS for coded files, JHB Apr2021 */
+                  if (fAMROctetAligned) frame_size++;
+
+                  #ifdef AMR_DEBUG
+                  if (frame_size < 0) printf(" frame_size < 0, bitRate_code = %d \n", bitRate_code);
+                  #endif
+               }
+            }
 
             if (codec_test_params.uncompress && codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_G729AB) {
 
@@ -1440,7 +1486,23 @@ PollBuffer:
             }
 #endif
 
-            if ((codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_AMR_WB_PLUS) && (frame_size < 0 || (ret_val = _fread(coded_buf + offset, sizeof(char), frame_size, fp_in)) != frame_size)) break;  /* no print message here, input is consumed and test finishes */
+         /* read frame_size amount of encoded data (for all codecs except for AMR-WB+) */
+
+            if ((codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_AMR_WB_PLUS) && (frame_size < 0 || (ret_val = _fread(coded_buf + offset, sizeof(char), frame_size, fp_in)) != frame_size)) {
+
+               #ifdef AMR_DEBUG
+               if (frame_count < 20) {
+
+                  int k;
+                  printf(" file pos = %d, in buf[] = ", (int)ftell(fp_in));
+                  for (k=0; k<frame_size; k++) printf("%x ", coded_buf[k]);
+                  printf("\n");
+               }
+               printf(" break after data read, frame_size = %d, ret_val = %d \n", frame_size, ret_val);
+               #endif
+
+               break;  /* no print message here, input is consumed and test finishes. fp_in file read errors are reported below, look for "loop exit condition" */
+            }
             
             if (codec_test_params.uncompress && codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_G729AB) {
                frame_size += 4; /* add frame header to frame_size */
@@ -1557,11 +1619,9 @@ PollBuffer:
                   goto codec_test_cleanup;
                }
 
-//   if (!ts->tv_sec) clock_gettime(CLOCK_REALTIME, p_ts);  /* if sec is uninitialized, then get current time */
-
-   ts_pcap.tv_sec = nsec_pcap / 1000000000L;
-   ts_pcap.tv_nsec = nsec_pcap % 1000000000L;
-   nsec_pcap += 20000000;  /* increment by 20 msec */
+               ts_pcap.tv_sec = nsec_pcap / 1000000000L;
+               ts_pcap.tv_nsec = nsec_pcap % 1000000000L;
+               nsec_pcap += 20000000;  /* increment by 20 msec */
 
                if ((ret_val = DSWritePcapRecord(fp_out, pkt_buf, NULL, NULL, &term_info, &ts_pcap, pkt_len)) < 0) {
                   fprintf(stderr, "ERROR: WritePcapRecord() returns %d error code \n", ret_val);
@@ -1569,6 +1629,19 @@ PollBuffer:
                }
             }
             else {  /* write out data for all file formats except for pcap, using pointer to bytes (addr) and number of bytes (len) */
+
+               #ifdef AMR_DEBUG
+               if (outFileType == ENCODED && frame_count < 20) {
+  
+                  printf(" file pos = %d, len = %d", (int)ftell(fp_out), len);
+                  if (len > 0) {
+                     int k;
+                     printf(", out buf[] = ");
+                     for (k=0; k<len; k++) printf("%.2x ", coded_buf[k]);
+                  }
+                  printf("\n");
+               }
+               #endif
 
                ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)addr, len, DS_WRITE, &MediaInfo);   /* DSSaveDataFile() returns bytes written */
 

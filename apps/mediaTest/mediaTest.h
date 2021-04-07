@@ -98,6 +98,8 @@ typedef struct
    float isf;
    unsigned int mode;
    float bitrate_plus;
+/* added Apr 2021, JHB */
+   unsigned int header_format;
 
 } codec_test_params_t;
 
