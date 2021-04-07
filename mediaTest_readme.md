@@ -532,7 +532,7 @@ octet_align=1  # comment out or set to zero for bandwidth efficient format
 
 The "codec_type" field can be set to AMR_NB or AMR for AMR narrowband, and the bitrate field changed as needed.
 
-Decoding from .amr and .awb file to audio:
+Here are the mediaTest commands for decoding from .amr and .awb file to audio:
 
 ```C
   ./mediaTest -cx86 -itest_files/stv16c_amr_23850_16kHz_mime.awb -otest_files/stv16c_amr_23850_16kHz_mime.wav -Csession_config/amrwb_codec_test_config
