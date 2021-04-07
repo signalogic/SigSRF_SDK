@@ -477,6 +477,7 @@ Application API interface to SigSRF codecs goes through voplib, which provides a
 [paTest Demo (Predictive Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md)
 
     -mediaTest reference application ([x86_mediaTest.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c))
+    -testing [Jitter Buffer](#user-content-jitterbuffer)
     -pktlib packet/media thread processing ([packet_flow_media_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)), which is used indirectly by the mediaMin reference application, via pktlib
 
 testing <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c" target="_blank">x86_mediaTest.c</a>
