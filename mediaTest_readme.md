@@ -469,7 +469,7 @@ SigSRF x86 codecs are designed for concurrent, high capacity operation. They are
     
     -thread safe
     -optimized for high performance, aimed at high cap or real-time applications
-    -follow the XDAIS standard for resource sharing, memory allocation, and low-level API structure
+    -compliant with the <a href="https://en.wikipedia.org/wiki/XDAIS_algorithms">XDAIS standard</a> for resource sharing, memory allocation, and low-level API structure
     -implemented as Linux shared libraries
     
 Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
@@ -556,7 +556,7 @@ Here are the mediaTest commands for decoding from .amr and .awb file to audio:
 
 Audio output can be raw audio file, .wav, .au, or USB audio.
 
-For AMR coded data, it's recommended to stick with file extensions .amr and .awb. Other extensions, such as .cod (used with EVS codecs) might work for AMR command lines, as mediaTest knows the codec type due to the codec configuration file, but are not supported at this time. Theoretically .wav files can support coded data types also, although it's not widely used. There is some functionality supporting that in mediaTest; if you need that and it's not working correctly, please create an issue on the SigSRF_SDK repository.
+For AMR coded data, it's recommended to stick with file extensions .amr and .awb. Other extensions, such as .cod (used with EVS codecs) might work for AMR command lines, as mediaTest knows the codec type due to the codec configuration file, but are not supported at this time. Theoretically .wav files can support coded data types also, although not widely used. There is some functionality supporting coded data .wav files in mediaTest; if you need that and find it's not working correctly, please create an issue on the SigSRF_SDK repository.
 
 <a name="x86CodecMELPe"></a>
 #### MELPe
