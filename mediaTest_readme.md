@@ -575,9 +575,9 @@ The following mediaTest command lines do back-to-back MELPe encode/decode; i.e. 
 ./mediaTest -cx86 -itest_files/pcm1648m.wav -omelpe_test_48kHz.wav -ousb1 -Csession_config/melpe_codec_2400bps_54bd_npp_post_config
 ```
 
-Note in the above command lines, the first three (3) commands output to USB audio on USB port 1, and in the last command line two (2) output audio specs are given, one to .wav file and one to USB audio.
+Note in the above command lines, the first three (3) commands output to USB audio on USB port 1, and in the last command line two (2) output audio specs are given, one to .wav file and one to USB audio.  Other supported output audio include .au file format, raw audio, and combinations if multiple output specs are given.
 
-The following mediaTest command lines encode from audio to .cod file using different combinations of MELPe bitrates, noise pre-processing (NPP), and synthesis filter post processing:
+The following mediaTest command lines encode from audio to .cod coded data file using different combinations of MELPe bitrates, noise pre-processing (NPP), and synthesis filter post processing:
 
 ```C
 ./mediaTest -cx86 -itest_files/bf1d.INP -obf1d_2400_56_NoNPP.cod -Csession_config/melpe_codec_2400bps_56bd_post_config
@@ -589,7 +589,7 @@ The following mediaTest command lines encode from audio to .cod file using diffe
 ./mediaTest -cx86 -itest_files/bf2d.INP -obf2d_600_54.cod -Csession_config/melpe_codec_600bps_54bd_npp_post_config
 ```
 
-Note the .cod file format is used for MELPe coded data.
+In the above command lines audio input is in raw audio format and the .cod file format is used for output MELPe coded data.
 
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
