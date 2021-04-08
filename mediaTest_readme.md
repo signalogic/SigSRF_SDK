@@ -466,12 +466,15 @@ Codec + audio mode supports the following functionality:
 Several mediaTest codec + audio mode command lines are given below, showing examples of encoding, decoding, and back-to-back encode and decode. These commands run on x86 servers, with no coCPU, GPU, or other hardware required.
 
 SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
-    
-    -thread safe
-    -optimized for high performance, aimed at high cap or real-time applications
-    -compliant with the <a href="https://en.wikipedia.org/wiki/XDAIS_algorithms">XDAIS standard</a> for resource sharing, memory allocation, and low-level API structure
-    -implemented as Linux shared libraries
-    
+
+- thread safe
+- optimized for high performance, aimed at high cap or real-time applications
+- compliant with the [XDAIS standard](https://en.wikipedia.org/wiki/XDAIS_algorithms) for resource sharing, memory allocation, and low-level API structure
+- implemented as Linux shared libraries
+
+- [RStudio Devtools](http://www.rstudio.com/products/rpackages/devtools/)
+- [Testthat](https://github.com/hadley/testthat)
+
 Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
 
 1) mediaTest reference application ([x86_mediaTest.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c))
