@@ -467,13 +467,13 @@ Several mediaTest codec + audio mode command lines are given below, showing exam
 
 SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
 
-- thread safe
-- optimized for high performance, aimed at high cap or real-time applications
-- compliant with the [XDAIS standard](https://en.wikipedia.org/wiki/XDAIS_algorithms) for resource sharing, memory allocation, and low-level API structure
-- implemented as Linux shared libraries
+    - [RStudio Devtools](http://www.rstudio.com/products/rpackages/devtools/)
+    - [Testthat](https://github.com/hadley/testthat)
 
-- [RStudio Devtools](http://www.rstudio.com/products/rpackages/devtools/)
-- [Testthat](https://github.com/hadley/testthat)
+    - thread safe
+    - optimized for high performance, aimed at high cap or real-time applications
+    - compliant with the [XDAIS standard](https://en.wikipedia.org/wiki/XDAIS_algorithms) for resource sharing, memory allocation, and low-level API structure
+    - implemented as Linux shared libraries
 
 Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
 
