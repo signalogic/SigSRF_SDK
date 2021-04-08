@@ -563,6 +563,34 @@ For AMR coded data, it's recommended to stick with file extensions .amr and .awb
 <a name="x86CodecMELPe"></a>
 #### MELPe
 
+The following mediaTest commandd line do back-to-back MELPe encode/decode; i.e. audio to audio, using different combinations of MELPe bitrates, noise pre-processing (NPP), and synthesis filter post processing:
+
+```C
+./mediaTest -cx86 -itest_files/pcm1608m.wav -ousb1 -Csession_config/melpe_codec_2400bps_54bd_npp_post_config
+
+./mediaTest -cx86 -itest_files/pcm1608m.wav -ousb1 -Csession_config/wav_test_config_48kHz_1chan
+
+./mediaTest -cx86 -itest_files/pcm1648m.wav -ousb1 -Csession_config/melpe_codec_2400bps_54bd_npp_post_config
+
+./mediaTest -cx86 -itest_files/pcm1648m.wav -omelpe_test_48kHz.wav -ousb1 -Csession_config/melpe_codec_2400bps_54bd_npp_post_config
+```
+
+Note in the above command lines, the first three (3) commands output to USB audio on USB port 1, and in the last command line two (2) output audio specs are given, one to .wav file and one to USB audio.
+
+The following mediaTest command lines encode from audio to .cod file using different combinations of MELPe bitrates, noise pre-processing (NPP), and synthesis filter post processing:
+
+```C
+ ./mediaTest -cx86 -itest_files/bf1d.INP -obf1d_2400_56_NoNPP.cod -Csession_config/melpe_codec_2400bps_56bd_post_config
+
+./mediaTest -cx86 -itest_files/bf2d.INP -obf2d_1200_81.cod -Csession_config/melpe_codec_1200bps_81bd_npp_post_config
+
+./mediaTest -cx86 -itest_files/bf2d.INP -obf2d_600_56.cod -Csession_config/melpe_codec_600bps_56bd_post_config
+
+./mediaTest -cx86 -itest_files/bf2d.INP -obf2d_600_54.cod -Csession_config/melpe_codec_600bps_54bd_npp_post_config
+```
+
+Note the .cod file format is used for MELPe coded data.
+
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
 
