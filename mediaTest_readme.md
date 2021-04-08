@@ -542,7 +542,7 @@ vad=1
 octet_align=1  # comment out or set to zero for bandwidth efficient format
 ```
 
-The "codec_type" field can be set to AMR_NB or AMR for AMR narrowband (be sure to also change sample_rate to 8000), and the bitrate field changed as needed.
+The "codec_type" field can be set to AMR_NB or AMR for AMR narrowband (be sure to also change sample_rate to 8000), and the bitrate field set as needed.
 
 Here are the mediaTest commands for decoding from .amr and .awb file to audio:
 
@@ -551,6 +551,8 @@ Here are the mediaTest commands for decoding from .amr and .awb file to audio:
 
   ./mediaTest -cx86 -itest_files/stv16c_amr_23850_16kHz_mime.awb -otest_files/stv16c_amr_23850_16kHz_mime.wav -Csession_config/amrwb_octet_aligned_codec_test_config
 ```
+
+For AMR coded data, it's recommended to stick with file extensions .amr and .awb. Other extensions, such as .cod (used with EVS codecs) might work for AMR command lines, as mediaTest knows the codec type due to the codec configuration file, but are not supported at this time. Theoretically .wav files can support coded data types also, although it's not widely used. There is some functionality supporting that in mediaTest; if you need that and it's not working correctly, please create an issue on the SigSRF_SDK repository.
 
 <a name="x86CodecMELPe"></a>
 #### MELPe
