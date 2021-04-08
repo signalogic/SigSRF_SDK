@@ -563,7 +563,7 @@ For AMR coded data, it's recommended to stick with file extensions .amr and .awb
 <a name="x86CodecMELPe"></a>
 #### MELPe
 
-The following mediaTest commandd line do back-to-back MELPe encode/decode; i.e. audio to audio, using different combinations of MELPe bitrates, noise pre-processing (NPP), and synthesis filter post processing:
+The following mediaTest command lines do back-to-back MELPe encode/decode; i.e. audio to audio, using different combinations of MELPe bitrates, noise pre-processing (NPP), and synthesis filter post processing:
 
 ```C
 ./mediaTest -cx86 -itest_files/pcm1608m.wav -ousb1 -Csession_config/melpe_codec_2400bps_54bd_npp_post_config
@@ -580,7 +580,7 @@ Note in the above command lines, the first three (3) commands output to USB audi
 The following mediaTest command lines encode from audio to .cod file using different combinations of MELPe bitrates, noise pre-processing (NPP), and synthesis filter post processing:
 
 ```C
- ./mediaTest -cx86 -itest_files/bf1d.INP -obf1d_2400_56_NoNPP.cod -Csession_config/melpe_codec_2400bps_56bd_post_config
+./mediaTest -cx86 -itest_files/bf1d.INP -obf1d_2400_56_NoNPP.cod -Csession_config/melpe_codec_2400bps_56bd_post_config
 
 ./mediaTest -cx86 -itest_files/bf2d.INP -obf2d_1200_81.cod -Csession_config/melpe_codec_1200bps_81bd_npp_post_config
 
