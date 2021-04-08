@@ -525,6 +525,8 @@ The following mediaTest command line does back-to-back AMR encode/decode; i.e. a
 ./mediaTest -cx86 -itest_files/stv16c.INP -otest_files/stv16c_amr_23850_16kHz_mime.wav -Csession_config/amrwb_codec_test_config
 ```
 
+Audio input and output can be raw audio file (as shown in the above example), .wav, .au, or USB audio.
+
 The following command lines first encode audio to .amr or .awb coded data file format, and then decode those files to audio. The examples include both bandwidth efficient and octet aligned formats:
 
 ```C
@@ -551,6 +553,8 @@ Here are the mediaTest commands for decoding from .amr and .awb file to audio:
 
   ./mediaTest -cx86 -itest_files/stv16c_amr_23850_16kHz_mime.awb -otest_files/stv16c_amr_23850_16kHz_mime.wav -Csession_config/amrwb_octet_aligned_codec_test_config
 ```
+
+Audio output can be raw audio file, .wav, .au, or USB audio.
 
 For AMR coded data, it's recommended to stick with file extensions .amr and .awb. Other extensions, such as .cod (used with EVS codecs) might work for AMR command lines, as mediaTest knows the codec type due to the codec configuration file, but are not supported at this time. Theoretically .wav files can support coded data types also, although it's not widely used. There is some functionality supporting that in mediaTest; if you need that and it's not working correctly, please create an issue on the SigSRF_SDK repository.
 
