@@ -575,7 +575,7 @@ The following mediaTest command lines do back-to-back MELPe encode/decode; i.e. 
 ./mediaTest -cx86 -itest_files/pcm1648m.wav -omelpe_test_48kHz.wav -ousb1 -Csession_config/melpe_codec_2400bps_54bd_npp_post_config
 ```
 
-Note in the above command lines, the first three (3) commands output to USB audio on USB port 1, and in the last command line two (2) output audio specs are given, one to .wav file and one to USB audio.  Other supported output audio include .au file format, raw audio, and combinations if multiple output specs are given.
+Note in the above command lines, the first three (3) commands output to USB audio on USB port 1, and in the last command line two (2) output audio specs are given, one to .wav file and one to USB audio.  Other supported output audio include .au file format, raw audio, and combinations if multiple output specs are given. Note also that mediaTest performs sampling rate conversion prior to encoding, to meet the MELPe narrowband sampling rate requirement (8 kHz).
 
 The following mediaTest command lines encode from audio to .cod coded data file using different combinations of MELPe bitrates, noise pre-processing (NPP), and synthesis filter post processing:
 
