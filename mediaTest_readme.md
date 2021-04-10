@@ -464,7 +464,7 @@ Codec + audio mode supports the following functionality:
 <a name="x86CodecTestMeasurement"></a>
 ### x86 Codec Test & Measurement
 
-Several mediaTest codec + audio mode command lines are given below, showing examples of encoding, decoding, and back-to-back encode and decode. These commands run on x86 servers, with no coCPU, GPU, or other hardware required.
+Several mediaTest codec + audio mode command lines are given below, showing examples of encoding, decoding, and back-to-back encode and decode. These commands run on x86 servers, with no coCPU, GPU, or other hardware required. For more codec information, see [SigSRF x86 Codec Notes](#user-content-x86codecnotes) below.
 
 For audio inputs mediaTest does automatic sampling rate conversion (i.e. to match the codec input sampling rate), but there are a couple of things to keep in mind about this:
 
