@@ -468,9 +468,9 @@ Several mediaTest codec + audio mode command lines are given below, showing exam
 
 For audio inputs mediaTest does automatic sampling rate conversion (i.e. to match the codec input sampling rate), but there are a couple of things to keep in mind about this:
 
-> 1) for raw audio input files, mediaTest doesn't know the sampling rate as raw files don't have a waveform header. For other cases, such as .wav, .au, and USB audio, mediaTest knows the sampling rate
-> 2) advanced codecs such as EVS accept multiple sampling rates, so depending on what rate you enter in the codec config file given on the command line, sampling rate conversion is often not needed
-> 3) basically, if the audio input rate differs from the rate specified in the codec config, then sampling rate conversion will be performed 
+> 1) For raw audio input files, mediaTest doesn't know the sampling rate as raw files don't have a waveform header. For other cases, such as .wav, .au, and USB audio, mediaTest knows the sampling rate
+> 2) Advanced codecs such as EVS accept multiple sampling rates, so depending on what rate you enter in the codec config file given on the command line, sampling rate conversion is often not needed
+> 3) Basically, if the audio input rate differs from the rate specified in the codec config file, then mediaTest will perform sampling rate conversion 
 
 <a name="x86CodecEVS"></a>
 #### EVS
