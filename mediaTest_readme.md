@@ -77,6 +77,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Test & Measurement](#user-content-x86codectestmeasurement)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SigSRF x86 Codec Notes](#user-content-x86codecnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS](#user-content-x86codecevs)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR](#user-content-x86codecamr)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MELPe](#user-content-x86codecmelpe)<br/>
@@ -467,8 +468,12 @@ Several mediaTest codec + audio mode command lines are given below, showing exam
 
 For audio inputs mediaTest does automatic sampling rate conversion (i.e. to match the codec input sampling rate), but there are a couple of things to keep in mind about this:
 
-> 1) for raw audio input files, mediaTest doesn't know the sampling rate as raw files don't have a waveform header. For other cases, such as .wav, .au, USB audio, mediaTest knows the sampling rate
-> 2) advanced codecs such as EVS accept multiple sampling rates, so mediaTest typically skips sampling rate conversion, unless your input is a multiple of 11.025 kHz or other rate not in the codec standard 
+> 1) for raw audio input files, mediaTest doesn't know the sampling rate as raw files don't have a waveform header. For other cases, such as .wav, .au, and USB audio, mediaTest knows the sampling rate
+> 2) advanced codecs such as EVS accept multiple sampling rates, so depending on what rate you enter in the codec config file given on the command line, sampling rate conversion is often not needed
+> 3) basically, if the audio input rate differs from the rate specified in the codec config, then sampling rate conversion will be performed 
+
+<a name="x86CodecNotes></a>
+#### SigSRF x86 Codec Notes
 
 SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
 
