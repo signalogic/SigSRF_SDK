@@ -76,7 +76,6 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**mediaTest**](#user-content-mediatest)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SigSRF x86 Codec Notes](#user-content-x86codecnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Test & Measurement](#user-content-x86codectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS](#user-content-x86codecevs)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR](#user-content-x86codecamr)<br/>
@@ -121,15 +120,16 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
+[**API Usage**](#user-content-apiusage)<br/>
+[**Audio Quality Notes**](#user-content-audioqualitynotes)<br/>
+[**Real-Time Performance**](#user-content-realtimeperformance)<br/>
+[**SigSRF x86 Codec Notes**](#user-content-x86codecnotes)<br/>
 [**3GPP Reference Code Notes**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
 &nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#user-content-verifyingevspcap)<br/>
-[**API Usage**](#user-content-apiusage)<br/>
 [**Wireshark Notes**](#user-content-wiresharknotes)<br/>
 &nbsp;&nbsp;&nbsp;[Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
-[**Audio Quality Notes**](#user-content-audioqualitynotes)<br/>
-[**Real-Time Performance**](#user-content-realtimeperformance)<br/>
 
 <a name="mediaMin"></a>
 # mediaMin
@@ -460,23 +460,6 @@ Codec + audio mode supports the following functionality:
 * pass-thru mode (no codec) allowing raw audio file or USB audio to be converted / saved to wav file.  Sampling rate, number of channels, sample bitwidth, and sample bitwise justification can be specified in the confguration file.  This mode is useful for testing USB audio devices, for example some devices may have limited available sampling rates, 24-bit or 32-bit sample width, or other specs that need SNR and line amplitude testing to determine an optimum set of parameters for compatibility with 16-bit narrowband and wideband codecs
 
 * sampling rate conversion is applied whenever input sampling rate does not match the specified codec (or pass-thru) rate
-
-<a name="x86CodecNotes"></a>
-### SigSRF x86 Codec Notes
-
-SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
-
-<big><pre>
-    - thread safe
-    - optimized for high performance, aimed at high cap or real-time applications
-    - compliant with the [XDAIS standard](https://en.wikipedia.org/wiki/XDAIS_algorithms) for resource sharing, memory allocation, and low-level API structure
-    - implemented as Linux shared libraries
-</pre></big>
-
-Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
-
-1) mediaTest reference application (look for x86_mediatest() in [apps/mediaTest/x86_mediaTest.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c))
-2) packet/media thread processing ([packet_flow_media_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)), invoked indirectly by the [mediaMin reference application](#user-content-mediamin), via the [pktlib](#user-content-pktlib) shared lib
 
 <a name="x86CodecTestMeasurement"></a>
 ### x86 Codec Test & Measurement
@@ -1412,41 +1395,6 @@ Examples of possible user-defined processing include advanced speech and sound r
 
 In addition to the above mentioned In SigSRF source codes, look also for the APIs DSSaveStreamData(), which saves ordered / extracted / decoded payload data, and DSGetStreamData(), which retrieves payload data. These APIs allow user-defined algorithms to control buffer timing between endpoints, depending on application objectives -- minimizing latency (real-time applications), maximizing bandwidth, matching or transrating endpoint timing, or otherwise as needed.
 
-<a name="3GPPNotes"></a>
-## 3GPP Reference Code Notes
-
-<a name="Using3GPPDecoder"></a>
-### Using the 3GPP Decoder
-
-*Note: the examples in this section assume you have downloaded the 3GPP reference code and installed somewhere on your system.*
-
-The 3GPP decoder can be used as the "gold standard" reference for debug and comparison in several situations. Below are a few examples.
-
-<a name="VerifyingEVSpcap"></a>
-### Verifying an EVS pcap
-
-In some cases, maybe due to unintelligble audio output, questions about pcap format or capture method, SDP descriptor options used for EVS encoding, etc, you may want to simply take a pcap, extract its EVS RTP payload stream, and copy to a .cod file with MIME header suitable for 3GPP decoder input. The mediaTest command line can do this, here are two examples:
-
-```C
-./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_pcap_extracted1.cod
-
-./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_pcap_extracted2.cod
-```
-Next, run the 3GPP decoder:
-
-```C
-./EVS_dec -mime -no_delay_cmp 16 EVS_pcap_extracted1.cod 3GPP_decoded_audio1.raw
-
-./EVS_dec -mime -no_delay_cmp 16 EVS_pcap_extracted2.cod 3GPP_decoded_audio2.raw
-```
-
-Note the 3GPP decoder will produce only a raw audio format file, so you will need to use sox or other tool to convert to .wav file for playback.  You can also decode with mediaTest directly to .wav format:
-
-```C
-./mediaTest -cx86 -iEVS_pcap_extracted1.cod -omediaTest_decoded_audio1.wav
-
-./mediaTest -cx86 -iEVS_pcap_extracted2.cod -omediaTest_decoded_audio2.wav
-```
 <a name="APIUsage"></a>
 ## API Usage
 
@@ -1484,6 +1432,121 @@ do {
       UpdateCounters(cur_time, thread_index);  /* update screen counters */
 
    } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* handle user input or other loop control */
+```
+
+<a name="AudioQualityNotes"></a>
+## Audio Quality Notes
+
+Below are some items to keep in mind when measuring audio quality of both individual streams and stream group output. The subject is complex and extensive, partly subjective as well as quantifiable, so these are key points, not an in-depth discussion.
+
+1) Wav files are indispensable for audio quality measurements, in particular for amplitude envelope, background noise, and intelligibility. In particular wav files allow background noise and discontinuities (spikes, glitches, audio drop-outs) to be studied with a greater resolution and bandwidth (sampling rate) than narrowband audio (e.g. G711, AMR-NB, G729, EVRC, etc). Wav files generated by mediaMin and mediaTest are typically 16-bit PCM with 16 kHz sampling rate and are thus suitable for this purpose.
+
+2) When authenticating audio quality for a customer application in which it's important to know precisely which audio audio occurred when, wav files -- although convenient -- should not be used alone. Wav files assume a linear sampling rate and do not encode sampling points, and can thus obscure audio delays/gaps and interstream alignment issues. This is why real-time packet audio should always be included for audio quality authentication purposes. Real-time packet audio can be linear output, G711, or encoded with wideband codecs (e.g. AMR-WB, EVS) -- the key point is that sampling time is included in the analysis, preferably with a granularity of 10 to 40 msec. However, if you're using Wireshark then the codec type should be one that Wireshark "understands", which currently includes G711 u/a, AMR, and AMR-WB.
+
+    To help with time domain analysis, [streamlib](#user-content-streamlib) supports audio markers, which are inserted into [stream group](#user-content-streamgroups) output at regular intervals (default of 1 sec). Below is a screen capture showing audio markers in action:
+
+    ![Stream group output with 1 sec audio markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/DeepLI_1sec_timing_marker_example.png?raw=true "Stream group output with 1 sec audio markers")
+    
+    Any "flexing" in audio marker spacing indicates timing issues -- frame loss (possibly resulting from packet loss or out-of-order packets), packet rate overrun or underrun, etc.
+    
+    In the mediaMin command line, audio markers can be enabled with a 0x8000000 flag in the -dN options cmd line argument.
+
+3) Continuous, real-time packet repair is crucial to achieving high quality audio. Both missing (lost) SID and media packets must be repaired. [Pktlib](#user-content-pktlib) uses a variety of methods, including packet re-ordering (due to out-of-order, or ooo, packets), packet loss concealment, SID insertion, and more. To identify packet loss and ooo problems, pktlib looks at missing sequence numbers, mismatched timestamps, and packet delta (rate). When verifying / measuring audio quality, you can look at both [run-time stats](#user-content-runtimestats) and [packet logs](#user-content-packetlog) for anomalies that might indicate audio quality problems. Even issues that may not be perceptible when listening can be identified this way; for example, during long periods of silence or background noise there may be packet flow issues unidentifiable by listening.
+
+4) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained embedded "chime markers" with very specific timing and tonal content.
+
+    ![Audio quality frequency domain analysis, chime markers, zoom in](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_chimes.png?raw=true "Audio quality frequency domain analysis, chime markers, zoom in")
+
+    ![Audio quality frequency domain analysis, chime markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_overall.png?raw=true "Audio quality frequency domain analysis, chime markers")
+
+    In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right in time relative to other streams (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
+
+<a name="RealTimePerformance"></a>
+## Real-Time Performance
+
+There are a number of complex factors involved in real-time performance, and by extension, high capacity operation. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
+
+For purposes of this SigSRF SDK github page, here is a summary of important points in achieving and sustaining real-time performance:
+
+1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).  For DSConfigMediaService() usage see StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
+
+2. Packet/media threads should not be preempted. To safeguard against this, the following basic guidelines are recommended:
+
+    - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, also consider the larger picture of what is running outside the VM or container
+    - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run at regular intervals should temporarily be disabled 
+    - network I/O should be limited to packet flow handled by pktlib and/or applications using pktlib
+ 
+    Non-deterministic OS are notorious for running what they want when they want, and Linux and its myriad of 3rd party install packages is no exception. Signalogic has seen cases where max capacity stress tests running 24/7 showed bursts of thread preemption messages repeating at intervals. In one case, on a Ubuntu system that was thought to be a minimal installation, messages appeared every 1 hour, like clockwork. It took days of sleuthing to figure out the cause; there were no obvious scheduled Linux or installed application tasks advertising a one hour interval.
+    
+    To mitigate such cases, there are various methods to prioritize threads and minimize interaction with the OS, some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward.<sup> [1]</sup>
+
+    To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
+
+    <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
+
+    A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
+
+3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few concurrent sessions. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
+
+4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow system performance can cause packet delta stats to fluctuate even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both real-time performance and audio quality, and any deviation is considered problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
+
+    ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
+
+    See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) above for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
+    
+<sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
+
+<a name="x86CodecNotes"></a>
+### SigSRF x86 Codec Notes
+
+SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
+
+<big><pre>
+    - thread safe
+    - optimized for high performance, aimed at high cap or real-time applications
+    - compliant with the [XDAIS standard](https://en.wikipedia.org/wiki/XDAIS_algorithms) for resource sharing, memory allocation, and low-level API structure
+    - implemented as Linux shared libraries
+</pre></big>
+
+Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
+
+1) mediaTest reference application (look for x86_mediatest() in [apps/mediaTest/x86_mediaTest.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c))
+2) packet/media thread processing ([packet_flow_media_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)), invoked indirectly by the [mediaMin reference application](#user-content-mediamin), via the [pktlib](#user-content-pktlib) shared lib
+
+<a name="3GPPNotes"></a>
+## 3GPP Reference Code Notes
+
+<a name="Using3GPPDecoder"></a>
+### Using the 3GPP Decoder
+
+*Note: the examples in this section assume you have downloaded the 3GPP reference code and installed somewhere on your system.*
+
+The 3GPP decoder can be used as the "gold standard" reference for debug and comparison in several situations. Below are a few examples.
+
+<a name="VerifyingEVSpcap"></a>
+### Verifying an EVS pcap
+
+In some cases, maybe due to unintelligble audio output, questions about pcap format or capture method, SDP descriptor options used for EVS encoding, etc, you may want to simply take a pcap, extract its EVS RTP payload stream, and copy to a .cod file with MIME header suitable for 3GPP decoder input. The mediaTest command line can do this, here are two examples:
+
+```C
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_pcap_extracted1.cod
+
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_pcap_extracted2.cod
+```
+Next, run the 3GPP decoder:
+
+```C
+./EVS_dec -mime -no_delay_cmp 16 EVS_pcap_extracted1.cod 3GPP_decoded_audio1.raw
+
+./EVS_dec -mime -no_delay_cmp 16 EVS_pcap_extracted2.cod 3GPP_decoded_audio2.raw
+```
+
+Note the 3GPP decoder will produce only a raw audio format file, so you will need to use sox or other tool to convert to .wav file for playback.  You can also decode with mediaTest directly to .wav format:
+
+```C
+./mediaTest -cx86 -iEVS_pcap_extracted1.cod -omediaTest_decoded_audio1.wav
+
+./mediaTest -cx86 -iEVS_pcap_extracted2.cod -omediaTest_decoded_audio2.wav
 ```
 
 <a name="WiresharkNotes"></a>
@@ -1548,65 +1611,3 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
     When .au save format is specified as shown in step 2, Wireshark performs uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples. If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, Hypersignal, or other conversion program.  If that doesn't match the mediaMin or mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
 
     *Note: the above instructions apply to Wireshark version 2.2.6.*
-
-<a name="AudioQualityNotes"></a>
-## Audio Quality Notes
-
-Below are some items to keep in mind when measuring audio quality of both individual streams and stream group output. The subject is complex and extensive, partly subjective as well as quantifiable, so these are key points, not an in-depth discussion.
-
-1) Wav files are indispensable for audio quality measurements, in particular for amplitude envelope, background noise, and intelligibility. In particular wav files allow background noise and discontinuities (spikes, glitches, audio drop-outs) to be studied with a greater resolution and bandwidth (sampling rate) than narrowband audio (e.g. G711, AMR-NB, G729, EVRC, etc). Wav files generated by mediaMin and mediaTest are typically 16-bit PCM with 16 kHz sampling rate and are thus suitable for this purpose.
-
-2) When authenticating audio quality for a customer application in which it's important to know precisely which audio audio occurred when, wav files -- although convenient -- should not be used alone. Wav files assume a linear sampling rate and do not encode sampling points, and can thus obscure audio delays/gaps and interstream alignment issues. This is why real-time packet audio should always be included for audio quality authentication purposes. Real-time packet audio can be linear output, G711, or encoded with wideband codecs (e.g. AMR-WB, EVS) -- the key point is that sampling time is included in the analysis, preferably with a granularity of 10 to 40 msec. However, if you're using Wireshark then the codec type should be one that Wireshark "understands", which currently includes G711 u/a, AMR, and AMR-WB.
-
-    To help with time domain analysis, [streamlib](#user-content-streamlib) supports audio markers, which are inserted into [stream group](#user-content-streamgroups) output at regular intervals (default of 1 sec). Below is a screen capture showing audio markers in action:
-
-    ![Stream group output with 1 sec audio markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/DeepLI_1sec_timing_marker_example.png?raw=true "Stream group output with 1 sec audio markers")
-    
-    Any "flexing" in audio marker spacing indicates timing issues -- frame loss (possibly resulting from packet loss or out-of-order packets), packet rate overrun or underrun, etc.
-    
-    In the mediaMin command line, audio markers can be enabled with a 0x8000000 flag in the -dN options cmd line argument.
-
-3) Continuous, real-time packet repair is crucial to achieving high quality audio. Both missing (lost) SID and media packets must be repaired. [Pktlib](#user-content-pktlib) uses a variety of methods, including packet re-ordering (due to out-of-order, or ooo, packets), packet loss concealment, SID insertion, and more. To identify packet loss and ooo problems, pktlib looks at missing sequence numbers, mismatched timestamps, and packet delta (rate). When verifying / measuring audio quality, you can look at both [run-time stats](#user-content-runtimestats) and [packet logs](#user-content-packetlog) for anomalies that might indicate audio quality problems. Even issues that may not be perceptible when listening can be identified this way; for example, during long periods of silence or background noise there may be packet flow issues unidentifiable by listening.
-
-4) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained embedded "chime markers" with very specific timing and tonal content.
-
-    ![Audio quality frequency domain analysis, chime markers, zoom in](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_chimes.png?raw=true "Audio quality frequency domain analysis, chime markers, zoom in")
-
-    ![Audio quality frequency domain analysis, chime markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_overall.png?raw=true "Audio quality frequency domain analysis, chime markers")
-
-    In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right in time relative to other streams (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
-
-<a name="RealTimePerformance"></a>
-## Real-Time Performance
-
-There are a number of complex factors involved in real-time performance, and by extension, high capacity operation. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
-
-For purposes of this SigSRF SDK github page, here is a summary of important points in achieving and sustaining real-time performance:
-
-1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).  For DSConfigMediaService() usage see StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
-
-2. Packet/media threads should not be preempted. To safeguard against this, the following basic guidelines are recommended:
-
-    - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, also consider the larger picture of what is running outside the VM or container
-    - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run at regular intervals should temporarily be disabled 
-    - network I/O should be limited to packet flow handled by pktlib and/or applications using pktlib
- 
-    Non-deterministic OS are notorious for running what they want when they want, and Linux and its myriad of 3rd party install packages is no exception. Signalogic has seen cases where max capacity stress tests running 24/7 showed bursts of thread preemption messages repeating at intervals. In one case, on a Ubuntu system that was thought to be a minimal installation, messages appeared every 1 hour, like clockwork. It took days of sleuthing to figure out the cause; there were no obvious scheduled Linux or installed application tasks advertising a one hour interval.
-    
-    To mitigate such cases, there are various methods to prioritize threads and minimize interaction with the OS, some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward.<sup> [1]</sup>
-
-    To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
-
-    <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
-
-    A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
-
-3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few concurrent sessions. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
-
-4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow system performance can cause packet delta stats to fluctuate even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both real-time performance and audio quality, and any deviation is considered problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
-
-    ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
-
-    See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) above for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
-    
-<sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
