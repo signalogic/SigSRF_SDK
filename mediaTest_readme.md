@@ -365,7 +365,7 @@ After loading stream group outputs in Wireshark (openli-voip-example_group0_am.p
 
 In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. To play stream group output audio click on the :arrow_forward: button.
 
-In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF [pktlib](#user-content-pktlib) and  [streamlib](#user-content-streamlib) module processing prioritize stability of this metric, as well as accurate time-alignment of individual stream contributors relative to each other.
+In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF [pktlib](#user-content-pktlib) and  [streamlib](#user-content-streamlib) module processing prioritize stability of this metric, as well as accurate time-alignment of individual stream contributors relative to each other. For information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
 
 mediaMin also generates [stream group](#user-content-streamgroups) output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
 
@@ -1449,7 +1449,7 @@ Below are some items to keep in mind when measuring audio quality of both indivi
     
     Any "flexing" in audio marker spacing indicates timing issues -- frame loss (possibly resulting from packet loss or out-of-order packets), packet rate overrun or underrun, etc.
     
-    In the mediaMin command line, audio markers can be enabled with a 0x8000000 flag in the -dN options cmd line argument.
+    In the mediaMin command line, audio markers can be enabled with a 0x8000000 flag in the -dN options cmd line argument. For information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
 
 3) Continuous, real-time packet repair is crucial to achieving high quality audio. Both missing (lost) SID and media packets must be repaired. [Pktlib](#user-content-pktlib) uses a variety of methods, including packet re-ordering (due to out-of-order, or ooo, packets), packet loss concealment, SID insertion, and more. To identify packet loss and ooo problems, pktlib looks at missing sequence numbers, mismatched timestamps, and packet delta (rate). When verifying / measuring audio quality, you can look at both [run-time stats](#user-content-runtimestats) and [packet logs](#user-content-packetlog) for anomalies that might indicate audio quality problems. Even issues that may not be perceptible when listening can be identified this way; for example, during long periods of silence or background noise there may be packet flow issues unidentifiable by listening.
 
@@ -1492,7 +1492,7 @@ For purposes of this SigSRF SDK github page, here is a summary of important poin
 
     ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
 
-    See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) above for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
+    See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) below for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
     
 <sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
 
