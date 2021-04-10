@@ -467,8 +467,8 @@ Several mediaTest codec + audio mode command lines are given below, showing exam
 
 For audio inputs mediaTest does automatic sampling rate conversion (i.e. to match the codec input sampling rate), but there are a couple of things to keep in mind about this:
 
-> -for raw audio input files, mediaTest doesn't know the sampling rate as raw files don't have a waveform header. For other cases, such as .wav, .au, USB audio, mediaTest knows the sampling rate
-> -advanced codecs such as EVS accept multiple sampling rates, so mediaTest typically skips sampling rate conversion, unless your input is a multiple of 11.025 kHz or other rate not in the codec standard 
+> 1) for raw audio input files, mediaTest doesn't know the sampling rate as raw files don't have a waveform header. For other cases, such as .wav, .au, USB audio, mediaTest knows the sampling rate
+> 2) advanced codecs such as EVS accept multiple sampling rates, so mediaTest typically skips sampling rate conversion, unless your input is a multiple of 11.025 kHz or other rate not in the codec standard 
 
 SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
 
