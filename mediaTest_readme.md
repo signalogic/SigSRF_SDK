@@ -472,7 +472,7 @@ For audio inputs mediaTest does automatic sampling rate conversion (i.e. to matc
 > 2) advanced codecs such as EVS accept multiple sampling rates, so depending on what rate you enter in the codec config file given on the command line, sampling rate conversion is often not needed
 > 3) basically, if the audio input rate differs from the rate specified in the codec config, then sampling rate conversion will be performed 
 
-<a name="x86CodecNotes></a>
+<a name="x86CodecNotes"></a>
 #### SigSRF x86 Codec Notes
 
 SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
