@@ -1497,7 +1497,7 @@ For purposes of this SigSRF SDK github page, here is a summary of important poin
 <sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
 
 <a name="x86CodecNotes"></a>
-### SigSRF x86 Codec Notes
+## SigSRF x86 Codec Notes
 
 SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
 
