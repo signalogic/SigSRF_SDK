@@ -1503,7 +1503,7 @@ SigSRF x86 codecs are designed for concurrent, high capacity operation and imple
 
 <big><pre>
     - thread safe
-    - optimized for high performance, aimed at high cap or real-time applications
+    - optimized for high performance, aimed at high cap and/or real-time applications
     - compliant with the [XDAIS standard](https://en.wikipedia.org/wiki/XDAIS_algorithms) for resource sharing, memory allocation, and low-level API structure
 </pre></big>
 
