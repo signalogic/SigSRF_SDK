@@ -1499,14 +1499,15 @@ For purposes of this SigSRF SDK github page, here is a summary of important poin
 <a name="x86CodecNotes"></a>
 ## SigSRF x86 Codec Notes
 
-SigSRF x86 codecs are designed for concurrent, high capacity operation. They are:
+SigSRF x86 codecs are designed for concurrent, high capacity operation and implemented as Linux shared libs. These libs are:
 
 <big><pre>
     - thread safe
     - optimized for high performance, aimed at high cap or real-time applications
     - compliant with the [XDAIS standard](https://en.wikipedia.org/wiki/XDAIS_algorithms) for resource sharing, memory allocation, and low-level API structure
-    - implemented as Linux shared libraries
 </pre></big>
+
+XDAIS compliance allows SigSRF codecs to be implemented on coCPU targets with minimal code porting issues. On fact, several SigSRF codecs were first implemented on Texas Instruments multicore CPU devices, until TI failed to recognize the importance of AI and deep learning and prematurely purged their DSP core competence and expertise. Those codecs were then "back ported" to x86 with minimum hassle and high performance. Going forward, other vendors such as ARM clearly recognize the importance of adding low-power, small package size, high performance C code compatible cores to servers, and coCPU architecture considerations will continue to gain in importance.
 
 Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
 
