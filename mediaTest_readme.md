@@ -80,6 +80,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS](#user-content-x86codecevs)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR](#user-content-x86codecamr)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MELPe](#user-content-x86codecmelpe)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G726](#user-content-x86codecg726)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
 &nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
@@ -582,6 +583,32 @@ The following mediaTest command lines encode from audio to .cod coded data file 
 ```
 
 In the above command lines audio input is in raw audio format and the .cod file format is used for output MELPe coded data.
+
+<a name="x86CodecG726"></a>
+#### G726
+
+The following mediaTest command line does back-to-back G726 encode/decode; i.e. audio input, audio output:
+
+```C
+./mediaTest -cx86 -itest_files/pcm1648m.wav -og726_40kbps_out.wav -Csession_config/g726_40kbps_codec_test_config
+```
+
+Note that in the above command line sampling rate conversion from 48 to 8 kHz is performed prior to G726 encode.
+
+Below are mediaTest command lines that perform G726 encode to file at different bitrates:
+
+```C
+./mediaTest -cx86 -itest_files/pcm1608m.wav -og726_40kbps_out.cod -Csession_config/g726_40kbps_codec_test_config
+./mediaTest -cx86 -itest_files/pcm1608m.wav -og726_32kbps_out.cod -Csession_config/g726_32kbps_codec_test_config
+./mediaTest -cx86 -itest_files/pcm1608m.wav -og726_24kbps_out.cod -Csession_config/g726_24kbps_codec_test_config
+./mediaTest -cx86 -itest_files/pcm1608m.wav -og726_16kbps_out.cod -Csession_config/g726_16kbps_codec_test_config
+```
+
+The following mediaTest command line G726 decodes from file to audio:
+
+```C
+./mediaTest -cx86 -ig726_40kbps_out.cod -og726_40kbps_out.wav -Csession_config/g726_40kbps_codec_test_config
+```
 
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
