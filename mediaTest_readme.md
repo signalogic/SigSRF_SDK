@@ -80,6 +80,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS](#user-content-x86codecevs)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR](#user-content-x86codecamr)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MELPe](#user-content-x86codecmelpe)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G729](#user-content-x86codecg729)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G726](#user-content-x86codecg726)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
@@ -583,6 +584,11 @@ The following mediaTest command lines encode from audio to .cod coded data file 
 ```
 
 In the above command lines audio input is in raw audio format and the .cod file format is used for output MELPe coded data.
+
+<a name="x86CodecG729"></a>
+#### G729
+
+The following mediaTest command line does back-to-back G729 encode/decode; i.e. audio input, audio output:
 
 <a name="x86CodecG726"></a>
 #### G726
