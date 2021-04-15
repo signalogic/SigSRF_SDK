@@ -341,7 +341,7 @@ After <a href="https://github.com/signalogic/SigSRF_SDK#user-content-sdkdownload
  
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example2.pcap -L -d0x000c1c01 -r20
 
-OpenLI generated pcaps contain encapsulated streams, as described above. Here are some notes about the above command lines and what to look for after they run:
+OpenLI generated pcaps contain [DER encapsulated streams, as described above](#user-content-encapsulatedstreams). Here are some notes about the above command lines and what to look for after they run:
 
 1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats) screen capture below. In the [stream group](#user-content-streamgroups) output, there should be no underrun (labeled as FLC, or frame loss concealment, in the [run-time stats](#user-content-runtimestats)), [packet logs](#user-content-packetlog) should be clean, and with no [event log](#user-content-eventlog) warnings or errors (highlighted in green).
 
