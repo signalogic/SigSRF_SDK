@@ -610,6 +610,17 @@ Below are mediaTest command lines that perform G726 encode to file at different 
 ./mediaTest -cx86 -itest_files/pcm1608m.wav -og726_16kbps_out.cod -Csession_config/g726_16kbps_codec_test_config
 ```
 
+Here is the codec configuration file used in the above commands:
+
+```CoffeeScript
+codec_type=G726
+bitrate=40000  # set bitrate as needed
+sample_rate=8000
+uncompress=0
+```
+
+Note the "uncompress" field should remain disabled for normal packet/media RTP usage. Mainly this field exists to allow comparison with 3GPP reference vectors, as the ITU G726 test program outputs encoded data in an uncompressed format (i.e. 360 bytes for a 10 msec frame).
+
 The following mediaTest command line G726 decodes from file to audio:
 
 ```C
