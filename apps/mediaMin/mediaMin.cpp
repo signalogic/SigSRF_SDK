@@ -1452,7 +1452,7 @@ uint32_t clock_rate = 0;
 
 /* SDP info check: num_rtpmaps will be > 0 if valid cmd line SDP file was given */
 
-   if (thread_info[thread_index].num_rtpmaps) {
+   if (thread_info[thread_index].num_rtpmaps[nInput]) {
 
    /* search through rtpmap payload types previously parsed and recorded by SDPAdd() */
 
