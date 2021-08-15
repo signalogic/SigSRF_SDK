@@ -73,7 +73,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Static Session Configuration**](#user-content-staticsessionconfig)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 
-&nbsp;&nbsp;&nbsp;[RTP Malware Detection](#user-content-rtpmalwaredetection)<br/>
+&nbsp;&nbsp;&nbsp;[**RTP Malware Detection**](#user-content-rtpmalwaredetection)<br/>
 
 [**mediaTest**](#user-content-mediatest)<br/>
 
