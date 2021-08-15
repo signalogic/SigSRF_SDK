@@ -45,7 +45,8 @@ SigSRF software is currently deployed in the following application areas:
 
 * Session Border Controller (SBC)
 * Media Gateway
-* Lawful Intercept (LI)
+* Lawful Intercept and Lawful Intelligence (LI)
+* RTP Malware Detection
 * RTP Decoder (<a href="https://signalogic.com/evs_codec.html">EVS</a>, AMR, G729, MELPe, etc)
 * Network Analyzers
 * Satcom and HF Radio Speech Compression
