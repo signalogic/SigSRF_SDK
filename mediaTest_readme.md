@@ -438,7 +438,9 @@ Although terminations can be defined in any order, in general term1 remote shoul
 <a name="rtpmalwaredetection"><a/>
 ## RTP Malware Detection
 
-RTP packet streams provide an opportunity for malware to hide payloads disguised as compressed audio. For example, an infected server might construct a valid codec bitstream with individual packdet payloads that contain stolen data instead of actual compressed audio. Even audio playout of such packet streams using popular tools such as Wireshark will not reveal the disguise, giving anything from static, "cyber robot" sounds, or even mostly valid audio with occasional glitches, buzzes, burps, etc. Without in-depth audio content analysis, there is no way to differentiate between ordinary bad audio and deliberately bad audio containing illegal data. 
+RTP packet streams provide an opportunity for malware to hide payloads disguised as compressed audio. For example, an infected server might construct a valid codec bitstream with individual packet payloads containing illegal data instead of actual compressed audio. Even audio playout of such packet streams using popular tools such as Wireshark will not reveal the disguise, giving anything from static, "cyber robot" sounds, or even mostly valid audio with occasional glitches, buzzes, burps, etc. Without in-depth audio content analysis, there is no way to differentiate between ordinary bad audio and deliberately bad audio containing illegal data.
+	
+mediaMin provides an "audio content analysis" mode that writes event log messages when codec payload inconsistencies are detected that indicate deliberate manipulation of codec bitstream packet data.
 	
 <a name="mediaTest"></a>
 # mediaTest
