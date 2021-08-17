@@ -80,6 +80,9 @@ namespace sdp {
     else if (input == "EVS") {
       result = SDP_EVS;
     }
+    else if (input == "CN") {
+      result = SDP_CN;  // comfort noise
+    }
     else if (input == "H264") {
       result = SDP_H264;
     }

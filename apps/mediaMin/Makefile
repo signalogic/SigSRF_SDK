@@ -26,6 +26,7 @@
 #  Modified Jan 2021 JHB, break out link flags from CC_FLAGS into AR_FLAGS, add -rpath linker options
 #  Modified Jan 2021 JHB, add cpp_objects target
 #  Modified Mar 2021 JHB, add derlib (DER decoding lib) to SIG_LIBS var
+#  Modified Apr 2021 JHB, add sdp_app.o session_app.o and user_io.o to cpp_objects target
 
 # check make cmd line for "no_codecs" option
 
@@ -296,7 +297,7 @@ cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
 c_common_objects = keybd.o
 cpp_sdp_objects = types.o sdp.o utils.o reader.o writer.o 
 c_mediaTest_objects = transcoder_control.o cmd_line_interface.o
-cpp_objects = mediaMin.o
+cpp_objects = sdp_app.o session_app.o user_io.o mediaMin.o
 # add sources as needed for user defined processing. For example, adding audio_domain_processing.c will take precedence over the default version included in streamlib.so
 # c_objects += audio_domain_processing.o
 # c_objects += packet_media_flow_proc.o

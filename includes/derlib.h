@@ -18,6 +18,11 @@
  Revision History
   
   Created Feb 2021 JHB
+  Modified May 2021 JHB, add DSSetDerStreamInfo()
+  Modified May 2021 JHB, in DSFindDerStream() change dest_port* parameter to point to a list of ports (list is zero-terminated)
+                         -add DS_DER_INFO_DSTPORT_LIST to DSGetDerStreamInfo()
+                         -change operation of DS_DER_INFO_DSTPORT to get/set a specific port in DSGetDerStreamInfo() and DSSetDerStreamInfo()
+  Modified Jun 2021 JHB, additional comments / instructions
 */
  
 #ifndef _DERLIB_H_
@@ -27,42 +32,44 @@
   #include "der.h"  /* use libwandder header file if found during make */
 #endif
 
-#define MAX_DER_STREAMS                 256  /* max number of concurrent DER streams */
+#define MAX_DER_STREAMS                   256  /* max number of concurrent DER streams */
+#define MAX_DER_DSTPORTS                  8
 
-#define MAX_DER_STRLEN                  512  /* max length of DER encoded strings that derlib can handle */
+#define MAX_DER_STRLEN                    512  /* max length of DER encoded strings that derlib can handle */
 
 /*defines used by DSconfigDerlib() API */
 
-#define DS_CD_GLOBALCONFIG              0x01
-#define DS_CD_DEBUGCONFIG               0x02
-#define DS_CD_INIT                      0x04
+#define DS_CD_GLOBALCONFIG                0x01
+#define DS_CD_DEBUGCONFIG                 0x02
+#define DS_CD_INIT                        0x04
 
-/* defines used by DSDetectDerStream() */
+/* defines used by DSFindDerStream() */
 
-#define DS_ISDER_INTERCEPTPOINTID       1       /* get DER stream interception point ID */
-#define DS_ISDER_DSTPORT                2       /* get DER stream destination port */
-#define DS_ISDER_PORT_MUST_BE_EVEN      0x1000  /* specify intercept data has to be received on even port number */
+#define DS_DER_FIND_INTERCEPTPOINTID      1       /* find DER stream interception point ID */
+#define DS_DER_FIND_DSTPORT               2       /* find DER stream destination port(s) */
+#define DS_DER_FIND_PORT_MUST_BE_EVEN     0x1000  /* specify intercept data has to be received on even port number */
 
-/* defines used by DSGetDerStreamInfo() */
+/* defines used by DSGetDerStreamInfo() and DSSetDerStreamInfo() */
 
-#define DS_DER_INFO_DSTPORT            0x100
-#define DS_DER_INFO_INTERCEPTPOINTID   0x200
-#define DS_DER_INFO_ASN_INDEX          0x300
-#define DS_DER_INFO_CC_PKT_COUNT       0x400
+#define DS_DER_INFO_DSTPORT               0x100
+#define DS_DER_INFO_INTERCEPTPOINTID      0x200
+#define DS_DER_INFO_ASN_INDEX             0x300
+#define DS_DER_INFO_CC_PKT_COUNT          0x400
+#define DS_DER_INFO_DSTPORT_LIST          0x500
 
-#define DS_DER_INFO_ITEM_MASK          0xff00
+#define DS_DER_INFO_ITEM_MASK             0xff00
 
 /* defines used by DSDecodeDerStream() */
 
-#define DS_DER_NULL_PACKET              1
-#define DS_DER_KEEP_ALIVE               2
-#define DS_DER_SEQNUM                   4
-#define DS_DER_INTERCEPTPOINTID         8
-#define DS_DER_TIMESTAMP                0x10
-#define DS_DER_TIMESTAMPQUALIFIER       0x20
-#define DS_DER_CC_PACKET                0x40
+#define DS_DER_NULL_PACKET                1
+#define DS_DER_KEEP_ALIVE                 2
+#define DS_DER_SEQNUM                     4
+#define DS_DER_INTERCEPTPOINTID           8
+#define DS_DER_TIMESTAMP                  0x10
+#define DS_DER_TIMESTAMPQUALIFIER         0x20
+#define DS_DER_CC_PACKET                  0x40
 
-#define DS_DECODE_DER_PRINT_DEBUG_INFO  0x10000000L
+#define DS_DECODE_DER_PRINT_DEBUG_INFO    0x10000000L
 
 /* ASN.1 tag definitions */
 
@@ -117,22 +124,25 @@ extern "C" {
 
   /* DSConfigDerLib() initializes and configures derlib
 
-     -has to be called once at app init time, by only one thread
+     -has to be called once at app init time, by only one application thread
      -uFlags options given by DS_CD_XX items above
      -return value < 0 indicates an error condition
   */
 
   int DSConfigDerlib(GLOBAL_CONFIG* pGlobalConfig, DEBUG_CONFIG* pDebugConfig, unsigned int uFlags);
 
-  /* DSIsDerStream() finds and/or auto-detects a DER encoded stream
+  /* DSFindDerStream() finds and/or auto-detects DER encoded streams and destination ports for existing streams
 
      -pkt_in_buf should contain a standard IPv4 or IPv6 TCP/IP packet, including header(s) and payload
-     -uFlags options given by DS_ISDER_XX items above
-     -szInterceptPointId must contain a valid string if DS_DER_GET_INTERCEPTPOINTID not specified
+     -uFlags options given by DS_DER_FIND_XX items above
+     -if uFlags includes DS_DER_FIND_INTERCEPTPOINTID:
+       -if specified, then szInterceptPointId contains an interception point Id upon successful return
+       -if not specified, then szInterceptPointId must contain a valid string
+     -upon successful return, dest_port_list[] contains one or more destination ports associated with the interception point Id. The port list is zero-terminated
      -return value < 0 indicates an error condition
   */
 
-  int DSIsDerStream(uint8_t* pkt_in_buf, unsigned int uFlags, char* szInterceptPointId, uint16_t* dest_port);
+  int DSFindDerStream(uint8_t* pkt_in_buf, unsigned int uFlags, char* szInterceptPointId, uint16_t dest_port_list[]);
 
   /* DSCreateDerStream() creates a DER stream
 
@@ -147,18 +157,37 @@ extern "C" {
 
      -hDerStream must be a DER stream handle created by a prior call to DSCreateDerStream()
      -uFlags options given by DS_DER_INFO_XX items above
-     -return value < 0 indicates an error condition
+     -return value:
+       port, index, packet count, etc (uFlags DS_DER_INFO_DSTPORT, DS_DER_INFO_ASN_INDEX, DS_DER_INFO_CC_PKT_COUNT, etc)
+       1 for info returned in pInfo (uFlags DS_DER_INFO_INTERCEPTPOINTID, DS_DER_INFO_DSTPORT_LIST, etc)
+       < 0 indicates an error condition
   */
 
   int64_t DSGetDerStreamInfo(HDERSTREAM hDerStream, unsigned int uFlags, void* pInfo);
+
+  /* DSSetDerStreamInfo() sets DER stream info
+
+     -hDerStream must be a DER stream handle created by a prior call to DSCreateDerStream()
+     -uFlags options given by DS_DER_INFO_XX items above
+     -pInfo:
+       pointer to port and port value (uFlag DS_DER_INFO_DSTPORT), pointer to port list (uFlag DS_DER_INFO_DSTPORT_LIST)
+     -return value:
+       > 0 indicates success
+       < 0 indicates an error condition
+  */
+
+  int64_t DSSetDerStreamInfo(HDERSTREAM hDerStream, unsigned int uFlags, void* pInfo);
 
   /* DSDecodeDerStream() decodes a DER encoded stream, returning one or more decoded items
 
      -hDerStream must be a DER stream handle created by a prior call to DSCreateDerStream()
      -pkt_in_buf should contain a standard IPv4 or IPv6 TCP/IP packet, including header(s) and payload
      -uFlags options given by DS_DER_XX items above
-     -der_decode should point to a HI3_DER_DECODE struct to be filled in with decoded items
-     -return value < 0 indicates an error condition
+     -der_decode should point to an HI3_DER_DECODE struct to be filled in with decoded items
+     -return value:
+         0 - nothing found
+       > 0 - length of CC packet found
+       < 0 - error condition
   */
 
   int DSDecodeDerStream(HDERSTREAM hDerStream, uint8_t* pkt_in_buf, uint8_t* pkt_out_buf, unsigned int uFlags, HI3_DER_DECODE* der_decode);

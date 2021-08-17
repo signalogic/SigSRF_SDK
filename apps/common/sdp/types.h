@@ -87,6 +87,7 @@ namespace sdp {
     SDP_AMRNB,
     SDP_AMRWB,
     SDP_EVS,
+    SDP_CN,  // comfort noise
     SDP_H264,
     SDP_TELEPHONE_EVENT
   };

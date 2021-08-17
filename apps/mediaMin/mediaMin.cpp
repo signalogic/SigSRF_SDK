@@ -36,7 +36,8 @@
 
  Source Code Notes
  
-  mediaMin.cpp is primarily a C file, but does contain some C++ code and more is being added
+  -mediaMin.cpp is primarily a C file, but does contain some C++ code and more is being added
+  -several additional cpp files are included in the build
 
  Revision History
 
@@ -91,21 +92,26 @@
                           -fix a few places where timing was incorrect; modified to look for combination of ((Mode & ANALYTICS_MODE) || term1.input_buffer_interval) to indicate "timed situations"
                           -set default jitter buffer max and target delay to 14 and 10
    Modified Apr 2020 JHB, clean up handling of DS_SESSION_INFO_DELETE_STATUS when exiting or repeating
-   Modified Apr 2020 JHB, app_printf() enhancements
+   Modified Apr 2020 JHB, app_printf() enhancements (in user_io.cpp)
    Modified May 2020 JHB, add handling for TERM_IGNORE_ARRIVAL_TIMING and TERM_OOO_HOLDOFF_ENABLE flags
    Modified Jun 2020 JHB, fix bug where string size wasn't large enough to handle multiple session stats summary print out (just prior to program exit)
    Modified Jun 2020 JHB, move static session creation into StaticSessionCreate()
    Modified Jun 2020 JHB, add ENABLE_ALIGNMENT_MARKERS -dN cmd line option, to support visual inspection when deduplication algorithm is active (ENABLE_STREAM_GROUP_DEDUPLICATION flag)
    Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0, fix various security and "indentation" warnings
    Modified Oct 2020 JHB, tested with .pcapng input files after support added to pktlib for reading pcapng file format
-   Modified Jan 2021 JHB, add cmd line SDP file parsing and management. See SDPAdd() below and apps/common/sdp folder for source code
+   Modified Jan 2021 JHB, add cmd line SDP file parsing and management. See SDPAdd() in sdp_app.cpp and apps/common/sdp folder for source code
    Modified Jan 2021 JHB, continued ASR integration and testing
    Modified Jan 2021 JHB, convert to .cpp, include <algorithm> and use namespace std
    Modified Feb/Mar 2021 JHB, add DER encoded encapsulated stream handling, with full abstraction of DER encoded and aggregated packets
                               -first tested on HI3 content in OpenLI captures
                               -for API functionality and documentation see include/derlib.h, for implementation see lib/derlib
                               -for app usage see source within ENABLE_DER_STREAM_DECODE below
-   Modified Mar 2021 JHB, modify SDP info to add from TCP/IP SIP invite packets, in addition to cmd line .sdp file. Multiple SDP info can be added at any time, in any sequence. See comments for SDPAdd()
+   Modified Mar 2021 JHB, modify SDP info to add from TCP/IP SIP invite packets, in addition to cmd line .sdp file. Multiple SDP info can be added at any time, in any sequence. See comments for SDPAdd() in sdp_app.cpp
+   Modified Apr 2021 JHB, move related functions to separate files:
+                          -SDPSetup(), SDPAdd(), and FindSIPInvite() to sdp_app.cpp
+                          -ReadSessionConfig(), StaticSessionCreate(), SetTimingInterval(), and GetSessionFlags() to session_app.cpp
+                          -UpdateCounters(), ProcessKeys(), and app_printf() to user_io.cpp
+   Modified May 2021 JHB, simplify DER encapsulated stream handling (around DSFindDerStream() and DSDecodeDerStream() ). Add comments
 */
 
 
@@ -117,7 +123,6 @@
 #include <netinet/udp.h>
 #include <signal.h>
 #include <assert.h>
-#include <stdarg.h>
 
 #include <algorithm>  /* bring in std::min and std::max */
 #include <fstream>
@@ -138,9 +143,7 @@ using namespace std;
 #include "shared_include/config.h"     /* configuration structs and definitions */
 #include "shared_include/streamlib.h"  /* streamlib provides an API interface for stream group management. Normally this is used by pktlib but can be accessed directly if needed */
 
-/* SDP handling header file */
-
-#include <sdp/sdp.h>
+#include <sdp/sdp.h>  /* SDP API header file */
 
 /* number of possible input streams, including streams that are re-used for multithread and high capacity testing */
 #define MAX_INPUT_STREAMS MAX_SESSIONS  /* MAX_SESSIONS is defined in transcoding.h, which is included in mediaTest.h */
@@ -149,110 +152,56 @@ using namespace std;
 //#define LOG_OUTPUT  LOG_FILE_ONLY  /* file output only */
 #define LOG_OUTPUT  LOG_SCREEN_FILE  /* screen + file output (LOG_SCREEN_FILE defined in diaglib.h) */
 
-#define ENABLE_MANAGED_SESSIONS
-//  #define STREAM_GROUP_BUFFER_TIME  1000  /* default stream group buffer time is 260 msec (2080 samples at 8 kHz sampling rate, 4160 samples at 16 kHz, etc). Uncommenting this define will set the buffer time, in this example to 1 sec */
 #define USE_GROUP_PULL_RETRY
 
-#include "mediaMin.h"  /* bring in some struct typedefs and other definitions */
-#include "cmdLineOpt.h"  /* cmd line handling */
+/* app level header files */
 
-/* following are standard operating modes, stress tests, and options that can be specified by -dN cmd line entry (N may be given in hex format, for example -d0xN).  Value of N is referred to in the source as "Mode" */
-
-/* standard operating modes */
-
-#define SESSION_CONFIG_FILE                   0  /* default mode (no -d entry), a session config file must be given on the cmd line, static sessions are created */
-#define DYNAMIC_CALL                          1  /* treat each cmd line input spec ("-ixx") as a multistream call and dynamically create sessions as they appear.  If stream groups are enabled, each call has its own stream group.  If a session config file is given on the cmd line it's ignored */
-#define COMBINE_CALLS                         2  /* similar to DYNAMIC_CALL, but combine all cmd line input specs into one call (and if stream groups are enabled, combine all group output into one group) */
-#define ENABLE_STREAM_GROUP_DEDUPLICATION     4  /* applies a deduplication algorithm, which looks for similar content between stream group contributors and attempts to align similar streams. The objective is to reduce perceived reverb/echo due to duplicated streams. A typical scenario is a multipath (duplicated) endpoint with different latencies */
-#define ENABLE_STREAM_GROUP_ASR               8  /* enable ASR processing on stream group output */
-#define ENABLE_DER_STREAM_DECODE         0x1000
-
-#define USE_PACKET_ARRIVAL_TIMES           0x10  /* use arrival times (packet timestamps) in pcap records to control push rate (can be combined with other mode flags) */
-
-/* stress tests / functional tests (see also fStressTest and fCapacityTest flags below) */
-
-#define CREATE_DELETE_TEST                 0x20  /* basic create / delete session stress test (automatically repeats) */
-#define CREATE_DELETE_TEST_PCAP            0x40  /* create / delete session stress test using sessions found in pcap (automatically repeats) */
-#define START_THREADS_FIRST                0x80  /* static sessions are created before starting packet/media thread(s) by default; set this to start threads first.  Dynamic sessions are always created after starting packet/media thread(s).  See StartPacketMediaThreads() */
-#define ENERGY_SAVER_TEST                 0x100  /* enables an initial delay before pushing packets to test packet/media thread "energy saver" mode */
-#define REPEAT_INPUTS                     0x200  /* repeat inputs, for example rewind pcap files when they finish. Note this mode requires 'q' key manual entry to exit */
-#define ENABLE_RANDOM_WAIT              0x20000  /* enable random wait when a mediaMin application thread is repeating. This flag is normally used in stress tests */
-
-/* operating mode options */
-
-#define ENABLE_STREAM_GROUPS              0x400  /* enable stream groups, currently only valid with dynamic call modes. If set the first session created from each multistream pcap will contain a stream group. Currently the default stream group processing is merging and time alignment of all audio */
-#define ENABLE_WAV_OUTPUT                 0x800  /* enable wav file output for stream group processing, such as audio stream merging */
-#define ROUND_ROBIN_SESSION_ALLOCATION   0x4000  /* allocate sessions to packet/media threads in round-robin manner. The idea is to keep p/m thread load balanced. This flag should be specified for high capacity situations */
-#define WHOLE_GROUP_THREAD_ALLOCATE      0x8000  /* do not split stream group sessions across packet/media threads. This avoids use of locks (semaphores) inside streamlib and gives higher performance */
-#define ANALYTICS_MODE                  0x40000  /* enable combination of pktlib FTRT mode and ptime interval packet push/pull. This is used in analytics mode when input packets do not have wall clock timing, or they do but timing is unreliable (lawful interception is one example) */
-#define ENABLE_AUTO_ADJUST_PUSH_RATE    0x80000  /* enable automatic control of push rate.  Currently supported only when ANALYTICS_MODE and DYNAMIC_CALL are also enabled */
-
-/* disables, enables */
-
-#define DISABLE_DTX_HANDLING           0x100000  /* DTX handling is enabled by default */
-#define DISABLE_FLC                    0x200000  /* stream group output FLC is enabled by default */
-#define ENABLE_ONHOLD_FLUSH_DETECT     0x400000  /* on-hold flush detection is disabled by default.  This is deprecated and has been replaced by a concept called "pastdue flush", which streamlib algorithms use to flush jitter buffers in the presence of high rates of packet loss.  If on-hold flush is enabled, packets are flushed from their jitter buffers if a stream is inactive for 0.2 sec (which is a very arbitrary amount; the pastdue approach reacts faster and more precisely) */
-#define DISABLE_PACKET_REPAIR          0x800000  /* packet repair enabled by default. Missing SID and media packets (detected by sequence number and timestamp discontinuities after packet re-ordering) are repaired */
-#define DISABLE_CONTRIB_PACKET_FLUSH  0x1000000  /* group contributor streams are flushed from their jitter buffer when their contribution rate becomes slow, decreasing the need for FLC on stream group combined output. Enabled by default */
-#define DISABLE_AUTOQUIT              0x2000000  /* disable automatic quit for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests. Automatic quit is enabled by default */
-
-/* alarms, debug, mem, and other extra stats */
-
-#define ENABLE_PACKET_INPUT_ALARM       0x10000  /* enable packet input alarm -- if no packets are received by pktlib; i.e. no packets are pushed via DSPushPackets() API by an application (in this case by mediaMin) for some elapsed time, then pktlib will print a warning message in the event log */
-#define ENABLE_TIMING_MARKERS        0x08000000  /* inject 1 sec wall clock timing markers in stream group output.  This can be helpful in debugging timing issues, for example the app (in this case mediaMin) is not pulling packets fast enough, or not maintaining a consistent pull interval. Additional audio marker options can be specified with uDebugMode (see examples below in DebugSetup() and LoggingSetup(), see also DEBUG_CONFIG struct definitions in shared_include/config.h) */
-#define ENABLE_DEBUG_STATS           0x10000000  /* enable debug stats for (i) internal packet/media thread, (ii) audio merging, and (iii) DER stream decoding */
-#define ENABLE_DEBUG_STATS_L2        0x20000000  /* reserved */
-#define ENABLE_ALIGNMENT_MARKERS     0x40000000  /* when combined with the ENABLE_STREAM_GROUP_DEDUPLICATION flag, enables alignment markers to show the point at which streams were aligned (the deduplication algorithm uses cross correlation to align one or more streams) */
-#define ENABLE_MEM_STATS             0x80000000  /* show mem usage stats in the event log */
+#include "mediaMin.h"     /* struct typedefs and other definitions */
+#include "cmdLineOpt.h"   /* cmd line handling */
+#include "sdp_app.h"      /* app level SDP management */
+#include "session_app.h"  /* app level session management */
+#include "user_io.h"      /* user I/O (keybd, counters and other output) */
 
 //#define VALGRIND_DEBUG  /* enable when using Valgrind for debug */
 #ifdef VALGRIND_DEBUG
 #define VALGRIND_DELAY 100  /* usleep delay value in usec for allowing valgrind to run multithreaded apps on the same core */
 #endif
 
-static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 2.9.3, Copyright (C) Signalogic 2018-2021\n";
+static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 3.01.0, Copyright (C) Signalogic 2018-2021\n";
 
 /* vars shared between app threads */
 
-static HPLATFORM     hPlatform = -1;        /* initialized by DSAssignPlatform() API in DirectCore lib */
-static int           debug_test_state;
-static bool          fThreadSync1 = false;  /* flag used to coordinate app threads during first stage of initialization */
-static bool          fThreadSync2 = false;  /* same, for second stage of initialization */
-static bool          fQuit = false;         /* set if 'q' (quit) key is pressed */
-static bool          fPause = false;        /* "" 'p' (pause).  Pauses operation, another 'p' resumes.  Can be combined with 'd' (display) key to read out internal p/m thread debug, capacity, stats, and other info */ 
-static bool          fStop = false;         /* "" 's' (stop).  Stop prior to next repeat (only applies if -RN is entered on cmd line.  Intended for clean stop to repeating test, avoiding partial output files, especially when ENABLE_RANDOM_WAIT is active */
-static unsigned int  num_app_threads = 1;   /* set to more than one if multiple mediaMin app threads are active. This is controlled by a mediaTest cmd line that includes "-Et -tn" options, where n is the number of app threads (see SigSRF documentation) */
-static int           num_pktmed_threads = 0;/* number of packet/media threads running */
-static int           log_level = 0;         /* set in LoggingSetup() */
-static bool          fStressTest;           /* determined from cmd line options, number of app threads, and session re-use */
-static bool          fCapacityTest;         /*    ""    ""   */
-static char          szSessionName[MAX_INPUT_STREAMS][384] = {{ "" }};  /* set in LoggingSetup() which should always be called */
-static bool          fInputsAllFinite = true;  /* set to false if inputs include UDP port or USB audio.  Default is true if all inputs are pcap or other file */
-static bool          fAutoQuit = false;     /* fAutoQuit determines whether program stops automatically.  This is the default for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests */
-static bool          fRepeatIndefinitely = false;  /* true if -R0 is given on the cmd line */
-static bool          fNChannelWavOutput = false;
+HPLATFORM     hPlatform = -1;           /* initialized by DSAssignPlatform() API in DirectCore lib */
+static int    debug_test_state;
+static bool   fThreadSync1 = false;     /* flag used to coordinate app threads during first stage of initialization */
+static bool   fThreadSync2 = false;     /* same, for second stage of initialization */
+bool          fQuit = false;            /* set if 'q' (quit) key is pressed */
+bool          fPause = false;           /* "" 'p' (pause).  Pauses operation, another 'p' resumes.  Can be combined with 'd' (display) key to read out internal p/m thread debug, capacity, stats, and other info */ 
+bool          fStop = false;            /* "" 's' (stop).  Stop prior to next repeat (only applies if -RN is entered on cmd line.  Intended for clean stop to repeating test, avoiding partial output files, especially when ENABLE_RANDOM_WAIT is active */
+unsigned int  num_app_threads = 1;      /* set to more than one if multiple mediaMin app threads are active. This is controlled by a mediaTest cmd line that includes "-Et -tn" options, where n is the number of app threads (see SigSRF documentation) */
+int           num_pktmed_threads = 0;   /* number of packet/media threads running */
+static int    log_level = 0;            /* set in LoggingSetup() */
+bool          fStressTest;              /* determined from cmd line options, number of app threads, and session re-use */
+bool          fCapacityTest;            /*    ""    ""   */
+static char   szSessionName[MAX_INPUT_STREAMS][384] = {{ "" }};  /* set in LoggingSetup() which should always be called */
+static bool   fInputsAllFinite = true;  /* set to false if inputs include UDP port or USB audio.  Default is true if all inputs are pcap or other file */
+static bool   fAutoQuit = false;        /* fAutoQuit determines whether program stops automatically.  This is the default for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests */
+bool          fRepeatIndefinitely = false;  /* true if -R0 is given on the cmd line */
+bool          fNChannelWavOutput = false;
 
 /* per application thread info */
 
-static THREAD_INFO thread_info[MAX_MEDIAMIN_THREADS] = {{ 0 }};  /* THREAD_INFO struct defined in mediaMin.h, MAX_MEDIAMIN_THREADS defined in mediaTest.h */
+THREAD_INFO thread_info[MAX_MEDIAMIN_THREADS] = {{ 0 }};  /* THREAD_INFO struct defined in mediaMin.h, MAX_MEDIAMIN_THREADS defined in mediaTest.h */
 static int average_push_rate[MAX_MEDIAMIN_THREADS] = { 0 };
-static int nRepeatsRemaining[MAX_MEDIAMIN_THREADS] = { 0 };
+int nRepeatsRemaining[MAX_MEDIAMIN_THREADS] = { 0 };
 
 /* misc local definitions (most definitions are in mediaTest.h and mediaMin.h) */
 
-#define SESSION_MARKED_AS_DELETED          0x80000000  /* flag used to mark hSessions[] entries as deleted during dynamic call operation */
 #define TIMER_INTERVAL                     1           /* timer value in seconds for CREATE_DELETE_TEST_PCAP test mode */
 #define WAIT_FOR_MASTER_THREAD             1           /* mode values used in AppThreadSync() local function */
 #define WAIT_FOR_ALL_THREADS               2
 
-#define APP_PRINTF_SAMELINE                1           /* app_printf() flags */
-#define APP_PRINTF_NEWLINE                 2
-#define APP_PRINTF_THREAD_INDEX_SUFFIX     4
-#define APP_PRINTF_EVENT_LOG               8
-#define APP_PRINTF_EVENT_LOG_NO_TIMESTAMP  0x10
-#define APP_PRINTF_EVENT_LOG_STRIP_LFs     0x20        /* strip intermediate (screen formatting) LFs */
-
-/* local functions */
+/* below are local functions inside mediaMin.cpp. Others are in app level source files (e.g. session_app.cpp, sdp_app.cpp, etc). SigSRF lib APIs have "DS" prefix, local functions do not */
 
 /* logging and configuration setup */
 
@@ -281,7 +230,7 @@ void ThreadWait(int when, int thread_index);
 void AppThreadSync(unsigned int, bool* fThreadSync, int thread_index);
 void PmThreadSync(int thread_index);
 
-/* local wrapper functions for DSPushPackets() and DSPullPackets(), including pcap read/write, queue full check, etc */
+/* local wrapper functions for pktlib DSPushPackets() and DSPullPackets(), including pcap read/write, queue full check, etc */
   
 int PushPackets(uint8_t* pkt_in_buf, HSESSION hSessions[], SESSION_DATA session_data[], int nSessions, uint64_t cur_time, int thread_index);
 int PullPackets(uint8_t* pkt_out_buf, HSESSION hSessions[], SESSION_DATA session_data[], unsigned int uFlags, unsigned int pkt_buf_len, int thread_index);
@@ -291,20 +240,10 @@ void FlushCheck(HSESSION hSessions[], uint64_t cur_time, uint64_t queue_check_ti
 
 int StartPacketMediaThreads(int num_pm_threads, int thread_index);
 
-/* helper functions for creating and managing sessions */
+/* helper functions for creating and managing sessions. See also functions in session_app.cpp */
 
-int ReadSessionConfig(SESSION_DATA session_data[], int thread_index);
-int StaticSessionCreate(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, int thread_index);
-void SetIntervalTiming(SESSION_DATA session_data[]);
 void reset_dynamic_session_info(int);
-unsigned int GetSessionFlags();
-bool FindSIPInvite(uint8_t* pkt_in_buf, int nInput, int thread_index);
-
-#define SDP_ADD_FILE    1
-#define SDP_ADD_STRING  2
-
-bool SDPAdd(const char* szInvite, unsigned int uFlags, int nInput, int thread_index);
-void SDPSetup(const char* szSDPFile, int thread_index);
+int create_dynamic_session(uint8_t *pkt, int pkt_len, HSESSION hSessions[], SESSION_DATA session_data[], int thread_index, int nInput, int nReuse);
 
 /* stress test helper functions */
 
@@ -312,21 +251,21 @@ int TestActions(HSESSION hSessions[], int thread_index);
 void handler(int signo);
 void TimerSetup();
 
-/* counters, keyboard handling, and output */
-
-void UpdateCounters(uint64_t, int);  /* update screen counters */
-bool ProcessKeys(HSESSION hSessions[], uint64_t, DEBUG_CONFIG*, int);  /* process keyboard command input */
-void app_printf(unsigned int uFlags, int thread_index, const char* fmt, ...);
-
 
 /* mediaMin application entry point. Program and multithreading notes:
 
-  -one mediaMin application thread is active if mediaMin is run from the cmd line. This includes standard operating mode at low capacity 
-  -multiple mediaMin application threads may be active if invoked from the mediaTest cmd line, using the -Et and -tN arguments. This is the case for (i) high capacity operation and (ii) stress tests
-  -in the case of multiple mediaMin threads, the var "thread_index" indicates the current thread
-  -in all cases, thread_index = 0 is the master mediaMin app thread. The master thread handles initialization, housekeeping, and exit cleanup. In addition the master thread manages packet/media threads, starting one or more p/m threads depending on cmd line entry
-  -application threads are separate from packet/media threads -- these should not be confused. Packet/media threads run in the pktlib shared library. Section 5, High Capacity Operation, in the SigSRF documentation includes htop screen caps showing both application and packet/media threads, and notes about CPU core usage, thread affinity, and other multithreading issues 
-  -mediaMin accepts the same command line as mediaTest, except that mediaMin (i) recognizes -dN entry for operating mode options (ignored by mediaTest), and (ii) ignores -Ex and -tN entry, which is used only by mediaTest (ignored by mediaMin)
+   -one mediaMin application thread is active if mediaMin is run from the cmd line. This includes standard operating mode for reference apps (SBC, lawful interception, ASR, malware detection, etc)
+
+   -multiple mediaMin application threads may be active if invoked from the mediaTest cmd line, using the -Et and -tN arguments. This is the case for (i) high capacity operation and (ii) stress tests
+
+   -in either case, the first mediaMin application thread is the master app thread:
+    -the master thread handles initialization, housekeeping, and exit cleanup
+    -in addition the master thread manages one or more packet/media threads, starting p/m threads depending on need (determined from cmd line entry)
+    -in the case of multiple mediaMin threads, the var "thread_index" indicates the current app thread (thread_index = 0 for app thread 0, 1 for app thread 1, etc)
+
+   -application threads are separate from packet/media threads -- these should not be confused. Packet/media threads run in the pktlib shared library. Section 5, High Capacity Operation, in the SigSRF documentation includes htop screen caps showing both application and packet/media threads, and notes about CPU core usage, thread affinity, and other multithreading issues 
+
+   -mediaMin accepts the same command line as mediaTest, except that mediaMin (i) recognizes -dN entry for operating mode options (ignored by mediaTest), and (ii) ignores -Ex and -tN entry, which is used only by mediaTest (ignored by mediaMin)
 */
 
 #ifdef MEDIAMIN  /* MEDIAMIN is defined in the mediaMin Makefile. This is true when mediaMin is run from the command line, in which case only one mediaMin application thread is active */
@@ -348,7 +287,6 @@ int i, j, nSessionsConfigured = 0, nRemainingToDelete = 0, thread_index = 0;  /*
 unsigned long long cur_time = 0, base_time = 0;
 uint64_t interval_count = 0, queue_check_time[MAX_SESSIONS] = { 0 };
 bool fExitErrorCond, fRepeatFromStart = false;  /* fRepeatFromStart is set true "start" or "session_create" labels are used. This happens if -RN cmd line entry is given (look for "nRepeat") or certain stress test types are specified */
-#define MAX_APP_STR_LEN 2000
 char tmpstr[MAX_APP_STR_LEN];
 
   	if (isMasterThread) {  /* print banner including program and lib version info, copyright */
@@ -426,7 +364,7 @@ char tmpstr[MAX_APP_STR_LEN];
          if (Mode & ANALYTICS_MODE) printf("  Analytics mode with ptime push/pull rate enabled\n");
          if (Mode & ENABLE_STREAM_GROUP_ASR) printf("  stream group output ASR enabled\n");
          if (Mode & ENABLE_DER_STREAM_DECODE) printf("  encapsulated DER stream detection and decoding enabled\n");
-         if (Mode & ENABLE_DEBUG_STATS) printf("  debug stats enabled\n");
+         if (Mode & ENABLE_DEBUG_STATS) printf("  debug info and stats enabled\n");
          if (Mode & ENABLE_AUTO_ADJUST_PUSH_RATE) printf("  auto-adjust dynamic packet push rate\n");
          if (Mode & DISABLE_DTX_HANDLING) printf("  DTX handling disabled\n");
          if (Mode & DISABLE_FLC) printf("  FLC (frame loss concealment) on stream group output disabled\n");
@@ -507,7 +445,7 @@ start:  /* note - label used only if test mode repeats are enabled */
 
    if (thread_info[thread_index].fDynamicCallMode) nSessionsConfigured = 0;
    else {
-      nSessionsConfigured = ReadSessionConfig(session_data, thread_index);
+      nSessionsConfigured = ReadSessionConfig(session_data, thread_index);  /* note - ReadSessionConfig() is in session_app.cpp */
       if (!nSessionsConfigured) goto cleanup;
    }
 
@@ -519,7 +457,7 @@ start:  /* note - label used only if test mode repeats are enabled */
 
 /* set up SDP info from command line .sdp entry, if any */
 
-   SDPSetup(szSDPFile, thread_index);
+   SDPSetup(szSDPFile, thread_index);  /* note - SDPSetup() is in sdp_app.cpp */
 
 /* check for any setup errors */
 
@@ -537,7 +475,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    if (!thread_info[thread_index].fDynamicCallMode) {  /* if cmd line not in dynamic call mode, create static sessions */
 
-      if (StaticSessionCreate(hSessions, session_data, nSessionsConfigured, thread_index) < 0) goto cleanup;   /* error out if static sessions were configured but none created */
+      if (StaticSessionCreate(hSessions, session_data, nSessionsConfigured, thread_index) < 0) goto cleanup;   /* error out if static sessions were configured but none created. Note - StaticSessionCreate() is in session_app.cpp */
    }
 
 /* all packet I/O and static session creation (if any) complete, sync app threads before continuing */
@@ -593,13 +531,13 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    /* update screen counters */
 
-      UpdateCounters(cur_time, thread_index);
+      UpdateCounters(cur_time, thread_index);  /* in user_io.cpp */
 
    /* update test conditions as needed. Note that repeating tests exit the push/pull loop here, after each thread detects end of input and flushes sessions. Also auto-quit (single app thread, no repeat) exits here */
 
       if (!TestActions(hSessions, thread_index)) break;
 
-   } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* process interactive keyboard commands */
+   } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* process interactive keyboard commands, see user_io.cpp */
 
  
 /* session deletion */
@@ -937,193 +875,6 @@ uint8_t before_sync, after_sync;
    } while (before_sync == after_sync);
 }
 
-/* read session configuration file and create static sessions.  Note this depends on -dN cmd line entry, see Mode var comments above */
-
-int ReadSessionConfig(SESSION_DATA session_data[], int thread_index) {
-
-char default_session_config_file[] = "session_config/packet_test_config";
-char* session_config_file;
-FILE* session_cfg_fp = NULL;
-int nSessionsConfigured = 0;
-char tmpstr[1024];
-
-   if (thread_info[thread_index].init_err) return 0;
-
-   if (strlen(MediaParams[0].configFilename) == 0 || access(MediaParams[0].configFilename, F_OK) == -1) {
-
-      if (strlen(MediaParams[0].configFilename) == 0) goto err;
-      
-      strcpy(tmpstr, "../");  /* try up one subfolder, in case the cmd line entry forgot the "../" prefix */
-      strcat(tmpstr, MediaParams[0].configFilename);
-
-      if (access(tmpstr, F_OK) == -1) {
-err:
-         printf("Specified config file: %s does not exist, using default file\n", MediaParams[0].configFilename);
-         session_config_file = default_session_config_file;
-      }
-      else session_config_file = tmpstr;
-   }
-   else session_config_file = MediaParams[0].configFilename;
-
-   printf("Opening session config file: %s\n", session_config_file);
-
-/* open session config file */
-
-   session_cfg_fp = fopen(session_config_file, "r");
-
-   if (session_cfg_fp == NULL) {
-
-      fprintf(stderr, "Error: SessionConfiguration() says failed to open static session config file %s, exiting mediaMin (%d)\n", session_config_file, thread_index);
-      thread_info[thread_index].init_err = true;
-
-      return 0;
-   }
-
-/* parse session config file */
-
-   while (run > 0 && (parse_session_config(session_cfg_fp, &session_data[nSessionsConfigured]) != -1)) nSessionsConfigured++;
-
-   printf("Info: SessionConfiguration() says %d session(s) found in config file\n", nSessionsConfigured);
-
-   if (nSessionsConfigured > MAX_SESSIONS) {
-
-      fprintf(stderr, "Warning: SessionConfiguration() says number of sessions exceeds pktlib max, reducing to %d\n", MAX_SESSIONS);
-      nSessionsConfigured = MAX_SESSIONS;
-   }
-
-/* close session config file */
-
-   fclose(session_cfg_fp);
-
-   return nSessionsConfigured;
-}
-
-/* create static sessions */
-
-int StaticSessionCreate(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, int thread_index) {
-
-int i, nSessionsCreated = 0;
-HSESSION hSession;
-
-   for (i=0; i<nSessionsConfigured; i++) {
-
-      printf("++++++++Creating session %d\n", thread_info[thread_index].total_sessions_created);
-
-      if (Mode & CREATE_DELETE_TEST) {  /* change group ID names */
-
-         static int create_counter = 10000;
-         char tmp_str[128];
-
-         itoa(create_counter, tmp_str, 10);
-         if (session_data[i].group_term.group_mode > 0) memmove(&session_data[i].group_term.group_id[strlen(session_data[i].group_term.group_id)-5], tmp_str, strlen(tmp_str));
-         if (session_data[i].term1.group_mode > 0) memmove(&session_data[i].term1.group_id[strlen(session_data[i].term1.group_id)-5], tmp_str, strlen(tmp_str));
-         if (session_data[i].term2.group_mode > 0) memmove(&session_data[i].term2.group_id[strlen(session_data[i].term2.group_id)-5], tmp_str, strlen(tmp_str));
-
-         if (i == nSessionsConfigured-1) create_counter++;  /* bug fix, JHB Jan 2019 */
-      }
-
-      if (Mode & DISABLE_DTX_HANDLING) {  /* DTX handling enabled by default in session config parsing (in transcoder_control.c), disable here if specified in cmd line */
-         session_data[i].term1.uFlags &= ~TERM_DTX_ENABLE;
-         session_data[i].term2.uFlags &= ~TERM_DTX_ENABLE;
-      }
-
-      if (Mode & DISABLE_PACKET_REPAIR) {  /* packet repair flags enabled by default in session config parsing (in transcoder_control.c), disable them here if specified in cmd line */
-         session_data[i].term1.uFlags &= ~(TERM_SID_REPAIR_ENABLE | TERM_PKT_REPAIR_ENABLE);
-         session_data[i].term2.uFlags &= ~(TERM_SID_REPAIR_ENABLE | TERM_PKT_REPAIR_ENABLE);
-      }
-
-      if (thread_info[thread_index].nInPcapFiles > 1) session_data[i].term2.uFlags |= TERM_EXPECT_BIDIRECTIONAL_TRAFFIC;  /* if we have multiple cmd line inputs, and we are in static session mode, we can set this flag, which makes p/m thread receive queue handling more efficient for bidirectional traffic */
-
-      int target_delay = 0, max_delay = 0;
-
-      if (nJitterBufferParams >= 0) {  /* cmd line param -jN, if entered. nJitterBufferParams is -1 if no cmd line entry */
-         target_delay = nJitterBufferParams & 0xff;
-         max_delay = (nJitterBufferParams & 0xff00) >> 8;
-      }
-      else if ((Mode & ENABLE_STREAM_GROUPS) || session_data[i].group_term.group_mode > 0) {
-         target_delay = 10;
-         max_delay = 14;
-      }
-
-      if (target_delay) session_data[i].term1.jb_config.target_delay = target_delay;
-      if (max_delay) session_data[i].term1.jb_config.max_delay = max_delay;
-
-      if (!(Mode & ANALYTICS_MODE) || target_delay > 7) session_data[i].term1.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
-
-      if ((Mode & ENABLE_STREAM_GROUPS) || session_data[i].group_term.group_mode > 0) {  /* adjust stream group_mode if needed, prior to creating session */
-
-         Mode |= ENABLE_STREAM_GROUPS;  /* in case stream groups were not enabled on cmd line, but they are for at least one session in the static session config file */
-
-         if (Mode & ENABLE_WAV_OUTPUT) {
-
-            session_data[i].group_term.group_mode |= STREAM_GROUP_WAV_OUT_MERGED | STREAM_GROUP_WAV_OUT_STREAM_MONO;  /* specify mono and group output wav files. If merging is enabled, the group output wav file will contain all input streams merged (unified conversation) */
-
-            if (!fStressTest && !fCapacityTest && nRepeatsRemaining[thread_index] == -1) {  /* specify N-channel wav output. Disable if load/capacity or stress test options are active. Don't enable if repeat is active, otherwise thread preemption warnings may show up in the event log (because N-channel processing takes a while), JHB Jun 2019 */
-
-               session_data[i].group_term.group_mode |= STREAM_GROUP_WAV_OUT_STREAM_MULTICHANNEL;
-               fNChannelWavOutput = true;
-            }
-         }
-
-         session_data[i].term1.uFlags |= TERM_OVERRUN_SYNC_ENABLE;  /* overrun synchronization enabled by default in session config parsing (in transcoder_control.c), enabling again here is redundant and shown only for info purposes */
-         session_data[i].term2.uFlags |= TERM_OVERRUN_SYNC_ENABLE;
-
-         if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & ENABLE_ONHOLD_FLUSH_DETECT)) {
-            session_data[i].term1.group_mode |= STREAM_CONTRIBUTOR_ONHOLD_FLUSH_DETECTION_ENABLE;
-            session_data[i].term2.group_mode |= STREAM_CONTRIBUTOR_ONHOLD_FLUSH_DETECTION_ENABLE;
-         }
-
-         if ((Mode & DISABLE_CONTRIB_PACKET_FLUSH) || (!(Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & ENABLE_AUTO_ADJUST_PUSH_RATE))) {
-            session_data[i].term1.group_mode |= STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH;  /* auto-adjust push rate (i.e. not based on timestamp timing) disqualifies use of packet flush, JHB Dec2019 */
-            session_data[i].term2.group_mode |= STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH;
-         }
-
-         if (Mode & ENABLE_DEBUG_STATS) session_data[i].group_term.group_mode |= STREAM_GROUP_DEBUG_STATS;
-         if (Mode & ENABLE_DEBUG_STATS_L2) session_data[i].group_term.group_mode |= STREAM_GROUP_DEBUG_STATS_L2;
-         if (Mode & DISABLE_FLC) session_data[i].group_term.group_mode |= STREAM_GROUP_FLC_DISABLE;
-
-         if (!session_data[i].group_term.ptime) session_data[i].group_term.ptime = 20;
-      }
-
-      SetIntervalTiming(&session_data[i]);  /* set termN.input_buffer_interval and termN.output_buffer_interval -- for user apps note it's important this be done */
-
-   /* call DSCreateSession() API (in pktlib .so) */
-
-      if ((hSession = DSCreateSession(hPlatform, NULL, &session_data[i], GetSessionFlags())) >= 0) {
-
-         hSessions[nSessionsCreated++] = hSession;  /* valid session handle returned from DSCreateSession(), add to hSessions[] */
-
-         #ifdef STREAM_GROUP_BUFFER_TIME
-         DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_BUFFER_TIME, STREAM_GROUP_BUFFER_TIME, NULL);  /* if STREAM_GROUP_BUFFER_TIME defined above, set group buffer time to value other than 260 msec default */
-         #endif
-
-         thread_info[thread_index].nSessionsCreated++;  /* update per app thread vars */
-         thread_info[thread_index].total_sessions_created++;
-
-      /* for debug mode "create sessions from pcap", create 1 initial session, create all others dynamically, based on pcap contents */
-
-         if (Mode & CREATE_DELETE_TEST_PCAP) break;
-      }
-      else app_printf(APP_PRINTF_NEWLINE | APP_PRINTF_EVENT_LOG, thread_index, "mediaMin INFO: Failed to create static session %d, continuing test with already created sessions \n", i);
-   }
-
-   if (nSessionsCreated) {
-
-      JitterBufferOutputSetup(thread_index);  /* set up jitter buffer output for all static sessions created */
-
-      if (Mode & ENABLE_STREAM_GROUPS) {  /* stream group output depends on session creation results, so we do after all static sessions are created. In Dynamic Call mode, it's done when sessions are created after first appearing in the input stream */
-   
-         StreamGroupOutputSetup(hSessions, 0, thread_index);  /* if any sessions created have a group term, set up stream group output */
-      }
-   }
-   else if (nSessionsConfigured) {
-
-      thread_info[thread_index].init_err = true;
-      return -1;  /* return error -- static sessions were configured but none created */
-   }
-
-   return nSessionsCreated;
-}
 
 /* following are dynamic session creation definitions and local functions */
 
@@ -1454,7 +1205,7 @@ uint32_t clock_rate = 0;
 
    if (thread_info[thread_index].num_rtpmaps[nInput]) {
 
-   /* search through rtpmap payload types previously parsed and recorded by SDPAdd() */
+   /* search through rtpmap payload types previously parsed and recorded by SDPAdd() (in sdp_app.cpp) */
 
       for (i=0; i<thread_info[thread_index].num_rtpmaps[nInput]; i++) {
 
@@ -1487,6 +1238,9 @@ uint32_t clock_rate = 0;
                case sdp::SDP_EVS:
                   found_codec_type = EVS;
                   break;
+
+               case sdp::SDP_CN:  /* codec types in sdp/types.h that SDK version of mediaMin is not handling, JHB May2021 */
+               case sdp::SDP_H264:
 
                default:
                   int pyld_type_index = min(max(pyld_type-96, 0), MAX_DYN_PYLD_TYPES-1);
@@ -1901,11 +1655,11 @@ err_msg:
 
 /* set timing values, including termN.input_buffer_interval and termN.output_buffer_interval -- for user apps note it's very important this be done before creating the session */
 
-   SetIntervalTiming(session);
+   SetIntervalTiming(session);  /* note - in session_app.cpp */
 
 /* create the session */
 
-   if ((hSession = DSCreateSession(hPlatform, NULL, session, GetSessionFlags())) < 0) {
+   if ((hSession = DSCreateSession(hPlatform, NULL, session, GetSessionFlags())) < 0) {  /* note - GetSessionFlags() is in session_app.cpp */
 
       app_printf(APP_PRINTF_NEWLINE, thread_index, "Failed to create dynamic session, app thread %d", thread_index); 
       return -2;  /* critical error */
@@ -2112,40 +1866,44 @@ read_packet:
             continue;
          }
 
-         bool fFoundEncapsulatedCCPkt = false;
+      /* DER encoded encapsulated stream processing, JHB Mar2021 */
 
-      /* DER encoded encapsulated stream processing, if enabled, JHB Mar2021 */
+         if (Mode & ENABLE_DER_STREAM_DECODE) {  /* look for DER encoded streams if specified in cmd line */
 
-         if (Mode & ENABLE_DER_STREAM_DECODE) {
+            string szInterceptPointId(256, (char)0), szId(256, (char)0);  /* create null C++ strings we can give to either C++ or C functions, JHB May2021 */
+            uint16_t der_dest_port_list[MAX_DER_DSTPORTS] = { 0 };
 
-            if (!thread_info[thread_index].hDerStreams[j]) {  /* look for DER encoded stream */
+            HDERSTREAM hDerStream = thread_info[thread_index].hDerStreams[j];
 
-               char szInterceptPointId[256] = "";
-               uint16_t der_dest_port = 0;
+            if (hDerStream) DSGetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT_LIST, der_dest_port_list);  /* DER stream already exists, initialize dest port list */
+            
+         /* DSFindDerStream() finds info at HI2 level, including 1) new DER streams, 2) new destination ports for an existing DER stream */
 
-               if (DSIsDerStream(pkt_in_buf, DS_ISDER_INTERCEPTPOINTID | DS_ISDER_DSTPORT | DS_ISDER_PORT_MUST_BE_EVEN, szInterceptPointId, &der_dest_port)) {
+            if (DSFindDerStream(pkt_in_buf, DS_DER_FIND_INTERCEPTPOINTID | DS_DER_FIND_DSTPORT | DS_DER_FIND_PORT_MUST_BE_EVEN, &szInterceptPointId[0], der_dest_port_list) > 0) {
 
-                  HDERSTREAM hDerStream = DSCreateDerStream(szInterceptPointId, der_dest_port, 0);
-                  if (hDerStream > 0) thread_info[thread_index].hDerStreams[j] = hDerStream;
+               if (!hDerStream) {  /* create DER stream if needed */
+                  hDerStream = DSCreateDerStream(&szInterceptPointId[0], der_dest_port_list[0], 0);
+                  if (hDerStream > 0) thread_info[thread_index].hDerStreams[j] = hDerStream; else hDerStream = (intptr_t)NULL;  /* to-do: add error handling */
                }
+               else if (DSGetDerStreamInfo(hDerStream, DS_DER_INFO_INTERCEPTPOINTID, &szId[0]) > 0 &&  /* DER stream already exists, add port if interception point Ids match */
+                        szInterceptPointId == szId) DSSetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT_LIST, der_dest_port_list);
             }
 
-            if (thread_info[thread_index].hDerStreams[j]) {  /* process DER encoded stream */
-
-               HDERSTREAM hDerStream = thread_info[thread_index].hDerStreams[j];
+            if (hDerStream) {  /* process DER encoded streams at HI3 level */
 
                uint8_t pkt_out_buf[MAX_RTP_PACKET_LEN] = { 0 };
                HI3_DER_DECODE der_decode = { 0 };
                int cc_pktlen;
+               bool fFoundEncapsulatedCCPkt = false;
 
-            /* see if DSDecodeDerStream() finds a valid CC packet */
+            /* DSDecodeDerStream() parses/decodes a DER stream looking for CC packets, and if found returns as fully formed IPv4/6 UDP packets */
 
-               unsigned int uFlags = DS_DER_SEQNUM | DS_DER_TIMESTAMP | DS_DER_TIMESTAMPQUALIFIER | DS_DER_CC_PACKET;
+               unsigned int uFlags = DS_DER_SEQNUM | DS_DER_TIMESTAMP | DS_DER_TIMESTAMPQUALIFIER | DS_DER_CC_PACKET;  /* tell DSDecodeDerStream() what to look for */
                if (Mode & ENABLE_DEBUG_STATS) uFlags |= DS_DECODE_DER_PRINT_DEBUG_INFO;
 
-               if ((cc_pktlen = DSDecodeDerStream(hDerStream, pkt_in_buf, pkt_out_buf, uFlags, &der_decode))) {
+               if ((cc_pktlen = DSDecodeDerStream(hDerStream, pkt_in_buf, pkt_out_buf, uFlags, &der_decode)) > 0) {  /* 0 means nothing found, < 0 is an error condition, > 0 is length of found packet */
 
-                  pkt_len = cc_pktlen;  /* valid CC packet found, overwrite pkt_len, packet */
+                  pkt_len = cc_pktlen;  /* valid CC packet found, set new pkt_len and pkt_in_buf values for subsequent IP/UDP packet processing */
                   memcpy(pkt_in_buf, pkt_out_buf, pkt_len);
                   fFoundEncapsulatedCCPkt = true;
 
@@ -2170,16 +1928,22 @@ read_packet:
 
          /* look for SIP invite packets */
 
-            bool fSIPInvite = FindSIPInvite(pkt_in_buf, j, thread_index);
+            bool fSIPInvite = FindSIPInvite(pkt_in_buf, j, thread_index);  /* note - FindSIPInvite() is in sdp_app.cpp */
 
             if (!fSIPInvite) {
 
-               uint16_t der_dest_port, dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL);
+               uint16_t der_dest_port_list[MAX_DER_DSTPORTS] = { 0 };
+               uint16_t dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL);
                HDERSTREAM hDerStream;
+               int i = 0;
 
-               if ((hDerStream = thread_info[thread_index].hDerStreams[j])) der_dest_port = DSGetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT, NULL);
+               if ((hDerStream = thread_info[thread_index].hDerStreams[j])) {
 
-               if (!hDerStream || dest_port == der_dest_port) {
+                  DSGetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT_LIST, der_dest_port_list);
+                  for (i=0; i<MAX_DER_DSTPORTS; i++) if (dest_port > 0 && dest_port == der_dest_port_list[i]) break;
+               }
+
+               if ((Mode & ENABLE_DEBUG_STATS) && (!hDerStream || i < MAX_DER_DSTPORTS)) {
 
                   int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, pkt_len, NULL, NULL);
                   char szDerStream[20] = "";
@@ -2710,215 +2474,6 @@ exit:
 }
 
 
-/* set input and output buffer interval timing.  Currently we are using term1.xx values for overall timing */
-
-void SetIntervalTiming(SESSION_DATA* session_data) {
-
-/* set input buffer intervals */
-
-   if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode, we set termN buffer_interval values to zero regardless of what they already are, and regardless of -rN cmd line entry */
-
-      session_data->term1.input_buffer_interval = 0;
-      session_data->term2.input_buffer_interval = 0;
-   }
-   else if ((int)frameInterval[0] != -1) {  /* frameInterval[0] is value of N in-rN cmd line entry */
-
-      if (frameInterval[0] < session_data->term1.ptime) session_data->term1.input_buffer_interval = 0;
-      else session_data->term1.input_buffer_interval = frameInterval[0];
-
-      if (frameInterval[0] < session_data->term2.ptime) session_data->term2.input_buffer_interval = 0;
-      else session_data->term2.input_buffer_interval = frameInterval[0];
-   }
-
-   if (session_data->term1.input_buffer_interval == -1) session_data->term1.input_buffer_interval = session_data->term1.ptime;  /*  if buffer_interval values are not given in either programmatic session setup (dynamic calls) or session config file, then set to ptime */
-   if (session_data->term2.input_buffer_interval == -1) session_data->term2.input_buffer_interval = session_data->term2.ptime;
-
-   if (Mode & ENABLE_AUTO_ADJUST_PUSH_RATE) {  /* set in situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
-
-      session_data->term1.uFlags |= TERM_IGNORE_ARRIVAL_TIMING;
-      session_data->term2.uFlags |= TERM_IGNORE_ARRIVAL_TIMING;
-   }
-
-/* set output buffer intervals:
-
-   -required for packet loss flush and pastdue flush to be active (see packet_flow_media_proc.c)
-   -required for accurate stream group output timing (i.e. should be set if stream groups are active)
-*/
-
-   if (session_data->term1.output_buffer_interval == -1 || (Mode & DYNAMIC_CALL)) {
-
-      if ((Mode & ANALYTICS_MODE) || session_data->term1.input_buffer_interval) session_data->term1.output_buffer_interval = session_data->term2.ptime;  /* output intervals use ptime from opposite terms */
-      else session_data->term1.output_buffer_interval = 0;
-   }
-
-   if (session_data->term2.output_buffer_interval == -1 || (Mode & DYNAMIC_CALL)) {
-
-      if ((Mode & ANALYTICS_MODE) || session_data->term2.input_buffer_interval)session_data->term2.output_buffer_interval = session_data->term1.ptime;
-      else session_data->term2.output_buffer_interval = 0;
-   }
-
-   if (Mode & ENABLE_STREAM_GROUPS) {
-
-      if ((Mode & ANALYTICS_MODE) ||
-          (session_data->term1.input_buffer_interval && session_data->term1.group_mode) ||
-          (session_data->term2.input_buffer_interval && session_data->term2.group_mode)) session_data->group_term.output_buffer_interval = session_data->group_term.ptime;
-
-      if (session_data->group_term.output_buffer_interval < 0) session_data->group_term.output_buffer_interval = 0;  /* if not specified, set to zero */
-   }
-
-   if ((int)frameInterval[0] == -1) frameInterval[0] = session_data->term1.input_buffer_interval;
-}
-
-
-unsigned int GetSessionFlags() {
-
-   unsigned int uFlags = DS_SESSION_MODE_IP_PACKET | DS_SESSION_DYN_CHAN_ENABLE | DS_SESSION_DISABLE_PRESERVE_SEQNUM;  /* default flags for DSCreateSession()*/
-
-   #if 0
-   uFlags |= DS_SESSION_STATE_ALLOW_DYNAMIC_ADJUST;  /* add dynamic jitter buffer delay adjust option, if needed */
-   #endif
-
-   #ifdef ENABLE_MANAGED_SESSIONS
-   uFlags |= DS_SESSION_USER_MANAGED;
-   #endif
-
-   #ifdef ALLOW_BACKGROUND_PROCESS  /* deprecated, no longer used */
-   if (use_bkgnd_process) {
-      uFlags |= DS_SESSION_DP_LINUX_SOCKETS;
-   }
-   else
-   #endif
-
-   if (!fNetIOAllowed) uFlags |= DS_SESSION_DISABLE_NETIO;
-
-   return uFlags;
-}
-
-
-/* SDPAdd
-
-  -add SDP info to thread data, for reference during dynamic session creation
-  -SDP info can be from command line .sdp file or SIP invite packet text data. SDP info can contain multiple Media elements, multiple rtpmap attributes
-  -SDP info can be added at any time, in any sequence (cmd line .sdp file, if one, is added first)
-  -currently duplicate media elements and rtpmap attributes are not filtered out. It's application dependent on whether first or latest matching rtpmap is used
-*/
- 
-bool SDPAdd(const char* szInvite, unsigned int uFlags, int nInput, int thread_index) {
-
-std::string sdpstr;
-
-   if (uFlags & SDP_ADD_STRING) sdpstr = szInvite;
-   else {
-
-   /* invite string NULL, read command line SDP file */
-
-      std::ifstream ifs(szInvite, std::ios::in);  /* note - ifs is an RAII object so ifstream will be closed when function exits */
-
-      if (!ifs.is_open()) {
-         Log_RT(2, "mediaMin ERROR: SDPAdd() file %s not found \n", szInvite);
-         return false;
-      }
-
-      std::string temp_sdpstr( (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>() );  /* ignore the extra (), it's a case of Most Vexing Parse (https://en.wikipedia.org/wiki/Most_vexing_parse) */
-      sdpstr = temp_sdpstr;
-   }
-
-   #ifdef PRINTSDPDEBUG
-   printf("\n sdp file = \n%s \n", sdpstr.c_str());  /* print all lines of sdp file */
-   #endif
-
-/* create SDP related items */
-
-   sdp::SDP sdp_session;
-   sdp::Reader reader;
-//   sdp::Writer writer;
-   sdp::Media* media = NULL;
-   int node = 0;
-
-// #define PRINTSDPDEBUG  /* turn on for SDP parsing debug */
-
-/* parse input SDP file into an sdp::SDP session */
-
-  reader.parse(sdpstr, &sdp_session);
-
-/* retrieve Media elements ("m=audio, m=video") */
-
-   #ifdef PRINTSDPDEBUG
-   sdp_session.print(NULL);
-   #endif
-
-   while (sdp_session.find(sdp::SDP_AUDIO, &media, &node)  /* find next audio Media element */
-          #if 0  /* uncomment to parse video Media elements */
-          || sdp_session.find(sdp::SDP_VIDEO, &media, &node)
-          #endif
-         ) {
-
-      #ifdef PRINTSDPDEBUG
-      printf(" + media found, media_node = %d \n", node);
-      #endif
-
-      node++;  /* increment node index, in case there are more Media elements */
-
-      vector<sdp::Attribute*> rtpmaps = {};  /* create an rtpmap vector, init to zero */
-
-      if (int num_rtpmaps = media->find(sdp::SDP_ATTR_RTPMAP, rtpmaps, NULL)) {  /* retrieve rtpmap attributes ("a=rtpmap:") for this Media element. Attribute nodes are children of Media element nodes, so starting node is always zero */
-
-         #ifdef PRINTSDPDEBUG
-         printf(" + num rtpmaps %d \n", num_rtpmaps);
-         #endif
-
-         for (int i=0; i<num_rtpmaps; i++) {  /* loop through rtpmap attributes */
-
-            sdp::AttributeRTP* rtpmap __attribute__ ((unused)) = (sdp::AttributeRTP*)rtpmaps[i];  /* map RTP attribute onto generic attribute in order to do something useful with it ... */
-
-            #ifdef PRINTSDPDEBUG
-            printf("%s rtpmap[%d], pyld type = %d, codec type = %d, sample rate = %d, num chan = %d \n", !i ? "\n" : "", i, rtpmap->pyld_type, rtpmap->codec_type, rtpmap->clock_rate, rtpmap->num_chan);
-            #endif
-         }
- 
-      /* save found rtmpaps in thread_info[] for reference in create_dynamic_session() */
-
-         if (!thread_info[thread_index].num_rtpmaps) thread_info[thread_index].rtpmaps[nInput] = rtpmaps;  /* first SDP info */
-         else {
-            vector<sdp::Attribute*> th_rtpmaps = thread_info[thread_index].rtpmaps[nInput];  /* append additional SDP info */
-            th_rtpmaps.insert( th_rtpmaps.end(), rtpmaps.begin(), rtpmaps.end() );
-            thread_info[thread_index].rtpmaps[nInput] = th_rtpmaps;
-         }
-
-         thread_info[thread_index].num_rtpmaps[nInput] += num_rtpmaps;  /* increment number of rtpmaps */
-      }
-   }
-
-   return true;
-}
-
-
-/* add SDP info from cmd line file, if any. Notes:
-
-   -cmd line SDP info applies to all inputs
-   -SDP info extracted from SIP invite packets applies only to input receiving the invite packets
-   -SDPAdd() adds SDP info text, extracted from either a file or SIP invite packets
-*/
-
-void SDPSetup(const char* szSDPFile, int thread_index) {
-
-int i;
-
-   if (szSDPFile && strlen(szSDPFile)) {
-
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) {
-         if (SDPAdd(szSDPFile, SDP_ADD_FILE, i, thread_index)) {
-            if (i == 0) Log_RT(4, "mediaMin INFO: cmd line SDP file %s processed \n", szSDPFile);
-         }
-         else {
-            Log_RT(2, "mediaMin ERROR: cmd line -s arg, SDP file %s not found \n", szSDPFile);
-            break;
-         }
-      }
-   }
-}
-
-
 void InputSetup(int thread_index) {
 
 int i = 0, j = 0;
@@ -3149,107 +2704,6 @@ unsigned int uFlags;
 }
 
 
-bool FindSIPInvite(uint8_t* pkt_in_buf, int nInput, int thread_index) {
-
-   int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL);
-   int pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL);
-
-   if (thread_info[thread_index].sip_save_len[nInput]) {
-
-      memmove(&pkt_in_buf[pyld_ofs + thread_info[thread_index].sip_save_len[nInput]], &pkt_in_buf[pyld_ofs], pyld_len);
-      memcpy(&pkt_in_buf[pyld_ofs], thread_info[thread_index].sip_save[nInput], thread_info[thread_index].sip_save_len[nInput]);
-      pyld_len += thread_info[thread_index].sip_save_len[nInput];
-      thread_info[thread_index].sip_save_len[nInput] = 0;
-      free(thread_info[thread_index].sip_save[nInput]);
-   }
-
-   bool fSIPInvite = false;
-   int index = 0;
-
-invite_check:
-
-   char search_str[50] = "a=rtpmap";
-   uint8_t* p;
-
-// if (index > pyld_len) fprintf(stderr, " ==== index %d > pyld_len %d \n", index, pyld_len);
-
-   if (pyld_len > index && (p = (uint8_t*)memmem(&pkt_in_buf[pyld_ofs+index], pyld_len-index, search_str, strlen(search_str)))) {  /* first find rtpmap, then back up and look for Length: */
-
-      strcpy(search_str, "Length:");
-
-      if ((p = (uint8_t*)memmem(&pkt_in_buf[pyld_ofs+index], (uint16_t)(p - &pkt_in_buf[index]), search_str, strlen(search_str)))) {
-
-         fSIPInvite = true;
-         uint8_t* p_ofs = p;
-
-         p += strlen(search_str);
-         int i = 0;
-         while (p[i] >= 0x20) i++;
-         p[i] = 0;
-         int len = atoi((const char*)p);
-         while (p[i] < 0x20) i++;
-         int start = i;
-
-         int rem = pyld_len - (&p[start] - &pkt_in_buf[pyld_ofs]);
-
-         if (len > rem) {  /* save partial SIP invite, starting with "Length:" */
-
-            thread_info[thread_index].sip_save_len[nInput] = pyld_len - (p_ofs - &pkt_in_buf[pyld_ofs]);
-            thread_info[thread_index].sip_save[nInput] = (uint8_t*)malloc(thread_info[thread_index].sip_save_len[nInput]);
-            memcpy(thread_info[thread_index].sip_save[nInput], p_ofs, thread_info[thread_index].sip_save_len[nInput]);
-         }
-         else {  /* complete SIP invite found, extract SDP info and add to thread data */
-
-            char szInvite[1024];
-            memcpy(szInvite, &p[start], len);
-            szInvite[len] = 0;
-
-            #if 1
-            uint16_t dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL);
-            Log_RT(4, "mediaMin INFO: SIP invite found, dst port = %u, pyld len = %d, len = %d, rem = %d, start = %d, index = %d \n%s", dest_port, pyld_len, len, rem, start, index, szInvite);
-            #endif
-
-            SDPAdd(szInvite, SDP_ADD_STRING, nInput, thread_index);  /* add SDP info to thread data */
-
-            index = &p[start] - &pkt_in_buf[pyld_ofs] + len;
-            goto invite_check;  /* look for more SIP invites in this packet */
-         }
-      }
-   }
-
-   return fSIPInvite;
-}
-
-/* update screen counters */
-
-void UpdateCounters(uint64_t cur_time, int thread_index) {
-
-char tmpstr[MAX_APP_STR_LEN] = "";
-static uint64_t last_time[MAX_PKTMEDIA_THREADS] = { 0 };
-
-   if (last_time[thread_index] == 0) last_time[thread_index] = cur_time;
-   if ((int64_t)cur_time - (int64_t)last_time[thread_index] <= 100*1000) return;  /* update counters no faster than 100 msec */
-
-   last_time[thread_index] = cur_time;
-
-   if (thread_info[thread_index].pkt_push_ctr != thread_info[thread_index].prev_pkt_push_ctr || thread_info[thread_index].pkt_pull_jb_ctr != thread_info[thread_index].prev_pkt_pull_jb_ctr || thread_info[thread_index].pkt_pull_xcode_ctr != thread_info[thread_index].prev_pkt_pull_xcode_ctr || thread_info[thread_index].pkt_pull_streamgroup_ctr != thread_info[thread_index].prev_pkt_pull_streamgroup_ctr) {
-
-      if (thread_info[thread_index].pkt_pull_jb_ctr >= 100000L) sprintf(tmpstr, "\rPsh %d, pul %d", thread_info[thread_index].pkt_push_ctr, thread_info[thread_index].pkt_pull_jb_ctr);
-      else sprintf(tmpstr, "\rPushed pkts %d, pulled pkts %d", thread_info[thread_index].pkt_push_ctr, thread_info[thread_index].pkt_pull_jb_ctr);
-      if (thread_info[thread_index].pkt_pull_xcode_ctr || thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], "j");
-      if (thread_info[thread_index].pkt_pull_xcode_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].pkt_pull_xcode_ctr);
-      if (thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %ds", thread_info[thread_index].pkt_pull_streamgroup_ctr);
-
-      thread_info[thread_index].prev_pkt_push_ctr = thread_info[thread_index].pkt_push_ctr;
-      thread_info[thread_index].prev_pkt_pull_jb_ctr = thread_info[thread_index].pkt_pull_jb_ctr;
-      thread_info[thread_index].prev_pkt_pull_xcode_ctr = thread_info[thread_index].pkt_pull_xcode_ctr;
-      thread_info[thread_index].prev_pkt_pull_streamgroup_ctr = thread_info[thread_index].pkt_pull_streamgroup_ctr;
-   }
-
-   if (strlen(tmpstr)) app_printf(APP_PRINTF_SAMELINE | APP_PRINTF_THREAD_INDEX_SUFFIX, thread_index, tmpstr);  /* use fully buffered I/O; i.e. not stdout (line buffered) or stderr (per character) */
-}
-
-
 /* start specified number of packet/media threads */
 
 int StartPacketMediaThreads(int num_pm_threads, int thread_index) {  /* should only be called by master thread.  See "thread sync points" above (thread_syncN: labels) */
@@ -3278,152 +2732,6 @@ unsigned int uFlags;
    }
 
    return 1;
-}
-
-
-/* process interactive keyboard input */
-
-bool ProcessKeys(HSESSION hSessions[], uint64_t cur_time, DEBUG_CONFIG* dbg_cfg, int thread_index) {
-
-char key;
-static int app_thread_index_debug = 0;
-static int pm_thread_index_debug = 0;
-int i;
-char tmpstr[500] = "";
-PACKETMEDIATHREADINFO PacketMediaThreadInfo;
-static uint64_t last_time = 0;
-static uint8_t save_uPrintfLevel = 0;
-
-   if (isMasterThread) {  /* master application threads (thread_index = 0) thread handles interactive keyboard commands */
-
-      if (last_time == 0) last_time = cur_time;
-      if ((int64_t)cur_time - (int64_t)last_time < 100*1000 && !fPause) return false;  /* check keys every 100 msec. Make an exception for pause key, otherwise we never get out of pause */
-
-      last_time = cur_time;
-
-      key = (char)tolower(getkey());
-
-      if (key == 'q' || run <= 0) {  /* quit key, Ctrl-C, or p/m thread error condition */
-
-         strcpy(tmpstr, "#### ");
-         if (key == 'q') sprintf(&tmpstr[strlen(tmpstr)], "q key entered");
-         else if (run == 0) sprintf(&tmpstr[strlen(tmpstr)], "Ctrl-C entered");
-         else if (run < 0) sprintf(&tmpstr[strlen(tmpstr)], "p/m thread error and abort condition"); 
-         sprintf(&tmpstr[strlen(tmpstr)], ", exiting mediaMin");
-         app_printf(APP_PRINTF_NEWLINE, thread_index, tmpstr);
-
-         fQuit = true;
-         return true;
-      }
-
-      if (key == 's') fStop = true;  /* graceful stop, not the same as quit. In a graceful stop each app thread stops after it reaches the end of its inputs, flushes sessions, etc, and does not repeat */
-
-      if (key == 'p') fPause ^= 1;  /* pause */
-
-      if (key == 'o') {  /* toggle p/m thread screen output off/on. Applies to all active p/m threads */
-
-         if (dbg_cfg->uPrintfLevel != 0) {
-
-            save_uPrintfLevel = dbg_cfg->uPrintfLevel;
-            dbg_cfg->uPrintfLevel = 0;
-         }
-         else dbg_cfg->uPrintfLevel = save_uPrintfLevel;
-
-         DSConfigPktlib(NULL, dbg_cfg, DS_CP_DEBUGCONFIG);
-      }
-
-      if (key >= '0' && key <= '9') {
-
-         pm_thread_index_debug = key - '0';  /* select a packet/media thread for debug output (subsequent 'd' input) */
-         if (pm_thread_index_debug >= num_pktmed_threads) pm_thread_index_debug = num_pktmed_threads-1;
-      }
-
-      bool fDisp = false;
-
-      if (key == '-') {
-         app_thread_index_debug--;
-         if (app_thread_index_debug < 0) app_thread_index_debug = (int)(num_app_threads-1);
-         fDisp = true;
-      }
-
-      if (key == '+') {
-         app_thread_index_debug++;
-         if (app_thread_index_debug == (int)num_app_threads) app_thread_index_debug = 0;
-         fDisp = true;
-      }
-
-      if (key == 'd' || fDisp) {  /* display debug output */
-
-         DSGetLogTimeStamp(tmpstr, sizeof(tmpstr), DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP | DS_LOG_LEVEL_UPTIME_TIMESTAMP);
-
-         char repeatstr[50];
-         if (!fRepeatIndefinitely && nRepeatsRemaining[thread_index] >= 0) sprintf(repeatstr, ", repeats remaining = %d", nRepeatsRemaining[thread_index]);  /* if cmd line entry includes -RN with N >= 0, nRepeatsRemaining will be > 0 for repeat operation, JHB Jan2020 */
-         else if (nRepeatsRemaining[thread_index] == -1) strcpy(repeatstr, ", no repeats");  /* nRepeat is -1 if cmd line has no -RN entry (no repeats). For cmd line entry -R0, fRepeatIndefinitely will be set */
-
-         printf("%s#### (App Thread) %sDebug info for app thread %d, run = %d%s \n", uLineCursorPos ? "\n" : "", tmpstr, app_thread_index_debug, run, fRepeatIndefinitely ? ", repeating indefinitely" : repeatstr);
-
-         strcpy(tmpstr, "");
-         for (i=0; i<thread_info[app_thread_index_debug].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " %d", thread_info[app_thread_index_debug].flush_state[i]);
-         printf("flush state =%s, flush_count = %d, nSessionsCreated = %d, push cnt = %d, jb pull cnt = %d, xcode pull cnt = %d \n", tmpstr, thread_info[app_thread_index_debug].flush_count, thread_info[app_thread_index_debug].nSessionsCreated, thread_info[app_thread_index_debug].pkt_push_ctr, thread_info[app_thread_index_debug].pkt_pull_jb_ctr, thread_info[app_thread_index_debug].pkt_pull_xcode_ctr);
-
-         if (hSessions) {
-
-            sprintf(tmpstr, "push queue check =");
-            for (i=0; i<thread_info[app_thread_index_debug].nSessionsCreated; i++) {
-               if (!(hSessions[i] & SESSION_MARKED_AS_DELETED)) sprintf(&tmpstr[strlen(tmpstr)], " %d", DSPushPackets(DS_PUSHPACKETS_GET_QUEUE_STATUS, NULL, NULL, &hSessions[i], 1));
-            }
-
-            sprintf(&tmpstr[strlen(tmpstr)], ", pull queue check =");
-            for (i=0; i<thread_info[app_thread_index_debug].nSessionsCreated; i++) {
-               if (!(hSessions[i] & SESSION_MARKED_AS_DELETED)) sprintf(&tmpstr[strlen(tmpstr)], " %d", DSPullPackets(DS_PULLPACKETS_GET_QUEUE_STATUS | DS_PULLPACKETS_TRANSCODED | DS_PULLPACKETS_JITTER_BUFFER, NULL, NULL, hSessions[i], NULL, 0, 0));
-            }
-
-            sprintf(&tmpstr[strlen(tmpstr)], ", pcap input check =");
-            for (i=0; i<thread_info[app_thread_index_debug].nInPcapFiles; i++) {
-               sprintf(&tmpstr[strlen(tmpstr)], " %d", thread_info[app_thread_index_debug].pcap_in[i] != NULL);
-            }
- 
-            printf("%s \n", tmpstr);
-
-#if 0  /* deprecated, don't use this method */
-            run = 2;
-#else  /* ask for run-time debug output from one or more packet / media threads */
-            uint64_t uThreadList = 1UL << pm_thread_index_debug;  /* uThreadList is a bitwise list of threads to display.  In this example only one bit is set */
-            DSDisplayThreadDebugInfo(uThreadList, DS_DISPLAY_THREAD_DEBUG_INFO_SCREEN_OUTPUT, "#### (PM Thread) ");  /* display run-time debug info for one or more packet/media threads.  Note that DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT could also be used to print to the event log */
-#endif
-         }
-      }
-
-      if (key == 't') {  /* print packet/media thread info, some of which is redundant with the 'd' command above. This is mainly an example of using the DSGetThreadInfo() API. The PACKETMEDIATHREADINFO struct is defined in pktlib.h */
-
-         DSGetThreadInfo(pm_thread_index_debug, 0, &PacketMediaThreadInfo);
-         printf("\n##### debug info for packet/media thread %d \n", pm_thread_index_debug);
-         printf("thread id = 0x%llx, uFlags = 0x%x, niceness = %d, max inactivity time (sec) = %d\n", (unsigned long long)PacketMediaThreadInfo.threadid, PacketMediaThreadInfo.uFlags, PacketMediaThreadInfo.niceness, (int)(PacketMediaThreadInfo.max_inactivity_time/1000000L));
-
-         int num_counted = 0;
-         uint64_t cpu_time_sum = 0;
-
-         for (i=0; i<THREAD_STATS_TIME_MOVING_AVG; i++) {
-
-            if (PacketMediaThreadInfo.CPU_time_avg[i] > 1000) {
-
-               cpu_time_sum += PacketMediaThreadInfo.CPU_time_avg[i];
-               num_counted++;
-            }
-         }
-
-         printf("CPU time (msec): avg %2.2f, max %2.2f\n", 1.0*cpu_time_sum/max(num_counted, 1)/1000, 1.0*PacketMediaThreadInfo.CPU_time_max/1000);
-      }
-
-      if (key == 'z') {  /* do not use -- reserved for Linux / system stall simulation (p/m thread "zap" function, hehe) */
-         if (run == 99) run = 1;
-         else run = 99;
-      }
-
-      return false;
-   }
-
-   return fQuit;  /* non-master threads don't handle keyboard commands, they do whatever the master thread does */
 }
 
 
@@ -3775,58 +3083,6 @@ void handler(int signo)
 #endif
 }
 
-/* local function to handle application screen output and cursor position update */
-
-void app_printf(unsigned int uFlags, int thread_index, const char* fmt, ...) {
-
-char outstr[MAX_APP_STR_LEN];
-char* p;
-va_list va;
-int slen;
-
-   p = &outstr[1];
-
-   va_start(va, fmt);
-   vsnprintf(p, sizeof(outstr)-1, fmt, va);
-   va_end(va);
-
-   if ((uFlags & APP_PRINTF_THREAD_INDEX_SUFFIX) && num_app_threads > 1) sprintf(&p[strlen(p)], " (%d)", thread_index);  /* add application thread index suffix if specified */
-
-/* make a reasonable effort to coordinate screen output between application threads and p/m threads, JHB Apr2020:
-
-   -p/m threads indicate when they are printing to screen by setting a bit in pm_thread_printf
-   -atomic read/compare/write sets/clears isCursorMidLine to indicate cursor position is "start of line" or somewhere mid-line
-   -race conditions in determining when the cursor is mid-line can still occur, but they are greatly reduced
-*/
-
-   while (pm_thread_printf);  /* wait for any p/m threads printing to finish. No locks are involved so this is quick */
-
-   if ((slen = strlen(p)) && !(uFlags & APP_PRINTF_SAMELINE) && p[slen-1] != '\n') { strcat(p, " \n"); slen += 2; }
-
-   if (slen) {
-
-      if ((uFlags & APP_PRINTF_NEWLINE) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) *(--p) = '\n';  /* update isCursorMidLine if needed */
-      else if (p[slen-1] != '\n') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);
-
-      uLineCursorPos = p[slen-1] != '\n' ? slen : 0;  /* update line cursor position */
-
-      printf("%s", p);  /* use buffered output */
-      
-      if ((uFlags & APP_PRINTF_EVENT_LOG) || (uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP)) {
-
-         if (uFlags & APP_PRINTF_EVENT_LOG_STRIP_LFs) {
-
-            bool fEndLF = false;
-            char* pLF = strrchr(p, '\n');
-            if (pLF == p+strlen(p)-1) { fEndLF = true; *pLF = '~'; }  /* don't strip end LF */
-            while ((pLF = strrchr(p, '\n'))) *pLF = '.';  /* replace any formatting LFs with . */
-            if (fEndLF) *(p+strlen(p)-1) = '\n';  /* restore end LF */
-         }
-
-         Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY | ((uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP) ? DS_LOG_LEVEL_NO_TIMESTAMP : 0), p);  /* if specified also print to event log */
-      }
-   }
-}
 
 void TimerSetup() {
 
@@ -3892,7 +3148,7 @@ int TestActions(HSESSION hSessions[], int thread_index) {
 
 int i, ret_val = 1;
 
-/* actions for stress tests, if active (see Mode var comments at top for possible tests that can be specified in the cmd line) */
+/* actions for stress tests, if active (see Mode var comments in mediaMin.h for possible tests that can be specified in the cmd line) */
 
    if ((Mode & CREATE_DELETE_TEST_PCAP) && debug_test_state == DELETE)  /* delete dynamic sessions in the "create from pcap" stress test mode.  Note that debug_test_state is updated by a timer in the "handler" signal handler function */
    {
