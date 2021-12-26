@@ -111,7 +111,12 @@
                           -SDPSetup(), SDPAdd(), and FindSIPInvite() to sdp_app.cpp
                           -ReadSessionConfig(), StaticSessionCreate(), SetTimingInterval(), and GetSessionFlags() to session_app.cpp
                           -UpdateCounters(), ProcessKeys(), and app_printf() to user_io.cpp
-   Modified May 2021 JHB, simplify DER encapsulated stream handling (around DSFindDerStream() and DSDecodeDerStream() ). Add comments
+   Modified May 2021 JHB, simplify DER encapsulated stream handling (around DSFindDerStream() and DSDecodeDerStream() ). Added comments
+   Modified Dec 2021 JHB, add experimental handling of .ber files on command line. Note the file input type definition PCAP_TYPE_BER added in pktlib.h
+   Modified Dec 2021 JHB, re-organize RTP packet validation in create_dynamic_session() - blunt checks first with no warnings, increasing to precise checks that warn
+   Modified Dec 2021 JHB, add handling for non-IP packets (e.g. ARP, 802.2 LLC frames) in PushPackets()
+   Modified Dec 2021 JHB, add handling for IP non-RTP packets (e.g. ICMP, DHCP) in create_dynamic_session(). Note a change was made in pktlib to handle ICMPv6
+   Modified Dec 2021 JHB, implement debug flags ENABLE_DER_DECODING_STATS and ENABLE_INTERMEDIATE_PCAP
 */
 
 
@@ -167,7 +172,7 @@ using namespace std;
 #define VALGRIND_DELAY 100  /* usleep delay value in usec for allowing valgrind to run multithreaded apps on the same core */
 #endif
 
-static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 3.01.0, Copyright (C) Signalogic 2018-2021\n";
+static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 3.2.0, Copyright (C) Signalogic 2018-2021\n";
 
 /* vars shared between app threads */
 
@@ -250,6 +255,8 @@ int create_dynamic_session(uint8_t *pkt, int pkt_len, HSESSION hSessions[], SESS
 int TestActions(HSESSION hSessions[], int thread_index);
 void handler(int signo);
 void TimerSetup();
+
+int packet_actions(uint8_t* pyld_data, uint8_t* pkt_in_buf, uint8_t protocol, int* pkt_len, unsigned int uFlags);
 
 
 /* mediaMin application entry point. Program and multithreading notes:
@@ -364,7 +371,6 @@ char tmpstr[MAX_APP_STR_LEN];
          if (Mode & ANALYTICS_MODE) printf("  Analytics mode with ptime push/pull rate enabled\n");
          if (Mode & ENABLE_STREAM_GROUP_ASR) printf("  stream group output ASR enabled\n");
          if (Mode & ENABLE_DER_STREAM_DECODE) printf("  encapsulated DER stream detection and decoding enabled\n");
-         if (Mode & ENABLE_DEBUG_STATS) printf("  debug info and stats enabled\n");
          if (Mode & ENABLE_AUTO_ADJUST_PUSH_RATE) printf("  auto-adjust dynamic packet push rate\n");
          if (Mode & DISABLE_DTX_HANDLING) printf("  DTX handling disabled\n");
          if (Mode & DISABLE_FLC) printf("  FLC (frame loss concealment) on stream group output disabled\n");
@@ -373,6 +379,10 @@ char tmpstr[MAX_APP_STR_LEN];
          if (Mode & ENABLE_TIMING_MARKERS) printf("  debug: 1 sec timing markers will be injected in stream group output\n");
          if (Mode & ENABLE_PACKET_INPUT_ALARM) printf("  input packet alarm enabled, if DSPushPackets() is not called for the alarm time limit a warning will show in the event log\n");
          if (Mode & DISABLE_AUTOQUIT) printf("  auto-quit disabled\n");
+
+         if (Mode & ENABLE_DEBUG_STATS) printf("  debug info and stats enabled\n");
+         if (Mode & ENABLE_DER_DECODING_STATS) printf("  DER decoding stats enabled\n");
+         if (Mode & ENABLE_INTERMEDIATE_PCAP) printf("  intermediate HIx / BER pcap output enabled\n");
       }
    }
 
@@ -657,14 +667,14 @@ cleanup:
 
    for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) {
    
-      if (thread_info[thread_index].pcap_in[i]) { fclose(thread_info[thread_index].pcap_in[i]); thread_info[thread_index].pcap_in[i] = NULL; }
+      if (thread_info[thread_index].pcap_in[i]) { DSClosePcap(thread_info[thread_index].pcap_in[i]); thread_info[thread_index].pcap_in[i] = NULL; }
 
       if ((Mode & ENABLE_DER_STREAM_DECODE) && thread_info[thread_index].hDerStreams[i]) DSDeleteDerStream(thread_info[thread_index].hDerStreams[i]);
    }
 
 /* close jitter buffer output file descriptors */
 
-   for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) if (thread_info[thread_index].fp_pcap_jb[i]) { fclose(thread_info[thread_index].fp_pcap_jb[i]); thread_info[thread_index].fp_pcap_jb[i] = NULL; }
+   for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) if (thread_info[thread_index].fp_pcap_jb[i]) { DSClosePcap(thread_info[thread_index].fp_pcap_jb[i]); thread_info[thread_index].fp_pcap_jb[i] = NULL; }
 
    if (!fExit && (Mode & CREATE_DELETE_TEST)) {
 
@@ -694,13 +704,13 @@ cleanup:
 
 /* close transcoded output file descriptors */
 
-   for (i=0; i<thread_info[thread_index].nOutPcapFiles; i++) if (thread_info[thread_index].pcap_out[i]) { fclose(thread_info[thread_index].pcap_out[i]); thread_info[thread_index].pcap_out[i] = NULL; }
+   for (i=0; i<thread_info[thread_index].nOutPcapFiles; i++) if (thread_info[thread_index].pcap_out[i]) { DSClosePcap(thread_info[thread_index].pcap_out[i]); thread_info[thread_index].pcap_out[i] = NULL; }
 
 /* close stream group output file descriptors and other items */
 
    for (i=0; i<MAX_STREAM_GROUPS; i++) {
 
-      if (thread_info[thread_index].fp_pcap_group[i]) { fclose(thread_info[thread_index].fp_pcap_group[i]); thread_info[thread_index].fp_pcap_group[i] = NULL; }
+      if (thread_info[thread_index].fp_pcap_group[i]) { DSClosePcap(thread_info[thread_index].fp_pcap_group[i]); thread_info[thread_index].fp_pcap_group[i] = NULL; }
       strcpy(thread_info[thread_index].szGroupName[i], "");
       thread_info[thread_index].fFirstGroupPull[i] = false;
       for (j=0; j<MAX_INPUT_REUSE; j++) thread_info[thread_index].fGroupTermCreated[i][j] = false;
@@ -1155,12 +1165,12 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t payload_len, uint8_
  
 int create_dynamic_session(uint8_t *pkt, int pkt_len, HSESSION hSessions[], SESSION_DATA session_data[], int thread_index, int nInput, int nReuse) {
 
-int i, ip_version, codec_type = 0, ip_hlen = 0;
+int i, ip_version, codec_type = 0, ip_hlen = 0, ip_hdr_len;
 HSESSION hSession;
 SESSION_DATA* session;
 char codecstr[10];
 uint32_t bitrate = 0, ptime = 20;
-int rtp_version, pyld_type, pkt_len_lib, rtp_pyld_ofs, rtp_pyld_len;
+int rtp_version, pyld_type, pkt_len_lib, rtp_hdr_len, rtp_pyld_ofs, rtp_pyld_len;
 uint32_t rtp_ssrc;
 short unsigned int rtp_seqnum;
 char group_id[MAX_SESSION_NAME_LEN] = "";
@@ -1174,32 +1184,76 @@ static bool fPrevErr = false;
 bool fSDPPyldTypeFound = false;
 uint32_t clock_rate = 0;
 
-/* perform thorough packet validation */
+/* perform thorough packet validation before creating a session */
 
-   ip_version = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_IP_VERSION, pkt, pkt_len, NULL, NULL);
+   bool fShowWarnings = (Mode & ENABLE_DEBUG_STATS) != 0;
+
+   ip_version = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_IP_VERSION | (fShowWarnings ? 0 : DS_PKT_INFO_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
 
    if (ip_version != 4 && ip_version != 6) {  /* must be IPv4 or IPv6 */
       sprintf(errstr, "invalid IP version = %d, pkt_len = %d", ip_version, pkt_len);
-      goto bad_packet;
+      goto non_rtp_packet;
    }
 
-   rtp_version = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_VERSION, pkt, pkt_len, NULL, NULL);
+   ip_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN | (fShowWarnings ? 0 : DS_PKT_INFO_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
+
+   if (ip_hdr_len < 0) {
+      sprintf(errstr, "invalid IP header len = %d, pkt_len = %d", ip_hdr_len, pkt_len);
+      goto non_rtp_packet;
+   }
+
+   rtp_version = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_VERSION | (fShowWarnings ? 0 : DS_PKT_INFO_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
 
    if (rtp_version != 2) {  /* must be RTP v2 */
       sprintf(errstr, "invalid RTP version = %d, pkt_len = %d", rtp_version, pkt_len);
-      goto bad_packet;
+      goto non_rtp_packet;
    }
 
-   pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt, pkt_len, NULL, NULL);
+   rtp_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_HDRLEN | (fShowWarnings ? 0 : DS_PKT_INFO_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
+
+   if (rtp_hdr_len <= 0) {
+      sprintf(errstr, "invalid RTP header len %d, IP hdr len = %d, pkt len = %d", ip_hdr_len, rtp_hdr_len, pkt_len);
+      goto non_rtp_packet;
+   }
+
+   rtp_pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDLEN | (fShowWarnings ? 0 : DS_PKT_INFO_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
+
+   if (rtp_pyld_len <= 0) {
+      #if 0
+      sprintf(errstr, "invalid RTP payload len %d, pkt len = %d, pkt_len_lib = %d, rtp hdr len = %d", rtp_pyld_len, pkt_len, pkt_len_lib, rtp_hdr_len);
+      #else
+      sprintf(errstr, "invalid RTP payload len %d, IP hdr len = %d, pkt len = %d", ip_hdr_len, rtp_pyld_len, pkt_len);
+      #endif
+      goto non_rtp_packet;
+   }
+
+   pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE | (fShowWarnings ? 0 : DS_PKT_INFO_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
 
    if (pyld_type < 0) {
-      sprintf(errstr, "invalid payload type = %d, pkt_len = %d", pyld_type, pkt_len);
-      goto bad_packet;
+      sprintf(errstr, "invalid RTP payload type = %d, pkt len = %d", pyld_type, pkt_len);
+      fShowWarnings = true;
+      goto non_rtp_packet;
    }
+
+/* UDP + RTP sanity check */
+
+   if (ip_hdr_len + UDP_HEADER_LEN + rtp_hdr_len + rtp_pyld_len != pkt_len) {
+
+      sprintf(errstr, "malformed UDP/RTP packet, IP hdr len = %d, pkt len = %d, rtp pyld len = %d", ip_hdr_len, pkt_len, rtp_pyld_len);
+      fShowWarnings = true;
+      goto non_rtp_packet;
+   }
+   #if 0
+   else {
+      static int count = 0;
+      if (count < 20) { printf(" ***** pkt ok, pkt_len = %d, rtp_pyld_len = %d \n", pkt_len, rtp_pyld_len); count ++; }
+   }
+   #endif
 
 /* ignore RTCP packets */
   
    if (pyld_type >= 72 && pyld_type <= 82) return 0;
+
 
 /* SDP info check: num_rtpmaps will be > 0 if valid cmd line SDP file was given */
 
@@ -1270,7 +1324,7 @@ uint32_t clock_rate = 0;
          if (!thread_info[thread_index].fDisallowedPyldTypeMsg[pyld_type_index][nInput]) {
             char fileinfo[256] = "";
             if (strlen(szSDPFile)) sprintf(fileinfo, "file %s or ", szSDPFile);
-            Log_RT(3, "mediaMin WARNING: create_dynamic_session() says RTP packet with payload type %d found but not defined in SDP %packet info for input %d, ignoring all RTP packets with this payload type \n", pyld_type, fileinfo, nInput);
+            Log_RT(3, "mediaMin WARNING: create_dynamic_session() says RTP packet with payload type %d found but not defined in SDP %spacket info for input %d, ignoring all RTP packets with this payload type, pkt len = %d, rtp pyld len = %d \n", pyld_type, fileinfo, nInput, pkt_len, rtp_pyld_len);
             thread_info[thread_index].fDisallowedPyldTypeMsg[pyld_type_index][nInput] = true;
          }
 
@@ -1278,29 +1332,26 @@ uint32_t clock_rate = 0;
       }
    }
 
-   pkt_len_lib = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN, pkt, pkt_len, NULL, NULL);
+/* more packet validation ... */
+
+   pkt_len_lib = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN | (fShowWarnings ? 0 : DS_PKT_INFO_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
 
    if (pkt_len_lib <= 0) {
       sprintf(errstr, "invalid pkt len = %d, pkt_len param = %d, payload type = %d", pkt_len_lib, pkt_len, pyld_type);
-      goto bad_packet;
+      fShowWarnings = true;
+      goto non_rtp_packet;
    }
 
-   rtp_pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDLEN, pkt, pkt_len, NULL, NULL);
-
-   if (rtp_pyld_len <= 0) {
-      sprintf(errstr, "invalid RTP payload len %d, pkt len = %d, pkt_len_lib = %d, payload type = %d", rtp_pyld_len, pkt_len, pkt_len_lib, pyld_type);
-      goto bad_packet;
-   }
-
-   rtp_pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDOFS, pkt, pkt_len, NULL, NULL);
+   rtp_pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDOFS | (fShowWarnings ? 0 : DS_PKT_INFO_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
 
    if (rtp_pyld_ofs <= 0) {
 
       sprintf(errstr, "invalid RTP payload offset %d, pkt len = %d, pkt_len_lib = %d, payload type = %d, rtp_pyld_len = %d", rtp_pyld_ofs, pkt_len, pkt_len_lib, pyld_type, rtp_pyld_len);
+      fShowWarnings = true;
 
-bad_packet:
+non_rtp_packet:
 
-      fprintf(stderr, "DSGetPacketInfo() returns error value for new session packet, no codec estimation performed, %s \n", errstr);
+      if (fShowWarnings) fprintf(stderr, "DSGetPacketInfo() returns error value for new session packet, no codec estimation performed, %s \n", errstr);
       return -1;
    }
 
@@ -1771,8 +1822,10 @@ int chnum, pyld_type, push_cnt = 0;
 int session_push_cnt[128] = { 0 };
 static uint8_t queue_full_warning[MAX_SESSIONS] = { 0 };
 uint64_t fp_sav_pos;
-int pyld_size;
+int rtp_pyld_size;
 int auto_adj_push_count = 0;
+uint16_t pkt_type;
+uint8_t protocol = 0;
 
 static uint64_t last_cur_time = 0;  /* only used by master app thread */
 
@@ -1807,16 +1860,81 @@ read_packet:
          else
          #endif
 
-         pkt_len = DSReadPcapRecord(thread_info[thread_index].pcap_in[j], pkt_in_buf, 0, p_pcap_rec_hdr, thread_info[thread_index].link_layer_len[j]);
+         uint16_t input_type = thread_info[thread_index].link_layer_len[j] >> 16;
+
+         if (input_type == PCAP_TYPE_LIBPCAP || input_type == PCAP_TYPE_PCAPNG) {
+
+            pkt_len = DSReadPcapRecord(thread_info[thread_index].pcap_in[j], pkt_in_buf, 0, p_pcap_rec_hdr, thread_info[thread_index].link_layer_len[j], &pkt_type);
+
+            if (pkt_len > 0) {  /* add non IP packet handing, JHB Dec2021 */
+
+               if (pkt_type == ETH_P_ARP) {  /* ignore ARP packets */
+                  #ifdef PKT_DISCARD_DEBUG
+                  printf(" ************* ignoring ARP pkt \n");
+                  #endif
+                  goto read_packet;
+               }
+               if (pkt_type <= 1536) { /* ignore 802.2 LLC frames (https://networkengineering.stackexchange.com/questions/50586/eth-ii-vs-802-2-llc-snap) */
+                  #ifdef PKT_DISCARD_DEBUG
+                  printf(" ************* ignoring LLC frames, pkt_type = %d \n", pkt_type);
+                  #endif
+                  goto read_packet;
+               }
+
+               ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL);  /* if IP version is invalid or there is some other basic packet problem, a warning message will be printed by DSGetPacketInfo() */
+
+               if (ret_val < 0) {
+
+                  #ifdef PKT_DISCARD_DEBUG
+                  printf("************* invalid IP version or malformed packet, pkt type = %d, pkt len = %d \n", pkt_type, pkt_len);
+                  #endif
+                  goto read_packet;
+               }
+
+               if (ret_val != UDP_PROTOCOL && ret_val != TCP_PROTOCOL) { /* ignore ICMP and various other protocols. Contact Signalogic if handling of a new protocol is needed, for example encapsulation protocols might be handled similarly as DER encapsulation, etc. */
+
+                  #ifdef PKT_DISCARD_DEBUG
+                  printf(" ************* ignoring non UDP or TCP pkt with protocol = %d \n", ret_val);
+                  #endif
+                  goto read_packet;
+               }
+
+               protocol = ret_val;  /* save protocol and proceed */
+            }
+         }
+         else if (input_type == PCAP_TYPE_BER) {  /* experimental BER input handling, JHB Dec2021 */
+
+            //#define BER_DEBUG
+
+            #ifdef BER_DEBUG
+            printf("***** inside BER detect \n");
+            #endif
+
+            uint8_t ber_data[1024];
+
+            pkt_len = fread(ber_data, sizeof(char), sizeof(ber_data), thread_info[thread_index].pcap_in[j]);
+
+            if (pkt_len > 0) {  /* format BER data into TCP/IP packet */
+
+               protocol = TCP_PROTOCOL;
+
+               unsigned int uFlags = 0;
+               if (Mode & ENABLE_INTERMEDIATE_PCAP) uFlags |= PCAP_TYPE_BER;  /* generate pcap output if specified in cmd line flags, JHB Dec2021 */
+
+               packet_actions(ber_data, pkt_in_buf, protocol, &pkt_len, uFlags);
+            }
+         }
 
          if (pkt_len == 0) {  /* packet stream file ends - close (or rewind if input repeat or certain types of stress tests are enabled) */
 
+            bool fRepeat = false;
+
             if (!(Mode & CREATE_DELETE_TEST_PCAP) && !(Mode & REPEAT_INPUTS)) {  /* check for input repeat */
 
-               if (thread_info[thread_index].pcap_in[j]) fclose(thread_info[thread_index].pcap_in[j]);  /* close the input file and set file handle to NULL so it's no longer operated on */
+               if (thread_info[thread_index].pcap_in[j]) DSClosePcap(thread_info[thread_index].pcap_in[j]);  /* close the input file and set file handle to NULL so it's no longer operated on */
                thread_info[thread_index].pcap_in[j] = NULL;
 
-               thread_info[thread_index].total_push_time[j] += cur_time - thread_info[thread_index].initial_push_time[j];
+               if (thread_info[thread_index].initial_push_time[j]) thread_info[thread_index].total_push_time[j] += cur_time - thread_info[thread_index].initial_push_time[j];  /* set total push time (if at least one push has happened, JHB Dec2021) */
             }
             else {  /* in certain test modes or if input repeat is enabled, start the pcap over */
 
@@ -1830,16 +1948,15 @@ read_packet:
 
                if (!fQueueEmpty) continue;  /* not empty yet, move on to next input */
 
-               thread_info[thread_index].total_push_time[j] += cur_time - thread_info[thread_index].initial_push_time[j];
+               if (thread_info[thread_index].initial_push_time[j]) thread_info[thread_index].total_push_time[j] += cur_time - thread_info[thread_index].initial_push_time[j];  /* set total push time (if at least one push has happened, JHB Dec2021) */
 
             /* note that wrapping a pcap will typically cause warning messages about "large negative" timestamp and sequence number jumps, JHB Mar2020 */
 
-               fseek(thread_info[thread_index].pcap_in[j], sizeof(pcap_hdr_t), SEEK_SET);  /* seek to pcap header offset (start of pcap) */
-               fp_sav_pos = ftell(thread_info[thread_index].pcap_in[j]);
+               DSOpenPcap(NULL, &thread_info[thread_index].pcap_in[j], NULL, "", DS_READ | DS_OPEN_PCAP_READ_HEADER | DS_OPEN_PCAP_RESET);  /* seek to start of first pcap record */
 
                app_printf(APP_PRINTF_NEWLINE, thread_index, "mediaMin INFO: pcap %s wraps", MediaParams[thread_info[thread_index].input_index[j]].Media.inputFilename);
 
-               pkt_len = DSReadPcapRecord(thread_info[thread_index].pcap_in[j], pkt_in_buf, 0, p_pcap_rec_hdr, thread_info[thread_index].link_layer_len[j]);
+               if (thread_info[thread_index].num_packets_in[j]) fRepeat = true;  /* set repeat flag (note the check whether stream has produced at least one valid packet, we don't wanna end up in infinite pkt_len == 0 loop), JHB Dec2021 */
             }
 
             thread_info[thread_index].initial_push_time[j] = 0;  /* reset initial push time */
@@ -1851,6 +1968,8 @@ read_packet:
                app_printf(APP_PRINTF_NEWLINE, thread_index, tmpstr);
                Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, tmpstr);
             }
+
+            if (fRepeat) goto read_packet;
          }
 
       /* if pkt_len is zero we've reached end of this input:
@@ -1866,6 +1985,8 @@ read_packet:
             continue;
          }
 
+         thread_info[thread_index].num_packets_in[j]++;  /* increment stream valid packet count (either UDP or TCP/IP) */
+
       /* DER encoded encapsulated stream processing, JHB Mar2021 */
 
          if (Mode & ENABLE_DER_STREAM_DECODE) {  /* look for DER encoded streams if specified in cmd line */
@@ -1879,7 +2000,15 @@ read_packet:
             
          /* DSFindDerStream() finds info at HI2 level, including 1) new DER streams, 2) new destination ports for an existing DER stream */
 
+               #ifdef BER_DEBUG
+               if (input_type == PCAP_TYPE_BER) printf("******** attempting to find intercept ID \n");
+               #endif
+
             if (DSFindDerStream(pkt_in_buf, DS_DER_FIND_INTERCEPTPOINTID | DS_DER_FIND_DSTPORT | DS_DER_FIND_PORT_MUST_BE_EVEN, &szInterceptPointId[0], der_dest_port_list) > 0) {
+
+               #ifdef BER_DEBUG
+               if (input_type == PCAP_TYPE_BER) printf("******** found intercept ID \n");
+               #endif
 
                if (!hDerStream) {  /* create DER stream if needed */
                   hDerStream = DSCreateDerStream(&szInterceptPointId[0], der_dest_port_list[0], 0);
@@ -1899,7 +2028,7 @@ read_packet:
             /* DSDecodeDerStream() parses/decodes a DER stream looking for CC packets, and if found returns as fully formed IPv4/6 UDP packets */
 
                unsigned int uFlags = DS_DER_SEQNUM | DS_DER_TIMESTAMP | DS_DER_TIMESTAMPQUALIFIER | DS_DER_CC_PACKET;  /* tell DSDecodeDerStream() what to look for */
-               if (Mode & ENABLE_DEBUG_STATS) uFlags |= DS_DECODE_DER_PRINT_DEBUG_INFO;
+               if (Mode & ENABLE_DER_DECODING_STATS) uFlags |= DS_DECODE_DER_PRINT_DEBUG_INFO;
 
                if ((cc_pktlen = DSDecodeDerStream(hDerStream, pkt_in_buf, pkt_out_buf, uFlags, &der_decode)) > 0) {  /* 0 means nothing found, < 0 is an error condition, > 0 is length of found packet */
 
@@ -1919,12 +2048,16 @@ read_packet:
                }
 
                if (der_decode.uList && !fFoundEncapsulatedCCPkt) continue;  /* found one or more DER items but not a CC packet, move to next input (socket or pcap) */
+
+               if (fFoundEncapsulatedCCPkt) protocol = UDP_PROTOCOL;  /* CC UDP packet found, set protocol to UDP/RTP */
+
+               if ((Mode & ENABLE_INTERMEDIATE_PCAP) && fFoundEncapsulatedCCPkt) packet_actions(NULL, pkt_in_buf, protocol, &pkt_len, PCAP_TYPE_HI3);  /* write out decoded DER stream to intermediate pcap; note this currently only includes decoded UDP packets, JHB Dec2021 */
             }
          }
 
-      /* mediaMin SDK version is currently ignoring TCP/IP packets other than encapsulated DER streams and SIP invites */
+      /* mediaMin SDK version currently ignores TCP/IP packets other than encapsulated DER streams and SIP invites */
   
-         if (DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL) == TCP_PROTOCOL) {
+         if (protocol == TCP_PROTOCOL) {
 
          /* look for SIP invite packets */
 
@@ -1943,7 +2076,7 @@ read_packet:
                   for (i=0; i<MAX_DER_DSTPORTS; i++) if (dest_port > 0 && dest_port == der_dest_port_list[i]) break;
                }
 
-               if ((Mode & ENABLE_DEBUG_STATS) && (!hDerStream || i < MAX_DER_DSTPORTS)) {
+               if ((Mode & ENABLE_DER_DECODING_STATS) && (!hDerStream || i < MAX_DER_DSTPORTS)) {
 
                   int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, pkt_len, NULL, NULL);
                   char szDerStream[20] = "";
@@ -1954,8 +2087,6 @@ read_packet:
 
             goto read_packet;  /* continue reading from this input, JHB Dec2020 */
          }
-
-         thread_info[thread_index].num_packets_in[j]++;
 
          if (!thread_info[thread_index].initial_push_time[j]) {
 
@@ -2023,21 +2154,30 @@ read_packet:
                                                      -a burst of RTCP packets in a multisession pcap may mean an on-hold or call-waiting period; i.e. one or more (or even all) call legs are not sending RTP
                                                      -packet_flow_media_proc.c uses the DS_RECV_PKT_FILTER_RTCP flag in DSRecvPackets()
                                                    */
+         bool fShowWarnings = (Mode & ENABLE_DEBUG_STATS) != 0;
 
-         pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_in_buf, pkt_len, NULL, NULL);
+         pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE | (fShowWarnings ? 0 : DS_PKT_INFO_SUPPRESS_ERROR_MSG), pkt_in_buf, pkt_len, NULL, NULL);
 
-         if (pyld_type < 0) {
+         if (pyld_type < 0 && fShowWarnings) {
 
 //   printf("\n dest port = %d \n", dest_port);
    
-            Log_RT(3, "mediaMin WARNING: PushPackets() says DSGetPacketInfo(DS_PKT_INFO_RTP_PYLDTYPE) returns error value, not checking for new session tupple, not pushing packet, pkt len = %d \n", pkt_len);
+//            Log_RT(3, "mediaMin WARNING: PushPackets() says DSGetPacketInfo(DS_PKT_INFO_RTP_PYLDTYPE) returns error value, not checking for new session tupple, not pushing packet, pkt len = %d \n", pkt_len);
+            Log_RT(4, "mediaMin INFO: PushPackets() says unknown UDP packet (DSGetPacketInfo can't find valid RTP payload type), pkt len = %d \n", pkt_len);
             goto read_packet;
          }
 
          if ((pyld_type >= 72 && pyld_type <= 82) && frameInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto read_packet;
          #endif
 
-         pyld_size = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDSIZE, pkt_in_buf, pkt_len, NULL, NULL);
+         rtp_pyld_size = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDSIZE | DS_PKT_INFO_SUPPRESS_ERROR_MSG, pkt_in_buf, pkt_len, NULL, NULL);
+
+         if (rtp_pyld_size <= 0 && fShowWarnings) {
+
+//            Log_RT(3, "mediaMin WARNING: PushPackets() says DSGetPacketInfo(DS_PKT_INFO_RTP_PYLDSIZE) returns error value, not checking for new session tupple, not pushing packet, pkt len = %d \n", pkt_len);
+            Log_RT(4, "mediaMin INFO: PushPackets() says unknown UDP packet (DSGetPacketInfo can't find valid RTP payload size), pkt len = %d \n", pkt_len);
+            goto read_packet;
+         }
 
       /* push packets using DSPushPackets() API in pktlib:
 
@@ -2078,7 +2218,7 @@ check_for_duplicated_headers:
 //  static int chk_cnt = 0;
 //  printf("checking for new session %d \n", chk_cnt++);
   
-               if (check_for_new_session(pkt_in_buf, pkt_len, pyld_type, pyld_size, thread_index) > 0) {
+               if (check_for_new_session(pkt_in_buf, pkt_len, pyld_type, rtp_pyld_size, thread_index) > 0) {
 
                   ret_val = create_dynamic_session(pkt_in_buf, pkt_len, hSessions, session_data, thread_index, j, n);
 
@@ -2126,7 +2266,7 @@ check_for_duplicated_headers:
 
                #define CHECK_RTP_PAYLOAD_TYPE
                #ifdef CHECK_RTP_PAYLOAD_TYPE  /* this is a special case useful for checking duplicated sessions that differ only in RTP payload type.  It doesn't handle the general case of exactly duplicated sessions */
-               if (chnum >= 0 && pyld_size != 4) {  /* don't check DTMF packets */
+               if (chnum >= 0 && rtp_pyld_size != 4) {  /* don't check DTMF packets */
 
                   int pyld_type_term = -1;
                   pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_in_buf, pkt_len, NULL, NULL);
@@ -2255,7 +2395,8 @@ push_ctrl:  /* upon entry PushPackets() jumps here if current average push rate 
             last_cur_time = cur_time;
          }
       }
-   }
+
+   }  /* end of input file/UDP port loop */
 
    return push_cnt;
 }
@@ -2502,12 +2643,34 @@ unsigned int uFlags;
 
             if ((thread_info[thread_index].link_layer_len[j] = DSOpenPcap(tmpstr, &thread_info[thread_index].pcap_in[j], NULL, "", uFlags)) < 0) {
 
-               fprintf(stderr, "Failed to open input pcap file: %s, index = %d, thread_index = %d, ret_val = %d\n", tmpstr, j, thread_index, thread_info[thread_index].link_layer_len[j]);
+               fprintf(stderr, "Failed to open input pcap file: %s, index = %d, thread_index = %d, ret_val = %d \n", tmpstr, j, thread_index, thread_info[thread_index].link_layer_len[j]);
                thread_info[thread_index].pcap_in[j] = NULL;
                thread_info[thread_index].init_err = true;  /* error condition for at least one input file, error message is already printed and/or logged */
                break;
             }
          }
+
+         goto valid_input_spec;
+      }
+      else if (strstr(strupr(strcpy(tmpstr, MediaParams[i].Media.inputFilename)), ".BER")) {
+
+         if (!(thread_info[thread_index].pcap_in[j] = fopen(MediaParams[i].Media.inputFilename, "rb+"))) {
+
+            strcpy(tmpstr, "../");  /* try up one subfolder */
+            strcat(tmpstr, MediaParams[i].Media.inputFilename);
+
+            if (!(thread_info[thread_index].pcap_in[j] = fopen(tmpstr, "rb+"))) {
+
+               fprintf(stderr, "Failed to open input ber file: %s, index = %d, thread_index = %d \n", tmpstr, j, thread_index);
+               thread_info[thread_index].pcap_in[j] = NULL;
+               thread_info[thread_index].init_err = true;  /* error condition for at least one input file, error message is already printed and/or logged */
+               break;
+            }
+         }
+
+         thread_info[thread_index].link_layer_len[j] = PCAP_TYPE_BER << 16;
+
+valid_input_spec:
 
          thread_info[thread_index].num_packets_in[j] = 0;
          thread_info[thread_index].input_index[j] = i;  /* save an index that maps to cmd line input specs */
@@ -3194,4 +3357,59 @@ int i, ret_val = 1;
    #endif
 
    return ret_val;
+}
+
+/* format and/or write packets, JHB Dec2021:
+
+  -misc packet handling: format data into IP packet, write packets to intermediate output files, more if needed
+  -to-do: error conditions, way to specify output file on cmd line, close files on prog exit (i.e. not every time something is written)
+*/
+
+int packet_actions(uint8_t* pyld_data, uint8_t* pkt_in_buf, uint8_t protocol, int* pkt_len, unsigned int uFlags) {
+
+uint8_t pcap_type;
+
+   if (pyld_data) {
+
+      FORMAT_PKT formatPkt = { 0 };
+      unsigned int uFlags_format_pkt = DS_FMT_PKT_STANDALONE | DS_FMT_PKT_USER_HDRALL;
+      if (protocol == TCP_PROTOCOL) uFlags_format_pkt |= DS_FMT_PKT_TCPIP;  /* add flag if TCP/IP format specified by caller */
+
+      formatPkt.IP_Version = DS_IPV4;
+      uint32_t* p = (uint32_t*)&formatPkt.SrcAddr;
+      *p = htonl(0x0A000101);
+      p = (uint32_t*)&formatPkt.DstAddr;
+      *p = htonl(0x0A000001);
+      formatPkt.tcpHeader.SrcPort = 0xa0a0;
+      formatPkt.tcpHeader.DstPort = 0xb0b0;
+
+      if (pkt_len) *pkt_len = DSFormatPacket(-1, uFlags_format_pkt, pyld_data, *pkt_len, &formatPkt, pkt_in_buf);  /* format packet, adjust pkt_len */
+   }
+
+   if ((pcap_type = (uFlags & 0x0f)) && pkt_len && *pkt_len > 0) {  /* output to pcap if specified by uFlags */
+
+      static bool fOnce = false;
+      static FILE* fp_pcap_out = NULL;
+      char temp_filename[256] = "";
+      if (pcap_type == PCAP_TYPE_BER) strcpy(temp_filename, "ber_output.pcap");
+      else if (pcap_type == PCAP_TYPE_HI3) strcpy(temp_filename, "hi3_output.pcap");
+
+      if (!fOnce) {
+
+         DSOpenPcap(temp_filename, &fp_pcap_out, NULL, "", DS_WRITE | DS_OPEN_PCAP_WRITE_HEADER);
+         fclose(fp_pcap_out);
+         fOnce = true;
+      }
+
+      if (fp_pcap_out) {
+
+         fp_pcap_out = fopen(temp_filename, "rb+");
+         fseek(fp_pcap_out, 0, SEEK_END);
+         DSWritePcapRecord(fp_pcap_out, pkt_in_buf, NULL, NULL, NULL, NULL, *pkt_len);
+         fclose(fp_pcap_out);
+         //DSClosePcap(fp_pcap_out);
+      }
+   }
+
+   return 1;
 }

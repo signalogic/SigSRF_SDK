@@ -39,9 +39,9 @@
 
 /*defines used by DSconfigDerlib() API */
 
-#define DS_CD_GLOBALCONFIG                0x01
-#define DS_CD_DEBUGCONFIG                 0x02
-#define DS_CD_INIT                        0x04
+#define DS_CD_GLOBALCONFIG                1
+#define DS_CD_DEBUGCONFIG                 2
+#define DS_CD_INIT                        4
 
 /* defines used by DSFindDerStream() */
 

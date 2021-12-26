@@ -1189,7 +1189,7 @@ void x86_mediaTest(void) {
 
             -DS_FMT_PKT_STANDALONE flag allows DSFormatPacket() pktlib API to be used without creating a session and streams (channels) via DSCreateSession()
             -several hardcoded values for now, user-specified IP version, IP addr, UDP port, payload type, etc can be implemented later
-            -DS_FMT_PKT_USER_HDRALL specifies DS_FMT_PKT_USER_IPADDR_SRC, DS_FMT_PKT_USER_IPADDR_DST, DS_FMT_PKT_USER_UDPPORT_SRC, and DS_FMT_PKT_USER_UDPPORT_DST
+            -DS_FMT_PKT_USER_HDRALL specifies DS_FMT_PKT_USER_SRC_IPADDR, DS_FMT_PKT_USER_DST_IPADDR, DS_FMT_PKT_USER_SRC_PORT, and DS_FMT_PKT_USER_DST_PORT
          */
 
             uFlags_format_pkt = DS_FMT_PKT_STANDALONE | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_SEQNUM | DS_FMT_PKT_USER_TIMESTAMP | DS_FMT_PKT_USER_PYLDTYPE | DS_FMT_PKT_USER_SSRC | DS_FMT_PKT_USER_MARKERBIT;
@@ -1214,7 +1214,7 @@ void x86_mediaTest(void) {
             memcpy(&format_pkt.DstAddr, &term_info.remote_ip.u, DS_IPV4_ADDR_LEN);
             format_pkt.IP_Version = term_info.local_ip.type;
             format_pkt.udpHeader.SrcPort = term_info.local_port;
-            format_pkt.udpHeader.DestPort = term_info.remote_port;
+            format_pkt.udpHeader.DstPort = term_info.remote_port;
             #if 0
             format_pkt.rtpHeader.BitFields = term_info.attr.voice_attr.rtp_payload_type;  /* set payload type (BitFields is 16-bit so we use network byte order. An alternative is to apply DS_FMT_PKT_HOST_BYTE_ORDER flag) */
             #else
@@ -2109,7 +2109,7 @@ codec_test_cleanup:
 
       /* read next pcap packet */
 
-         if (!(packet_length = DSReadPcapRecord(fp_in, pkt_buffer, 0, NULL, link_layer_length))) break;
+         if (!(packet_length = DSReadPcapRecord(fp_in, pkt_buffer, 0, NULL, link_layer_length, NULL))) break;
 
          frame_count++;
          printf("\rExtracting frame %d", frame_count);

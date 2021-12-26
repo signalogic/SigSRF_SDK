@@ -177,7 +177,7 @@ extern char              network_packet_test, cocpu_sim_test, cocpu_network_test
 extern unsigned int      CPU_mode, programMode;
 extern unsigned int      inFileType, outFileType, outFileType2, USBAudioInput, USBAudioOutput;
 extern char              executionMode[2];
-extern int               debugMode;
+extern int64_t           debugMode;
 #define Mode debugMode
 extern int               performanceMeasurementMode;
 extern int               nReuseInputs;
@@ -260,6 +260,7 @@ extern "C" {
      PCAP,           /* supports both pcap and pcapng formats, JHB Oct2020 */
      TEXT,
      CSV,
+     BER,            /* added experimental, JHB Dec2021 */
      USB_AUDIO = 0x100,  /* for output only, USB audio can be combined with audio file types */
      INVALID
   };

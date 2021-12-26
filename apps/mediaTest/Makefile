@@ -278,7 +278,7 @@ endif
 cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
 c_common_objects = keybd.o
 cpp_sdp_objects = types.o sdp.o utils.o reader.o writer.o 
-cpp_mediaMin_objects = mediaMin.o
+cpp_mediaMin_objects = mediaMin.o sdp_app.o session_app.o user_io.o
 c_objects = sigMRF_init.o control_thread_task.o codec_thread_task.o transcoder_control.o codec_test_control.o host_c66x_xfer_control.o dummy_packet.o mediaTest.o cmd_line_interface.o packet_flow_media_proc.o x86_mediaTest.o
 
 # build targets

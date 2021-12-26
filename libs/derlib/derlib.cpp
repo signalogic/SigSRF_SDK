@@ -27,6 +27,7 @@
   Modified May 2021 JHB, make dest_ports[] in DER_STREAM struct an array that represents a list of ports
                          -add DS_DER_INFO_DSTPORT_LIST to get/set the list in DSGetDerStreamInfo() and DSSetDerStreamInfo()
                          -change operation of DS_DER_INFO_DSTPORT to get/set a specific port in DSGetDerStreamInfo() and DSSetDerStreamInfo()
+  Modified Dec 2021 JHB, continue to improve DSFindDerStream() flexibility in recognizing different LEA HI3 formats, both DER and BER
 */
 
 /* Linux includes */
@@ -200,7 +201,7 @@ int DSFindDerStream(uint8_t* pkt_in_buf, unsigned int uFlags, char* szInterceptP
 
 int i, pyld_ofs, pyld_len, ret_val = 0;
 uint16_t dst_port;
-int tag = 0, len = 0, port_list_index = -1;
+int tag = 0, len = 0, port_list_index = -1, generic_string_count = 0;
 char szInterceptionIdentifier[256] = "";
 char szAuthCountryIdentifier[128] = "";
 
@@ -218,7 +219,7 @@ static bool fOnce = false;
  
       if (dest_port_list) for (i=0; i<MAX_DER_DSTPORTS; i++) if (dest_port_list[i] == dst_port) return 0;
 
-   /* get packets payload length and offset */
+   /* get packet's payload length and offset */
  
       if (!(pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL))) return 0;
 
@@ -232,7 +233,7 @@ static bool fOnce = false;
 
             uint8_t tag_chk = pkt_in_buf[pyld_ofs+i];
 
-            if (tag_chk == DER_TAG_INTERCEPTPOINTID || tag_chk == 0x82 || tag_chk == 0x81) {
+            if (tag_chk == DER_TAG_INTERCEPTPOINTID || (tag_chk >= 0x80 && tag_chk <= 0x82)) { //tag_chk == 0x82 || tag_chk == 0x81) {
 
                #ifdef INTERCEPTPOINTDEBUG
                printf("\n $$$$ index = %d, dst port = %d \n", i, dst_port);
@@ -255,7 +256,11 @@ static bool fOnce = false;
                   printf("\n $$$$ found valid tag = 0x%x, len = %d \n", tag, len);
                   #endif
 
-                  if (tag == 0x81) {
+                  if (tag == 0x80) {
+
+                    generic_string_count++;  /* count valid generic string tags */
+                  }
+                  else if (tag == 0x81) {
 
                      memcpy(szInterceptionIdentifier, &pkt_in_buf[pyld_ofs+i+2], len);
                      szInterceptionIdentifier[len] = 0;
@@ -287,11 +292,11 @@ static bool fOnce = false;
             }
          }  /* end of payload loop */
 
-      /* some countries don't use Intercept Point Id; for those, if we can't find one then we use LI Identifier as the Id */ 
+      /* some countries don't use Intercept Point Id; for those, if we can't find one then we use LI Identifier as the Id. Conditions for that (i) valid country identifier found, (ii) valid generic text strings found above some threshold, JHB Dec2021 */ 
 
-         if (!ret_val && strlen(szInterceptionIdentifier) && !strcmp(szAuthCountryIdentifier, "JP")) {
+         if (!ret_val && strlen(szInterceptionIdentifier) && (generic_string_count >=3 || !strcmp(szAuthCountryIdentifier, "JP"))) {
 
-            ret_val = 1;
+            ret_val = !strcmp(szAuthCountryIdentifier, "JP") ? 2 : 3;
 
             if (szInterceptPointId) strcpy(szInterceptPointId, szInterceptionIdentifier);
          }
@@ -324,8 +329,11 @@ static bool fOnce = false;
    if (ret_val) {
 
       char msgstr[100] = "found";
-      if (port_list_index > 0) strcpy(msgstr, "found additional port for");
-      Log_RT(4, "INFO: DSFindDerStream() %s HI interception point ID %s, tag = 0x%x, len = %u, dest port = %u, pyld len = %d, pyld ofs = %d", msgstr, szInterceptPointId, tag, len, port_list_index >= 0 ? dest_port_list[port_list_index] : dst_port, pyld_len, pyld_ofs);
+      if (port_list_index > 0) strcat(msgstr, " additional port for");
+      char id_type_str[100] = "HI interception point ID";
+      if (ret_val == 2) strcat(id_type_str, " (country identifier)");
+      else if (ret_val == 3) strcat(id_type_str, " (tag count threshold)");
+      Log_RT(4, "INFO: DSFindDerStream() %s %s %s, tag = 0x%x, len = %u, dest port = %u, pyld len = %d, pyld ofs = %d", msgstr, id_type_str, szInterceptPointId, tag, len, port_list_index >= 0 ? dest_port_list[port_list_index] : dst_port, pyld_len, pyld_ofs);
 
       #ifdef INTERCEPTPOINTDEBUG
       usleep(1000000);
@@ -455,7 +463,7 @@ int i, ret_val = 0, asn_index = 0, pyld_len = -1;
          pyld_len += save_len;
       }
 
-   /* scan for interception point Id (may also be an interception identifier, see DSFindDerStream() above */
+   /* scan for interception point Id (may also be an interception identifier, see DSFindDerStream() above) */
 
       uint8_t* p = (uint8_t*)memmem(&pkt_in_buf[pyld_ofs + asn_index], pyld_len, szInterceptPointId, strlen(szInterceptPointId));
 
@@ -463,7 +471,7 @@ int i, ret_val = 0, asn_index = 0, pyld_len = -1;
 
          asn_index = (int)(p - &pkt_in_buf[pyld_ofs] - 2);  /* start index at interception point tag */
 
-         p = &pkt_in_buf[pyld_ofs];   /* asn_index is an offset from start of payload */
+         p = &pkt_in_buf[pyld_ofs];   /* asn_index is offset from start of payload */
 
          uint8_t tag = p[asn_index];  /* interception point tag, len */
          uint8_t len = p[asn_index+1];
@@ -654,11 +662,20 @@ int i, ret_val = 0, asn_index = 0, pyld_len = -1;
                   #ifdef IPV4DEBUG
                   static bool fOnce = false;
                   uint16_t prot = (uint16_t)p[asn_index + 9];
-                  if (!fOnce && prot == 0x11) {
-                     uint16_t udp_len = ((uint16_t)p[asn_index + 24] << 8) | p[asn_index + 25];
-                     uint16_t plen = ((uint16_t)p[asn_index + 2] << 8) | p[asn_index + 3];
-                     printf(" ********** likely found IPv4 / UDP, checksum = 0x%x, checksum cand = 0x%x, plen = %d, udp len = %d \n", checksum, (uint16_t)~checksum_candidate, plen, udp_len);
-                     for (i=0; i<udp_len-8; i++) printf("%0x ", p[asn_index+28+i]);
+                  if (!fOnce && (prot == 0x11 || prot == 6)) {
+                     if (prot == 0x11) {
+                        uint16_t udp_len = ((uint16_t)p[asn_index + 24] << 8) | p[asn_index + 25];
+                        uint16_t pktlen = ((uint16_t)p[asn_index + 2] << 8) | p[asn_index + 3];
+                        printf(" ********** likely found IPv4 / UDP, checksum = 0x%x, checksum cand = 0x%x, pktlen = %d, udp len = %d \n", checksum, (uint16_t)~checksum_candidate, pktlen, udp_len);
+                        for (i=0; i<udp_len-8; i++) printf("%0x ", p[asn_index+28+i]);
+                     }
+                     else {
+
+                        //uint16_t udp_len = ((uint16_t)p[asn_index + 24] << 8) | p[asn_index + 25];
+                        uint16_t plen = ((uint16_t)p[asn_index + 2] << 8) | p[asn_index + 3];
+                        printf(" ********** likely found IPv4 / TCP, checksum = 0x%x, checksum cand = 0x%x, plen = %d \n", checksum, (uint16_t)~checksum_candidate, plen);
+                        //for (i=0; i<udp_len-8; i++) printf("%0x ", p[asn_index+28+i]);
+                     }
                      printf(" \n");
                      fOnce = true;
                   }

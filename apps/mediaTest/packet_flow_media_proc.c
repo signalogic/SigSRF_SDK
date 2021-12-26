@@ -1627,7 +1627,7 @@ run_loop:
             for (j=0; j<nInFiles; j++) if (in_type[j] == PCAP) {
 
 //read:
-               pkt_len[0] = DSReadPcapRecord(fp_in[j], pkt_in_buf, 0, NULL, link_layer_length[j]);
+               pkt_len[0] = DSReadPcapRecord(fp_in[j], pkt_in_buf, 0, NULL, link_layer_length[j], NULL);
 
 #if 0  /* no longer needed, done by DSRecvPackets() when S_RECV_PKT_ENABLE_RFC7198_DEDUP flag is applied */
                if (pkt_len[0] > 0) {
@@ -5158,7 +5158,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
          if (cur_time - last_time[i] >= frameInterval[i]*1000) {  /* has interval elapsed ?  (comparison is in usec) */
 
-            if (!(packet_length = DSReadPcapRecord(fp_in[i], pkt_buffer, 0, NULL, link_layer_length[i]))) continue;
+            if (!(packet_length = DSReadPcapRecord(fp_in[i], pkt_buffer, 0, NULL, link_layer_length[i], NULL))) continue;
             else __sync_add_and_fetch(&num_pkts_read_multithread, 1);
 
             #ifdef ENABLE_MANAGED_SESSIONS

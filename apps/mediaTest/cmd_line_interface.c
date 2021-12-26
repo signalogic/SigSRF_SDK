@@ -26,7 +26,8 @@
    Modified Nov 2019 JHB, add CSV and TEXT output file types (latter to support Kaldi ASR)
    Modified Dec 2019 JHB, add nJitterBufferParams to support jitter buffer target and max delay cmd line entry (-jN)
    Modified Jan 2020 JHB, add nRepeat to supper number of repeat times cmd line entry (-RN)
-   Modified Jan 2021 JHB, change references to AUDIO_FILE_TYPES to IS_AUDIO_FILE_TYPE, initialize outFileType2, USBAudioInput, and USBAudioOutput, allow pcap for output file type, add char szSDPFile[CMDOPT_MAX_INPUT_LEN] 
+   Modified Jan 2021 JHB, change references to AUDIO_FILE_TYPES to IS_AUDIO_FILE_TYPE, initialize outFileType2, USBAudioInput, and USBAudioOutput, allow pcap for output file type, add char szSDPFile[CMDOPT_MAX_INPUT_LEN]
+   Modified Dec 2021 JHB, makde debugMode 64-bit int
 */
 
 
@@ -58,7 +59,7 @@ unsigned int frameInterval[MAX_INPUT_STREAMS] = { 20 };
 
 unsigned int   inFileType, outFileType, outFileType2 = 0, USBAudioInput = 0, USBAudioOutput = 0;
 char           executionMode[2] = { 'a', 'c' }; /* default is app execution mode, cmd line */
-int            debugMode = 0;
+int64_t        debugMode = 0;
 int            performanceMeasurementMode = 0;
 int            nReuseInputs = 0;
 int            nSegmentation = 0;
@@ -263,6 +264,7 @@ char tmpstr[1024];
    else if (strstr(tmpstr, ".COD") || strstr(tmpstr, ".AMR") || strstr(tmpstr, ".AWB") || strstr(tmpstr, ".BIT")) fileType = ENCODED;
    else if (strstr(tmpstr, ".TXT")) fileType = TEXT;
    else if (strstr(tmpstr, ".CSV")) fileType = CSV;
+   else if (strstr(tmpstr, ".BER")) fileType = BER;
 
    return fileType;
 }

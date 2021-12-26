@@ -26,6 +26,7 @@
    Modified Dec 2019 JHB, add -jN cmd line entry for jitter buffer params (for mediaMin app usage), sets nJitterBufferOptions in userIfs (UserInterface struct in userInfo.h)
    Modified Jan 2020 JHB, add -RN cmd line entry for repeat number of times
    Modified Jan 2021 JHB, add -s option specific to mediaMin to handle SDP file input on cmd line
+   Modified Dec 2021 JHB, make -d option (mode/debug flags) 64-bit integer
 */
 
 #include <stdlib.h>
@@ -139,8 +140,8 @@ CmdLineOpt::Record options[] = {
           (char *)"Scrypt algorithm r parameter" },
 	{'p', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Scrypt algorithm p parameter", {{(void*)0}} },
-	{'d', CmdLineOpt::INTEGER, NOTMANDATORY,
-          (char *)"Debug mode for most programs (enter as -dN, where N is mode value).  dkLen parameter for Scrypt Algorithm test program", {{(void*)-1}} },
+	{'d', CmdLineOpt::INT64, NOTMANDATORY,
+          (char *)"Debug mode for most programs (enter as -dN, where N is mode value). dkLen parameter for Scrypt Algorithm test program", {{(void*)-1}} },
 };
 
 /* global storage of cmd line options */
@@ -321,7 +322,7 @@ char tmpstr[CMDOPT_MAX_INPUT_LEN];
 
          if (cmdOpts.nInstances('p')) userIfs->scryptParamp = cmdOpts.getInt('p', 0, 0);
 
-         userIfs->debugMode = cmdOpts.getInt('d', 0, 0);  /* always call to get default value (-1) if no entry */
+         userIfs->debugMode = cmdOpts.getInt64('d', 0);  /* always call to get default value (-1) if no entry */
 
          if (uFlags & CLI_MEDIA_APPS) userIfs->nRepeatTimes = cmdOpts.getInt('R', 0, 0);  /* always call to get default value (-1) if no entry */
          else if (cmdOpts.nInstances('d')) userIfs->scryptdklen = cmdOpts.getInt('d', 0, 0);

@@ -25,6 +25,7 @@
    Modified Dec 2019 JHB, add #define for nJitterBufferParams, for mediaMin app usage
    Modified Jan 2020 JHB, add #define for nRepeat, for mediaMin app usage
    Modified Jan 2021 JHB, add #define for szSDPFile for mediaMin app SDP file input
+   Modified Dec 2021 JHB, make debugMode 64-bit int
 */
 
 #ifndef _USERINFO_H_
@@ -79,7 +80,7 @@ typedef struct {
    int       algorithmIdNum;
    int       libFlags;
    uint64_t  taskAssignmentCoreLists;
-   int       debugMode;
+   int64_t   debugMode;
    int       programMode;
    int       programSubMode;
    char      executeMode;

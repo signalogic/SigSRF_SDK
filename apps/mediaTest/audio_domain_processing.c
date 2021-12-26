@@ -192,14 +192,14 @@ HASRDECODER hASRDecoder;
 
       if (uFlags & DS_PROCESS_AUDIO_PACKET_OUTPUT) {
 
-      /* one-time output packet format setup. Note that DS_FMT_PKT_USER_HDRALL specifies DS_FMT_PKT_USER_IPADDR_SRC, DS_FMT_PKT_USER_IPADDR_DST, DS_FMT_PKT_USER_UDPPORT_SRC, and DS_FMT_PKT_USER_UDPPORT_DST */
+      /* one-time output packet format setup. Note that DS_FMT_PKT_USER_HDRALL specifies DS_FMT_PKT_USER_SRC_IPADDR, DS_FMT_PKT_USER_DST_IPADDR, DS_FMT_PKT_USER_SRC_PORT, and DS_FMT_PKT_USER_DST_PORT */
 
          merge_uFlags_format = DS_FMT_PKT_NO_INC_CHNUM_TIMESTAMP | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_SEQNUM | DS_FMT_PKT_USER_TIMESTAMP | DS_FMT_PKT_USER_PYLDTYPE | DS_FMT_PKT_USER_SSRC | DS_FMT_PKT_USER_MARKERBIT;
          memcpy(groupFormatPkt.SrcAddr, &output_term.local_ip.u, DS_IPV6_ADDR_LEN);  /* DS_IPV6_ADDR_LEN defined in shared_include/session.h */
          memcpy(groupFormatPkt.DstAddr, &output_term.remote_ip.u, DS_IPV6_ADDR_LEN);
          groupFormatPkt.IP_Version = output_term.local_ip.type;
          groupFormatPkt.udpHeader.SrcPort = output_term.local_port;
-         groupFormatPkt.udpHeader.DestPort = output_term.remote_port;
+         groupFormatPkt.udpHeader.DstPort = output_term.remote_port;
          groupFormatPkt.rtpHeader.PyldType = output_term.attr.voice_attr.rtp_payload_type;  /* set payload type */
 
       /* check if there is a call on-hold or call waiting timestamp gap that needs to be accumulated, notes JHB Nov2019:

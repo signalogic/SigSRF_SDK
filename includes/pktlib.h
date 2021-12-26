@@ -80,6 +80,9 @@
   Modified Feb 2021 JHB, added DS_PKT_INFO_PYLDLEN option to DSGetPacketInfo()
   Modified Feb 2021 JHB, changed len[] param in DSPushPackets(), DSPullPackets(), DSRecvPackets(), DSSendPackets(), DSGetOrderedPackets(), and DSBufferPackets() from unsigned int* to int*. Any packet length with -1 value should be interpreted as an error condition independent of other packets in the array
   Modified Mar 2021 JHB, change DSLogPacketTimeLossStats() to DSLogRunTimeStats(), add DS_LOG_RUNTIME_STATS_XX flags
+  Modified Dec 2021 JHB, add DS_FMT_PKT_TCPIP flag to allow DSFormatPacket() to format/create TCP/IP packets
+  Modified Dec 2021 JHB, modify DSOpenPcap to return packet type (based on EtherType). This allows ARP, LLC frames, etc to be differentiated
+  Modified Dec 2021 JHB, add DS_OPEN_PCAP_RESET flag to instruct DSOpenPcap() to reset an existing (already open) pcap to start of first packet record
 */
 
 #ifndef _PKTLIB_H_
@@ -176,11 +179,24 @@ extern "C" {
   typedef struct {
 
     uint16_t  SrcPort;         /* Source Port */
-    uint16_t  DestPort;        /* Destination Port */
+    uint16_t  DstPort;         /* Destination Port */
     uint16_t  UDP_length;      /* Length */
     uint16_t  UDP_checksum;    /* Checksum */
 
   } UDPHeader;
+
+  typedef struct {
+
+    uint16_t  SrcPort;         /* Source Port */
+    uint16_t  DstPort;         /* Destination Port */
+    uint32_t  seq_num;         /* sequence number */
+    uint32_t  ack_num;         /* ack number */
+    uint16_t  hdr_len_misc;    /* header size and flags */
+    uint16_t  window;
+    uint16_t  checksum;        /* Checksum */
+    uint16_t  urgent;
+
+  } TCPHeader;
 
   /* FORMAT_PKT struct, used in DSFormatPacket() API */
 
@@ -204,6 +220,7 @@ extern "C" {
    
     UDPHeader  udpHeader;
     RTPHeader  rtpHeader;
+    TCPHeader  tcpHeader;       /* used only if DSFormatPacket() uFlags includes DS_FMT_PKT_TCPIP */
 
     uint16_t   ptime;
 
@@ -224,6 +241,7 @@ extern "C" {
 
   #define UDP_PROTOCOL               17
   #define TCP_PROTOCOL               6
+  #define ICMP_PROTOCOL              1
 
   /* thread level items */
 
@@ -723,13 +741,22 @@ extern "C" {
 
   } vlan_hdr_t;
 
+/* definitions used by pcap APIs. Notes:
+
+  -PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered
+  -PCAP_TYPE_BER and PCAP_TYPE_HI3 are used by mediaMin for intermediate packet output
+*/
+
   #define PCAP_TYPE_LIBPCAP         0
   #define PCAP_TYPE_PCAPNG          1
-  #define PCAP_LINK_LAYER_LEN_MASK  0xffff
+  #define PCAP_TYPE_BER             2
+  #define PCAP_TYPE_HI3             3
+  #define PCAP_LINK_LAYER_LEN_MASK  0xffff  /* upper 16 bits of DSOpenPcap() return value has pcap type, lower 16 bits has link layer length */
 
   int DSOpenPcap(const char* pcap_file, FILE** fp_pcap, pcap_hdr_t* pcap_file_hdr, const char* errstr, unsigned int uFlags);
-  int DSReadPcapRecord(FILE* fp_in, uint8_t* pkt_buf, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_length);
+  int DSReadPcapRecord(FILE* fp_in, uint8_t* pkt_buf, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_length, uint16_t* pkt_type);
   int DSWritePcapRecord(FILE* fp_out, uint8_t* pkt_buf, pcaprec_hdr_t* pcap_pkt_hdr, struct ether_header* eth_hdr, TERMINATION_INFO* termInfo,  struct timespec* ts, int pkt_buf_len);
+  int DSClosePcap(FILE* fp_pcap);
 
   #if 0  /* the marker bit is now defined as a bit field in the RTPHeader struct and can be set/cleared directly, JHB Jan2021 */
   void DSSetMarkerBit(FORMAT_PKT* formatPkt, unsigned int uFlags);
@@ -968,6 +995,7 @@ extern "C" {
 #define DS_PKT_INFO_RTP_PYLDLEN               0x0c00
 #define DS_PKT_INFO_RTP_PYLDSIZE              DS_PKT_INFO_RTP_PYLDLEN
 #define DS_PKT_INFO_RTP_PYLD_CONTENT          0x0d00         /* retrieves content type, not payload data. Use either DS_PKT_INFO_PYLDOFS or DS_PKT_INFO_RTP_PYLDOFS to get offset to start of packet data, JHB Dec2020 */
+#define DS_PKT_INFO_RTP_HDRLEN                0x0e00         /* retrieves RTP header length, including extensions if any, JHB Dec2021 */
 
 #define DS_PKT_INFO_RTP_HEADER                0xff00         /* returns whole RTP header in void* pInfo arg */
 
@@ -1083,6 +1111,7 @@ extern "C" {
 #define DS_OPEN_PCAP_WRITE_HEADER             0x0200
 #define DS_OPEN_PCAP_QUIET                    0x0400
 #define DS_READ_PCAP_RECORD_COPY              0x0800         /* copy pcap record only, don't advance file pointer.  Use with DSReadPcapRecord() */
+#define DS_OPEN_PCAP_RESET                    0x1000         /* seek to start of pcap; assumes valid (already open) file handle given to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ, JHB Dec2021 */
 
 /* DSFormatPacket() definitions */
 
@@ -1090,22 +1119,24 @@ extern "C" {
 
 #define DS_FMT_PKT_STANDALONE                 0x0020         /* format packet separately from sessions created by pktlib DSCreateSession(). The chnum param of the DSFormatPacket() API is ignored, and otherwise no association is made with existing pktlib sessions */
 
+#define DS_FMT_PKT_TCPIP                      0x0040         /* format packet as TCP/IP */
+
 #define DS_FMT_PKT_USER_PYLDTYPE              0x0100         /* DS_FMT_PKT_USER_ITEM flags indicate that ITEM is being supplied in the FORMAT_PKT struct pointer param of the DSFormatPacket() API */ 
 #define DS_FMT_PKT_USER_MARKERBIT             0x0200
 #define DS_FMT_PKT_USER_SEQNUM                0x0400
 #define DS_FMT_PKT_USER_TIMESTAMP             0x0800
 #define DS_FMT_PKT_USER_SSRC                  0x1000
 #define DS_FMT_PKT_USER_PTIME                 0x2000
-#define DS_FMT_PKT_USER_IPADDR_SRC            0x4000
-#define DS_FMT_PKT_USER_IPADDR_DST            0x8000
-#define DS_FMT_PKT_USER_UDPPORT_SRC           0x10000
-#define DS_FMT_PKT_USER_UDPPORT_DST           0x20000
+#define DS_FMT_PKT_USER_SRC_IPADDR            0x4000
+#define DS_FMT_PKT_USER_DST_IPADDR            0x8000
+#define DS_FMT_PKT_USER_SRC_PORT              0x10000        /* either UDP or TCP source port */
+#define DS_FMT_PKT_USER_DST_PORT              0x20000        /* either UDP or TCP dest port */
 
 #define DS_FMT_PKT_DISABLE_IPV4_CHECKSUM      0x40000        /* disable IPV4 checksum calculation when formatting the packet */
 #define DS_FMT_PKT_RTP_EVENT                  0x80000
 #define DS_FMT_PKT_NO_INC_CHNUM_TIMESTAMP     0x100000       /* do not increment chnum internal record timestamp (this flag is reserved, do not use) */
 
-#define DS_FMT_PKT_USER_HDRALL                DS_FMT_PKT_USER_IPADDR_SRC | DS_FMT_PKT_USER_IPADDR_DST | DS_FMT_PKT_USER_UDPPORT_SRC | DS_FMT_PKT_USER_UDPPORT_DST
+#define DS_FMT_PKT_USER_HDRALL                DS_FMT_PKT_USER_SRC_IPADDR | DS_FMT_PKT_USER_DST_IPADDR | DS_FMT_PKT_USER_SRC_PORT | DS_FMT_PKT_USER_DST_PORT
 
 /* DSConfigMediaService() uFlags definitions
 

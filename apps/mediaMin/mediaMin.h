@@ -18,6 +18,7 @@
    Modified Mar 2021 JHB, add hDerStreams[] to support DER encoded encapsulated streams
    Modified Mar 2021 JHB, add SIP invite items
    Modified Apr 2021 JHB, add include for derlib.h, move Mode constants here
+   Modified Dec 2021 JHB, add new command line debug flags ENABLE_DER_DECODING_STATS and ENABLE_INTERMEDIATE_PCAP
 */
 
 #ifndef _MEDIAMIN_H_
@@ -73,10 +74,12 @@
 
 #define ENABLE_PACKET_INPUT_ALARM       0x10000  /* enable packet input alarm -- if no packets are received by pktlib; i.e. no packets are pushed via DSPushPackets() API by an application (in this case by mediaMin) for some elapsed time, then pktlib will print a warning message in the event log */
 #define ENABLE_TIMING_MARKERS        0x08000000  /* inject 1 sec wall clock timing markers in stream group output.  This can be helpful in debugging timing issues, for example the app (in this case mediaMin) is not pulling packets fast enough, or not maintaining a consistent pull interval. Additional audio marker options can be specified with uDebugMode (see examples below in DebugSetup() and LoggingSetup(), see also DEBUG_CONFIG struct definitions in shared_include/config.h) */
-#define ENABLE_DEBUG_STATS           0x10000000  /* enable debug info and stats for (i) internal packet/media thread, (ii) audio merging, and (iii) DER stream decoding */
+#define ENABLE_DEBUG_STATS           0x10000000  /* enable debug info and stats for (i) additional mediaMin warnings, (ii) internal packet/media thread, (iii) audio merging, and (iv) DER stream decoding */
 #define ENABLE_DEBUG_STATS_L2        0x20000000  /* reserved */
 #define ENABLE_ALIGNMENT_MARKERS     0x40000000  /* when combined with the ENABLE_STREAM_GROUP_DEDUPLICATION flag, enables alignment markers to show the point at which streams were aligned (the deduplication algorithm uses cross correlation to align one or more streams) */
 #define ENABLE_MEM_STATS             0x80000000  /* show mem usage stats in the event log */
+#define ENABLE_DER_DECODING_STATS   0x100000000LL  /* show stats and info messages for DER encapsulated streams */
+#define ENABLE_INTERMEDIATE_PCAP    0x200000000LL  /* for HI2/HI3 and .ber input, enable intermediate pcap output after decoding */
 
 #define MAX_APP_STR_LEN              2000
 
