@@ -207,7 +207,6 @@ where "distroNN" is the Linux distro and version and "date" is the package date.
 ```
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 ```
-
 ```
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 ```
@@ -218,7 +217,6 @@ For the ASR version of the SDK, the following commands can be used:
 ```
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_Ubuntu*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 ```
-
 ```
     wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_CentOS*.rar" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
 ```
