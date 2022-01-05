@@ -1,7 +1,7 @@
 # Table of Contents
 
-[SigSRF Overview](#user-content-overview)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Applications](#user-content-applications)<br/>
+[EdgeStream and SigSRF Overview](#user-content-overview)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Applications and Use Cases](#user-content-applications)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#user-content-platformssupported)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Telecom Mode](#user-content-telecommode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Telecom Mode Data Flow Diagram](#user-content-telecommodedataflowdiagram)<br/>
@@ -25,11 +25,13 @@
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
 
 <a name="Overview"></a>
-# SigSRF Overview
+# EdgeStream™ and SigSRF Overview
 
-The SigSRF (Streaming Resource Functions) SDK introduces a scalable approach to telecom, media, HPC, and AI servers.  The basic concept is to scale between cloud, private cloud, and Edge and IoT servers, while maintaining a cloud programming model.
+SigSRF is a series of modules (libraries) and EdgeStream™ is a combination of SigSRF and applications that use SigSRF APIs. SRF stands for Streaming Resourcing Functions.
 
-The primary objectives of SigSRF software are:
+The combined EdgeStream + SigSRF SDK introduces a scalable approach to telecom, media, HPC, and AI servers.  The basic concept is to scale between cloud, private cloud, and Edge and IoT servers, while maintaining a cloud programming model.
+
+The primary objectives of EdgeStream and SigSRF software are:
 
 * provide high performance software modules for telecom, media, AI (deep learning), and analytics streaming applications
 * provide both telecom and analytics modes for (i) telecom and CDN applications and (ii) data analytics and web IT applications
@@ -39,9 +41,9 @@ The primary objectives of SigSRF software are:
 * maintain full program compatibility with cloud servers, including open source software support, server architectures, latest programming languages, etc.
 
 <a name="Applications"></a>
-## Applications
+## Applications and Use Cases
 
-SigSRF software is currently deployed in the following application areas:
+EdgeStream and SigSRF software are currently deployed in the following application areas:
 
 * Session Border Controller (SBC)
 * Media Gateway
@@ -55,9 +57,9 @@ SigSRF software is currently deployed in the following application areas:
 <a name="PlatformsSupported"></a>
 ## Platforms Supported
 
-SigSRF software is designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Reference applications available on this page and the mediaTest/mediaMin pages are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
+EdgeStream and SigSRF software are designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Reference SDK applications have low resource and footprint profiles and are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
 
-SigSRF supports media delivery, transcoding, deep learning <sup>1</sup>, OpenCV, speech recognition, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
+EdgeStream and SigSRF support media delivery, transcoding, deep learning <sup>1</sup>, OpenCV, speech recognition, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
 For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture, for an overview see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/WhenSoftwareOnlyIsNotEnough.md">When Software Only Is Not Enough</a>.
 
@@ -108,16 +110,16 @@ For information on HI2 and HI3 intercept decoding with <a href="https://openli.n
 <a name="Multithreaded"></a>
 ## Multithreaded for High Performance
 
-SigSRF library modules support multiple, concurrent packet + media processing threads.  Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups.  Thread stats include profiling, performance, and session allocation.  Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet/media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
+Both SigSRF library modules and EdgeStream applications support multiple, concurrent packet + media processing threads. Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups.  Thread stats include profiling, performance, and session allocation.  Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet/media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
 
 High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
 
-SigSRF software is currently deployed by major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment locations.
+EdgeStream and SigSRF software are currently deployed by major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment use cases and/or locations.
 
-SigSRF software, unlike many open source repositories, is not experimental or prototype, and is constantly going through rigorous customer production testing.  Some of the signal processing modules have deployment histories dating back to 2005, including telecom, communications, and aviation systems.  Packet processing modules include some components dating back to 2010, such as jitter buffer and some voice codecs.  The origins of SigSRF software are in telecom system deployment, with emphasis in the last few years on deep learning.
+EdgeStream and SigSRF software, unlike many open source repositories, are not experimental or prototype. Some of the signal processing modules have deployment histories dating back to 2005, including telecom, communications, and aviation systems. Packet processing modules include some components dating back to 2010, such as jitter buffer and some voice codecs.  The origins of SigSRF software are in telecom system deployment, with emphasis in the last few years on deep learning. Both EdgeStream and SigSRF continuously undergo rigorous customer production testing. 
 
 For calculation-intensive shared library components, such as codecs, signal processing, and inference, SigSRF implements the XDAIS standard made popular by Texas Instruments.  XDAIS was designed to manage shared resources and conflict between calculation- and memory-intensive algorithms.  Originally XDAIS was intended by TI to help produce robust, reliable software on highly resource-constrained embedded platforms.  It continues to help achieve that on today's modern Linux servers.
 
@@ -156,9 +158,9 @@ Some notes about the above data flow diagram:
 <a name="SDKDownload"></a>
 # SDK Download
 
-There are two (2) options for SigSRF SDK download (i) RAR package and install script or (ii) or Docker container. The SDK contains:
+There are two (2) options for EdgeStream and SigSRF SDK download (i) RAR package and install script or (ii) or Docker container. The SDK contains:
 
-   1) A limited eval / reference version of SigSRF libraries and applications, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on reference application limits, see [Run Notes](#user-content-RunNotes) below.
+   1) A limited eval / reference version of SigSRF libraries and EdgeStream applications, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on reference application limits, see [Run Notes](#user-content-RunNotes) below.
 
    2) Makefiles and C/C++ source code for
    &nbsp;&nbsp;&nbsp;&nbsp;<ul>
