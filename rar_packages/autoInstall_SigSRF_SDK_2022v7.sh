@@ -340,6 +340,12 @@ swInstall() {  # install Signalogic SW on specified path
 
 # note -- assumes dependencyCheck() and swInstallSetup() have run
 
+   if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+      cp_prefix="/bin/"
+   elif [ "$OS" = "Ubuntu" ]; then
+      cp_prefix=""
+   fi
+
 	if [ "$installOptions" = "coCPU" ]; then
 
 		echo
@@ -415,25 +421,25 @@ swInstall() {  # install Signalogic SW on specified path
 	echo "Installing SigSRF libs for packet handling, stream group processing, inference, diagnostic, etc..."
 	cd $installPath/Signalogic/DirectCore/lib/
 	for d in *; do
-		cd $d; cp -p lib* /usr/lib; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
+		cd $d; "$cp_prefix"cp -p lib* /usr/lib; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
 	done
 
 	echo
 	echo "Installing SigSRF codec libs..."
 	cd $installPath/Signalogic/SIG_LIBS/Voice/AMR/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null;
+	"$cp_prefix"cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/AMR-WB/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null;
+	"$cp_prefix"cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/AMR-WB+/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null;
+	"$cp_prefix"cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/EVS_floating-point/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null;
+	"$cp_prefix"cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/G726/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null;
+	"$cp_prefix"cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/G729AB/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null;
+	"$cp_prefix"cp -p lib* /usr/lib 2>/dev/null;
 	cd $installPath/Signalogic/SIG_LIBS/Voice/MELPe_floating-point/lib 2>/dev/null
-	cp -p lib* /usr/lib 2>/dev/null;
+	"$cp_prefix"cp -p lib* /usr/lib 2>/dev/null;
 	ldconfig;
 
 	echo
