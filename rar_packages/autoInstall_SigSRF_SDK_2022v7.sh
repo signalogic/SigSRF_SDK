@@ -47,17 +47,16 @@ unrarCheck() {
 		while true; do
 			read -p "Unrar not installed, ok to install now ?" yn
 			case $yn in
-#				[Yy]* ) apt-get install unrar; return 1; break;;
 				[Yy]* ) line_pkg="unrar"
 						depInstall_wo_dpkg;
 						if [[ $? > 0 ]]; then
-							echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
-
-#							sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
-
                      if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-                        sed -i "/^# rpm .* multiverse$/ s/^# //" /etc/yum.repos.d; yum check-update
+                        echo "Attempting to install rarlab unrar ..."
+                        wget https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
+                        tar -zxvf rarlinux-x64-6.0.b2.tar.gz
+                        sudo mv rar/rar rar/unrar /usr/local/bin/
                      elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+                        echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
                         sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
                      fi
 
