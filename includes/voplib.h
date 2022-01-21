@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/include/voplib.h
 
- Copyright (C) Signalogic Inc. 2010-2021
+ Copyright (C) Signalogic Inc. 2010-2022
 
  License
 
@@ -28,6 +28,7 @@
   Modified Jul 2019 JHB, DSGetCodecFs() removed, use DSGetCodecSampleRate(hCodec) instead
   Modified Feb 2020 JHB, add DS_GET_NUMFRAMES flag in DSCodecDecode()
   Modified Oct 2020 JHB, add DSCodecGetInfo() API to pull all available encoder/decoder info as needed. First input param is codec handle or codec_type, depending on uFlags. Added codec_name, raw_frame_size, and coded_frame_size elements to CODEC_PARAMS struct support DSCodecGetInfo()
+  Modified Jan 2022 JHB, add DS_CC_TRACK_MEM_USAGE flag, add DSGetCodecTypeStr() API
 */
  
 #ifndef _VOPLIB_H_
@@ -223,6 +224,7 @@ extern "C" {
   int DSGetCodecCodedFrameSize(HCODEC hCodec);
   int DSGetCodecType(HCODEC hCodec);
   int DSGetCodecInfo(HCODEC hCodec, unsigned int uFlags, void* pInfo);
+  int DSGetCodecTypeStr(int codec_type, char* codecstr);  /* this one requires codec_type, not hCodec */
 
 /* Codec helper functions */
 
@@ -274,6 +276,7 @@ extern "C" {
 #define DS_CC_CREATE_ENCODER    0x01
 #define DS_CC_CREATE_DECODER    0x02
 #define DS_CC_USE_TERMINFO      0x100
+#define DS_CC_TRACK_MEM_USAGE   0x200
 
 /* DSGetCodecInfo() flags */
 

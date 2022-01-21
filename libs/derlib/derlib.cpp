@@ -233,7 +233,7 @@ static bool fOnce = false;
 
             uint8_t tag_chk = pkt_in_buf[pyld_ofs+i];
 
-            if (tag_chk == DER_TAG_INTERCEPTPOINTID || (tag_chk >= 0x80 && tag_chk <= 0x82)) { //tag_chk == 0x82 || tag_chk == 0x81) {
+            if (tag_chk == DER_TAG_INTERCEPTPOINTID || (tag_chk >= 0x80 && tag_chk <= 0x82)) {
 
                #ifdef INTERCEPTPOINTDEBUG
                printf("\n $$$$ index = %d, dst port = %d \n", i, dst_port);
@@ -292,9 +292,9 @@ static bool fOnce = false;
             }
          }  /* end of payload loop */
 
-      /* some countries don't use Intercept Point Id; for those, if we can't find one then we use LI Identifier as the Id. Conditions for that (i) valid country identifier found, (ii) valid generic text strings found above some threshold, JHB Dec2021 */ 
+      /* some countries don't use Intercept Point Id; for those, if we can't find one then we use LI Identifier as the Id. Conditions for that are (i) valid country identifier found, or (ii) valid generic text strings found above some threshold, JHB Dec2021 */ 
 
-         if (!ret_val && strlen(szInterceptionIdentifier) && (generic_string_count >=3 || !strcmp(szAuthCountryIdentifier, "JP"))) {
+         if (!ret_val && strlen(szInterceptionIdentifier) && (generic_string_count >= 3 || !strcmp(szAuthCountryIdentifier, "JP"))) {
 
             ret_val = !strcmp(szAuthCountryIdentifier, "JP") ? 2 : 3;
 

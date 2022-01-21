@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/x86_mediaTest.c
 
- Copyright (C) Signalogic Inc. 2017-2021
+ Copyright (C) Signalogic Inc. 2017-2022
  
  License
 
@@ -66,6 +66,7 @@
                          -tested with bandwidth efficient and octet aligned coded file format
                          -bug did not affect back-to-back encode/decode (i.e. audio to audio)
   Modified Apr 2021 JHB, fix issues with G726 uncompressed vs. compressed mode, retest all bitrates
+  Modified Jan 2022 JHB, use cmd line -dN flag to specify DS_CC_TRACK_USAGE_FLAG in DSCodecCreate()
 */
 
 /* Linux header files */
@@ -80,6 +81,7 @@
 
 #include "mediaTest.h"
 #include "minmax.h"
+#include "cmd_line_debug_flags.h"  /* bring in ENABLE_xxx definitions used when parsing -dN cmd line flag (look for "debugMode"), JHB Jan2022 */
 
 /* SigSRF lib header files (all libs are .so format) */
 
@@ -529,7 +531,7 @@ void x86_mediaTest(void) {
 
    /* start of code for codec test mode */
 
-      printf("x86 codec test start\n");
+      printf("x86 codec test start, debug flags = 0x%llx \n", (unsigned long long)debugMode);
 
       hPlatform = DSAssignPlatform(NULL, PlatformParams.szCardDesignator, 0, 0, 0);  /* assign platform handle, needed for concurrency and VM management */
 
@@ -889,8 +891,10 @@ void x86_mediaTest(void) {
 
             sampleRate_codec = 8000;
 
-            // if (inFileType != ENCODED) printf("MELPe before DSCodecCreate (encoder), bitrate = %d, bitDensity = %d, Npp = %d\n", encoderParams.bitRate, encoderParams.bitDensity, encoderParams.Npp);
-            // if (outFileType != ENCODED) printf("MELPe before DSCodecCreate (decoder), bitrate = %d, bitDensity = %d, post filter = %d\n", decoderParams.bitRate, decoderParams.bitDensity, decoderParams.post);
+            #if 0  /* now done in common section "if fCreateCodec" below, JHB Jul2019 */
+            if (inFileType != ENCODED) printf("MELPe before DSCodecCreate (encoder), bitrate = %d, bitDensity = %d, Npp = %d\n", encoderParams.bitRate, encoderParams.bitDensity, encoderParams.Npp);
+            if (outFileType != ENCODED) printf("MELPe before DSCodecCreate (decoder), bitrate = %d, bitDensity = %d, post filter = %d\n", decoderParams.bitRate, decoderParams.bitDensity, decoderParams.post);
+            #endif
 
             break;
          }
@@ -906,13 +910,14 @@ void x86_mediaTest(void) {
 
          CodecParams.enc_params.frameSize = CodecParams.dec_params.frameSize = codec_frame_duration;  /* in msec */
          CodecParams.codec_type = codec_test_params.codec_type;
+         unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CC_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in mediaMin.h, JHB Jan2022 */
 
-         if ((inFileType != ENCODED) && (encoder_handle = DSCodecCreate(&CodecParams, DS_CC_CREATE_ENCODER)) < 0) {
+         if ((inFileType != ENCODED) && (encoder_handle = DSCodecCreate(&CodecParams, DS_CC_CREATE_ENCODER | uFlags)) < 0) {
             printf("codec test mode, failed to init encoder\n");
             goto codec_test_cleanup;
          }
 
-         if ((outFileType != ENCODED) && (decoder_handle = DSCodecCreate(&CodecParams, DS_CC_CREATE_DECODER)) < 0) {
+         if ((outFileType != ENCODED) && (decoder_handle = DSCodecCreate(&CodecParams, DS_CC_CREATE_DECODER | uFlags)) < 0) {
             printf("codec test mode, failed to init decoder\n");
             goto codec_test_cleanup;
          }

@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/mediaMin.cpp
 
- Copyright (C) Signalogic Inc. 2018-2021
+ Copyright (C) Signalogic Inc. 2018-2022
 
  License
 
@@ -117,6 +117,7 @@
    Modified Dec 2021 JHB, add handling for non-IP packets (e.g. ARP, 802.2 LLC frames) in PushPackets()
    Modified Dec 2021 JHB, add handling for IP non-RTP packets (e.g. ICMP, DHCP) in create_dynamic_session(). Note a change was made in pktlib to handle ICMPv6
    Modified Dec 2021 JHB, implement debug flags ENABLE_DER_DECODING_STATS and ENABLE_INTERMEDIATE_PCAP
+   Modified Jan 2022 JHB, testing with separate cmd_line_debug_flags.h header file, included in mediaMin.h
 */
 
 
@@ -161,11 +162,11 @@ using namespace std;
 
 /* app level header files */
 
-#include "mediaMin.h"     /* struct typedefs and other definitions */
-#include "cmdLineOpt.h"   /* cmd line handling */
-#include "sdp_app.h"      /* app level SDP management */
-#include "session_app.h"  /* app level session management */
-#include "user_io.h"      /* user I/O (keybd, counters and other output) */
+#include "mediaMin.h"              /* struct typedefs and other definitions */
+#include "cmdLineOpt.h"            /* cmd line handling */
+#include "sdp_app.h"               /* app level SDP management */
+#include "session_app.h"           /* app level session management */
+#include "user_io.h"               /* user I/O (keybd, counters and other output) */
 
 //#define VALGRIND_DEBUG  /* enable when using Valgrind for debug */
 #ifdef VALGRIND_DEBUG
@@ -289,7 +290,7 @@ unsigned char  pkt_in_buf[32*MAX_RTP_PACKET_LEN] = { 0 }, pkt_out_buf[32*MAX_RTP
 DEBUG_CONFIG dbg_cfg = { 0 };  /* struct used for lib debug configuration; see shared_include/debug.h */
 GLOBAL_CONFIG gbl_cfg = { 0 };
 
-int i, j, nSessionsConfigured = 0, nRemainingToDelete = 0, thread_index = 0;  /* mediaMin application thread index (normally zero, except for high capacity and stress test situations, see above comments) */
+int i, j, nSessionsConfigured = 0, nRemainingToDelete = 0, thread_index = 0;  /* mediaMin application thread index (normally zero, except for high capacity and stress test situations, see definitions and comments in cmd_line_debug_flags.h) */
 
 unsigned long long cur_time = 0, base_time = 0;
 uint64_t interval_count = 0, queue_check_time[MAX_SESSIONS] = { 0 };
@@ -407,7 +408,7 @@ char tmpstr[MAX_APP_STR_LEN];
 
       GlobalConfig(&gbl_cfg);  /* configure libraries, gbl_cfg struct is defined in shared_include/config.h */
 
-      DebugSetup(&dbg_cfg);  /* set up debug items (see cmd line debug flags above) */
+      DebugSetup(&dbg_cfg);  /* set up debug items (see cmd line debug flag definitions and comments in cmd_line_debug_flags.h) */
 
    /* init and configure pktlib */
 
@@ -3311,7 +3312,7 @@ int TestActions(HSESSION hSessions[], int thread_index) {
 
 int i, ret_val = 1;
 
-/* actions for stress tests, if active (see Mode var comments in mediaMin.h for possible tests that can be specified in the cmd line) */
+/* actions for stress tests, if active (see Mode var comments in cmd_line_debug_flags.h for possible tests that can be specified in the cmd line) */
 
    if ((Mode & CREATE_DELETE_TEST_PCAP) && debug_test_state == DELETE)  /* delete dynamic sessions in the "create from pcap" stress test mode.  Note that debug_test_state is updated by a timer in the "handler" signal handler function */
    {
