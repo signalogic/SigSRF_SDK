@@ -58,9 +58,9 @@ unrarCheck() {
                      elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
                         echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
                         sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
+                        depInstall_wo_dpkg;
                      fi
 
-							depInstall_wo_dpkg;
 							if [[ $? = 0 ]]; then
 								return 1
 							fi;
