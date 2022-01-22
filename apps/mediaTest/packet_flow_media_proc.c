@@ -365,8 +365,10 @@ extern uint8_t uShowGroupContributorAmounts[MAX_SESSIONS];  /* streamlib */
 
 int num_missed_interval_index[MAX_STREAM_GROUPS] = { 0 };  /* referenced in streamlib.so */
 int num_flc_applied[MAX_STREAM_GROUPS] = { 0 };
+#ifdef __LIBRARYMODE__
 uint32_t uFramesDropped[NCORECHAN] = { 0 };
 int nMaxStreamDataAvailable[NCORECHAN] = { 0 };  /* per contributor max data available, used as a run-time stat in DSLogRunTimeStats(). Updated by DSStoreStreamData() in streamlib */
+#endif
 
 #ifndef __LIBRARYMODE__  /* global vars in cmd line build, but not in thread build (pktlib) */
 
@@ -2107,9 +2109,9 @@ debug:
 
                            if (!nDormantChanFlush[hSession][term]) session_info_thread[hSession].ssrc_state[term] = SSRC_LIVE;
 
-#ifdef __LIBRARYMODE__
+                           #ifdef __LIBRARYMODE__
                            last_buffer_time[chnum] = cur_time;
-#endif
+                           #endif
                         }
                         else {
 
@@ -2466,9 +2468,11 @@ next_session:
             if (packet_media_thread_info[thread_index].fProfilingEnabled) start_profile_time = get_time(USE_CLOCK_GETTIME);
 
             num_chan = get_channels(hSession, stream_indexes, chan_nums, thread_index);
-#ifdef __LIBRARYMODE__
+
+            #ifdef __LIBRARYMODE__
             num_chan = CheckForDormantSSRC(hSession, num_chan, chan_nums, numSessions, threadid, hSessions_t, cur_time, thread_index);
-#endif
+            #endif
+
             num_chan = CheckForOnHoldFlush(hSession, num_chan, chan_nums);
 
             num_chan = CheckForPacketLossFlush(hSession, num_chan, chan_nums, cur_time, thread_index);  /* in analytics mode (clockless, or FTRT mode), if last time DSGetOrderedPackets() was called exceeds N ptimes, then call again */
@@ -5665,12 +5669,14 @@ organize_by_ssrc:
 
                if (DSGetSessionInfo(c, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CHNUM_PARENT, 0, NULL) == c) {  /* add overrun stats only for parent channels (as explained in streamlib.h, child channels contribute to their parent group member stream), JHB Apr2020 */
 
+                  #ifdef __LIBRARYMODE__
                   add_stats_str(ovrnstr, MAX_STATS_STRLEN, " %d/%u", c, uFramesDropped[c]);
 
                   HCODEC hCodec;
                   int framesize;
 
                   if ((hCodec = DSGetSessionInfo(c, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CODEC, 1, NULL)) > 0 && (framesize = DSGetCodecRawFrameSize(hCodec)) > 0) add_stats_str(mxovrnstr, MAX_STATS_STRLEN, " %d/%2.2f", c, 100.0*nMaxStreamDataAvailable[c]/framesize/DSGetStreamGroupContributorMaxFrameCapacity(c));
+                  #endif
                }
 
                if (!fShowOwnerOnce) add_stats_str(undrstr, MAX_STATS_STRLEN, " %d/%d/%d", idx, num_missed_interval_index[idx], num_flc_applied[idx]);
