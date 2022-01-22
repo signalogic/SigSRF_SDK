@@ -218,6 +218,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 	{
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
+
 			package=$(rpm -qa gcc-c++)
 
 			if [ ! $package ]; then
@@ -230,9 +231,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 #		  		echo "lsb_release package is needed"
 #				yum install redhat-lsb-core
 #			fi
-      else
-         package=""
-		fi
+      fi
 
 		cd $installPath/Signalogic/installation_rpms/RHEL
 		filename="rhelDependency.txt"
@@ -240,10 +239,12 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
 	{
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
-#			package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
-#			if [ ! $package ]; then
-#				package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
-#			fi
+
+			package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
+
+			if [ ! $package ]; then
+				package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
+			fi
 
 			package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
 
@@ -260,13 +261,13 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 		  		echo "lsb_release package is needed"
 				apt-get install lsb-release
 			fi
-		else
-			package=""
 		fi
 
 		cd $installPath/Signalogic/installation_rpms/Ubuntu
 		filename="UbuntuDependency.txt"
    }
+   # elif # unsupported OS ?
+   fi
  
    while read -r -u 3 line
 	do
@@ -345,8 +346,10 @@ swInstall() {  # install Signalogic SW on specified path
             distribution=$(cat /etc/centos-release)
          }
          elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+         {
             distribution=$(lsb_release -d)
          }
+         fi
 
 			cd $installPath/Signalogic/DirectCore/hw_utils; make
 			cd ../driver; 
@@ -593,8 +596,10 @@ installCheckVerify() {
       cat /etc/centos-release | tee -a $diagReportFile
    }
    elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+   {
       lsb_release -a | tee -a $diagReportFile
    }
+   fi
 
 	echo | tee -a $diagReportFile
 	echo "SigSRF Install Path and Options Check" | tee -a $diagReportFile
