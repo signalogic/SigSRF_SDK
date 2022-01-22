@@ -219,60 +219,46 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 	{
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 			package=$(rpm -qa gcc-c++)
+
 			if [ ! $package ]; then
 				echo -e "gcc compiler and toolchain is needed\n"
 				yum install gcc-c++
 			fi
 
-			lsbReleaseInstalled=`type -p lsb_release`
-			if [ ! $lsbReleaseInstalled ]; then
-		  		echo "lsb_release package is needed"
-				yum install redhat-lsb-core
-			fi
+#			lsbReleaseInstalled=`type -p lsb_release`
+#			if [ ! $lsbReleaseInstalled ]; then
+#		  		echo "lsb_release package is needed"
+#				yum install redhat-lsb-core
+#			fi
+      else
+         package=""
 		fi
 
 		cd $installPath/Signalogic/installation_rpms/RHEL
 		filename="rhelDependency.txt"
-
-		while read -r -u 3 line
-		do
-
-			d=$(sed 's/.rpm//g' <<< $line)
-			package=`rpm -qa | grep -w $d | head -n1`
-			if [ ! $package ]; then
-				if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
-					if [ ! $totalInstall ]; then
-						read -p  "Do you wish to install $d package? Please enter [Y]es, [N]o, [A]ll: " Dn
-						if [[ ($Dn = "a") || ($Dn = "A") ]]; then
-							totalInstall=1
-						fi
-					fi
-					case $Dn in
-						[YyAa]* ) depInstall ; ;;
-						[Nn]* ) ;;
-						* ) echo "Please retry with just y, n, or a";;
-					esac
-				elif [ "$dependencyInstall" = "Dependency Check" ]; then
-					printf "%s %s[ NOT INSTALLED ]\n" $d "${DOTs:${#d}}"
-				fi
-			else
-				printf "%s %s[ ALREADY INSTALLED ]\n" $d "${DOTs:${#d}}"
-			fi
-		done 3< "$filename"
-	}
-	
+   }
 	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
 	{
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
-			package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
-			if [ ! $package ]; then
-				package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
-			fi
+#			package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
+#			if [ ! $package ]; then
+#				package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
+#			fi
+
+			package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
 
 			if [ ! $package ]; then
-				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
-				unlink /usr/bin/gcc
-				unlink /usr/bin/g++
+				echo -e "gcc compiler and toolchain is needed\n"
+#				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
+#				unlink /usr/bin/gcc
+#				unlink /usr/bin/g++
+				apt install build-essential
+			fi
+
+			lsbReleaseInstalled=`type -p lsb_release`
+			if [ ! $lsbReleaseInstalled ]; then
+		  		echo "lsb_release package is needed"
+				apt-get install lsb-release
 			fi
 		else
 			package=""
@@ -280,61 +266,60 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		cd $installPath/Signalogic/installation_rpms/Ubuntu
 		filename="UbuntuDependency.txt"
+   }
+ 
+   while read -r -u 3 line
+	do
 
-		while read -r -u 3 line
-		do
+		d=$(sed 's/_.*//g' <<< $line)
+		if [[ "$d" == "make" ]]; then
+			g=$d
+		else
+			g=$(sed 's/-.*//g' <<< $line)  # search for "-" to set g with the generic package name
+		fi
 
-			d=$(sed 's/_.*//g' <<< $line)
-			if [[ "$d" == "make" ]]; then
-				g=$d
-			else
-				g=$(sed 's/-.*//g' <<< $line)  # search for "-" to set g with the generic package name
-			fi
+		package=$(dpkg -s $g 2>/dev/null | grep Status | awk ' {print $4} ')
 
-			package=$(dpkg -s $g 2>/dev/null | grep Status | awk ' {print $4} ')
+		if [[ "$g" == "libncurses"* && "$installOptions" != "coCPU" ]]; then  # libncurses only in memTest Makefile
+			package="not_needed"
+		fi
 
-			if [[ "$g" == "libncurses"* && "$installOptions" != "coCPU" ]]; then  # libncurses only in memTest Makefile
-				package="not_needed"
-			fi
+		if [[ "$g" == "libexplain"* && "$installOptions" != "coCPU" ]]; then  # libexplain only in streamTest Makefile
+			package="not_needed"
+		fi
 
-			if [[ "$g" == "libexplain"* && "$installOptions" != "coCPU" ]]; then  # libexplain only in streamTest Makefile
-				package="not_needed"
-			fi
-
-			if [ ! $package ]; then
-				if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
-					if [ ! $totalInstall ]; then
-						read -p "Do you wish to install $g package? Please enter [Y]es, [N]o, [A]ll: " Dn
-						if [[ ($Dn = "a") || ($Dn = "A") ]]; then
-							totalInstall=1
-						fi
+		if [ ! $package ]; then
+			if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
+				if [ ! $totalInstall ]; then
+					read -p "Do you wish to install $g package? Please enter [Y]es, [N]o, [A]ll: " Dn
+					if [[ ($Dn = "a") || ($Dn = "A") ]]; then
+						totalInstall=1
 					fi
-					case $Dn in
-						[YyAa]* ) depInstall ; ;;  # depInstall uses "line" var
-						[Nn]* ) ;;
-						* ) echo "Please retry with just y, n, or a";;
-					esac
-				elif [ "$dependencyInstall" = "Dependency Check" ]; then
-					printf "%s %s[ NOT INSTALLED ]\n" $g "${DOTs:${#g}}"
 				fi
-			elif [ "$package" = "not_needed" ]; then
-				printf "%s %s[ NOT NEEDED ]\n" $g "${DOTs:${#g}}"
-			elif [ $package ]; then
-				printf "%s %s[ ALREADY INSTALLED ]\n" $g "${DOTs:${#g}}"
-		fi
-		done 3< "$filename"
-		
-		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
-			# Dependencies gcc and g++ will be installed as gcc-4.8 and g++-4.8 so it is necessary to create a symmlink (gcc and g++) otherwise SW installation might fail
-			if [ ! -L  /usr/bin/gcc ]; then
-		  	  	ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
+				case $Dn in
+					[YyAa]* ) depInstall ; ;;  # depInstall uses "line" var
+					[Nn]* ) ;;
+					* ) echo "Please retry with just y, n, or a";;
+				esac
+			elif [ "$dependencyInstall" = "Dependency Check" ]; then
+				printf "%s %s[ NOT INSTALLED ]\n" $g "${DOTs:${#g}}"
 			fi
-			if [ ! -L  /usr/bin/g++ ]; then
-				ln -s /usr/bin/g++-4.8 /usr/bin/g++
-			fi
-		fi
-	}
-	fi
+		elif [ "$package" = "not_needed" ]; then
+			printf "%s %s[ NOT NEEDED ]\n" $g "${DOTs:${#g}}"
+		elif [ $package ]; then
+			printf "%s %s[ ALREADY INSTALLED ]\n" $g "${DOTs:${#g}}"
+   	fi
+	done 3< "$filename"
+
+#	if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
+#		# Dependencies gcc and g++ will be installed as gcc-4.8 and g++-4.8 so it is necessary to create a symmlink (gcc and g++) otherwise SW installation might fail
+#		if [ ! -L  /usr/bin/gcc ]; then
+#	  	  	ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
+#		fi
+#		if [ ! -L  /usr/bin/g++ ]; then
+#			ln -s /usr/bin/g++-4.8 /usr/bin/g++
+#		fi
+#	fi
 }
 
 swInstall() {  # install Signalogic SW on specified path
@@ -354,11 +339,19 @@ swInstall() {  # install Signalogic SW on specified path
 		echo
 
 		if [ "$target" = "Host" ]; then
-			#cd $installPath/Signalogic_*/DirectCore/hw_utils; make clean; make
+
+         if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+         {
+            distribution=$(cat /etc/centos-release)
+         }
+         elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+            distribution=$(lsb_release -d)
+         }
+
 			cd $installPath/Signalogic/DirectCore/hw_utils; make
 			cd ../driver; 
-			distribution=$(lsb_release -d)
 			kernel=$(uname -r) 
+
 			if [[ $kernel == 3.2.0-49-generic ]]; then
 				cp sig_mc_hw_ubuntu_12.04.5.ko sig_mc_hw.ko
 			elif [[ $kernel == 3.16.0-67-generic ]]; then
@@ -595,7 +588,14 @@ installCheckVerify() {
 
 	echo
 	echo "Distro Info" | tee -a $diagReportFile
-	lsb_release -a | tee -a $diagReportFile
+   if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+   {
+      cat /etc/centos-release | tee -a $diagReportFile
+   }
+   elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+      lsb_release -a | tee -a $diagReportFile
+   }
+
 	echo | tee -a $diagReportFile
 	echo "SigSRF Install Path and Options Check" | tee -a $diagReportFile
 	echo "Install path: $installPath" | tee -a $diagReportFile
