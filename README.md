@@ -202,7 +202,7 @@ Separate RAR packages are provided for different Linux distributions. Please cho
 
 To download the install script and one or more rar files directly from Github (i.e. without checking out a clone repository), use the following commands:
 ```
-wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2020v6.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2020v6.sh
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2022v7.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2022v7.sh
 ```
 ```
 wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_distroNN_date.rar
@@ -262,7 +262,7 @@ SigSRF uses a Kaldi ASR implementation. In the SDK the Kaldi "mini-librispeech" 
 
 To run the install script enter:
 
-    source autoInstall_SigSRF_SDK_2020v6.sh
+    source autoInstall_SigSRF_SDK_2022v7.sh
 
 The script will then prompt as follows:
 
