@@ -2,7 +2,7 @@
 #================================================================================================
 # Bash script to install/uninstall SigSRF SDK
 # Copyright (C) Signalogic Inc 2017-2022
-# Rev 1.7
+# Rev 1.7.1
 
 # Requirements
    # Internet connection
@@ -28,6 +28,7 @@
 #  Modified Jan 2021 JHB, fix minor issues in installCheckVerify(), add SIGNALOGIC_INSTALL_OPTIONS in /etc/environment, add preliminary check for valid .rar file
 #  Modified Jan 2021 JHB, unrar only most recent .rar file in case user has downloaded before, look for .rar that matches installed distro
 #  Modified Feb 2021 JHB, add ASR version to install options, add swInstallSetup(), fix problems in dependencyCheck(), add install path confirmation
+#  Modified Jan 2022 JHB, minor mods for CentOS 8
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -41,8 +42,8 @@ depInstall_wo_dpkg() {
 
 unrarCheck() {
 
-	unrarInstalled=`type -p unrar`
-	if [ ! $unrarInstalled ]; then
+	unrarInstalled=`type -p unrar`  # see if unrar is recognized on cmd line
+	if [ ! $unrarInstalled ]; then  # if not then need to install
 
 		while true; do
 			read -p "Unrar not installed, ok to install now ?" yn
@@ -157,7 +158,7 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 	
 	echo
 	echo "SigSRF software Installation will be performed..."
-	mv $installPath/Signalogic_*/etc/signalogic /etc
+	mv -f $installPath/Signalogic_*/etc/signalogic /etc
 	rm -rf $installPath/Signalogic*/etc
 	echo
 	kernel_version=`uname -r`

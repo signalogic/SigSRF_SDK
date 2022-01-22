@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/packet_flow_media_proc.c
 
- Copyright (C) Signalogic Inc. 2017-2021
+ Copyright (C) Signalogic Inc. 2017-2022
 
  License
 
@@ -127,6 +127,7 @@
    Modified Jan 2021 JHB, change units of session_info_thread[hSession].merge_audio_chunk_size from size (bytes) to time (msec), part of change to make stream group processing independent of sampling rate
    Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
    Modified Mar 2021 JHB, change DSLogPacketTimeLossStats() to DSLogRunTimeStats(), incorporate use of DS_LOG_RUNTIME_STATS_XX flags
+   Modified Jan 2022 JHB, fix linker warnings in CentOS 8 g++ 8.3 by not including last_buffer_time, nMaxStreamDataAvailable, uFramesDropped in __LIBRARYMODE__ build
 */
 
 #ifndef _GNU_SOURCE
