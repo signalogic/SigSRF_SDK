@@ -481,13 +481,18 @@ static inline int get_channels(HSESSION, int[], int[], int);
 static inline unsigned int uFlags_session(HSESSION);
 
 static inline int CheckForSSRCChange(HSESSION, int[], uint8_t*, int*, int, unsigned int, unsigned int, unsigned int[], int);
+#ifdef __LIBRARYMODE__
 static inline int CheckForDormantSSRC(HSESSION, int num_chan, int chan_nums[], int, int, HSESSION[], uint64_t cur_time, int thread_index);
+#endif
 static inline int CheckForOnHoldFlush(HSESSION hSession, int num_chan, int chan_nums[]);
 static inline int CheckForPacketLossFlush(HSESSION hSession, int num_chan, int chan_nums[], uint64_t cur_time, int thread_index);
 
 int InitStream(HSESSION[], int, int, bool*);
 int InitSession(HSESSION, int);
+#ifdef __LIBRARYMODE__
 int CleanSession(HSESSION, int);
+#endif
+
 #ifdef USE_CHANNEL_PKT_STATS
 int ManageSessions(HSESSION[], PKT_COUNTERS[], PKT_STATS_HISTORY[], PKT_STATS_HISTORY[], bool*, int);
 int WritePktLog(HSESSION, PKT_COUNTERS[], PKT_STATS_HISTORY[], PKT_STATS_HISTORY[], int);
@@ -629,7 +634,9 @@ static uint64_t last_packet_in_time_pull[NCORECHAN] = { 0 };
 static uint32_t packet_rtp_time_pull[NCORECHAN] = { 0 };
 static uint32_t last_rtp_timestamp_pull[NCORECHAN] = { 0 };
 
+#ifdef __LIBRARYMODE__
 uint64_t last_buffer_time[NCORECHAN] = { 0 };  /* per stream last jitter buffer add time (in msec) */
+#endif
 static uint64_t last_pull_time[NCORECHAN] = { 0 };  /* per stream last jitter buffer pull time (in msec), updated after calls to DSGetOrderedPackets(). Referenced in get_chan_packets() in pktlib.c */
 
 static uint32_t packet_in_bursts[NCORECHAN] = { 0 };
@@ -2100,7 +2107,9 @@ debug:
 
                            if (!nDormantChanFlush[hSession][term]) session_info_thread[hSession].ssrc_state[term] = SSRC_LIVE;
 
+#ifdef __LIBRARYMODE__
                            last_buffer_time[chnum] = cur_time;
+#endif
                         }
                         else {
 
@@ -2457,9 +2466,9 @@ next_session:
             if (packet_media_thread_info[thread_index].fProfilingEnabled) start_profile_time = get_time(USE_CLOCK_GETTIME);
 
             num_chan = get_channels(hSession, stream_indexes, chan_nums, thread_index);
-
+#ifdef __LIBRARYMODE__
             num_chan = CheckForDormantSSRC(hSession, num_chan, chan_nums, numSessions, threadid, hSessions_t, cur_time, thread_index);
-
+#endif
             num_chan = CheckForOnHoldFlush(hSession, num_chan, chan_nums);
 
             num_chan = CheckForPacketLossFlush(hSession, num_chan, chan_nums, cur_time, thread_index);  /* in analytics mode (clockless, or FTRT mode), if last time DSGetOrderedPackets() was called exceeds N ptimes, then call again */
@@ -4085,6 +4094,8 @@ char szSSRCStatus[200];
 }
 
 
+#ifdef __LIBRARYMODE__
+
 static inline int CheckForDormantSSRC(HSESSION hSession, int num_chan, int chan_nums[], int numSessions, int threadid, HSESSION hSessions_t[], uint64_t cur_time, int thread_index) {
 
 int i, i2, j, k;
@@ -4155,6 +4166,7 @@ bool fChanFound = false;
    return num_chan;
 }
 
+#endif
 
 static inline int CheckForOnHoldFlush(HSESSION hSession, int num_chan, int chan_nums[]) {
 
@@ -4577,6 +4589,7 @@ int session_state, j;
    return 1;
 }
 
+#ifdef __LIBRARYMODE__
 
 /* CleanSession() handles cleanup for items that may apply to both parent and child channels. Child channels are created dynamically so we don't know what index they will end up using when sessions are created.  We know only when sessions are deleted, JHB Nov2019 */
 
@@ -4660,6 +4673,7 @@ int ch[64];
    return 1;
 }
 
+#endif
 
 /* ManageSessions() enumerates through all session handles and manages sessions assigned to this thread:
 
@@ -4776,7 +4790,10 @@ get_num_sessions:
                   DSLogRunTimeStats(hSession, DS_LOG_RUNTIME_STATS_ORGANIZE_BY_STREAM_GROUP | DS_LOG_RUNTIME_STATS_SUPPRESS_ERROR_MSG | DS_LOG_RUNTIME_STATS_DISPLAY | DS_LOG_RUNTIME_STATS_EVENTLOG);
                }
 
+#ifdef __LIBRARYMODE__
+
                CleanSession(hSession, thread_index);  /* clear p/m thread level items */
+#endif
 
                DSDeleteSession(hSession);  /* pktlib */
 
