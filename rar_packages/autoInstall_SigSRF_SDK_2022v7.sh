@@ -288,32 +288,33 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		d=$(sed 's/_.*//g' <<< $line)
 		if [[ "$d" == "make" ]]; then
-			g=$d
+			e=$d
 		else
-			g=$(sed 's/devel-.*//g' <<< $line)  # search for "devel-" to set g with generic developer package name
-         if [[ "$g" == "" ]]; then
-			   g=$(sed 's/-.*//g' <<< $line)  # search for "-" to set g with generic package name
+         if [[ "$d" == *"-devel-"* ]]; then
+			   e=$(sed 's/-.*//g! {'s/-.*//g}' <<< $line)  # search for second "-" to set e with generic developer package name
+         else
+            e=$(sed 's/-.*//g' <<< $line)  # search for first "-" to set e with generic package name
          fi
 		fi
 
-		package=$(dpkg -s $g 2>/dev/null | grep Status | awk ' {print $4} ')
+		package=$(dpkg -s $e 2>/dev/null | grep Status | awk ' {print $4} ')
 
-		if [[ ( "$g" == "libncurses"* || "$g" == "ncurses"* || "$g" == "libncurses-devel"* || "$g" == "ncurses-devel"* ) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
+		if [[ ( "$e" == "libncurses"* || "$e" == "ncurses"* || "$e" == "libncurses-devel"* || "$e" == "ncurses-devel"* ) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
 			package="not needed"
 		fi
 
-		if [[ ( "$g" == "libexplain"* || "$g" == "libexplain-devel"* ) && "$installOptions" != "coCPU" ]]; then  # libexplain only referenced in streamTest Makefile
+		if [[ ( "$e" == "libexplain"* || "$e" == "libexplain-devel"* ) && "$installOptions" != "coCPU" ]]; then  # libexplain only referenced in streamTest Makefile
 			package="not needed"
 		fi
 
-		if [[ "$g" == "gcc"* && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we won't worry about minimum version
+		if [[ "$e" == "gcc"* && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we don't worry about minimum version
 			package="already installed"
 		fi
 
 		if [ ! $package ]; then
 			if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 				if [ ! $totalInstall ]; then
-					read -p "Do you wish to install $g package? Please enter [Y]es, [N]o, [A]ll: " Dn
+					read -p "Do you wish to install $e package? Please enter [Y]es, [N]o, [A]ll: " Dn
 					if [[ ($Dn = "a") || ($Dn = "A") ]]; then
 						totalInstall=1
 					fi
@@ -324,12 +325,12 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 					* ) echo "Please retry with just y, n, or a";;
 				esac
 			elif [ "$dependencyInstall" = "Dependency Check" ]; then
-				printf "%s %s[ NOT INSTALLED ]\n" $g "${DOTs:${#g}}"
+				printf "%s %s[ NOT INSTALLED ]\n" $e "${DOTs:${#e}}"
 			fi
 		elif [ "$package" = "not needed" ]; then
-			printf "%s %s[ NOT NEEDED ]\n" $g "${DOTs:${#g}}"
+			printf "%s %s[ NOT NEEDED ]\n" $e "${DOTs:${#e}}"
 		elif [ "$package" != "" ]; then
-			printf "%s %s[ ALREADY INSTALLED ]\n" $g "${DOTs:${#g}}"
+			printf "%s %s[ ALREADY INSTALLED ]\n" $e "${DOTs:${#e}}"
    	fi
 	done 3< "$filename"
 
