@@ -161,15 +161,13 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 	echo "SIGNALOGIC_INSTALL_OPTIONS=$installOptions" >> /etc/environment
 	
 	echo
-	echo "SigSRF software Installation will be performed..."
+	echo "Installing SigSRF software ..."
 	mv -f $installPath/Signalogic_*/etc/signalogic /etc
 	rm -rf $installPath/Signalogic*/etc
 	echo
-	kernel_version=`uname -r`
-	echo $kernel_version
-	echo
 	echo "Creating symlinks..."
-	
+	echo
+
 	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 		if [ ! -L /usr/src/linux ]; then
 			ln -s /usr/src/kernels/$kernel_version /usr/src/linux
@@ -493,7 +491,7 @@ unInstall() { # uninstall Signalogic SW completely
 
 	OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')
 	echo
-	echo "Signalogic SW uninstallation will be performed..."
+	echo "Uninstalling SigSRF software..."
 	echo
 	unInstallPath=$SIGNALOGIC_INSTALL_PATH
 	if [ ! $unInstallPath ]; then
@@ -523,8 +521,6 @@ unInstall() { # uninstall Signalogic SW completely
 		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 			rm -rf /etc/sysconfig/modules/sig_mc_hw.modules
 		fi
-	
-		kernel_version=`uname -r`
 	
 		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 			if [ $target = "Host" ]; then
@@ -622,6 +618,7 @@ installCheckVerify() {
    else   # else includes Ubuntu, Debian, VM target, or anything else
       lsb_release -a | tee -a $diagReportFile
    fi
+   echo "Kernel Version: $kernel_version" | tee -a $diagReportFile
 
 	echo | tee -a $diagReportFile
 	echo "SigSRF Install Path and Options Check" | tee -a $diagReportFile
@@ -729,7 +726,8 @@ installCheckVerify() {
 
 wdPath=$PWD
 OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')  # OS var is used throughout script
-echo "Host Operating System: $OS"
+kernel_version=`uname -r`
+echo "Host Operating System $OS, Kernel version $kernel_version"
 PS3="Please select target for SigSRF software install [1-2]: "
 select target in "Host" "VM" 
 do
