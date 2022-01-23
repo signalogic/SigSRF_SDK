@@ -291,7 +291,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			e=$d
 		else
          if [[ "$d" == *"-devel-"* ]]; then
-			   e=$(sed 's/-.*//g! {'s/-.*//g'}' <<< $line)  # search for second "-" to set e with generic developer package name
+			   e=$(sed 's/-.*//2' <<< $line)  # search for second "-" to set e with generic developer package name
          else
             e=$(sed 's/-.*//g' <<< $line)  # search for first "-" to set e with generic package name
          fi
@@ -320,7 +320,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			package="already installed"
 		fi
 
-		if [ ! $package ]; then
+		if [ "$package" == "" ]; then
 			if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 				if [ ! $totalInstall ]; then
 					read -p "Do you wish to install $e package? Please enter [Y]es, [N]o, [A]ll: " Dn
@@ -338,7 +338,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			fi
 		elif [ "$package" = "not needed" ]; then
 			printf "%s %s[ NOT NEEDED ]\n" $e "${DOTs:${#e}}"
-		elif [ "$package" != "" ]; then
+		else
 			printf "%s %s[ ALREADY INSTALLED ]\n" $e "${DOTs:${#e}}"
    	fi
 	done 3< "$filename"
