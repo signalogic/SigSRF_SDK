@@ -1,6 +1,6 @@
 #!/bin/bash
 #================================================================================================
-# Bash script to install/uninstall SigSRF SDK
+# Bash script to install/uninstall SigSRF SDK and EdgeStream apps
 # Copyright (C) Signalogic Inc 2017-2022
 # Rev 1.7.1
 
@@ -166,7 +166,6 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 	rm -rf $installPath/Signalogic*/etc
 	echo
 	echo "Creating symlinks..."
-	echo
 
 	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 		if [ ! -L /usr/src/linux ]; then
@@ -461,7 +460,7 @@ swInstall() {  # install Signalogic SW on specified path
 	ldconfig;
 
 	echo
-	echo "Building SigSRF applications..."
+	echo "Building EdgeStream applications..."
 
 	if [ "$installOptions" = "coCPU" ]; then
 
@@ -642,7 +641,7 @@ installCheckVerify() {
 	# Symlinks check
 
 	echo | tee -a $diagReportFile
-	echo "SigSRF Symlinks Check" | tee -a $diagReportFile
+	echo "SigSRF and EdgeStream Symlinks Check" | tee -a $diagReportFile
 
 	d="Signalogic Symlink"
 	if [ -L $installPath/Signalogic ]; then
@@ -682,7 +681,7 @@ installCheckVerify() {
 	# Apps check
 
 	echo | tee -a $diagReportFile
-	echo "SigSRF Apps Check" | tee -a $diagReportFile
+	echo "EdgeStream Apps Check" | tee -a $diagReportFile
 
 	if [ "$installOptions" = "coCPU" ]; then
 
@@ -727,7 +726,8 @@ installCheckVerify() {
 wdPath=$PWD
 OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')  # OS var is used throughout script
 kernel_version=`uname -r`
-echo "Host Operating System $OS, Kernel version $kernel_version"
+echo "OS distro $OS, kernel version $kernel_version"
+echo
 PS3="Please select target for SigSRF software install [1-2]: "
 select target in "Host" "VM" 
 do
