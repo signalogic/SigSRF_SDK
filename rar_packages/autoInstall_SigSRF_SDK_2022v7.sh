@@ -303,7 +303,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			package="not needed"
 		fi
 
-		if [[ "$g" == "gcc"* && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we won't worry about minimum version
+		if [[ "$g" == "gcc" && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we won't worry about minimum version
 			package="already installed"
 		fi
 
