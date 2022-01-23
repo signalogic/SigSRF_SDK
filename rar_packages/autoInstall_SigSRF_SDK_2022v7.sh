@@ -28,6 +28,7 @@
 #  Modified Jan 2021 JHB, fix minor issues in installCheckVerify(), add SIGNALOGIC_INSTALL_OPTIONS in /etc/environment, add preliminary check for valid .rar file
 #  Modified Jan 2021 JHB, unrar only most recent .rar file in case user has downloaded before, look for .rar that matches installed distro
 #  Modified Feb 2021 JHB, add ASR version to install options, add swInstallSetup(), fix problems in dependencyCheck(), add install path confirmation
+#  Modified Jan 2022 JHB, add EdgeStream references
 #  Modified Jan 2022 JHB, mods for CentOS 8, remove reference to specific gcc version
 #  Modified Jan 2022 JHB, assume distro other than Ubunto or CentOS / RHEL as possible Ubuntu/Debian, let user know this is happening
 #================================================================================================
@@ -117,7 +118,7 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 
 	while true; do
 
-		echo "Enter path for SigSRF software and dependency package installation:"
+		echo "Enter path for SigSRF and EdgeStream software and dependency package installation:"
 		read installPath
 
 		if [ ! $installPath ]; then
@@ -161,7 +162,7 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 	echo "SIGNALOGIC_INSTALL_OPTIONS=$installOptions" >> /etc/environment
 	
 	echo
-	echo "Installing SigSRF software ..."
+	echo "Installing SigSRF and EdgeStream software ..."
 	mv -f $installPath/Signalogic_*/etc/signalogic /etc
 	rm -rf $installPath/Signalogic*/etc
 	echo
@@ -212,7 +213,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		if [ ! $installPath ]; then
 			echo 
-			echo "SigSRF software install path not found"
+			echo "SigSRF / EdgeStream software install path not found"
 			echo
 			return 0
 		fi
@@ -490,7 +491,7 @@ unInstall() { # uninstall Signalogic SW completely
 
 	OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')
 	echo
-	echo "Uninstalling SigSRF software..."
+	echo "Uninstalling SigSRF and EdgeStream software..."
 	echo
 	unInstallPath=$SIGNALOGIC_INSTALL_PATH
 	if [ ! $unInstallPath ]; then
@@ -726,9 +727,9 @@ installCheckVerify() {
 wdPath=$PWD
 OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')  # OS var is used throughout script
 kernel_version=`uname -r`
-echo "OS distro $OS, kernel version $kernel_version"
+echo "OS distro: $OS, kernel version: $kernel_version"
 echo
-PS3="Please select target for SigSRF software install [1-2]: "
+PS3="Please select target for SigSRF and EdgeStream software install [1-2]: "
 select target in "Host" "VM" 
 do
 	case $target in
@@ -742,29 +743,29 @@ echo
 
 COLUMNS=1  # force single column menu, JHB Jan2021
 PS3="Please select install operation to perform [1-6]: "
-select opt in "Install SigSRF Software" "Install SigSRF Software with ASR Option" "Install SigSRF Software with coCPU Option" "Uninstall SigSRF Software" "Check / Verify SigSRF Software Install" "Exit"
+select opt in "Install SigSRF and EdgeStream Software" "Install SigSRF and EdgeStream Software with ASR Option" "Install SigSRF and EdgeStream Software with coCPU Option" "Uninstall SigSRF and EdgeStream Software" "Check / Verify SigSRF and EdgeStream Software Install" "Exit"
 do
 	case $opt in
-		"Install SigSRF Software") if ! unrarCheck; then
+		"Install SigSRF and EdgeStream Software") if ! unrarCheck; then
 			if ! packageSetup; then
 				swInstallSetup; dependencyCheck; swInstall;
 			fi
 		fi
 		break;;
-		"Install SigSRF Software with ASR Option") if ! unrarCheck; then
+		"Install SigSRF and EdgeStream Software with ASR Option") if ! unrarCheck; then
 			if ! packageSetup; then
 				swInstallSetup; dependencyCheck; installOptions="ASR"; swInstall;
 			fi
 		fi
 		break;;
-		"Install SigSRF Software with coCPU Option") if ! unrarCheck; then
+		"Install SigSRF and EdgeStream Software with coCPU Option") if ! unrarCheck; then
 			if ! packageSetup; then
 				swInstallSetup; dependencyCheck; installOptions="coCPU"; swInstall;
 			fi
 		fi
 		break;;
-		"Uninstall SigSRF Software") unInstall; break;;
-		"Check / Verify SigSRF Software Install") installCheckVerify; break;;
+		"Uninstall SigSRF and EdgeStream Software") unInstall; break;;
+		"Check / Verify SigSRF and EdgeStream Software Install") installCheckVerify; break;;
 		"Exit") echo "Exiting..."; break;;
 		*) echo invalid option $opt;;
 	esac
