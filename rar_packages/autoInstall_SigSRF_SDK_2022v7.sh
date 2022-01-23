@@ -295,7 +295,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		package=$(dpkg -s $g 2>/dev/null | grep Status | awk ' {print $4} ')
 
-		if [[ (("$g" == "libncurses"*) || ("$g" == "ncurses"*)) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
+		if [[ ("$g" == "libncurses"* || "$g" == "ncurses"*) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
 			package="not needed"
 		fi
 
@@ -325,7 +325,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			fi
 		elif [ "$package" = "not needed" ]; then
 			printf "%s %s[ NOT NEEDED ]\n" $g "${DOTs:${#g}}"
-		elif [ $package ]; then
+		elif [ "$package" != "" ]; then
 			printf "%s %s[ ALREADY INSTALLED ]\n" $g "${DOTs:${#g}}"
    	fi
 	done 3< "$filename"
