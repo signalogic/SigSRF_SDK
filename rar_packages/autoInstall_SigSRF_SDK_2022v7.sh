@@ -290,20 +290,23 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 		if [[ "$d" == "make" ]]; then
 			g=$d
 		else
-			g=$(sed 's/-.*//g' <<< $line)  # search for "-" to set g with the generic package name
+			g=$(sed 's/devel-.*//g' <<< $line)  # search for "devel-" to set g with generic developer package name
+         if [[ "$g" == "" ]]; then
+			   g=$(sed 's/-.*//g' <<< $line)  # search for "-" to set g with generic package name
+         fi
 		fi
 
 		package=$(dpkg -s $g 2>/dev/null | grep Status | awk ' {print $4} ')
 
-		if [[ ("$g" == "libncurses"* || "$g" == "ncurses"*) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
+		if [[ ( "$g" == "libncurses"* || "$g" == "ncurses"* || "$g" == "libncurses-devel"* || "$g" == "ncurses-devel"*) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
 			package="not needed"
 		fi
 
-		if [[ "$g" == "libexplain"* && "$installOptions" != "coCPU" ]]; then  # libexplain only referenced in streamTest Makefile
+		if [[ ( "$g" == "libexplain"* || "$g" == "libexplain-devel"* )&& "$installOptions" != "coCPU" ]]; then  # libexplain only referenced in streamTest Makefile
 			package="not needed"
 		fi
 
-		if [[ "$g" == "gcc" && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we won't worry about minimum version
+		if [[ "$g" == "gcc"* && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we won't worry about minimum version
 			package="already installed"
 		fi
 
