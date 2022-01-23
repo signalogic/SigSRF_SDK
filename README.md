@@ -303,12 +303,13 @@ Distributor ID: Ubuntu
 Description:    Ubuntu 20.04.1 LTS
 Release:        20.04
 Codename:       focal
+Kernel Version: 5.4.0-86-generic
 
 SigSRF Install Path and Options Check
 Install path: /home/labuser
 Install options:
 
-SigSRF Symlinks Check
+SigSRF and EdgeStream Symlinks Check
 Signalogic Symlink ..............................................[ OK ]
 Apps Symlink ....................................................[ OK ]
 Linux Symlink ...................................................[ OK ]
@@ -323,7 +324,7 @@ hwmgr ...........................................................[ OK ]
 filelib .........................................................[ OK ]
 cimlib ..........................................................[ OK ]
 
-SigSRF Apps Check
+EdgeStream Apps Check
 iaTest ..........................................................[ OK ]
 mediaTest .......................................................[ OK ]
 mediaMin ........................................................[ OK ]
