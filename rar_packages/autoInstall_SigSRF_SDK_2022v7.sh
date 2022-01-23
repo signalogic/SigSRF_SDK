@@ -291,7 +291,9 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			e=$d
 		else
          if [[ "$d" == *"-devel-"* ]]; then
-			   e=$(sed 's/-[^-]*//2g' <<< $line)  # search for second "-" and truncate to set e with generic developer package name
+			   e=$(sed 's/-/~/1' <<< $line)  # search for second "-" and truncate to set e with generic developer package name. The 3-step hack can be replaced with a one-line sed that handles 2nd ocurrence correctly
+			   e=$(sed 's/-.*//g' <<< $e)
+			   e=$(sed 's/~/-/1' <<< $e)
          else
             e=$(sed 's/-.*//g' <<< $line)  # search for first "-" and truncate to set e with generic package name
          fi
