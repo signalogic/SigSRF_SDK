@@ -298,11 +298,11 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		package=$(dpkg -s $g 2>/dev/null | grep Status | awk ' {print $4} ')
 
-		if [[ ( "$g" == "libncurses"* || "$g" == "ncurses"* || "$g" == "libncurses-devel"* || "$g" == "ncurses-devel"*) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
+		if [[ ( "$g" == "libncurses"* || "$g" == "ncurses"* || "$g" == "libncurses-devel"* || "$g" == "ncurses-devel"* ) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
 			package="not needed"
 		fi
 
-		if [[ ( "$g" == "libexplain"* || "$g" == "libexplain-devel"* )&& "$installOptions" != "coCPU" ]]; then  # libexplain only referenced in streamTest Makefile
+		if [[ ( "$g" == "libexplain"* || "$g" == "libexplain-devel"* ) && "$installOptions" != "coCPU" ]]; then  # libexplain only referenced in streamTest Makefile
 			package="not needed"
 		fi
 
