@@ -291,7 +291,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			e=$d
 		else
          if [[ "$d" == *"-devel-"* ]]; then
-			   e=$(sed 's/-.*//2' <<< $line)  # search for second "-" to set e with generic developer package name
+			   e=$(sed 's/-[^.]*//2' <<< $line)  # search for second "-" to set e with generic developer package name
          else
             e=$(sed 's/-.*//g' <<< $line)  # search for first "-" to set e with generic package name
          fi
@@ -299,22 +299,13 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		package=$(dpkg -s $e 2>/dev/null | grep Status | awk ' {print $4} ')
 
-   echo
-   echo "L1"
-
 		if [[ ( "$e" == "libncurses"* || "$e" == "ncurses"* || "$e" == "libncurses-devel"* || "$e" == "ncurses-devel"* ) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
 			package="not needed"
 		fi
 
-   echo
-   echo "L2"
-
 		if [[ ( "$e" == "libexplain"* || "$e" == "libexplain-devel"* ) && "$installOptions" != "coCPU" ]]; then  # libexplain only referenced in streamTest Makefile
 			package="not needed"
 		fi
-
-   echo
-   echo "L3"
 
 		if [[ "$e" == "gcc"* && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we don't worry about minimum version
 			package="already installed"
