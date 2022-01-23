@@ -28,14 +28,16 @@
 #  Modified Jan 2021 JHB, fix minor issues in installCheckVerify(), add SIGNALOGIC_INSTALL_OPTIONS in /etc/environment, add preliminary check for valid .rar file
 #  Modified Jan 2021 JHB, unrar only most recent .rar file in case user has downloaded before, look for .rar that matches installed distro
 #  Modified Feb 2021 JHB, add ASR version to install options, add swInstallSetup(), fix problems in dependencyCheck(), add install path confirmation
-#  Modified Jan 2022 JHB, minor mods for CentOS 8
+#  Modified Jan 2022 JHB, mods for CentOS 8, remove reference to specific gcc version
+#  Modified Jan 2022 JHB, assume distro other than Ubunto or CentOS / RHEL as possible Ubuntu/Debian, let user know this is happening
 #================================================================================================
 
 depInstall_wo_dpkg() {
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 		yum localinstall $line_pkg
-	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+#	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+   else  # else includes Ubuntu, Debian, VM target, or anything else
 		apt-get install $line_pkg
 	fi
 }
@@ -56,7 +58,8 @@ unrarCheck() {
                         wget https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
                         tar -zxvf rarlinux-x64-6.0.2.tar.gz
                         mv rar/rar rar/unrar /usr/local/bin/
-                     elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+#                    elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+                     else  # else includes Ubuntu, Debian, VM target, or anything else
                         echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
                         sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
                         depInstall_wo_dpkg;
@@ -86,7 +89,7 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
    #  -distro version and date
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-		if [ "$installOptions" = "ASR" ]; then
+		if [ "$installOptions" = "ASR" ]; then  # demo includes automatic speech recognition
 			rarFile="Signalogic_sw_host_SigSRF_*_ASR_*CentOS*.rar"
 		else
 			rarFile="Signalogic_sw_host_SigSRF_*CentOS*.rar"
@@ -100,7 +103,7 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 	fi
 
    # unrar only most recent .rar file found (also this avoids unraring more than one file, due to wildcard), JHB Jan2021
-   # notes - Github doesn't support last-modified headers (has been that way for years), so wget and curl are unable to preserve the file date. But we still search for the most recent .rar as it's good practice
+   # notes - Github doesn't support last-modified headers (has been that way for years), so wget and curl are unable to preserve the file date. But we still search for most recent .rar as a best practice
 
 	rarFileNewest=""
 	for iFileName in `ls -tr $rarFile`; do
@@ -137,7 +140,8 @@ depInstall() {
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 		yum localinstall $line
-	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+#	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+   else  # else includes Ubuntu, Debian, VM target, or anything else
 		dpkg -i $line
 		if [ $? -gt 0 ]; then
 			apt-get -f --force-yes --yes install  # package name not needed if run immediately after dpkg, JHB Sep2020
@@ -170,7 +174,8 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 		if [ ! -L /usr/src/linux ]; then
 			ln -s /usr/src/kernels/$kernel_version /usr/src/linux
 		fi 
-	elif [ "$OS" = "Ubuntu" ]; then
+#	elif [ "$OS" = "Ubuntu" ]; then
+   else  # else includes Ubuntu, Debian, VM target, or anything else
 		if [ ! -L /usr/src/linux ]; then
 			ln -s /usr/src/linux-headers-$kernel_version /usr/src/linux
 		fi
@@ -206,6 +211,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		installPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
 		dependencyInstall="Dependency Check"
+      gcc_package=""
 
 		if [ ! $installPath ]; then
 			echo 
@@ -219,11 +225,12 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 	{
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 
-			package=$(rpm -qa gcc-c++)
+			gcc_package=$(rpm -qa gcc-c++)  # generic g++ check, should come back with version installed
 
-			if [ ! $package ]; then
+			if [ ! $gcc_package ]; then
 				echo -e "gcc compiler and toolchain is needed\n"
 				yum install gcc-c++
+            gcc_package=$(rpm -qa gcc-c++)  # recheck
 			fi
 
 #			lsbReleaseInstalled=`type -p lsb_release`
@@ -236,24 +243,32 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 		cd $installPath/Signalogic/installation_rpms/RHEL
 		filename="rhelDependency.txt"
    }
-	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+#	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+   else  # else includes Ubuntu, Debian, VM target, or anything else
 	{
+
+      if [ "$OS" != "Ubuntu" ]; then
+         echo
+         echo "Not CentOS or Ubunto distro $(OS) ... attempting to install assuming Ubuntu / Debian derivative"
+      fi
+
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 
-			package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
+#			gcc_package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
+#			if [ ! $gcc_package ]; then
+#           gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
+#        fi
 
-			if [ ! $package ]; then
-				package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
-			fi
+			gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
 
-			package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
-
-			if [ ! $package ]; then
+			if [ ! $gcc_package ]; then
 				echo -e "gcc compiler and toolchain is needed\n"
 #				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
 #				unlink /usr/bin/gcc
 #				unlink /usr/bin/g++
 				apt install build-essential
+
+            gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # recheck
 			fi
 
 			lsbReleaseInstalled=`type -p lsb_release`
@@ -266,8 +281,6 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 		cd $installPath/Signalogic/installation_rpms/Ubuntu
 		filename="UbuntuDependency.txt"
    }
-   # elif # unsupported OS ?
-   fi
  
    while read -r -u 3 line
 	do
@@ -281,12 +294,16 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		package=$(dpkg -s $g 2>/dev/null | grep Status | awk ' {print $4} ')
 
-		if [[ "$g" == "libncurses"* && "$installOptions" != "coCPU" ]]; then  # libncurses only in memTest Makefile
-			package="not_needed"
+		if [[ ("$g" == "libncurses"*) || ("$g" == "ncurses"*) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
+			package="not needed"
 		fi
 
-		if [[ "$g" == "libexplain"* && "$installOptions" != "coCPU" ]]; then  # libexplain only in streamTest Makefile
-			package="not_needed"
+		if [[ "$g" == "libexplain"* && "$installOptions" != "coCPU" ]]; then  # libexplain only referenced in streamTest Makefile
+			package="not needed"
+		fi
+
+		if [[ "$g" == "gcc"* && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we won't worry about minimum version
+			package="already installed"
 		fi
 
 		if [ ! $package ]; then
@@ -305,7 +322,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			elif [ "$dependencyInstall" = "Dependency Check" ]; then
 				printf "%s %s[ NOT INSTALLED ]\n" $g "${DOTs:${#g}}"
 			fi
-		elif [ "$package" = "not_needed" ]; then
+		elif [ "$package" = "not needed" ]; then
 			printf "%s %s[ NOT NEEDED ]\n" $g "${DOTs:${#g}}"
 		elif [ $package ]; then
 			printf "%s %s[ ALREADY INSTALLED ]\n" $g "${DOTs:${#g}}"
@@ -329,7 +346,8 @@ swInstall() {  # install Signalogic SW on specified path
 
    if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
       cp_prefix="/bin/"
-   elif [ "$OS" = "Ubuntu" ]; then
+#   elif [ "$OS" = "Ubuntu" ]; then
+   else  # else includes Ubuntu, Debian, VM target, or anything else
       cp_prefix=""
    fi
 
@@ -345,11 +363,11 @@ swInstall() {  # install Signalogic SW on specified path
          {
             distribution=$(cat /etc/centos-release)
          }
-         elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+         #elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+         else  # else includes Ubuntu, Debian, VM target, or anything else
          {
             distribution=$(lsb_release -d)
          }
-         fi
 
 			cd $installPath/Signalogic/DirectCore/hw_utils; make
 			cd ../driver; 
@@ -405,7 +423,8 @@ swInstall() {  # install Signalogic SW on specified path
 			chmod 755 /etc/sysconfig/modules/sig_mc_hw.modules
 			echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.d/rc.local
 			chmod 755 /etc/rc.d/rc.local
-		elif [ "$OS" = "Ubuntu" ]; then
+#		elif [ "$OS" = "Ubuntu" ]; then
+      else  # else includes Ubuntu, Debian, VM target, or anything else
 			echo "sig_mc_hw" >> /etc/modules
 			sed -i '/exit*/d' /etc/rc.local
 			echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.local
@@ -477,7 +496,7 @@ unInstall() { # uninstall Signalogic SW completely
 		unInstallPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
 		if [ ! $unInstallPath ]; then
 			echo 
-			echo "Signalogic install path could not be found."
+			echo "Signalogic install path not found"
 			echo
 			return 0
 		fi
@@ -509,7 +528,8 @@ unInstall() { # uninstall Signalogic SW completely
 			elif [ $target = "VM" ]; then
 				rm -rf /usr/lib/modules/$kernel_version/virtio-sig.ko
 			fi
-		elif [ "$OS" = "Ubuntu" ]; then
+#		elif [ "$OS" = "Ubuntu" ]; then
+      else  # else includes Ubuntu, Debian, VM target, or anything else
 			if [ $target = "Host" ]; then
 				rm -rf /lib/modules/$kernel_version/sig_mc_hw.ko
 			elif [ $target = "VM" ]; then
@@ -519,7 +539,8 @@ unInstall() { # uninstall Signalogic SW completely
 	
 		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 			sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.d/rc.local 
-		elif [ "$OS" = "Ubuntu" ]; then
+#		elif [ "$OS" = "Ubuntu" ]; then
+      else  # else includes Ubuntu, Debian, VM target, or anything else
 			sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.local
 		fi
 	fi
@@ -595,11 +616,11 @@ installCheckVerify() {
    {
       cat /etc/centos-release | tee -a $diagReportFile
    }
-   elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+#  elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
+   else   # else includes Ubuntu, Debian, VM target, or anything else
    {
       lsb_release -a | tee -a $diagReportFile
    }
-   fi
 
 	echo | tee -a $diagReportFile
 	echo "SigSRF Install Path and Options Check" | tee -a $diagReportFile
@@ -707,7 +728,7 @@ installCheckVerify() {
 # *********** script entry point ************
 
 wdPath=$PWD
-OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')
+OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')  # OS var is used throughout script
 echo "Host Operating System: $OS"
 PS3="Please select target for SigSRF software install [1-2]: "
 select target in "Host" "VM" 
