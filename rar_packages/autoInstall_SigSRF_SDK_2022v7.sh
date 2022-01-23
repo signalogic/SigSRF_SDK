@@ -215,7 +215,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		if [ ! $installPath ]; then
 			echo 
-			echo "SigSRF software install path could not be found."
+			echo "SigSRF software install path not found"
 			echo
 			return 0
 		fi
@@ -281,6 +281,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 		cd $installPath/Signalogic/installation_rpms/Ubuntu
 		filename="UbuntuDependency.txt"
    }
+   fi
  
    while read -r -u 3 line
 	do
@@ -294,7 +295,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 		package=$(dpkg -s $g 2>/dev/null | grep Status | awk ' {print $4} ')
 
-		if [[ ("$g" == "libncurses"*) || ("$g" == "ncurses"*) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
+		if [[ (("$g" == "libncurses"*) || ("$g" == "ncurses"*)) && "$installOptions" != "coCPU" ]]; then  # libncurses only referenced in memTest Makefile
 			package="not needed"
 		fi
 
@@ -360,14 +361,11 @@ swInstall() {  # install Signalogic SW on specified path
 		if [ "$target" = "Host" ]; then
 
          if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-         {
             distribution=$(cat /etc/centos-release)
-         }
          #elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
          else  # else includes Ubuntu, Debian, VM target, or anything else
-         {
             distribution=$(lsb_release -d)
-         }
+         fi
 
 			cd $installPath/Signalogic/DirectCore/hw_utils; make
 			cd ../driver; 
@@ -613,14 +611,11 @@ installCheckVerify() {
 	echo
 	echo "Distro Info" | tee -a $diagReportFile
    if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-   {
       cat /etc/centos-release | tee -a $diagReportFile
-   }
 #  elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
    else   # else includes Ubuntu, Debian, VM target, or anything else
-   {
       lsb_release -a | tee -a $diagReportFile
-   }
+   fi
 
 	echo | tee -a $diagReportFile
 	echo "SigSRF Install Path and Options Check" | tee -a $diagReportFile
@@ -722,7 +717,6 @@ installCheckVerify() {
 	else
 		printf "%s %s[ OK ]\n" $d "${line:${#d}}" | tee -a $diagReportFile
 	fi
-
 }
 
 # *********** script entry point ************
