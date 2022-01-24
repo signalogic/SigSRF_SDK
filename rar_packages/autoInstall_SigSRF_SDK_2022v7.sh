@@ -61,7 +61,7 @@ unrarCheck() {
 #						if [[ $? > 0 ]]; then
                      if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
                         echo "Attempting to install rarlab unrar ..."
-                        wget https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
+                        wget --no-check-certificate https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
                         tar -zxvf rarlinux-x64-6.0.2.tar.gz
                         mv rar/rar rar/unrar /usr/local/bin/
 #                    elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
