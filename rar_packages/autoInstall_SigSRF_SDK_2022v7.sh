@@ -279,7 +279,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
 				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
-               apt-get -y install build-essential
+               apt-get install build-essential
 				fi
 
             gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # recheck
@@ -323,7 +323,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			package="not needed"
 		fi
 
-		if [[ "$e" == "gcc"* && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we don't worry about minimum version
+		if [[ ("$e" == "gcc"* || "$e" == "g++"*) && "$gcc_package" != "" ]]; then  # gcc/g++ of some version already installed. Since we retro-test back to 4.6 (circa 2011), we don't worry about minimum version
 			package="already installed"
 		fi
 
