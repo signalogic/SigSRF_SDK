@@ -46,14 +46,19 @@ depInstall_wo_dpkg() {
 unrarCheck() {
 
 	unrarInstalled=`type -p unrar`  # see if unrar is recognized on cmd line
-	if [ ! $unrarInstalled ]; then  # if not then need to install
+	if [ "$unrarInstalled" == "" ]; then  # if not then need to install
 
 		while true; do
 			read -p "Unrar not installed, ok to install now ?" yn
 			case $yn in
 				[Yy]* ) line_pkg="unrar"
-						depInstall_wo_dpkg;
-						if [[ $? > 0 ]]; then
+
+						depInstall_wo_dpkg;  # try installing package way
+
+                  unrarInstalled=`type -p unrar`  # recheck
+
+	               if [ "$unrarInstalled" == "" ]; then  # if still not installed, then try non-package methods
+#						if [[ $? > 0 ]]; then
                      if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
                         echo "Attempting to install rarlab unrar ..."
                         wget https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
@@ -230,7 +235,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
          fi
 
 			if [ "$gcc_package" == "" ]; then
-				echo -e "gcc compiler and toolchain is needed\n"
+				echo -e "gcc/g++ compilers and toolchain is needed\n"
 				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
 				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
                yum install gcc-c++
@@ -272,14 +277,14 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
          fi
 
 			if [ "$gcc_package" == "" ]; then
-				echo -e "gcc compiler and toolchain is needed\n"
+				echo -e "gcc/g++ compilers and toolchain is needed\n"
 #				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
 #				unlink /usr/bin/gcc
 #				unlink /usr/bin/g++
 
 				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
 				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
-               apt-get install build-essential
+               apt-get install build-essential  # to-do: not likely to work on old Ubuntu distros
 				fi
 
             gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # recheck
