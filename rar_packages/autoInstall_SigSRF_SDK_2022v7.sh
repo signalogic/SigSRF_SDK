@@ -225,6 +225,10 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 			gcc_package=$(rpm -qa gcc-c++)  # generic g++ check, should come back with version installed
 
+         if [ ! gcc_package ]; then  # in case gcc/g++ was installed stand-alone, not using a package
+            gcc_package=$(g++ --version 2>/dev/null | grep g++ | awk ' {print $4} ')
+         fi
+
 			if [ ! $gcc_package ]; then
 				echo -e "gcc compiler and toolchain is needed\n"
 				yum install gcc-c++
@@ -258,6 +262,10 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 #        fi
 
 			gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
+
+         if [ ! gcc_package ]; then  # in case gcc/g++ was installed stand-alone, not using a package
+            gcc_package=$(g++ --version 2>/dev/null | grep g++ | awk ' {print $4} ')
+         fi
 
 			if [ ! $gcc_package ]; then
 				echo -e "gcc compiler and toolchain is needed\n"
