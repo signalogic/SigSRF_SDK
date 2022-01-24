@@ -235,7 +235,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
          fi
 
 			if [ "$gcc_package" == "" ]; then
-				echo -e "gcc/g++ compilers and toolchain is needed\n"
+				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain is needed\n"
 				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
 				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
                yum install gcc-c++
@@ -277,7 +277,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
          fi
 
 			if [ "$gcc_package" == "" ]; then
-				echo -e "gcc/g++ compilers and toolchain is needed\n"
+				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain is needed\n"
 #				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
 #				unlink /usr/bin/gcc
 #				unlink /usr/bin/g++
