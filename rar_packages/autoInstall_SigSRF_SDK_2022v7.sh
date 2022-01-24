@@ -225,13 +225,17 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 			gcc_package=$(rpm -qa gcc-c++)  # generic g++ check, should come back with version installed
 
-         if [ ! gcc_package ]; then  # in case gcc/g++ was installed stand-alone, not using a package
+         if [ "$gcc_package" == "" ]; then  # in case gcc/g++ was installed stand-alone, not using a package
             gcc_package=$(g++ --version 2>/dev/null | grep g++ | awk ' {print $4} ')
          fi
 
-			if [ ! $gcc_package ]; then
+			if [ "$gcc_package" == "" ]; then
 				echo -e "gcc compiler and toolchain is needed\n"
-				yum install gcc-c++
+				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
+				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
+               yum install gcc-c++
+				fi
+
             gcc_package=$(rpm -qa gcc-c++)  # recheck
 			fi
 
@@ -263,16 +267,20 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 			gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
 
-         if [ ! gcc_package ]; then  # in case gcc/g++ was installed stand-alone, not using a package
+         if [ "$gcc_package" == "" ]; then  # in case gcc/g++ was installed stand-alone, not using a package
             gcc_package=$(g++ --version 2>/dev/null | grep g++ | awk ' {print $4} ')
          fi
 
-			if [ ! $gcc_package ]; then
+			if [ "$gcc_package" == "" ]; then
 				echo -e "gcc compiler and toolchain is needed\n"
 #				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
 #				unlink /usr/bin/gcc
 #				unlink /usr/bin/g++
-				apt install build-essential
+
+				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
+				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
+               apt-get -y install build-essential
+				fi
 
             gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # recheck
 			fi
