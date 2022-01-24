@@ -245,12 +245,12 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
    else  # else includes Ubuntu, Debian, VM target, or anything else
 	{
 
-      if [ "$OS" != "Ubuntu" ]; then
-         echo
-         echo "Not CentOS or Ubunto distro $(OS) ... attempting to install assuming Ubuntu / Debian derivative"
-      fi
-
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
+
+         if [ "$OS" != "Ubuntu" ]; then
+            echo
+            echo "Not Ubuntu or CentOS / RHEL distro $(OS) ... attempting to install assuming Ubuntu / Debian derivative ..."
+         fi
 
 #			gcc_package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
 #			if [ ! $gcc_package ]; then
