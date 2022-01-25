@@ -127,7 +127,8 @@
    Modified Jan 2021 JHB, change units of session_info_thread[hSession].merge_audio_chunk_size from size (bytes) to time (msec), part of change to make stream group processing independent of sampling rate
    Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
    Modified Mar 2021 JHB, change DSLogPacketTimeLossStats() to DSLogRunTimeStats(), incorporate use of DS_LOG_RUNTIME_STATS_XX flags
-   Modified Jan 2022 JHB, fix linker warnings in CentOS 8 g++ 8.3 by not including last_buffer_time, nMaxStreamDataAvailable, uFramesDropped in __LIBRARYMODE__ build
+   Modified Jan 2022 JHB, fix "symbol size changed" linker build warnings in CentOS 8 g++ 8.3 by not including last_buffer_time, nMaxStreamDataAvailable, and uFramesDropped in __LIBRARYMODE__ build
+   Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for hSessionOwner ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized 
 */
 
 #ifndef _GNU_SOURCE
@@ -3135,7 +3136,7 @@ pull:
                   uint8_t* stream_ptr = stream_data;
                   HCODEC hCodec_link = (intptr_t)NULL;
                   bool fStreamGroupMember = false;  /* if a channel is a stream group contributor */
-                  HSESSION hSessionOwner;
+                  HSESSION hSessionOwner = -1;
                   unsigned int contributor_flags = 0;
 
                   prev_chnum = -1;
@@ -3289,7 +3290,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                            if ((ret_val = DSStoreStreamGroupContributorData(chnum_parent, stream_ptr, data_length, 0)) < 0) {
 
-                              int thread_index_owner = DSGetSessionInfo(hSessionOwner, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_THREAD, 0, NULL);
+                              int thread_index_owner = hSessionOwner >= 0 ? DSGetSessionInfo(hSessionOwner, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_THREAD, 0, NULL) : -1;
                               int pull_queue_level = DSPullPackets(DS_PULLPACKETS_GET_QUEUE_LEVEL | DS_PULLPACKETS_TRANSCODED, NULL, NULL, hSession, NULL, 0, 0);
                               int push_queue_level = DSPushPackets(DS_PUSHPACKETS_GET_QUEUE_LEVEL, NULL, NULL, &hSession, 1);
                               bool fStopContributor = false;

@@ -67,6 +67,7 @@
                          -bug did not affect back-to-back encode/decode (i.e. audio to audio)
   Modified Apr 2021 JHB, fix issues with G726 uncompressed vs. compressed mode, retest all bitrates
   Modified Jan 2022 JHB, use cmd line -dN flag to specify DS_CC_TRACK_USAGE_FLAG in DSCodecCreate()
+  Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for ret_val in x86_mediaTest() ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized 
 */
 
 /* Linux header files */
@@ -446,7 +447,7 @@ void x86_mediaTest(void) {
       uint8_t in_buf[MAX_RAW_FRAME*24];  /* 24 is sampling rate conversion worst case:  192 kHz down to 8 kHz */
       uint8_t coded_buf[MAX_CODED_FRAME], coded_buf_sav[MAX_CODED_FRAME];
       uint8_t out_buf[MAX_RAW_FRAME*24] = { 0 };
-      int ret_val;
+      int ret_val = 0;
       int framesize = -1, i;
 
       FILE *fp_in = NULL, *fp_out = NULL;
