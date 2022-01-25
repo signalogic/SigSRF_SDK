@@ -46,17 +46,22 @@ depInstall_wo_dpkg() {
 unrarCheck() {
 
 	unrarInstalled=`type -p unrar`  # see if unrar is recognized on cmd line
-	if [ ! $unrarInstalled ]; then  # if not then need to install
+	if [ "$unrarInstalled" == "" ]; then  # if not then need to install
 
 		while true; do
 			read -p "Unrar not installed, ok to install now ?" yn
 			case $yn in
 				[Yy]* ) line_pkg="unrar"
-						depInstall_wo_dpkg;
-						if [[ $? > 0 ]]; then
+
+						depInstall_wo_dpkg;  # try installing package way
+
+                  unrarInstalled=`type -p unrar`  # recheck
+
+	               if [ "$unrarInstalled" == "" ]; then  # if still not installed, then try non-package methods
+#						if [[ $? > 0 ]]; then
                      if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
                         echo "Attempting to install rarlab unrar ..."
-                        wget https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
+                        wget --no-check-certificate https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
                         tar -zxvf rarlinux-x64-6.0.2.tar.gz
                         mv rar/rar rar/unrar /usr/local/bin/
 #                    elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
@@ -225,9 +230,17 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 			gcc_package=$(rpm -qa gcc-c++)  # generic g++ check, should come back with version installed
 
-			if [ ! $gcc_package ]; then
-				echo -e "gcc compiler and toolchain is needed\n"
-				yum install gcc-c++
+         if [ "$gcc_package" == "" ]; then  # in case gcc/g++ was installed stand-alone, not using a package
+            gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $4} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work
+         fi
+
+			if [ "$gcc_package" == "" ]; then
+				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain is needed\n"
+				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
+				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
+               yum install gcc-c++
+				fi
+
             gcc_package=$(rpm -qa gcc-c++)  # recheck
 			fi
 
@@ -259,12 +272,20 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 			gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
 
-			if [ ! $gcc_package ]; then
-				echo -e "gcc compiler and toolchain is needed\n"
+         if [ "$gcc_package" == "" ]; then  # in case gcc/g++ was installed stand-alone, not using a package
+            gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $4} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work
+         fi
+
+			if [ "$gcc_package" == "" ]; then
+				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain is needed\n"
 #				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
 #				unlink /usr/bin/gcc
 #				unlink /usr/bin/g++
-				apt install build-essential
+
+				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
+				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
+               apt-get install build-essential  # to-do: not likely to work on old Ubuntu distros
+				fi
 
             gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # recheck
 			fi
@@ -307,7 +328,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			package="not needed"
 		fi
 
-		if [[ "$e" == "gcc"* && "$gcc_package" != "" ]]; then  # gcc of some version already installed. Since we retro-test back to 4.6 (circa 2011), we don't worry about minimum version
+		if [[ ("$e" == "gcc"* || "$e" == "g++"*) && "$gcc_package" != "" ]]; then  # gcc/g++ of some version already installed. Since we retro-test back to 4.6 (circa 2011), we don't worry about minimum version
 			package="already installed"
 		fi
 
