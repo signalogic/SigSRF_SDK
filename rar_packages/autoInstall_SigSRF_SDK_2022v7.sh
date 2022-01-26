@@ -130,7 +130,7 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 			installPath="/usr/local"  # default if nothing entered
 		fi
 
-		read -p "Please confirm install path $installPath  [Y] or [N] " Confirm
+		read -p "Please confirm install path $installPath [Y] or [N] " Confirm
 
 		case $Confirm in
 			[Yy]* ) break;;
@@ -228,14 +228,24 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 	{
 		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 
-			gcc_package=$(rpm -qa gcc-c++)  # generic g++ check, should come back with version installed
+         gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $1} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work, install script expects Makefiles to work
 
-         if [ "$gcc_package" == "" ]; then  # in case gcc/g++ was installed stand-alone, not using a package
-            gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $4} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work
+         if [ "gcc_package" == "" ]; then
+
+            gcc_package=$(g++ --version 2>/dev/null | grep g++ | awk ' {print $1} ')
+
+            if [ "gcc_package" != "" ]; then
+
+               gpp_path=$(which g++)
+               ln -s $(gpp_path) /usr/bin/g++  # set needed symlink
+            else
+        			gcc_package=$(rpm -qa gcc-c++)  # generic g++ package check, should come back with version installed
+            fi
          fi
 
 			if [ "$gcc_package" == "" ]; then
-				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain is needed\n"
+
+				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain are needed\n"
 				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
 				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
                yum install gcc-c++
@@ -270,14 +280,14 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 #           gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
 #        fi
 
-			gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
+			gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ package check, should come back with "installed"
 
          if [ "$gcc_package" == "" ]; then  # in case gcc/g++ was installed stand-alone, not using a package
             gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $4} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work
          fi
 
 			if [ "$gcc_package" == "" ]; then
-				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain is needed\n"
+				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain are needed\n"
 #				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
 #				unlink /usr/bin/gcc
 #				unlink /usr/bin/g++
@@ -291,7 +301,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			fi
 
 			lsbReleaseInstalled=`type -p lsb_release`
-			if [ ! $lsbReleaseInstalled ]; then
+			if [ "$lsbReleaseInstalled" == "" ]; then
 		  		echo "lsb_release package is needed"
 				apt-get install lsb-release
 			fi
