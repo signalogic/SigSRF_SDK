@@ -223,95 +223,78 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			return 0
 		fi
 	fi
-	
-	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-	{
-		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 
-         gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $1} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work, install script expects Makefiles to work
+	if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 
-         if [ "$gcc_package" == "" ]; then
+      if [[ "$OS" != "Ubuntu" && "$OS" != "Red Hat Enterprise Linux Server" && "$OS" != "CentOS Linux" ]]; then
+         echo
+         echo "Not Ubuntu or CentOS / RHEL distro $(OS) ... attempting to install assuming Ubuntu / Debian derivative ..."
+      fi
 
-            gcc_package=$(g++ --version 2>/dev/null | grep g++ | awk ' {print $1} ')
+      gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $1} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work, install script expects Makefiles to work
 
-            if [ "$gcc_package" != "" ]; then
+      if [ "$gcc_package" == "" ]; then
 
-               gpp_path=$(which g++)
-               ln -s $(gpp_path) /usr/bin/g++  # set needed symlink
+         gcc_package=$(g++ --version 2>/dev/null | grep g++ | awk ' {print $1} ')
+
+         if [ "$gcc_package" != "" ]; then
+
+            gpp_path=$(which g++)
+            ln -s $gpp_path /usr/bin/g++  # set necessary symlink
+         else
+            if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+               gcc_package=$(rpm -qa gcc-c++)  # generic g++ package check, should come back with version installed
             else
-        			gcc_package=$(rpm -qa gcc-c++)  # generic g++ package check, should come back with version installed
+               gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ package check, should come back with "installed"
             fi
          fi
+      fi
 
-			if [ "$gcc_package" == "" ]; then
+      if [ "$gcc_package" == "" ]; then
 
-				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain are needed\n"
-				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
-				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
+         echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain are needed\n"
+
+			read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
+			if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
+
+            if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
                yum install gcc-c++
-				fi
-
-            gcc_package=$(rpm -qa gcc-c++)  # recheck
+               gcc_package=$(rpm -qa gcc-c++)  # recheck
+            else
+               apt-get install build-essential  # to-do: not likely to work on old Ubuntu distros
+               gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # recheck
+            fi
 			fi
+   	fi
+
+      if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 
 #			lsbReleaseInstalled=`type -p lsb_release`
 #			if [ ! $lsbReleaseInstalled ]; then
 #		  		echo "lsb_release package is needed"
 #				yum install redhat-lsb-core
-#			fi
-      fi
-
-		cd $installPath/Signalogic/installation_rpms/RHEL
-		filename="rhelDependency.txt"
-   }
-#	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
-   else  # else includes Ubuntu, Debian, VM target, or anything else
-	{
-
-		if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
-
-         if [ "$OS" != "Ubuntu" ]; then
-            echo
-            echo "Not Ubuntu or CentOS / RHEL distro $(OS) ... attempting to install assuming Ubuntu / Debian derivative ..."
-         fi
-
-#			gcc_package=$(dpkg -s g++-4.8 2>/dev/null | grep Status | awk ' {print $4} ')
-#			if [ ! $gcc_package ]; then
-#           gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ check, should come back with "installed"
 #        fi
+      else
 
-			gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ package check, should come back with "installed"
-
-         if [ "$gcc_package" == "" ]; then  # in case gcc/g++ was installed stand-alone, not using a package
-            gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $4} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work
-         fi
-
-			if [ "$gcc_package" == "" ]; then
-				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain are needed\n"
-#				apt-get -y --purge remove gcc g++ gcc-4.8 g++-4.8
-#				unlink /usr/bin/gcc
-#				unlink /usr/bin/g++
-
-				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
-				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
-               apt-get install build-essential  # to-do: not likely to work on old Ubuntu distros
-				fi
-
-            gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # recheck
-			fi
-
-			lsbReleaseInstalled=`type -p lsb_release`
+  			lsbReleaseInstalled=`type -p lsb_release`
 			if [ "$lsbReleaseInstalled" == "" ]; then
 		  		echo "lsb_release package is needed"
 				apt-get install lsb-release
 			fi
 		fi
-
+   fi
+	
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+	{
+		cd $installPath/Signalogic/installation_rpms/RHEL
+		filename="rhelDependency.txt"
+   }
+   else {
 		cd $installPath/Signalogic/installation_rpms/Ubuntu
 		filename="UbuntuDependency.txt"
    }
    fi
- 
+
    while read -r -u 3 line
 	do
 
