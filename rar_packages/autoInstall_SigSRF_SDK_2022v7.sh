@@ -269,7 +269,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
       if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 
-#			lsbReleaseInstalled=`type -p lsb_release`
+			lsbReleaseInstalled=`type -p lsb_release`
 #			if [ ! $lsbReleaseInstalled ]; then
 #		  		echo "lsb_release package is needed"
 #				yum install redhat-lsb-core
