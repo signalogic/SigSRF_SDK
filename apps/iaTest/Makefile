@@ -18,6 +18,7 @@
 #  Modified Aug 2020 JHB, edit INCLUDES var to allow includes specified as "shared_include/xxx.h" 
 #  Modified Feb 2021 JHB, add CPPC and CPPC_FLAGS to separate building c and cpp objects with gcc and g++, remove link reference to libexplain
 #  Modified Jan 2022 JHB, fix INCLUDES to give correct path to find core_c.h (and other header files included by ia.c --> cv.h). On Sig lab systems this problem doesn't appear because OpenCV is installed (which sets up /usr/include/opencv2/core/core_c.h etc) but on user systems that's not assumed and these header files were not being found
+#  Modified Jan 2022 JHB, set OPENCV_LIBS var depending on whether OpenCV is found to be installed
 
 # determine if OpenCV is installed on the system
 OPENCVPATH=/usr/lib
@@ -64,22 +65,24 @@ coCPU_shared_stream_c_objects = writestream.o readstream.o
 all: iaTest.o $(cpp_objects) $(c_objects) $(coCPU_shared_ia_c_objects) $(coCPU_shared_stream_c_objects) $(lib_cpp_objects) link
 
 iaTest.o:
-	$(CPPC) $(CPPC_FLAGS) -c iaTest.c 
+	$(CPPC) $(CPPC_FLAGS) -c iaTest.c
 
 $(cpp_objects): %.o: ../../common/%.cpp
-	$(CPPC) $(CPPC_FLAGS) -c $< -o $@ 
+	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
 
 $(c_objects): %.o: ../../common/%.c
-	$(CPPC) $(CPPC_FLAGS) -c $< -o $@ 
+	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
 
 $(coCPU_shared_ia_c_objects): %.o: ../../../../mCPU_target/Ia/%.c
-	$(CC) $(CC_FLAGS) -c $< -o $@ 
+#	$(CC) $(CC_FLAGS) -c $< -o $@
+	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
 
 $(coCPU_shared_stream_c_objects): %.o: ../../../../mCPU_target/Stream/%.c
-	$(CC) $(CC_FLAGS) -c $< -o $@ 
+#	$(CC) $(CC_FLAGS) -c $< -o $@
+	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
 
 $(lib_cpp_objects): %.o: ../streamTest/%.cpp
-	$(CPPC) $(CPPC_FLAGS) -c $< -o $@ 
+	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
 
 link:
 	$(CPPC) $(cpp_objects) $(c_objects) $(coCPU_shared_ia_c_objects) $(coCPU_shared_stream_c_objects) $(lib_cpp_objects) iaTest.o $(AR_FLAGS) -o ./iaTest -lstdc++ -lpthread -lhwmgr -lhwlib -lcimlib -ldiaglib $(OPENCV_LIBS) -lstublib
