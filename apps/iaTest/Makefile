@@ -19,6 +19,7 @@
 #  Modified Feb 2021 JHB, add CPPC and CPPC_FLAGS to separate building c and cpp objects with gcc and g++, remove link reference to libexplain
 #  Modified Jan 2022 JHB, fix INCLUDES to give correct path to find core_c.h (and other header files included by ia.c --> cv.h). On Sig lab systems this problem doesn't appear because OpenCV is installed (which sets up /usr/include/opencv2/core/core_c.h etc) but on user systems that's not assumed and these header files were not being found
 #  Modified Jan 2022 JHB, set OPENCV_LIBS var depending on whether OpenCV is found to be installed
+#  Modified Jan 2022 JHB, build all targets with g++, add -Wno-deprecated-xx flags to remove warnings in gcc 5.3.x and higher
 
 # determine if OpenCV is installed on the system
 OPENCVPATH=/usr/lib
@@ -39,7 +40,7 @@ INCLUDES += -I../../../../mCPU_target/opencv/include -I../../../../mCPU_target/o
 # INCLUDES += -I../../../../mCPU_target/opencv/dynamicuda/include
 
 CC_FLAGS = $(INCLUDES) 
-CC_FLAGS += -g3 -O3 -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_IA_ -D_USE_IA_
+CC_FLAGS += -g3 -O3 -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_IA_ -D_USE_IA_ -Wno-deprecated-declarations -Wno-deprecated
 CPPC_FLAGS = $(CC_FLAGS) -std=c++0x
 
 ifdef _use_enmgr_
