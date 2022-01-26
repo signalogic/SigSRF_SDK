@@ -231,12 +231,18 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
          gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $1} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work, install script expects Makefiles to work
 
          if [ "gcc_package" == "" ]; then
-
             gcc_package=$(g++ --version 2>/dev/null | grep g++ | awk ' {print $1} ')
+
+  echo "after chk2 gcc_package = $gcc_package"
 
             if [ "gcc_package" != "" ]; then
 
+  echo "inside gpp = $gpp_path"
+
                gpp_path=$(which g++)
+
+  echo "inside gpp = $gpp_path"
+
                ln -s $(gpp_path) /usr/bin/g++  # set needed symlink
             else
         			gcc_package=$(rpm -qa gcc-c++)  # generic g++ package check, should come back with version installed
@@ -244,7 +250,6 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
          fi
 
 			if [ "$gcc_package" == "" ]; then
-
 				echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain are needed\n"
 				read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
 				if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
