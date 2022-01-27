@@ -43,6 +43,61 @@ depInstall_wo_dpkg() {
 	fi
 }
 
+packageSetup() { # check for .rar file and if found, prompt for Signalogic installation path, extract files
+
+   # match SigSRF .rar files by ASR version and distro type, ignore the following:  JHB Jan2021
+   #  -SDK vs license
+   #  -host vs target
+   #  -distro version and date
+
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+		if [ "$installOptions" = "ASR" ]; then  # demo includes automatic speech recognition
+			rarFile="Signalogic_sw_host_SigSRF_*_ASR_*CentOS*.rar"
+		else
+			rarFile="Signalogic_sw_host_SigSRF_*CentOS*.rar"
+		fi
+	else  # add other distro types later.  Currently Debian defaults to Ubuntu .rar, JHB Jan2021
+		if [ "$installOptions" = "ASR" ]; then
+			rarFile="Signalogic_sw_host_SigSRF_*_ASR_*Ubuntu*.rar"
+		else
+			rarFile="Signalogic_sw_host_SigSRF_*Ubuntu*.rar"
+		fi
+	fi
+
+   # unrar only most recent .rar file found (also this avoids unraring more than one file, due to wildcard), JHB Jan2021
+   # notes - Github doesn't support last-modified headers (has been that way for years), so wget and curl are unable to preserve the file date. But we still search for most recent .rar as a best practice
+
+	rarFileNewest=""
+	for iFileName in `ls -tr $rarFile`; do
+		rarFileNewest=$iFileName;
+	done;
+
+	if [ "$rarFileNewest" = "" ]; then  # add check for no .rar files found, JHB Jan2021
+		echo "Install package rar file not found"
+		return 0
+	fi
+
+   echo  # print blank line, lots of stuff may be displayed just before the path prompt
+
+	while true; do
+
+		echo "Enter path for SigSRF and EdgeStream software and dependency package installation:"
+		read installPath
+
+		if [ ! $installPath ]; then
+			installPath="/usr/local"  # default if nothing entered
+		fi
+
+		read -p "Please confirm install path $installPath [Y] or [N] " Confirm
+
+		case $Confirm in
+			[Yy]* ) break;;
+		esac
+	done
+
+	return 1
+}
+
 unrarCheck() {
 
 	unrarInstalled=`type -p unrar`  # see if unrar is recognized on cmd line
@@ -82,64 +137,11 @@ unrarCheck() {
 				* ) echo "Please enter y or n";;
 			esac
 		done
+
+      unrar x -o+ $rarFileNewest $installPath/  # assumes packageSetup() has been called first, and rarFileNewest and installPath have been set
 	else
 		return 1
 	fi
-}
-
-packageSetup() { # check for .rar file and if found, prompt for Signalogic installation path, extract files
-
-   # match SigSRF .rar files by ASR version and distro type, ignore the following:  JHB Jan2021
-   #  -SDK vs license
-   #  -host vs target
-   #  -distro version and date
-
-	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-		if [ "$installOptions" = "ASR" ]; then  # demo includes automatic speech recognition
-			rarFile="Signalogic_sw_host_SigSRF_*_ASR_*CentOS*.rar"
-		else
-			rarFile="Signalogic_sw_host_SigSRF_*CentOS*.rar"
-		fi
-	else  # add other distro types later.  Currently Debian defaults to Ubuntu .rar, JHB Jan2021
-		if [ "$installOptions" = "ASR" ]; then
-			rarFile="Signalogic_sw_host_SigSRF_*_ASR_*Ubuntu*.rar"
-		else
-			rarFile="Signalogic_sw_host_SigSRF_*Ubuntu*.rar"
-		fi
-	fi
-
-   # unrar only most recent .rar file found (also this avoids unraring more than one file, due to wildcard), JHB Jan2021
-   # notes - Github doesn't support last-modified headers (has been that way for years), so wget and curl are unable to preserve the file date. But we still search for most recent .rar as a best practice
-
-	rarFileNewest=""
-	for iFileName in `ls -tr $rarFile`; do
-		rarFileNewest=$iFileName;
-	done;
-
-	if [ "$rarFileNewest" = "" ]; then  # add check for no .rar files found, JHB Jan2021
-		echo "Install package rar file not found"
-		return 0
-	fi
-
-	while true; do
-
-		echo "Enter path for SigSRF and EdgeStream software and dependency package installation:"
-		read installPath
-
-		if [ ! $installPath ]; then
-			installPath="/usr/local"  # default if nothing entered
-		fi
-
-		read -p "Please confirm install path $installPath [Y] or [N] " Confirm
-
-		case $Confirm in
-			[Yy]* ) break;;
-		esac
-	done
-
-	unrar x -o+ $rarFileNewest $installPath/
-
-	return 1
 }
 
 depInstall() {
@@ -762,20 +764,20 @@ PS3="Please select install operation to perform [1-6]: "
 select opt in "Install SigSRF and EdgeStream Software" "Install SigSRF and EdgeStream Software with ASR Option" "Install SigSRF and EdgeStream Software with coCPU Option" "Uninstall SigSRF and EdgeStream Software" "Check / Verify SigSRF and EdgeStream Software Install" "Exit"
 do
 	case $opt in
-		"Install SigSRF and EdgeStream Software") if ! unrarCheck; then
-			if ! packageSetup; then
+		"Install SigSRF and EdgeStream Software") if ! packageSetup; then
+			if ! unrarCheck; then
 				swInstallSetup; dependencyCheck; swInstall;
 			fi
 		fi
 		break;;
-		"Install SigSRF and EdgeStream Software with ASR Option") if ! unrarCheck; then
-			if ! packageSetup; then
+		"Install SigSRF and EdgeStream Software with ASR Option") if ! packageSetup; then
+			if ! unrarCheck; then
 				swInstallSetup; dependencyCheck; installOptions="ASR"; swInstall;
 			fi
 		fi
 		break;;
-		"Install SigSRF and EdgeStream Software with coCPU Option") if ! unrarCheck; then
-			if ! packageSetup; then
+		"Install SigSRF and EdgeStream Software with coCPU Option") if ! packageSetup; then
+			if ! unrarCheck; then
 				swInstallSetup; dependencyCheck; installOptions="coCPU"; swInstall;
 			fi
 		fi
