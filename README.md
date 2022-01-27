@@ -434,7 +434,7 @@ The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md">paTest page</a> gives example command lines for a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies.  Application Java and C/C++ source code is included.
 
-<a name="SDKDemoTestedPlatforms">
+<a name="SDKDemoTestedPlatforms"></a>
 # SDK / Demo Tested Platforms
 
 The EdgeStream and SigSRF SDK and demos have been tested on the following platforms:
