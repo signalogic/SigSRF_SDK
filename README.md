@@ -234,7 +234,7 @@ Note that the install script checks for the presence of the unrar package, and i
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
 
-To install the ASR version of the SDK, first follow the instructions in [Install Notes](#user-content-installnotes), above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install SigSRF Software with ASR Option" instead of item 1).
+To install the ASR version of the SDK, first follow the instructions in [Install Notes](#user-content-installnotes), above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
 
 Here are some additional notes:
 
