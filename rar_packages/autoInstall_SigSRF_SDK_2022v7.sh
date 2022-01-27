@@ -131,7 +131,7 @@ unrarCheck() {
 								unrar_status="install"
 							fi;
 						else
-							unrar_status="unrar"
+							unrar_status="already installed"
 						fi
 						break;;
 				[Nn]* ) unrar_status="don't install";;
