@@ -24,6 +24,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patest)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[SDK / Demo Tested Platforms](#user-content-sdkdemotestedplatforms)<br/>
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
 
 <a name="Overview"></a>
@@ -433,6 +434,43 @@ The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md">paTest page</a> gives example command lines for a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies.  Application Java and C/C++ source code is included.
 
+<a name="SDKDemoTestedPlatforms">
+# SDK / Demo Tested Platforms
+
+The EdgeStream and SigSRF SDK and demos have been tested on the following platforms:
+ 
+<b>Ubuntu</b>
+ 
+  Ubuntu 20.04.1 LTS
+  g++/gcc (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+   
+  Ubuntu 18.04.5 LTS
+  g++/gcc (Ubuntu 8.4.0-1ubuntu1~18.04) 8.4.0
+   
+  Ubuntu 16.04.6 LTS
+  g++/gcc (Ubuntu 7.4.0-1ubuntu1~16.04~ppa1) 7.4.0
+   
+  Ubuntu 12.04.5 LTS
+  gcc (Ubuntu/Linaro 4.6.4-1ubuntu1~12.04) 4.6.4
+  g++ (Ubuntu 4.8.4-1ubuntu15~12.04.1) 4.8.4
+ 
+<b>CentO/b>
+ 
+  CentOS Linux release 8.2.2004 (Core)
+  g++/gcc (GCC) 8.3.1 20191121 (Red Hat 8.3.1-5)
+   
+  CentOS Linux release 7.6.1810 (Core)
+  g++/gcc (GCC) 6.5.0
+
+  CentOS Linux release 7.9.2009 (Core)
+  g++/gcc (GCC) 5.5.0
+   
+  CentOS Linux release 7.9.2009 (Core)
+  gcc (GCC) 5.3.1 20160406 (Red Hat 5.3.1-6)
+   
+  CentOS Linux release 7.6.1810 (Core)
+  g++/gcc (GCC) 4.8.5 20150623 (Red Hat 4.8.5-44)
+   
 <a name="DocumentationSupport"></a>
 # Documentation, Support, and Contact
 
