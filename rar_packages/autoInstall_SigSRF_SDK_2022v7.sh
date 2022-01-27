@@ -228,7 +228,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
       if [[ "$OS" != "Ubuntu" && "$OS" != "Red Hat Enterprise Linux Server" && "$OS" != "CentOS Linux" ]]; then
          echo
-         echo "Not Ubuntu or CentOS / RHEL distro $(OS) ... attempting to install assuming Ubuntu / Debian derivative ..."
+         echo "Distro $OS is not Ubuntu or CentOS / RHEL; attempting to install assuming Ubuntu / Debian derivative ..."
       fi
 
       gcc_package=$(/usr/bin/g++ --version 2>/dev/null | grep g++ | awk ' {print $1} ')  # EdgeStream Makefiles expect /usr/bin/g++ to work, install script expects Makefiles to work
@@ -382,7 +382,8 @@ swInstall() {  # install Signalogic SW on specified path
             distribution=$(cat /etc/centos-release)
          #elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
          else  # else includes Ubuntu, Debian, VM target, or anything else
-            distribution=$(lsb_release -d)
+            #distribution=$(lsb_release -d)
+            distribution=$(cat /etc/lsb-release)  # use this in case installing lsb-release package ran into any problems
          fi
 
 			cd $installPath/Signalogic/DirectCore/hw_utils; make
@@ -607,7 +608,7 @@ installCheckVerify() {
 		installPath=$(grep -w "SIGNALOGIC_INSTALL_PATH=*" /etc/environment | sed -n -e '/SIGNALOGIC_INSTALL_PATH/ s/.*\= *//p')
 		if [ ! $installPath ]; then
 			echo 
-			echo "Signalogic install path could not be found"
+			echo "Signalogic install path not found"
 			echo
 			return 0
 		fi
@@ -630,12 +631,13 @@ installCheckVerify() {
       cat /etc/centos-release | tee -a $diagReportFile
 #  elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
    else   # else includes Ubuntu, Debian, VM target, or anything else
-      lsb_release -a | tee -a $diagReportFile
+      cat /etc/lsb-release | tee -a $diagReportFile  # use this in case installing lsb-release package ran into trouble
+      #lsb_release -a | tee -a $diagReportFile
    fi
    echo "Kernel Version: $kernel_version" | tee -a $diagReportFile
 
 	echo | tee -a $diagReportFile
-	echo "SigSRF Install Path and Options Check" | tee -a $diagReportFile
+	echo "EdgeStream and SigSRF Install Path and Options Check" | tee -a $diagReportFile
 	echo "Install path: $installPath" | tee -a $diagReportFile
 	echo "Install options: $installOptions" | tee -a $diagReportFile
 
@@ -656,7 +658,7 @@ installCheckVerify() {
 	# Symlinks check
 
 	echo | tee -a $diagReportFile
-	echo "SigSRF and EdgeStream Symlinks Check" | tee -a $diagReportFile
+	echo "EdgeStream and SigSRF Symlinks Check" | tee -a $diagReportFile
 
 	d="Signalogic Symlink"
 	if [ -L $installPath/Signalogic ]; then
@@ -752,7 +754,7 @@ do
 	esac
 done
 
-echo "*****************************************************"
+echo "*********************************************************************"
 echo
 
 COLUMNS=1  # force single column menu, JHB Jan2021
