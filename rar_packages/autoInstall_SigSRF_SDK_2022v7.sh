@@ -142,10 +142,8 @@ unrarCheck() {
 		unrar_status="already installed"
 	fi
 
-   if [[ "$unrar_status" == "install" ]]; then
+   if [[ "$unrar_status" == "install" || "$unrar_status" == "already installed" ]]; then  # unrar in both of these cases, for example the Signalogic/etc folder gets deleted, and unrar restores it. Unrar'ing doesn't take long
       unrar x -o+ $rarFileNewest $installPath/  # assumes packageSetup() has been called first, and rarFileNewest and installPath have been set
-      return 1
-   elif [[ "$unrar_status" == "already installed" ]]; then
       return 1
    elif [[ "$unrar_status" == "uninitialized" ]]; then
       echo "internal problem in unrarCheck()"
