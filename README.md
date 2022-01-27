@@ -442,17 +442,17 @@ The EdgeStream and SigSRF SDK and demos have been tested on the following platfo
 <b>Ubuntu</b>
  
   Ubuntu 20.04.1 LTS
-  g++/gcc (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+  g++/gcc (Ubuntu 9.3.0-17ubuntu1\~20.04) 9.3.0
    
   Ubuntu 18.04.5 LTS
-  g++/gcc (Ubuntu 8.4.0-1ubuntu1~18.04) 8.4.0
+  g++/gcc (Ubuntu 8.4.0-1ubuntu1\~18.04) 8.4.0
    
   Ubuntu 16.04.6 LTS
-  g++/gcc (Ubuntu 7.4.0-1ubuntu1~16.04~ppa1) 7.4.0
+  g++/gcc (Ubuntu 7.4.0-1ubuntu1\~16.04\~ppa1) 7.4.0
    
   Ubuntu 12.04.5 LTS
-  gcc (Ubuntu/Linaro 4.6.4-1ubuntu1~12.04) 4.6.4
-  g++ (Ubuntu 4.8.4-1ubuntu15~12.04.1) 4.8.4
+  gcc (Ubuntu/Linaro 4.6.4-1ubuntu1\~12.04) 4.6.4
+  g++ (Ubuntu 4.8.4-1ubuntu15\~12.04.1) 4.8.4
  
 <b>CentOS</b>
  
