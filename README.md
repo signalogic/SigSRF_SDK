@@ -24,7 +24,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[paTest (predictive analytics from log data)](#user-content-patest)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[SDK / Demo Tested Platforms](#user-content-sdkdemotestedplatforms)<br/>
+[SDK / Demo Tested Platforms](#user-content-sdkdemotestedplatforms)<br/>
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
 
 <a name="Overview"></a>
@@ -454,7 +454,7 @@ The EdgeStream and SigSRF SDK and demos have been tested on the following platfo
   gcc (Ubuntu/Linaro 4.6.4-1ubuntu1~12.04) 4.6.4
   g++ (Ubuntu 4.8.4-1ubuntu15~12.04.1) 4.8.4
  
-<b>CentO/b>
+<b>CentOS</b>
  
   CentOS Linux release 8.2.2004 (Core)
   g++/gcc (GCC) 8.3.1 20191121 (Red Hat 8.3.1-5)
