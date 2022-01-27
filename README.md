@@ -255,7 +255,7 @@ SigSRF uses a Kaldi ASR implementation. In the SDK the Kaldi "mini-librispeech" 
 
 ### Sudo Privilege
 
-<i>Running the install script requires being logged in as root or as a user with sudo root privilege.</i>  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>).  In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
+<i>Running the install script requires being logged in as root or as a user with sudo root privilege.</i>  In Ubuntu, allowing a user sudo root privilege can be done by adding the user to the “administrators” group (<a href="http://askubuntu.com/questions/168280/how#do#i#grant#sudo#privileges#to#an#existing#user" target="_blank">as shown here</a>). In CentOS a user can be added to the “/etc/sudoers” file (<a href="https://wiki.centos.org/TipsAndTricks/BecomingRoot" target="_blank">as shown here</a>).  Please make sure this is the case before running the script.
 
 <a name="RunningTheInstallScript"></a>
 ### Running the Install Script
@@ -272,17 +272,17 @@ The script will then prompt as follows:
 
 Host is the default. Selecting VM causes additional resource management to be installed that's needed if host and guest share DirectCore resources. If you are running in a container, either case still applies. After choosing either Host or VM, the script will next prompt for an install option:
 
-    1) Install SigSRF Software
-    2) Install SigSRF Software with ASR Option
-    3) Install SigSRF Software with coCPU Option
-    4) Uninstall SigSRF Software
-    5) Check / Verify SigSRF Software Install
+    1) Install EdgeStream and SigSRF Software
+    2) Install EdgeStream and SigSRF Software with ASR Option
+    3) Install EdgeStream and SigSRF Software with coCPU Option
+    4) Uninstall EdgeStream and SigSRF Software
+    5) Check / Verify EdgeStream and SigSRF Software Install
     6) Exit
     Please select install operation to perform [1-6]:
 
 If install operations 1) thru 3) are selected, the script will prompt for an install path:
 
-    Enter the path for SigSRF software installation:
+    Enter the path for EdgeStream and SigSRF software installation:
 
 If no path is entered the default path is /usr/local. <i>Do not enter a path such as "Signalogic" or "/home/Signalogic"</i> as during the install a "Signalogic" symlink is created for the base install folder, which would conflict. Here are a few possible install path examples:
 
@@ -305,11 +305,11 @@ Release:        20.04
 Codename:       focal
 Kernel Version: 5.4.0-86-generic
 
-SigSRF Install Path and Options Check
+EdgeStream and SigSRF Install Path and Options Check
 Install path: /home/labuser
 Install options:
 
-SigSRF and EdgeStream Symlinks Check
+EdgeStream and SigSRF Symlinks Check
 Signalogic Symlink ..............................................[ OK ]
 Apps Symlink ....................................................[ OK ]
 Linux Symlink ...................................................[ OK ]
