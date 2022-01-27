@@ -100,7 +100,9 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 
 unrarCheck() {
 
+   unrar_status="uninitialized"
 	unrarInstalled=`type -p unrar`  # see if unrar is recognized on cmd line
+
 	if [ "$unrarInstalled" == "" ]; then  # if not then need to install
 
 		while true; do
@@ -113,13 +115,12 @@ unrarCheck() {
                   unrarInstalled=`type -p unrar`  # recheck
 
 	               if [ "$unrarInstalled" == "" ]; then  # if still not installed, then try non-package methods
-#						if [[ $? > 0 ]]; then
+
                      if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
                         echo "Attempting to install rarlab unrar ..."
                         wget --no-check-certificate https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
                         tar -zxvf rarlinux-x64-6.0.2.tar.gz
                         mv rar/rar rar/unrar /usr/local/bin/
-#                    elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
                      else  # else includes Ubuntu, Debian, VM target, or anything else
                         echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
                         sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
@@ -127,21 +128,31 @@ unrarCheck() {
                      fi
 
 							if [[ $? = 0 ]]; then
-								return 1
+								unrar_status="install"
 							fi;
 						else
-							return 1
+							unrar_status="unrar"
 						fi
 						break;;
-				[Nn]* ) return 0;;
+				[Nn]* ) unrar_status="don't install";;
 				* ) echo "Please enter y or n";;
 			esac
 		done
-
-      unrar x -o+ $rarFileNewest $installPath/  # assumes packageSetup() has been called first, and rarFileNewest and installPath have been set
 	else
-		return 1
+		unrar_status="already installed"
 	fi
+
+   if [[ "$unrar_status" == "install" ]]; then
+      unrar x -o+ $rarFileNewest $installPath/  # assumes packageSetup() has been called first, and rarFileNewest and installPath have been set
+      return 1
+   elif [[ "$unrar_status" == "already installed" ]]; then
+      return 1
+   elif [[ "$unrar_status" == "uninitialized" ]]; then
+      echo "internal problem in unrarCheck()"
+      return 0
+   else
+      return 0  # user doesn't want to install
+   fi
 }
 
 depInstall() {
