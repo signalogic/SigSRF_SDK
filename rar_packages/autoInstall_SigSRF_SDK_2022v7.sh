@@ -732,7 +732,7 @@ installCheckVerify() {
 	# Leftover /dev/shm hwlib files check
 
 	echo | tee -a $diagReportFile
-	echo "SigSRF Leftover hwlib Files Check" | tee -a $diagReportFile
+	echo "DirectCore Residual Files Check" | tee -a $diagReportFile
 	d="hwlib_mutex"
 
 	if [ -f /dev/shm/$d ]; then
