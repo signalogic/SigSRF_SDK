@@ -284,7 +284,7 @@ Host is the default. Selecting VM causes additional resource management to be in
     6) Exit
     Please select install operation to perform [1-6]:
 
-If install operations 1) thru 3) are selected, the script will prompt for an install path:
+If operations 1) thru 3) are selected, the script will prompt for an install path:
 
     Enter the path for EdgeStream and SigSRF software installation:
 
@@ -296,7 +296,9 @@ If no path is entered the default path is /usr/local. <i>Do not enter a path suc
   /root
 ```
 
-After entering an install path, you will be prompted for confirmation.  If at any time you want to abort the install and start over, press Ctrl-C.
+After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail).
+
+If at any time you want to abort the install and start over, press Ctrl-C.
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes. The Check / Verify option also generates screen output, here is an example:
 
