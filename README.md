@@ -17,7 +17,7 @@
 [SDK Download](#user-content-sdkdownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Rar Package](#user-content-installnotesrarpackage)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Docker Container](#user-content-insallnotesdockercontainer)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Docker Container](#user-content-installnotesdockercontainer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Sudo Privilege](#user-content-sudoprivilege)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Running the Install Script](#user-content-runningtheinstallscript)<br/>
