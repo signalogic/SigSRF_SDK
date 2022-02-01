@@ -399,9 +399,9 @@ Reference application examples are provided as executables, C/C++ source code an
 
 Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo installed and ready to run are located at:
 
-https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
+    https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
 
-https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
+    https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
 
 Note that Rar package install steps above -- downloading .rar files and running install script -- do not apply as the Docker container is already configured.
 
