@@ -17,10 +17,10 @@
 [SDK Download](#user-content-sdkdownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Rar Package](#user-content-installnotesrarpackage)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Docker Container](#user-content-installnotesdockercontainer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Sudo Privilege](#user-content-sudoprivilege)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Running the Install Script](#user-content-runningtheinstallscript)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Docker Container](#user-content-installnotesdockercontainer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-runnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatest)<br/>
@@ -233,17 +233,6 @@ The ASR version is separated into .partN.rar files because the overall .rar file
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
 
-<a name="InstallNotesDockerContainer"></a>
-### Install Notes - Docker Container
-
-Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo installed and ready to run are located at:
-
-https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
-
-https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
-
-after running docker pull and run commands on one of these containers you can skip to [Run Notes](#RunNotes) below.
-
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
 
@@ -404,6 +393,27 @@ which although it shows an error message will cause no problems.
 ### Building Reference Applications
 
 Reference application examples are provided as executables, C/C++ source code and Makefiles. Reference apps should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
+
+<a name="InstallNotesDockerContainer"></a>
+### Install Notes - Docker Container
+
+Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo installed and ready to run are located at:
+
+https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
+
+https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
+
+Note that Rar package install steps above -- downloading .rar files and running install script -- do not apply as the Docker container is already configured.
+
+To access pcap and media files output by EdgeStream demo apps, you can WinSCP into the docker container with the following steps:
+
+    docker-machine ls
+
+    NAME ACTIVE DRIVER STATE URL SWARM DOCKER ERRORS
+    manager - hyperv Running tcp://192.168.111.63:2376 v1.13.0
+    worker - hyperv Running tcp://192.168.111.64:2376 v1.13.0
+
+and then use the reported IP and port info inside the WinSCP client, with userid docker, and password tcuser. 
 
 <a name="RunNotes"></a>
 ## Run Notes
