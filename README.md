@@ -16,7 +16,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
 [SDK Download](#user-content-sdkdownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Rar Package](#user-content-installnotesrarpackage)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Docker Container](#user-content-insallnotesdockercontainer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Sudo Privilege](#user-content-sudoprivilege)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Running the Install Script](#user-content-runningtheinstallscript)<br/>
@@ -198,8 +199,8 @@ For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar
 
 Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. 
 
-<a name="InstallNotes"></a>
-## Install Notes
+<a name="InstallNotesRarPackage"></a>
+## Install Notes - Rar Package
 
 Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install only the most recent .rar file. Also the install script will auto-check for kernel version and Linux distro version to decide which .rar file to install.
 
@@ -231,6 +232,17 @@ The ASR version is separated into .partN.rar files because the overall .rar file
 <i><b>Important Note:</b> all .rar files and the install script should be downloaded to the same folder. The actual install folder can be different, as the install script prompts for an install path (see below).</i>
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
+
+<a name="InstallNotesDockerContainer"></a>
+### Install Notes - Docker Container
+
+Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo installed and ready to run are located at:
+
+https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
+
+https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
+
+after running docker pull and run commands on one of these containers you can skip to [Run Notes](#RunNotes) below.
 
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
