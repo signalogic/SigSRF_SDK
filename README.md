@@ -403,9 +403,9 @@ Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo inst
 
     https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
 
-Note that Rar package install steps above -- downloading .rar files and running install script -- do not apply as the Docker container is already configured.
+Note that Rar Package install steps above (e.g. downloading .rar files and running install script) do not apply as the Docker container is already configured.
 
-To access pcap and media files output by EdgeStream demo apps, you can WinSCP into the docker container with the following steps:
+To access pcap and media files output by EdgeStream demo apps -- for example to run WireShark -- you can WinSCP into the docker container with the following steps:
 
     docker-machine ls
 
