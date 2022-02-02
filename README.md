@@ -415,13 +415,21 @@ To access pcap and media files output by EdgeStream demo apps -- for example to 
 
 and then use the reported IP and port info inside the WinSCP client, with userid docker, and password tcuser. 
 
-### Docker Container Notes
+### Ubuntu Docker Container Notes
 
-The base Ubuntu container comes from a repository hosted by user "gmao", who is associated with NASA, as shown below:
+1) Ubuntu distro is 20.04.2. gcc/g++ 11.2.0 is installed
+2) wget and unrar are installed, along with a symlink /usr/bin/g++ pointing to /gcc/bin/g++
+3) The base Ubuntu container comes from a repository hosted by user "gmao", who is associated with NASA, as shown below:
 
     https://hub.docker.com/u/gmao
 
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/ubuntu_base_container_docker_hub_profile.png" width=50% alt="Ubuntu base container Docker hub profile info" title="Ubuntu base container Docker hub profile info"></br>
+
+### CentOS Docker Container Notes
+
+1) CentOS distro is 8.2.2004. gcc/g++ 8.3.1-5 is installed
+2) wget and unrar are installed, along with a symlink /usr/bin/g++ pointing to /gcc/bin/g++
+
 
 <a name="RunNotes"></a>
 ## Run Notes
