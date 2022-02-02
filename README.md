@@ -503,9 +503,7 @@ The EdgeStream and SigSRF SDK and demos have been tested on the following platfo
   g++/gcc (GCC) 6.5.0
 
   CentOS Linux release 7.9.2009 (Core)</br>
-  g++/gcc (GCC) 5.5.0
-   
-  CentOS Linux release 7.9.2009 (Core)</br>
+  g++ (GCC) 5.5.0</br>
   gcc (GCC) 5.3.1 20160406 (Red Hat 5.3.1-6)
    
   CentOS Linux release 7.6.1810 (Core)</br>
