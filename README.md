@@ -421,6 +421,8 @@ The base Ubuntu container comes from a repository hosted by user "gmao", who is 
 
     https://hub.docker.com/u/gmao
 
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/ubuntu_base_container_docker_hub_profile.png" width=50%></br>
+
 ![Ubuntu base container Docker Hub profile](https://github.com/signalogic/SigSRF_SDK/blob/master/images/ubuntu_base_container_docker_hub_profile.png?raw=true "Ubuntu base container Docker Hub profile")
 
 <a name="RunNotes"></a>
