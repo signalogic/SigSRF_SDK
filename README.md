@@ -429,7 +429,11 @@ and then use the reported IP and port info inside the WinSCP client, with userid
 
 1) CentOS distro is 8.2.2004. gcc/g++ 8.3.1-5 is installed
 2) wget and unrar are installed, along with symlink /usr/bin/g++ pointing to /gcc/bin/g++
+3) The base CentOS container comes from a repository hosted by user "images4dev", as shown below:
 
+    https://hub.docker.com/u/images4dev
+
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/centos_base_container_docker_hub_profile.png" width=50% alt="CentOS base container Docker hub profile info" title="CentOS base container Docker hub profile info"></br>
 
 <a name="RunNotes"></a>
 ## Run Notes
