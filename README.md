@@ -403,9 +403,17 @@ Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo inst
 
     https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
 
-Note that Rar Package install steps above (e.g. downloading .rar files and running install script) do not apply as the Docker container is already fully configured.
+Note that the Rar Package install section above (e.g. downloading .rar files and running install script) does not apply as the Docker container is already fully configured. After running the container, change your current folder ...
 
-To access pcap and media files output by EdgeStream demo apps -- for example to run WireShark -- you can WinSCP into the docker container with the following steps:
+    cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest
+
+or
+
+    cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest/mediaMin
+
+... depending on which EdgeStream demo app you want to run. The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
+
+To access pcap and media files output by EdgeStream demo apps inside the container -- for example to run WireShark -- you can WinSCP into the container with the following steps:
 
     docker-machine ls
 
