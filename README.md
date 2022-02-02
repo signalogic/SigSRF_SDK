@@ -428,7 +428,7 @@ and then use the reported IP and port info inside the WinSCP client, with userid
 ### CentOS Docker Container Notes
 
 1) CentOS distro is 8.2.2004. gcc/g++ 8.3.1-5 is installed
-2) wget and unrar are installed, along with a symlink /usr/bin/g++ pointing to /gcc/bin/g++
+2) wget and unrar are installed, along with symlink /usr/bin/g++ pointing to /gcc/bin/g++
 
 
 <a name="RunNotes"></a>
@@ -503,9 +503,11 @@ The EdgeStream and SigSRF SDK and demos have been tested on the following platfo
   g++/gcc (GCC) 6.5.0
 
   CentOS Linux release 7.9.2009 (Core)</br>
-  g++ (GCC) 5.5.0</br>
-  gcc (GCC) 5.3.1 20160406 (Red Hat 5.3.1-6)
-   
+  g++/gcc (GCC) 5.5.0</br>
+  
+  CentOS Linux release 7.9.2009 (Core)</br>
+  g++/gcc (GCC) 5.3.1 20160406 (Red Hat 5.3.1-6)
+
   CentOS Linux release 7.6.1810 (Core)</br>
   g++/gcc (GCC) 4.8.5 20150623 (Red Hat 4.8.5-44)
    
