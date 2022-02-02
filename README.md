@@ -417,13 +417,11 @@ and then use the reported IP and port info inside the WinSCP client, with userid
 
 ### Docker Container Notes
 
-The base Ubuntu container comes from a repository hosted by user "gmao", who is associated with NASA:
+The base Ubuntu container comes from a repository hosted by user "gmao", who is associated with NASA, as shown below:
 
     https://hub.docker.com/u/gmao
 
-<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/ubuntu_base_container_docker_hub_profile.png" width=50%></br>
-
-![Ubuntu base container Docker Hub profile](https://github.com/signalogic/SigSRF_SDK/blob/master/images/ubuntu_base_container_docker_hub_profile.png?raw=true "Ubuntu base container Docker Hub profile")
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/ubuntu_base_container_docker_hub_profile.png" width=50% alt="Ubuntu base container Docker hub profile info" title="Ubuntu base container Docker hub profile info"></br>
 
 <a name="RunNotes"></a>
 ## Run Notes
