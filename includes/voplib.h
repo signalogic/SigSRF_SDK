@@ -28,7 +28,8 @@
   Modified Jul 2019 JHB, DSGetCodecFs() removed, use DSGetCodecSampleRate(hCodec) instead
   Modified Feb 2020 JHB, add DS_GET_NUMFRAMES flag in DSCodecDecode()
   Modified Oct 2020 JHB, add DSCodecGetInfo() API to pull all available encoder/decoder info as needed. First input param is codec handle or codec_type, depending on uFlags. Added codec_name, raw_frame_size, and coded_frame_size elements to CODEC_PARAMS struct support DSCodecGetInfo()
-  Modified Jan 2022 JHB, add DS_CC_TRACK_MEM_USAGE flag, add DSGetCodecTypeStr() API
+  Modified Jan 2022 JHB, add DS_CC_TRACK_MEM_USAGE flag, add DSGetCodecName() API
+  Modified Feb 2022 JHB, change DSGetCodecTypeStr() to DSGetCodecName() and add uFlags to allow codec param to be interpreted as either HCODEC or codec_type (as with DSGetCodecInfo)
 */
  
 #ifndef _VOPLIB_H_
@@ -177,14 +178,16 @@ extern "C" {
 
   } CODEC_OUTARGS;
 
+/* CODEC_PARAMS struct used in DSCodecCreate() and DSGetCodecInfo() */
+
   typedef struct {
 
-     int codec_type;
-     char codec_name[50];
-     uint16_t raw_frame_size;
-     uint16_t coded_frame_size;
-     CODEC_ENC_PARAMS enc_params;
-     CODEC_DEC_PARAMS dec_params;
+     int codec_type;               /* specifies codec type -- see "voice_codec_type" enums in shared_include/session.h */
+     char codec_name[50];          /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecName() */
+     uint16_t raw_frame_size;      /* filled in by DSCodecCreate() and DSGetCodecInfo() */
+     uint16_t coded_frame_size;    /*   "    "    " */
+     CODEC_ENC_PARAMS enc_params;  /* if encoder instance is being created, this must point to desired encoder params. See examples in x86_mediaTest.c */
+     CODEC_DEC_PARAMS dec_params;  /* if decoder instance is being created, this must point to desired decoder params. See examples in x86_mediaTest.c */
 
   } CODEC_PARAMS;
 
@@ -216,17 +219,21 @@ extern "C" {
 
 #define DS_GET_NUMFRAMES  0x100  /* if specified in uFlags, DSCodecDecode() returns the number of frames in the payload.  No decoding is performed */
 
-/* APIs that need an hCodec (note -- DSCodecInfo() has a flag for an option here hCodec is interpreted as a codec type */
-  
-  int DSGetCodecSampleRate(HCODEC hCodec);
-  int DSGetCodecBitRate(HCODEC hCodec);
-  int DSGetCodecRawFrameSize(HCODEC hCodec);
-  int DSGetCodecCodedFrameSize(HCODEC hCodec);
-  int DSGetCodecType(HCODEC hCodec);
-  int DSGetCodecInfo(HCODEC hCodec, unsigned int uFlags, void* pInfo);
-  int DSGetCodecTypeStr(int codec_type, char* codecstr);  /* this one requires codec_type, not hCodec */
+/* Helper APIs that take an hCodec returned by DSCodecCreate(). Notes:
 
-/* Codec helper functions */
+    -return values are -1 or otherwise < 0 on error conditions
+    -DSGetCodecInfo() and DSGetCodecName() accept a flag allowing codec_type instead of an hCodec; see additional comments below
+*/
+  
+  int DSGetCodecSampleRate(HCODEC hCodec);      /* returns codec sampling rate in Hz */
+  int DSGetCodecBitRate(HCODEC hCodec);         /* returns codec bitrate in bps */
+  int DSGetCodecRawFrameSize(HCODEC hCodec);    /* returns codec media frame size (i.e. prior to encode, after decode), in bytes */
+  int DSGetCodecCodedFrameSize(HCODEC hCodec);  /* returns codec compressed frame size (i.e. after encode, prior to decode), in bytes */
+  int DSGetCodecType(HCODEC hCodec);            /* returns codec type, see "voice_codec_type" enums in shared_include/session.h */
+  int DSGetCodecInfo(int codec, unsigned int uFlags, void* pInfo);  /* returns information for the specified codec. The codec param can be either an hCodec or codec_type returned by DSGetCodecType(), although if not an hCodec then currently only DS_GCI_CODECNAME is applicable. If a specific DS_GCI_xxx flag is given then the returned info will be copied directly into pInfo, otherwise pInfo should always point to a CODEC_PARAMS struct (see also DS_GCI_xxx definition comments below) */
+  int DSGetCodecName(int codec, char* codecstr, unsigned int uFlags);  /* returns a short printable name of the specified codec (typically 5-10 char string, always less than 50 char). The codec param can be either an hCodec or codec_type returned by DSGetCodecType() */
+
+/* more codec helper functions, these accept only codec_type */
 
 /* get sample rate code, given a codec type and actual sampling rate in Hz */
 
@@ -278,9 +285,17 @@ extern "C" {
 #define DS_CC_USE_TERMINFO      0x100
 #define DS_CC_TRACK_MEM_USAGE   0x200
 
-/* DSGetCodecInfo() flags */
+/* DSGetCodecInfo() and DSGetCodecName() flags */
 
-#define DS_CODEC_INFO_HANDLE    0x100
-#define DS_CODEC_INFO_TYPE      0x200
+#define DS_GC_CODECHANDLE       0x100  /* specifies the DSGetCodecXXX function should interpret the codec param (first param) as an hCodec. This is the default if no flag is given */ 
+#define DS_GC_CODECTYPE         0x200  /* specifies the DSGetCodecXXX function should interpret the codec param (first param) as a codec_type */ 
+
+/* flags that can be used to retrieve specific items using DSGetCodecInfo(). When any DS_GCI_xxx flag is given, pInfo must point to the item to be returned, not to a CODEC_PARAMS struct */
+
+#define DS_GCI_CODECNAME        0x01
+#define DS_GCI_RAWFRAMESIZE     0x02
+#define DS_GCI_CODEDFRAMESIZE   0x03
+
+#define DS_GCI_ITEM_MASK        0xff
 
 #endif  /* _VOPLIB_H_ */

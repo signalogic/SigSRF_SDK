@@ -107,8 +107,9 @@ static HPLATFORM hPlatform = -1;  /* platform handle, see DSAssignPlatform() cal
 extern PLATFORMPARAMS PlatformParams;  /* command line params */
 
 /* local functions */
-
+#if 0  /* replaced by DSGetCodecName() in voplib */
 int get_codec_name(int codec_type, char* szCodecName);
+#endif
 const char* strrstr(const char* haystack, const char* needle);
 
 
@@ -496,7 +497,7 @@ void x86_mediaTest(void) {
 
       struct timeval tv;
       uint64_t t1, t2;
-      char szCodecName[20] = "";
+      char szCodecName[50] = "";
       char szNumChan[20] = "";
       bool fFramePrint = false;
 
@@ -696,8 +697,11 @@ void x86_mediaTest(void) {
       if (!MediaInfo.SampleWidth) MediaInfo.SampleWidth = DS_DP_SHORTINT;
       if (!MediaInfo.CompressionCode) MediaInfo.CompressionCode = DS_GWH_CC_PCM;
 
-
+      #if 0  /* replaced by DSGetCodecName() in voplib */
       if (!get_codec_name(codec_test_params.codec_type, szCodecName)) {
+      #else
+      if (DSGetCodecName(codec_test_params.codec_type, szCodecName, DS_GC_CODECTYPE) <= 0) {
+      #endif
 
          printf("Error: non-supported or invalid codec type found in config file\n");
          goto codec_test_cleanup;
@@ -2210,6 +2214,7 @@ pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB
    printf("x86 mediaTest end\n");
 }
 
+#if 0  /* replaced by DSGetCodecName() in voplib */
 
 /* assign codec name string, based on codec type (see list of constants in Signalogic/shared_include/session.h */
 
@@ -2264,6 +2269,7 @@ int get_codec_name(int codec_type, char* szCodecName) {
 
    return (int)true;
 }
+#endif
 
 const char* strrstr(const char* haystack, const char* needle) {
 

@@ -5656,11 +5656,11 @@ organize_by_ssrc:
                #if 0  /* example of how to use voplib DSGetCodecInfo() with a codec handle, JHB Oct2020 */
                CODEC_PARAMS codec_params;  /* CODEC_PARAMS is in voplib.h */
                HCODEC hCodec = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC, 1, NULL);  /*  1 = decoder, 2 = encoder ... see pktlib.h comments */
-               DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE, &codec_params);  /* voplib.h API */
+               DSGetCodecInfo(hCodec, DS_GC_CODECHANDLE, &codec_params);  /* voplib.h API */
                strcpy(codec_name, codec_params.codec_name);
                // printf(" bit rate = %d, sampling rate = %d \n", codec_params.dec_params.bitRate, codec_params.dec_params.samplingRate);
                #else  /* or if codec type is already known and we just need the codec name... */
-               DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE, codec_name);
+               DSGetCodecName(termInfo.codec_type, codec_name, DS_GC_CODECTYPE);
                #endif
 
                add_stats_str(sessstr, MAX_STATS_STRLEN, " %d%s/%d/%s/%d", hSession, hSession == hSessionGroupOwner && !fShowOwnerOnce ? "(grp owner)" : "", c, codec_name, termInfo.bitrate);
