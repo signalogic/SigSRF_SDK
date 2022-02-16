@@ -107,6 +107,8 @@ char thread_status[2*MAX_CODEC_INSTANCES] = { 0 };
 
 static HPLATFORM hPlatform = -1;  /* platform handle, see DSAssignPlatform() call */
 
+int numChan = 1;  /* numChan is sitting out here because it's referred to in USBAudioXXX functions. To-do: fix this, JHB Feb2022 */
+
 extern PLATFORMPARAMS PlatformParams;  /* command line params */
 
 /* local functions */
@@ -150,8 +152,6 @@ snd_pcm_uframes_t period_size_USBAudio_output = DEFAULT_USBAUDIO_PERIOD_SIZE;
 snd_pcm_uframes_t buffer_size_USBAudio_output = period_size_USBAudio_output * numChan_device * bytesPerSample_device * 2;
 snd_async_handler_t *pcm_callback_capture, *pcm_callback_playback;
 snd_pcm_hw_params_t* hw_params;
-
-int numChan = 1;  /* numChan is sitting out here because it's referred to in USBAudioXXX functions. To-do: fix this, JHB Feb2022 */
 
 void USBAudioCallbackCapture(snd_async_handler_t* pcm_callback) {	
 
