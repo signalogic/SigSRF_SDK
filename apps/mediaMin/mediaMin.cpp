@@ -328,7 +328,7 @@ char tmpstr[MAX_APP_STR_LEN];
 
    if (Mode == -1) Mode = 0;  /* default value if no cmd line entry given is -1 (Mode is defined in mediaTest.h, same as debugMode which is set on the command line by -d argument) */
 
-   if (nRepeat == 0) fRepeatIndefinitely = true;  /* nRepeat is initialized in cmd_line_interface.c from -RN cmd line entry (if none nRepeat = -1). Note that some stress tests already have repeat built in, so -RN entry may be ignored or treated differently in those cases */
+   if (nRepeat == 0) fRepeatIndefinitely = true;  /* nRepeat is initialized in cmd_line_interface.c from -RN cmd line entry (if no entry nRepeat = -1). Note that some stress tests already have repeat built in, so -RN entry may be ignored or treated differently in those cases */
    nRepeatsRemaining[thread_index] = nRepeat;  /* each app thread keeps an independent repeat count, as they may repeat at different times (for example if ENABLE_RANDOM_WAIT is set) */
 
    if ((Mode & 0xff) < 0x20) {

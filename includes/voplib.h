@@ -30,6 +30,7 @@
   Modified Oct 2020 JHB, add DSCodecGetInfo() API to pull all available encoder/decoder info as needed. First input param is codec handle or codec_type, depending on uFlags. Added codec_name, raw_frame_size, and coded_frame_size elements to CODEC_PARAMS struct support DSCodecGetInfo()
   Modified Jan 2022 JHB, add DS_CC_TRACK_MEM_USAGE flag, add DSGetCodecName() API
   Modified Feb 2022 JHB, change DSGetCodecTypeStr() to DSGetCodecName() and add uFlags to allow codec param to be interpreted as either HCODEC or codec_type (as with DSGetCodecInfo)
+  Modified Feb 2022 JHB, modify DSCodecEncode() and DSCodecDecode() to accept pointer to one or more codec handles and a num channels param. This enables multichannel encoding/decoding (e.g. stereo audio files) and simplified concurrent codec instance test and measurement (e.g. 30+ codec instances within one thread or CPU core). Multichannel input and output data must be interleaved; see API comments and examples in x86_mediaTest.c
 */
  
 #ifndef _VOPLIB_H_
@@ -44,18 +45,21 @@
 
 #include "alglib.h"
 
-/* Sampling frequency and frame size max values, min ptime */
-#if 1
+/* Sampling frequency and frame size max values, max, min, and nominal ptimes */
+#if 0
   #define MAX_PTIME        20       /* 20 ms */
 #else
   #define MAX_PTIME        60       /* in msec */
   #define MIN_PTIME        20       /* in msec */
+  #define NOM_PTIME        20
 #endif
 
 #define MAX_FS             48       /* 48 kHz */
-#define MAX_SAMPLES_FRAME  (MAX_FS*MAX_PTIME)
-#define MAX_RAW_FRAME      (MAX_SAMPLES_FRAME*sizeof(short int))
+#define MAX_SAMPLES_FRAME  (MAX_FS*NOM_PTIME)  /* nominal value 960 samples */
+#define MAX_RAW_FRAME      (MAX_SAMPLES_FRAME*sizeof(int16_t))  /* maximum raw audio frame size, in bytes. Nominal value 1920 bytes*/
 #define MAX_CODED_FRAME    328      /* AMR-WB+: 80 byte max frame size + 2 byte header * 4 sub frames */
+#define MAX_AUDIO_CHAN     100      /* max audio channels supported in the mediaTest refererence application. Note this channel count is completely separate from max channels in pktlib and the mediaMin reference app */
+#define MAX_FSCONV_UP_DOWN_FACTOR  160  /* current maximum Fs conversion up/down factor allowed in mediaTest and mediaMin reference apps. This is also referred to in alglib */
 
 /* constants used for AMR and EVS codec formats */
 
@@ -196,26 +200,29 @@ extern "C" {
 
   void DSCodecDelete(HCODEC hCodec);
 
-  int DSCodecEncode(HCODEC           hCodec,
-                    unsigned int     uFlags,
-                    uint8_t*         inData, 
-                    uint8_t*         outData,
-                    uint32_t         in_frameSize,
-                    CODEC_OUTARGS*   pOutArgs);
+  int DSCodecEncode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
+                    unsigned int     uFlags,        /* flags, see DS_CE_xxx flags below */
+                    uint8_t*         inData,        /* pointer to input audio data */
+                    uint8_t*         outData,       /* pointer to output coded bitstream data */
+                    uint32_t         in_frameSize,  /* size of input audio data, in bytes */
+                    int              numChan,       /* number of channels to be encoded. Multichannel data must be interleaved */
+                    CODEC_OUTARGS*   pOutArgs);     /* optional encoding parameters. Tyiclly this value is NULL */
 
-  int DSCodecDecode(HCODEC           hCodec,
-                    unsigned int     uFlags,
-                    uint8_t*         inData,
-                    uint8_t*         outData,
-                    uint32_t         in_frameSize,  /* in bytes */
-                    CODEC_OUTARGS*   pOutArgs);
+  int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
+                    unsigned int     uFlags,        /* flags, see DS_CD_xxx flags below */
+                    uint8_t*         inData,        /* pointer to input coded bitstream data */
+                    uint8_t*         outData,       /* pointer to output audio data */
+                    uint32_t         in_frameSize,  /* size of coded bitstream data, in bytes */
+                    int              numChan,       /* number of channels to be decoded. Multichannel data must be interleaved */
+                    CODEC_OUTARGS*   pOutArgs);     /* optional decoding parameters. Tyiclly this value is NULL */
 
-  int DSCodecTranscode(HCODEC        hCodecSrc,
-                       HCODEC        hCodecDst,
+  int DSCodecTranscode(HCODEC*       hCodecSrc,
+                       HCODEC*       hCodecDst,
                        unsigned int  uFlags,
                        uint8_t*      inData,
                        uint32_t      in_frameSize,  /* in bytes */
-                       uint8_t*      outData);
+                       uint8_t*      outData,
+                       int           numChan);
 
 #define DS_GET_NUMFRAMES  0x100  /* if specified in uFlags, DSCodecDecode() returns the number of frames in the payload.  No decoding is performed */
 
@@ -274,28 +281,28 @@ extern "C" {
 
 /* DSConfigVoplib() flags */
 
-#define DS_CV_GLOBALCONFIG      0x01
-#define DS_CV_DEBUGCONFIG       0x02
-#define DS_CV_INIT              0x04
+#define DS_CV_GLOBALCONFIG                0x01
+#define DS_CV_DEBUGCONFIG                 0x02
+#define DS_CV_INIT                        0x04
 
 /* DSCodecCreate() flags */
 
-#define DS_CC_CREATE_ENCODER    0x01
-#define DS_CC_CREATE_DECODER    0x02
-#define DS_CC_USE_TERMINFO      0x100
-#define DS_CC_TRACK_MEM_USAGE   0x200
+#define DS_CODEC_CREATE_ENCODER           0x01
+#define DS_CODEC_CREATE_DECODER           0x02
+#define DS_CODEC_CREATE_USE_TERMINFO      0x100
+#define DS_CODEC_CREATE_TRACK_MEM_USAGE   0x200
 
 /* DSGetCodecInfo() and DSGetCodecName() flags */
 
-#define DS_GC_CODECHANDLE       0x100  /* specifies the DSGetCodecXXX function should interpret the codec param (first param) as an hCodec. This is the default if no flag is given */ 
-#define DS_GC_CODECTYPE         0x200  /* specifies the DSGetCodecXXX function should interpret the codec param (first param) as a codec_type */ 
+#define DS_CODEC_INFO_HANDLE              0x100  /* specifies the DSGetCodecXXX function should interpret the codec param (first param) as an hCodec. This is the default if no flag is given */ 
+#define DS_CODEC_INFO_TYPE                0x200  /* specifies the DSGetCodecXXX function should interpret the codec param (first param) as a codec_type */ 
 
-/* flags that can be used to retrieve specific items using DSGetCodecInfo(). When any DS_GCI_xxx flag is given, pInfo must point to the item to be returned, not to a CODEC_PARAMS struct */
+/* flags that can be used to retrieve specific items using DSGetCodecInfo(). When one of these DS_CODEC_INFO_xxx flags is given, pInfo must point to the item to be returned, not to a CODEC_PARAMS struct */
 
-#define DS_GCI_CODECNAME        0x01
-#define DS_GCI_RAWFRAMESIZE     0x02
-#define DS_GCI_CODEDFRAMESIZE   0x03
+#define DS_CODEC_INFO_NAME                0x01
+#define DS_CODEC_INFO_RAW_FRAME_SIZE      0x02
+#define DS_CODEC_INFO_CODED_FRAME_SIZE    0x03
 
-#define DS_GCI_ITEM_MASK        0xff
+#define DS_CODEC_INFO_ITEM_MASK           0xff
 
 #endif  /* _VOPLIB_H_ */

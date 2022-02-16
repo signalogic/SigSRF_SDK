@@ -5,11 +5,12 @@
  
    Functions for encoding or decoding pre-configured files as a separate thread
  
- Copyright (C) Signalogic Inc. 2017-2019
+ Copyright (C) Signalogic Inc. 2017-2022
  
- Revision History:
+ Revision History
  
-   Created, CJ, March 2017
+  Created Mar 2017 CKJ
+  Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
 */
 
 #include <stdio.h>
@@ -77,13 +78,9 @@ void *encode_thread_task(void *arg)
    
    in_frame_size = DSGetCodecRawFrameSize(hCodec);
 
-   while (run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size))
-   {
-#if 0
-      DSCodecEncode(hCodec, 0, in_buf, out_buf, &out_frame_size);
-#else
-      out_frame_size = DSCodecEncode(hCodec, 0, in_buf, out_buf, in_frame_size, NULL);
-#endif
+   while (run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size)) {
+
+      out_frame_size = DSCodecEncode(&hCodec, 0, in_buf, out_buf, in_frame_size, 1, NULL);
 
       ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &out_fp, NULL, (uintptr_t)out_buf, out_frame_size, DS_WRITE, &MediaInfo);
 
@@ -140,13 +137,9 @@ void *decode_thread_task(void *arg)
    fseek(in_fp, 16, SEEK_SET);
 }
 
-   while (run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size))
-   {
-#if 0
-      DSCodecDecode(hCodec, 0, in_buf, in_frame_size, out_buf);
-#else
-      out_frame_size = DSCodecDecode(hCodec, 0, in_buf, out_buf, in_frame_size, NULL);
-#endif
+   while (run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size)) {
+
+      out_frame_size = DSCodecDecode(&hCodec, 0, in_buf, out_buf, in_frame_size, 1, NULL);
 
       ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &out_fp, NULL, (uintptr_t)out_buf, out_frame_size, DS_WRITE, &MediaInfo);
 

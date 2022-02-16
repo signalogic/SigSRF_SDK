@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/audio_domain_processing.c
 
- Copyright (C) Signalogic Inc. 2018-2021
+ Copyright (C) Signalogic Inc. 2018-2022
 
  License
 
@@ -26,6 +26,8 @@
   Modified Jun 2020 JHB, add DSDeduplicateStreams(). See function description comments
   Modified Jan 2021 JHB, implement sampling rate conversion if applicable to audio input data (look for DSConvertFs()
   Modified Jan 2021 JHB, integrate ASR (look for DS_PROCESS_AUDIO_APPLY_ASR flag)
+  Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
+  Modified Feb 2022 JHB, modify calling format to DSConvertFs(), see comments in alglib.h
 */
 
 
@@ -286,12 +288,12 @@ HASRDECODER hASRDecoder;
             -input length and return value are in samples
           */
 
-            DSConvertFs((int16_t*)pAudioBuffer, sample_rate, up_factor, down_factor, delay_buffer, frame_size/2, 1);  /* when calling DSConvertFs() directly, length is specified in samples (note: last param is num_chan, set for mono, JHB Jul2019) */
+            DSConvertFs((int16_t*)pAudioBuffer, sample_rate, up_factor, down_factor, delay_buffer, frame_size/2, 1, NULL, 0, 0);  /* when calling DSConvertFs() directly, length is specified in samples (note: 4th to last param is num_chan, set for mono, JHB Jul2019) (last 3 params are user-defined filter coefficients, user-defined filter length, and flags, JHB Feb2022) */
          }
 
       /* encode audio */
 
-         pyld_len = DSCodecEncode(hCodec, 0, pAudioBuffer, group_audio_encoded_frame, frame_size*up_factor/down_factor, NULL);
+         pyld_len = DSCodecEncode(&hCodec, 0, pAudioBuffer, group_audio_encoded_frame, frame_size*up_factor/down_factor, 1, NULL);
 
          if (pyld_len < 0) {  /* if merge codec doesn't exist or has already been deleted */
             Log_RT(3, "WARNING: DSProcessGroupAudio() says DSCodecEncode() returns %d error code, hSession = %d, idx = %d \n", pyld_len, hSession, idx);

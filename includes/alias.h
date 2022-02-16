@@ -5,7 +5,7 @@
 
  Project: DirectCore lib and driver
 
- Copyright Signalogic Inc. 1994-2020
+ Copyright Signalogic Inc. 1994-2022
 
  Revision History
 
@@ -22,6 +22,7 @@
   Revised Aug 2017 JHB, protected some codes with #if __STDC_VERSION__ >= 199901L to allow compatibility with C90 sources (for example 3GPP codec sources)
   Revised Oct 2018 JHB, changed definition of "bool" for non C++ codes to uint8_t. See comments
   Modified Jan 2021 JHB, don't include minmax.h for C++ code using std::min and std::max
+  Modified Feb 2022 JHB, removed HFILE alias and modified streamTest.c to use FILE*, this was only app using HFILE, which is now defined in filelib.h for filelib file handles
 */
 
  
@@ -291,8 +292,10 @@
 
    #define BYTE unsigned char
 
+   #if 0  /* removed and modified streamTest.c to use FILE*, this was only app using HFILE. Now defined in filelib.h for filelib file handles, JHB Feb2022 */
    #define HFILE  FILE *
    #define HFILE_ERROR  (HFILE)-1
+   #endif
 
    #define _llseek fseek
    #define _lread(file, ptrdata, sizeinbytes) fread(ptrdata, sizeinbytes, 1, file)

@@ -448,7 +448,7 @@ pthread_t     thread;
 
       printf("Loading input video data from file %s... \n", structype(uFlags, pAppParams, [0].Video.inputFilename));
 
-      if ((numBytes = DSLoadDataFile(CPU_mode & CPUMODE_CPU ? DS_GM_HOST_MEM : dpHandle, NULL, structype(uFlags, pAppParams, [0].Video.inputFilename), loadDataAddr, 0, (uint32_t)NULL, NULL)) <= 0) {
+      if ((numBytes = DSLoadDataFile(CPU_mode & CPUMODE_CPU ? DS_GM_HOST_MEM : dpHandle, NULL, structype(uFlags, pAppParams, [0].Video.inputFilename), loadDataAddr, 0, (uint32_t)NULL, NULL, NULL)) <= 0) {
 
          printf("Input video file %s not found\n", structype(uFlags, pAppParams, [0].Video.inputFilename));
          return 0;

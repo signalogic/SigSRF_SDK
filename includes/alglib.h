@@ -5,7 +5,7 @@
 
   Projects: SigSRF, DirectCore
  
-  Copyright (C) Signalogic Inc. 2001-2020
+  Copyright (C) Signalogic Inc. 2001-2022
 
   Revision History
 
@@ -22,6 +22,7 @@
    Modified Jan 2019 CKJ, add DSConvertDataFormat() + DS_CONVERTDATA_xxx flags
    Modified Jul 2019 JHB, add defines for mediaTest segmentation and silence/sounds strip command line entry (-sN)
    Modified Oct 2019 JHB, add autoscaling in DSMergeStreamAudioEX() to avoid clipping, and DS_AUDIO_MERGE_NORESCALE flag to disable if needed
+   Modified Feb 2022 JHB, add user-defined filter params (pFilt and filt_len), add uFlags param and DS_FSCONV_xxx flags, change DSConvertFs() pData and pDelay params to void* to lay groundwork for floating-point filters
 */
 
 #ifndef _ALGLIB_H_
@@ -30,6 +31,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdint.h>
 
 /* alglib version string global var */
 
@@ -50,30 +53,36 @@ int c;
 /*
    DSConvertFs() - converts sampling rate of an input buffer.  Notes:
 
-    -up factor and down factor should be smallest possible integers.  For example if up sampling from 16 kHz to 24 kHz, up factor should be 3 and down factor should be 2.  The ratio of the up factor to down factors is the "conversion ratio"
+    -up factor and down factor should be smallest possible integers. For example if up sampling from 16 kHz to 24 kHz, up factor should be 3 and down factor should be 2. The ratio of up factor to down factor is the "conversion ratio"
 
     -input data length should be specified in samples
 
-    -returns an output data length in samples, calculated by multiplying input data length by the conversion ratio
+    -returns an output data length in samples, calculated by multiplying input data length by the conversion ratio. If DS_FSCONV_NO_INTERPOLATE is specified then the return value is the input data length multiplied by up_factor; if DS_FSCONV_NO_DECIMATE is specified then the return value is the input data length divided by down_factor. -1 is returned for error conditions
 
-   Note this API is different than DSConvertFsPacket() in pktlib, which performs Fs conversion based on termination info given in session definitions
+   Note this API is different than DSConvertFsPacket() in pktlib, which performs Fs conversion based on TERMINATION_INFO struct (shared_include/session.h) info given in session definitions
 */
 
-int DSConvertFs(int16_t*,   /* pointer to data */
-                int16_t,    /* sampling rate of data, in Hz */
-                int16_t,    /* up factor */    
-                int16_t,    /* down factor */
-                int16_t*,   /* pointer to delay values */
-                uint16_t,   /* data length, in samples */
-                uint16_t    /* num channels */
+int DSConvertFs(void* pData,         /* pointer to input and output data (processing is done in-place). Assumed to be interleaved by num chanenls for multichannel data */
+                int Fs,              /* sampling rate of data, in Hz */
+                int up_factor,       /* up factor */    
+                int down_factor,     /* down factor */
+                void* pDelay,        /* pointer to delay values (per channel, not interleaved). Delay values must be preserved between calls to DSConvertFs() */
+                int data_len,        /* data length, in samples */
+                int numChan,         /* num channels represented in input/output data */
+                void* pFilt,         /* pointer to user-defined filter coefficients. pFilt is NULL for typical telecom and audio Fs conversions*/
+                int filt_len,        /* user-defined filter length, not used unless pFilt is non-NULL */
+                unsigned int uFlags  /* flags */
                );
 
-int DSAgc(
-          float x[],     /* input/output array, single-precision float in, short int out */
+#define DS_FSCONV_FLOATING_POINT      0x100  /* if the DS_FSCONV_FLOATING_POINT flag is given then input/output data, delay values, and filter coefficient are single precision (32-bit) floating point, otherwise (no flag, which is the defaut) they are integer (16-bit) fixed point. Note - floating-point is in process of being added, JHB Feb2022 */
+#define DS_FSCONV_NO_INTERPOLATE      0x200  /* don't do interpolation (ignore up factor) */
+#define DS_FSCONV_NO_DECIMATE         0x400  /* dont do decimation (ignore down factor) */
+#define DS_FSCONV_NO_FILTER           0x800  /* don't perform filtering */
+
+int DSAgc(float x[],     /* input/output array, single-precision float in, short int out */
           float mem[],   /* per channel memory values of size 2, init to [0,0] */
           const short n  /* array size, in number of elements */
          );
-
 
 /* Following APIs require a chnum parameter that specifies a stream group owner */
  

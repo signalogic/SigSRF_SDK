@@ -6,7 +6,7 @@
 # 
 # Makefile for mediaTest streaming, transcoding, and audio test and measurement program
 #
-# Copyright (C) Signalogic Inc. 2015-2021
+# Copyright (C) Signalogic Inc. 2015-2022
 #
 # Revision History
 #
@@ -19,7 +19,7 @@
 #  Modified Jun 2018 CJ, add checks for non-installed codec libs, omit them in the link if needed
 #  Modified Oct 2018 JHB, add install checks for AMR NB, AMR WB, and AMR WB+ codecs
 #  Modified Oct 2018 JHB, add -map linker option (which requires -Xlinker option to be recognized)
-#  Modified Nov 2018 JHB, add streamlib
+#  Modified Nov 2018 JHB, add streamlib so mediaMin files can link
 #  Modified Dec 2018 JHB, remove unused AMR-WB+ common lib
 #  Modified Mar 2019 JHB, add cmd line options to configure ALSA and codec libs linked in customer demo executables.  This is for cases where the customer does not have gcc tools (or does but doesn't want to build) and they will run executables built by Signalogic
 #  Modified Jul 2019 JHB, add -Wall to gcc flags
@@ -29,6 +29,7 @@
 #  Modified Jan 2021 JHB, change ALSA detection to look for /usr/include/alsa folder instead of /proc/asound. ALSA might be installed but not the dev version of ALSA, which has the header files
 #  Modified Jan 2021 JHB, add INSTALLPATH, add rpath linker options for version of Kaldi libs used by SigSRF and for ATLAS linear algebra / matrix lib (only if makefile detects Kaldi is installed)
 #  Modified Jan 2021 JHB, change c_mediamin_objects target to cpp_mediamin_objects, add cpp_sdp_objects target
+#  Modified Feb 2022 JHB, update comments
 
 # check make cmd line for "no_codecs" option
 

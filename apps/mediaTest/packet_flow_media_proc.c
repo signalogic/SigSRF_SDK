@@ -128,7 +128,8 @@
    Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
    Modified Mar 2021 JHB, change DSLogPacketTimeLossStats() to DSLogRunTimeStats(), incorporate use of DS_LOG_RUNTIME_STATS_XX flags
    Modified Jan 2022 JHB, fix "symbol size changed" linker build warnings in CentOS 8 g++ 8.3 by not including last_buffer_time, nMaxStreamDataAvailable, and uFramesDropped in __LIBRARYMODE__ build
-   Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for hSessionOwner ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized 
+   Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for hSessionOwner ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized
+   Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
 */
 
 #ifndef _GNU_SOURCE
@@ -3017,11 +3018,11 @@ pull:
    }
    #endif
 
-                           media_data_len = DSCodecDecode(hCodec, 0, pyld_ptr, media_data_buffer, pyld_len, NULL);
+                           media_data_len = DSCodecDecode(&hCodec, 0, pyld_ptr, media_data_buffer, pyld_len, 1, NULL);
 
                            if (media_data_len < 0) {
 
-                              Log_RT(2, "ERROR: pkt/media thread %d says DSCodecDecode() returned error condition, hSession = %d, chnum = %d, pyld_len = %d\n", thread_index, hSession, chnum, pyld_len);
+                              Log_RT(2, "ERROR: pkt/media thread %d says DSCodecDecode() returned error condition, hSession = %d, chnum = %d, pyld_len = %d, hCodec = %d \n", thread_index, hSession, chnum, pyld_len, hCodec);
                               break;  /* error condition */
                            }
                         }
@@ -3318,7 +3319,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                      /* Encode one or more raw audio frames */
 
-                        pyld_len = DSCodecEncode(hCodec_link, 0, stream_ptr, encoded_data_buffer, out_media_data_len, NULL);  /* Notes -- 1) Input media framesize can be either equal to a single framesize (depending on sampling
+                        pyld_len = DSCodecEncode(&hCodec_link, 0, stream_ptr, encoded_data_buffer, out_media_data_len, 1, NULL);  /* Notes -- 1) Input media framesize can be either equal to a single framesize (depending on sampling
                                                                                                                                              rate in use) or an integer multiple.  In the latter case, an RTP payload will be created
                                                                                                                                              created containing multiple frames
 
@@ -5253,7 +5254,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
                break;
             }
 
-            media_data_len = DSCodecDecode(hCodec, 0, pyld_ptr, media_data_buffer, pyld_len, NULL);
+            media_data_len = DSCodecDecode(&hCodec, 0, pyld_ptr, media_data_buffer, pyld_len, 1, NULL);
 
             if ((chnum = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, packet_length, &termInfo, NULL)) < 0)
             {
@@ -5271,7 +5272,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
          /* encode raw audio frame given by decoder */
 
-            pyld_len = DSCodecEncode(hCodec_link, 0, media_data_buffer, encoded_data_buffer, out_media_data_len, NULL);
+            pyld_len = DSCodecEncode(&hCodec_link, 0, media_data_buffer, encoded_data_buffer, out_media_data_len, 1, NULL);
 
          /* format packet */
 
@@ -5656,11 +5657,11 @@ organize_by_ssrc:
                #if 0  /* example of how to use voplib DSGetCodecInfo() with a codec handle, JHB Oct2020 */
                CODEC_PARAMS codec_params;  /* CODEC_PARAMS is in voplib.h */
                HCODEC hCodec = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC, 1, NULL);  /*  1 = decoder, 2 = encoder ... see pktlib.h comments */
-               DSGetCodecInfo(hCodec, DS_GC_CODECHANDLE, &codec_params);  /* voplib.h API */
+               DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE, &codec_params);  /* voplib.h API */
                strcpy(codec_name, codec_params.codec_name);
                // printf(" bit rate = %d, sampling rate = %d \n", codec_params.dec_params.bitRate, codec_params.dec_params.samplingRate);
                #else  /* or if codec type is already known and we just need the codec name... */
-               DSGetCodecName(termInfo.codec_type, codec_name, DS_GC_CODECTYPE);
+               DSGetCodecName(termInfo.codec_type, codec_name, DS_CODEC_INFO_TYPE);
                #endif
 
                add_stats_str(sessstr, MAX_STATS_STRLEN, " %d%s/%d/%s/%d", hSession, hSession == hSessionGroupOwner && !fShowOwnerOnce ? "(grp owner)" : "", c, codec_name, termInfo.bitrate);

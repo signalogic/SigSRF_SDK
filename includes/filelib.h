@@ -3,7 +3,7 @@
 
   Description:  File management library for various types of audio and waveform files, including header handling and manipulation for .wav, Hypersignal .tim, and Matlab (includes gateway function for MATLAB calls)
 
-  Copyright (c) 1993-2020 Signalogic, Inc.
+  Copyright (c) 1993-2022 Signalogic, Inc.
   All Rights Reserved
 
   Revision History
@@ -15,6 +15,7 @@
    Modified Jun 2017 JHB, DSWriteWvfrmHeader() returns number of bytes written (header length)
    Modified Apr 2018 JHB, added compression codes for AMRNB, AMRWB, MELPe, and EVS
    Modified Jan 2020 JHB, add MAXTHREADS definition and DSCreateFilelibThread()
+   Modified Feb 2022 JHB, add DS_ prefix to DSSeekPos() flags, add HFILE alias to HFILEW for app use, add DS_SEEKPOS_RETURN_BYTES flag for DSSeekPos()
 */
 
 /* temporary "strict" literals for BOOL and UINT */
@@ -68,9 +69,11 @@
 #define MAXFILECHANNELS          64
 #define MAXTHREADS               32    /* max application threads, see change in filemgr.cpp, JHB Jan2020 */
 
-#define START_POS                22    /* seek constants */
-#define END_POS                  23
-#define CURRENT_POS              24
+#define DS_START_POS             22    /* seek constants, add DS_ prefix and use with DSSeekPos(), JHB Feb2022 */
+#define DS_END_POS               23
+#define DS_CURRENT_POS           24
+#define DS_SEEKPOS_RETURN_BYTES  0x100  /* returns byte position instead of samples, for example header length instead of zero at start of a .wav file, JHB Feb2022 */
+#define DS_SEEKPOS_ITEM_MASK     0xff
 
 /*
 #define MAG                      0
@@ -191,6 +194,7 @@ DECLSPEC HWND LIBAPI DSInitFileLib();  /* Entry point code for DLL */
 #define long_t long   /* long_t will be 32 bits on 32-bit system, 64 bits on 64-bit system, JHB Jan2017 */
 
 typedef short int HFILEW;
+#define HFILE HFILEW  /* removed from alias.h so it's Ok to use for Linux, but WinXX would be a conflict, JHB Feb2022 */
 
 DECLSPEC short int LIBAPI DSOpenFile(LPCSTR, HFILEW); /* open / create File -> returns handle to file (returns 0 on error) */
 

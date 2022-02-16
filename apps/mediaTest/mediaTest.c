@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaTest.c
 
- Copyright (C) Signalogic Inc. 2015-2021
+ Copyright (C) Signalogic Inc. 2015-2022
  
  Description:
  
@@ -107,6 +107,7 @@
    Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0, include minmax.h (for min/max functions)
    Modified Jan 2021 JHB, improve error message output for invalid cmd line arguments, add some help text
    Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
+   Modified Feb 2022 JHB, insert NULLs for pFilelibHandle param in calls to DSLoadDataFile() in hwlib (a newly added param)
 */
 
 /* system header files */
@@ -660,7 +661,7 @@ short int*           pBuffer16 = NULL;
       
       printf("Loading %s to coCPU mem adddr 0x%llx\n", MediaParams[0].Media.inputFilename, (long long unsigned int)loadDataAddr);
 
-      numBytes = DSLoadDataFile((CPU_mode & CPUMODE_CPU) ? DS_GM_HOST_MEM : hCard, NULL, MediaParams[0].Media.inputFilename, loadDataAddr, 0, (uint32_t)NULL, NULL);
+      numBytes = DSLoadDataFile((CPU_mode & CPUMODE_CPU) ? DS_GM_HOST_MEM : hCard, NULL, MediaParams[0].Media.inputFilename, loadDataAddr, 0, (uint32_t)NULL, NULL, NULL);
 
       numFrames = numBytes / DSGetCompressedFramesize(DS_VOICE_CODEC_TYPE_EVS, MediaParams[0].Streaming.bitRate, HEADERFULL);  /* to-do, replace later with param from session config file, JHB Jan 2016 */
    }
@@ -680,7 +681,7 @@ short int*           pBuffer16 = NULL;
 
       if (strstr(tmpstr, ".WAV") != NULL) pMediaInfo = &MediaInfo;
 
-      numBytes = DSLoadDataFile((CPU_mode & CPUMODE_CPU) ? DS_GM_HOST_MEM : hCard, NULL, MediaParams[0].Media.inputFilename, loadDataAddr, 0, (uint32_t)NULL, pMediaInfo);
+      numBytes = DSLoadDataFile((CPU_mode & CPUMODE_CPU) ? DS_GM_HOST_MEM : hCard, NULL, MediaParams[0].Media.inputFilename, loadDataAddr, 0, (uint32_t)NULL, pMediaInfo, NULL);
 
       numFrames = numBytes / (MediaParams[0].samplingRate / 25);
    }
@@ -1170,8 +1171,8 @@ char              modestr[20], debugstr[100];
 
 /* code starts, display banner messages */
 
-  	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms, Rev 2.8, Copyright (C) Signalogic 2015-2021\n");
-   printf("  Libraries in use: DirectCore v%s, pktlib v%s, streamlib v%s, voplib v%s, diaglib v%s, cimlib v%s", HWLIB_VERSION, PKTLIB_VERSION, STREAMLIB_VERSION, VOPLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
+  	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms, Rev 2.9, Copyright (C) Signalogic 2015-2022\n");
+   printf("  Libraries in use: DirectCore v%s, pktlib v%s, streamlib v%s, voplib v%s, alglib v%s, diaglib v%s, cimlib v%s", HWLIB_VERSION, PKTLIB_VERSION, STREAMLIB_VERSION, VOPLIB_VERSION, ALGLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
 #if defined(_ALSA_INSTALLED_)
    printf(", aviolib v%s", AVIOLIB_VERSION);
 #endif

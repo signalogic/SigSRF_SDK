@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/include/hwlib.h
 
- Copyright (C) Signalogic Inc. 1994-2020
+ Copyright (C) Signalogic Inc. 1994-2022
 
  License
 
@@ -33,6 +33,7 @@
   Modified Sep 2019 JHB, use __builtin_ia32_rdtscp() and __builtin_ia32_rdtsc() to avoid including x86intrin.h, which seems to have gcc version (and maybe Linux version) compatibility issues
   Modified Jan 2020 JHB, add DS_DATAFILE_USESEM flag for use with DSSaveDataFile() and DSLoadDataFile()
   Modified Sep 2020 JHB, fix #pragma GCC diagnostic ignored "-pedantic", should be "-Wpedantic". This was causing a warning in gcc 9.3.0
+  Modified Feb 2022 JHB, add HFILE* param to DSLoadDataFile() to support optional use of filelib APIs while file is open
 */
  
 #ifndef _HWLIB_H_
@@ -49,6 +50,7 @@
 #include "enmgr.h"
 #include "boards.h"
 #include "sig_mc_hw.h"  /* c66x driver header file */
+#include "filelib.h"  /* HFILE definition, JHB Feb2022 */
 
 extern const char HWLIB_VERSION[256];
 
@@ -325,7 +327,7 @@ DECLSPEC UINT      LIBAPI DSRunDevices               (HCARD, QWORD);
 #define DSGetCoreStatus DSGetProcessorStatus
 
 /* memory and variable transfers, IEEE conversion */
-DECLSPEC INT       DSLoadDataFile                    (HCARD, FILE**, const char*, uintptr_t, UINT, UINT, PMEDIAINFO);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_OPEN flag), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
+DECLSPEC INT       DSLoadDataFile                    (HCARD, FILE**, const char*, uintptr_t, UINT, UINT, PMEDIAINFO, HFILE*);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_OPEN flag), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
 DECLSPEC INT       DSSaveDataFile                    (HCARD, FILE**, const char*, uintptr_t, UINT, UINT, PMEDIAINFO);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_CREATE or DS_OPEN flags), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
 
 DECLSPEC UINT      LIBAPI DSPutMem                   (HCARD, UINT, DWORD, UINT, void far*, DWORD);

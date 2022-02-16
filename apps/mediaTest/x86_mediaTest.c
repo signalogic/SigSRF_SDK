@@ -52,7 +52,7 @@
   Modified May-Jun 2018 CKJ - add support for AMR and AMR WB codecs
   Modified Jun 2018 JHB, integrate USB audio output
   Modified Jul 2018 JHB, packet_flow_media_proc(executionMode) function moved to separate file to support media thread and process execution.  executionMode can be app, thread, or process.  See also DSConfigMediaService() and its uControl and uFlags definitions in pktlib.h
-  Modified Oct 2018 JHB, add sample rate conversion for USB audio output, independent of waveform or USB audio input prior to codec processing.  Calculate separate period and buffer size parameters not dependent on those used for USB audio input.  Note that many USB audio devices, such as the Focusrite 2i2 used in Sig lab testing, support a minimum sample rate of 44.1 kHz.  For codec support, it helps a lot of the device supports 48 kHz
+  Modified Oct 2018 JHB, add sample rate conversion for USB audio output, independent of waveform or USB audio input prior to codec processing.  Calculate separate period and buffer size parameters not dependent on those used for USB audio input.  Note that many USB audio devices, such as the Focusrite 2i2 used in Sig lab testing, support a minimum sample rate of 44.1 kHz.  For codec support, it helps a lot if the device supports 48 kHz
   Modified Dec 2018 CKJ, add support for AMR-WB+ codec, including ".BIT" coded data file extension, variable encoder input framesize.  Pass &encOutArgs to DSCodecEncode() function
   Modified Dec 2018 JHB, adjust thread/core affinity for high capacity mediaTest -Et -tN mode testing (creates N mediaMin application threads)
   Modified Jul 2019 JHB, codecs now accessed via voplib API calls and CODEC_PARAMS struct.  XDAIS interface is now visibile from voplib and alglib but not applications
@@ -66,8 +66,11 @@
                          -tested with bandwidth efficient and octet aligned coded file format
                          -bug did not affect back-to-back encode/decode (i.e. audio to audio)
   Modified Apr 2021 JHB, fix issues with G726 uncompressed vs. compressed mode, retest all bitrates
-  Modified Jan 2022 JHB, use cmd line -dN flag to specify DS_CC_TRACK_USAGE_FLAG in DSCodecCreate()
-  Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for ret_val in x86_mediaTest() ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized 
+  Modified Jan 2022 JHB, use cmd line -dN flag to specify DS_CODEC_CREATE_TRACK_USAGE_FLAG in DSCodecCreate()
+  Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for ret_val in x86_mediaTest() ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized
+  Modified Feb 2022 JHB, fix issues with sampling rate conversion applied to multichannel data (i) fs_convert_delay_buf not declared correctly and (ii) num_samples used in DSConvertFs() was incorrectly divided by numChan
+  Modified Feb 2022 JHB, modify DSCodecEncode() and DSCodecDecode() to pass pointer to one or more codec handles and a num channels param. This enables multichannel encoding/decoding (e.g. stereo audio files) and simplifies concurrent codec instance test and measurement (e.g. 30+ codec instances within one thread or CPU core)
+  Modified Feb 2022 JHB, make responsive to -RN command line entry (repeat), with same specs as mediaMin. For example, for an encoder-decoder data flow, -R2 repeats the data flow twice, wrapping the input waveform file after each repeat
 */
 
 /* Linux header files */
@@ -115,9 +118,6 @@ const char* strrstr(const char* haystack, const char* needle);
 
 #define AUDIO_SAMPLE_SIZE  2       /* in bytes.  Currently all codecs take 16-bit samples.  Some like AMR require 14-bit left-justified within 16 bits */
 
-//unsigned int numChan;
-int numChan = 1;
-
 /* USB audio support enabled by default.  If command line input is given as -iusb0, -iusb1, etc then USB audio input is active; sampling rate, bitwidth, num channels, etc should be specified in session config file.  Comment this define to disable USB audio related code */
 
 #define ENABLE_USBAUDIO
@@ -151,6 +151,7 @@ snd_pcm_uframes_t buffer_size_USBAudio_output = period_size_USBAudio_output * nu
 snd_async_handler_t *pcm_callback_capture, *pcm_callback_playback;
 snd_pcm_hw_params_t* hw_params;
 
+int numChan = 1;  /* numChan is sitting out here because it's referred to in USBAudioXXX functions. To-do: fix this, JHB Feb2022 */
 
 void USBAudioCallbackCapture(snd_async_handler_t* pcm_callback) {	
 
@@ -437,22 +438,29 @@ uint8_t zerobuf[MAX_RAW_FRAME] = { 0 };
    return 1;
 }
 
+
 /* main function entry */
 
 void x86_mediaTest(void) {
 
    printf("x86 mediaTest start\n");
    
-   if (codec_test)
-   {
-      uint8_t in_buf[MAX_RAW_FRAME*24];  /* 24 is sampling rate conversion worst case:  192 kHz down to 8 kHz */
-      uint8_t coded_buf[MAX_CODED_FRAME], coded_buf_sav[MAX_CODED_FRAME];
-      uint8_t out_buf[MAX_RAW_FRAME*24] = { 0 };
+   if (codec_test) {
+
+      #define MAX_FS_CONVERT_MEDIATEST  160  /* mediaTest sampling rate conversion worst case:  44100 to/from 48000 kHz (was 24 for 8 to/from 192 kHz) */
+      #define MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE  (MAX_FS_CONVERT_MEDIATEST*4)  /* to limit stack usage, we define a "tradeoff size" between number of audio channels and worst-case Fs conversion, for example 4 channels at 44.1 <--> 48 kHz, or 100 channels at 8 <--> 48 kHz, etc */
+      uint8_t in_buf[MAX_RAW_FRAME*MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE*AUDIO_SAMPLE_SIZE];
+      uint8_t out_buf[MAX_RAW_FRAME*MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE*AUDIO_SAMPLE_SIZE] = { 0 };
+
+      uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN], coded_buf_sav[MAX_CODED_FRAME*MAX_AUDIO_CHAN];
+
       int ret_val = 0;
       int framesize = -1, i;
 
       FILE *fp_in = NULL, *fp_out = NULL;
+      HFILE hFile_in = (intptr_t)NULL;  /* filelib file handle, JHB Feb 2022 */
       int frame_count = 0;
+      bool fRepeatIndefinitely = (nRepeat == 0); /* nRepeat is initialized in cmd_line_interface.c from -RN cmd line entry (if no entry nRepeat = -1). See also mediaMin usage of nRepeat, JHB Feb2022 */
       char tmpstr[1024], tmpstr2[1024];
       codec_test_params_t  codec_test_params;
       char default_config_file[] = "session_config/codec_test_config";
@@ -461,7 +469,9 @@ void x86_mediaTest(void) {
       unsigned int inbuf_size;
       uint8_t* addr;
       char key;
-      unsigned int sampleRate_input = 0, sampleRate_output, sampleRate_codec = 8000;
+      unsigned int sampleRate_input = 0, sampleRate_output, sampleRate_codec = 8000, fs_divisor;
+      bool fConfig_vs_InputChanConflict = false;
+      char chanstr[100] = "";
       int input_framesize;  /* in bytes, determined by input sampling rate and codec or pass-thru framesize */
       int coded_framesize = 0;
       unsigned int __attribute__((unused)) output_framesize;  /* currently not used unless _ALSA_INSTALLED_ is defined, but likely to be used in the future */
@@ -486,8 +496,8 @@ void x86_mediaTest(void) {
       bool fFirstUSBAudioBuffer = false;
 #endif
 
-      short int fs_convert_delay_buf[MAX_SAMPLES_FRAME*24][8] = {{ 0 }};  /* 24 is sampling rate conversion worst case:  192 kHz down to 8 kHz */
-      short int fs_convert_delay_buf_output[MAX_SAMPLES_FRAME*24][8] = {{ 0 }};
+      short int fs_convert_delay_buf[MAX_AUDIO_CHAN][MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE] = {{ 0 }};
+      short int fs_convert_delay_buf_output[MAX_AUDIO_CHAN][MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE] = {{ 0 }};
       unsigned int upFactor, downFactor, upFactor_output, downFactor_output;
       float codec_frame_duration = 0;  /* in msec */
 
@@ -502,7 +512,7 @@ void x86_mediaTest(void) {
       bool fFramePrint = false;
 
       bool fCreateCodec = true;  /* set to false for pass-thru case (no codecs specified) */
-      HCODEC encoder_handle = 0, decoder_handle = 0;  /* 0 = not initialized, < 0 indicates an error, > 0 is valid codec handle */
+      HCODEC encoder_handle[MAX_AUDIO_CHAN] = { 0 }, decoder_handle[MAX_AUDIO_CHAN] = { 0 };  /* codec handles: 0 = not initialized, < 0 indicates an error, > 0 is valid codec handle. We are using arrays of handles here to allow multichannel audio processing */
       CODEC_PARAMS CodecParams = { 0 };  /* see voplib.h */
       CODEC_OUTARGS encOutArgs = { 0 };  /* currently only used by AMR-WB+, see comments below */
 
@@ -530,7 +540,6 @@ void x86_mediaTest(void) {
       struct timespec ts_pcap;
       uint64_t nsec_pcap = 0;
 
-
    /* start of code for codec test mode */
 
       printf("x86 codec test start, debug flags = 0x%llx \n", (unsigned long long)debugMode);
@@ -550,7 +559,7 @@ void x86_mediaTest(void) {
 
          if (inFileType != ENCODED) {
 
-            DSLoadDataFile(DS_GM_HOST_MEM, &fp_in, MediaParams[0].Media.inputFilename, (uintptr_t)NULL, 0, DS_OPEN, &MediaInfo);  /* for wav files, pMediaInfo will be initialized with wav file header info */
+            DSLoadDataFile(DS_GM_HOST_MEM, &fp_in, MediaParams[0].Media.inputFilename, (uintptr_t)NULL, 0, DS_OPEN, &MediaInfo, &hFile_in);  /* for wav files, pMediaInfo will be initialized with wav file header info */
          }
          else {
 
@@ -571,6 +580,7 @@ void x86_mediaTest(void) {
 
          if (MediaInfo.Fs > 0) sampleRate_input = MediaInfo.Fs;
          if (MediaInfo.NumChan > 0) numChan = MediaInfo.NumChan;
+//     printf(" .wav file numchan = %d \n", numChan);
       }
 
 #if defined(_ALSA_INSTALLED_) && defined(ENABLE_USBAUDIO)
@@ -686,6 +696,12 @@ void x86_mediaTest(void) {
          if (sampleRate_input == 0) sampleRate_input = sampleRate_output;  /* raw audio file with no header */
 
          numChan = codec_test_params.num_chan;  /* default is 1 if num_chan is not specified in the codec config file */
+
+         if (MediaInfo.NumChan > 0 && MediaInfo.NumChan != numChan) {  /* config file conflicts with input waveform header; we trust the latter, JHB Feb2022 */
+
+            numChan = MediaInfo.NumChan;
+            fConfig_vs_InputChanConflict = true;
+         }
 //printf("numChan = %d\n", numChan);
          printf("Opened config file: ");
       }
@@ -700,7 +716,7 @@ void x86_mediaTest(void) {
       #if 0  /* replaced by DSGetCodecName() in voplib */
       if (!get_codec_name(codec_test_params.codec_type, szCodecName)) {
       #else
-      if (DSGetCodecName(codec_test_params.codec_type, szCodecName, DS_GC_CODECTYPE) <= 0) {
+      if (DSGetCodecName(codec_test_params.codec_type, szCodecName, DS_CODEC_INFO_TYPE) <= 0) {
       #endif
 
          printf("Error: non-supported or invalid codec type found in config file\n");
@@ -709,7 +725,9 @@ void x86_mediaTest(void) {
 
       printf("codec = %s, ", szCodecName);
       if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) printf("%d bitrate, ", codec_test_params.bitrate);
-      printf("sample rate = %d Hz\n", sampleRate_output);
+      printf("sample rate = %d Hz, ", sampleRate_output);
+      if (fConfig_vs_InputChanConflict) sprintf(chanstr, "(note: input waveform header %d channels overrides config file value %d)", numChan, codec_test_params.num_chan);
+      printf("num channels = %d %s\n", codec_test_params.num_chan, chanstr);
 
       if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE && (int)codec_test_params.bitrate <= 0) {
 
@@ -915,23 +933,36 @@ void x86_mediaTest(void) {
 
          CodecParams.enc_params.frameSize = CodecParams.dec_params.frameSize = codec_frame_duration;  /* in msec */
          CodecParams.codec_type = codec_test_params.codec_type;
-         unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CC_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in mediaMin.h, JHB Jan2022 */
+         unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in mediaMin.h, JHB Jan2022 */
 
-         if ((inFileType != ENCODED) && (encoder_handle = DSCodecCreate(&CodecParams, DS_CC_CREATE_ENCODER | uFlags)) < 0) {
-            printf("codec test mode, failed to init encoder\n");
-            goto codec_test_cleanup;
-         }
+         for (i=0; i<numChan; i++) {
 
-         if ((outFileType != ENCODED) && (decoder_handle = DSCodecCreate(&CodecParams, DS_CC_CREATE_DECODER | uFlags)) < 0) {
-            printf("codec test mode, failed to init decoder\n");
-            goto codec_test_cleanup;
+            if ((inFileType != ENCODED) && (encoder_handle[i] = DSCodecCreate(&CodecParams, DS_CODEC_CREATE_ENCODER | uFlags)) < 0) {
+               printf("codec test mode, failed to init encoder\n");
+               goto codec_test_cleanup;
+            }
+
+            if ((outFileType != ENCODED) && (decoder_handle[i] = DSCodecCreate(&CodecParams, DS_CODEC_CREATE_DECODER | uFlags)) < 0) {
+               printf("codec test mode, failed to init decoder\n");
+               goto codec_test_cleanup;
+            }
          }
       }
 
-   /* set up and down factors for possible sampling rate conversion (applied if sampleRate_input != sampleRate_output) */
+   /* Sampling rate conversion setup. Note there are two (2) possible Fs conversion stages (i) before encoding (because encoder rates are limited) and (ii) after decoding (because output rates are limited for some reason, such as USB audio) */
 
+   /* set up and down factors for possible input sampling rate conversion (applied if sampleRate_input != sampleRate_output) */
+
+      #if 1  /* use glibc greatest common demoninator function, JHB Feb2022 */
+      fs_divisor = gcd(sampleRate_input, sampleRate_output);
+      upFactor = sampleRate_output / fs_divisor;
+      downFactor = sampleRate_input / fs_divisor;
+      #else
       upFactor = sampleRate_output > sampleRate_input ? sampleRate_output / sampleRate_input : 1;
       downFactor = sampleRate_input > sampleRate_output ? sampleRate_input / sampleRate_output : 1;
+      #endif
+
+   /* set up and down factors for possible output sampling rate conversion (applied if sampleRate_output != sampleRate_USBAudio) */
 
 #if defined(_ALSA_INSTALLED_) && defined(ENABLE_USBAUDIO)
       upFactor_output = sampleRate_USBAudio > sampleRate_output ? sampleRate_USBAudio / sampleRate_output : 1;
@@ -997,13 +1028,14 @@ void x86_mediaTest(void) {
       sprintf(szNumChan, "%d channel", numChan);
       if (numChan > 1) strcat(szNumChan, "s");
       strcpy(tmpstr2, "");
+
       if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) {
-         if (encoder_handle) strcpy(tmpstr, "encoder");
-         if (decoder_handle) sprintf(tmpstr2, "decoder framesize (bytes) = %d, ", coded_framesize);
+         if (encoder_handle[0]) strcpy(tmpstr, "encoder");
+         if (decoder_handle[0]) sprintf(tmpstr2, "decoder framesize (bytes) = %d, ", coded_framesize);
       }
       else strcpy(tmpstr, "pass-thru");
 
-      printf("  input framesize (samples) = %d, %s framesize (samples) = %d, %sinput Fs = %d (Hz), output Fs = %d (Hz), %s\n", input_framesize/AUDIO_SAMPLE_SIZE, tmpstr, inbuf_size/AUDIO_SAMPLE_SIZE, tmpstr2, sampleRate_input, sampleRate_output, szNumChan);
+      printf("  input framesize (samples) = %d, %s framesize (samples) = %d, %sinput Fs = %d Hz, output Fs = %d Hz, %s\n", input_framesize/AUDIO_SAMPLE_SIZE, tmpstr, inbuf_size/AUDIO_SAMPLE_SIZE, tmpstr2, sampleRate_input, sampleRate_output, szNumChan);
 
 #if defined(_ALSA_INSTALLED_) && defined(ENABLE_USBAUDIO)
 
@@ -1255,16 +1287,15 @@ void x86_mediaTest(void) {
       gettimeofday(&tv, NULL);
       t1 = (uint64_t)tv.tv_sec*1000000L + (uint64_t)tv.tv_usec;
 
-      if (encoder_handle && decoder_handle) printf("Running encoder-decoder data flow ...\n");
-      else if (encoder_handle) printf("Running encoder ...\n");
-      else if (decoder_handle) printf("Running decoder ...\n");
+      if (encoder_handle[0] && decoder_handle[0]) printf("Running encoder-decoder data flow ...\n");
+      else if (encoder_handle[0]) printf("Running encoder ...\n");
+      else if (decoder_handle[0]) printf("Running decoder ...\n");
       else printf("Running pass-thru ...\n");
 
       while (run) {
-
+loop:
          key = toupper(getkey());
-         if (key == 'Q')
-         {
+         if (key == 'Q') {  /* break out of while(run) loop */
             run = 0;
             break;
          }
@@ -1325,18 +1356,34 @@ PollBuffer:
 
                #define FILL_LAST_FRAME  /* if last frame is partial, zerofill, CKJ Dec 2018 */
                #ifdef FILL_LAST_FRAME
-               ret_val = DSLoadDataFile(DS_GM_HOST_MEM, &fp_in, NULL, (uintptr_t)in_buf, input_framesize*numChan, DS_READ, NULL);
-               if (ret_val > 0)
-               {
+               ret_val = DSLoadDataFile(DS_GM_HOST_MEM, &fp_in, NULL, (uintptr_t)in_buf, input_framesize*numChan, DS_READ, NULL, &hFile_in);
+ 
+               if (ret_val > 0) {
                   int i;
                   for (i = ret_val; i < input_framesize*numChan; i++) in_buf[i] = 0;  /* fill in last frame with zeros, if needed (if partial frame) */
                }
                else {
                   segmenter(SEGMENTER_CLEANUP, frame_count, codec_frame_duration, uStripFrame, 0, 0, &fp_out_segment, &MediaInfoSegment, &fp_out_concat, &MediaInfoConcat, &fp_out_stripped, &MediaInfoStripped);  /* clean up segmentation, if active. Note - segmenter() will return immediately if input segmentation is not active, JHB Apr2021 */
+
+                  if (fRepeatIndefinitely || --nRepeat >= 0) {  /* if repeat active, wrap waveform file, JHB Feb2022 */
+
+                     int64_t fpos = 0;
+
+                     #if 0  /* either of these work to get start of waveform file data, DSSeekPos() keeps the filelib fp up to date also in case other filelib operations are needed */
+                     if (hFile_in) fpos = DSGetWvfrmHeader(hFile_in, DS_GWH_HEADERLEN);  /* get header length, in bytes*/
+                     #else
+                     if (hFile_in) fpos = DSSeekPos(hFile_in, DS_START_POS | DS_SEEKPOS_RETURN_BYTES, 0);  /* seek to start of waveform file header, if applicable. Note that hFile_in is returned by DSLoadDataFile() with a DS_OPEN param, if the file is a supported waveform file type, JHB Feb2022 */
+                     #endif
+
+                     fseek(fp_in, fpos, SEEK_SET);  /* seek to fpos bytes after start of file */
+
+                     goto loop;  /* continue until user hits 'q' */
+                  }
+
                   break;  /* exit while loop */
                }
                #else
-               if ((ret_val = DSLoadDataFile(DS_GM_HOST_MEM, &fp_in, NULL, (uintptr_t)in_buf, input_framesize*numChan, DS_READ, NULL)) != input_framesize*numChan) break;
+               if ((ret_val = DSLoadDataFile(DS_GM_HOST_MEM, &fp_in, NULL, (uintptr_t)in_buf, input_framesize*numChan, DS_READ, NULL, &hFile_in)) != input_framesize*numChan) break;
                #endif
             }
 
@@ -1347,26 +1394,29 @@ PollBuffer:
             fflush(stdout);
             fFramePrint = true;
 
-         /* perform sample rate conversion if needed (DSConvertFs() is in alglib).  Notes:
+         /* perform sample rate conversion if needed.  Notes:
 
-              1) Sampling rate of output data is input rate * upFactor / downFactor
-
-              2) Data is processed in-place, so in_buf contains both input data and decimated or interpolated output data.  For interpolation case, in_buf must point to a buffer large enough to handle the increased amount of output data
+              -sampling rate of output data is input rate * upFactor / downFactor
+              -data is processed in-place, so in_buf contains both input data and decimated or interpolated output data. For interpolation case, in_buf must point to a buffer large enough to handle the increased amount of output data
+              -DSConvertFs() is in alglib
          */
-  
+
             if (sampleRate_input != sampleRate_output) {
 
-               int num_samples = input_framesize/numChan/AUDIO_SAMPLE_SIZE;
+               int num_samples = input_framesize/AUDIO_SAMPLE_SIZE;
 
                for (i=0; i<numChan; i++) {
 
-                  DSConvertFs(&((short int*)in_buf)[i],  /* pointer to data */
+                  DSConvertFs(&((short int*)in_buf)[i],  /* pointer to data. Multichannel data must be interleaved */
                               sampleRate_input,          /* sampling rate of data, in Hz */
                               upFactor,                  /* up factor */    
                               downFactor,                /* down factor */
-                              fs_convert_delay_buf[i],   /* pointer to delay values (this buffer has to be preserved between calls to DSConvertFs() so it must be per channel */
-                              num_samples,               /* data length, in samples */
-                              numChan);                  /* number of interleaved channels in the input data */
+                              fs_convert_delay_buf[i],   /* per-channel pointer to delay values, buffer must be preserved between calls to DSConvertFs() */
+                              num_samples,               /* data length per channel, in samples */
+                              numChan,                   /* number of interleaved channels in the input data */
+                              NULL,                      /* user-defined filter N/A */
+                              0,                         /* length of user-defined filter N/A */
+                              0);                        /* no flags */
                }
             }
 
@@ -1380,11 +1430,11 @@ PollBuffer:
                uStripFrame = STRIP_FRAME_SILENCE;
             }
 
-         /* call codec encoder if needed.  encOutArgs contains the number of samples needed for the next frame in encOutArgs.size (currently applies only to AMR-WB+, CKJ Dec 2018) */
+         /* call codec encoder if needed. encOutArgs contains the number of samples needed for the next frame in encOutArgs.size (currently applies only to AMR-WB+, CKJ Dec 2018) */
 
-            if (encoder_handle) {
+            if (encoder_handle[0]) {
 
-               coded_framesize = DSCodecEncode(encoder_handle, 0, in_buf, coded_buf, inbuf_size, &encOutArgs);  /* voplib API */
+               coded_framesize = DSCodecEncode(encoder_handle, 0, in_buf, coded_buf, inbuf_size, numChan, &encOutArgs);  /* call voplib codec encode API */
 
                #ifdef CODEC_FILE_DEBUG
                printf(" encode: duration = %d, uncompress = %d, coded frame size = %d \n", (int)codec_frame_duration, codec_test_params.uncompress, coded_framesize);
@@ -1561,7 +1611,7 @@ PollBuffer:
 
          /* call codec decoder if needed */
 
-            if (decoder_handle) {
+            if (decoder_handle[0]) {
 
 #ifdef _MELPE_INSTALLED_
                if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_MELPE && ((codec_test_params.bitDensity == 56) || (codec_test_params.bitDensity == 88))) {  /* special case for MELPe full path with packed bit densities.  MELPe supports packed bit densities that require fractional bytes split across frames */
@@ -1608,12 +1658,14 @@ PollBuffer:
 
                if (coded_framesize > 0 && !uStripFrame) {
 
-                  len = DSCodecDecode(decoder_handle, 0, coded_buf, out_buf, coded_framesize, NULL);  /* voplib API */
+                  len = DSCodecDecode(decoder_handle, 0, coded_buf, out_buf, coded_framesize, numChan, NULL);  /* call voplib codec decode API */
 
                   if (len < 0) {
                      fprintf(stderr, "DSCodecDecode() returns error %d, exiting test \n", len);
                      goto codec_test_cleanup;
                   }
+                  
+                  len *= numChan;  /* adjust for multichannel data before writing out to wav file or USB audio, JHB Feb2022 */
                }
                else len = 0;
             }
@@ -1682,7 +1734,10 @@ PollBuffer:
                   printf("\n");
                }
                #endif
-
+ #if 0
+ static bool fOnce2 = false;
+ if (!fOnce2) { printf(" before DSSaveDataFile, inbuf_size = %d, len = %d \n", inbuf_size, len); fOnce2 = true; }
+ #endif
                ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)addr, len, DS_WRITE, &MediaInfo);   /* DSSaveDataFile() returns bytes written */
 
                if (ret_val != len) {
@@ -1716,7 +1771,10 @@ PollBuffer:
                               downFactor_output,               /* down factor */
                               fs_convert_delay_buf_output[i],  /* pointer to delay values (this buffer has to be preserved between calls to DSConvertFs() so it must be per channel */
                               num_samples,                     /* data length, in samples */
-                              numChan);                        /* number of interleaved channels in the input data */
+                              numChan,                         /* number of interleaved channels in the input data */
+                              NULL,                            /* user-defined filter N/A */
+                              0,                               /* length of user-defined filter N/A */
+                              0);                              /* no flags */
                }
             }
          }
@@ -1767,11 +1825,13 @@ codec_test_cleanup:
 
       /* codec tear down / cleanup */
 
-      if (encoder_handle) DSCodecDelete(encoder_handle);
-      if (decoder_handle) DSCodecDelete(decoder_handle);
+      for (i=0; i<numChan; i++) {
+         if (encoder_handle[i]) DSCodecDelete(encoder_handle[i]);
+         if (decoder_handle[i]) DSCodecDelete(decoder_handle[i]);
+      }
 
       if (fp_in) {
-         if (inFileType != ENCODED) DSLoadDataFile(DS_GM_HOST_MEM, &fp_in, NULL, (uintptr_t)NULL, 0, DS_CLOSE, NULL);
+         if (inFileType != ENCODED) DSLoadDataFile(DS_GM_HOST_MEM, &fp_in, NULL, (uintptr_t)NULL, 0, DS_CLOSE, NULL, &hFile_in);
          else fclose(fp_in);
       }
 
@@ -1905,7 +1965,7 @@ codec_test_cleanup:
 
       while (parse_codec_params(fp_cfg, &ft_info) != -1) 
       {
-         if ((hCodec[nCodecs] = DSCodecCreate(&ft_info.term, DS_CC_CREATE_ENCODER | DS_CC_CREATE_DECODER | DS_CC_USE_TERMINFO)) < 0)
+         if ((hCodec[nCodecs] = DSCodecCreate(&ft_info.term, DS_CODEC_CREATE_ENCODER | DS_CODEC_CREATE_DECODER | DS_CODEC_CREATE_USE_TERMINFO)) < 0)
          {
             fprintf(stderr, "%s:%d: Failed to create codec\n", __FILE__, __LINE__);
             continue;
