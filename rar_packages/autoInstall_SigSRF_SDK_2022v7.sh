@@ -466,7 +466,7 @@ swInstall() {  # install Signalogic SW on specified path
 	echo "Installing SigSRF libs for packet handling, stream group processing, inference, diagnostic, etc..."
 	cd $installPath/Signalogic/DirectCore/lib/
 	for d in *; do
-		cd $d; "$cp_prefix"cp -p lib*.so /usr/lib; "$cp_prefix"cp -p lib*.a /usr/lib; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
+		cd $d; "$cp_prefix"cp -p lib*.so /usr/lib 2>/dev/null; "$cp_prefix"cp -p lib*.a /usr/lib 2>/dev/null; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
 	done
 
 	echo
