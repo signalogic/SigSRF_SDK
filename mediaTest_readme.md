@@ -645,7 +645,11 @@ To test max codec capacity, a 21 channel .wav file is provided in the Rar Packag
 	
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config
 
-On a Xeon E5-2660 0 @ 2.20GHz system, this test takes about 15 sec to encode/decode the 21 channels, so the max single core capacity is around 40 channels of encode + decode. Of course processing time varies depending on core type and speed.
+On a Xeon E5-2660 R0 @ 2.20GHz system, this test takes about 15 sec to encode/decode the 21 channels, so the max single core capacity is around 40 channels of encode + decode. Of course processing time varies depending on core type and speed. To make the test longer, the input waveform file can be "wrapped" using the repeat command line option, for example:
+
+    ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -R11
+
+which could extend the per-channel test time to about 5 minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that you should keep an eye on things, as a massive output .wav file will build up quickly.
 
 To help analyze audio quality, below is a table showing what is in each channel.
 	 
