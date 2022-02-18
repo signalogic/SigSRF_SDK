@@ -423,7 +423,7 @@ or
 
 ... depending on which EdgeStream app you want to run. The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
 
-To access pcap and media files output by EdgeStream demo apps inside the container -- for example to run WireShark -- you can WinSCP into the container with the following steps:
+To access pcap and media files output by EdgeStream apps inside the container -- for example to run WireShark -- you can WinSCP into the container with the following steps:
 
     docker-machine ls
 
