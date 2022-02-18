@@ -437,7 +437,7 @@ Note the container is configured for root privileges which makes modifying and r
 
 ### Ubuntu Docker Container Notes
 
-1) Ubuntu distro is 20.04.2. gcc/g++ 11.2.0 is installed
+1) Ubuntu distro is 20.04.2, with gcc/g++ 11.2.0 installed
 2) wget and unrar are installed, along with a symlink /usr/bin/g++ pointing to /gcc/bin/g++
 3) The base Ubuntu container comes from a repository hosted by user "gmao", who is associated with NASA, as shown below:
 
@@ -447,7 +447,7 @@ Note the container is configured for root privileges which makes modifying and r
 
 ### CentOS Docker Container Notes
 
-1) CentOS distro is 8.2.2004. gcc/g++ 8.3.1-5 is installed
+1) CentOS distro is 8.2.2004, with gcc/g++ 8.3.1-5 installed
 2) wget and unrar are installed, along with symlink /usr/bin/g++ pointing to /gcc/bin/g++
 3) The base CentOS container comes from a repository hosted by user "images4dev", as shown below:
 
@@ -458,13 +458,13 @@ Note the container is configured for root privileges which makes modifying and r
 <a name="RunNotes"></a>
 ## Run Notes
 
-Available reference applications are listed below.  The iaTest and paTest apps do not have a functionality limit.  mediaMin and mediaTest app functionality is limited as follows:
+Available reference applications are listed below.  The iaTest and paTest apps do not have a functionality limit. mediaMin and mediaTest app functionality is limited as follows:
 
    1) Data limit.  Processing is limited to 100,000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
 
    2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
 
-If you would prefer an evaluation version with increased concurrency limits for a trial period, [contact us](#DocumentationSupport). This requires a business case and possibly an NDA.
+If you would prefer an evaluation version with increased data and concurrency limits for a trial period, [contact us](#DocumentationSupport). This requires a business case and possibly an NDA.
 
 <a name="mediaMin_and_mediaTest"></a>
 ### mediaMin and mediaTest Reference Applications
