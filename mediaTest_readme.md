@@ -11,6 +11,8 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+4Q 2021 - 1Q2022 - testing with wide range of Ubuntu and CentOS and g++/gcc versions. Docker containers pre-configured to run SDK and demo programs, including speech recognition from RTP packet input
+
 1Q-2Q 2021 - encapsulated stream support, tested with OpenLI pcaps containing DER encoded HI3 intercept streams, per ETSI LI and ASN.1 standards
 
 1Q 2021 - real-time ASR option added to mediaMin command line. Kaldi ASR works on stream group outputs, after RTP decoding, stream merging and other signal processing. All codecs supported (narrowband codecs are up-sampled prior to ASR)
@@ -85,6 +87,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G729](#user-content-x86codecg729)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G726](#user-content-x86codecg726)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity Codec Test](#user-content-highcapacitycodectest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
 &nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#user-content-convertingpcaps2wav)<br/>
@@ -635,7 +638,18 @@ The following mediaTest command line G726 decodes from file to audio:
 ```C
 ./mediaTest -cx86 -ig726_40kbps_out.cod -og726_40kbps_out.wav -Csession_config/g726_40kbps_codec_test_config
 ```
+<a name"High Capacity Codec Test"></a>
+	
+### High Capacity Codec Test
 
+To test max codec capacity, a 21 channel .wav file is provided in the Rar Package and Docker containers. Each channel contains around 30 sec of wideband speech, music, various types of background noise, and other sounds. The following mediaTest command line runs an EVS encode-decode data flow on all 21 channels:
+	
+    ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config
+
+On a Xeon E5-2660 0 @ 2.20GHz system, this test takes about 15 sec to encode/decode the 21 channels, so the max single core capacity is around 40 channels of encode + decode. Of course processing time varies depending on core type and speed.
+
+To help analyze audio quality, below is a table showing what is in each channel.
+	 
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
 
