@@ -297,7 +297,7 @@ If no path is entered the default path is /usr/local. <i>Do not enter a path suc
   /root
 ```
 
-After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail).
+After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail). During the install, if g++/gcc build tools are not found on your system, the install script will ask permission to install them, and then build EdgeStream applications as part of the install process. This is important, as the EdgeStream app Makefiles look for packages like ALSA and Kaldi, and set compiler defines as needed.
 
 If at any time you want to abort the install and start over, press Ctrl-C.
 
@@ -403,7 +403,17 @@ Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo inst
 
     https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
 
-Note that the Rar Package install section above (e.g. downloading .rar files and running install script) does not apply as the Docker container is already fully configured. After running the container, change your current folder ...
+Note that the Rar Package install section above (e.g. downloading .rar files and running install script) does not apply as the Docker containers are already fully configured.
+
+After pulling the container, use the following run command:
+
+    docker run -it --cap-add=sys_nice signalogic/sigsrf_sdk_demo_ubuntu /bin/bash
+    
+or
+
+    docker run -it --cap-add=sys_nice signalogic/sigsrf_sdk_demo_centos /bin/bash
+    
+ After running the container, change your current folder ...
 
     cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest
 
@@ -421,7 +431,9 @@ To access pcap and media files output by EdgeStream demo apps inside the contain
     manager - hyperv Running tcp://192.168.111.63:2376 v1.13.0
     worker - hyperv Running tcp://192.168.111.64:2376 v1.13.0
 
-and then use the reported IP and port info inside the WinSCP client, with userid docker, and password tcuser. 
+and then use the reported IP and port info inside the WinSCP client, with userid docker, and password tcuser.
+
+Note the container is configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
 
 ### Ubuntu Docker Container Notes
 
