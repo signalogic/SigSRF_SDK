@@ -31,6 +31,7 @@
 #  Modified Jan 2022 JHB, add EdgeStream references
 #  Modified Jan 2022 JHB, mods for CentOS 8, remove reference to specific gcc version
 #  Modified Jan 2022 JHB, assume distro other than Ubunto or CentOS / RHEL as possible Ubuntu/Debian, let user know this is happening
+#  Modified Feb 2022 JHB, change lib* copy to lib*.so; lib*.a otherwise a files like lib_logging.c were getting copied to /usr/lib
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -465,7 +466,7 @@ swInstall() {  # install Signalogic SW on specified path
 	echo "Installing SigSRF libs for packet handling, stream group processing, inference, diagnostic, etc..."
 	cd $installPath/Signalogic/DirectCore/lib/
 	for d in *; do
-		cd $d; "$cp_prefix"cp -p lib* /usr/lib; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
+		cd $d; "$cp_prefix"cp -p lib*.so /usr/lib 2>/dev/null; "$cp_prefix"cp -p lib*.a /usr/lib 2>/dev/null; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
 	done
 
 	echo
