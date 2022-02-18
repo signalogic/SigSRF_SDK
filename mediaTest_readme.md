@@ -638,8 +638,7 @@ The following mediaTest command line G726 decodes from file to audio:
 ```C
 ./mediaTest -cx86 -ig726_40kbps_out.cod -og726_40kbps_out.wav -Csession_config/g726_40kbps_codec_test_config
 ```
-<a name"High Capacity Codec Test"></a>
-	
+<a name"HighCapacityCodecTest"></a>
 ### High Capacity Codec Test
 
 To test max codec capacity, a 21 channel .wav file is provided in the Rar Package and Docker containers. Each channel contains around 30 sec of wideband speech, music, various types of background noise, and other sounds. The following mediaTest command line runs an EVS encode-decode data flow on all 21 channels:
