@@ -86,8 +86,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MELPe](#user-content-x86codecmelpe)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G729](#user-content-x86codecg729)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G726](#user-content-x86codecg726)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity Codec Test](#user-content-highcapacitycodectest)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
 &nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#user-content-convertingpcaps2wav)<br/>
@@ -638,7 +638,7 @@ The following mediaTest command line G726 decodes from file to audio:
 ```C
 ./mediaTest -cx86 -ig726_40kbps_out.cod -og726_40kbps_out.wav -Csession_config/g726_40kbps_codec_test_config
 ```
-<a name"HighCapacityCodecTest"></a>
+<a name="HighCapacityCodecTest"></a>
 ### High Capacity Codec Test
 
 To test max codec capacity, a 21 channel .wav file is provided in the Rar Package and Docker containers. Each channel contains around 30 sec of wideband speech, music, various types of background noise, and other sounds. The following mediaTest command line runs an EVS encode-decode data flow on all 21 channels:
