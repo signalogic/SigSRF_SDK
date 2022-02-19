@@ -11,7 +11,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-4Q 2021 - 1Q2022 - testing with wide range of Ubuntu and CentOS and g++/gcc versions. Docker containers pre-configured to run SDK and demo programs, including speech recognition from RTP packet input
+4Q 2021 - 1Q2022 - testing with wide range of Ubuntu and CentOS and g++/gcc versions. Docker containers pre-configured to run SDK and demo programs, including speech recognition from UDP/RTP streams
 
 1Q-2Q 2021 - encapsulated stream support, tested with OpenLI pcaps containing DER encoded HI3 intercept streams, per ETSI LI and ASN.1 standards
 
@@ -645,14 +645,39 @@ To test max codec capacity, a 21 channel .wav file is provided in the Rar Packag
 	
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config
 
-On a Xeon E5-2660 R0 @ 2.20GHz system, this test takes about 15 sec to encode/decode the 21 channels, so the max single core capacity is around 40 channels of encode + decode. Of course processing time varies depending on core type and speed. To make the test longer, the input waveform file can be "wrapped" using the repeat command line option, for example:
+On a Xeon E5-2660 R0 @ 2.20GHz core, this test takes about 15 sec to encode/decode the 21 channels, so the max single core capacity is around 40 channels of encode + decode. Of course processing time varies depending on core type and speed. To make the test longer, the input waveform file can be "wrapped" using the repeat command line option, for example:
 
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -R11
 
-which could extend the per-channel test time to about 5 minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that you should keep an eye on things, as a massive output .wav file will build up quickly.
+which extends the test time to about 5 minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that then you should keep an eye on things, as a massive output .wav file will build up quickly.
 
-To help analyze audio quality, below is a table showing what is in each channel, along with sox commands for playing individual channels.
-	 
+To help analyze audio quality, below is a table showing what's in each channel, along with sox commands for playing individual channels.
+
+| Channel  | Content | Source .wav File |
+| ---------|-------- |------------------|
+| 1   | sine wave sweep | T02.wav |
+| 2   | sawtooth wave sweep | T03.wav |
+| 3   | Arabic speech (female) | T04.wav |
+| 4   | Arabic speech (male) | T05.wav |
+| 5   | English speech | T06.wav |
+| 6   | English speech | T07.wav |
+| 7   | Spanish speech | T08.wav |
+| 8   | French speech | T09.wav |
+| 9   | Chinese speech | T10.wav |
+| 10  | Japanese speech + noise | T11.wav |
+| 11  | English speech, very quiet | T12.wav |
+| 12  | English speech, very quiet with bursts of noise | T13.wav |
+| 13  | English speech | T14.wav |
+| 14  | Spanish speech + noise | T15.wav |
+| 15  | French speech + noise | T16.wav |
+| 16  | English speech (male) + noise | T17.wav |
+| 17  | English speech (male) | T18.wav |
+| 18  | Arabic speech (child) | T19.wav |
+| 19  | music, mix of languages, sounds, background noises | T20.wav |
+| 20  | silence | T21.wav |
+| 21  | Chinese speech (female) | T22.wav |
+
+
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
 
