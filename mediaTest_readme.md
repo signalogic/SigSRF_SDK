@@ -651,7 +651,7 @@ On a Xeon E5-2660 R0 @ 2.20GHz system, this test takes about 15 sec to encode/de
 
 which could extend the per-channel test time to about 5 minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that you should keep an eye on things, as a massive output .wav file will build up quickly.
 
-To help analyze audio quality, below is a table showing what is in each channel.
+To help analyze audio quality, below is a table showing what is in each channel, along with sox commands for playing individual channels.
 	 
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
