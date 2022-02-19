@@ -641,15 +641,15 @@ The following mediaTest command line G726 decodes from file to audio:
 <a name="HighCapacityCodecTest"></a>
 ### High Capacity Codec Test
 
-To test max codec capacity, a 21 channel .wav file is provided in the Rar Package and Docker containers. Each channel contains around 30 sec of wideband speech, music, various types of background noise, and other sounds. The following mediaTest command line runs an EVS encode-decode data flow on all 21 channels:
+To test max codec capacity, a 21 channel .wav file is provided in the Rar packages and Docker containers. Each channel contains from 10 to 30 sec of wideband speech, music, various types of background noise, and other sounds (note that all channels are extended to 30 sec to equal the longest duration channel). The following mediaTest command line runs an EVS encode-decode data flow on all 21 channels:
 	
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config
 
-On a Xeon E5-2660 R0 @ 2.20GHz core, this test takes about 15 sec to encode/decode the 21 channels, so the max single core capacity is around 40 channels of encode + decode. Of course processing time varies depending on core type and speed. To make the test longer, the input waveform file can be "wrapped" using the repeat command line option, for example:
+On a Xeon E5-2660 R0 @ 2.20GHz core, this test takes about 15 sec to encode/decode the 21 channels, so the max single core capacity is around 40 channels of encode + decode. Of course processing time varies depending on core type and speed. To make the test longer, for example to allow htop inspection of core activity and memory usage, the input waveform file can be "wrapped" using the repeat command line option, for example:
 
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -R11
 
-which extends the test time to about 5 minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that then you should keep an eye on things, as a massive output .wav file will build up quickly.
+which extends the test time to about 5 minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that then you should keep an eye on things, as a massive output .wav file will build up quickly !
 
 To help analyze audio quality, below is a table showing what's in each channel, along with sox commands for playing individual channels.
 
@@ -677,7 +677,7 @@ To help analyze audio quality, below is a table showing what's in each channel, 
 | 20  | silence | T21.wav |
 | 21  | Chinese speech (female) | T22.wav |
 
-To play an individual channel, either in the NchanXX.wav files, you can use sox commands, for example:
+To play an individual channel, either in the NchanXX.wav files, you can use sox commands; here are some examples using sox v14.4.2 for Win10:
 
     sox Nchan21.wav -t waveaudio remix 19
     sox Nchan21_evs.wav -t waveaudio remix 19
@@ -694,12 +694,12 @@ After entering one of the above commands, you should see sox output similar to:
 	
 Note that sox channels start with 1, if you specify 0 then sox auto-generates a "perfect silence" output.
 
-The source Tnn.wav files are 16 kHz 16-bit signed PCM format, originally published by ITU as part of the G.722.2 wideband codec standard.  Not all of the Tnn.wav files are included in the Rar packages or Docker containers. If you want a copy of these please contact Signalogic and let u know.
+The source Tnn.wav files are 16 kHz 16-bit signed PCM format, originally published by ITU as part of the G.722.2 wideband codec standard. Not all of the Tnn.wav files are included in the Rar packages or Docker containers, but you can create them by splitting them out for Nchan21.wav. If for some reason you need a copy from Signalogic please contact us and let us know.
 	
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
 
-As explained on the SigSRF page, coCPU refers to Texas Instruments, FPGA, neural net, or other non x86 CPUs available in a server, typically on a PCIe card.  coCPUs are typically used to (i) "front" incoming network or USB data and perform real-time, latency-sensitive processing, or (ii) accelerate computationally intensive operations (e.g. convolutions in a deep learning application).
+As explained on the [SigSRF page](https://github.com/signalogic/SigSRF_SDK), coCPU refers to Texas Instruments, FPGA, neural net, or other non x86 CPUs available in a server, typically on a PCIe card.  coCPUs are typically used to (i) "front" incoming network or USB data and perform real-time, latency-sensitive processing, or (ii) accelerate computationally intensive operations (e.g. convolutions in a deep learning application).
 
 For transcoding, coCPU cores can be used to achieve extremely high capacity per box, for example in applications where power consumption and/or box size is constrained.  The following command lines specify Texas Insstruments c66x coCPU cores <sup>1</sup>.  The first one does the same EVS WB test as above, and the second one does an EVS NB test.  Both produce .wav files that contain a variety of speech, music, and other sounds that demonstrate fidelity and high definition achieved by wideband EVS encoding:
 
