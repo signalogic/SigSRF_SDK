@@ -655,12 +655,12 @@ To help analyze audio quality, below is a table showing what's in each channel, 
 
 | Channel  | Content | Source .wav File |
 | ---------|-------- |------------------|
-| 1   | sine wave sweep | T02.wav |
-| 2   | sawtooth wave sweep | T03.wav |
+| 1   | sine wave sweep, loud | T02.wav |
+| 2   | sine wave sweep | T03.wav |
 | 3   | Arabic speech (female) | T04.wav |
 | 4   | Arabic speech (male) | T05.wav |
 | 5   | English speech | T06.wav |
-| 6   | English speech | T07.wav |
+| 6   | English speech, quiet | T07.wav |
 | 7   | Spanish speech | T08.wav |
 | 8   | French speech | T09.wav |
 | 9   | Chinese speech | T10.wav |
@@ -677,12 +677,12 @@ To help analyze audio quality, below is a table showing what's in each channel, 
 | 20  | silence | T21.wav |
 | 21  | Chinese speech (female) | T22.wav |
 
-To play an individual channel, either in the Nchan21.wav file or Nchan21_evs.wav file, you can use sox commands, for example:
+To play an individual channel, either in the NchanXX.wav files, you can use sox commands, for example:
 
     sox Nchan21.wav -t waveaudio remix 19
     sox Nchan21_evs.wav -t waveaudio remix 19
 
-After entering one of the above commands, you should see output similar to:
+After entering one of the above commands, you should see sox output similar to:
 
      File Size: 19.7M
       Bit Rate: 5.38M
@@ -692,7 +692,9 @@ After entering one of the above commands, you should see output similar to:
     Replaygain: off
       Duration: 00:00:29.34
 	
-Note that sox channels start with 1, if you specify 0 then sox generates a "perfect silence" output.
+Note that sox channels start with 1, if you specify 0 then sox auto-generates a "perfect silence" output.
+
+The source Tnn.wav files are 16 kHz 16-bit signed PCM format, originally published by ITU as part of the G.722.2 wideband codec standard.  Not all of the Tnn.wav files are included in the Rar packages or Docker containers. If you want a copy of these please contact Signalogic and let u know.
 	
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
