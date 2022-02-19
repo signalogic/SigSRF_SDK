@@ -677,7 +677,23 @@ To help analyze audio quality, below is a table showing what's in each channel, 
 | 20  | silence | T21.wav |
 | 21  | Chinese speech (female) | T22.wav |
 
+To play an individual channel, either in the Nchan21.wav file or Nchan21_evs.wav file, you can use sox commands, for example:
 
+    sox Nchan21.wav -t waveaudio remix 19
+    sox Nchan21_evs.wav -t waveaudio remix 19
+
+After entering one of the above commands, you should see output similar to:
+
+     File Size: 19.7M
+      Bit Rate: 5.38M
+      Encoding: Signed PCM
+      Channels: 21 @ 16-bit
+    Samplerate: 16000Hz
+    Replaygain: off
+      Duration: 00:00:29.34
+	
+Note that sox channels start with 1, if you specify 0 then sox generates a "perfect silence" output.
+	
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
 
