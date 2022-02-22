@@ -700,8 +700,12 @@ Below is an htop screencap showing CPU core consumption during a codec max capac
 	
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/codec_max_capacity_test.png" width="800" alt="Measuring codec max capacity CPU usage with htop" title="Measuring codec max capacity CPU usage with htop"/></br>
 
-Note the highlighted CPU and memory usage display areas, showing 100% core usage and about 18.6 kB memory usage for 21 EVS encoder and 21 EVS decoder instances.
-	
+Note the highlighted CPU and memory usage display areas, showing 100% core usage and approx 18.6 MB memory usage for mediaTest (audio buffers etc) and 21 EVS encoder and decoder instances. To see exact codec memory usage stats, the ENABLE_MEM_STATS flag can be set in the command line debug flags option:
+
+    ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -d0x80000000
+    
+ Debug flags options are defined in cmd_line_debug_flags.h.
+
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
 
