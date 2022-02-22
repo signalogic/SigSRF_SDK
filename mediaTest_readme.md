@@ -694,7 +694,7 @@ After entering one of the above commands, you should see sox output similar to:
 	
 Note that sox channels start with 1, if you specify 0 then sox auto-generates a "perfect silence" output.
 
-The source Tnn.wav files are 16 kHz 16-bit signed PCM format, originally published by ITU as part of the G.722.2 wideband codec standard. Not all of the Tnn.wav files are included in the Rar packages or Docker containers, but you can create them by splitting them out for Nchan21.wav. If for some reason you need a copy from Signalogic please contact us and let us know.
+The source Tnn.wav files are 16 kHz 16-bit signed PCM format, originally published by ITU as part of the G.722.2 wideband codec standard. Not all of the Tnn.wav files are included in the Rar packages or Docker containers, but you can create them by splitting them out of Nchan21.wav with sox commands. If you need a copy from Signalogic please contact us and let us know.
 	
 Below is an htop screencap showing CPU core consumption during a codec max capacity test:
 	
