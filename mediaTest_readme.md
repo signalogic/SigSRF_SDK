@@ -696,11 +696,11 @@ Note that sox channels start with 1, if you specify 0 then sox auto-generates a 
 
 The source Tnn.wav files are 16 kHz 16-bit signed PCM format, originally published by ITU as part of the G.722.2 wideband codec standard. Not all of the Tnn.wav files are included in the Rar packages or Docker containers, but you can create them by splitting them out for Nchan21.wav. If for some reason you need a copy from Signalogic please contact us and let us know.
 	
-Below is an htop screencap showing 100% core consumption during a codec max capacity test:
+Below is an htop screencap showing CPU core consumption during a codec max capacity test:
 	
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/codec_max_capacity_test.png" width="800" alt="Measuring codec max capacity CPU usage with htop" title="Measuring codec max capacity CPU usage with htop"/></br>
 
-Note the highlighted CPU and memory usage display areas. The example in the the sreencap is for the 21 channel mediaTest command line above, showing memory usage of 18.6 kB for 21 EVS encoder and 21 EVS decoder instances.
+Note the highlighted CPU and memory usage display areas, showing 100% core usage and about 18.6 kB memory usage for 21 EVS encoder and 21 EVS decoder instances.
 	
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
