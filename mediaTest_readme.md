@@ -704,7 +704,7 @@ Note the highlighted CPU and memory usage display areas, showing 100% core usage
 
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -d0x80000000
     
- Debug flags options are defined in cmd_line_debug_flags.h.
+ Debug flag options are defined in cmd_line_debug_flags.h.
 
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
