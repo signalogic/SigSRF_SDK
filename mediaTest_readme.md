@@ -698,7 +698,9 @@ The source Tnn.wav files are 16 kHz 16-bit signed PCM format, originally publish
 	
 Below is an htop screenca showing 100% core consumption during a codec max capacity test:
 	
-![Codec Max Capacity Test CPU Usage](https://github.com/signalogic/SigSRF_SDK/blob/master/images/codec_max_capacity_test_sm.png?raw=true "Measuring codec max capacity CPU usage with htop")
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/codec_max_capacity_test.png width="800"> alt="Measuring codec max capacity CPU usage with htop" title="Measuring codec max capacity CPU usage with htop"/></br>
+
+Note the highlighted areas and memory usage of 309 MByte for 21 encoder and 21 decoder instances.
 	
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
