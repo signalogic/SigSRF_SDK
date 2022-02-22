@@ -700,7 +700,7 @@ Below is an htop screencap showing 100% core consumption during a codec max capa
 	
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/codec_max_capacity_test.png" width="800" alt="Measuring codec max capacity CPU usage with htop" title="Measuring codec max capacity CPU usage with htop"/></br>
 
-Note the highlighted CPU usage display areas and memory usage of 18.6 kB for 21 encoder and 21 decoder instances.
+Note the highlighted CPU and memory usage display areas. The example in the the sreencap is for the 21 channel mediaTest command line above, showing memory usage of 18.6 kB for 21 EVS encoder and 21 EVS decoder instances.
 	
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
