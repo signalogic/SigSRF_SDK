@@ -705,6 +705,12 @@ Note the highlighted CPU and memory usage display areas, showing 100% core usage
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -d0x80000000
     
  Debug flag options are defined in cmd_line_debug_flags.h.
+ 
+ Below is an htop screencap showing CPU core consumption during a multithreaded codec max capacity test:
+	
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/codec_max_capacity_test_multithread.png" width="800" alt="Multithread measurement of codec max capacity CPU usage with htop" title="Multithread measurement of codec max capacity CPU usage with htop"/></br>
+
+Again note the highlighted CPU and memory usage display areas, showing 100% core usage across two threads, for a total of 42 EVS encoder instances and 42 decoder instances.
 
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
