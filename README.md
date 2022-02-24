@@ -31,7 +31,7 @@
 <a name="Overview"></a>
 # EdgeStream™ and SigSRF Overview
 
-SigSRF is a series of modules (libraries) and EdgeStream™ is a combination of SigSRF and applications that use SigSRF APIs. SRF stands for Streaming Resourcing Functions.
+SigSRF is a series of modules (libraries) and [EdgeStream™](https://signalogic.com/edgestream) is a combination of SigSRF and applications that use SigSRF APIs. SRF stands for Streaming Resourcing Functions.
 
 The combined EdgeStream + SigSRF SDK introduces a scalable approach to telecom, media, HPC, and AI servers.  The basic concept is to scale between cloud, private cloud, and Edge and IoT servers, while maintaining a cloud programming model.
 
