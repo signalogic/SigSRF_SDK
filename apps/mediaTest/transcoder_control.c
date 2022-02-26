@@ -9,7 +9,7 @@ Description:
     - session tear down
     - additional control plane message passing
 
- Copyright (C) Signalogic Inc. 2015-2021
+ Copyright (C) Signalogic Inc. 2015-2022
 
  Revision History
  
@@ -29,6 +29,7 @@ Description:
   Modified Dec 2018 CKJ, add codec config file fields to support AMR-WB+, including "limiter", "low_complexity", "isf", "mode", and "bitrate_plus"
   Modified Jan 2020 JHB, add default settings for TERM_PKT_REPAIR_ENABLE and max_pkt_repair_ptimes
   Modified Apr 2021 JHB, add parsing of "header_format" for codec config files. This currently applies to AMR and EVS
+  Modified Feb 2022 JHB, fix issues with comments and extra whitespace in codec config files, update other config/session file parsing with these changes also (look for JHB Feb2022)
 */
 
 #include "mediaTest.h"
@@ -726,28 +727,24 @@ int parse_session_config(FILE *fp, SESSION_DATA *params)
 
    while (1) 
    {
-      memset(string, 0, 1024);
-      if (fgets(string, 1024, fp) == NULL)
-         return -1;
+      memset(string, 0, sizeof(string));
+      if (fgets(string, sizeof(string), fp) == NULL) return -1;
 
       /* remove comments */
       cmt_str = strchr(string, '#');
       if(cmt_str != NULL) memset(cmt_str, 0, strlen(cmt_str));
 
       /* skip empty lines */
-      if ((strlen(string) == 0) || (strcmp(string,"\n") == 0))
-         continue;
+      if ((strlen(string) == 0) || (strcmp(string,"\n") == 0)) continue;
 
       /* check for start of session data block */
-      if (strstr(string,"start_of_session_data") || strstr(string,"session_data_start"))
-         found_start = 1;
+      if (strstr(string,"start_of_session_data") || strstr(string,"session_data_start")) found_start = 1;
 
       /* skip all lines until the start of a session data block is found */
       if (!found_start) continue;
 
       /* check for end of session data block */
-      if (strstr(string,"end_of_session_data") || strstr(string,"session_data_end"))
-         break;
+      if (strstr(string,"end_of_session_data") || strstr(string,"session_data_end")) break;
 
       len = strlen(string);
 
@@ -755,9 +752,9 @@ int parse_session_config(FILE *fp, SESSION_DATA *params)
       if (len > 1 && (string[len-1] == 0x0A || string[len-1] == 0x0D)) string[len-1] = '\0'; /* check for CR or LF as last char in string */
       if (len > 2 && string[len-2] == 0x0D) string[len-2] = '\0'; /* check for CR as 2nd to last char in string */
       
-      name = strtok_r((char *)&string, "=", &value);
+      str_remove_whitespace(string);  /* added CKJ Aug2017. Process string prior to searching for =, in case of trailing whitespace after removing comment, JHB Feb2022 */
 
-      str_remove_whitespace(value);  /* added CKJ Aug2017 */
+      name = strtok_r((char*)&string, "=", &value);
 
       parse_session_config_line(name, value, params);
    }
@@ -838,28 +835,24 @@ int parse_codec_params(FILE *fp, FRAME_TEST_INFO *info)
 
    while (1) 
    {
-      memset(string, 0, 1024);
-      if (fgets(string, 1024, fp) == NULL)
-         return -1;
+      memset(string, 0, sizeof(string));
+      if (fgets(string, sizeof(string), fp) == NULL) return -1;
 
       /* remove comments */
       cmt_str = strchr(string, '#');
-      if(cmt_str != NULL) memset(cmt_str, 0, strlen(cmt_str));
+      if (cmt_str != NULL) memset(cmt_str, 0, strlen(cmt_str));
 
       /* skip empty lines */
-      if ((strlen(string) == 0) || (strcmp(string,"\n") == 0))
-         continue;
+      if ((strlen(string) == 0) || (strcmp(string,"\n") == 0)) continue;
       
       /* check for start of codec data block */
-      if (strstr(string,"start_of_codec_data") || strstr(string,"codec_data_start"))
-         found_start = 1;
+      if (strstr(string,"start_of_codec_data") || strstr(string,"codec_data_start")) found_start = 1;
       
       /* skip all lines until the start of a codec data block is found */
       if (!found_start) continue;
       
       /* check for end of codec data block */
-      if (strstr(string,"end_of_codec_data") || strstr(string,"codec_data_end"))
-         break;
+      if (strstr(string,"end_of_codec_data") || strstr(string,"codec_data_end")) break;
 
       len = strlen(string);
       
@@ -867,9 +860,9 @@ int parse_codec_params(FILE *fp, FRAME_TEST_INFO *info)
       if (len > 1 && (string[len-1] == 0x0A || string[len-1] == 0x0D)) string[len-1] = '\0'; /* check for CR or LF as last char in string */
       if (len > 2 && string[len-2] == 0x0D) string[len-2] = '\0'; /* check for CR as 2nd to last char in string */
 
-      name = strtok_r((char *)&string, "=", &value);
+      str_remove_whitespace(string);  /* added CKJ Aug2017. Process string prior to searching for =, in case of trailing whitespace after removing comment, JHB Feb2022 */
 
-      str_remove_whitespace(value);  /* added CKJ Aug2017 */
+      name = strtok_r((char*)&string, "=", &value);
 
       parse_term_data(name, value, info);
    }
@@ -942,7 +935,7 @@ static void parse_codec_test_data(char *name, char *value, codec_test_params_t *
 void parse_codec_test_params(FILE *fp, codec_test_params_t *params)
 {
    char *name, *cmt_str;
-   char *value, string[200];
+   char *value, string[1024];
    int len;
 
    params->codec_type = -1;  /* if mediaTest is run with old session config files that have a bitrate specified but not the codec type, then we default to EVS.  Note that codec_type can be "NONE" for pass-thru situations, for example no encoding, USB audio saved to wav file.  JHB Mar 2018 */
@@ -951,15 +944,15 @@ void parse_codec_test_params(FILE *fp, codec_test_params_t *params)
 
    while (1) 
    {
-      if (fgets(string, 100, fp) == NULL) break;
+      memset(string, 0, sizeof(string));
+      if (fgets(string, sizeof(string), fp) == NULL) break;
 
       /* remove comments */
       cmt_str = strchr(string, '#');
       if(cmt_str != NULL) memset(cmt_str, 0, strlen(cmt_str));
 
-      /* skip empty lines and comments */
-      if ((strcmp(string,"\n") == 0) || strstr(string,"#"))
-         continue;
+      /* skip empty lines */
+      if ((strlen(string) == 0) || (strcmp(string,"\n") == 0)) continue;
 
       len = strlen(string);
 
@@ -967,9 +960,9 @@ void parse_codec_test_params(FILE *fp, codec_test_params_t *params)
       if (len > 1 && (string[len-1] == 0x0A || string[len-1] == 0x0D)) string[len-1] = '\0'; /* check for CR or LF as last char in string */
       if (len > 2 && string[len-2] == 0x0D) string[len-2] = '\0'; /* check for CR as 2nd to last char in string */
 
-      name = strtok_r((char *)&string, "=", &value);
+      str_remove_whitespace(string);  /* added CKJ Aug2017. Process string prior to searching for =, in case of trailing whitespace after removing comment, JHB Feb2022 */
 
-      str_remove_whitespace(value);  /* added CKJ Aug2017 */
+      name = strtok_r((char*)&string, "=", &value);
 
       parse_codec_test_data(name, value, params);
    }
@@ -1202,28 +1195,24 @@ static int parse_session_params(FILE *fp, session_params_t *params)
 
    while (1) 
    {
-      memset(string, 0, 1024);
-      if (fgets(string, 1024, fp) == NULL)
-         return -1;
+      memset(string, 0, sizeof(string));
+      if (fgets(string, sizeof(string), fp) == NULL) return -1;
 
       /* remove comments */
       cmt_str = strchr(string, '#');
       if(cmt_str != NULL) memset(cmt_str, 0, strlen(cmt_str));
 
       /* skip empty lines */
-      if ((strlen(string) == 0) || (strcmp(string,"\n") == 0))
-         continue;
+      if ((strlen(string) == 0) || (strcmp(string,"\n") == 0)) continue;
 
       /* check for start of session data block */
-      if (strstr(string,"start_of_session_data") || strstr(string,"session_data_start"))
-         found_start = 1;
+      if (strstr(string,"start_of_session_data") || strstr(string,"session_data_start")) found_start = 1;
 
       /* skip all lines until the start of a session data block is found */
       if (!found_start) continue;
 
       /* check for end of session data block */
-      if (strstr(string,"end_of_session_data") || strstr(string,"session_data_end"))
-         break;
+      if (strstr(string,"end_of_session_data") || strstr(string,"session_data_end")) break;
 
       len = strlen(string);
 
@@ -1231,9 +1220,9 @@ static int parse_session_params(FILE *fp, session_params_t *params)
       if (len > 1 && (string[len-1] == 0x0A || string[len-1] == 0x0D)) string[len-1] = '\0'; /* check for CR or LF as last char in string */
       if (len > 2 && string[len-2] == 0x0D) string[len-2] = '\0'; /* check for CR as 2nd to last char in string */
 
-      name = strtok_r((char *)&string, "=", &value);
+      str_remove_whitespace(string);  /* added JHB Jun2016 */
 
-      str_remove_whitespace(value);  /* added JHB Jun2016 */
+      name = strtok_r((char*)&string, "=", &value);
 
       parse_session_data(name, value, params);
    }
