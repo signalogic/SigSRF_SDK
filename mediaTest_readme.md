@@ -673,7 +673,7 @@ To make the test longer, for example to allow htop inspection of core activity a
 
 which extends the test time to about 5 minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that then you should keep an eye on things, as a massive output .wav file will build up quickly !
 	
-The commands below run the same test with the SigSRF AMR-WB codec:
+The commands below run the 21-channel wav file encode + decode test with the SigSRF AMR-WB codec:
 
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_amrwb.wav -Csession_config/amrwb_codec_test_config
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_amrwb.wav -Csession_config/amrwb_codec_test_config_no_vad
@@ -693,7 +693,7 @@ Opened config file: codec = AMR-WB, 23850 bitrate, sample rate = 16000 Hz, num c
 Opened output audio file Nchan21_amrwb.wav
 Running encoder-decoder data flow ...
 Processing frame 1467...
-Run-time: 12.922845s
+Run-time: 12.880760s
 x86 codec test end
 x86 mediaTest end
 ```
