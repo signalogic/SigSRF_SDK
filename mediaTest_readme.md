@@ -663,7 +663,7 @@ Processing frame 1467...
 Run-time: 15.406819s
 x86 codec test end
 x86 mediaTest end
-```C
+```
 	
 In this example, the test takes about 15 sec to encode/decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 40 channels of encode + decode to stay in real-time. Of course processing time varies depending on your system's core type and speed.
 	
@@ -696,7 +696,7 @@ Processing frame 1467...
 Run-time: 12.922845s
 x86 codec test end
 x86 mediaTest end
-```C
+```
 
 In the above example, the test takes about 13 sec to encode/decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 48 channels of encode + decode to stay in real-time. Of course processing time varies depending on your system's core type and speed.
 
