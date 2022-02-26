@@ -700,7 +700,7 @@ x86 mediaTest end
 
 In the above example, the test takes about 13 sec to encode/decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 48 channels of encode + decode to stay in real-time. Of course processing time varies depending on your system's core type and speed.
 
-To help analyze audio quality, below is a table showing what's in each channel, along with sox commands for playing individual channels.
+To help analyze audio quality, below is a table showing what's in each channel of NChan21.wav, along with sox commands for playing individual channels.
 
 | Channel  | Content | Source .wav File |
 | ---------|-------- |------------------|
