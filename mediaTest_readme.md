@@ -645,11 +645,60 @@ To test max codec capacity, a 21 channel .wav file is provided in the Rar packag
 	
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config
 
-On a Xeon E5-2660 R0 @ 2.20GHz core, this test takes about 15 sec to encode/decode the 21 channels, so the max single core capacity is around 40 channels of encode + decode. Of course processing time varies depending on core type and speed. To make the test longer, for example to allow htop inspection of core activity and memory usage, the input waveform file can be "wrapped" using the repeat command line option, for example:
+Running the above command on a Xeon E5-2660 R0 @ 2.20GHz core gives display output similar to:
+
+```C	
+Running on x86 cores, no coCPU cores specified
+x86 mediaTest start
+x86 codec test start, debug flags = 0x0
+INFO: DSAssignPlatform() system CPU architecture supports rdtscp instruction, TSC integrity monitoring enabled
+INFO: DSConfigVoplib() voplib and codecs initialized, flags = 0x1d
+Opened audio input file test_files/Nchan21.wav
+Opening codec config file: session_config/evs_16kHz_13200bps_config
+Opened config file: codec = EVS, 13200 bitrate, sample rate = 16000 Hz, num channels = 1 (note: input waveform header 21 channels overrides config file value 1)
+  input framesize (samples) = 320, encoder framesize (samples) = 320, decoder framesize (bytes) = 34, input Fs = 16000 Hz, output Fs = 16000 Hz, 21 channels
+Opened output audio file Nchan21_evs.wav
+Running encoder-decoder data flow ...
+Processing frame 1467...
+Run-time: 15.406819s
+x86 codec test end
+x86 mediaTest end
+```C
+	
+In this example, the test takes about 15 sec to encode/decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 40 channels of encode + decode to stay in real-time. Of course processing time varies depending on your system's core type and speed.
+	
+To make the test longer, for example to allow htop inspection of core activity and memory usage, the input waveform file can be "wrapped" using the repeat command line option, for example:
 
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -R11
 
 which extends the test time to about 5 minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that then you should keep an eye on things, as a massive output .wav file will build up quickly !
+	
+The commands below run the same test with the SigSRF AMR-WB codec:
+
+    ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_amrwb.wav -Csession_config/amrwb_codec_test_config
+    ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_amrwb.wav -Csession_config/amrwb_codec_test_config_no_vad
+
+With VAD disabled, running the above command on a Xeon E5-2660 R0 @ 2.20GHz core gives display output similar to:
+
+```C
+Running on x86 cores, no coCPU cores specified
+x86 mediaTest start
+x86 codec test start, debug flags = 0x0
+INFO: DSAssignPlatform() system CPU architecture supports rdtscp instruction, TSC integrity monitoring enabled
+INFO: DSConfigVoplib() voplib and codecs initialized, flags = 0x1d
+Opened audio input file test_files/Nchan21.wav
+Opening codec config file: session_config/amrwb_codec_test_config_no_vad
+Opened config file: codec = AMR-WB, 23850 bitrate, sample rate = 16000 Hz, num channels = 1 (note: input waveform header 21 channels overrides config file value 1)
+  input framesize (samples) = 320, encoder framesize (samples) = 320, decoder framesize (bytes) = 61, input Fs = 16000 Hz, output Fs = 16000 Hz, 21 channels
+Opened output audio file Nchan21_amrwb.wav
+Running encoder-decoder data flow ...
+Processing frame 1467...
+Run-time: 12.922845s
+x86 codec test end
+x86 mediaTest end
+```C
+
+In the above example, the test takes about 13 sec to encode/decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 48 channels of encode + decode to stay in real-time. Of course processing time varies depending on your system's core type and speed.
 
 To help analyze audio quality, below is a table showing what's in each channel, along with sox commands for playing individual channels.
 
