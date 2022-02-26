@@ -3,11 +3,11 @@
 
  Purpose: Defines help menu and collects command line options
 
- Copyright (C) Signalogic Inc. 1992-2021
+ Copyright (C) Signalogic Inc. 1992-2022
 
  Revision History
 
-   Created, 10/11/05 2:40p Nithin
+   Created, 10/11/05 2:40p Nithin Rajagopal
    Modified 7 Aug 2013 JG, added implementation for accepting the order 'n' for the FFT
    Modified 6 Aug 2014 JG, modifying the description of command line arguments to bring up to date
    Modified Nov 2014 JHB, updating to match changes in userInfo.h (cardDesignator, processorClockrate, and numCores), updated for v5 release and new documentation
@@ -27,6 +27,7 @@
    Modified Jan 2020 JHB, add -RN cmd line entry for repeat number of times
    Modified Jan 2021 JHB, add -s option specific to mediaMin to handle SDP file input on cmd line
    Modified Dec 2021 JHB, make -d option (mode/debug flags) 64-bit integer
+   Modified Feb 2022 JHB, in getUserInfo() display summary, show x86 clock rate instead of "Default", if coCPU executable file not used show "N/A" instead of nothing
 */
 
 #include <stdlib.h>
@@ -153,6 +154,7 @@ int getUserInfo(int argc, char* argv[], UserInterface* userIfs, unsigned int uFl
 int instances, i;
 char labelstr[CMDOPT_MAX_INPUT_LEN];
 char tmpstr[CMDOPT_MAX_INPUT_LEN];
+char clkstr[100];
 
 /*int rc = EXIT_FAILURE; - unused variable CJ 4/25/17*/
 
@@ -347,11 +349,46 @@ char tmpstr[CMDOPT_MAX_INPUT_LEN];
          if (strstr(tmpstr, "X86")) strcpy(labelstr, "Platform Designator = ");
          else strcpy(labelstr, "Card Designator = ");
 
-         if (userIfs->processorClockrate) sprintf(tmpstr, "%d MHz", userIfs->processorClockrate);
-         else strcpy(tmpstr, "default");
+         if (userIfs->processorClockrate) sprintf(clkstr, "%d MHz", userIfs->processorClockrate);
+         else {  /* if no clock rate specified, get system clock rate, JHB Feb2022 */
 
-         cout << "userSpecified = {" << labelstr << userIfs->cardDesignator <<  ", " << "Core List = 0x" << hex << setfill('0') << setw(8) << userIfs->coreBitMask << ", "
-              << "Clock = " << tmpstr << ", " << "coCPU Executable = " << userIfs->targetFileName << ", "              
+            bool fCpuMHzFound = false;
+
+            FILE* fp = fopen("/proc/cpuinfo", "r");
+
+            if (fp) {
+
+               size_t n = 0;
+               char* line = NULL;
+
+               while (getline(&line, &n, fp) > 0) {
+
+                  if (strstr(line, "cpu MHz")) {
+
+                     char* p = strrchr(line, ' ');  /* find first space from end */
+                     if (p) {
+                        strcpy(clkstr, p+1);
+                        if ((p = strchr(clkstr, (char)0xd))) *p = 0;  /* remove any CR/LFs */
+                        if ((p = strchr(clkstr, (char)0xa))) *p = 0;
+                        strcat(clkstr, " MHz");
+                        fCpuMHzFound = true;
+                        break;
+                     }
+                  }
+               }
+
+               free(line);
+               fclose(fp);
+            }
+
+            if (!fCpuMHzFound) strcpy(clkstr, "Default");
+         }
+
+         char coCPU_executable[1000] = "N/A";
+         if (strlen(userIfs->targetFileName)) strcpy(coCPU_executable, userIfs->targetFileName);
+         
+         cout << "userSpecified = {" << labelstr << userIfs->cardDesignator <<  ", " << "Core List = 0x" << hex << setfill('0')
+              << setw(8) << userIfs->coreBitMask << ", " << "Clock = " << clkstr << ", " << "coCPU Executable = " << coCPU_executable << ", "              
               << "Algorithm Flag = " << dec << userIfs->algorithmIdNum << "}" << endl;  /* use stream modifiers for hex output, JHB Feb2015 */
       }
 
