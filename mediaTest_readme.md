@@ -87,7 +87,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G729](#user-content-x86codecg729)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G726](#user-content-x86codecg726)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity Codec Test](#user-content-highcapacitycodectest)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Fullband Audio Codec Test and Measurement](#user-content-FullbandAudioCodecTestMeasurement)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Fullband Audio Codec Test & Measurement](#user-content-fullbandaudiocodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
 &nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
@@ -763,7 +763,7 @@ Note the highlighted CPU and memory usage display areas, showing 100% core usage
 Again note the highlighted screencap areas, showing 100% core usage across two mediaTest process, for a total of 42 EVS encoder instances and 42 decoder instances. In this example, the two mediaTest process were run in two (2) separate terminal windows. By contrast, the mediaMin reference application uses one process to start multiple threads. In either case, at the shared object library (.so) level, SigSRF codecs are completely thread-safe, with no knowledge of application structure, process, thread, etc.
 
 <a name="FullbandAudioCodecTestMeasurement"></a>
-### Fullband Audio Codec Test and Measurement
+### Fullband Audio Codec Test & Measurement
 
 Newer codecs support "super wideband" and "fullband" sampling rates of 32 and 48 kHz. Below are some mediaTest command lines to test these rates with music and other high bandwidth content. In the first example a 44.1 kHz stereo music wav file is encoded and decoded with the EVS codec, producing an output stereo wav file on which we can perform frequency domain and other analysis and measurements.
 
