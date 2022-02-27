@@ -87,6 +87,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G729](#user-content-x86codecg729)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G726](#user-content-x86codecg726)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity Codec Test](#user-content-highcapacitycodectest)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Fullband Audio Codec Test and Measurement](#user-content-FullbandAudioCodecTestMeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
 &nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
@@ -760,6 +761,27 @@ Note the highlighted CPU and memory usage display areas, showing 100% core usage
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/codec_max_capacity_test_multithread.png" width="800" alt="Multithread measurement of codec max capacity CPU usage with htop" title="Multithread measurement of codec max capacity CPU usage with htop"/></br>
 
 Again note the highlighted screencap areas, showing 100% core usage across two mediaTest process, for a total of 42 EVS encoder instances and 42 decoder instances. In this example, the two mediaTest process were run in two (2) separate terminal windows. By contrast, the mediaMin reference application uses one process to start multiple threads. In either case, at the shared object library (.so) level, SigSRF codecs are completely thread-safe, with no knowledge of application structure, process, thread, etc.
+
+<a name="FullbandAudioCodecTestMeasurement"></a>
+### Fullband Audio Codec Test and Measurement
+
+Newer codecs support "super wideband" and "fullband" sampling rates of 32 and 48 kHz. Below are some mediaTest command lines to test these rates with music and other high bandwidth content. In the first example a 44.1 kHz stereo music wav file is encoded and decoded with the EVS codec, producing an output stereo wav file on which we can perform frequency domain and other analysis and measurements.
+
+    ./mediaTest -cx86 -itest_files/music_stereo.wav -omusic_stereo_evs.wav -Csession_config/evs_48kHz_13200bps_stereo_config
+
+Note that mediaTest performs sampling rate (Fs) conversion from 44.1 to 48 kHz prior to encode, as it knows the input Fs from the wav file header, and it knows the EVS codec fullband Fs specification. In the following spectrographs we can see that EVS maintains the full frequency bandwidth of the music content.
+
+The next example uses the AMR-WB codec, which is limited to 16 kHz sampling rate (wideband)
+
+    ./mediaTest -cx86 -itest_files/music_stereo.wav -omusic_stereo_amrwb.wav -Csession_config/amrwb_23850bps_stereo_config
+
+and in the following spectrographs we can clearly see the frequency cutoff.
+
+To verify sampling rate conversion by itself, we can use a command such as:
+
+    ./mediaTest -cx86 -itest_files/music_stereo.wav -omusic_stereo_passthru.wav -Csession_config/passthru_stereo_config
+
+where passthru_stereo_config specifies "none" for codec type, but enforces a 48 kHz output sampling rate.
 
 <a name="coCPUCodecTestMeasurement"></a>
 ### coCPU Codec Test & Measurement
