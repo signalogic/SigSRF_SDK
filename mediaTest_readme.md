@@ -765,11 +765,13 @@ Again note the highlighted screencap areas, showing 100% core usage across two m
 <a name="FullbandAudioCodecTestMeasurement"></a>
 ### Fullband Audio Codec Test & Measurement
 
-Newer codecs support "super wideband" and "fullband" sampling rates of 32 and 48 kHz. Below are some mediaTest command lines to test these rates with music and other high bandwidth content. In the first example a 44.1 kHz stereo music wav file is encoded and decoded with the EVS codec, producing an output stereo wav file on which we can perform frequency domain and other analysis and measurements.
+Newer codecs support "super wideband" and "fullband" sampling rates of 32 and 48 kHz. Below are some mediaTest command lines to test these rates with music and other high bandwidth content. In the first example a 44.1 kHz stereo music wav file is encoded and decoded with the EVS codec, producing an output stereo wav file with which we can perform frequency domain and other analysis and measurements.
 
-    ./mediaTest -cx86 -itest_files/music_stereo.wav -omusic_stereo_evs.wav -Csession_config/evs_48kHz_13200bps_stereo_config
+    ./mediaTest -cx86 -itest_files/music_stereo.wav -omusic_stereo_evs.wav -Csession_config/evs_48kHz_24400bps_stereo_config
 
-Note that mediaTest performs sampling rate (Fs) conversion from 44.1 to 48 kHz prior to encode, as it knows the input Fs from the wav file header, and it knows the EVS codec fullband Fs specification. In the following spectrographs we can see that EVS maintains the full frequency bandwidth of the music content.
+Note that mediaTest performs sampling rate (Fs) conversion from 44.1 to 48 kHz prior to encode, as it knows the input Fs from the wav file header, and it knows the fullband Fs specification from the config file. In the following spectrograph we can see that EVS fullband maintains the full 22.05 kHz bandwidth music content.
+
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/music_stereo_evs_fullband_spectrograph.png" width="800" alt="Spectrograph of stereo music encoded with EVS at fullband (48 kHz) sampling rate" title="Spectrograph of stereo music encoded with EVS at fullband (48 kHz) sampling rate"/></br>
 
 The next example uses the AMR-WB codec, which is limited to 16 kHz sampling rate (wideband)
 
