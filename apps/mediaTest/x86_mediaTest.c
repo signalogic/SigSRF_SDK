@@ -743,14 +743,18 @@ void x86_mediaTest(void) {
 
          case DS_VOICE_CODEC_TYPE_EVS:
          {
-            CodecParams.enc_params.samplingRate = codec_test_params.sample_rate;       /* in Hz */
+            CodecParams.enc_params.samplingRate = codec_test_params.sample_rate;       /* in Hz. Note that for fullband (FB, 48 kHz) sampling rate (Fs) with cutoff frequency (Fc) of 20 kHz, a minimum bitrate of 24.4 kbps is required. If you give 13.2 kbps bitrate, then the codec enforces an Fc of 14.4 kHz */
             CodecParams.enc_params.bitRate = codec_test_params.bitrate;                /* in bps */
             CodecParams.enc_params.dtx.dtx_enable = codec_test_params.dtx_enable;      /* 0 = DTX disabled, 1 = enabled */
             CodecParams.enc_params.sid_update_interval = codec_test_params.dtx_value ? codec_test_params.dtx_value : (codec_test_params.dtx_enable ? 8 : 0);  /* if DTX is enabled then default SID update interval is 8.  A zero update interval enables "adaptive SID" */
             CodecParams.enc_params.rf_enable = codec_test_params.rf_enable;
             CodecParams.enc_params.fec_indicator = codec_test_params.fec_indicator;
             CodecParams.enc_params.fec_offset = codec_test_params.fec_offset;
+            #if 0
             CodecParams.enc_params.bandwidth_limit = DS_EVS_BWL_SWB;                   /* codec will set limit depending on sampling rate */
+            #else  /* change this to make encoder setup more clear, JHB Feb2022 */
+            CodecParams.enc_params.bandwidth_limit = DS_EVS_BWL_FB;                    /* codec will set limit lower if required by specified sampling rate, JHB Feb2022 */
+            #endif
             CodecParams.enc_params.rtp_pyld_hdr_format.header_format = 1;              /* hard coded to 1 to match 3GPP encoder reference executable, which only writes header full format */
 
          /* EVS codec DTX notes:

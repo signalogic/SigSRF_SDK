@@ -21,7 +21,7 @@
    Modified Mar 2019 JHB, fix problem with _X86 build (#else section of #ifdef _USE_DSPLIB_) where if both up_factor and down_factor = 1, it still did convolution
    Modified Jul 2019 JHB, add num_chan param, allow pData to point to start of a channel within interleaved (multichannel) data.  Note that pData must point to the channel's first value
    Modified Feb 2022 JHB, allow non-symmetric filters with odd or even length, make multiply/add loop more efficient (see USE_OLD_INDEXING), base filter choice on ratios of up_factor and down_factor as opposed to specific values. For example if user gives up 4 down 2 (instead of 2:1 for whatever reason) we handle it
-   Modified Feb 2022 JHB, implement additional filters: 3/2 and 2/3 up and down, 44.1 to 48 and 48 to 44.1 kHz
+   Modified Feb 2022 JHB, implement additional filters: 3/2 and 2/3 up and down, 44.1 <--> 48 kHz, and 44.1 <--> 16 kHz
    Modified Feb 2022 JHB, for large up/down factors (e.g. 44.1 <--> 48) (i) fix problem with int16 data_len overflow (change all input params to int) and (ii) increase size of temp_store (see notes)
    Modified Feb 2022 JHB, split coefficients out to filt_coeffs.h, add user-defined filter params (pFilt_user and filt_len_user), lay groundwork for floating-point filters
 */
@@ -175,73 +175,85 @@ float* pData_f = NULL, *pDelay_f = NULL;
       pDelay = (int16_t*)pDelay_user;
    }
 
-   bool fNoRatio = (up_factor == 0 || down_factor == 0);
+   bool fDivisionOfOrByZero = (up_factor == 0 || down_factor == 0);
 
    if (pFilt_user != NULL) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = (const float*)pFilt_user;
       else pFilt = (int16_t*)pFilt_user;
       filt_len = filt_len_user;
    }
-   else if (!fNoRatio && up_factor/down_factor == 2) {
+   else if (!fDivisionOfOrByZero && up_factor/down_factor == 2) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up2_float;
       else pFilt = fir_filt_up2;
       filt_len = FIR_FILT_UP2_SIZE;
    }
-   else if (!fNoRatio && up_factor/down_factor == 3) {
+   else if (!fDivisionOfOrByZero && up_factor/down_factor == 3) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up3_float;
       else pFilt = fir_filt_up3;
       filt_len = FIR_FILT_UP3_SIZE;
    }
-   else if (!fNoRatio && up_factor/down_factor == 4) {
+   else if (!fDivisionOfOrByZero && up_factor/down_factor == 4) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up4_float;
       else pFilt = fir_filt_up4;
       filt_len = FIR_FILT_UP4_SIZE;
    }
    else if (up_factor/down_factor == 6) {
-      if (!fNoRatio && uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up6_float;
+      if (!fDivisionOfOrByZero && uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up6_float;
       else pFilt = fir_filt_up6;
       filt_len = FIR_FILT_UP6_SIZE;
    }
-   else if (!fNoRatio && 2*up_factor/3 == down_factor) {
+   else if (!fDivisionOfOrByZero && 2*up_factor/3 == down_factor) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up1p5_float;
       else pFilt = fir_filt_up1p5;
       filt_len = FIR_FILT_UP1P5_SIZE;
    }
-   else if (!fNoRatio && down_factor/up_factor == 2) {
+   else if (!fDivisionOfOrByZero && down_factor/up_factor == 2) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_down2_float;
       else pFilt = fir_filt_down2;
       filt_len = FIR_FILT_DOWN2_SIZE;
    }
-   else if (!fNoRatio && down_factor/up_factor == 3) {
+   else if (!fDivisionOfOrByZero && down_factor/up_factor == 3) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_down3_float;
       else pFilt = fir_filt_down3;
       filt_len = FIR_FILT_DOWN3_SIZE;
    }
-   else if (!fNoRatio && down_factor/up_factor == 4) {
+   else if (!fDivisionOfOrByZero && down_factor/up_factor == 4) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_down4_float;
       else pFilt = fir_filt_down4;
       filt_len = FIR_FILT_DOWN4_SIZE;
    }
-   else if (!fNoRatio && down_factor/up_factor == 6) {
+   else if (!fDivisionOfOrByZero && down_factor/up_factor == 6) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_down6_float;
       else pFilt = fir_filt_down6;
       filt_len = FIR_FILT_DOWN6_SIZE;
    }
-   else if (!fNoRatio && 2*down_factor/3 == up_factor) {
+   else if (!fDivisionOfOrByZero && 2*down_factor/3 == up_factor) {
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_down1p5_float;
       else pFilt = fir_filt_down1p5;
       filt_len = FIR_FILT_DOWN1P5_SIZE;
    }
-   else if (!fNoRatio && up_factor*44100/48000 == down_factor) {  /* 44.1 to 48, 22.05 to 24, 11.025 to 12, etc */
+   else if (!fDivisionOfOrByZero && up_factor*44100/48000 == down_factor) {  /* 44.1 to 48, 22.05 to 24, 11.025 to 12, etc */
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up160_down147_float;
       else pFilt = fir_filt_up160_down147;
       filt_len = FIR_FILT_UP160_DOWN147_SIZE;
    }
-   else if (!fNoRatio && down_factor*44100/48000 == up_factor) {  /* 48 to 44.1, 24 to 22.05, etc */
+   else if (!fDivisionOfOrByZero && down_factor*44100/48000 == up_factor) {  /* 48 to 44.1, 24 to 22.05, etc */
       if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up147_down160_float;
       else pFilt = fir_filt_up147_down160;
       filt_len = FIR_FILT_UP147_DOWN160_SIZE;
    }
+   else if (!fDivisionOfOrByZero && up_factor*44100/16000 == down_factor) {  /* 44.1 to 16, 22.05 to 8, useful for wideband and narrowband codec testing */
+      if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up160_down441_float;
+      else pFilt = fir_filt_up160_down441;
+      filt_len = FIR_FILT_UP160_DOWN441_SIZE;
+   }
+   else if (!fDivisionOfOrByZero && down_factor*44100/16000 == up_factor) {  /* 16 to 44.1, 8 to 22.05, useful for wideband and narrowband codec testing */
+      if (uFlags & DS_FSCONV_FLOATING_POINT) pFilt_f = fir_filt_up441_down160_float;
+      else pFilt = fir_filt_up441_down160;
+      filt_len = FIR_FILT_UP441_DOWN160_SIZE;
+   }
+   else if (up_factor != down_factor && !(uFlags & DS_FSCONV_NO_FILTER) Log_RT(3, "WARNING: DSConvertFs() says sampling rate conversion ratio %d:%d not supported \n", up_factor, down_factor);
+
 #if !defined(_USE_DSPLIB_) && defined(USE_OLD_INDEXING)
    flen2 = filt_len/2;
 #endif
@@ -305,7 +317,7 @@ float* pData_f = NULL, *pDelay_f = NULL;
       #if 0
       if (up_factor > 1 || down_factor > 1) {  /* don't modify input data if no up/down conversion specified, JHB Mar 2019 */
       #else
-      if (pFilt && !(uFlags & DS_FSCONV_NO_FILTER)) {  /* note that pFilt won't be set if both up_factor and down_factor are 1 and a user-defined filter is not given, JHB Feb2022 */
+      if (pFilt && !(uFlags & DS_FSCONV_NO_FILTER)) {  /* note that pFilt won't be set if both up_factor and down_factor are 1 (or otherwise equal) and a user-defined filter is not given, JHB Feb2022 */
       #endif
    
          for (i=0; i<data_len; i++) { /* x[i] */
