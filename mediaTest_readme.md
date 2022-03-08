@@ -727,7 +727,7 @@ To help analyze audio quality, below is a table showing what's in each channel o
 | 20  | silence | T21.wav |
 | 21  | Chinese speech (female) | T22.wav |
 
-To play an individual channel, either in the NchanXX.wav files, you can use sox commands; here are some examples using sox v14.4.2 for Win10:
+To play an individual channel in multichannel .wav files you can use sox commands; here are some examples using sox v14.4.2 for Win10:
 
     sox Nchan21.wav -t waveaudio remix 19
     sox Nchan21_evs.wav -t waveaudio remix 19
@@ -772,6 +772,15 @@ Newer codecs support "super wideband" and "fullband" sampling rates of 32 and 48
 Note that mediaTest performs sampling rate (Fs) conversion from 44.1 to 48 kHz prior to encode, as it knows the input Fs from the wav file header, and it knows the fullband Fs specification from the config file. In the following spectrograph we can see that EVS fullband maintains the full 22.05 kHz bandwidth of music content.
 
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/music_stereo_evs_fullband_spectrograph.png" width="800" alt="Spectrograph of stereo music encoded with EVS at fullband (48 kHz) sampling rate" title="Spectrograph of stereo music encoded with EVS at fullband (48 kHz) sampling rate"/></br>
+
+To play the output wav file you can use the following sox command:
+
+    sox music_stereo_evs.wav -t waveaudio
+
+and to play only the left or right channel:
+
+    sox music_stereo_evs.wav -t waveaudio remix 1
+    sox music_stereo_evs.wav -t waveaudio remix 2
 
 The next example uses the AMR-WB codec, which is limited to a fixed 16 kHz sampling rate (aka wideband):
 
