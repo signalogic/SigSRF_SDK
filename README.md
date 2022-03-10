@@ -184,13 +184,11 @@ For servers augmented with a coCPU card, the mediaTest, mediaMin, and iaTest ref
 <a name="InstallNotesDockerContainer"></a>
 ### Docker Containers
 
-Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo installed and ready to run are located at:
+Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demos installed and ready to run are located at:
 
     https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
 
     https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
-
-Note that the Rar Package install section below (e.g. downloading .rar files and running install script) does not apply as the Docker containers are already fully configured.
 
 After pulling the container, use the following run command:
 
