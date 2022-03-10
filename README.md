@@ -216,9 +216,9 @@ To access pcap and media files output by EdgeStream apps inside the container --
     manager - hyperv Running tcp://192.168.111.63:2376 v1.13.0
     worker - hyperv Running tcp://192.168.111.64:2376 v1.13.0
 
-and then use the reported IP and port info inside the WinSCP client, with userid docker, and password tcuser.
+and then use the reported IP and port info inside the WinSCP client, with userid docker, and password tcuser. For more information on pcap, waveform, and other test files provided with the SDK, see [Test File Notes](#user-content-testfilenotes) below.
 
-Note the container is configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
+Note that all available containers ire configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
 
 ### Ubuntu Docker Container Notes
 
@@ -274,6 +274,8 @@ The ASR version is separated into .partN.rar files because the overall .rar file
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
 
+ or more information on pcap, waveform, and other test files provided with the SDK, see [Test File Notes](#user-content-testfilenotes) below.
+ 
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
 
