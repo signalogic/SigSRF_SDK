@@ -14,13 +14,13 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
-[SDK Download](#user-content-sdkdownload)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Rar Package](#user-content-installnotesrarpackage)<br/>
+[SDK - Demos, Run Reference Apps, Build User Apps](#user-content-sdkdownload)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Docker Containers](#user-content-installnotesdockercontainer)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Rar Packages](#user-content-installnotesrarpackage)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Sudo Privilege](#user-content-sudoprivilege)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Running the Install Script](#user-content-runningtheinstallscript)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes - Docker Container](#user-content-installnotesdockercontainer)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-runnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatest)<br/>
@@ -160,9 +160,9 @@ Some notes about the above data flow diagram:
    6) <b>Media signal processing and inference</b>.  The second orange vertical line divides the "packet domain" and "media domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The media domain contains raw audio or video data, which allows signal processing operations, such as sample rate conversion, conferencing, filtering, echo cancellation, convolutional neural network (CNN) classification, etc. to be performed.  Also this is where image and voice analytics takes place, for instance by handing video and audio data off to another process.
 
 <a name="SDKDownload"></a>
-# SDK Download
+# SDK - Demos, Run Reference Apps, Build User Apps
 
-There are two (2) options for EdgeStream and SigSRF SDK download (i) RAR package and install script or (ii) or Docker container. The SDK contains:
+There are two (2) options to run and test the EdgeStream and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. The SDK contains:
 
    1) A limited eval / reference version of SigSRF libraries and EdgeStream applications, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on reference application limits, see [Run Notes](#user-content-RunNotes) below.
 
@@ -179,28 +179,69 @@ All reference applications run on x86 Linux servers.
 
 For servers augmented with a coCPU card, the mediaTest, mediaMin, and iaTest reference apps will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in SDK .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.
 
-<a name="TestFileNotes"></a>
-## Test File Notes
+<a name="InstallNotesDockerContainer"></a>
+### Docker Containers
 
-Several pcap and wav files are included in the default install, providing input for example command lines. After these are verified to work, user-supplied pcaps, UDP input, and wav files can be used.
+Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo installed and ready to run are located at:
 
-Additional advanced pcap examples are also available, including:
+    https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
 
-    -multiple streams with different LTE codecs and DTX configurations
-    -multiple RFC8108 (SSRC transitions)
-    -sustained packet loss (up to 10%), both media and SID
-    -call gaps
-    -media server playout packet rate variation (up to +/-10%)
-    -sustained packet rate mismatches between streams
-    -dormant SSRC ("stream takeover")
-    -RFC7198 (temporal packet duplication)
+    https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
 
-For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the reference apps will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison. Both libpcap and pcapng formats are supported.
+Note that the Rar Package install section below (e.g. downloading .rar files and running install script) does not apply as the Docker containers are already fully configured.
 
-Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. 
+After pulling the container, use the following run command:
+
+    docker run -it --cap-add=sys_nice signalogic/sigsrf_sdk_demo_ubuntu /bin/bash
+    
+or
+
+    docker run -it --cap-add=sys_nice signalogic/sigsrf_sdk_demo_centos /bin/bash
+    
+ After running the container, change your current folder ...
+
+    cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest
+
+or
+
+    cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest/mediaMin
+
+... depending on which EdgeStream app you want to run. The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
+
+To access pcap and media files output by EdgeStream apps inside the container -- for example to run WireShark -- you can WinSCP into the container with the following steps:
+
+    docker-machine ls
+
+    NAME ACTIVE DRIVER STATE URL SWARM DOCKER ERRORS
+    manager - hyperv Running tcp://192.168.111.63:2376 v1.13.0
+    worker - hyperv Running tcp://192.168.111.64:2376 v1.13.0
+
+and then use the reported IP and port info inside the WinSCP client, with userid docker, and password tcuser.
+
+Note the container is configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
+
+### Ubuntu Docker Container Notes
+
+1) Ubuntu distro is 20.04.2, with gcc/g++ 11.2.0 installed
+2) wget and unrar are installed, along with a symlink /usr/bin/g++ pointing to /gcc/bin/g++
+3) The base Ubuntu container comes from a repository hosted by user "gmao", who is associated with NASA, as shown below:
+
+    https://hub.docker.com/u/gmao
+
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/ubuntu_base_container_docker_hub_profile.png" width=50% alt="Ubuntu base container Docker hub profile info" title="Ubuntu base container Docker hub profile info"></br>
+
+### CentOS Docker Container Notes
+
+1) CentOS distro is 8.2.2004, with gcc/g++ 8.3.1-5 installed
+2) wget and unrar are installed, along with symlink /usr/bin/g++ pointing to /gcc/bin/g++
+3) The base CentOS container comes from a repository hosted by user "images4dev", as shown below:
+
+    https://hub.docker.com/u/images4dev
+
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/centos_base_container_docker_hub_profile.png" width=50% alt="CentOS base container Docker hub profile info" title="CentOS base container Docker hub profile info"></br>
 
 <a name="InstallNotesRarPackage"></a>
-## Install Notes - Rar Package
+## Rar Packages
 
 Separate RAR packages are provided for different Linux distributions. Please choose the appropriate one or closest match. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install only the most recent .rar file. Also the install script will auto-check for kernel version and Linux distro version to decide which .rar file to install.
 
@@ -394,66 +435,25 @@ which although it shows an error message will cause no problems.
 
 Reference application examples are provided as executables, C/C++ source code and Makefiles. Reference apps should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
 
-<a name="InstallNotesDockerContainer"></a>
-### Install Notes - Docker Container
+<a name="TestFileNotes"></a>
+## Test File Notes
 
-Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demo installed and ready to run are located at:
+Several pcap and wav files are included in the default install, providing input for example command lines. After these are verified to work, user-supplied pcaps, UDP input, and wav files can be used.
 
-    https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
+Additional advanced pcap examples are also available, including:
 
-    https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
+    -multiple streams with different LTE codecs and DTX configurations
+    -multiple RFC8108 (SSRC transitions)
+    -sustained packet loss (up to 10%), both media and SID
+    -call gaps
+    -media server playout packet rate variation (up to +/-10%)
+    -sustained packet rate mismatches between streams
+    -dormant SSRC ("stream takeover")
+    -RFC7198 (temporal packet duplication)
 
-Note that the Rar Package install section above (e.g. downloading .rar files and running install script) does not apply as the Docker containers are already fully configured.
+For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the reference apps will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison. Both libpcap and pcapng formats are supported.
 
-After pulling the container, use the following run command:
-
-    docker run -it --cap-add=sys_nice signalogic/sigsrf_sdk_demo_ubuntu /bin/bash
-    
-or
-
-    docker run -it --cap-add=sys_nice signalogic/sigsrf_sdk_demo_centos /bin/bash
-    
- After running the container, change your current folder ...
-
-    cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest
-
-or
-
-    cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest/mediaMin
-
-... depending on which EdgeStream app you want to run. The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
-
-To access pcap and media files output by EdgeStream apps inside the container -- for example to run WireShark -- you can WinSCP into the container with the following steps:
-
-    docker-machine ls
-
-    NAME ACTIVE DRIVER STATE URL SWARM DOCKER ERRORS
-    manager - hyperv Running tcp://192.168.111.63:2376 v1.13.0
-    worker - hyperv Running tcp://192.168.111.64:2376 v1.13.0
-
-and then use the reported IP and port info inside the WinSCP client, with userid docker, and password tcuser.
-
-Note the container is configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
-
-### Ubuntu Docker Container Notes
-
-1) Ubuntu distro is 20.04.2, with gcc/g++ 11.2.0 installed
-2) wget and unrar are installed, along with a symlink /usr/bin/g++ pointing to /gcc/bin/g++
-3) The base Ubuntu container comes from a repository hosted by user "gmao", who is associated with NASA, as shown below:
-
-    https://hub.docker.com/u/gmao
-
-<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/ubuntu_base_container_docker_hub_profile.png" width=50% alt="Ubuntu base container Docker hub profile info" title="Ubuntu base container Docker hub profile info"></br>
-
-### CentOS Docker Container Notes
-
-1) CentOS distro is 8.2.2004, with gcc/g++ 8.3.1-5 installed
-2) wget and unrar are installed, along with symlink /usr/bin/g++ pointing to /gcc/bin/g++
-3) The base CentOS container comes from a repository hosted by user "images4dev", as shown below:
-
-    https://hub.docker.com/u/images4dev
-
-<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/centos_base_container_docker_hub_profile.png" width=50% alt="CentOS base container Docker hub profile info" title="CentOS base container Docker hub profile info"></br>
+Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. 
 
 <a name="RunNotes"></a>
 ## Run Notes
