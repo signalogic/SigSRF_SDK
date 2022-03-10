@@ -14,7 +14,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
-[SDK - Demos, Run Reference Apps, Build User Apps](#user-content-sdkdownload)<br/>
+[Using the SDK - Run Demos and Reference Apps, Build User Apps](#user-content-sdkdownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Docker Containers](#user-content-installnotesdockercontainer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Rar Packages](#user-content-installnotesrarpackage)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
@@ -160,7 +160,7 @@ Some notes about the above data flow diagram:
    6) <b>Media signal processing and inference</b>.  The second orange vertical line divides the "packet domain" and "media domain".  DSStoreStreamData() and DSGetStreamData() decouple these domains in the case of unequal ptimes.  The media domain contains raw audio or video data, which allows signal processing operations, such as sample rate conversion, conferencing, filtering, echo cancellation, convolutional neural network (CNN) classification, etc. to be performed.  Also this is where image and voice analytics takes place, for instance by handing video and audio data off to another process.
 
 <a name="SDKDownload"></a>
-# SDK - Demos, Run Reference Apps, Build User Apps
+# Using the SDK - Run Demos and Reference Apps, Build User Apps
 
 There are two (2) options to run and test the EdgeStream and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. The SDK contains:
 
