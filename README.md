@@ -162,7 +162,7 @@ Some notes about the above data flow diagram:
 <a name="SDKDownload"></a>
 # Using the SDK - Run Demos and Reference Apps, Build User Apps
 
-There are two (2) options to run and test the EdgeStream and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. See the [Docker Containers](#user-content-installnotesdockercontainer) and [Rar Packages](#user-content-installnotesrarpackage) sections below.
+There are two (2) options to run and test the EdgeStream and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. Option (i) is fastest and easiest, option (ii) will give precise performance results for specific VM or bare-metal configurations. See the [Docker Containers](#user-content-installnotesdockercontainer) and [Rar Packages](#user-content-installnotesrarpackage) sections below.
 
 The SDK contains:
 
