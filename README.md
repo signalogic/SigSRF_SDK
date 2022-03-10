@@ -162,7 +162,9 @@ Some notes about the above data flow diagram:
 <a name="SDKDownload"></a>
 # Using the SDK - Run Demos and Reference Apps, Build User Apps
 
-There are two (2) options to run and test the EdgeStream and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. The SDK contains:
+There are two (2) options to run and test the EdgeStream and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. See the [Docker Containers](#user-content-installnotesdockercontainer) and [Rar Packages](#user-content-installnotesrarpackage) sections below.
+
+The SDK contains:
 
    1) A limited eval / reference version of SigSRF libraries and EdgeStream applications, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on reference application limits, see [Run Notes](#user-content-RunNotes) below.
 
