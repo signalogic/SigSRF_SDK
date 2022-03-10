@@ -177,7 +177,7 @@ The SDK contains:
  
    3) Concurrency examples, including stream, instance, and multiple user
    
-All reference applications run on x86 Linux servers.
+All reference applications and demos were built and tested on x86 servers with a range of Ubuntu and CentOS distributions and g++/gcc tools.
 
 For servers augmented with a coCPU card, the mediaTest, mediaMin, and iaTest reference apps will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in SDK .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.
 
