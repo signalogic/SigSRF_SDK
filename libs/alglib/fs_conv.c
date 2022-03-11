@@ -24,6 +24,7 @@
    Modified Feb 2022 JHB, implement additional filters: 3/2 and 2/3 up and down, 44.1 <--> 48 kHz, and 44.1 <--> 16 kHz
    Modified Feb 2022 JHB, for large up/down factors (e.g. 44.1 <--> 48) (i) fix problem with int16 data_len overflow (change all input params to int) and (ii) increase size of temp_store (see notes)
    Modified Feb 2022 JHB, split coefficients out to filt_coeffs.h, add user-defined filter params (pFilt_user and filt_len_user), lay groundwork for floating-point filters
+   Modified Mar 2022 JHB, show a warning message when no filter is defined for a specified (and mathematically valid) sampling rate conversion ratio. Apps can avoid the warning by (i) giving the DS_FSCONV_NO_FILTER flag or (ii) supplying user-defined filter coefficients (pFilt)
 */
 
 #include <stdint.h>
@@ -252,7 +253,8 @@ float* pData_f = NULL, *pDelay_f = NULL;
       else pFilt = fir_filt_up441_down160;
       filt_len = FIR_FILT_UP441_DOWN160_SIZE;
    }
-   else if (up_factor != down_factor && !(uFlags & DS_FSCONV_NO_FILTER) Log_RT(3, "WARNING: DSConvertFs() says sampling rate conversion ratio %d:%d not supported \n", up_factor, down_factor);
+
+   if (!pFilt && up_factor != down_factor && !(uFlags & DS_FSCONV_NO_FILTER)) Log_RT(3, "WARNING: DSConvertFs() says no filter defined for sampling rate conversion ratio %d:%d \n", up_factor, down_factor);  /* apps can avoid this warning by (i) specifing DS_FSCONV_NO_FILTER or (ii) supplying user-defined filter coefficients (pFilt), JHB Mar2022 */
 
 #if !defined(_USE_DSPLIB_) && defined(USE_OLD_INDEXING)
    flen2 = filt_len/2;

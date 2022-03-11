@@ -1438,6 +1438,8 @@ PollBuffer:
 
             if (encoder_handle[0]) {
 
+//   if (frame_count < 200) memset(in_buf, 0, 640);
+
                coded_framesize = DSCodecEncode(encoder_handle, 0, in_buf, coded_buf, inbuf_size, numChan, &encOutArgs);  /* call voplib codec encode API */
 
                #ifdef CODEC_FILE_DEBUG
