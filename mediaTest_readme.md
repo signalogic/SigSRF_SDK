@@ -666,7 +666,7 @@ x86 codec test end
 x86 mediaTest end
 ```
 	
-In this example, the test takes about 15 sec to encode/decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 40 channels of encode + decode to stay in real-time. Of course processing time varies depending on your system's core type and speed.
+In this example, the test takes about 15 sec to encode/decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 40 channels of encode + decode to stay in real-time. On an Atom C2358 @ 2 GHz, the same command takes about 40 sec. Of course processing time varies depending on your system's core type and speed.
 	
 To make the test longer, for example to allow htop inspection of core activity and memory usage, the input waveform file can be "wrapped" using the repeat command line option, for example:
 
