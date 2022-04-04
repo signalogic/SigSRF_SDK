@@ -21,6 +21,7 @@
   Modified Jan 2021 JHB, add diaglib for error handling (Log_RT), initialize asr_handles, zero handle member values prior to use, make local data and functions static
   Modified Jan 2021 JHB, add DSASRConfig() to provide initialization ease-of-use and flexibility
   Modified Feb 2021 JHB, make DSASRConfig() flexible on where it finds Kaldi .conf, .mdl, .fst, and other files
+  Modified Apr 2022 JHB, handled Kaldi hard-coded paths inside ivector_extractor.conf; see comments in DSASRConfig() and find_kaldi_file()
 */
 
 /* Kaldi includes */
@@ -442,25 +443,50 @@ static int SigOnline2WavNnet3LatgenFasterClose(HASRDECODER handle) {  /* note - 
    -input: Kaldi file, including subfolder path
    -output: actual path location (tmpstr)
    -return value: true if found, false if not
+   -added install_path option, resolving relative paths to absolute, JHB Apr2022
 */
 
-bool find_kaldi_file(char* tmpstr, const char* kaldi_file) {
+bool find_kaldi_file(char* full_path, char* install_path_user, const char* kaldi_file) {
 
 struct stat buffer;
+char install_path_local[256], rel_path[256];
+char* install_path = install_path_user ? install_path_user : install_path_local;
 
 /* check for development folder first, if not found then check for executable and lib folders */
 
-   sprintf(tmpstr, "/storage/%s", kaldi_file);
+   strcpy(install_path, "/storage");
+   sprintf(full_path, "%s/%s", install_path, kaldi_file);
 
-   if (stat(tmpstr, &buffer)) {  /* stat() returns 0 if file exists */
+   if (stat(full_path, &buffer)) {  /* stat() returns 0 if file exists */
 
-      sprintf(tmpstr, "../../../../../%s", kaldi_file);  /* try executable folder */
+      strcpy(rel_path, "../../../../..");
+      if (!realpath(rel_path, install_path)) {
+         Log_RT(3, "WARNING: DSASRConfig() says exe folder realpath() error = %d \n", errno);
+      }
+      #ifdef HARDCODED_CONF_FILE_DEBUG
+      else printf(" exe folder resolved path = %s \n", install_path);
+      #endif
+      sprintf(full_path, "%s/%s", install_path, kaldi_file);  /* try executable folder */
 
-      if (stat(tmpstr, &buffer)) {
+      if (stat(full_path, &buffer)) {
 
-         sprintf(tmpstr, "../../../%s", kaldi_file);  /* try lib folder */
+         strcpy(rel_path, "../../..");
+         if (!realpath(rel_path, install_path)) {
+            Log_RT(3, "WARNING: DSASRConfig() says lib folder realpath() error = %d \n", errno);
+         }
+         #ifdef HARDCODED_CONF_FILE_DEBUG
+         else printf(" lib folder resolved path = %s \n", install_path);
+         #endif
+         sprintf(full_path, "%s/%s", install_path, kaldi_file);  /* try lib folder */
 
-         if (stat(tmpstr, &buffer)) {
+         if (stat(full_path, &buffer)) {
+
+         /* note - we could also try the "SIGNALOGIC_INSTALL_PATH=" field inside /etc/environment file, which is added by install script, e.g:
+
+              SIGNALOGIC_INSTALL_PATH=/home/sigsrf_sdk_demo
+
+            but for now we're not doing that, JHB Apr2022
+         */
 
             Log_RT(2, "ERROR: DSASRConfig() says cannot locate Kaldi file %s either on local development folder or SDK install folder \n", kaldi_file);
             return false;
@@ -487,18 +513,87 @@ char mdl_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/final
 char fst_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/HCLG.fst";
 char txt_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/words.txt";
 
-char tmpstr[256];
+char install_dummy[] = "/home/labuser/Signalogic";
 
-  
+/* /home/sigsrf_sdk_demo/Signalogic_2020v8/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/ivector_extractor.conf */
+
+char full_path[256], install_path[256], full_path_temp[256], line[256], line2[256];
+FILE *fconf = NULL, *fconf_temp = NULL;
+
    if (!config) return -1;  /* error condition */
 
    if (!config->feature_type) config->feature_type = strdup("mfcc");
 
-   if (!find_kaldi_file(tmpstr, mfcc_conf_str)) return -1;
-   if (!config->mfcc_config) config->mfcc_config = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/mfcc.conf");
+   if (!find_kaldi_file(full_path, NULL, mfcc_conf_str)) return -1;
+   if (!config->mfcc_config) config->mfcc_config = strdup(full_path); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/mfcc.conf");
 
-   if (!find_kaldi_file(tmpstr, ivector_conf_str)) return -1;
-   if (!config->ivector_config) config->ivector_config = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/ivector_extractor.conf");
+   if (!find_kaldi_file(full_path, install_path, ivector_conf_str)) return -1;
+   if (!config->ivector_config) config->ivector_config = strdup(full_path); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/ivector_extractor.conf");
+
+/* handle ivector_extractor.conf file, which contains several paths needed by Kaldi libs, JHB Apr2022:
+
+  -in the .conf file installed by SDK/demo .rar packages, paths start with a "/home/labuser/Signalogic" dummy, which we need to replace with actual install path
+  -we use path install_path returned by find_kaldi_file()
+  -this should only occur once: first time ASR is invoked after a fresh install. After that we check for the dummy each time an app runs and first initializes ASR but we won't find it
+  -another option would be to do this in the install script, but that doesn't cover cases where users are moving files around and effectively changing the install path
+  -later versions of Kaldi may have ways to specify these paths directly/individually, instead of using a .conf file. Several Kaldi paths (see above) are already separate from the .conf file
+  -examples of .conf files needed by Kaldi libs: splice.conf, online_cmvn.conf, final.mat
+*/
+
+      #ifdef HARDCODED_CONF_FILE_DEBUG
+      printf(" *******inferlib, opening ivector config file %s \n", full_path);
+      #endif
+
+   if ((fconf = fopen(full_path, "r"))) {
+
+      #ifdef HARDCODED_CONF_FILE_DEBUG
+      printf(" ******* inside conf file read \n");
+      #endif
+
+      sprintf(full_path_temp, "%s_temp", full_path);
+      fconf_temp = fopen(full_path_temp, "w");
+ 
+      bool fDummy_found = false;
+      char* p;
+
+      while (fgets(line, sizeof(line), fconf)) {  /* read all lines of .conf file */
+
+         #ifdef HARDCODED_CONF_FILE_DEBUG
+         printf(" ******* conf file line = %s \n", line);
+         #endif
+
+         if ((p = strstr(line, install_dummy))) {
+
+            *p = 0;
+            strcpy(line2, line);  /* copy first part of line */
+            strcat(line2, install_path);  /* add install path */
+            strcat(line2, p + strlen(install_dummy));  /* add remainder of original line */
+            strcpy(line, line2);
+
+            #ifdef HARDCODED_CONF_FILE_DEBUG
+            printf(" ******* conf file modified line = %s \n", line);
+            #endif
+
+            fDummy_found = true;
+         }
+
+         fwrite(line, strlen(line), 1, fconf_temp);  /* write out either original line or modified line */
+      }
+
+      #ifdef HARDCODED_CONF_FILE_DEBUG
+      printf(" *******after checking for dummy install, dummy found = %d, temp conf path = %s \n", fDummy_found, full_path_temp);
+      #endif
+      
+      if (fconf) fclose(fconf);
+      if (fconf_temp) fclose(fconf_temp);
+
+      if (fDummy_found) {  /* if any replacements made then delete the original .conf file and rename the temp file */
+
+         remove(full_path);  /* remove original conf file */
+         rename(full_path_temp, full_path);  /* rename temp file */
+      }
+      else remove(full_path_temp);  /* otherwise if no replacements just remove the temp file */
+   }
 
    if (!config->frame_subsampling_factor) config->frame_subsampling_factor = 3;
    if (!config->acoustic_scale) config->acoustic_scale = 1.0;
@@ -507,14 +602,14 @@ char tmpstr[256];
    if (!config->lattice_beam) config->lattice_beam = 6.0;
    if (!config->silence_phones) config->silence_phones = strdup("1:2:3:4:5:6:7:8:9:10");
 
-   if (!find_kaldi_file(tmpstr, mdl_str)) return -1;
-   if (!config->nnet3_rxfilename) config->nnet3_rxfilename = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/final.mdl");
+   if (!find_kaldi_file(full_path, NULL, mdl_str)) return -1;
+   if (!config->nnet3_rxfilename) config->nnet3_rxfilename = strdup(full_path); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/final.mdl");
 
-   if (!find_kaldi_file(tmpstr, fst_str)) return -1;
-   if (!config->fst_rxfilename) config->fst_rxfilename = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/HCLG.fst");
+   if (!find_kaldi_file(full_path, NULL, fst_str)) return -1;
+   if (!config->fst_rxfilename) config->fst_rxfilename = strdup(full_path); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/HCLG.fst");
 
-   if (!find_kaldi_file(tmpstr, txt_str)) return -1;
-   if (!config->word_syms_filename) config->word_syms_filename = strdup(tmpstr); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/words.txt");
+   if (!find_kaldi_file(full_path, NULL, txt_str)) return -1;
+   if (!config->word_syms_filename) config->word_syms_filename = strdup(full_path); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/words.txt");
 
    if (uFlags & DS_ASR_CONFIG_DO_ENDPOINTING) config->do_endpointing = true;  /* default value is false, DSSessionCreate() in pktlik calls DSASRConfig() without this flag */
    if (uFlags & DS_ASR_CONFIG_ONLINE) config->online = true;  /* should be true for real-time operation, DSSessionCreate() in pktlib calls DSASRConfig() with this flag */
