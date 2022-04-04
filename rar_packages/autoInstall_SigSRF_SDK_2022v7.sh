@@ -2,7 +2,7 @@
 #================================================================================================
 # Bash script to install/uninstall SigSRF SDK and EdgeStream apps
 # Copyright (C) Signalogic Inc 2017-2022
-# Rev 1.7.1
+# Rev 1.7.2
 
 # Requirements
    # Internet connection
@@ -31,7 +31,7 @@
 #  Modified Jan 2022 JHB, add EdgeStream references
 #  Modified Jan 2022 JHB, mods for CentOS 8, remove reference to specific gcc version
 #  Modified Jan 2022 JHB, assume distro other than Ubunto or CentOS / RHEL as possible Ubuntu/Debian, let user know this is happening
-#  Modified Feb 2022 JHB, change lib* copy to lib*.so; lib*.a otherwise a files like lib_logging.c were getting copied to /usr/lib
+#  Modified Mar 2022 JHB, set installOptions immediately after user menu and before any functions are called. Without this fix, if an ASR or coCPU package is selected, but the appropriate .rar is not found, no error message is given
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -73,8 +73,8 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 		rarFileNewest=$iFileName;
 	done;
 
-	if [ "$rarFileNewest" = "" ]; then  # add check for no .rar files found, JHB Jan2021
-		echo "Install package rar file not found"
+	if [ "$rarFileNewest" = "" ]; then  # add check for incorrect or no .rar files found, JHB Jan2021
+		echo "Install rar package file not found"
 		return 0
 	fi
 
@@ -466,7 +466,7 @@ swInstall() {  # install Signalogic SW on specified path
 	echo "Installing SigSRF libs for packet handling, stream group processing, inference, diagnostic, etc..."
 	cd $installPath/Signalogic/DirectCore/lib/
 	for d in *; do
-		cd $d; "$cp_prefix"cp -p lib*.so /usr/lib 2>/dev/null; "$cp_prefix"cp -p lib*.a /usr/lib 2>/dev/null; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
+		cd $d; "$cp_prefix"cp -p lib* /usr/lib; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
 	done
 
 	echo
@@ -780,15 +780,15 @@ do
 			fi
 		fi
 		break;;
-		"Install SigSRF and EdgeStream Software with ASR Option") if ! packageSetup; then
+		"Install SigSRF and EdgeStream Software with ASR Option") installOptions="ASR"; if ! packageSetup; then
 			if ! unrarCheck; then
-				swInstallSetup; dependencyCheck; installOptions="ASR"; swInstall;
+				swInstallSetup; dependencyCheck; swInstall;
 			fi
 		fi
 		break;;
-		"Install SigSRF and EdgeStream Software with coCPU Option") if ! packageSetup; then
+		"Install SigSRF and EdgeStream Software with coCPU Option") installOptions="coCPU"; if ! packageSetup; then
 			if ! unrarCheck; then
-				swInstallSetup; dependencyCheck; installOptions="coCPU"; swInstall;
+				swInstallSetup; dependencyCheck; swInstall;
 			fi
 		fi
 		break;;
