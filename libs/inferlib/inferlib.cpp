@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/lib/inferlib/inferlib.cpp
 
- Copyright (C) Signalogic Inc. 2018-2022
+ Copyright (C) Signalogic Inc. Dallas, Texas, 2018-2022
 
  License
 
