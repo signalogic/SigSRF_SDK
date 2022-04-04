@@ -21,7 +21,7 @@
   Modified Jan 2021 JHB, add diaglib for error handling (Log_RT), initialize asr_handles, zero handle member values prior to use, make local data and functions static
   Modified Jan 2021 JHB, add DSASRConfig() to provide initialization ease-of-use and flexibility
   Modified Feb 2021 JHB, make DSASRConfig() flexible on where it finds Kaldi .conf, .mdl, .fst, and other files
-  Modified Apr 2022 JHB, handled Kaldi hard-coded paths inside ivector_extractor.conf; see comments in DSASRConfig() and find_kaldi_file()
+  Modified Apr 2022 JHB, for containers and rar package installs, handle Kaldi hard-coded paths inside ivector_extractor.conf; see comments in DSASRConfig() and find_kaldi_file()
 */
 
 /* Kaldi includes */
@@ -530,19 +530,22 @@ FILE *fconf = NULL, *fconf_temp = NULL;
    if (!find_kaldi_file(full_path, install_path, ivector_conf_str)) return -1;
    if (!config->ivector_config) config->ivector_config = strdup(full_path); //"/storage/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/ivector_extractor.conf");
 
-/* handle ivector_extractor.conf file, which contains several paths needed by Kaldi libs, JHB Apr2022:
+/* ivector_extractor.conf file requires special handling. This file contains several hardcoded paths needed by Kaldi libs, JHB Apr2022:
 
-  -in the .conf file installed by SDK/demo .rar packages, paths start with a "/home/labuser/Signalogic" dummy, which we need to replace with actual install path
-  -we use path install_path returned by find_kaldi_file()
+  -in the .conf file installed by SDK/demo .rar packages, paths start with a "/home/labuser/Signalogic" dummy, which we detect in order to replace with actual install path on live systems
   -this should only occur once: first time ASR is invoked after a fresh install. After that we check for the dummy each time an app runs and first initializes ASR but we won't find it
-  -another option would be to do this in the install script, but that doesn't cover cases where users are moving files around and effectively changing the install path
-  -later versions of Kaldi may have ways to specify these paths directly/individually, instead of using a .conf file. Several Kaldi paths (see above) are already separate from the .conf file
-  -examples of .conf files needed by Kaldi libs: splice.conf, online_cmvn.conf, final.mat
+  -we use path install_path returned by find_kaldi_file(), which uses realpath() to eliminate any relative path syntax
+
+  Additional notes:
+  
+    -another option would be to do this in the install script, but that doesn't cover cases where users are moving files around or otherwise changing their install path
+    -later versions of Kaldi may have ways to specify these paths directly/individually, instead of using a .conf file. Several Kaldi paths (see above) are already handled separately from any .conf file
+    -examples of files inside ivector_extractor.conf needed by Kaldi libs: splice.conf, online_cmvn.conf, final.mat
 */
 
-      #ifdef HARDCODED_CONF_FILE_DEBUG
-      printf(" *******inferlib, opening ivector config file %s \n", full_path);
-      #endif
+   #ifdef HARDCODED_CONF_FILE_DEBUG
+   printf(" *******inferlib, opening ivector config file %s \n", full_path);
+   #endif
 
    if ((fconf = fopen(full_path, "r"))) {
 
@@ -626,7 +629,7 @@ FILE *fconf = NULL, *fconf_temp = NULL;
 }
 
 
-/* Wrapper Functions */
+/* wrapper Functions */
 
 HASRDECODER DSASRCreate(ASR_CONFIG* asr_config) {return SigOnline2WavNnet3LatgenFasterInit(asr_config);}
 int DSASRProcess(HASRDECODER handle, float* data, int length) {return SigOnline2WavNnet3LatgenFasterProcess(handle, data, length);}
