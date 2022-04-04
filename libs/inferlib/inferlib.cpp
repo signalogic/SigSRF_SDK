@@ -1,19 +1,21 @@
 /*
  $Header: /root/Signalogic/DirectCore/lib/inferlib/inferlib.cpp
 
- Copyright (C) Signalogic Inc. 2018-2021
+ Copyright (C) Signalogic Inc. 2018-2022
 
  License
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
 
+  If there is an appropriate license statement for source code that interfaces to Kaldi, it should go here. For example Nvidia uses pre-built Kaldi in their containers and their web pages have nothing to say on the subject. Note that Kaldi source code is licensed under under the Apache License, Version 2.0
+
  Description
 
-  Inference library including automatic speech recognition (ASR) decoder
+  Inference library including interface to Kaldi automatic speech recognition (ASR) online decoder. Expects input as wideband audio (16 kHz Fs) data in 32-bit floating-point format; see SigOnline2WavNnet3LatgenFasterProcess()
 
  Projects
 
-  SigSRF, DirectCore
+  EdgeStream, SigSRF, DirectCore
 
  Revision History
 
@@ -129,7 +131,7 @@ typedef struct ASR_Info {
 static ASR_INFO asr_handles[MAX_ASR_HANDLES] = {};  /* ensure all .in_use elements are initialized to false */
 
 /* CJ - protection needs to be added when acquiring a new handle index to make the library thread-safe */
-/* JHB - to address this, both DSASRCreate() and DSASRDelete() ae currently called fom pktlib within pktlib_sem lock */
+/* JHB - to address this, both DSASRCreate() and DSASRDelete() ae currently called within pktlib_sem lock (inside pktlib) */
 
 static ASR_INFO* get_asr_handle() {
 
