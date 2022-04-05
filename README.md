@@ -287,7 +287,7 @@ Note that the install script checks for the presence of the unrar package, and i
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
 
-To run the ASR version of the SigSRF + EdgeStream SDK, you can download and run a Docker container (see [Docker Containers](#user-content-installnotesdockercontainer) above) or install the ASR-specific RAR package. To install the RAR package, first follow the instructions in [Install Notes](#user-content-installnotes), above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
+To run the ASR version of the SigSRF + EdgeStream SDK, you can download and run a Docker container (see [Docker Containers](#user-content-installnotesdockercontainer) above) or install the ASR-specific RAR package. To install the RAR package, first follow the instructions in [Rar Packages](#user-content-installnotesrarpackage), above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
 
 For RAR package installation, here are some additional notes:
 
