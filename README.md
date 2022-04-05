@@ -21,6 +21,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Sudo Privilege](#user-content-sudoprivilege)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Running the Install Script](#user-content-runningtheinstallscript)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[ASR Notes](#user-content-asrnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Run Notes](#user-content-runnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin and mediaTest (streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more)](#user-content-mediamin_and_mediatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iaTest (image analytics)](#user-content-iatest)<br/>
@@ -192,6 +193,8 @@ Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demos ins
     https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
 
     https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_centos
+    
+    https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu_asr
 
 After pulling the container, use the following run command:
 
@@ -210,6 +213,8 @@ or
     cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest/mediaMin
 
 ... depending on which EdgeStream app you want to run. The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
+
+To run ASR (automatic speech recognition) the "asr" container is needed (it's much larger). For ASR specific info, see [ASR Notes](#user-content-asrnotes) below.
 
 To access pcap and media files output by EdgeStream apps inside the container -- for example to run WireShark -- you can WinSCP into the container with the following steps:
 
@@ -282,9 +287,9 @@ Note that the install script checks for the presence of the unrar package, and i
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
 
-To install the ASR version of the SDK, first follow the instructions in [Install Notes](#user-content-installnotes), above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
+To run the ASR version of the SigSRF + EdgeStream SDK, you can download and run a Docker container (see [Docker Containers](#user-content-installnotesdockercontainer) above) or install the ASR-specific RAR package. To install the RAR package, first follow the instructions in [Install Notes](#user-content-installnotes), above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
 
-Here are some additional notes:
+For RAR package installation, here are some additional notes:
 
     -downloading the ASR .rar files takes longer as the .rar size is  substantially larger. Also the
      install itself takes a little longer
