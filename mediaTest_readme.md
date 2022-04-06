@@ -449,7 +449,7 @@ mediaMin also generates [stream group](#user-content-streamgroups) output .wav f
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
 
-mediaMin supports ASR processing simultaneously with all other packet handling, media codec, stream group, signal processing, and other options. ASR is performed on stream group output, which can be a single audio stream input or multiple audio streams after merging.  Below are some command line examples showing pcap input along with ASR output:
+mediaMin supports ASR processing simultaneously with packet handling, media codec, stream group, signal processing, and other options. ASR is performed on stream group output, which can be a single audio stream input or multiple audio streams after merging.  Below are some command line examples showing pcap input along with ASR output:
 
     ./mediaMin -M0 -cx86 -i../pcaps/asr_test1.pcap -L -d0x10000c19 -r20
 
@@ -462,13 +462,14 @@ mediaMin supports ASR processing simultaneously with all other packet handling, 
     :
     :
 	
-Note that recognized speech output is displayed (or written to text file) in real-time, as audio stream processing occurs. Here are some notes about ASR operation:
+Note that recognized speech is displayed (or written to text file) in real-time, as audio stream processing proceeds.
 	
-1. Input is expected to be wideband audio (16 kHz sampling rate)
-2. The SDK version of mediaMin currently supports only pcap input with RTP encoded voice (e.g. VoLTE codecs). A version that also handles wav and USB audio input is expected in 2Q22. AS noted in xxx above, pcaps can be generated from wav files using mediaTest commands.
-3. 
+Here are some notes about ASR operation:
 	
-
+1. Input is expected to be wideband audio (16 kHz sampling rate); in the case of pcap input this implies wideband codecs such as AMR-WB, EVS, G711.1, or clear mode with 256 kbps data.
+2. The SDK version of mediaMin currently supports only pcap input with RTP encoded voice (e.g. VoLTE codecs). A version that also handles wav and USB audio input is expected in 2Q22. As shown in [Converting Wav to Pcaps](#user-content-convertingwav2pcaps), pcaps can be generated from wav files using mediaTest commands.
+3. Capacity with ASR enabled is substantially reduced.
+	
 <a name="rtpmalwaredetection"><a/>
 ## RTP Malware Detection
 
