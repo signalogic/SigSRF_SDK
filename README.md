@@ -289,25 +289,8 @@ Note that the install script checks for the presence of the unrar package, and i
 
 To run the ASR version of the SigSRF + EdgeStream SDK, you can download and run a Docker container (see [Docker Containers](#user-content-installnotesdockercontainer) above) or install the ASR-specific RAR package. To install the RAR package, first follow the instructions in [Rar Packages](#user-content-installnotesrarpackage), above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
 
-For RAR package installation, here are some additional notes:
-
-    -downloading the ASR .rar files takes longer as the .rar size is  substantially larger. Also the
-     install itself takes a little longer
+Note that downloading the ASR .rar files takes longer as the .rar size is  substantially larger. Also the install itself takes a little longer.
     
-    -the mediaMin page has command line examples of performing ASR on RTP encoded pcaps. mediaTest
-     can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded
-     with any of the codecs supported in the SDK
-
-    -system performance is crucial -- unless you are running at least a Xeon E5-25xx core you won't
-     see real-time performance when ASR is enabled. Currently SigSRF attempts to maintain real-time
-     performance for one stream group per x86 core (a stream group may have up to 8 input stream
-     contributors). Normally capacity is around 30 to 50 stream groups per core, including all packet
-     handling, jitter buffer, codecs, stream group merging and signal processing. Enabling ASR reduces
-     this capacity greatly, as state-of-the-art ASR is heavily dependent on DNNs (deep neural networks),
-     HMM/GMM acoustic modeling, and HCLG based finite state transducers
-     
-SigSRF uses a Kaldi ASR implementation. In the SDK the Kaldi "mini-librispeech" model is used, which expects English speakers and has a vocabulary size around 200k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
-
 <a name="SudoPrivilege"></a>
 ### Sudo Privilege
 
@@ -465,6 +448,16 @@ For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar
 
 Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. 
 
+<a name=ASRNotes"></a>
+                 
+The SigSRF inferlib module (inference library) provides an interface to Kaldi ASR. In the SDK the Kaldi "mini-librispeech" model is used, which expects English speakers and has a vocabulary size around 20k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
+
+The mediaMin page has command line examples of performing ASR on RTP encoded pcaps. mediaTest can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded with any of the codecs supported in the SDK
+
+For ASR performance and accuracy, system performance is crucial -- unless you are running a Xeon E5-25xx core or similar you won't see sustained real-time performance. However, because SigSRF libs have been developed and deployed on Linux systems by telecoms who are extremely sensitive to losing any amount of data, near-real-time ASR is possible on even slow CPUs such as Atom C2300 series. On slower CPUs, thread preemption and buffer management built into SigSRF libs allows for several seconds of real-time ASR operation separated by pauses.
+                 
+Currently SigSRF attempts to maintain real-time performance for one stream group per x86 core (a stream group may have up to 8 input stream contributors). Normally capacity is around 30 to 50 stream groups per core, including all packet handling, jitter buffer, codecs, stream group merging and signal processing. Enabling ASR reduces this capacity greatly, as state-of-the-art ASR is heavily dependent on DNNs (deep neural networks), HMM/GMM acoustic modeling, and HCLG based finite state transducers.
+     
 <a name="RunNotes"></a>
 ## Run Notes
 
