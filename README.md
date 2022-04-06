@@ -451,9 +451,9 @@ Example command lines for both the default set of pcaps and wav files and advanc
 <a name="ASRNotes"></a>
 ## ASR Notes
                  
-The SigSRF inferlib module (inference library) provides an interface to Kaldi ASR. In the SDK the Kaldi "mini-librispeech" model is used, which expects English speakers and has a vocabulary size around 20k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
+The SigSRF "inferlib" (inference library) module provides an interface to Kaldi ASR. In the SDK the Kaldi "mini-librispeech" model is used, which is trained with English speech and has a vocabulary size around 20k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
 
-The mediaMin page has command line examples of performing ASR on RTP encoded pcaps. mediaTest can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded with any of the codecs supported in the SDK
+The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin page</a> has command line examples of performing ASR on RTP encoded pcaps. mediaTest can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded with any of the codecs supported in the SDK
 
 For ASR performance and accuracy, system performance is crucial -- unless you are running a Xeon E5-25xx core or similar you won't see sustained real-time performance. However, because SigSRF libs have been developed and deployed on Linux systems by telecoms who are extremely sensitive to losing any amount of data, near-real-time ASR is possible on even slow CPUs such as Atom C2300 series. On slower CPUs, thread preemption and buffer management built into SigSRF libs allows for several seconds of real-time ASR operation separated by pauses.
                  
