@@ -7,7 +7,7 @@
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
 
-  If there is an appropriate license statement for source code that interfaces to Kaldi, it should go here. For example Nvidia uses pre-built Kaldi in their containers and their web pages have nothing to say on the subject. Note that Kaldi source code is licensed under under the Apache License, Version 2.0
+  If there is an appropriate license statement for source code that interfaces to Kaldi libs, it should go here. For example Nvidia uses pre-built Kaldi in their containers but their web pages have nothing to say on the subject. Kaldi source code is licensed under under the Apache License, Version 2.0
 
  Description
 
@@ -23,8 +23,16 @@
   Modified Jan 2021 JHB, add diaglib for error handling (Log_RT), initialize asr_handles, zero handle member values prior to use, make local data and functions static
   Modified Jan 2021 JHB, add DSASRConfig() to provide initialization ease-of-use and flexibility
   Modified Feb 2021 JHB, make DSASRConfig() flexible on where it finds Kaldi .conf, .mdl, .fst, and other files
-  Modified Apr 2022 JHB, for containers and rar package installs, handle Kaldi hard-coded paths inside ivector_extractor.conf; see comments in DSASRConfig() and find_kaldi_file()
+  Modified Apr 2022 JHB, for containers and rar package installs, handle Kaldi hardcoded paths inside ivector_extractor.conf; see comments in DSASRConfig() and find_kaldi_file()
+
+ Software design notes:
+
+   -the ASR_INFO struct defines ASR instances used internally here
+   -an ASR instance handle points to an ASR_INFO struct in asr_handles[]
+   -user apps initialize an ASR_CONFIG struct (inferlib.h) and then call DSASRCreate() with the config to create an instance handle
+   -DSASRxxx APIs typically are wrappers around internal functions, for example DSASRCreate() calls SigOnline2WavNnet3LatgenFasterInit()
 */
+
 
 /* Kaldi includes */
 #include "online2/online-nnet3-decoding.h"
@@ -36,6 +44,7 @@
 #include "inferlib.h"
 #include "shared_include/streamlib.h"
 #include "diaglib.h"  /* provides Log_RT() */
+#include "dsstring.h"
 
 using namespace std;
 using namespace kaldi;
@@ -84,8 +93,6 @@ namespace kaldi {
       }
    }
 }
-
-// inferlib ASR instance info
 
 typedef struct ASR_Info {
    
@@ -483,7 +490,7 @@ char* install_path = install_path_user ? install_path_user : install_path_local;
 
          if (stat(full_path, &buffer)) {
 
-         /* note - we could also try the "SIGNALOGIC_INSTALL_PATH=" field inside /etc/environment file, which is added by install script, e.g:
+         /* note - we could also try the "SIGNALOGIC_INSTALL_PATH=" field inside /etc/environment file, which is added by the SigSRF install script, e.g:
 
               SIGNALOGIC_INSTALL_PATH=/home/sigsrf_sdk_demo
 
@@ -502,7 +509,7 @@ char* install_path = install_path_user ? install_path_user : install_path_local;
 /* Notes
 
      -strdup() mallocs are freed in config_free(), which is called by DSASRDelete()
-     -for uninitialized config items use hardcoded values for now, eventually add methods (or combination) (i) pass additional params to DSASRConfig(), (ii) parse a config file
+     -for uninitialized config items we use hardcoded values for now, eventually we can add methods (or combination) (i) pass additional params to DSASRConfig(), (ii) parse a config file
 */
 
 int DSASRConfig(ASR_CONFIG* config, unsigned int uFlags, const char* utterance_id, int sample_rate) {
@@ -515,11 +522,7 @@ char mdl_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/final
 char fst_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/HCLG.fst";
 char txt_str[] = "kaldi/egs/mini_librispeech/s5/exp/chain/tree_sp/graph_tgsmall/words.txt";
 
-char install_dummy[] = "/home/labuser/Signalogic";
-
-/* /home/sigsrf_sdk_demo/Signalogic_2020v8/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/conf/ivector_extractor.conf */
-
-char full_path[256], install_path[256], full_path_temp[256], line[256], line2[256];
+char full_path[256], install_path[256], full_path_temp[256], full_path_bak[256], line[256];
 FILE *fconf = NULL, *fconf_temp = NULL;
 
    if (!config) return -1;  /* error condition */
@@ -534,16 +537,23 @@ FILE *fconf = NULL, *fconf_temp = NULL;
 
 /* ivector_extractor.conf file requires special handling. This file contains several hardcoded paths needed by Kaldi libs, JHB Apr2022:
 
-  -in the .conf file installed by SDK/demo .rar packages, paths start with a "/home/labuser/Signalogic" dummy, which we detect in order to replace with actual install path on live systems
-  -this should only occur once: first time ASR is invoked after a fresh install. After that we check for the dummy each time an app runs and first initializes ASR but we won't find it
-  -we use path install_path returned by find_kaldi_file(), which uses realpath() to eliminate any relative path syntax
+  -in the .conf file installed by SDK/demo .rar packages, file paths start with a "/home/labuser/Signalogic" install path dummy. This or other install path is likely to be wrong, so we test each file path in the conf file and try to open the file. If we can't open it Kaldi can't either, so the path needs to be modified
+  -conf file modification should only occur once: the first time ASR is invoked after a fresh install. After that we continue to check conf files paths in case the user changes the SDK install path or otherwise moves things around. We would expect conf file modification to be infrequent
+  -we use install_path returned by find_kaldi_file(), which uses realpath() to eliminate any relative path syntax. For example the first time the ASR Docker container is run, the hardcocded reference to final.mat would end up as:
+  
+     /home/sigsrf_sdk_demo/Signalogic_2020v8/kaldi/egs/mini_librispeech/s5/exp/chain/tdnn1h_sp_online/ivector_extractor/final.mat
 
   Additional notes:
-  
-    -another option would be to do this in the install script, but that doesn't cover cases where users are moving files around or otherwise changing their install path
+
+    -another option would be to do this in the install script, but that doesn't cover cases where users move files around or otherwise change their install path
     -later versions of Kaldi may have ways to specify these paths directly/individually, instead of using a .conf file. Several Kaldi paths (see above) are already handled separately from any .conf file
     -examples of files inside ivector_extractor.conf needed by Kaldi libs: splice.conf, online_cmvn.conf, final.mat
+
+  To-do:
+    -add critical section protection to prevent multiple threads contending over the same .conf file. It's not performance sensitive as code runs once when an app first calls DSASRConfig()
 */
+
+//#define HARDCODED_CONF_FILE_DEBUG
 
    #ifdef HARDCODED_CONF_FILE_DEBUG
    printf(" *******inferlib, opening ivector config file %s \n", full_path);
@@ -555,11 +565,13 @@ FILE *fconf = NULL, *fconf_temp = NULL;
       printf(" ******* inside conf file read \n");
       #endif
 
+      bool fConfModify = false;
+      char *p;
+
+   /* create temp file */
+
       sprintf(full_path_temp, "%s_temp", full_path);
       fconf_temp = fopen(full_path_temp, "w");
- 
-      bool fDummy_found = false;
-      char* p;
 
       while (fgets(line, sizeof(line), fconf)) {  /* read all lines of .conf file */
 
@@ -567,37 +579,67 @@ FILE *fconf = NULL, *fconf_temp = NULL;
          printf(" ******* conf file line = %s \n", line);
          #endif
 
-         if ((p = strstr(line, install_dummy))) {
+         if ((p = strstr(line, "/"))) {  /* if we find a line with path info, try to open each file as Kaldi lib would do it */
 
-            *p = 0;
-            strcpy(line2, line);  /* copy first part of line */
-            strcat(line2, install_path);  /* add install path */
-            strcat(line2, p + strlen(install_dummy));  /* add remainder of original line */
-            strcpy(line, line2);
+            char line2[256], *p2;
+            struct stat buffer;
 
-            #ifdef HARDCODED_CONF_FILE_DEBUG
-            printf(" ******* conf file modified line = %s \n", line);
-            #endif
+            strcpy(line2, line);
+            str_remove_linebreaks(line2);
+            p2 = strstr(line2, "/");
 
-            fDummy_found = true;
+            if (!stat(p2, &buffer)) goto write_line;  /* if we can open the file then no modification needed, this line of conf file is ok as-is */
+
+         /* we can't open the file path given in the conf file line, it needs to be updated */
+
+            if ((p2 = strstr(line, "/kaldi"))) {  /* locate the Kaldi subfolder */
+
+            /* build new line: first part of existing line, install path returned by find_kaldi_file(), remainder of existing line */
+
+               int nLenFirstPart = (intptr_t)(p-line);
+
+               memcpy(line2, line, nLenFirstPart);
+               line2[nLenFirstPart] = 0;
+               strcat(line2, install_path);
+               strcat(line2, p2);
+
+               char line3[256], *p3;
+
+               strcpy(line3, line2);
+               str_remove_linebreaks(line3);
+               p3 = strstr(line3, "/");
+
+               if (!stat(p3, &buffer)) {  /* try again to open the file */
+                  strcpy(line, line2);
+                  fConfModify = true;  /* indicate successful modification */
+               }
+               else Log_RT(3, "WARNING: DSASRConfig() says Kaldi ivector_extractor.conf file modified line %s still contains incorrect path \n", p3);  /* warn if modification failed */
+
+               #ifdef HARDCODED_CONF_FILE_DEBUG
+               printf(" ******* conf file modified line = %s \n", line);
+               #endif
+            }
          }
 
-         fwrite(line, strlen(line), 1, fconf_temp);  /* write out either original line or modified line */
+write_line:
+
+         fwrite(line, strlen(line), 1, fconf_temp);  /* write out to temp file either original or modified line */
       }
 
       #ifdef HARDCODED_CONF_FILE_DEBUG
-      printf(" *******after checking for dummy install, dummy found = %d, temp conf path = %s \n", fDummy_found, full_path_temp);
+      printf(" *******after checking for conf file lines, fConfModify = %d, temp conf path = %s \n", fConfModify, full_path_temp);
       #endif
       
       if (fconf) fclose(fconf);
       if (fconf_temp) fclose(fconf_temp);
 
-      if (fDummy_found) {  /* if any replacements made then delete the original .conf file and rename the temp file */
+      if (fConfModify) {  /* if successful mods made then remove the original .conf file and rename the temp file */
 
-         remove(full_path);  /* remove original conf file */
+         sprintf(full_path_bak, "%s_bak", full_path);
+         rename(full_path, full_path_bak);  /* save original conf file with "bak" suffix */
          rename(full_path_temp, full_path);  /* rename temp file */
       }
-      else remove(full_path_temp);  /* otherwise if no replacements just remove the temp file */
+      else if (fconf_temp) remove(full_path_temp);  /* otherwise if no successful mods then remove the temp file */
    }
 
    if (!config->frame_subsampling_factor) config->frame_subsampling_factor = 3;
