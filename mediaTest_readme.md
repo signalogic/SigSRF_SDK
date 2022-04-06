@@ -65,8 +65,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**](#user-content-dynamicsessioncreation)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Static Session Configuration**](#user-content-staticsessionconfig)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Static Session Configuration](#user-content-staticsessionconfig)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 
@@ -453,10 +453,16 @@ mediaMin supports ASR processing along with all other options. ASR is performed 
 
     ./mediaMin -M0 -cx86 -i../pcaps/asr_test1.pcap -L -d0x10000c19 -r20
 
+    :
+    :
     Pushed pkts 178, pulled pkts 22j 19x Pkts recv 181 buf 181 jb 179 xc 179 sent 179 mnp 19 -1 -1 pd 15.97 -1.00 -1.00
     00:00:03.675.806 INFO: stream group 0 asr_test1 output first interval 520 (msec), base interval 520.5140, avail data (msec) 540, num_frames 27, min_gap 0 max_gap 0, owner session 0, woc1 1, woc2 0, group flags 0x36000009, ch 0 pastdue 0 contributor flags 0x100
-	Pushed pkts 366, pulled pkts 210j 207x 183s<i><b>A KING ROLLED THE STAKE IN THE EARLY DAYS</b></i> g 195 sent 360 mnp 19 -1 -1 pd 20.01 -1.00 -1.00
+	Pushed pkts 366, pulled pkts 210j 207x 183s**A KING ROLLED THE STAKE IN THE EARLY DAYS** 195 sent 360 mnp 19 -1 -1 pd 20.01 -1.00 -1.00
     Pushed pkts 405, pulled pkts 249j 246x 222s     Pkts recv 405 buf 405 jb 402 xc 402 sg 237 sent 402 mnp 19 -1 -1 pd 20.01 -1.00 -1.00
+    :
+    :
+	
+Note that recognized speech output is display (or written to text file) in real-time, as audio stream processing occurs.
 
 <a name="rtpmalwaredetection"><a/>
 ## RTP Malware Detection
