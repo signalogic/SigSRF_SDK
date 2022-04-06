@@ -451,7 +451,7 @@ Example command lines for both the default set of pcaps and wav files and advanc
 <a name="ASRNotes"></a>
 ## ASR Notes
                  
-The SigSRF "inferlib" (inference library) module provides an interface to Kaldi ASR. In the SDK the Kaldi "mini-librispeech" model is used, which is trained with English speech and has a vocabulary size around 20k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
+The SigSRF "inferlib" (inference library) module provides an interface to Kaldi ASR. In the SigSRF and EdgeStreawm SDK the Kaldi "mini-librispeech" model is used, which is trained with English speech and has a vocabulary size around 20k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
 
 To run ASR, you can either download a Docker container or install the ASR version Rar package; for details see [ASR Install Notes](#user-content-asrinstallnotes) above. The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin page</a> has command line examples running ASR on RTP encoded pcaps. mediaTest can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded with any of the codecs supported in the SDK. mediaMin is currently being modified to support direct .wav and USB audio input.
 
