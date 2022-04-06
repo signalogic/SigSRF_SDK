@@ -64,16 +64,18 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**](#user-content-dynamicsessioncreation)<br/>
+&nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Dynamic Session Creation**](#user-content-dynamicsessioncreation)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Static Session Configuration**](#user-content-staticsessionconfig)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroupscmdline)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[OpenLI Support](#user-content-openlisupport)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Static Session Configuration**](#user-content-staticsessionconfig)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
+&nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
 
 &nbsp;&nbsp;&nbsp;[**RTP Malware Detection**](#user-content-rtpmalwaredetection)<br/>
 
@@ -234,12 +236,70 @@ Below are mediaMin command line examples showing how to control jitter buffer de
 
 See [Jitter Buffer](#user-content-jitterbuffer) below for information on underlying jitter buffer operation and functionality.
 
+<a name="Sessions"></a>
+## Sessions
+
+mediaMin supports dynamic and static sessions. Dynamic sessions are created "on the fly", by recognizing packet streams with unique combinations of IP/port/payload, auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream it finds. Static sessions are created from configuration files specified on the command line that contain IP addresses and ports, codec types and bitrates, and other session info parameters.
+
 <a name="DynamicSessionCreation"></a>
-## Dynamic Session Creation
+### Dynamic Session Creation
 
 mediaMin supports dynamic session creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream it finds. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.
 
 In cases where input streams have a definitive end, for instance one or more command line input pcaps, mediaMin will automatically do session cleanup and delete.
+
+<a name="StaticSessionConfig"></a>
+### Static Session Configuration
+
+Static session configuration can be handled programmatically using the [pktlib](#user-content-pktlib) DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or parsing a session configuration text file to set the struct elements. The latter method is implemented by both mediaTest and mediaMin (look for ReadSessionConfig() and StaticSessionCreate() inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
+
+Structs used in session related APIs are defined in shared_include/session.h, look for SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
+
+Here is a look inside a typical session configuration file, similar to those used in the example command lines shown on this page:
+
+```CoffeeScript
+# Session 1
+[start_of_session_data]
+
+term1.remote_ip = d01:5d2::11:123:5201  # IPv6 format
+term1.remote_port = 6170
+term1.local_ip = fd01:5d2::11:123:5222
+term1.local_port = 18446
+term1.media_type = "voice"
+term1.codec_type = "G711_ULAW"
+term1.bitrate = 64000  # in bps
+term1.ptime = 20  # in msec
+term1.rtp_payload_type = 0
+term1.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term1 -> term2 direction, forward DTMF events for term2 -> term1 direction
+term1.dtmf_payload_type = "NONE"  # A value should be given depending on the dtmf_type field
+term1.sample_rate = 8000   # in Hz (note for fixed rate codecs this field is descriptive only)
+## term1.dtx_handling = -1  # -1 disables DTX handling
+
+term2.remote_ip = 192.16.0.130  # IPv4 format
+term2.remote_port = 10242
+term2.local_ip = 192.16.0.16
+term2.local_port = 6154
+term2.media_type = "voice"
+term2.codec_type = "EVS"
+term2.bitrate = 13200  # in bps
+term2.ptime = 20  # in msec
+term2.rtp_payload_type = 127
+term2.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term2 -> term1 direction, forward DTMF events for term1 -> term2 direction
+term2.dtmf_payload_type = "NONE"
+term2.sample_rate = 16000   # in Hz
+term2.header_format = 1  # Header format, applies to some codecs (EVS, AMR), 0 = CH (Compact Header), 1 = FH (Full Header)
+## term2.dtx_handling = -1  # -1 disables DTX handling
+
+[end_of_session_data]
+
+# Session 2
+[start_of_session_data]
+
+...more session definitions ...
+
+```
+
+Note that each session typically has one or two "terminations", or endpoints (term1 and term2). A session with only term1 can accept and send streaming data with one endpoint, and perform processing on the data required by the endpoint, by the server running mediaMin, or both.  A session with term1 and term2 can exchange streaming data between endpoints, and perform intermediate processing, such as transcoding, speech recognition, overlaying or adding data to the streams, etc.  The number of sessions defined is limited only by the performance of the platform.
 
 <a name="SDPSupport"></a>
 ### SDP Support
@@ -299,6 +359,15 @@ a=rtpmap:100 telephone-event/16000
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
 
 The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path.
+
+<a name="SessionConfigDiagram"></a>
+### Session Endpoint Flow Diagram
+
+As described in Static Session Configuration above, "remote" IP addr and UDP port values refer to stream source, and "local" values refer to stream destination, where a "stream" is a network socket or pcap.  Rx traffic (i.e. received by the user application or mediaMin reference app) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, or sent by the user application or mediaMin app) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
+
+![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
+
+Although terminations can be defined in any order, in general term1 remote should match incoming source values, and term1 local should match incoming destination values. If an outgoing stream is simply a pcap file or a UDP port that nobody is listening to, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
 
 <a name="StreamGroupsCmdLine"></a>
 ## Stream Groups
@@ -377,67 +446,17 @@ In the above displays, note the "Max Delta" stat. This is an indicator of both a
 
 mediaMin also generates [stream group](#user-content-streamgroups) output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
 
-<a name="StaticSessionConfig"></a>
-## Static Session Configuration
+<a name="ASR"><a/>
+## ASR (Automatic Speech Recognition)
 
-Static session configuration can be handled programmatically using the [pktlib](#user-content-pktlib) DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or parsing a session configuration text file to set the struct elements. The latter method is implemented by both mediaTest and mediaMin (look for ReadSessionConfig() and StaticSessionCreate() inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
+mediaMin supports ASR processing along with all other options. ASR is performed on stream group output, which can be a single audio stream input or multiple streams after merging.  Below are some command line examples along with output:
 
-Structs used in session related APIs are defined in shared_include/session.h, look for SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
+    ./mediaMin -M0 -cx86 -i../pcaps/asr_test1.pcap -L -d0x10000c19 -r20
 
-Here is a look inside a typical session configuration file, similar to those used in the example command lines shown on this page:
-
-```CoffeeScript
-# Session 1
-[start_of_session_data]
-
-term1.remote_ip = d01:5d2::11:123:5201  # IPv6 format
-term1.remote_port = 6170
-term1.local_ip = fd01:5d2::11:123:5222
-term1.local_port = 18446
-term1.media_type = "voice"
-term1.codec_type = "G711_ULAW"
-term1.bitrate = 64000  # in bps
-term1.ptime = 20  # in msec
-term1.rtp_payload_type = 0
-term1.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term1 -> term2 direction, forward DTMF events for term2 -> term1 direction
-term1.dtmf_payload_type = "NONE"  # A value should be given depending on the dtmf_type field
-term1.sample_rate = 8000   # in Hz (note for fixed rate codecs this field is descriptive only)
-## term1.dtx_handling = -1  # -1 disables DTX handling
-
-term2.remote_ip = 192.16.0.130  # IPv4 format
-term2.remote_port = 10242
-term2.local_ip = 192.16.0.16
-term2.local_port = 6154
-term2.media_type = "voice"
-term2.codec_type = "EVS"
-term2.bitrate = 13200  # in bps
-term2.ptime = 20  # in msec
-term2.rtp_payload_type = 127
-term2.dtmf_type = "NONE"  # "RTP" = handle incoming DTMF event packets for term2 -> term1 direction, forward DTMF events for term1 -> term2 direction
-term2.dtmf_payload_type = "NONE"
-term2.sample_rate = 16000   # in Hz
-term2.header_format = 1  # Header format, applies to some codecs (EVS, AMR), 0 = CH (Compact Header), 1 = FH (Full Header)
-## term2.dtx_handling = -1  # -1 disables DTX handling
-
-[end_of_session_data]
-
-# Session 2
-[start_of_session_data]
-
-...more session definitions ...
-
-```
-
-Note that each session typically has one or two "terminations", or endpoints (term1 and term2). A session with only term1 can accept and send streaming data with one endpoint, and perform processing on the data required by the endpoint, by the server running mediaMin, or both.  A session with term1 and term2 can exchange streaming data between endpoints, and perform intermediate processing, such as transcoding, speech recognition, overlaying or adding data to the streams, etc.  The number of sessions defined is limited only by the performance of the platform.
-
-<a name="SessionConfigDiagram"></a>
-### Session Endpoint Flow Diagram
-
-As described in Static Session Configuration above, "remote" IP addr and UDP port values refer to stream source, and "local" values refer to stream destination, where a "stream" is a network socket or pcap.  Rx traffic (i.e. received by the user application or mediaMin reference app) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, or sent by the user application or mediaMin app) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
-
-![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
-
-Although terminations can be defined in any order, in general term1 remote should match incoming source values, and term1 local should match incoming destination values. If an outgoing stream is simply a pcap file or a UDP port that nobody is listening to, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
+    Pushed pkts 178, pulled pkts 22j 19x Pkts recv 181 buf 181 jb 179 xc 179 sent 179 mnp 19 -1 -1 pd 15.97 -1.00 -1.00
+    00:00:03.675.806 INFO: stream group 0 asr_test1 output first interval 520 (msec), base interval 520.5140, avail data (msec) 540, num_frames 27, min_gap 0 max_gap 0, owner session 0, woc1 1, woc2 0, group flags 0x36000009, ch 0 pastdue 0 contributor flags 0x100
+	Pushed pkts 366, pulled pkts 210j 207x 183s<i><b>A KING ROLLED THE STAKE IN THE EARLY DAYS</b></i> g 195 sent 360 mnp 19 -1 -1 pd 20.01 -1.00 -1.00
+    Pushed pkts 405, pulled pkts 249j 246x 222s     Pkts recv 405 buf 405 jb 402 xc 402 sg 237 sent 402 mnp 19 -1 -1 pd 20.01 -1.00 -1.00
 
 <a name="rtpmalwaredetection"><a/>
 ## RTP Malware Detection
