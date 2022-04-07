@@ -471,8 +471,8 @@ In general, to enable ASR with any arbitrary mediaMin command, including mediaMi
 
 Here are some notes about ASR operation:
 
-1. Input is expected to be wideband audio (16 kHz sampling rate); in the case of pcap input this implies wideband codecs such as AMR-WB, EVS, G711.1, or clear mode with 256 kbps data.
-2. The SDK version of mediaMin currently supports only pcap input with RTP encoded voice (e.g. VoLTE codecs). A version that also handles wav and USB audio input is expected in 2Q22. As shown in [Converting Wav to Pcaps](#user-content-convertingwav2pcaps), pcaps can be generated from wav files using mediaTest commands.
+1. Input is expected to be wideband audio (16 kHz sampling rate); in the case of pcap input this implies wideband codecs such as AMR-WB, EVS, G711.1, or clear mode with 256 kbps data
+2. The SDK version of mediaMin currently supports pcap input with RTP encoded voice (e.g. VoLTE codecs). A version that also handles wav and USB audio input is expected in 2Q22. As shown in [Converting Wav to Pcaps](#user-content-convertingwav2pcaps), pcaps can be generated from wav files using mediaTest commands
 3. Capacity with ASR enabled is substantially reduced. For more information on ASR capacity / real-time performance, see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-asrnotes">ASR Notes</a>
 	
 <a name="rtpmalwaredetection"><a/>
