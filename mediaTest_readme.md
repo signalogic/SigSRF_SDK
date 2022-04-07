@@ -457,7 +457,7 @@ mediaMin supports ASR processing simultaneously with packet handling, media code
 :
 Pushed pkts 178, pulled pkts 22j 19x Pkts recv 181 buf 181 jb 179 xc 179 sent 179 mnp 19 -1 -1 pd 15.97 -1.00 -1.00
 00:00:03.675.806 INFO: stream group 0 asr_test1 output first interval 520 (msec), base interval 520.5140, avail data (msec) 540, num_frames 27, min_gap 0 max_gap 0, owner session 0, woc1 1, woc2 0, group flags 0x36000009, ch 0 pastdue 0 contributor flags 0x100
-Pushed pkts 366, pulled pkts 210j 207x 183s<b><font color="blue">A KING ROLLED THE STAKE IN THE EARLY DAYS</font></b>195 sent 360 mnp 19 -1 -1 pd 20.01 -1.00 -1.00
+Pushed pkts 366, pulled pkts 210j 207x 183s<b><p style="color: blue">A KING ROLLED THE STAKE IN THE EARLY DAYS</p></b>195 sent 360 mnp 19 -1 -1 pd 20.01 -1.00 -1.00
 Pushed pkts 405, pulled pkts 249j 246x 222s     Pkts recv 405 buf 405 jb 402 xc 402 sg 237 sent 402 mnp 19 -1 -1 pd 20.01 -1.00 -1.00
 :
 :
