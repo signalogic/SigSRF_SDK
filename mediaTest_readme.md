@@ -241,12 +241,12 @@ See [Jitter Buffer](#user-content-jitterbuffer) below for information on underly
 <a name="Sessions"></a>
 ## Sessions
 
-mediaMin supports dynamic and static sessions. Dynamic sessions are created "on the fly", by recognizing packet streams with unique combinations of IP/port/payload, auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream it finds. Static sessions are created from configuration files specified on the command line that contain IP addresses and ports, codec types and bitrates, and other session info parameters.
+mediaMin supports dynamic and static sessions. Dynamic sessions are created "on the fly", by recognizing packet streams with unique combinations of IP/port/payload, auto-detecting the codec type, and creating [pktlib](#user-content-pktlib) sessions to process subsequent packet flow. Static sessions are created from configuration files specified on the command line that contain IP addresses and ports, codec types and bitrates, and other session info parameters.
 
 <a name="DynamicSessionCreation"></a>
 ### Dynamic Session Creation
 
-mediaMin supports dynamic session creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream it finds. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.
+mediaMin supports dynamic session creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.  mediaMin supports both UDP and TCP/IP streams, and also auto-detects encapsulated streams, for example BER encoded streams.
 
 In cases where input streams have a definitive end, for instance one or more command line input pcaps, mediaMin will automatically do session cleanup and delete.
 
