@@ -11,7 +11,7 @@
 
  Description
 
-  Inference library including interface to Kaldi automatic speech recognition (ASR) online decoder. Expects input as wideband audio (16 kHz Fs) data in 32-bit floating-point format; see SigOnline2WavNnet3LatgenFasterProcess()
+  Inference library including interface to Kaldi automatic speech recognition (ASR) online decoder. Input expected as wideband audio (16 kHz Fs) data in 32-bit floating-point format; see SigOnline2WavNnet3LatgenFasterProcess()
 
  Projects
 
@@ -25,11 +25,11 @@
   Modified Feb 2021 JHB, make DSASRConfig() flexible on where it finds Kaldi .conf, .mdl, .fst, and other files
   Modified Apr 2022 JHB, for containers and rar package installs, handle Kaldi hardcoded paths inside ivector_extractor.conf; see comments in DSASRConfig() and find_kaldi_file()
 
- Software design notes:
+ Software Design Notes
 
    -the ASR_INFO struct defines ASR instances used internally here
    -an ASR instance handle points to an ASR_INFO struct in asr_handles[]
-   -user apps initialize an ASR_CONFIG struct (inferlib.h) and then call DSASRCreate() with the config to create an instance handle
+   -user apps call DSASRConfig() to initialize an ASR_CONFIG struct (inferlib.h) and then call DSASRCreate() with the config to create an instance handle
    -DSASRxxx APIs typically are wrappers around internal functions, for example DSASRCreate() calls SigOnline2WavNnet3LatgenFasterInit()
 */
 
@@ -642,6 +642,8 @@ write_line:
       else if (fconf_temp) remove(full_path_temp);  /* otherwise if no successful mods then remove the temp file */
    }
 
+/* Kaldi .conf file handling finished, resume initialization */
+
    if (!config->frame_subsampling_factor) config->frame_subsampling_factor = 3;
    if (!config->acoustic_scale) config->acoustic_scale = 1.0;
    if (!config->beam) config->beam = 15.0;
@@ -673,7 +675,7 @@ write_line:
 }
 
 
-/* wrapper Functions */
+/* wrapper Functions. Apps should use DSASRxxx() APIs published in inferlib.h */
 
 HASRDECODER DSASRCreate(ASR_CONFIG* asr_config) {return SigOnline2WavNnet3LatgenFasterInit(asr_config);}
 int DSASRProcess(HASRDECODER handle, float* data, int length) {return SigOnline2WavNnet3LatgenFasterProcess(handle, data, length);}

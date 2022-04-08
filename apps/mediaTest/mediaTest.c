@@ -108,6 +108,7 @@
    Modified Jan 2021 JHB, improve error message output for invalid cmd line arguments, add some help text
    Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
    Modified Feb 2022 JHB, insert NULLs for pFilelibHandle param in calls to DSLoadDataFile() in hwlib (a newly added param)
+   Modified Mar 2022 JHB, add GPX file input file handling
 */
 
 /* system header files */
@@ -1193,10 +1194,10 @@ char              modestr[20], debugstr[100];
 
    if (CPU_mode & CPUMODE_C66X) {
 
-      if (network_packet_test + cocpu_sim_test + cocpu_network_test + codec_test != 1) {
+      if (network_packet_test + cocpu_sim_test + cocpu_network_test + codec_test + gpx_process != 1) {
 
          strcpy(modestr, "c66x coCPU");
-         sprintf(debugstr, "codec test = %d, cocpu sim test = %d, cocpu network test = %d, network packet test = %d", codec_test, cocpu_sim_test, cocpu_network_test, network_packet_test);
+         sprintf(debugstr, "codec test = %d, cocpu sim test = %d, cocpu network test = %d, network packet test = %d, gpx process = %d", codec_test, cocpu_sim_test, cocpu_network_test, network_packet_test, gpx_process);
 
 cmd_err: printf("Invalid cmd line options for %s, make sure: \n", modestr);
          printf("  one or more -i and -o (input and output) options are correctly specified \n");
@@ -1209,9 +1210,9 @@ cmd_err: printf("Invalid cmd line options for %s, make sure: \n", modestr);
    }
    else {
 
-      if (x86_frame_test + x86_pkt_test + codec_test + pcap_extract != 1) {
+      if (x86_frame_test + x86_pkt_test + codec_test + pcap_extract + gpx_process != 1) {
          strcpy(modestr, "x86");
-         sprintf(debugstr, "codec test = %d, x86 frame test = %d, x86 pkt test = %d, pcap extract = %d", codec_test, x86_frame_test, x86_pkt_test, pcap_extract);
+         sprintf(debugstr, "codec test = %d, x86 frame test = %d, x86 pkt test = %d, pcap extract = %d, gpx process = %d", codec_test, x86_frame_test, x86_pkt_test, pcap_extract, gpx_process);
          goto cmd_err;
       }
    }
@@ -1222,7 +1223,7 @@ cmd_err: printf("Invalid cmd line options for %s, make sure: \n", modestr);
 
       printf("Running on x86 cores, no coCPU cores specified\n");
 
-      x86_mediaTest();  /* Run x86 mediaTest */
+      x86_mediaTest();  /* run x86 mediaTest */
       main_ret = 0;
       goto exit;
    }

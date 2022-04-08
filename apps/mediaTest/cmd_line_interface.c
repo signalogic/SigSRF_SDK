@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/cmd_line_interface.c
 
- Copyright (C) Signalogic Inc. 2018-2021
+ Copyright (C) Signalogic Inc. 2018-2022
  
  Description
  
@@ -27,7 +27,8 @@
    Modified Dec 2019 JHB, add nJitterBufferParams to support jitter buffer target and max delay cmd line entry (-jN)
    Modified Jan 2020 JHB, add nRepeat to supper number of repeat times cmd line entry (-RN)
    Modified Jan 2021 JHB, change references to AUDIO_FILE_TYPES to IS_AUDIO_FILE_TYPE, initialize outFileType2, USBAudioInput, and USBAudioOutput, allow pcap for output file type, add char szSDPFile[CMDOPT_MAX_INPUT_LEN]
-   Modified Dec 2021 JHB, makde debugMode 64-bit int
+   Modified Dec 2021 JHB, make debugMode 64-bit int
+   Modified Mar 2022 JHB, add GPX file input handling, -Fn flag for mediaTest gpx processing
 */
 
 
@@ -68,6 +69,7 @@ int            nAmplitude = 0;
 int            nJitterBufferParams = 0;
 int            nRepeat = 0;
 char           szSDPFile[CMDOPT_MAX_INPUT_LEN] = "";
+int            nSamplingFrequency;
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 
@@ -90,7 +92,7 @@ void intHandler(int sig) {
   2) Only one flag is set at one time
 */
 
-char           network_packet_test = 0, cocpu_sim_test = 0, cocpu_network_test = 0, codec_test = 0, x86_frame_test = 0, x86_pkt_test = 0, pcap_extract = 0;
+char           network_packet_test = 0, cocpu_sim_test = 0, cocpu_network_test = 0, codec_test = 0, x86_frame_test = 0, x86_pkt_test = 0, pcap_extract = 0, gpx_process = 0;
 unsigned int   CPU_mode = 0, programMode = 0;
 
 
@@ -103,7 +105,7 @@ int cmdLineInterface(int argc, char **argv, unsigned int uFlags) {
 
 UserInterface userIfs = {0, 0, 0, 0, "", "", false};
 
-bool fAudioInputFile, fAudioOutputFile, fPcapInputFile, fCodedInputFile, fCodedOutputFile, fPcapOutputFile;
+bool fAudioInputFile, fAudioOutputFile, fPcapInputFile, fCodedInputFile, fCodedOutputFile, fPcapOutputFile, fGpxInputFile;
 bool __attribute__ ((unused)) fTextOutputFile, fCSVOutputFile;  /* added Nov 2019 JHB */
 
 unsigned int cim_uFlags;
@@ -150,6 +152,7 @@ unsigned int cim_uFlags;
    fCodedInputFile = inFileType == ENCODED;
    fPcapInputFile = inFileType == PCAP;
    fAudioInputFile = IS_AUDIO_FILE_TYPE(inFileType);
+   fGpxInputFile = inFileType == GPX;
    
    outFileType = get_file_type(MediaParams[0].Media.outputFilename, 1);
 
@@ -177,6 +180,7 @@ unsigned int cim_uFlags;
 
    codec_test = ((fAudioInputFile || USBAudioInput || fCodedInputFile) && (fAudioOutputFile || USBAudioOutput || fCodedOutputFile || fPcapOutputFile));  /* codec mode = both I/O audio or compressed bitstream of some type (also includes output pcap) */
    pcap_extract = (fPcapInputFile && fCodedOutputFile);
+   gpx_process = (fGpxInputFile != 0);
 
 // printf("codec_test = %d, pcap_extract = %d, pcap input file = %d\n", codec_test, pcap_extract, fPcapInputFile);
 
@@ -217,6 +221,7 @@ unsigned int cim_uFlags;
    nJitterBufferParams = userIfs.nJitterBufferOptions;  /* lsbyte is target delay, next byte is max delay, JHB Dec2019 */
    nRepeat = (int)userIfs.nRepeatTimes;  /* -1 = no entry (no repeat), 0 = repeat forever, > 1 is repeat number of times, JHB Jan2020 */
    if (strlen(userIfs.szSDPFile)) strcpy(szSDPFile, userIfs.szSDPFile);
+   nSamplingFrequency = userIfs.nSamplingFrequency;  /* sampling frequency for gpx processing */
 
 /* register signal handler to catch Ctrl-C signal and cleanly exit mediaTest, mediaMin, and other test programs */
 
@@ -265,6 +270,7 @@ char tmpstr[1024];
    else if (strstr(tmpstr, ".TXT")) fileType = TEXT;
    else if (strstr(tmpstr, ".CSV")) fileType = CSV;
    else if (strstr(tmpstr, ".BER")) fileType = BER;
+   else if (strstr(tmpstr, ".GPX")) fileType = GPX;
 
    return fileType;
 }

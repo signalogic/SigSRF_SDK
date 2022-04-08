@@ -140,6 +140,7 @@ typedef struct {
    #define   nJitterBufferOptions scryptParamp     /* mediaMin app usage of -j cmd line entry, JHB Dec2019 */ 
    #define   nRepeatTimes scryptdklen              /* mediaMin app usasge of -R cmd line entry, JHB Jan2020 */
    #define   szSDPFile szScryptFile                /* mediaMin app usasge of -s cmd line entry for SDP file input. Note that mediaTest uses -s for audio file segmentation JHB Jan2021 */
+   #define   nSamplingFrequency scryptParamp       /* mediaTest app Fs for gpx processing, JHB Mar2022 */
 
 } UserInterface;
 

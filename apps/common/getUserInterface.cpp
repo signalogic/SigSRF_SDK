@@ -28,6 +28,7 @@
    Modified Jan 2021 JHB, add -s option specific to mediaMin to handle SDP file input on cmd line
    Modified Dec 2021 JHB, make -d option (mode/debug flags) 64-bit integer
    Modified Feb 2022 JHB, in getUserInfo() display summary, show x86 clock rate instead of "Default", if coCPU executable file not used show "N/A" instead of nothing
+   Modified Mar 2022 JHB, add -Fn flag for mediaTest gpx processing
 */
 
 #include <stdlib.h>
@@ -46,7 +47,7 @@ CmdLineOpt::Record options[] = {
    {'c', CmdLineOpt::STRING, MANDATORY,
           (char *)"Platform / card designator (e.g. -cx86 or -cSIGC66XX)" },
    {'f', CmdLineOpt::INTEGER, MANDATORY_COCPU,
-          (char *)"CPU clock rate in MHz (e.g. -f1000)", {{(void*)1000}} },
+          (char *)"CPU clock frequency in MHz (e.g. -f1000)", {{(void*)1000}} },
    {'m', CmdLineOpt::INT64, MANDATORY_COCPU,
           (char *)"Core select bit mask. (e.g. -m1, means core0, -m2 means core1, -m3 means core0 and core1.  For some programs only one core can be selected at a time)" },
    {'e', CmdLineOpt::STRING, MANDATORY_COCPU,
@@ -96,14 +97,14 @@ CmdLineOpt::Record options[] = {
    {'I', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Interval for audio segmentation, or input FFT data waveform (-I0 for ramp, -I1 for impulse, default is ramp)" },
 
-   /* video streaming test program flags */
+   /* video and audio streaming flags */
   
    {'x', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"x resolution (e.g. -x1920 for 1920 video width)", {{(void*)0}} },
    {'y', CmdLineOpt::INTEGER, NOTMANDATORY, 
           (char *)"y resolution (e.g. -x1080 for 1080 video height)", {{(void*)0}} },
 	{'s', CmdLineOpt::INTEGER, NOTMANDATORY,
-          (char *)"Segmentation for mediaTest, streaming mode for streamTest (e.g. -s0 for oneshot, -s1 for continuous)", {{(void*)0}} },
+          (char *)"Segmentation for mediaTest audio, streaming mode for streamTest (e.g. -s0 for oneshot, -s1 for continuous)", {{(void*)0}} },
 	{'s', CmdLineOpt::STRING, NOTMANDATORY,
           (char *)"sdp file input for mediaMin" },
 	{'r', CmdLineOpt::INTEGER, NOTMANDATORY,
@@ -120,6 +121,11 @@ CmdLineOpt::Record options[] = {
           (char *)"Jitter buffer parameters, lower 8 bits is target delay, next 8 bits is max delay (in number of packets)", {{(void*)-1}} },
 	{'R', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Repeat number of times", {{(void*)-1}} },
+
+   /* gpx processing flags */
+
+   {'F', CmdLineOpt::INTEGER, NOTMANDATORY,
+          (char *)"Sampling frequency in Hz (e.g. -F8000)", {{(void*)-1}} },  /* initialize to -1 so programs can tell if -Fn has been given on cmd line */
 
 	/* Scrypt test program flags */ 
 
@@ -183,6 +189,8 @@ char clkstr[100];
          }   
 
          if (cmdOpts.nInstances('f')) userIfs->processorClockrate = cmdOpts.getInt('f', 0, 0);
+
+         if (cmdOpts.nInstances('F')) userIfs->nSamplingFrequency = cmdOpts.getInt('F', 0, 0);  /* mediaTest app gps sampling frequency, JHB Mar2022 */
 
          if (cmdOpts.nInstances('m')) userIfs->coreBitMask = cmdOpts.getInt64('m', 0);
 

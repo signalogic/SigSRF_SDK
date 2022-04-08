@@ -11,6 +11,7 @@
  
   Created Mar 2017 CKJ
   Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
+  Modified Mar 2022 JHB, add some missing initializer brackets that cause warnings with gcc compiler
 */
 
 #include <stdio.h>
@@ -47,7 +48,7 @@ void *encode_thread_task(void *arg)
    uint8_t out_buf[MAX_CODED_FRAME];
    int ret_val;
    uint32_t in_frame_size, out_frame_size;
-   MEDIAINFO MediaInfo = {0};
+   MEDIAINFO MediaInfo = {{0}};  /* add 2nd set of brackets, JHB Mar2022 */
 
    in_fp = fopen(encoder_input_files[hCodec], "rb");
    if (!in_fp) 
@@ -110,7 +111,7 @@ void *decode_thread_task(void *arg)
    uint8_t out_buf[MAX_RAW_FRAME];
    int ret_val;
    uint32_t in_frame_size = 0, out_frame_size;
-   MEDIAINFO MediaInfo = {0};
+   MEDIAINFO MediaInfo = {{0}};  /* add 2nd set of brackets, JHB Mar2022 */
 
    in_fp = fopen(decoder_input_files[hCodec], "rb");
    if (!in_fp) 

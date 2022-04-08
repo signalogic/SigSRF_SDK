@@ -23,6 +23,7 @@
   Revised Oct 2018 JHB, changed definition of "bool" for non C++ codes to uint8_t. See comments
   Modified Jan 2021 JHB, don't include minmax.h for C++ code using std::min and std::max
   Modified Feb 2022 JHB, removed HFILE alias and modified streamTest.c to use FILE*, this was only app using HFILE, which is now defined in filelib.h for filelib file handles
+  Modified Mar 2022 JHB, move MAXPATH outside of defined(__LIBRARYMODE__)
 */
 
  
@@ -55,17 +56,19 @@
    #include "minmax.h"
 #endif
 
-#if defined (__LIBRARYMODE__)
-   #define MAXPATH 260
+#define MAXPATH 260  /* pull MAXPATH out of defined(__LIBRARYMODE__) and make available to apps, JHB Mar2022 */
+
+#if defined(__LIBRARYMODE__)
+
    #define MAXFILE 260
 
-   #if defined (__MSVC__) || defined (_WIN32_WINNT)
+   #if defined(__MSVC__) || defined(_WIN32_WINNT)
       #define huge
       #define far
    #endif
 #endif
 
-#if defined (_LINUX_) || defined (_WIN32_WINNT)
+#if defined(_LINUX_) || defined(_WIN32_WINNT)
    #define lstrcpy strcpy
    #define lstrcmp strcmp
    #define lstrcat strcat
@@ -74,7 +77,7 @@
 
 /* #include <linux/version.h> */
 
-#if defined (_LINUX_)
+#if defined(_LINUX_)
 
    #define _GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)  /* Modified:  Added GCC version Macro to compare it with version >=4.5 to avoid pragma error in GCC versions < 4.5. HP, SC, Oct 2014 */
 

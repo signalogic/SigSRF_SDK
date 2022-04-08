@@ -3,7 +3,7 @@
 
   header file for mediaMin application and mediaTest test and measurement program
 
-  Copyright (C) Signalogic, 2015-2021
+  Copyright (C) Signalogic, 2015-2022
 
   Revision History
 
@@ -29,6 +29,7 @@
    Modified Oct 2020 JHB, PCAP definition in I/O file type enum can be used with both pcap and pcapng formats
    Modified Jan 2021 JHB, change AUDIO_FILE_TYPES macro to IS_AUDIO_FILE_TYPE, add extern reference for char szSDPFile[CMDOPT_MAX_INPUT_LEN]
    Modified Apr 2021 JHB, add "header_format" to codec_test_params_t struct
+   Modified Mar 2022 JHB, add GPX file type and reference to gpx_process (cmd line handling)
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -173,7 +174,7 @@ extern volatile bool     fNetIOAllowed;
 extern volatile bool     fUSBIOAllowed;
 extern volatile int      debug_thread;   /* which packet/media thread is currently selected for run-time debug output */
 
-extern char              network_packet_test, cocpu_sim_test, cocpu_network_test, codec_test;
+extern char              network_packet_test, cocpu_sim_test, cocpu_network_test, codec_test, gpx_process;
 extern unsigned int      CPU_mode, programMode;
 extern unsigned int      inFileType, outFileType, outFileType2, USBAudioInput, USBAudioOutput;
 extern char              executionMode[2];
@@ -187,6 +188,7 @@ extern int               nAmplitude;
 extern int               nJitterBufferParams;
 extern int               nRepeat;
 extern char              szSDPFile[CMDOPT_MAX_INPUT_LEN];
+extern int               nSamplingFrequency;
 
 extern QWORD             nCoreList;                         /* bitwise core list given in command line */
 extern HCARD             hCard;
@@ -261,6 +263,7 @@ extern "C" {
      TEXT,
      CSV,
      BER,            /* added experimental, JHB Dec2021 */
+     GPX,
      USB_AUDIO = 0x100,  /* for output only, USB audio can be combined with audio file types */
      INVALID
   };

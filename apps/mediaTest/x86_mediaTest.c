@@ -56,6 +56,7 @@
   Modified Dec 2018 CKJ, add support for AMR-WB+ codec, including ".BIT" coded data file extension, variable encoder input framesize.  Pass &encOutArgs to DSCodecEncode() function
   Modified Dec 2018 JHB, adjust thread/core affinity for high capacity mediaTest -Et -tN mode testing (creates N mediaMin application threads)
   Modified Jul 2019 JHB, codecs now accessed via voplib API calls and CODEC_PARAMS struct.  XDAIS interface is now visibile from voplib and alglib but not applications
+  Modified Aug-Sep 2019 JHB, add segmentation and cmd line options
   Modified Mar 2020 JHB, handle name change of mediaThread_test_app.c to mediaMin.c
   Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0: include minmax.h (for min/max functions), fix various security and "indentation" warnings
   Modified Jan 2021 JHB, fix warning for sampleRate_codec used uninitialized (no idea why this suddenly popped up)
@@ -71,6 +72,8 @@
   Modified Feb 2022 JHB, fix issues with sampling rate conversion applied to multichannel data (i) fs_convert_delay_buf not declared correctly and (ii) num_samples used in DSConvertFs() was incorrectly divided by numChan
   Modified Feb 2022 JHB, modify DSCodecEncode() and DSCodecDecode() to pass pointer to one or more codec handles and a num channels param. This enables multichannel encoding/decoding (e.g. stereo audio files) and simplifies concurrent codec instance test and measurement (e.g. 30+ codec instances within one thread or CPU core)
   Modified Feb 2022 JHB, make responsive to -RN command line entry (repeat), with same specs as mediaMin. For example, for an encoder-decoder data flow, -R2 repeats the data flow twice, wrapping the input waveform file after each repeat
+  Modified Mar 2022 JHB, move strrstr() to dsstring.h (as static line)
+  Modified Mar 2022 JHB, add first pass of gpx file processing
 */
 
 /* Linux header files */
@@ -80,12 +83,15 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <limits.h>
+#include <math.h>
 
 /* app support header files */
 
 #include "mediaTest.h"
 #include "minmax.h"
 #include "cmd_line_debug_flags.h"  /* bring in ENABLE_xxx definitions used when parsing -dN cmd line flag (look for "debugMode"), JHB Jan2022 */
+#include "dsstring.h"
+#include "gpx/gpxlib.h"
 
 /* SigSRF lib header files (all libs are .so format) */
 
@@ -107,15 +113,15 @@ char thread_status[2*MAX_CODEC_INSTANCES] = { 0 };
 
 static HPLATFORM hPlatform = -1;  /* platform handle, see DSAssignPlatform() call */
 
-int numChan = 1;  /* numChan is sitting out here because it's referred to in USBAudioXXX functions. To-do: fix this, JHB Feb2022 */
+int numChan = 1;  /* numChan is sitting out here because it's referred to in USB audio callback functions in aviolib. To-do: fix this by adding a caller data struct when registering callback functions (a pointer to which is then available pcm_callback in struct sent to callback functions) , JHB Feb2022 */
 
 extern PLATFORMPARAMS PlatformParams;  /* command line params */
 
 /* local functions */
 #if 0  /* replaced by DSGetCodecName() in voplib */
 int get_codec_name(int codec_type, char* szCodecName);
-#endif
 const char* strrstr(const char* haystack, const char* needle);
+#endif
 
 
 #define AUDIO_SAMPLE_SIZE  2       /* in bytes.  Currently all codecs take 16-bit samples.  Some like AMR require 14-bit left-justified within 16 bits */
@@ -438,7 +444,6 @@ uint8_t zerobuf[MAX_RAW_FRAME] = { 0 };
    return 1;
 }
 
-
 /* main function entry */
 
 void x86_mediaTest(void) {
@@ -466,13 +471,13 @@ void x86_mediaTest(void) {
       char default_config_file[] = "session_config/codec_test_config";
       char *config_file;
       int len;
-      unsigned int inbuf_size;
+      unsigned int inbuf_size = 0;
       uint8_t* addr;
       char key;
-      unsigned int sampleRate_input = 0, sampleRate_output, sampleRate_codec = 8000, fs_divisor;
+      unsigned int sampleRate_input = 0, sampleRate_output = 0, sampleRate_codec = 8000, fs_divisor;
       bool fConfig_vs_InputChanConflict = false;
       char chanstr[100] = "";
-      int input_framesize;  /* in bytes, determined by input sampling rate and codec or pass-thru framesize */
+      int input_framesize = 0;  /* in bytes, determined by input sampling rate and codec or pass-thru framesize */
       int coded_framesize = 0;
       unsigned int __attribute__((unused)) output_framesize;  /* currently not used unless _ALSA_INSTALLED_ is defined, but likely to be used in the future */
 
@@ -498,7 +503,7 @@ void x86_mediaTest(void) {
 
       short int fs_convert_delay_buf[MAX_AUDIO_CHAN][MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE] = {{ 0 }};
       short int fs_convert_delay_buf_output[MAX_AUDIO_CHAN][MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE] = {{ 0 }};
-      unsigned int upFactor, downFactor, upFactor_output, downFactor_output;
+      unsigned int upFactor = 0, downFactor = 0, upFactor_output = 0, downFactor_output = 0;
       float codec_frame_duration = 0;  /* in msec */
 
       FILE *fp_cfg = NULL;
@@ -2077,8 +2082,7 @@ codec_test_cleanup:
   
       printf("x86 frame test end\n");
    }
-   else if (pcap_extract)
-   {
+   else if (pcap_extract) {
 
    /* The pcap extract mode extracts RTP payloads from pcap files and writes to 3GPP decoder compatible .cod files.  Notes:
    
@@ -2276,82 +2280,241 @@ pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB
 
       printf("pcap extract end\n");
    }
+   else if (gpx_process) {
 
-   printf("x86 mediaTest end\n");
-}
+      FILE *fp_in = NULL, *fp_out = NULL;
+      char tmpstr[1024], key;
+      int i, j;
 
-#if 0  /* replaced by DSGetCodecName() in voplib */
+  #define N_LOOKBACK 16
 
-/* assign codec name string, based on codec type (see list of constants in Signalogic/shared_include/session.h */
+      GPX_POINT gpx_points_in_buffer[N_LOOKBACK + NUM_GPX_POINTS_PER_FRAME] = { 0 };
+      GPX_POINT gpx_points_out_buffer[N_LOOKBACK + NUM_GPX_POINTS_PER_FRAME] = { 0 };
 
-int get_codec_name(int codec_type, char* szCodecName) {
+      GPX_POINT* gpx_points_in = &gpx_points_in_buffer[N_LOOKBACK];
+      GPX_POINT* gpx_points_out = &gpx_points_out_buffer[N_LOOKBACK];
 
-   switch (codec_type) {
+      #define N_RUN 4  /* must always be power of 2 */
+	   float run_sum_save_d[N_RUN] = { 0 };  /* distance running sum */
+	   float run_sum_save_h[N_RUN] = { 0 };  /* heading (bearing) running sum */
+      float run_sum_d = 0, run_sum_h = 0;
+      int run_sum_index = 0;
+      int alt_filt_count = 0;
 
-      case DS_VOICE_CODEC_TYPE_G711_ULAW:
-         strcpy(szCodecName, "G711u");
-         break;
+      int aggressive_count = 0, relax_count = 0, loop_fix_count = 0, alt_dev_count = 0, drop_out_count = 0;  /* stat counters */
 
-      case DS_VOICE_CODEC_TYPE_G711_ALAW:
-         strcpy(szCodecName, "G711a");
-         break;
+      const char header1[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx creator=\"EdgeStreamGPX\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\" version=\"1.1\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n<metadata>\n";
+      const char header2[] = "</metadata>\n<trk>\n  <name>test output</name>\n  <trkseg>\n";
+      const char trailer1[] = "  </trkseg>\n</trk>\n</gpx>\n";
 
-      case DS_VOICE_CODEC_TYPE_EVS:
-         strcpy(szCodecName, "EVS");
-         break;
+      int ret_val, frame_count = 0;
 
-      case DS_VOICE_CODEC_TYPE_AMR_NB:
-         strcpy(szCodecName, "AMR-NB");
-         break;
+      bool fFirstPoint = false;
 
-      case DS_VOICE_CODEC_TYPE_AMR_WB:
-         strcpy(szCodecName, "AMR-WB");
-         break;
-         
-      case DS_VOICE_CODEC_TYPE_AMR_WB_PLUS:
-         strcpy(szCodecName, "AMR-WB+");
-         break;
+   /* open input gpx file */
 
-      case DS_VOICE_CODEC_TYPE_G726:
-         strcpy(szCodecName, "G726");
-         break;
+      fp_in = fopen(MediaParams[0].Media.inputFilename, "r");  /* cmd line -i should specify gpx text file */
 
-      case DS_VOICE_CODEC_TYPE_G729AB:
-         strcpy(szCodecName, "G729AB");
-         break;
+      if (!fp_in) {
 
-      case DS_VOICE_CODEC_TYPE_MELPE:
-         strcpy(szCodecName, "MELPe");
-         break;
-
-      case DS_VOICE_CODEC_TYPE_NONE:
-         strcpy(szCodecName, "None (pass-thru)");
-         break;
-
-      default:
-         strcpy(szCodecName, "");
-         return (int)false;
-   }
-
-   return (int)true;
-}
-#endif
-
-const char* strrstr(const char* haystack, const char* needle) {
-
-   unsigned needle_length = strlen(needle);
-   char* p = (char*)haystack + strlen(haystack) - needle_length - 1;  /* don't compare terminating zeros */
-   size_t i;
-
-   while (p >= haystack) {
-
-      for (i = 0; i < needle_length; ++i) if (p[i] != needle[i]) {
-         p--;
-         continue;
+         printf("Unable to find input gpx file %s \n", MediaParams[0].Media.inputFilename);
+         goto gpx_process_cleanup;
       }
 
-      return p;
+   /* open output gpx file and write header info */
+
+      fp_out = fopen(MediaParams[0].Media.outputFilename, "w");  /* cmd line -o should specify gpx text file */
+
+      if (!fp_out) {
+
+         printf("Unable to create output gpx file %s \n", MediaParams[0].Media.outputFilename);
+         goto gpx_process_cleanup;
+      }
+
+      fwrite(header1, strlen(header1), 1, fp_out);
+
+      strcpy(tmpstr, "  <time>");
+      time_t t;
+      time(&t);
+      struct tm* timeinfo;
+      timeinfo = gmtime(&t);
+      sprintf(&tmpstr[strlen(tmpstr)], "%04d-%02d-%02dT%02d:%02d:%02d", 1900+timeinfo->tm_year, timeinfo->tm_mon+1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+      strcat(tmpstr, "Z");
+      strcat(tmpstr, "</time>\n");
+      fwrite(tmpstr, strlen(tmpstr), 1, fp_out);
+
+      fwrite(header2, strlen(header2), 1, fp_out);
+
+   /* any other initialization */
+   
+      nSamplingFrequency = max(nSamplingFrequency, GPS_FS_DEFAULT);  /* if -Fn given on command line then set to value of n. If no -Fn given then default is value defined in gpxlib.h (currently set to 1 Hz) */
+
+      printf("Running gpx data flow ... \n");
+
+      while (run) {
+
+         key = toupper(getkey());
+         if (key == 'Q') {  /* break out of while loop */
+            run = 0;
+            break;
+         }
+
+         frame_count++;
+         printf("\rReading gpx frame %d", frame_count);
+
+      /* read gpx data frame */
+
+         if ((ret_val = gpx::read_gpx_frame(fp_in, gpx_points_in, NUM_GPX_POINTS_PER_FRAME)) < 0) run = 0;  /* read_gpx_frame() returns number of gpx points read. Break out of while loop on error condition */
+
+      /* apply signal processing flow:
+
+         -fix "loops", where one or more points shows a physically impossible (or at least highly unlikely) heading change
+         -correct points with extreme altitude deviations (i.e. phyically impossible deviations within 1-2 sec)
+         -detect and account for GPS dropout
+         -2-D lowpass filtering
+         -[to-do] nearest road recognition
+         -[to-do] point-by-point perpendicular snap-to-road
+      */
+
+         for (i=0; i<ret_val; i++) {
+
+            if (!fFirstPoint) {  /* initialize lookback buffers after reading first frame */
+
+               for (j=1; j<=N_LOOKBACK; j++) {
+                  gpx_points_in[-j] = gpx_points_in[i];
+                  gpx_points_out[-j] = gpx_points_in[i];
+               }
+
+               fFirstPoint = true;
+            }
+
+         /* calculate distance and heading, update running sums */
+
+  if (gpx_points_in[i].lat == 37.354092f) printf("*** found i = %d specific point lat = %f, time change = %d, elev change = %d \n", i, gpx_points_in[i].lat, (int)(gpx_points_in[i].time - gpx_points_in[i-1].time), (int)(gpx_points_in[i].elev - gpx_points_in[i-1].elev));
+
+            float d = gpx::gpx_distance(gpx_points_in[i-1].lat, gpx_points_in[i-1].lon, gpx_points_in[i].lat, gpx_points_in[i].lon);
+            float h = gpx::gpx_bearing(gpx_points_in[i-1].lat, gpx_points_in[i-1].lon, gpx_points_in[i].lat, gpx_points_in[i].lon);
+
+            run_sum_d += d - run_sum_save_d[(run_sum_index - N_RUN) & (N_RUN-1)];  /* add newest running sum value, subtract oldest */
+            run_sum_h += h - run_sum_save_h[(run_sum_index - N_RUN) & (N_RUN-1)];
+
+         /* fix loops which are physically impossible:
+
+            -if heading reverses compared to prior trajectory (running sum), then interpolate a new point
+            -re-update running sums
+            -note - I assume such loops result from GPS receiver and/or OS service fuck-ups; e.g. sat signal was lost, then regained with a new sat, one or both points had errors, and the new point is impossible (or at least extremely unlikely) - but no assessment was made
+         */ 
+
+            float dh = abs(h - run_sum_h/N_RUN);  /* heading delta change (note - gpx_bearing() returns h in radians, -pi/2 to pi/2) */
+
+            if (dh > 2*M_PI/5 && i < ret_val-1) {  /* does heading change more than 144 degrees compared to previous N_RUN points ? (i.e. 4/5 of pi/2, which is close to a 180 reversal) */
+
+               gpx_points_in[i].lon = (gpx_points_in[i+1].lon + gpx_points_in[i-1].lon)/2;  /* replace point with before and after interpolation */
+               gpx_points_in[i].lat = (gpx_points_in[i+1].lat + gpx_points_in[i-1].lat)/2;
+               gpx_points_in[i].elev = (gpx_points_in[i+1].elev + gpx_points_in[i-1].elev)/2;
+
+            /* recalculate distance and heading, re-update running sums */
+
+               run_sum_d -= d;
+               run_sum_h -= h;
+
+               d = gpx::gpx_distance(gpx_points_in[i-1].lat, gpx_points_in[i-1].lon, gpx_points_in[i].lat, gpx_points_in[i].lon);
+               h = gpx::gpx_bearing(gpx_points_in[i-1].lat, gpx_points_in[i-1].lon, gpx_points_in[i].lat, gpx_points_in[i].lon);
+
+               run_sum_d += d;
+               run_sum_h += h;
+
+               loop_fix_count++;
+            }
+
+            float dt = gpx_points_in[i].time - gpx_points_in[i-1].time;  /* delta time */
+
+         /* look for extreme altitude deviations:
+
+            -change of altitude more than 4 m in under 2 sec ? not likely; even a 20% downhill grade at 20 m/sec change would not exceed that
+            -we further require minimum heading change (22.5 deg) and distance excursion (which seems to indicate a sat switch or error)
+            -note - after further review of a lot of recordings, altitude data is completely unreliable, so the distance requirement is set higher (20 m)
+         */
+
+            if (dt < 2*nSamplingFrequency && dh > M_PI/16 && d > 20 && abs(gpx_points_in[i].elev - gpx_points_in[i-1].elev) > 4) {
+
+               alt_filt_count = 10;
+            /* to-do: add "marker", add 100 m vertical distance to point so it can easily be seen, but after all processing has occurred */
+
+   //printf("***** alt dev = %d, dist = %f, lat = %2.5f \n", abs(gpx_points_in[i].elev - gpx_points_in[i-1].elev), d, gpx_points_in[i].lat);
+
+               alt_dev_count++;
+            }
+            else if (alt_filt_count > 0) alt_filt_count--;
+
+         /* update running sum buffers with new values */
+
+            run_sum_save_d[run_sum_index & (N_RUN-1)] = d;
+            run_sum_save_h[run_sum_index & (N_RUN-1)] = h;
+            run_sum_index++;
+
+         /* dynamically adjust filter coefficients and apply filter:
+
+            -higher speed, more aggressive filtering (compensate for overshoot)
+            -extreme altitude deviations, more aggressive filtering
+         */ 
+
+            float a = alt_filt_count > 0 ? 0.1 : (d > 10 ? 0.3 : 0.5);
+            float b = 1-a;  /* unity gain filter */
+
+         /* look for GPS dropout:
+         
+            -after dropout, have no choice but to "fully trust" next available point
+            -override any previous settings
+         */
+
+            if (dt > 4*nSamplingFrequency) {
+
+               alt_filt_count = 0;
+               a = 1;
+               b = 0;
+               drop_out_count++;
+            }
+
+            if (a < 0.5) aggressive_count++;
+            else relax_count++;
+
+         /* set output values */
+
+            gpx_points_out[i].lat = a*gpx_points_in[i].lat + b*gpx_points_out[i-1].lat;
+            gpx_points_out[i].lon = a*gpx_points_in[i].lon + b*gpx_points_out[i-1].lon;
+            gpx_points_out[i].elev = gpx_points_in[i].elev;
+
+            gpx_points_out[i].time = gpx_points_in[i].time;
+            gpx_points_out[i].time_zone = gpx_points_in[i].time_zone;
+
+         }  /* end of frame loop */
+
+      /* write gpx output frame */
+
+         gpx::write_gpx_frame(fp_out, gpx_points_out, ret_val);
+
+      /* update lookback buffers */
+
+         memcpy(gpx_points_in_buffer, &gpx_points_in[NUM_GPX_POINTS_PER_FRAME - N_LOOKBACK], N_LOOKBACK*sizeof(GPX_POINT));
+         memcpy(gpx_points_out_buffer, &gpx_points_out[NUM_GPX_POINTS_PER_FRAME - N_LOOKBACK], N_LOOKBACK*sizeof(GPX_POINT));
+
+         if (ret_val < NUM_GPX_POINTS_PER_FRAME) run = 0;  /* break out of while loop on end of data */
+      }
+
+      printf("\n");
+
+      printf("stats: aggressive filter count = %d, relaxed filter count = %d, loop fix count = %d, alt deviation count = %d, drop out count = %d \n", aggressive_count, relax_count, loop_fix_count, alt_dev_count, drop_out_count);
+
+   /* write output file trailer info */
+
+      fwrite(trailer1, strlen(trailer1), 1, fp_out);
+
+gpx_process_cleanup:
+
+      if (fp_in) fclose(fp_in);
+      if (fp_out) fclose(fp_out);
    }
 
-   return NULL;
+   printf("x86 mediaTest end\n");
 }

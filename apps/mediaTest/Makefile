@@ -30,6 +30,7 @@
 #  Modified Jan 2021 JHB, add INSTALLPATH, add rpath linker options for version of Kaldi libs used by SigSRF and for ATLAS linear algebra / matrix lib (only if makefile detects Kaldi is installed)
 #  Modified Jan 2021 JHB, change c_mediamin_objects target to cpp_mediamin_objects, add cpp_sdp_objects target
 #  Modified Feb 2022 JHB, update comments
+#  Modified Mar 2022 JHB, add cpp_gpx_objects target
 
 # check make cmd line for "no_codecs" option
 
@@ -278,17 +279,21 @@ endif
 
 cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
 c_common_objects = keybd.o
-cpp_sdp_objects = types.o sdp.o utils.o reader.o writer.o 
+cpp_sdp_objects = types.o sdp.o utils.o reader.o writer.o
+cpp_gpx_objects = gpxlib.o
 cpp_mediaMin_objects = mediaMin.o sdp_app.o session_app.o user_io.o
 c_objects = sigMRF_init.o control_thread_task.o codec_thread_task.o transcoder_control.o codec_test_control.o host_c66x_xfer_control.o dummy_packet.o mediaTest.o cmd_line_interface.o packet_flow_media_proc.o x86_mediaTest.o
 
 # build targets
-all: $(cpp_common_objects) $(cpp_sdp_objects) $(c_common_objects) $(cpp_mediaMin_objects) $(c_objects) link
+all: $(cpp_common_objects) $(cpp_sdp_objects) $(cpp_gpx_objects) $(c_common_objects) $(cpp_mediaMin_objects) $(c_objects) link
 
 $(cpp_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.cpp
 	$(CC) $(CC_FLAGS) -c $< -o $@ 
 
 $(cpp_sdp_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/sdp/%.cpp
+	$(CC) $(CC_FLAGS) -c $< -o $@ 
+
+$(cpp_gpx_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/gpx/%.cpp
 	$(CC) $(CC_FLAGS) -c $< -o $@ 
 
 $(c_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.c
@@ -302,7 +307,7 @@ $(c_objects): %.o: %.c
 
 # link object files, essential libs, and cimlib which provides cmd line handling
 link:
-	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(c_common_objects) $(c_objects) $(cpp_mediaMin_objects) $(LINKER_INCLUDES) -o ./mediaTest -lstdc++ $(SIG_LIBS) -ldl -lpthread -lcimlib -lstublib
+	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(cpp_gpx_objects) $(c_common_objects) $(c_objects) $(cpp_mediaMin_objects) $(LINKER_INCLUDES) -o ./mediaTest -lstdc++ $(SIG_LIBS) -ldl -lpthread -lcimlib -lstublib
 
 .PHONY: clean all 
 clean:

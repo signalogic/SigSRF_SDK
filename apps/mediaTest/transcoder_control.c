@@ -30,32 +30,36 @@ Description:
   Modified Jan 2020 JHB, add default settings for TERM_PKT_REPAIR_ENABLE and max_pkt_repair_ptimes
   Modified Apr 2021 JHB, add parsing of "header_format" for codec config files. This currently applies to AMR and EVS
   Modified Feb 2022 JHB, fix issues with comments and extra whitespace in codec config files, update other config/session file parsing with these changes also (look for JHB Feb2022)
+  Modified Mar 2022 JHB, moved str_remove_whitespace() to dsstring.h
 */
-
-#include "mediaTest.h"
-#include "voplib.h"           /* codec related APIs */
-
-/* #include "dsstring.h"        // [not used] dsstring.h contains strcpyrws() (copy and remove white space) */
 
 #include <arpa/inet.h>
 
-typedef struct session_params_s
-{
+#include "mediaTest.h"
+#include "dsstring.h"         /* bring in str_remove_whitespace(), JHB Mar2022 */
+
+/* SigSRF includes */
+
+#include "voplib.h"           /* codec related APIs */
+
+typedef struct session_params_s {
    SESSION_DATA session_data;
    int node_id;
 } session_params_t;
 
 typedef struct stack_s stack_t;
-struct stack_s
-{
+
+struct stack_s {
    int id;
    session_params_t param;
    stack_t *next;
 };
 
+#if 0
 /* generic whitespace removal func, JHB Jun 2016 */
 
 static void str_remove_whitespace(char* str) {
+
 unsigned int i;
 char* p = str;
 
@@ -63,6 +67,7 @@ char* p = str;
 
    *p = 0;  /* terminating zero */
 }
+#endif
 
 static int media_type(char *value) {
 

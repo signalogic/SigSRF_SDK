@@ -3133,7 +3133,11 @@ pull:
 
                   int num_data, packet_type;
                   unsigned int data_len[256], data_chan[256], data_info[256];
+                  #ifndef DEMOBUILD  /* see comments in pktlib.c about demo build internal buffering to allow slower CPUs such as Atom, JHB Apr2022 */
                   uint8_t stream_data[5*10240];
+                  #else
+                  uint8_t stream_data[10*10240];
+                  #endif
                   uint8_t* stream_ptr = stream_data;
                   HCODEC hCodec_link = (intptr_t)NULL;
                   bool fStreamGroupMember = false;  /* if a channel is a stream group contributor */
