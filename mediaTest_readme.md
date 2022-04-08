@@ -11,6 +11,8 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+2Q 2022 - improved ASR, including support for near-real-time operation on slower CPUs. First version of GPS track processing (used for LI software), including gpx file handling, de-noising, dynamically adjusted filter coefficients, dropout detection, and more
+
 4Q 2021 - 1Q2022 - testing with wide range of Ubuntu and CentOS and g++/gcc versions. Docker containers pre-configured to run SDK and demo programs, including speech recognition from UDP/RTP streams
 
 1Q-2Q 2021 - encapsulated stream support, tested with OpenLI pcaps containing DER encoded HI3 intercept streams, per ETSI LI and ASN.1 standards
