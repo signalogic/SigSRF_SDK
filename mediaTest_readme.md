@@ -482,13 +482,13 @@ The above command can be run with wideband audio pcaps included in the SDK; look
 	
 | pcap File | ASR container test results | original wav file | recorded speech |
 |-----------|----------------------------|-------------------|-----------------|
-| asr_test1 | A king rolled the stake in the early days we found when events take a bad turn | asr_test.wav | A king ruled the state in the early days. We frown when events take a bad turn |
-| asr_test2 |   | T06.wav | |
-| asr_test3 |   | T07.wav | |
-| asr_test4 |   | T18.wav | |
+| asr_test1 | A king rolled the stake in the early days ... we found when events take a bad turn | asr_test.wav | A king ruled the state in the early days. We frown when events take a bad turn. |
+| asr_test2 | Fairy tales should be fun to write ... a large hast hot hot water types | T06.wav | Fairy tales should be fun to write. The large house had hot water taps. |
+| asr_test3 | I don't know ... more than I ascend and he smiled. | T18.wav | I don't know ... the vampire said, and he smiled. |
+| asr_test4 | Bring your problems to the wise chief ... All sat frozen watched the screen | T07.wav | Bring your problems to the wise chief. All sat frozen and watched the screen |
 
-The original wav files are included in the mediaTest/test_files folder.
-	
+The original wav files are included in the mediaTest/test_files folder; they are recordings from a speech corpus known as the <a href="https://www.cs.columbia.edu/~hgs/audio/harvard.html">"Harvard Sentences</a>, prepared in the 1960s by the IEEE Subcommittee on Subjective Measurements as part of their recommended practices for speech quality measurements.
+
 In general, to enable ASR with any arbitrary mediaMin command, including mediaMin commands documented on this page, you can set the "ENABLE_STREAM_GROUP_ASR" bit in the -dN command line option (-dN command line options and debug flags are documented in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_debug_flags.h">cmd_line_debug_flags.h</a>).
 
 Here are some notes about ASR operation:
