@@ -31,6 +31,7 @@
 #  Modified Jan 2021 JHB, change c_mediamin_objects target to cpp_mediamin_objects, add cpp_sdp_objects target
 #  Modified Feb 2022 JHB, update comments
 #  Modified Mar 2022 JHB, add cpp_gpx_objects target
+#  Modified Apr 2022 JHB, link libm (required by -ffast-math compiler flag used in codec builds)
 
 # check make cmd line for "no_codecs" option
 
@@ -307,7 +308,7 @@ $(c_objects): %.o: %.c
 
 # link object files, essential libs, and cimlib which provides cmd line handling
 link:
-	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(cpp_gpx_objects) $(c_common_objects) $(c_objects) $(cpp_mediaMin_objects) $(LINKER_INCLUDES) -o ./mediaTest -lstdc++ $(SIG_LIBS) -ldl -lpthread -lcimlib -lstublib
+	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(cpp_gpx_objects) $(c_common_objects) $(c_objects) $(cpp_mediaMin_objects) $(LINKER_INCLUDES) -o ./mediaTest -lstdc++ $(SIG_LIBS) -ldl -lpthread -lm -lcimlib -lstublib
 
 .PHONY: clean all 
 clean:

@@ -27,6 +27,7 @@
 #  Modified Jan 2021 JHB, add cpp_objects target
 #  Modified Mar 2021 JHB, add derlib (DER decoding lib) to SIG_LIBS var
 #  Modified Apr 2021 JHB, add sdp_app.o session_app.o and user_io.o to cpp_objects target
+#  Modified Apr 2022 JHB, link libm (required by -ffast-math compiler flag used in codec builds)
 
 # check make cmd line for "no_codecs" option
 
@@ -325,7 +326,7 @@ $(c_objects): %.o: %.c
 
 # link object files, essential libs, and cimlib which provides cmd line handling. stublib is last in link order and fills in top-level APIs for any modules not available (their XX_INSTALLED flags not set) due to version, demo, license etc (examples would be some less often used codecs)
 linker:
-	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(c_common_objects) $(c_mediaTest_objects) $(cpp_objects) $(c_objects) $(LINKER_INCLUDES) -o ./mediaMin -lstdc++ $(SIG_LIBS) -ldl -lcimlib -lstublib
+	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(c_common_objects) $(c_mediaTest_objects) $(cpp_objects) $(c_objects) $(LINKER_INCLUDES) -o ./mediaMin -lstdc++ $(SIG_LIBS) -ldl -lm -lcimlib -lstublib
 
 .PHONY: clean all
 clean:
