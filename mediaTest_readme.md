@@ -730,7 +730,7 @@ To make the test longer, for example to allow htop inspection of core activity a
 
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -R11
 
-which extends the test time to about 5 minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that then you should keep an eye on things, as a massive output .wav file will build up quickly !
+which extends the test time to several minutes. Entering -R0 will repeat indefinitely until the 'q' key is pressed - although if you do that then you should keep an eye on things, as a massive output .wav file will build up quickly !
 	
 The commands below run the 21-channel wav file encode + decode test with the SigSRF AMR-WB codec:
 
