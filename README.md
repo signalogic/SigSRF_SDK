@@ -225,7 +225,7 @@ You may want to remotely access pcap and media files output by EdgeStream apps i
 
 To do this with WinSCP, you can set up a second host SSH port NNNN and then add:
 
-  -p NNNN:8080
+    -p NNNN:8080
   
 to your docker run command. Per Docker documentation this "creates a firewall rule which maps a container port to a port on the Docker host to the outside world", i.e. remote access over port NNNN is relayed to port 8080 on the "bridge network" that Docker maintains for the container made active by the run command. In this way, you can set up two (2) WinSCP remote sessions, one for the host and one for the containter under test.
 
