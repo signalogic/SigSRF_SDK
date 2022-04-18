@@ -293,7 +293,7 @@ The ASR version is separated into .partN.rar files because the overall .rar file
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
 
- or more information on pcap, waveform, and other test files provided with the SDK, see [Test File Notes](#user-content-testfilenotes) below.
+For more information on pcap, waveform, and other test files provided with the SDK, see [Test File Notes](#user-content-testfilenotes) below.
  
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
@@ -342,7 +342,7 @@ If no path is entered the default path is /usr/local. <i>Do not enter a path suc
   /root
 ```
 
-After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail). During the install, if g++/gcc build tools are not found on your system, the install script will ask permission to install them, and then build EdgeStream applications as part of the install process. This is important, as the EdgeStream app Makefiles look for packages like ALSA and Kaldi, and set compiler defines based on what is found on the system. For example, if you are installing the ASR option, and Kaldi is not found on your system, then the mediaMin Makefile will set compiler defines to use Kaldi libs included in the Rar package.
+After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail). During the install, if g++/gcc build tools are not found on your system, the install script will ask permission to install them, and then build EdgeStream applications as part of the install process. This is important, as the EdgeStream app Makefiles look for OS distro version, tools version, libraries such as libmvec, and packages like ALSA and Kaldi, and set compiler defines based on what is found on the system. For example, if you are installing the ASR option, and Kaldi is not found on your system, then the mediaMin Makefile will set compiler defines to use Kaldi libs included in the Rar package.
 
 If at any time you want to abort the install and start over, press Ctrl-C.
 
@@ -473,7 +473,9 @@ Currently SigSRF attempts to maintain real-time performance for one stream group
 <a name="RunNotes"></a>
 ## Run Notes
 
-Available reference applications are listed below.  The iaTest and paTest apps do not have a functionality limit. mediaMin and mediaTest app functionality is limited as follows:
+<i>Although the Rar packages include run-time executables for EdgeStream reference applications (e.g. mediaTest and mediaMin), make sure you initially rebuild these apps before running them. This is important, as the EdgeStream Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and then set compiler defines based on what is found on the system.</i>
+
+Reference applications limits are listed below.  The iaTest and paTest apps do not have a functionality limit. mediaMin and mediaTest app functionality is limited as follows:
 
    1) Data limit.  Processing is limited to 100,000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
 
