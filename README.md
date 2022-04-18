@@ -216,7 +216,20 @@ or
 
 To run ASR (automatic speech recognition) the "asr" container is needed (it's much larger). For ASR specific info, see [ASR Notes](#user-content-asrnotes) below.
 
-To access pcap and media files output by EdgeStream apps inside the container -- for example to run WireShark -- you can WinSCP into the container with the following steps:
+Note that all available containers are configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
+
+<a name="WinSCPAccesDockerContainers"></a>
+#### WinSCP Access to Docker Containers
+
+You may want to remotely access pcap and media files output by EdgeStream apps inside a running container -- for example to run WireShark or a media player. This can be super convenient for test and measurement purposes (for more information on pcap, waveform, and other test files provided with the SDK, see [Test File Notes](#user-content-testfilenotes) below).
+
+To do this with WinSCP, you can set up a second host SSH port NNNN and then add:
+
+    -p NNNN:8080
+  
+to your docker run command. Per Docker documentation this "creates a firewall rule which maps a container port to a port on the Docker host to the outside world", i.e. remote access over port NNNN is relayed to port 8080 on the "bridge network" that Docker maintains for the container made active by the run command. In this way, you can set up two (2) WinSCP remote sessions, one for the host and one for the containter under test.
+
+As an additional note, there is online forum discussion about WinSCP-ing into a container with the following steps:
 
     docker-machine ls
 
@@ -224,9 +237,7 @@ To access pcap and media files output by EdgeStream apps inside the container --
     manager - hyperv Running tcp://192.168.111.63:2376 v1.13.0
     worker - hyperv Running tcp://192.168.111.64:2376 v1.13.0
 
-and then use the reported IP and port info inside the WinSCP client, with userid docker, and password tcuser. For more information on pcap, waveform, and other test files provided with the SDK, see [Test File Notes](#user-content-testfilenotes) below.
-
-Note that all available containers ire configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
+and then using the reported IP and port info inside the WinSCP client, along with userid docker, and password tcuser. However, this only works when Docker is running inside a VM, for example on a WinXX or MacOS host.
 
 ### Ubuntu Docker Container Notes
 
