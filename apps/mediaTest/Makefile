@@ -226,10 +226,10 @@ LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L/usr/lib
 # -older systems require older codec libs
 # -depends on Linux distro, system configuration, and version of installed SigSRF found
 
-include /etc/os-release  # source contents of /etc/os-release file
+include /etc/os-release  # source contents of /etc/os-release file; this will set several Makefile variables such as NAME, VERSION_ID, ID, etc
 VERSION_ID := $(patsubst "%",%,$(VERSION_ID))  # remove quotes
 
-ifneq (,$(findstring Centos,$(NAME)))
+ifneq (,$(findstring CentOS,$(NAME)))
   VER_MAJOR := $(shell echo $(VERSION_ID) | cut -f1 -d.)
   VER_MINOR := $(shell echo $(VERSION_ID) | cut -f2 -d.)
   # CentOS version <= 7.07
