@@ -28,16 +28,18 @@
 #  Modified Mar 2021 JHB, add derlib (DER decoding lib) to SIG_LIBS var
 #  Modified Apr 2021 JHB, add sdp_app.o session_app.o and user_io.o to cpp_objects target
 #  Modified Apr 2022 JHB, link libm (required by -ffast-math compiler flag used in codec builds)
+#  Modified Apr 2022 JHB, add system-dependent linking for codecs built with --fast-math
 
 # check make cmd line for "no_codecs" option
 
 ifeq ($(no_codecs),1)
-   no_melp = 1
-   no_g729 = 1
-   no_g726 = 1
-   no_amrnb = 1
-   no_amrwb = 1
-   no_amrwbplus = 1
+  no_evs = 1
+  no_melp = 1
+  no_g729 = 1
+  no_g726 = 1
+  no_amrnb = 1
+  no_amrwb = 1
+  no_amrwbplus = 1
 endif
 
 # set install path var, from mediaMin folder SigSRF software install path is 5 levels up
@@ -54,6 +56,17 @@ else
     ALSA_INSTALLED = y
   else
     ALSA_INSTALLED = n
+  endif
+endif
+
+ifeq ($(no_evs),1)
+  EVS_INSTALLED = n
+else
+  EVSPATH=/usr/lib/libevscom_sig.x86.so
+  ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
+    EVS_INSTALLED = y
+  else
+    EVS_INSTALLED = n
   endif
 endif
 
@@ -200,8 +213,37 @@ endif
 
 LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L/usr/lib
 
-# codec libs, depending on install + configuration
-CODEC_LIBS = -levsenc_sig.x86 -levsdec_sig.x86 -levscom_sig.x86
+# determine linking for codec libs built with --ffast-math
+#
+# -older systems require older codec libs
+# -depends on Linux distro, system configuration, and version of installed SigSRF found
+
+include /etc/os-release  # source contents of /etc/os-release file
+VERSION_ID := $(patsubst "%",%,$(VERSION_ID))  # remove quotes
+
+ifneq (,$(findstring Centos,$(NAME)))
+  VER_MAJOR := $(shell echo $(VERSION_ID) | cut -f1 -d.)
+  VER_MINOR := $(shell echo $(VERSION_ID) | cut -f2 -d.)
+  # CentOS version <= 7.07
+  USE_OLD_CODEC_LIBS := $(shell [ $(VER_MAJOR) -le 7 -o \( $(VER_MAJOR) -eq 7 -a $(VER_MINOR) -ge 7 \) ] && echo true)
+else
+  VER_MAJOR := $(shell echo $(VERSION_ID) | cut -f1 -d.)
+  VER_MINOR := $(shell echo $(VERSION_ID) | cut -f2 -d.)
+  # Ubunto version <= 12.04
+  USE_OLD_CODEC_LIBS := $(shell [ $(VER_MAJOR) -le 12 -o \( $(VER_MAJOR) -eq 12 -a $(VER_MINOR) -ge 4 \) ] && echo true)
+endif
+
+ifeq ($(EVS_INSTALLED),y)
+  ifeq ($(USE_OLD_CODEC_LIBS),true)
+    CODEC_LIBS += -levsenc_sig.x86_gcc4.6
+    CODEC_LIBS += -levsdec_sig.x86_gcc4.6
+    CODEC_LIBS += -levscom_sig.x86_gcc4.6
+  else 
+    CODEC_LIBS += -levsenc_sig.x86
+    CODEC_LIBS += -levsdec_sig.x86
+    CODEC_LIBS += -levscom_sig.x86
+  endif
+endif
 
 ifeq ($(MELPE_INSTALLED),y)
   CODEC_LIBS += -lmelpe_sig.x86
