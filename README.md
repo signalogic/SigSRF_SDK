@@ -437,7 +437,9 @@ which although it shows an error message will cause no problems.
 
 ### Building Reference Applications
 
-Reference application examples are provided as executables, C/C++ source code and Makefiles. Reference apps should run as-is, but if not (due to Linux distribution or kernel differences), they can be rebuilt using gcc and/or g++.  To allow this, the install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
+Reference application examples are provided as executables, C/C++ source code and Makefiles. After installing a Rar package, reference apps may run as-is, but also they may not, as the EdgeStream app Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and set compiler defines based on what is found on the system. Note this does not apply to Docker containers, as they are already pre-configured with ready-to-run EdgeStream apps.
+
+EdgeStream apps can be rebuilt at any time using gcc and/or g++.  To allow this, the Rar package install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
 
 <a name="TestFileNotes"></a>
 ## Test File Notes
@@ -473,7 +475,7 @@ Currently SigSRF attempts to maintain real-time performance for one stream group
 <a name="RunNotes"></a>
 ## Run Notes
 
-<i>Although the Rar packages include run-time executables for EdgeStream reference applications (e.g. mediaTest and mediaMin), make sure you initially rebuild these apps before running them. This is important, as the EdgeStream Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and then set compiler defines based on what is found on the system.</i>
+<i>Although the Rar packages include run-time executables for EdgeStream reference applications (e.g. mediaTest and mediaMin), make sure you initially rebuild these apps before running them. This is important, as the EdgeStream Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and then set compiler defines based on what is found on the system. Note this does not apply to Docker containers, as they are already pre-configured with ready-to-run EdgeStream executables.</i>
 
 Reference applications limits are listed below.  The iaTest and paTest apps do not have a functionality limit. mediaMin and mediaTest app functionality is limited as follows:
 
