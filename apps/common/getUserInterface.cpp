@@ -29,6 +29,7 @@
    Modified Dec 2021 JHB, make -d option (mode/debug flags) 64-bit integer
    Modified Feb 2022 JHB, in getUserInfo() display summary, show x86 clock rate instead of "Default", if coCPU executable file not used show "N/A" instead of nothing
    Modified Mar 2022 JHB, add -Fn flag for mediaTest gpx processing
+   Modified Apr 2022 JHB, further clarify getUserInfo() display, Core List --> coCPU Core List and Clock --> coCPU Clock if applicable
 */
 
 #include <stdlib.h>
@@ -354,15 +355,17 @@ char clkstr[100];
          strcpy(tmpstr, userIfs->cardDesignator);
          strupr(tmpstr);
 
+         bool fcoCPU = false;
+
          if (strstr(tmpstr, "X86")) strcpy(labelstr, "Platform Designator = ");
-         else strcpy(labelstr, "Card Designator = ");
+         else { strcpy(labelstr, "Card Designator = "); fcoCPU = true; }
 
          if (userIfs->processorClockrate) sprintf(clkstr, "%d MHz", userIfs->processorClockrate);
          else {  /* if no clock rate specified, get system clock rate, JHB Feb2022 */
 
-            bool fCpuMHzFound = false;
-
             FILE* fp = fopen("/proc/cpuinfo", "r");
+
+            bool fCpuMHzFound = false;
 
             if (fp) {
 
@@ -395,8 +398,10 @@ char clkstr[100];
          char coCPU_executable[1000] = "N/A";
          if (strlen(userIfs->targetFileName)) strcpy(coCPU_executable, userIfs->targetFileName);
          
-         cout << "userSpecified = {" << labelstr << userIfs->cardDesignator <<  ", " << "Core List = 0x" << hex << setfill('0')
-              << setw(8) << userIfs->coreBitMask << ", " << "Clock = " << clkstr << ", " << "coCPU Executable = " << coCPU_executable << ", "              
+         cout << "userSpecified = {" << labelstr << userIfs->cardDesignator <<  ", "
+              << (fcoCPU ? "coCPU " : "") << "Clock = " << clkstr << ", "
+              << "coCPU Core List = 0x" << hex << setfill('0') << setw(8) << userIfs->coreBitMask << ", "
+              << "coCPU Executable = " << coCPU_executable << ", "              
               << "Algorithm Flag = " << dec << userIfs->algorithmIdNum << "}" << endl;  /* use stream modifiers for hex output, JHB Feb2015 */
       }
 
