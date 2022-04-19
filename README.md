@@ -223,7 +223,7 @@ To run ASR (automatic speech recognition) the "asr" container is needed (it's mu
 
 2. Performance can be slightly improved by adding the "privileged" flag to the run command, for example:
 
-    docker run -it --cap-add=sys_nice --priviliged signalogic/sigsrf_sdk_demo_ubuntu /bin/bash
+    docker run -it --cap-add=sys_nice --privileged signalogic/sigsrf_sdk_demo_ubuntu /bin/bash
  
  This has more impact on slower CPUs (e.g. Atom), for instance it might make packet output intervals slightly more consistent.
 
