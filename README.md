@@ -221,18 +221,18 @@ To run ASR (automatic speech recognition) the "asr" container is needed (it's mu
 
 1. All available containers are configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
 
-2. Performance can be slightly improved by adding the "privileged" flag to the run command, for example:
+2. App performance inside containers can be slightly improved by adding the "privileged" flag to the run command, for example:
 
     docker run -it --cap-add=sys_nice --privileged signalogic/sigsrf_sdk_demo_ubuntu /bin/bash
  
- This has more impact on slower CPUs (e.g. Atom), for instance it might make packet output intervals slightly more consistent.
+  This has more of an impact on slower CPUs (e.g. Atom), for instance it might make packet output intervals slightly more consistent.
 
-3. Rar packages are included in each container, if for some reason you want to re-run the SDK/demo install from scratch.
+3. Rar packages are included in each container, if for any reason it should be needed to re-run the SDK/demo install from scratch.
 
 <a name="WinSCPAccesDockerContainers"></a>
 #### WinSCP Access to Docker Containers
 
-You may want to remotely access pcap and media files output by EdgeStream apps inside a running container -- for example to run WireShark or a media player. This can be convenient for test and measurement purposes (for more information on pcap, waveform, and other test files provided with the SDK, see [Test File Notes](#user-content-testfilenotes) below).
+You may want to remotely access inside a running/active container pcap and media files output by EdgeStream apps -- for example to run WireShark or a media player (for more information on pcap, waveform, event log, packet log, and other test files provided/generated using the SDK, see [Test File Notes](#user-content-testfilenotes) below). This can be convenient for test and measurement purposes, as it avoids manual copying of files between host and container.
 
 To do this with WinSCP, you can set up a second host SSH port NNNN and then add:
 
