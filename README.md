@@ -219,15 +219,17 @@ To run ASR (automatic speech recognition) the "asr" container is needed (it's mu
 <a name="GeneralDockerContainerNotes"></a>
 #### General Docker Container Notes
 
-1. All available containers are configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
+1. All available containers have been tested on x86 Linux bare metal servers, including performance and capacity measurements given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. Measurements on x86 VMs on other OS (e.g MacOS, WinXX) are likely to be slower.
 
-2. App performance inside containers can be slightly improved by adding the "privileged" flag to the run command, for example:
+2. All available containers are configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
+
+3. App performance inside containers can be slightly improved by adding the "privileged" flag to the run command, for example:
 
     docker run -it --cap-add=sys_nice --privileged signalogic/sigsrf_sdk_demo_ubuntu /bin/bash
  
   This has more of an impact on slower CPUs (e.g. Atom), for instance it might make packet output intervals slightly more consistent.
 
-3. Rar packages are included in each container, if for any reason it should be needed to re-run the SDK/demo install from scratch.
+4. Rar packages are included in each container, if for any reason it should be needed to re-run the SDK/demo install from scratch.
 
 <a name="WinSCPAccesDockerContainers"></a>
 #### WinSCP Access to Docker Containers
