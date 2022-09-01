@@ -16,7 +16,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
 [Using the SDK - Run Demos and Reference Apps, Build User Apps](#user-content-sdkdownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Docker Containers](#user-content-dockercontainers)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Docker Container Notes](#user-content-asrdockercontainernotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Docker Container](#user-content-asrdockercontainer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Rar Packages](#user-content-rarpackages)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
@@ -216,8 +216,8 @@ or
 
 ... depending on which EdgeStream app you want to run. The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
 
-<a name="ASRDockerContainerNotes"></a>
-### ASR Docker Container Notes
+<a name="ASRDockerContainer"></a>
+### ASR Docker Container
 
 The ASR (automatic speech recognition) container is larger than other containers, but otherwise the procedure is the same as in [Docker Containers](#user-content=dockercontainers) above. For ASR specific info, see [ASR Notes](#user-content-asrnotes) below.
 
@@ -280,7 +280,7 @@ and then using the reported IP and port info in the remote WinSCP client, along 
 <a name="RarPackages"></a>
 ## Rar Packages
 
-As an alternative to Docker containers, Ubuntu and CentOS RAR packages are available to install SigSRF and EdgeStream software on VMs or bare-metal servers. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install the most recent .rar file. The install script auto-checks kernel version and Linux distro version to decide which .rar file to look for.
+As an alternative to Docker containers, Ubuntu and CentOS RAR packages are available to install SigSRF and EdgeStream software on VMs or bare-metal servers. The install script auto-checks kernel version and Linux distro version to decide which .rar file to look for. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install the most recent .rar file.
 
 <a name="InstallNotes"></a>
 ### Install Notes
