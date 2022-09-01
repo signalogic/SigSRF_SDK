@@ -15,10 +15,10 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
 [Using the SDK - Run Demos and Reference Apps, Build User Apps](#user-content-sdkdownload)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Docker Containers](#user-content-installnotesdockercontainer)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Docker Containers](#user-content-dockercontainers)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Rar Packages](#user-content-rarpackages)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Rar Package Install Notes](#user-content-installnotes)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Rar Package ASR Install Notes](#user-content-asrinstallnotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Sudo Privilege](#user-content-sudoprivilege)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Running the Install Script](#user-content-runningtheinstallscript)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Test File Notes](#user-content-testfilenotes)<br/>
@@ -167,7 +167,7 @@ Some notes about the above data flow diagram:
 <a name="SDKDownload"></a>
 # Using the SDK - Run Demos and Reference Apps, Build User Apps
 
-There are two (2) options to run and test the EdgeStream and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. Option (i) is fastest and easiest, option (ii) will give precise performance results for specific VM or bare-metal configurations. See the [Docker Containers](#user-content-installnotesdockercontainer) and [Rar Packages](#user-content-rarpackages) sections below.
+There are two (2) options to run and test the EdgeStream and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. Option (i) is fastest and easiest, option (ii) will give precise performance results for specific VM or bare-metal configurations. See the [Docker Containers](#user-content-dockercontainers) and [Rar Packages](#user-content-rarpackages) sections below.
 
 The SDK contains:
 
@@ -279,7 +279,7 @@ and then using the reported IP and port info in the remote WinSCP client, along 
 Ubuntu and CentOS RAR packages are provided for different Linux distributions allowing SigSRF and EdgeStream software to be installed on VMs or bare-metal servers. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install the most recent .rar file. The install script auto-checks kernel version and Linux distro version to decide which .rar file to look for.
 
 <a name="InstallNotes"></a>
-### Rar Package Install Notes
+### Install Notes
 
 To download the install script and one or more rar files directly from Github (i.e. without checking out a clone repository), use the following commands:
 ```
@@ -313,7 +313,7 @@ Note that the install script checks for the presence of the unrar package, and i
 For more information on pcap, waveform, and other test files provided with the SDK, see [Test File Notes](#user-content-testfilenotes) below.
  
 <a name="ASRInstallNotes"></a>
-### Rar Package ASR Install Notes
+### ASR Install Notes
 
 To run the ASR version of the SigSRF + EdgeStream SDK, you can download and run a Docker container (see [Docker Containers](#user-content-dockercontainers) above) or install the ASR-specific RAR package. To install the RAR package, first follow the instructions in [Rar Packages](#user-content-rarpackages) above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
 
@@ -483,7 +483,7 @@ Example command lines for both the default set of pcaps and wav files and advanc
                  
 The SigSRF "inferlib" (inference library) module provides an interface to Kaldi ASR. In the SigSRF and EdgeStreawm SDK the Kaldi "mini-librispeech" model is used, which is trained with English speech and has a vocabulary size around 20k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
 
-To run ASR, you can either download a Docker container (see [Docker Containers](#user-content-dockercontainers) above) or install the ASR version Rar package (see [Rar Package ASR Install Notes](#user-content-asrinstallnotes) above). The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin page</a> has command line examples running ASR on RTP encoded pcaps. mediaTest can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded with any of the codecs supported in the SDK. mediaMin is currently being modified to support direct .wav and USB audio input.
+To run ASR, you can either download a Docker container (see [Docker Containers](#user-content-dockercontainers) above) or install the ASR version Rar package (see [ASR Install Notes](#user-content-asrinstallnotes) above). The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin page</a> has command line examples running ASR on RTP encoded pcaps. mediaTest can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded with any of the codecs supported in the SDK. mediaMin is currently being modified to support direct .wav and USB audio input.
 
 For ASR performance and accuracy, system performance is crucial -- unless you are running a Xeon E5-25xx core or similar you won't see sustained real-time performance. However, because SigSRF libs have been developed and deployed on Linux systems for telecoms who are extremely sensitive to losing any amount of data, near-real-time ASR is possible even on slow CPUs such as Atom C2300 series. On slower CPUs, thread preemption and buffer management built into SigSRF libs allows for several seconds of real-time ASR operation separated by pauses.
                  
