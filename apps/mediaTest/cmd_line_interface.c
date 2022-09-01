@@ -29,6 +29,7 @@
    Modified Jan 2021 JHB, change references to AUDIO_FILE_TYPES to IS_AUDIO_FILE_TYPE, initialize outFileType2, USBAudioInput, and USBAudioOutput, allow pcap for output file type, add char szSDPFile[CMDOPT_MAX_INPUT_LEN]
    Modified Dec 2021 JHB, make debugMode 64-bit int
    Modified Mar 2022 JHB, add GPX file input handling, -Fn flag for mediaTest gpx processing
+   Modified Aug 2022 JHB, adjust declaration of a few global vars to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
 */
 
 
@@ -56,20 +57,26 @@ PLATFORMPARAMS PlatformParams = {{ 0 }};
 MEDIAPARAMS MediaParams[MAXSTREAMS];
 unsigned int frameInterval[MAX_INPUT_STREAMS] = { 20 };
 
-/* global vars set here */
+/* global vars referenced in mediaMin.c, x86_mediaTest.c, and packet_flow_media_proc.c */
 
-unsigned int   inFileType, outFileType, outFileType2 = 0, USBAudioInput = 0, USBAudioOutput = 0;
-char           executionMode[2] = { 'a', 'c' }; /* default is app execution mode, cmd line */
-int64_t        debugMode = 0;
-int            performanceMeasurementMode = 0;
-int            nReuseInputs = 0;
-int            nSegmentation = 0;
-int            nSegmentInterval = 0;
-int            nAmplitude = 0;
-int            nJitterBufferParams = 0;
-int            nRepeat = 0;
-char           szSDPFile[CMDOPT_MAX_INPUT_LEN] = "";
-int            nSamplingFrequency;
+volatile int8_t  run = 1;  /* may be cleared by application signal handler to stop packet / media processing loops */
+unsigned int     inFileType, outFileType, outFileType2 = 0, USBAudioInput = 0, USBAudioOutput = 0;
+char             executionMode[2] = { 'a', 'c' }; /* default is app execution mode, cmd line */
+int64_t          debugMode = 0;
+int              performanceMeasurementMode = 0;
+int              nReuseInputs = 0;
+int              nSegmentation = 0;
+int              nSegmentInterval = 0;
+int              nAmplitude = 0;
+int              nJitterBufferParams = 0;
+int              nRepeat = 0;
+char             szSDPFile[CMDOPT_MAX_INPUT_LEN] = "";
+int              nSamplingFrequency;
+#ifndef __LIBRARYMODE__  /* this group declared here in non-library build, otherwise declared in packet_flow_media_proc.c, Aug 2022 JHB */
+volatile char    pktStatsLogFile[CMDOPT_MAX_INPUT_LEN] = "";
+volatile int     send_sock_fd = -1, send_sock_fd_ipv6 = -1;
+volatile bool    frame_mode = false, use_bkgnd_process = false, use_log_file = false;
+#endif
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 

@@ -130,6 +130,7 @@
    Modified Jan 2022 JHB, fix "symbol size changed" linker build warnings in CentOS 8 g++ 8.3 by not including last_buffer_time, nMaxStreamDataAvailable, and uFramesDropped in __LIBRARYMODE__ build
    Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for hSessionOwner ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized
    Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
+   Modified Aug 2022 JHB, adjust declaration of a few global vars to allow no_mediamin and no_pktlib options in mediaTest build (run, frame_mode, etc)
 */
 
 #ifndef _GNU_SOURCE
@@ -338,13 +339,15 @@ extern unsigned int inFileType, outFileType, outFileType2, USBAudioInput, USBAud
 
 volatile bool    fNetIOAllowed = false;  /* set true if UDP socket input should be handled.  Will be set false if program / process permissions do not allow network sockets and/or USB ports to be opened. Default is disabled */
 volatile bool    fUSBIOAllowed = false;
-volatile int8_t  run = 1;                /* may be cleared by application signal handler to stop packet / media processing loop */
+//volatile int8_t  run = 1;                /* may be cleared by application signal handler to stop packet / media processing loop */
 volatile char    fPMMasterThreadExit = 0;
 volatile char    fPMThreadsClosing = 0;
 volatile uint8_t uQueueRead = 0;
+#ifdef __LIBRARYMODE__  /* this group declared here in library build, otherwise declared in cmd_line_interface.c, JHB Aug 2022 */
 volatile char    pktStatsLogFile[CMDOPT_MAX_INPUT_LEN] = "";
 volatile int     send_sock_fd = -1, send_sock_fd_ipv6 = -1;
-volatile bool    frame_mode = false, use_bkgnd_process = false, use_log_file = false;  /* this group moved here from cmd_line_interface.c */
+volatile bool    frame_mode = false, use_bkgnd_process = false, use_log_file = false;
+#endif
 volatile bool    demo_build = false;
 volatile int     debug_thread = 0;
 volatile int     nManageSessionRetriesAllowed = 1;
@@ -1284,7 +1287,7 @@ init_sessions:
 
       #endif  /* stream merging */
 
-#endif /* __LIBRARY_MODE__ */
+#endif /* __LIBRARYMODE__ */
 
 set_session_flags:
 
@@ -1469,7 +1472,7 @@ run_loop:
             last_pkt_group_cnt = pkt_group_cnt;
          }
 
-#ifndef __LIBRARYMODE__
+         #ifndef __LIBRARYMODE__
 
          if (!fMediaThread) {
 
@@ -1481,7 +1484,7 @@ run_loop:
                break;
             }
          }
-#endif
+         #endif
 
          prev_display_time = cur_time;
       }
@@ -3897,13 +3900,13 @@ int i = 0, k = 0;
 
 stream_check:
 
-#ifndef __LIBRARYMODE__
+   #ifndef __LIBRARYMODE__
    if (!packet_media_thread_info[thread_index].fMediaThread) {
 
       i = n;
       while (hSessions[i] == -1 && i >= 0) i--;  /* in cmd line execution, if we still don't have a valid session handle, try assuming there are more input streams than sessions */
    }
-#endif
+   #endif
 
 /* last check:  make sure the session is assigned to this packet/media thread */
 
@@ -4801,10 +4804,10 @@ get_num_sessions:
                   DSLogRunTimeStats(hSession, DS_LOG_RUNTIME_STATS_ORGANIZE_BY_STREAM_GROUP | DS_LOG_RUNTIME_STATS_SUPPRESS_ERROR_MSG | DS_LOG_RUNTIME_STATS_DISPLAY | DS_LOG_RUNTIME_STATS_EVENTLOG);
                }
 
-#ifdef __LIBRARYMODE__
+               #ifdef __LIBRARYMODE__
 
                CleanSession(hSession, thread_index);  /* clear p/m thread level items */
-#endif
+               #endif
 
                DSDeleteSession(hSession);  /* pktlib */
 
@@ -4921,7 +4924,7 @@ int i;
       if (strlen((const char*)pktStatsLogFile)) strcpy(szLogFile, (const char*)pktStatsLogFile);  /* if no log file given on the cmd line, we use one of the output names and replace extension with .txt */
       else {
 
-#ifndef __LIBRARYMODE__
+         #ifndef __LIBRARYMODE__
 
       /* assign log filename to inherit the first output pcap filename found (but with .txt extension).  If no output pcaps found, then use the first .wav filename found */
 
@@ -4971,7 +4974,7 @@ int i;
                break;
             }
          }
-#endif
+         #endif  /* ifndef __LIBRARYMODE__ */
 
          if (!p) strcpy(szLogFile, "pcap_jb_log.txt");
       }
@@ -5085,7 +5088,7 @@ char* szLocalLogFilename = NULL;
    return ret_val;
 }
 
-#if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)  /* deprecated, no longer used.  See comments near SECONDARY_THREADS_DEPRECATED above */
+#if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)  /* secondaryThreads() is deprecated, no longer used.  See comments near SECONDARY_THREADS_DEPRECATED above */
 
 /* multithread / concurrent channel example source */
 
@@ -6095,16 +6098,15 @@ char tmpstr[8000] = "";
    if (run != 1) run = 1;  /* restore run var */
 }
 
-
 void ThreadAbort(int thread_index, char* errstr) {
-
-int i;
 
    Log_RT(2, "CRITICAL, %s, unrecoverable error in packet/media thread %d, aborting\n", errstr, thread_index);
 
+   int i;
+
    if (run > 0) {
    
-      for (i=0; i<nPktMediaThreads; i++) ThreadDebugOutput(NULL, -1, 0, i, DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT);  /* show debug output for existing threads, JHB Sep2019 */
+      for (i=0; i<nPktMediaThreads; i++) ThreadDebugOutput(NULL, -1, 0, i, DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT);  /* display debug output for existing threads, JHB Sep2019 */
       run = -1;
    }
 }
