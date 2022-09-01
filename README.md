@@ -16,6 +16,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
 [Using the SDK - Run Demos and Reference Apps, Build User Apps](#user-content-sdkdownload)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Docker Containers](#user-content-dockercontainers)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Docker Container Notes](#user-content-asrdockercontainernotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Rar Packages](#user-content-rarpackages)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Install Notes](#user-content-installnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ASR Install Notes](#user-content-asrinstallnotes)<br/>
@@ -187,7 +188,7 @@ All reference applications and demos were built and tested on x86 servers with a
 For servers augmented with a coCPU card, the mediaTest, mediaMin, and iaTest reference apps will utilize coCPU cards if found at run-time (coCPU drivers and libs are included in SDK .rar files).  Example coCPU cards are <a href="http://processors.wiki.ti.com/index.php/HPC" target="_blank">shown here</a>, and can be obtained from TI, Advantech, or Signalogic.
 
 <a name="DockerContainers"></a>
-### Docker Containers
+## Docker Containers
 
 Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demos installed and ready to run are located at:
 
@@ -215,10 +216,13 @@ or
 
 ... depending on which EdgeStream app you want to run. The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
 
-To run ASR (automatic speech recognition) the "asr" container is needed (it's much larger). For ASR specific info, see [ASR Notes](#user-content-asrnotes) below.
+<a name="ASRDockerContainerNotes"></a>
+### ASR Docker Container Notes
+
+The ASR (automatic speech recognition) container is larger than other containers, but otherwise the procedure is the same as in [Docker Containers](#user-content=dockercontainers) above. For ASR specific info, see [ASR Notes](#user-content-asrnotes) below.
 
 <a name="GeneralDockerContainerNotes"></a>
-#### General Docker Container Notes
+### General Docker Container Notes
 
 1. All available containers have been tested on x86 Linux bare metal servers, including performance and capacity measurements given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. Measurements on x86 VMs on other OS (e.g MacOS, WinXX) are likely to be slower.
 
@@ -233,7 +237,7 @@ To run ASR (automatic speech recognition) the "asr" container is needed (it's mu
 4. Rar packages are included in each container, if for any reason it should be needed to re-run the SDK/demo install from scratch.
 
 <a name="WinSCPAccesDockerContainers"></a>
-#### WinSCP Access to Docker Containers
+### WinSCP Access to Docker Containers
 
 You may want to remotely access inside a running/active container pcap and media files output by EdgeStream apps -- for example to run WireShark or a media player (for more information on pcap, waveform, event log, packet log, and other test files provided/generated using the SDK, see [Test File Notes](#user-content-testfilenotes) below). This can be convenient for test and measurement purposes, as it avoids manual copying of files between host and container.
 
@@ -253,7 +257,7 @@ As an additional note, there is online forum discussion about WinSCP-ing into a 
 
 and then using the reported IP and port info in the remote WinSCP client, along with userid docker, and password tcuser. However, this only works when Docker is running inside a VM, for example on a WinXX or MacOS host.
 
-### Ubuntu Docker Container Notes
+## Ubuntu Docker Container Notes
 
 1) Ubuntu distro is 20.04.2, with gcc/g++ 11.2.0 installed
 2) wget and unrar are installed, along with a symlink /usr/bin/g++ pointing to /gcc/bin/g++
@@ -263,7 +267,7 @@ and then using the reported IP and port info in the remote WinSCP client, along 
 
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/ubuntu_base_container_docker_hub_profile.png" width=50% alt="Ubuntu base container Docker hub profile info" title="Ubuntu base container Docker hub profile info"></br>
 
-### CentOS Docker Container Notes
+## CentOS Docker Container Notes
 
 1) CentOS distro is 8.2.2004, with gcc/g++ 8.3.1-5 installed
 2) wget and unrar are installed, along with symlink /usr/bin/g++ pointing to /gcc/bin/g++
@@ -315,7 +319,7 @@ For more information on pcap, waveform, and other test files provided with the S
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
 
-To run the ASR version of the SigSRF + EdgeStream SDK, you can download and run a Docker container (see [Docker Containers](#user-content-dockercontainers) above) or install the ASR-specific RAR package. To install the RAR package, first follow the instructions in [Rar Packages](#user-content-rarpackages) above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
+To install the ASR RAR package, first follow the instructions in [Rar Packages](#user-content-rarpackages) above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
 
 Note that downloading the ASR .rar files takes longer as the .rar size is  substantially larger. Also the install itself takes a little longer.
     
