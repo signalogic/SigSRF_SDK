@@ -276,7 +276,7 @@ and then using the reported IP and port info in the remote WinSCP client, along 
 <a name="RarPackages"></a>
 ## Rar Packages
 
-Ubuntu and CentOS RAR packages are provided for different Linux distributions allowing SigSRF and EdgeStream software to be installed on VMs or bare-metal servers. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install the most recent .rar file. The install script auto-checks kernel version and Linux distro version to decide which .rar file to look for.
+As an alternative to Docker containers, Ubuntu and CentOS RAR packages are available to install SigSRF and EdgeStream software on VMs or bare-metal servers. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install the most recent .rar file. The install script auto-checks kernel version and Linux distro version to decide which .rar file to look for.
 
 <a name="InstallNotes"></a>
 ### Install Notes
