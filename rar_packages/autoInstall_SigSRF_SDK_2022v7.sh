@@ -2,7 +2,7 @@
 #================================================================================================
 # Bash script to install/uninstall SigSRF SDK and EdgeStream apps
 # Copyright (C) Signalogic Inc 2017-2022
-# Rev 1.7.2
+# Rev 1.7.3
 
 # Requirements
    # Internet connection
@@ -32,6 +32,7 @@
 #  Modified Jan 2022 JHB, mods for CentOS 8, remove reference to specific gcc version
 #  Modified Jan 2022 JHB, assume distro other than Ubunto or CentOS / RHEL as possible Ubuntu/Debian, let user know this is happening
 #  Modified Mar 2022 JHB, set installOptions immediately after user menu and before any functions are called. Without this fix, if an ASR or coCPU package is selected, but the appropriate .rar is not found, no error message is given
+#  Modified Aug 2022 JHB, add hello_codec to post-install build and "Apps check" section in installCheckVerify()
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -511,6 +512,9 @@ swInstall() {  # install Signalogic SW on specified path
 	cd $installPath/Signalogic/apps/mediaTest/mediaMin
 	make clean; make all;
 
+	cd $installPath/Signalogic/apps/mediaTest/hello_codec
+	make clean; make all;
+
 	cd $wdPath
 }
 
@@ -604,7 +608,7 @@ diagLibPrint() {
 
 diagAppPrint() {
 
-	if [ -f $installPath/Signalogic/apps/"$appfile"/"$appfile" ]; then
+	if [ -f $installPath/Signalogic/apps/"$appfile"/"$appname" ]; then
 		printf "%s %s[ OK ]\n" $appname "${line:${#appname}}" | tee -a $diagReportFile
 	else
 		printf "%s %s[ X ]\n" $appname "${line:${#appname}}" | tee -a $diagReportFile
@@ -722,13 +726,8 @@ installCheckVerify() {
 
 	appfile="iaTest"; appname="iaTest"; diagAppPrint;
 	appfile="mediaTest"; appname="mediaTest"; diagAppPrint;
-
-	appfile="mediaMin"; appname="mediaMin";
-	if [ -f $installPath/Signalogic/apps/mediaTest/$appfile/$appfile ]; then
-		printf "%s %s[ OK ]\n" $appname "${line:${#appname}}" | tee -a $diagReportFile
-	else
-		printf "%s %s[ X ]\n" $appname "${line:${#appname}}" | tee -a $diagReportFile
-	fi
+	appfile="mediaTest/mediaMin"; appname="mediaMin"; diagAppPrint;
+	appfile="mediaTest/hello_codec"; appname="hello_codec"; diagAppPrint;
 
 	# Leftover /dev/shm hwlib files check
 
