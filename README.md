@@ -496,7 +496,7 @@ Currently SigSRF attempts to maintain real-time performance for one stream group
 <a name="RunNotes"></a>
 ## Run Notes
 
-<i>Although the Rar packages include run-time executables for EdgeStream reference applications (e.g. mediaTest and mediaMin), make sure you initially rebuild these apps before running them. This is important, as the EdgeStream Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and then set compiler defines based on what is found on the system. Note this does not apply to Docker containers, as they are already pre-configured with ready-to-run EdgeStream executables.</i>
+Docker containers are pre-configured with ready-to-run EdgeStream executables. For Rar packages, the install script builds executables as its last step -- <i>if that fails for any reason, make sure you initially rebuild the demo and reference apps before running them. This is important, as the Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and then set compiler defines based on what's found on the system.</i>
 
 Reference applications limits are listed below.  The iaTest and paTest apps do not have a functionality limit. mediaMin and mediaTest app functionality is limited as follows:
 
