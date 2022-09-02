@@ -1050,7 +1050,16 @@ To make and run hello_codec, cd to the hello_codec folder and type
   make clean
   make all
 
-hello_codec accepts codec config file and debug mode flag command line options, but no input / output or operating mode options. To handle audio I/O and process a variety of audio file and USB input output sources and combinations, the mediaTest program should be used instead. When it first runs, hello_codec reads the codec config file to determine the codec type and any optional parameters, then generates several frames of 1 kHz sine wave tone, then encodes and decodes the tone buffer frame-by-frame using the natural frame size supported by the codec. 
+hello_codec accepts codec config file and debug mode flag command line options, but no input / output or operating mode options. To handle audio I/O and process a variety of audio file and USB input output sources and combinations, the mediaTest program should be used instead. When it runs hello_codec
+
+-reads a codec config file given on the command line to determine the codec type and any optional parameters
+-generates several frames of 1 kHz sine tone and stores in a buffer
+-creates and initializes encoder and decoder instances
+-encodes and decodes the tone buffer frame-by-frame (using the natural frame size supported by the codec)
+-deletes codec instances
+-stores output in a .wav file
+
+The .c source is commented in detail including what source sections and header files are needed and the Makefile has a table showing libs required, required for demo (but not for licensed), and optional.
 
 Here are some examples of running hello_codec
 
