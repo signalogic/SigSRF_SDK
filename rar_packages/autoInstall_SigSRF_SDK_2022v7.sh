@@ -33,6 +33,7 @@
 #  Modified Jan 2022 JHB, assume distro other than Ubunto or CentOS / RHEL as possible Ubuntu/Debian, let user know this is happening
 #  Modified Mar 2022 JHB, set installOptions immediately after user menu and before any functions are called. Without this fix, if an ASR or coCPU package is selected, but the appropriate .rar is not found, no error message is given
 #  Modified Aug 2022 JHB, add hello_codec to post-install build and "Apps check" section in installCheckVerify()
+#  Modified Aug 2022 JHB, check exit status of unrar command
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -145,8 +146,12 @@ unrarCheck() {
 	fi
 
    if [[ "$unrar_status" == "install" || "$unrar_status" == "already installed" ]]; then  # unrar in both of these cases, for example the Signalogic/etc folder gets deleted, and unrar restores it. Unrar'ing doesn't take long
-      unrar x -o+ $rarFileNewest $installPath/  # assumes packageSetup() has been called first, and rarFileNewest and installPath have been set
-      return 1
+      if unrar x -o+ $rarFileNewest $installPath/; then # assumes packageSetup() has been called first, and rarFileNewest and installPath have been set
+         return 1
+      else
+         echo "unrar error"
+         return 0
+      fi
    elif [[ "$unrar_status" == "uninitialized" ]]; then
       echo "internal problem in unrarCheck()"
       return 0
