@@ -1037,7 +1037,7 @@ The [mediaMin](#user-content-mediamin) section above describes real-time transco
 <a name="hellocodec"></a>
 ## hello codec
 
-For applications integrating a SigSRF codec, "hello codec" demonstrates the minimum source code needed to instantiate and encode/decode media with SigSRF codecs. hello_codec.c and its Makefile are located at
+For applications integrating a SigSRF codec, "hello codec" demonstrates the minimum source code needed to encode/decode media with SigSRF codecs. hello_codec.c and its Makefile are located at
 
     /installpath/Signalogic/apps/mediaTest/hello_codec
     
@@ -1047,9 +1047,9 @@ where installpath is the path used when installing SigSRF software. For the Sign
 
 To make and run hello_codec, cd to the hello_codec folder and type
 
-    make clean;  make all
+    make clean; make all
 
-hello_codec accepts codec config file and debug mode flag command line options, but no input / output or operating mode options. To handle audio I/O and process a variety of audio file and USB input output sources and combinations, the mediaTest program should be used instead. When it runs hello_codec
+The hello_codec command line accepts codec config file and debug mode options, but no input / output specs or operating mode options (to process a variety of audio file and USB I/O sources and combinations, use the mediaTest program instead). When it runs hello_codec
 
 * reads a codec config file given on the command line to determine the codec type and any optional parameters
 * generates several frames of 1 kHz sine tone and stores in a buffer
@@ -1058,7 +1058,7 @@ hello_codec accepts codec config file and debug mode flag command line options, 
 * deletes codec instances
 * stores output in a .wav file
 
-The .c source is commented in detail including what source sections and header files are needed and the Makefile has a table showing libs required, required for demo (but not for licensed), and optional.
+The .c source is commented in detail including source sections and necessary / optional header files. The Makefile has a table showing libs (i) required, (ii) required for demo (but not for licensed), and (iii) optional.
 
 Here are some examples of running hello_codec
 
@@ -1067,7 +1067,7 @@ Here are some examples of running hello_codec
     ./hello_codec -cx86 -C../session_config/amr_packet_test_config_AMR-12.2kbps-20ms_bw
     ./hello_codec -cx86 -C../session_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw
   
-Upon completion, hello_codec saves output in the file codec_output_test.wav for convenient codec output audio quality testing.
+Upon completion, hello_codec saves output in file codec_output_test.wav for convenient codec output audio quality testing.
 
 <a name="pktlib"></a>
 # pktlib
