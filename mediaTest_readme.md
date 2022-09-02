@@ -1047,8 +1047,7 @@ where installpath is the path used when installing SigSRF software. For the Sign
 
 To make and run hello_codec, cd to the hello_codec folder and type
 
-  make clean
-  make all
+    make clean;  make all
 
 hello_codec accepts codec config file and debug mode flag command line options, but no input / output or operating mode options. To handle audio I/O and process a variety of audio file and USB input output sources and combinations, the mediaTest program should be used instead. When it runs hello_codec
 
