@@ -11,7 +11,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-3Q 2022 - SigSRF™ and EdgeStream™ incorporated into the RobotHPC™ Robotics Edge Platform hardware + software solution
+3Q 2022 - SigSRF™ and EdgeStream™ incorporated into the [RobotHPC™ Robotics Edge Platform](https://signalogic.com/RobotHPC) hardware + software solution
 
 3Q 2022 - "hello codec" minimal codec usage and integration example for codec-only users
 
@@ -1043,14 +1043,14 @@ For applications integrating a SigSRF codec, "hello codec" demonstrates the mini
     
 where installpath is the path used when installing SigSRF software. For the Signalogic Docker Hub containers, this path is
 
-    /home/sigsrf_sk_demo/Signalogic/apps/mediaTest/hello_codec
+    /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest/hello_codec
 
 To make and run hello_codec, cd to the hello_codec folder and type
 
   make clean
   make all
 
-hello_codec accepts codec config file and debug mode flag command line options, but no input / output options. To process a variety of audio file and USB input output sources and combinations, the mediaTest program should be used. hello_codec first reads the codec config file to determine the codec type and any optional parameters, then generates several frames of 1 kHz sine wave tone in a buffer, then encodes and decodes that buffer frame-by-frame using the natural frame size supported by the codec. 
+hello_codec accepts codec config file and debug mode flag command line options, but no input / output or operating mode options. To handle audio I/O and process a variety of audio file and USB input output sources and combinations, the mediaTest program should be used instead. When it first runs, hello_codec reads the codec config file to determine the codec type and any optional parameters, then generates several frames of 1 kHz sine wave tone, then encodes and decodes the tone buffer frame-by-frame using the natural frame size supported by the codec. 
 
 Here are some examples of running hello_codec
 
@@ -1059,7 +1059,7 @@ Here are some examples of running hello_codec
     ./hello_codec -cx86 -C../session_config/amr_packet_test_config_AMR-12.2kbps-20ms_bw
     ./hello_codec -cx86 -C../session_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw
   
-Upon completion, hello_codec saves output in the file codec_output_test.wav.
+Upon completion, hello_codec saves output in the file codec_output_test.wav for convenient codec output audio quality testing.
 
 <a name="pktlib"></a>
 # pktlib
