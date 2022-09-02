@@ -1052,9 +1052,8 @@ To make and run hello_codec, cd to the hello_codec folder and type
 The hello_codec command line accepts codec config file and debug mode options, but no input / output specs or operating mode options (to process a variety of audio file and USB I/O sources and combinations, use the mediaTest program instead). When it runs hello_codec
 
 * reads a codec config file given on the command line to determine the codec type and any optional parameters
-* generates several frames of 1 kHz sine tone and stores in a buffer
-* creates and initializes encoder and decoder instances
-* encodes and decodes the tone buffer frame-by-frame (using the natural frame size supported by the codec)
+* fills in CODEC_PARAMS structs and creates and initializes encoder and decoder instances
+* encodes and decodes a 1 kHz tone buffer frame-by-frame (using the natural frame size supported by the codec)
 * deletes codec instances
 * stores output in a .wav file
 
