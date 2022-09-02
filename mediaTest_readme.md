@@ -11,6 +11,10 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+3Q 2022 - SigSRF™ and EdgeStream™ incorporated into the RobotHPC™ Robotics Edge Platform hardware + software solution
+
+3Q 2022 - "hello codec" minimal codec usage and integration example for codec-only users
+
 2Q 2022 - improved ASR, including support for near-real-time operation on slower CPUs. First version of GPS track processing (used for LI software), including gpx file handling, de-noising, dynamically adjusted filter coefficients, dropout detection, and more
 
 2Q 2022 - 15 to 20% codec performance improvement, both encode and decode
@@ -105,6 +109,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Pcap Generation](#user-content-amrpcapgenerator)</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTX Handling](#user-content-dtxhandling)<br/>
 &nbsp;&nbsp;&nbsp;[**mediaTest Notes**](#user-content-mediatestnotes)<br/>
+&nbsp;&nbsp;&nbsp;[**hello codec**](#user-content-hellocodec)<br/>
 
 [**pktlib**](#user-content-pktlib)<br/>
 
@@ -1028,6 +1033,33 @@ The [mediaMin](#user-content-mediamin) section above describes real-time transco
 5) Codec compressed bitstreams are stored in files in ".cod" format, with a MIME header and with FH formatted frames (i.e. every frame includes a ToC byte). This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line.  See examples in the "Using the 3GPP Decoder" section below.
 6) session config files (specified by the -C cmd line option), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the [Static Session Configuration](#user-content-staticsessionconfig) above.
 7) Transcoding in frame mode tests is not yet supported.
+
+<a name="hellocodec"></a>
+## hello codec
+
+For applications integrating a SigSRF codec, "hello codec" demonstrates the minimum source code needed to instantiate and encode/decode media with SigSRF codecs. hello_codec.c and its Makefile are located at
+
+    /installpath/Signalogic/apps/mediaTest/hello_codec
+    
+where installpath is the path used when installing SigSRF software. For the Signalogic Docker Hub containers, this path is
+
+    /home/sigsrf_sk_demo/Signalogic/apps/mediaTest/hello_codec
+
+To make and run hello_codec, cd to the hello_codec folder and type
+
+  make clean
+  make all
+
+hello_codec accepts codec config file and debug mode flag command line options, but no input / output options. To process a variety of audio file and USB input output sources and combinations, the mediaTest program should be used. hello_codec first reads the codec config file to determine the codec type and any optional parameters, then generates several frames of 1 kHz sine wave tone in a buffer, then encodes and decodes that buffer frame-by-frame using the natural frame size supported by the codec. 
+
+Here are some examples of running hello_codec
+
+    ./hello_codec -cx86 -C../session_config/evs_16kHz_13200bps_config
+    ./hello_codec -cx86 -C../session_config/evs_32kHz_13200bps_config -d0x80000000
+    ./hello_codec -cx86 -C../session_config/amr_packet_test_config_AMR-12.2kbps-20ms_bw
+    ./hello_codec -cx86 -C../session_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw
+  
+Upon completion, hello_codec saves output in the file codec_output_test.wav.
 
 <a name="pktlib"></a>
 # pktlib
