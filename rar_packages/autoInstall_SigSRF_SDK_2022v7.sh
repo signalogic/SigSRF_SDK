@@ -2,7 +2,7 @@
 #================================================================================================
 # Bash script to install/uninstall SigSRF SDK and EdgeStream apps
 # Copyright (C) Signalogic Inc 2017-2022
-# Rev 1.7.3
+# Rev 1.7.4
 
 # Requirements
    # Internet connection
@@ -34,6 +34,7 @@
 #  Modified Mar 2022 JHB, set installOptions immediately after user menu and before any functions are called. Without this fix, if an ASR or coCPU package is selected, but the appropriate .rar is not found, no error message is given
 #  Modified Aug 2022 JHB, add hello_codec to post-install build and "Apps check" section in installCheckVerify()
 #  Modified Aug 2022 JHB, check exit status of unrar command
+#  Modified Sep 2022 JHB, minor mods after testing Ubuntu .rar with Debian
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -121,10 +122,30 @@ unrarCheck() {
 
                      if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
                         echo "Attempting to install rarlab unrar ..."
+
+                			wgetInstalled=`type -p wget`  # wget should already be installed, but check anyway
+			               if [ "$wgetInstalled" == "" ]; then
+                           echo "wget not found, attempting to install wget ..."
+                           apt-get install wget
+                        fi
+
                         wget --no-check-certificate https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
                         tar -zxvf rarlinux-x64-6.0.2.tar.gz
                         mv rar/rar rar/unrar /usr/local/bin/
-                     else  # else includes Ubuntu, Debian, VM target, or anything else
+                     elif [ "$OS" = "Debian GNU/Linux" ]; then
+                        echo "Attempting to install non-free unrar for Debian ..."
+
+                			wgetInstalled=`type -p wget`  # wget should already be installed, but check anyway
+			               if [ "$wgetInstalled" == "" ]; then
+                           echo "wget not found, attempting to install wget ..."
+                           apt-get install wget && apt-get -y install gnupg
+                        fi
+
+                        wget -qO - https://ftp-master.debian.org/keys/archive-key-10.asc | apt-key add - \
+                           && echo deb http://deb.debian.org/debian buster main contrib non-free | tee -a /etc/apt/sources.list \
+                           && apt-get update \
+                           && apt-get install unrar
+                     else  # else includes Ubuntu, VM target, or anything else
                         echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
                         sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
                         depInstall_wo_dpkg;
@@ -285,14 +306,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			fi
    	fi
 
-      if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-
-			lsbReleaseInstalled=`type -p lsb_release`
-#			if [ ! $lsbReleaseInstalled ]; then
-#		  		echo "lsb_release package is needed"
-#				yum install redhat-lsb-core
-#        fi
-      else
+      if [ "$OS" = "Ubuntu" ]; then  # lsb_release needed only for Ubuntu (not CentOS, Debian, etc)
 
   			lsbReleaseInstalled=`type -p lsb_release`
 			if [ "$lsbReleaseInstalled" == "" ]; then
@@ -398,10 +412,10 @@ swInstall() {  # install Signalogic SW on specified path
 
          if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
             distribution=$(cat /etc/centos-release)
-         #elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
-         else  # else includes Ubuntu, Debian, VM target, or anything else
-            #distribution=$(lsb_release -d)
-            distribution=$(cat /etc/lsb-release)  # use this in case installing lsb-release package ran into any problems
+         elif [ "$OS" = "Ubuntu" ]; then
+            distribution=$(cat /etc/lsb-release)
+         else  # else includes Debian, VM target, or anything else
+            distribution=$(cat /etc/os-release)  # os-release is supposedly the Linux standard
          fi
 
 			cd $installPath/Signalogic/DirectCore/hw_utils; make
@@ -650,10 +664,11 @@ installCheckVerify() {
 	echo "Distro Info" | tee -a $diagReportFile
    if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
       cat /etc/centos-release | tee -a $diagReportFile
-#  elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
-   else   # else includes Ubuntu, Debian, VM target, or anything else
+   elif [ "$OS" = "Ubuntu" ]; then
       cat /etc/lsb-release | tee -a $diagReportFile  # use this in case installing lsb-release package ran into trouble
-      #lsb_release -a | tee -a $diagReportFile
+#  elif [ "$target" = "VM" -o "$OS" = "Debian" ]; then
+   else   # else includes Debian, VM target, or anything else
+      cat /etc/os-release | tee -a $diagReportFile
    fi
    echo "Kernel Version: $kernel_version" | tee -a $diagReportFile
 
