@@ -42,8 +42,8 @@
 
 /* SigSRF lib header files (all libs are .so format) */
 
-#include "hwlib.h"  /* platform, VM, and concurrency management provided by DirectCore (not needed for licensed codec-only applications) */
-#include "voplib.h"
+#include "hwlib.h"                 /* platform, VM, and concurrency management provided by DirectCore (not needed for licensed codec-only applications) */
+#include "voplib.h"                /* codec and other voice-over-packet related APIs */
 
 /* cross-platform definitions */
 
@@ -58,7 +58,11 @@
 #define F_1KHZ             1000   /* 1 kHz used for test sine wave generation -- change as needed */
 #define A_4096             4096   /* amplitude used for test waveform generation -- change as needed*/
 
-/* local functions, defined after main() */
+/* local functions, defined after main(). Notes:
+
+  -these are reference/example functions, replace with application-specific code as needed
+  -the most important helper function is set_codec_params(), which fills in CODEC_PARAMS encoder and decoder structs
+*/
 
 int read_codec_config_file(codec_test_params_t* codec_test_params, int* input_sampleRate, int* output_sampleRate);
 bool set_codec_params(codec_test_params_t* codec_test_params, CODEC_PARAMS* CodecParams, float* codec_frame_duration, int* codec_sampleRate);
@@ -74,19 +78,20 @@ int cmdline(int argc, char** argv);
 static HPLATFORM       hPlatform = -1;             /* platform handle, see DSAssignPlatform() call */
 codec_test_params_t    codec_test_params = { 0 };  /* codec parameters read from cmd line config file */
 
-/* HCODEC defines a codec handle. Notes:
+/* Codec related var declarations. Notes:
 
+  -HCODEC defines a codec handle, returned by DSCodecCreate(), then used for voplib APIs DSCodecEncode(), DSCodecDecode(), DSGetCompressedFramesize(), etc
   -handle value returned by DSCodecCreate():  0 = not initialized, < 0 indicates an error, > 0 is valid codec handle
-  -here we use arrays of handles to allow multichannel audio processing as an example. Note that multichannel audio (e.g. stereo, or N-channel wav file) is in addition to concurrent (multithread) codec streams; i.e. they are not the same thing
+  -here we use arrays of codec handles to allow multichannel audio processing as an example. Note that multichannel audio (e.g. stereo, or N-channel wav file) is in addition to concurrent (multithread) codec streams; i.e. they are not the same thing
 */
 
-HCODEC               encoder_handles[MAX_AUDIO_CHAN] = { 0 },
+HCODEC               encoder_handles[MAX_AUDIO_CHAN] = { 0 },  /* MAX_AUDIO_CHAN defined in voplib.h ... this is a completely arbitrary value, can be whatever the application needs */
                      decoder_handles[MAX_AUDIO_CHAN] = { 0 };
 
 CODEC_PARAMS         CodecParams = { 0 };  /* CODEC_PARAMS and CODEC_OUTARGS defined in voplib.h */
 CODEC_OUTARGS        encOutArgs = { 0 };   /* currently only used by AMR-WB+, see comments below */
 
-int                  numChan = 1;  /* number of audio channels per codec stream (e.g. stereo, or N-channel wav file). Note this is separate from concurrent codec streams (multithread), although it still requires multiple codec instances (one per channel) */
+int                  numChan = 1;  /* number of audio channels per codec stream (e.g. stereo, or N-channel wav file), one codec handle per channel. Note this is separate from concurrent codec streams (multithread) */
 
 int main(int argc, char** argv) {
 
@@ -106,17 +111,17 @@ int input_framesize = 0, coded_framesize = 0, output_framesize = 0, inbuf_size =
 #define MAX_FS_CONVERT_MEDIATEST  160  /* mediaTest sampling rate conversion worst case:  44100 to/from 48000 kHz (was 24 for 8 to/from 192 kHz) */
 #define MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE  (MAX_FS_CONVERT_MEDIATEST*4)  /* to limit stack usage, we define a "tradeoff size" between number of audio channels and worst-case Fs conversion, for example 4 channels at 44.1 <--> 48 kHz, or 100 channels at 8 <--> 48 kHz, etc */
 
-uint8_t in_buf[MAX_RAW_FRAME*MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE*AUDIO_SAMPLE_SIZE];
-uint8_t out_buf[MAX_RAW_FRAME*MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE*AUDIO_SAMPLE_SIZE] = { 0 };
-uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN];
+uint8_t in_buf[MAX_RAW_FRAME*MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE*AUDIO_SAMPLE_SIZE];  /* raw audio input buffer, prior to encoding */
+uint8_t out_buf[MAX_RAW_FRAME*MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE*AUDIO_SAMPLE_SIZE] = { 0 };  /* decoded audio output buffer */
+uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN];  /* encoder output buffer */
 
-/* handle command line params. Params and format are same as mediaTest, but currently hello_codec is only paying attention to codec config file and debug mode (-dN entry) */
+/* handle command line params. Params and format are same as mediaTest, but currently hello_codec is only paying attention to codec config file (-C entry) and debug mode (-dN entry) */
 
    if (cmdline(argc, argv) < 0) exit(EXIT_FAILURE);
 
    printf("hello codec start, debug flags = 0x%llx \n", (unsigned long long)debugMode);
 
-   hPlatform = DSAssignPlatform(NULL, PlatformParams.szCardDesignator, 0, 0, 0);  /* assign platform handle used for concurrency, VM management, and demo management. A platform handle is not required for licensed codec-only applications */
+   hPlatform = DSAssignPlatform(NULL, PlatformParams.szCardDesignator, 0, 0, 0);  /* platform handles are used for concurrency, VM management, and demo management. DSAssignPlatform() is in hwlib (aka DirectCore). A platform handle is not required for licensed codec-only applications */
 
    DSConfigVoplib(NULL, NULL, DS_CV_INIT);  /* initialize voplib and codec libs */
 
@@ -126,8 +131,9 @@ uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN];
 
 /* fill CodecParams struct. Notes:
 
-     -in this case we fill CodecParams from codec config file specified on the commmand line
-     -applications can set CodecParams in any way as needed. See codec-specific sections of the switch statement inside set_codec_params()
+     -CodecParams is of type CODEC_PARAMS (voplib.h)
+     -we fill CodecParams from the codec config file specified on the commmand line (same as with mediaTest command line)
+     -alternatively, applications can fill CodecParams in any way, as needed. For specific codecs, see sections of the switch statement inside set_codec_params()
      -note that CodecParams has encoder and decoder sub-structs
      -see additional notes inside set_codec_params()
 */
@@ -135,12 +141,12 @@ uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN];
 
       CodecParams.enc_params.frameSize = CodecParams.dec_params.frameSize = codec_frame_duration;  /* in msec */
       CodecParams.codec_type = codec_test_params.codec_type;
-      unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in mediaMin.h, JHB Jan2022 */
+      unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in cmd_line_debug_flags.h, JHB Jan2022 */
 
    /* create required number of encoder and decoder instances. Notes:
 
       -any number of codec instances can be created dynamically by any number of threads, at any time
-      -to specify multichannel audio data (e.g. stereo, N-channel wav), set numChan > 1. Multichannel concurrent instances are separate from / additional to multithread conccurrent instances
+      -to specify multichannel audio data (e.g. stereo, N-channel wav), set numChan > 1. Remember that multichannel concurrent instances are separate from (and in addition to) multithread conccurrent instances
    */
 
       for (i=0; i<numChan; i++) {
@@ -151,7 +157,7 @@ uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN];
       }
    }
    
-/* set input/output and intermediate (coded) frame sizes */
+/* set input, output, and intermediate (coded) frame sizes */
 
    if (set_frame_sizes(&codec_test_params, codec_frame_duration, input_sampleRate, output_sampleRate, &input_framesize, &coded_framesize, &output_framesize, &inbuf_size, &outbuf_size) < 0) goto cleanup;
 
@@ -160,10 +166,7 @@ uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN];
    sprintf(szNumChan, "%d channel", numChan);
    if (numChan > 1) strcat(szNumChan, "s");
 
-   if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) {
-
-      strcpy(tmpstr, "encoder"); sprintf(tmpstr2, "decoder framesize (bytes) = %d, ", coded_framesize);
-   }
+   if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) { strcpy(tmpstr, "encoder"); sprintf(tmpstr2, "decoder framesize (bytes) = %d, ", coded_framesize); }
    else { strcpy(tmpstr, "pass-thru"); strcpy(tmpstr2, ""); }
 
    printf("  input framesize (samples) = %d, %s framesize (samples) = %d, %sinput Fs = %d Hz, codec Fs = %d, output Fs = %d Hz, %s\n", input_framesize/AUDIO_SAMPLE_SIZE, tmpstr, inbuf_size/AUDIO_SAMPLE_SIZE, tmpstr2, input_sampleRate, codec_sampleRate, output_sampleRate, szNumChan);
@@ -172,7 +175,7 @@ uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN];
 
    generate_test_waveform(in_buf, NUM_FRAMES, input_framesize, input_sampleRate, F_1KHZ, A_4096);
 
- /* prepare to run the test */
+ /* prepare to run the codec example */
 
    gettimeofday(&tv, NULL);
    t1 = (uint64_t)tv.tv_sec*1000000L + (uint64_t)tv.tv_usec;
@@ -182,24 +185,29 @@ uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN];
    else if (decoder_handles[0]) printf("Running decoder ...\n");
    else printf("Running pass-thru ...\n");
 
- /* run the test: encode-decode loop for NUM_FRAMES number of frames */
+ /* run the example: encode-decode loop for NUM_FRAMES number of frames */
 
-   while (run) {
+   while (run && frame_count < NUM_FRAMES) {
 
-      if (toupper(getkey()) == 'Q') { run = 0; break; }  /* user can press 'q' key to break out of while(run) loop */
+      if (toupper(getkey()) == 'Q') { run = 0; break; }  /* user can press 'q' key to break out of while loop */
 
       for (i=0; i<numChan; i++) {  /* to specify multichannel audio data (e.g. stereo, N-channel wav), set numChan > 1 */
       
          coded_framesize = DSCodecEncode(encoder_handles, 0, &in_buf[frame_count*inbuf_size], coded_buf, inbuf_size, numChan, &encOutArgs);  /* call codec encode API (in voplib)*/
 
+      /*
+         :
+         : application-specific coded data handling here; e.g. RTP packet flow
+         :
+      */
+
          if (coded_framesize > 0) len = DSCodecDecode(decoder_handles, 0, coded_buf, &out_buf[frame_count*outbuf_size], coded_framesize, numChan, NULL);  /* call codec decode API (in voplib) */
       }
 
-      if (++frame_count >= NUM_FRAMES) break;  /* finished processing data ? */
-      else printf("\rProcessing frame %d...", frame_count);
+      printf("\rProcessing frame %d...", ++frame_count);  /* update frame count display */
    }
 
-   printf("\n");  /* leave existing status line, including any error messages (don't clear it) */
+   printf("\n");  /* leave existing status line, including any error messages (don't clear them) */
 
    if (!run) printf("Exiting test\n");  /* run == 0 indicates an early exit; e.g. user pressed quit key or an error occurred */
 
@@ -208,7 +216,7 @@ uint8_t coded_buf[MAX_CODED_FRAME*MAX_AUDIO_CHAN];
 
    printf("Run-time: %3.6fs\n", 1.0*(t2-t1)/1e6);
 
-/* as a convenient, easy way to verify encode/decode, write output data to wav file */
+/* as a convenient way to verify encode/decode, write output data to wav file */
 
    write_wav_file(out_buf, input_sampleRate, numChan, frame_count*outbuf_size);
 
@@ -217,8 +225,8 @@ cleanup:
 /* codec tear down and cleanup */
 
    for (i=0; i<numChan; i++) {
-      if (encoder_handles[i]) DSCodecDelete(encoder_handles[i]);
-      if (decoder_handles[i]) DSCodecDelete(decoder_handles[i]);
+      if (encoder_handles[i] > 0) DSCodecDelete(encoder_handles[i]);
+      if (decoder_handles[i] > 0) DSCodecDelete(decoder_handles[i]);
    }
 
    if (hPlatform != -1) DSFreePlatform((intptr_t)hPlatform);  /* free platform handle */
@@ -242,7 +250,7 @@ bool set_codec_params(codec_test_params_t* codec_test_params, CODEC_PARAMS* Code
 
 bool fCreateCodec = true;
 
-   /* setup/init for specified codec.  Codecs use voplib APIs */
+   /* setup/init for specified codec. Codecs use voplib APIs */
 
       switch (codec_test_params->codec_type) {
 
@@ -355,7 +363,7 @@ bool fCreateCodec = true;
             CodecParams->dec_params.uncompress = codec_test_params->uncompress;
 
          /* codec_frame_duration notes:
-         
+
             -for G726, increase if more than 10 msec is being encoded or decoded per frame
             -currently codec_test_params_t struct (mediaTest.h) doesn't have a ptime element to control framesize multiples. That's a to-do item
             -packet/media thread processing in pktlib does handle ptime
@@ -425,7 +433,7 @@ bool fCreateCodec = true;
             fCreateCodec = false;
             break;
       }
-      
+
    return fCreateCodec;
 }
 
@@ -496,7 +504,7 @@ int output_upFactor = 1, output_downFactor = 1;
 
 void generate_test_waveform(uint8_t* in_buf, int numFrames, int input_framesize, int Fs, int Fc, int Amp) {
 
-#define pi M_PI  /* M_PI is in math.h */
+#define pi M_PI  /* M_PI in math.h */
 
 int i, j;
 short int* p = (short int*)in_buf;
@@ -549,7 +557,7 @@ char *config_file;
 FILE *fp_cfg = NULL;
 char szCodecName[50] = "";
 
-   /* Config file handling:  (i) give an error if config file doesn't exist, (ii) use default file only if no config file given and input waveform file appears to be a 3GPP test vector, (iii) otherwise go with input waveform header and/or test mode.  JHB Mar 2018 */
+/* Config file handling:  (i) give an error if config file doesn't exist, (ii) use default file only if no config file given and input waveform file appears to be a 3GPP test vector, (iii) otherwise go with input waveform header and/or test mode.  JHB Mar 2018 */
 
    if (strlen(MediaParams[0].configFilename) == 0) {
 
@@ -626,7 +634,7 @@ char libstr[500];
    sprintf(&libstr[strlen(libstr)], ", voplib v%s, diaglib v%s, cimlib v%s", VOPLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
    printf("%s\n", libstr);
 
-   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS)) exit(EXIT_FAILURE);
+   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS)) return -1;
 
    #if 0  /* we don't check for I/O specs in hello_codec. mediaTest has a full I/O implementation */
 
