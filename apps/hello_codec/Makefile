@@ -17,6 +17,7 @@
 # Revision History
 #
 #  Created Aug 2022 JHB
+#  Modified Sep 2022 JHB, modify USE_OLD_CODEC_LIBS var for Debian
 
 ifeq ($(no_codecs),1)
   no_evs = 1
@@ -162,6 +163,7 @@ LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L/usr/lib
 #
 # -older systems require older codec libs
 # -depends on Linux distro, system configuration, and version of installed SigSRF found
+# -Debian doesn't seem to have "VERSION" field, so for now we're assuming newer libs
 
 include /etc/os-release  # source contents of /etc/os-release file; this will set several Makefile variables such as NAME, VERSION_ID, ID, etc
 VERSION_ID := $(patsubst "%",%,$(VERSION_ID))  # remove quotes
@@ -171,7 +173,7 @@ ifneq (,$(findstring CentOS,$(NAME)))
   VER_MINOR := $(shell echo $(VERSION_ID) | cut -f2 -d.)
   # CentOS version <= 7.07
   USE_OLD_CODEC_LIBS := $(shell [ $(VER_MAJOR) -le 7 -o \( $(VER_MAJOR) -eq 7 -a $(VER_MINOR) -ge 7 \) ] && echo true)
-else
+else ifneq  (,$(findstring Ubuntu,$(NAME)))
   VER_MAJOR := $(shell echo $(VERSION_ID) | cut -f1 -d.)
   VER_MINOR := $(shell echo $(VERSION_ID) | cut -f2 -d.)
   # Ubunto version <= 12.04
