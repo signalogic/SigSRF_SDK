@@ -1,0 +1,34 @@
+# Session config file used for several mediaTest demos, defining endpoints for EVS to G711 transcoding
+
+[start_of_session_data]
+
+term1.local_ip = 192.168.0.1
+term1.local_port = 18446
+term1.remote_ip = 192.168.0.2
+term1.remote_port = 6170
+term1.media_type = voice
+term1.codec_type = G711_ULAW
+term1.bitrate = 64000  # in bps
+term1.ptime = 20  # in msec
+term1.rtp_payload_type = 0
+term1.dtmf_type = NONE
+term1.dtmf_payload_type = NONE
+term1.sample_rate = 8000  # in Hz
+## term1.dtx_handling = -1  # -1 disables DTX handling
+
+term2.local_ip = 192.168.0.1
+term2.local_port = 6154
+term2.remote_ip = 192.168.0.3
+term2.remote_port = 10242
+term2.media_type = voice
+term2.codec_type = EVS
+term2.bitrate = 13200  # in bps
+term2.ptime = 20  # in msec
+term2.rtp_payload_type = 127
+term2.dtmf_type = NONE
+term2.dtmf_payload_type = NONE
+term2.sample_rate = 16000  # in Hz
+term2.header_format = 1  # for EVS, 0 = CH format, 1 = FH format
+## term2.dtx_handling = -1  # -1 disables DTX handling
+
+[end_of_session_data]

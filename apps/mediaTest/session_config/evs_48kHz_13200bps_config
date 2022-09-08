@@ -1,0 +1,7 @@
+# EVS codec config file for fullband testing
+
+codec_type = EVS
+bitrate = 13200      # bitrate in bps
+sample_rate = 48000  # fullband encoder sampling rate
+dtx_enable = 0
+rf_enable = 0

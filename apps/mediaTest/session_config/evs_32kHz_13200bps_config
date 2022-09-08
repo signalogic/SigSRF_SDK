@@ -1,0 +1,4 @@
+bitrate=13200
+sample_rate=32000
+dtx_enable=0
+rf_enable=0

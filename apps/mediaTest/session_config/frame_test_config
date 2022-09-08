@@ -1,0 +1,15 @@
+### Codec 1
+codec_data_start
+
+media_type=voice
+codec_type=EVS
+bitrate=13200
+ptime=20
+dtx_enable=0
+rf_enable=0
+sample_rate=16000
+evs_header_full=1
+encoder_file=test_files/stv16c.INP
+decoder_file=reference_files/stv16c_13200_16kHz_mime_o3.COD
+
+end_of_codec_data

@@ -1,0 +1,4 @@
+codec_type=AMR_NB
+bitrate=12200
+sample_rate=8000
+vad=1

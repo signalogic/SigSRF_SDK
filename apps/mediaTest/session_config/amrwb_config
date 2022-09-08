@@ -1,0 +1,19 @@
+### Session 1
+
+session_data_start
+
+term1.local_ip=10.10.64.55
+term1.local_port=18000
+term1.remote_ip=10.10.68.35
+term1.remote_port=6000
+term1.media_type=voice
+term1.codec_type=AMR_WB
+term1.bitrate=23850
+term1.ptime=20
+term1.rtp_payload_type=97
+term1.dtmf_type=NONE
+term1.dtmf_payload_type=NONE
+term1.octet_align=1
+
+end_of_session_data
+

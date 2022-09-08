@@ -1,0 +1,5 @@
+bitrate=5900
+sample_rate=16000
+dtx_enable=1
+dtx_value=8
+rf_enable=0
