@@ -3730,11 +3730,8 @@ cleanup:
    #endif
 
    #if defined(ENABLE_STREAM_GROUPS) && !defined(__LIBRARYMODE__)
-   if (fp_out_wav_merge != NULL) 
-      DSSaveDataFile(DS_GM_HOST_MEM, &fp_out_wav_merge, NULL, (uintptr_t)NULL, 0, DS_CLOSE, &MediaInfo_merge);  /* close wav file, update Fs and length in Wav header */
-
-   if (fp_out_pcap_merge != NULL) 
-      fclose(fp_out_pcap_merge);
+   if (fp_out_wav_merge != NULL) DSSaveDataFile(DS_GM_HOST_MEM, &fp_out_wav_merge, NULL, (uintptr_t)NULL, 0, DS_CLOSE, &MediaInfo_merge);  /* close merge wav file, update Fs and length in Wav header */
+   if (fp_out_pcap_merge != NULL) fclose(fp_out_pcap_merge);  /* close pcap merge file */
    #endif
 
 /* close network sockets */
@@ -3743,13 +3740,6 @@ cleanup:
 
       if (recv_sock_fd != -1) close(recv_sock_fd);
       if (send_sock_fd != -1) close(send_sock_fd);
-   }
-
-   if (!fMediaThread) {
-
-      #if (LOG_OUTPUT != LOG_SCREEN_ONLY)
-      if (fp_sig_lib_log) fclose(fp_sig_lib_log);
-      #endif
    }
 
    #if SAVE_INTERIM_OUTPUT
@@ -3777,6 +3767,13 @@ sync_exit:
 
       usleep(1000);
       goto sync_exit;
+   }
+
+   if (!fMediaThread) {  /* moved here for mediaTest operation (fMediaThread = false), after WritePktLog() which is last possible use of event log file, JHB Sep 2022 */
+
+      #if (LOG_OUTPUT != LOG_SCREEN_ONLY)
+      if (fp_sig_lib_log) fclose(fp_sig_lib_log);
+      #endif
    }
 
 /* free platform handle */

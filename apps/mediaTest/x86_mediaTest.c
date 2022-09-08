@@ -74,6 +74,8 @@
   Modified Feb 2022 JHB, make responsive to -RN command line entry (repeat), with same specs as mediaMin. For example, for an encoder-decoder data flow, -R2 repeats the data flow twice, wrapping the input waveform file after each repeat
   Modified Mar 2022 JHB, move strrstr() to dsstring.h (as static line)
   Modified Mar 2022 JHB, add first pass of gpx file processing
+  Modified Jun 2022 JHB, add delta change in heading to aggressive filter coefficient calculation in GPX track filtering
+  Modified Aug 2022 JHB, add _NO_PKTLIB_ and _NO_MEDIAMIN_ in a few places to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
 */
 
 /* Linux header files */
@@ -531,6 +533,8 @@ void x86_mediaTest(void) {
       FILE* fp_out_segment = NULL, *fp_out_concat = NULL, *fp_out_stripped = NULL;
       char* p;
 
+      #ifndef _NO_PKTLIB_  /* JHB Aug 2022 */
+
    /* items added to support pcap output, JHB Jan2021 */
 
       TERMINATION_INFO term_info;
@@ -544,6 +548,7 @@ void x86_mediaTest(void) {
       int pkt_len;
       struct timespec ts_pcap;
       uint64_t nsec_pcap = 0;
+      #endif
 
    /* start of code for codec test mode */
 
@@ -724,7 +729,7 @@ void x86_mediaTest(void) {
       if (DSGetCodecName(codec_test_params.codec_type, szCodecName, DS_CODEC_INFO_TYPE) <= 0) {
       #endif
 
-         printf("Error: non-supported or invalid codec type found in config file\n");
+         printf("\rError: non-supported or invalid codec type found in config file\n");
          goto codec_test_cleanup;
       }
 
@@ -942,7 +947,7 @@ void x86_mediaTest(void) {
 
          CodecParams.enc_params.frameSize = CodecParams.dec_params.frameSize = codec_frame_duration;  /* in msec */
          CodecParams.codec_type = codec_test_params.codec_type;
-         unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in mediaMin.h, JHB Jan2022 */
+         unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in cmd_line_debug_flags.h, JHB Jan2022 */
 
          for (i=0; i<numChan; i++) {
 
@@ -1227,6 +1232,8 @@ void x86_mediaTest(void) {
          if (IS_AUDIO_FILE_TYPE(outFileType2)) strcpy(MediaInfo.szFilename, MediaParams[1].Media.outputFilename);
          else strcpy(MediaInfo.szFilename, MediaParams[0].Media.outputFilename);
 
+         #ifndef _NO_PKTLIB_  /* JHB Aug 2022 */
+
          if (outFileType == PCAP) {
 
             ret_val = DSOpenPcap(MediaInfo.szFilename, &fp_out, NULL, "", DS_WRITE | DS_OPEN_PCAP_WRITE_HEADER);
@@ -1251,15 +1258,15 @@ void x86_mediaTest(void) {
             memcpy(&term_info.local_ip.u.ipv6, xxx, DS_IPV6_ADDR_LEN);  /* DS_IPV6_ADDR_LEN defined in shared_include/session.h */
             memcpy(&term_info.remote_ip.u.ipv6, xxx, DS_IPV6_ADDR_LEN);
             #else
-            term_info.remote_ip.type = DS_IPV4;  /* defaults. IPv6 and user-specified IP addr and UDP port can be added later */
+            term_info.remote_ip.type = DS_IPV4;  /* default: use source/dest IP addr and port compatible with "pcap_file_test_config" config file, which is referred to in several mediaTest demo command lines. IPv6 and user-specified IP addr and UDP port can be added later */
             term_info.local_ip.type = DS_IPV4;
-            term_info.local_ip.u.ipv4 = htonl(0x0A000101);
-            term_info.remote_ip.u.ipv4 = htonl(0x0A000001);
+            term_info.local_ip.u.ipv4 = htonl(0xC0A80003);  /* 192.168.0.3 */
+            term_info.remote_ip.u.ipv4 = htonl(0xC0A80001);  /* 192.168.0.1 */
             #endif
 
-            term_info.local_port = 0xa0a0;
-            term_info.remote_port = 0xb0b0;
-            term_info.attr.voice_attr.rtp_payload_type = 109;
+            term_info.local_port = 0x0228;  /* 10242 */
+            term_info.remote_port = 0x0A18;  /* 6154 */
+            term_info.attr.voice_attr.rtp_payload_type = 127;
 
             memcpy(&format_pkt.SrcAddr, &term_info.local_ip.u, DS_IPV4_ADDR_LEN);  /* DS_IPVn_ADDR_LEN defined in shared_include/session.h */
             memcpy(&format_pkt.DstAddr, &term_info.remote_ip.u, DS_IPV4_ADDR_LEN);
@@ -1274,7 +1281,7 @@ void x86_mediaTest(void) {
 
             clock_gettime(CLOCK_REALTIME, &ts_pcap);
             nsec_pcap = ts_pcap.tv_sec*1000000000L + ts_pcap.tv_nsec;
-        }
+         }
          else {  /* create output file for all file formats except for pcap */
 
             ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, MediaInfo.szFilename, (uintptr_t)NULL, 0, DS_CREATE, &MediaInfo);  /* DSSaveDataFile returns bytes written, with DS_CREATE flag it returns header length (if any, depending on file type) */
@@ -1289,6 +1296,7 @@ void x86_mediaTest(void) {
             printf("Failed to open output %s file %s, ret_val = %d\n", filestr, MediaInfo.szFilename, ret_val);
             goto codec_test_cleanup;
          }
+         #endif  /* ifndef _NO_PKTLIB_ */
       }
 
    /* get ready to run the test */
@@ -1696,6 +1704,8 @@ PollBuffer:
 
          if (outFileType != USB_AUDIO) {
 
+            #ifndef _NO_PKTLIB_  /* JHB Aug 2022 */
+
             if (outFileType == PCAP) {
 
                format_pkt.rtpHeader.Sequence = seq_num++;
@@ -1731,7 +1741,9 @@ PollBuffer:
                   goto codec_test_cleanup;
                }
             }
-            else {  /* write out data for all file formats except for pcap, using pointer to bytes (addr) and number of bytes (len) */
+            else
+            #endif  /* ifndef _NO_PKTLIB_ */
+            {  /* write out data for all file formats except for pcap, using pointer to bytes (addr) and number of bytes (len) */
 
                #ifdef CODEC_FILE_DEBUG
                if (outFileType == ENCODED && frame_count < 20) {
@@ -1837,8 +1849,8 @@ codec_test_cleanup:
       /* codec tear down / cleanup */
 
       for (i=0; i<numChan; i++) {
-         if (encoder_handle[i]) DSCodecDelete(encoder_handle[i]);
-         if (decoder_handle[i]) DSCodecDelete(decoder_handle[i]);
+         if (encoder_handle[i] > 0) DSCodecDelete(encoder_handle[i]);
+         if (decoder_handle[i] > 0) DSCodecDelete(decoder_handle[i]);
       }
 
       if (fp_in) {
@@ -1866,6 +1878,11 @@ codec_test_cleanup:
    }
    else if (x86_pkt_test || frame_mode)
    {
+   
+#ifdef _NO_MEDIAMIN_
+      printf("Attempting to call mediaMin_thread() but build had mediaMin disabled (i.e. make cmd line with no_mediamin=1) \n");
+#else
+
       int num_threads = PlatformParams.cimInfo[0].taskAssignmentCoreLists[0] | (PlatformParams.cimInfo[0].taskAssignmentCoreLists[1] << 8) | (PlatformParams.cimInfo[0].taskAssignmentCoreLists[2] << 16) | (PlatformParams.cimInfo[0].taskAssignmentCoreLists[3] << 24);  /* this is the -tN cmd line value, if entered.  -1 means there was no entry, JHB Sep 2018 */
 
       if (num_threads == -1) {
@@ -1944,6 +1961,7 @@ codec_test_cleanup:
 
             break;
       }
+#endif  /* ifndef _NO_MEDIAMIN_ */
    }
    else if (x86_frame_test)
    {
@@ -2083,6 +2101,10 @@ codec_test_cleanup:
       printf("x86 frame test end\n");
    }
    else if (pcap_extract) {
+
+#ifdef _NO_PKTLIB_  /* JHB Aug 2022 */
+      printf("Attempting to call pktlib() functions but build had pktlib disabled (i.e. make cmd line with no_pktlib=1) \n");
+#else
 
    /* The pcap extract mode extracts RTP payloads from pcap files and writes to 3GPP decoder compatible .cod files.  Notes:
    
@@ -2279,6 +2301,8 @@ pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB
       if (fp_out) DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)NULL, 0, DS_CLOSE, &MediaInfo);
 
       printf("pcap extract end\n");
+
+#endif  /* ifndef _NO_PKTLIB_ */
    }
    else if (gpx_process) {
 
@@ -2455,11 +2479,11 @@ pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB
 
          /* dynamically adjust filter coefficients and apply filter:
 
-            -higher speed, more aggressive filtering (compensate for overshoot)
-            -extreme altitude deviations, more aggressive filtering
+            -higher speed with unlikely changes in heading --> more aggressive filtering (compensate for overshoot) (add change in heading, JHB Jun2022)
+            -extreme altitude deviations --> more aggressive filtering
          */ 
 
-            float a = alt_filt_count > 0 ? 0.1 : (d > 10 ? 0.3 : 0.5);
+            float a = alt_filt_count > 0 ? 0.1 : (d > 10 && dh > M_PI/16 ? 0.3 : 0.5);
             float b = 1-a;  /* unity gain filter */
 
          /* look for GPS dropout:
