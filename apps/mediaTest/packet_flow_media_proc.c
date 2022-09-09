@@ -131,6 +131,7 @@
    Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for hSessionOwner ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized
    Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
    Modified Aug 2022 JHB, adjust declaration of a few global vars to allow no_mediamin and no_pktlib options in mediaTest build (run, frame_mode, etc)
+   Modified Sep 2022 JHB, for mediaTest operation (non mediaMin thread): (i) move event log file fclose() to be after WritePktLog(), (ii) add auto-breakout from key processing
 */
 
 #ifndef _GNU_SOURCE
@@ -1634,14 +1635,12 @@ run_loop:
       if (!fMediaThread) {
 
          static int push_cnt[MAX_INPUT_STREAMS] = { 0 };
+         bool fBreak = false;
 
          if (cur_time > start_time + interval_time*1000*interval_count) {  /* packet input interval has elapsed ?  (all comparisons are in usec) */
 
-            bool fDataAvailable = false;
-
             for (j=0; j<nInFiles; j++) if (in_type[j] == PCAP) {
 
-//read:
                pkt_len[0] = DSReadPcapRecord(fp_in[j], pkt_in_buf, 0, NULL, link_layer_length[j], NULL);
 
 #if 0  /* no longer needed, done by DSRecvPackets() when S_RECV_PKT_ENABLE_RFC7198_DEDUP flag is applied */
@@ -1652,6 +1651,9 @@ run_loop:
                   if (pyld_type >= 72 && pyld_type <= 82) goto read;
                }
 #endif
+
+               fBreak = true;
+
                for (i = threadid; i < (int)nSessions_gbl; i += nThreads_gbl) {
 
                   hSession = get_session_handle(hSessions_t, i, thread_index);
@@ -1667,8 +1669,7 @@ get_pkt_info:
 
                         push_cnt[j]++;
                      }
-//                     #ifdef NEW_REUSE_CODE
-//                     else if (fReuseInputs)
+
                      #ifdef PERFORMANCE_MEASUREMENT
                      else if (performanceMeasurementMode == 1)
                      {
@@ -1678,36 +1679,50 @@ get_pkt_info:
                      #endif
                   }
 
-               /* for cmd line execution, data available is false if (i) no further input of any type is available, including pcap files or UDP sockets, and (ii) once that happens, if all pushed packets have been consumed.  Note 
-                  note that for thread exeuction, it's up to the user app, which has to "flush" each session to indicate no further data available, depending on whatever application dependent criteria it needs to use */
+               /* for cmd line execution, data available is false if (i) no further input of any type is available, including pcap files or UDP sockets, and (ii) once that happens, if all pushed packets have been consumed.  Note that for thread exeuction, it's up to the user app, which has to "flush" each session to indicate no further data available, depending on whatever application dependent criteria it needs to use */
   
-                  fDataAvailable = false;
+                  bool fDataAvailable = false;
                   for (int k=0; k<nInFiles; k++) if (in_type[k] == PCAP && !feof(fp_in[k])) fDataAvailable = true;
+
                   if (!fDataAvailable && !DSPushPackets(DS_PUSHPACKETS_GET_QUEUE_STATUS, NULL, NULL, &hSession, 1)) fDataAvailable = true;
 
+                  if (fDataAvailable) fBreak = false;  /* add automatic break-out from key processing, JHB Sep 2022 */
+
+                  if (fBreak) {  /* don't break if jitter buffers are not empty yet */
+
+                     int chnum1 = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, 1, NULL);  /* get channel number for term1 */
+                     if (chnum1 >= 0 && DSGetJitterBufferInfo(chnum1, DS_JITTER_BUFFER_INFO_NUM_PKTS) > 0) fBreak = false;
+                     int chnum2 = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, 2, NULL);
+                     if (chnum2 >= 0 && DSGetJitterBufferInfo(chnum2, DS_JITTER_BUFFER_INFO_NUM_PKTS) > 0) fBreak = false;
+                  }
+
                   session_info_thread[hSession].fDataAvailable = fDataAvailable;
+
+                  //#define DEBUGDATAAVAILABLE
+                  #ifdef DEBUGDATAAVAILABLE
+
+                  static bool prev_fDataAvailable[MAX_SESSIONS] = { false };
+
+                  if (!session_info_thread[hSession].fDataAvailable && prev_fDataAvailable[hSession]) {  /* no data available but previously there was ? */
+
+                     printf("+++++++++++++++ data available goes false, chnum_map[hSession, i] =");
+                     for (j=0; j<MAX_TERMS; j++) printf(" %d", session_info_thread[hSession].chnum_map[j]);
+                     printf(" push count =");
+                     for (j=0; j<nInFiles; j++) printf(" %d", push_cnt[j]);
+                     printf("\n");
+                  }
+
+                  prev_fDataAvailable[hSession] = session_info_thread[hSession].fDataAvailable;
+                  #endif
                }
             }
-
-            //#define DEBUGDATAAVAILABLE
-            #ifdef DEBUGDATAAVAILABLE
-
-            static bool prev_fDataAvailable = true;
-
-            if (!fDataAvailable && prev_fDataAvailable) {
-
-               printf("+++++++++++++++ data available goes false, chnum_map[hSession, i] =");
-               for (j=0; j<MAX_TERMS; j++) printf(" %d", session_info_thread[hSession].chnum_map[j]);
-               printf(" push count =");
-               for (j=0; j<nInFiles; j++) printf(" %d", push_cnt[j]);
-               printf("\n");
-            }
-
-            prev_fDataAvailable = fDataAvailable;
-            #endif
          }
-      }
-      #endif
+
+         if (fBreak) break;  /* break out of mediaTest key processing loop when no further data available, JHB Sep 2022 */
+
+      }  /* !fMediaThread */
+
+      #endif  /* ifndef __LIBRARYMODE__ */
 
       if (packet_media_thread_info[thread_index].fProfilingEnabled) {
          input_time = 0;
@@ -2435,9 +2450,6 @@ next_session:
          }
          #endif
 
-#if 0  /* fDataAvailable is now session based, so not sure what to do about this one.  JHB Aug2018 */
-         fDataAvailable = true;
-#endif
       #if NONBLOCKING
       }
       #endif

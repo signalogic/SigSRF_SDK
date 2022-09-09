@@ -76,6 +76,7 @@
   Modified Mar 2022 JHB, add first pass of gpx file processing
   Modified Jun 2022 JHB, add delta change in heading to aggressive filter coefficient calculation in GPX track filtering
   Modified Aug 2022 JHB, add _NO_PKTLIB_ and _NO_MEDIAMIN_ in a few places to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
+  Modified Sep 2022 JHB, for pcap output, make source/dest IP addr and port and payload type values compatible with "pcap_file_test_config" config file, which is referred to in several mediaTest demo command lines
 */
 
 /* Linux header files */
@@ -1258,14 +1259,14 @@ void x86_mediaTest(void) {
             memcpy(&term_info.local_ip.u.ipv6, xxx, DS_IPV6_ADDR_LEN);  /* DS_IPV6_ADDR_LEN defined in shared_include/session.h */
             memcpy(&term_info.remote_ip.u.ipv6, xxx, DS_IPV6_ADDR_LEN);
             #else
-            term_info.remote_ip.type = DS_IPV4;  /* default: use source/dest IP addr and port compatible with "pcap_file_test_config" config file, which is referred to in several mediaTest demo command lines. IPv6 and user-specified IP addr and UDP port can be added later */
+            term_info.remote_ip.type = DS_IPV4;  /* default: use source/dest IP addr and port and payload type values compatible with "pcap_file_test_config" config file, which is referred to in several mediaTest demo command lines. IPv6 and user-specified IP addr and UDP port can be added later */
             term_info.local_ip.type = DS_IPV4;
             term_info.local_ip.u.ipv4 = htonl(0xC0A80003);  /* 192.168.0.3 */
             term_info.remote_ip.u.ipv4 = htonl(0xC0A80001);  /* 192.168.0.1 */
             #endif
 
-            term_info.local_port = 0x0228;  /* 10242 */
-            term_info.remote_port = 0x0A18;  /* 6154 */
+            term_info.local_port = 0x0228;  /* 10242, network byte order */
+            term_info.remote_port = 0x0A18;  /* 6154, network byte order */
             term_info.attr.voice_attr.rtp_payload_type = 127;
 
             memcpy(&format_pkt.SrcAddr, &term_info.local_ip.u, DS_IPV4_ADDR_LEN);  /* DS_IPVn_ADDR_LEN defined in shared_include/session.h */
