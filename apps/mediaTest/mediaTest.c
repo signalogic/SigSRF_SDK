@@ -109,6 +109,7 @@
    Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
    Modified Feb 2022 JHB, insert NULLs for pFilelibHandle param in calls to DSLoadDataFile() in hwlib (a newly added param)
    Modified Mar 2022 JHB, add GPX file input file handling
+   Modified Aug 2022 JHB, add _NO_PKTLIB_ in a few places to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
 */
 
 /* system header files */
@@ -122,7 +123,7 @@
 /* app support header files */
 
 #include "mediaTest.h"
-#include "test_programs.h"   /* demo program support (command line entry, etc) */
+#include "test_programs.h"   /* application and test programs support (command line entry, etc) */
 #include "keybd.h"           /* interactive key command support */
 #include "minmax.h"
 
@@ -286,7 +287,9 @@ static int process_transcoded_packet(unsigned char *packet, int length)
       }
    }
 
+   #ifndef _NO_PKTLIB_  /* JHB Aug 2022 */
    DSSendPackets((HSESSION*)&send_sock_fd, DS_SEND_PKT_SOCKET_HANDLE, packet, &packet_length, 1);
+   #endif
 
    return packet_length;
 }
@@ -1153,7 +1156,6 @@ exit:
 /* application entry point */
 
 int main(int argc, char **argv) {
-
   
 /* API app items */
 
@@ -1169,18 +1171,29 @@ int               i;
 DWORD             dw_mainprobe_addr, main_probe;
 DWORD             dw_chipid_addr, chip_id;
 char              modestr[20], debugstr[100];
+char              libstr[256];
 
 /* code starts, display banner messages */
 
   	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms, Rev 2.9, Copyright (C) Signalogic 2015-2022\n");
-   printf("  Libraries in use: DirectCore v%s, pktlib v%s, streamlib v%s, voplib v%s, alglib v%s, diaglib v%s, cimlib v%s", HWLIB_VERSION, PKTLIB_VERSION, STREAMLIB_VERSION, VOPLIB_VERSION, ALGLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
-#if defined(_ALSA_INSTALLED_)
-   printf(", aviolib v%s", AVIOLIB_VERSION);
-#endif
-   printf("\n");
 
+   sprintf(libstr, "  Libraries in use: DirectCore v%s", HWLIB_VERSION);
+   #ifndef _NO_PKTLIB_  /* JHB Aug 2022 */
+   sprintf(&libstr[strlen(libstr)], ", pktlib v%s", PKTLIB_VERSION);
+   #endif
+   #ifndef _NO_MEDIAMIN_
+   sprintf(&libstr[strlen(libstr)], ", streamlib v%s", STREAMLIB_VERSION);
+   #endif
+   sprintf(&libstr[strlen(libstr)], ", voplib v%s, alglib v%s, diaglib v%s, cimlib v%s", VOPLIB_VERSION, ALGLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
+   #ifdef _ALSA_INSTALLED_
+   sprintf(&libstr[strlen(libstr)], ", aviolib v%s", AVIOLIB_VERSION);
+   #endif
+   printf("%s\n", libstr);
+
+   #ifndef _NO_PKTLIB_  /* demo_build only used in packt_flow_media_proc.c */
    if (strstr(PKTLIB_VERSION, "DEMO") || strstr(VOPLIB_VERSION, "DEMO")) demo_build = true;
-   if (demo_build)printf("Using demo only library versions\n");
+   if (demo_build) printf("Using demo-only library versions\n");
+   #endif
 
    if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS)) exit(EXIT_FAILURE);
 
@@ -1189,6 +1202,12 @@ char              modestr[20], debugstr[100];
       main_ret = log_file_diagnostics();
       goto exit;
    }
+
+   #if 0  /* debug info */
+   strcpy(modestr, "x86");
+   sprintf(debugstr, "codec test = %d, x86 frame test = %d, x86 pkt test = %d, pcap extract = %d, gpx process = %d \n", codec_test, x86_frame_test, x86_pkt_test, pcap_extract, gpx_process);
+   printf("%s \n", debugstr);
+   #endif
 
 /* Verify test mode settings - any errors then exit the application (no cleanup is necessary at this point) */
 

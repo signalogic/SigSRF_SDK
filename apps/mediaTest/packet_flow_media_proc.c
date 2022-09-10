@@ -1639,6 +1639,8 @@ run_loop:
 
          if (cur_time > start_time + interval_time*1000*interval_count) {  /* packet input interval has elapsed ?  (all comparisons are in usec) */
 
+            fBreak = true;
+
             for (j=0; j<nInFiles; j++) if (in_type[j] == PCAP) {
 
                pkt_len[0] = DSReadPcapRecord(fp_in[j], pkt_in_buf, 0, NULL, link_layer_length[j], NULL);
@@ -1651,16 +1653,15 @@ run_loop:
                   if (pyld_type >= 72 && pyld_type <= 82) goto read;
                }
 #endif
-
-               fBreak = true;
-
                for (i = threadid; i < (int)nSessions_gbl; i += nThreads_gbl) {
 
                   hSession = get_session_handle(hSessions_t, i, thread_index);
 
                   if (pkt_len[0] > 0) {
 
+#ifdef PERFORMANCE_MEASUREMENT
 get_pkt_info:
+#endif
                      chnum_parent = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKT_INFO_SUPPRESS_ERROR_MSG, pkt_in_buf, pkt_len[0], NULL, NULL);
 
                      if (chnum_parent >= 0) {
@@ -1679,7 +1680,9 @@ get_pkt_info:
                      #endif
                   }
 
-               /* for cmd line execution, data available is false if (i) no further input of any type is available, including pcap files or UDP sockets, and (ii) once that happens, if all pushed packets have been consumed.  Note that for thread exeuction, it's up to the user app, which has to "flush" each session to indicate no further data available, depending on whatever application dependent criteria it needs to use */
+               /* for cmd line execution, data available is false if (i) no further input of any type is available, including pcap files or UDP sockets, and (ii) once that happens, all pushed packets have been consumed.  Note that for thread exeuction, it's up to the user app, which has to "flush" each session to indicate no further data available, depending on whatever application dependent criteria it needs to use
+
+                  Note -- unlike mediaMin, no careful effort is made here to precisely map input streams to sessions -- we're just looking for the end of all streams and empty jitter buffers for all sessions, JHB Sep 2022 */
   
                   bool fDataAvailable = false;
                   for (int k=0; k<nInFiles; k++) if (in_type[k] == PCAP && !feof(fp_in[k])) fDataAvailable = true;
@@ -1718,7 +1721,7 @@ get_pkt_info:
             }
          }
 
-         if (fBreak) break;  /* break out of mediaTest key processing loop when no further data available, JHB Sep 2022 */
+         if (fBreak) break;  /* break out of mediaTest command line key processing loop when no further data available, JHB Sep 2022 */
 
       }  /* !fMediaThread */
 
