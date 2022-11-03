@@ -1,6 +1,0 @@
-codec_type = EVS
-bitrate = 24400  # in bps
-sample_rate = 48000  # in Hz. Note that for fullband (FB, 48 kHz) sampling rate (Fs) with cutoff frequency (Fc) of 20 kHz, a minimum bitrate of 24.4 kbps is required. If you give 13.2 kbps bitrate, then the codec enforces an Fc of 14.4 kHz
-dtx_enable = 0
-rf_enable = 0
-num_chan = 2  # Note that .wav or .au file inputs with header specifying a different number of channels overrides this value 

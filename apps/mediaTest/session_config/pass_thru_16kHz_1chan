@@ -1,5 +1,0 @@
-# pass thru (no codec) config file example, useful for converting between audio file formats (e.g. raw audio to wav)
-
-codec_type=none
-sample_rate=16000
-num_chan=1
