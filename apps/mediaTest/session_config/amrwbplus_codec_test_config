@@ -1,0 +1,10 @@
+codec_type=AMR_WB+
+bitrate_plus=7 # in kbps
+num_chan=2
+mode=25
+vad=0
+isf=1.1
+low_complexity=1
+sample_rate=48000
+mono=0
+limiter=1

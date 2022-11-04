@@ -1,0 +1,6 @@
+codec_type=EVS
+bitrate=13200
+sample_rate=48000
+dtx_enable=0
+rf_enable=0
+num_chan=2

@@ -1,0 +1,7 @@
+# set payload_shift value in TERMINATION_INFO struct
+# this config file sets only this one parameter, for use with mediaMin dynamically created sessions (use -Cfilename cmd line option)
+# use positive shift values for left-shift, negative for right-shift (shift value in bits 7-0)
+# use filter flags in bits 15-8 to control shift conditions; see shared_include/session.h
+
+payload_shift = 0x302
+

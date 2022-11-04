@@ -1,0 +1,6 @@
+codec_type=EVS
+bitrate=5900
+sample_rate=8000
+dtx_enable=1
+dtx_value=8
+rf_enable=0

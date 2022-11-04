@@ -1,0 +1,8 @@
+# EVS codec config file for wideband testing with encoder output in compact header format
+
+codec_type = EVS
+bitrate = 13200      # bitrate in bps
+sample_rate = 16000  # wideband encoder samping rate
+dtx_enable = 0
+rf_enable = 0
+header_format = 0    # compact header

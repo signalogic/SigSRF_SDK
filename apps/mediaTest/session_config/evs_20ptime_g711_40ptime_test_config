@@ -1,0 +1,35 @@
+# Session config file showing EVS 20 msec ptime conversion to G711 40 msec ptime (including transcoding)
+
+[start_of_session_data]
+
+term1.local_ip = 192.168.0.1  # IPv4 addr
+term1.local_port = 6154
+term1.remote_ip = 192.168.0.3
+term1.remote_port = 10242
+term1.media_type = voice
+term1.codec_type = EVS
+term1.bitrate = 13200  # in bps
+term1.ptime = 20  # in msec
+term1.rtp_payload_type = 127
+term1.dtmf_type = NONE
+term1.dtmf_payload_type = NONE
+term1.sample_rate = 16000  # in Hz
+term1.header_format = 1  # for EVS, 0 = CH format, 1 = FH format
+## term1.dtx_handling = -1  # -1 disables DTX handling
+
+term2.local_ip = 192.168.0.2  # IPv4 addr
+term2.local_port = 6170
+term2.remote_ip = 192.168.0.1
+term2.remote_port = 18446
+term2.media_type = voice
+term2.codec_type = G711_ULAW
+term2.bitrate = 64000  # in bps
+term2.ptime = 40  # in msec
+term2.rtp_payload_type = 0
+term2.dtmf_type = NONE
+term2.dtmf_payload_type = NONE
+term2.sample_rate = 8000  # in Hz
+## term2.dtx_handling = -1  # -1 disables DTX handling
+
+
+[end_of_session_data]

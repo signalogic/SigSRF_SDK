@@ -1,0 +1,5 @@
+# pass thru (no codec) config file example for encoded bitstream to pcap
+
+codec_type = none
+num_chan = 1
+framesize = 32
