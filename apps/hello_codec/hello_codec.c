@@ -27,6 +27,7 @@
  Revision History
 
   Created Aug 2022 JHB
+  Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo() per updates in voplib.h
 */
 
 /* Linux header files */
@@ -80,7 +81,7 @@ codec_test_params_t    codec_test_params = { 0 };  /* codec parameters read from
 
 /* Codec related var declarations. Notes:
 
-  -HCODEC defines a codec handle, returned by DSCodecCreate(), then used for voplib APIs DSCodecEncode(), DSCodecDecode(), DSGetCompressedFramesize(), etc
+  -HCODEC defines a codec handle, returned by DSCodecCreate(), then used for voplib APIs DSCodecEncode(), DSCodecDecode(), DSGetCodecInfo(), etc
   -handle value returned by DSCodecCreate():  0 = not initialized, < 0 indicates an error, > 0 is valid codec handle
   -here we use arrays of codec handles to allow multichannel audio processing as an example. Note that multichannel audio (e.g. stereo, or N-channel wav file) is in addition to concurrent (multithread) codec streams; i.e. they are not the same thing
 */
@@ -459,12 +460,12 @@ int output_upFactor = 1, output_downFactor = 1;
 
       case DS_VOICE_CODEC_TYPE_G726:
 
-         *coded_framesize = DSGetCompressedFramesize(codec_test_params->codec_type, codec_test_params->bitrate, 0);
+         *coded_framesize = DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params->bitrate, 0, NULL);
          break;
 
       case DS_VOICE_CODEC_TYPE_G729AB:
 
-         *coded_framesize = DSGetCompressedFramesize(codec_test_params->codec_type, 0, 0);
+         *coded_framesize = DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, 0, 0, NULL);
          break;
 
       case DS_VOICE_CODEC_TYPE_EVS:
@@ -472,14 +473,14 @@ int output_upFactor = 1, output_downFactor = 1;
       case DS_VOICE_CODEC_TYPE_AMR_WB:
       case DS_VOICE_CODEC_TYPE_AMR_WB_PLUS:
 
-         *coded_framesize = DSGetCompressedFramesize(codec_test_params->codec_type, codec_test_params->bitrate, HEADERFULL);
+         *coded_framesize = DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params->bitrate, HEADERFULL, NULL);
 //         printf("input_framesize = %d, coded_framesize = %d\n", input_framesize, *coded_framesize);
          break;
 
       case DS_VOICE_CODEC_TYPE_MELPE:
 
          if (!codec_test_params->bitDensity) codec_test_params->bitDensity = 54;  /* default bit density handling should be moved to transcoder_control.c */
-         *coded_framesize = DSGetCompressedFramesize(codec_test_params->codec_type, codec_test_params->bitrate, codec_test_params->bitDensity);
+         *coded_framesize = DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params->bitrate, codec_test_params->bitDensity, NULL);
          break;
 
       case DS_VOICE_CODEC_TYPE_NONE:
@@ -488,7 +489,7 @@ int output_upFactor = 1, output_downFactor = 1;
 
    if (codec_test_params->codec_type != DS_VOICE_CODEC_TYPE_NONE && !*coded_framesize) {
 
-      printf("Error: DSGetCompressedFramesize() returns zero\n");
+      printf("Error: DSGetCodecInfo() with DS_CODEC_INFO_CODED_FRAMESIZE uFlag returns zero\n");
       return -1;
    }
 
@@ -592,7 +593,7 @@ char szCodecName[50] = "";
 
    /* hello_codec doesn't implement sample rate conversion, so we use only the rate given in the codec config file. For a full implementation of Fs conversion, see mediaTest, which determines input/output rates from audio I/O waveform file headers, USB audio buffers, etc */
 
-      parse_codec_test_params(fp_cfg, codec_test_params);
+      parse_codec_config(fp_cfg, codec_test_params);
 
       *output_sampleRate = codec_test_params->sample_rate;
       if (*input_sampleRate == 0) *input_sampleRate = *output_sampleRate;
@@ -602,7 +603,7 @@ char szCodecName[50] = "";
       printf("Opened config file: ");
    }
 
-   if (DSGetCodecName(codec_test_params->codec_type, szCodecName, DS_CODEC_INFO_TYPE) <= 0) {
+   if (DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_NAME, 0, 0, szCodecName) <= 0) {
 
       printf("\rError: non-supported or invalid codec type found in config file\n");
       return -1;

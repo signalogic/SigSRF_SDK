@@ -12,6 +12,7 @@
   Created Mar 2017 CKJ
   Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
   Modified Mar 2022 JHB, add some missing initializer brackets that cause warnings with gcc compiler
+  Modified Oct 2022 JHB, change DSGetCodecRawFramesize() to DSGetCodecInfo()
 */
 
 #include <stdio.h>
@@ -57,7 +58,7 @@ void *encode_thread_task(void *arg)
       return 0;
    }
    
-   switch(DSGetCodecType(hCodec)){
+   switch (DSGetCodecType(hCodec)) {
       case DS_VOICE_CODEC_TYPE_G711_ULAW:
          sprintf(out_filename, "test_files/codec_%d_encoded.ul", hCodec);
          break;
@@ -77,7 +78,7 @@ void *encode_thread_task(void *arg)
       return 0;
    }
    
-   in_frame_size = DSGetCodecRawFrameSize(hCodec);
+   in_frame_size = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_RAW_FRAMESIZE, 0, 0, NULL);
 
    while (run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size)) {
 
@@ -128,9 +129,9 @@ void *decode_thread_task(void *arg)
       return 0;
    }
    
-   in_frame_size = DSGetCodecCodedFrameSize(hCodec);
+   in_frame_size = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_CODED_FRAMESIZE, 0, 0, NULL);  /* don't need to specify bitrate if we use DS_CODEC_INFO_HANDLE, JHB Oct 2022 */
 #if 0
-   out_frame_size = DSGetCodecRawFrameSize(hCodec);
+   out_frame_size = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_RAW_FRAMESIZE, 0, NULL);
 #endif
 
 {

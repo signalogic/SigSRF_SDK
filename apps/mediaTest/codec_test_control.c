@@ -8,7 +8,7 @@
       - codec test params setup
       - codec test config file parsing
  
- Copyright (C) Signalogic Inc. 2016-2021
+ Copyright (C) Signalogic Inc. 2016-2022
 
  Revision History
  
@@ -19,6 +19,7 @@
    Modified Dec 2018 CKJ, add encoded file extension ".BIT" to support AMR-WB+
    Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0, include minmax.h (for min/max functions)
    Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
+   Modified Sep 2022 JHB, change parse_codec_test_params() parse_codec_config() to match changes in transcoder_control.c
 */
 
 /* app support header files */
@@ -66,7 +67,7 @@ FILE *cfg_fp = NULL;
       return -1;
    }
    
-   parse_codec_test_params(cfg_fp, codec_test_params);
+   parse_codec_config(cfg_fp, codec_test_params);
    
    printf("input file: %s, output file: %s\n", mediaParams->Media.inputFilename, mediaParams->Media.outputFilename);
 

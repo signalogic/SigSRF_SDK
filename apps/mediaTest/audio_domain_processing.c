@@ -28,6 +28,7 @@
   Modified Jan 2021 JHB, integrate ASR (look for DS_PROCESS_AUDIO_APPLY_ASR flag)
   Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
   Modified Feb 2022 JHB, modify calling format to DSConvertFs(), see comments in alglib.h
+  Modified Oct 2022 JHB, change DSGetCodeSampleRate() to DSGetCodecInfo()
 */
 
 
@@ -182,7 +183,7 @@ HASRDECODER hASRDecoder;
 
       /* check if sampling rate conversion is needed prior to encoding */
 
-         codec_sample_rate = DSGetCodecSampleRate(hCodec);
+         codec_sample_rate = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_SAMPLERATE, 0, 0, NULL);
 
          if (sample_rate != codec_sample_rate) {
 

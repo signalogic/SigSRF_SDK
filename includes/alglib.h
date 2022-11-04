@@ -48,7 +48,7 @@ int c;
    return b;
 }
 
-/* Following APIs can be applied to data independently of source (can be UDP/RTP packet, file, USB audio, etc */
+/* Following APIs can be applied to data independently of source (source can be UDP/RTP packet, file, USB audio, etc) */
 
 /*
    DSConvertFs() - converts sampling rate of an input buffer.  Notes:

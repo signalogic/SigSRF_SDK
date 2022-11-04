@@ -13,7 +13,7 @@
   
     Support for c66x coCPU card PCIe and ATCA blade SRIO interfaces
 
-  Copyright (C) Signalogic, Inc, 2016-2021
+  Copyright (C) Signalogic, Inc, 2016-2022
 
     Add APIs to (i) encapsulate c66x PCIe and SRIO interfaces, and (ii) support x86-only or combined x86 and c66x server usage.  APIs are consistent between all use cases
 
@@ -72,10 +72,10 @@
     Apr 2018, CJ
       -add MELPe params
 
-    Jun 2018, CJ
+    Jun 2018 CJ
       -add merge and deduplication fields to TERMINATION_INFO
 
-    Nov 2018, JHB
+    Nov 2018 JHB
       -add thread level session items, including SESSION_INFO_THREAD, to support (i) multithreading and (ii) streamlib.so (stream groups)
       -add output_bufer_interval to TERMINATION_INFO struct
       -change "merge" references to "group" where it doesn't necessarily involve merging, including "group_term", "group_mode", and "group_status" in TERMINATION_INFO and SESSION_DATA structs, and DS_GROUP_OWNER, DS_GROUP_CONTRIBUTOR enums.  In preparation for other stream group operations, including speech recognition.  See also comments in streamlib.h
@@ -102,6 +102,10 @@
 
     Jan 2021 JHB
       -re-define merge_audio_chunk_size to stream_group_buffer_time in SESSION_THREAD_INFO struct. See comments
+
+    Sep 2022 JHB
+      -add TERM_DISABLE_DORMANT_SESSION_DETECTION flag and dormant_SSRC_wait_time item to TERMINATION_INFO struct. See comments
+      -add "payload_shift" shift amount and filter flags in TERMINATION_INFO struct. See comments
 */
 
 #ifndef _SESSION_H_
@@ -618,7 +622,7 @@ typedef struct {
 
 #ifdef ENABLE_TERM_MODE_FIELD
 
-  #define TERMINATION_MODE_DEFAULT           0  /* termN mode flag values can be OR'd together in application code and session config files */
+  #define TERMINATION_MODE_DEFAULT           0  /* termN mode uFlags values can be OR'd together in application code and session config files */
   #define TERMINATION_MODE_IP_PORT_DONTCARE  1
 
   uint32_t mode;
@@ -626,16 +630,17 @@ typedef struct {
 
 #ifdef _X86
 
-/* "flags" definitions */
+/* "uFlags" definitions */
 
-  #define TERM_DTX_ENABLE                    1     /* enable DTX handling for termN */
-  #define TERM_SID_REPAIR_ENABLE             2     /* enable SID repair for termN: correct SID packet loss when possible */
-  #define TERM_PKT_REPAIR_ENABLE             4     /* enable packet repair for termN:  correct media packet loss when possible */
-  #define TERM_OVERRUN_SYNC_ENABLE           8     /* enable overrun synchronization in streamlib */
-  #define TERM_EXPECT_BIDIRECTIONAL_TRAFFIC  0x10  /* applications should set this flag for telecom mode applications. If not set, packet/media thread receive queue handling performance is increased for unidirectional traffic (analytics mode) */
-  #define TERM_IGNORE_ARRIVAL_TIMING         0x20  /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
-  #define TERM_OOO_HOLDOFF_ENABLE            0x40  /* see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF comments in pktlib.h */
-
+  #define TERM_DTX_ENABLE                         1     /* enable DTX handling for termN */
+  #define TERM_SID_REPAIR_ENABLE                  2     /* enable SID repair for termN: correct SID packet loss when possible */
+  #define TERM_PKT_REPAIR_ENABLE                  4     /* enable packet repair for termN:  correct media packet loss when possible */
+  #define TERM_OVERRUN_SYNC_ENABLE                8     /* enable overrun synchronization in streamlib */
+  #define TERM_EXPECT_BIDIRECTIONAL_TRAFFIC       0x10  /* applications should set this flag for telecom mode applications. If not set, packet/media thread receive queue handling performance is increased for unidirectional traffic (analytics mode) */
+  #define TERM_IGNORE_ARRIVAL_TIMING              0x20  /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
+  #define TERM_OOO_HOLDOFF_ENABLE                 0x40  /* see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF comments in pktlib.h */
+  #define TERM_DISABLE_DORMANT_SESSION_DETECTION  0x80  /* see comments in mediaTest/cmd_line_debug_flags.h */
+  
   uint32_t sample_rate;
   uint32_t input_sample_rate;
   uint32_t buffer_depth;
@@ -653,8 +658,15 @@ typedef struct {
   uint32_t group_status;
 #endif
 
-  uint32_t Reserved1;
-  uint32_t Reserved2;
+/* payload shift filter flags */
+
+  #define TERM_PAYLOAD_SHIFT_AMRWBIOMODE          0x100
+  #define TERM_PAYLOAD_SHIFT_COMPACTHEADER        0x200
+  #define TERM_PAYLOAD_SHIFT_FULLHEADER           0x400
+  #define TERM_PAYLOAD_SHIFT_FILTERMASK           0xff00
+  
+  uint32_t dormant_SSRC_wait_time;     /* time period before to wait before a session channel's SSRC can be considered dormant (in msec). See CheckForDormantSSRC() in packet_flow_media_proc.c for comments */
+  int32_t payload_shift;               /* non-zero indicates amount of RTP payload shift after encoding or before decoding. Shift conditions can be controlled by filter flags (in bits 15-8). Shift amount ranges from -8 to +7 (in bits 7-0) */
   uint32_t Reserved3;
   uint32_t Reserved4;
   uint32_t Reserved5;

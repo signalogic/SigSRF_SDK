@@ -390,7 +390,7 @@ char          szLastSeq[100];
 
                if (pkts[k].rtp_seqnum + seq_wrap[i]*65536L == rtp_seqnum) {
 
-                  StreamStats[i].ooo_max = max(StreamStats[i].ooo_max, abs(k-j));  /* record max ooo */
+                  StreamStats[i].ooo_max = max(StreamStats[i].ooo_max, (unsigned int)abs(k-j));  /* record max ooo */
                   fOoo_sn = true;  /* found ooo seq num */
                   break;
                }
@@ -897,7 +897,7 @@ int           i, j, k, num_ssrcs;
 int           in_ssrc_groups = 0;
 int           out_ssrc_groups = 0;
 
-#if 0  /* move these off the stack as they seemed to be causing sporadic seg-faults, can;t even get to first line in the funciton.  MAX_SSRCS is 65536 (defined in diaglib.h) so this is around 2 MB of total space, maybe not a good idea. JHB Sep 2018 */
+#if 0  /* move these off the stack as they seemed to be causing sporadic seg-faults, can't even get to first line in the function.  MAX_SSRCS is 65536 (defined in diaglib.h) so this is around 2 MB of total space, maybe not a good idea. JHB Sep 2018 */
 int           in_first_pkt_idx[MAX_SSRCS] = { 0 };
 int           in_last_pkt_idx[MAX_SSRCS] = { 0 };
 uint32_t      in_first_rtp_seqnum[MAX_SSRCS] = { 0 };
@@ -936,7 +936,6 @@ STREAM_STATS*  OutputStreamStats = NULL;
 #endif
 
 unsigned long long t1, t2;
-
 
    if (uFlags & DS_PKTSTATS_LOG_APPEND) fp_log = fopen(szLogfile, "ab");
    else fp_log = fopen(szLogfile, "wb");

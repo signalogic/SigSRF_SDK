@@ -110,6 +110,7 @@
    Modified Feb 2022 JHB, insert NULLs for pFilelibHandle param in calls to DSLoadDataFile() in hwlib (a newly added param)
    Modified Mar 2022 JHB, add GPX file input file handling
    Modified Aug 2022 JHB, add _NO_PKTLIB_ in a few places to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
+   Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo()
 */
 
 /* system header files */
@@ -667,7 +668,7 @@ short int*           pBuffer16 = NULL;
 
       numBytes = DSLoadDataFile((CPU_mode & CPUMODE_CPU) ? DS_GM_HOST_MEM : hCard, NULL, MediaParams[0].Media.inputFilename, loadDataAddr, 0, (uint32_t)NULL, NULL, NULL);
 
-      numFrames = numBytes / DSGetCompressedFramesize(DS_VOICE_CODEC_TYPE_EVS, MediaParams[0].Streaming.bitRate, HEADERFULL);  /* to-do, replace later with param from session config file, JHB Jan 2016 */
+      numFrames = numBytes / DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, MediaParams[0].Streaming.bitRate, HEADERFULL, NULL);  /* to-do, replace later with param from session config file, JHB Jan 2016 */
    }
    else {  /* either encoder or both encoder + decoder are enabled */
 
@@ -1175,7 +1176,7 @@ char              libstr[256];
 
 /* code starts, display banner messages */
 
-  	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms, Rev 2.9, Copyright (C) Signalogic 2015-2022\n");
+  	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms, Rev 2.9.5, Copyright (C) Signalogic 2015-2022\n");
 
    sprintf(libstr, "  Libraries in use: DirectCore v%s", HWLIB_VERSION);
    #ifndef _NO_PKTLIB_  /* JHB Aug 2022 */

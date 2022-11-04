@@ -20,7 +20,7 @@ Description:
   Modified Aug 2017 CJ, use str_remove_whitespace() in all cases after getting config file value to relax restrictions on config file format
   Modified Aug 2017 JHB, remove case sensitivity for value entry (not fields, values only)
   Modified Mar 2018 JHB, use _X86 instead of _X86_ (to be consistent with shared_include / coCPU usage)
-  Modified Mar 2018 JHB, modify parse_codec_test_data() to handle "codec_type" field.  Modify parse_codec_test_params() to default to EVS if codec_type field not given
+  Modified Mar 2018 JHB, modify parse_codec_params() to handle "codec_type" field.  Modify parse_codec_config() to default to EVS if codec_type field not given
   Modified Apr 2018 JHB, add MELPe to codec_type()
   Modified Aug 2018 CKJ, add session configuration file parsing for merge term
   Modified Sep 2018 JHB, add delay item to TERMINATION_INFO struct (in msec)
@@ -31,6 +31,8 @@ Description:
   Modified Apr 2021 JHB, add parsing of "header_format" for codec config files. This currently applies to AMR and EVS
   Modified Feb 2022 JHB, fix issues with comments and extra whitespace in codec config files, update other config/session file parsing with these changes also (look for JHB Feb2022)
   Modified Mar 2022 JHB, moved str_remove_whitespace() to dsstring.h
+  Modified Sep 2022 JHB, add flexibility and readability improvements to "header_format" field in codec config files. Add a "framesize" option for codec config files, this allows a framesize to be specified for pass-thru cases such as .cod to .pcap, where no encoding/decoding is specified
+  Modified Oct 2022 JHB, add payload_shift field in codec config files for debug/test purposes. +/- shift amount and filter flags can be specified (see definitions in shared_include/session.h). use strtoul() instead of atoi() to allow hex entry
 */
 
 #include <arpa/inet.h>
@@ -465,8 +467,8 @@ char tmpstr[256];
 #endif      
       if (params->term1.codec_type == DS_VOICE_CODEC_TYPE_EVS)
       {
-         if (atoi(value) > 3) params->term1.attr.voice_attr.u.evs.codec_flags |= (DSGetSampleRateValue(DS_VOICE_CODEC_TYPE_EVS, atoi(value)) & DS_EVS_SAMPLE_RATE);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
-         else params->term1.attr.voice_attr.u.evs.codec_flags |= (atoi(value) & DS_EVS_SAMPLE_RATE);
+         if (atoi(value) > 3) params->term1.attr.voice_attr.u.evs.codec_flags |= DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
+         else if (atoi(value) >= 0) params->term1.attr.voice_attr.u.evs.codec_flags |= atoi(value);
       }
    }
    else if (strstr(name,"term1.evs_header_full") || strstr(name,"term1.header_format"))
@@ -572,8 +574,8 @@ char tmpstr[256];
       
       if (params->term2.codec_type == DS_VOICE_CODEC_TYPE_EVS)
       {
-         if (atoi(value) > 3) params->term2.attr.voice_attr.u.evs.codec_flags |= (DSGetSampleRateValue(DS_VOICE_CODEC_TYPE_EVS, atoi(value)) & DS_EVS_SAMPLE_RATE);  /* note -- codec_type should be replaced by params->term2.codec_type, which shd be parsed in a first pass */
-         else params->term2.attr.voice_attr.u.evs.codec_flags |= (atoi(value) & DS_EVS_SAMPLE_RATE);
+         if (atoi(value) > 3) params->term2.attr.voice_attr.u.evs.codec_flags |= DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term2.codec_type, which shd be parsed in a first pass */
+         else if (atoi(value) >= 0) params->term2.attr.voice_attr.u.evs.codec_flags |= atoi(value);
       }
    }
    else if (strstr(name,"term2.evs_header_full") || strstr(name,"term2.header_format"))
@@ -679,8 +681,8 @@ char tmpstr[256];
       
       if (params->group_term.codec_type == DS_VOICE_CODEC_TYPE_EVS)
       {
-         if (atoi(value) > 3) params->group_term.attr.voice_attr.u.evs.codec_flags |= (DSGetSampleRateValue(DS_VOICE_CODEC_TYPE_EVS, atoi(value)) & DS_EVS_SAMPLE_RATE);  /* note -- codec_type should be replaced by params->group_term.codec_type, which shd be parsed in a first pass */
-         else params->group_term.attr.voice_attr.u.evs.codec_flags |= (atoi(value) & DS_EVS_SAMPLE_RATE);
+         if (atoi(value) > 3) params->group_term.attr.voice_attr.u.evs.codec_flags |= DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->group_term.codec_type, which shd be parsed in a first pass */
+         else if (atoi(value) >= 0) params->group_term.attr.voice_attr.u.evs.codec_flags |= atoi(value);
       }
    }
    else if (strstr(name,"merge_term.evs_header_full") || strstr(name,"merge_term.header_format") || strstr(name,"group_term.header_format"))
@@ -812,8 +814,8 @@ static int parse_term_data(char *name, char *value, FRAME_TEST_INFO *info)
 #ifdef _X86
       info->term.sample_rate = atoi(value);
 #endif
-      if (atoi(value) > 3) info->term.attr.voice_attr.u.evs.codec_flags |= (DSGetSampleRateValue(DS_VOICE_CODEC_TYPE_EVS, atoi(value)) & DS_EVS_SAMPLE_RATE);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
-      else info->term.attr.voice_attr.u.evs.codec_flags |= (atoi(value) & DS_EVS_SAMPLE_RATE);
+      if (atoi(value) > 3) info->term.attr.voice_attr.u.evs.codec_flags |= DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
+      else if (atoi(value) >= 0) info->term.attr.voice_attr.u.evs.codec_flags |= atoi(value);
    }
    else if (strcmp(name,"evs_header_full") == 0 || strcmp(name,"header_format") == 0)
       info->term.attr.voice_attr.u.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
@@ -832,7 +834,7 @@ static int parse_term_data(char *name, char *value, FRAME_TEST_INFO *info)
 }
 
 /* x86 frame test mode config file parsing */
-int parse_codec_params(FILE *fp, FRAME_TEST_INFO *info)
+int parse_codec_config_frame_mode(FILE *fp, FRAME_TEST_INFO *info)
 {
    char *name, *cmt_str, found_start = 0;
    char *value, string[1024];
@@ -876,47 +878,47 @@ int parse_codec_params(FILE *fp, FRAME_TEST_INFO *info)
 }
 
 /* parse codec test config line */
-static void parse_codec_test_data(char *name, char *value, codec_test_params_t *params) 
+static void parse_codec_params(char *name, char *value, codec_test_params_t *params) 
 {
    if (!strcmp(name, "bitrate"))  /* because "bitrateplus" is another field, CKJ Dec 2018 */
       params->bitrate = atoi(value);
-   else if (strstr(name, "sample_rate"))
+   else if (strcasestr(name, "sample_rate"))
       params->sample_rate = atoi(value);
-   else if (strstr(name, "dtx_enable"))
+   else if (strcasestr(name, "dtx_enable"))
       params->dtx_enable = atoi(value);
-   else if (strstr(name, "dtx_value"))
+   else if (strcasestr(name, "dtx_value"))
       params->dtx_value = atoi(value);
-   else if (strstr(name, "rf_enable"))
+   else if (strcasestr(name, "rf_enable"))
       params->rf_enable = atoi(value);
-   else if (strstr(name, "fec_indicator"))
+   else if (strcasestr(name, "fec_indicator"))
       params->fec_indicator = atoi(value);
-   else if (strstr(name, "fec_offset"))
+   else if (strcasestr(name, "fec_offset"))
       params->fec_offset = atoi(value);
 /* add codec type, JHB Mar 2018 */
-   else if (strstr(name, "codec_type"))
+   else if (strcasestr(name, "codec_type"))
       params->codec_type = codec_type(value);
 /* add num channels, JHB Mar 2018 */
-   else if (strstr(name, "num_chan"))
+   else if (strcasestr(name, "num_chan"))
       params->num_chan = atoi(value);
-   else if (strstr(name, "Npp"))
+   else if (strcasestr(name, "Npp"))
       params->Npp = atoi(value);
-   else if (strstr(name, "post"))
+   else if (strcasestr(name, "post"))
       params->post = atoi(value);
-   else if (strstr(name, "bitDensity"))
+   else if (strcasestr(name, "bitDensity"))
       params->bitDensity = atoi(value);
-   else if (strstr(name, "vad"))
+   else if (strcasestr(name, "vad"))
       params->vad = atoi(value);
-   else if (strstr(name, "uncompress"))
+   else if (strcasestr(name, "uncompress"))
       params->uncompress = atoi(value);
-   else if (strstr(name, "mono"))
+   else if (strcasestr(name, "mono"))
       params->mono = atoi(value);
-   else if (strstr(name, "limiter"))
+   else if (strcasestr(name, "limiter"))
       params->limiter = atoi(value);
-   else if (strstr(name, "low_complexity"))
+   else if (strcasestr(name, "low_complexity"))
       params->low_complexity = atoi(value);
-   else if (strstr(name, "isf"))
+   else if (strcasestr(name, "isf"))
       params->isf = (float)atof(value);
-   else if (strstr(name, "mode"))
+   else if (strcasestr(name, "mode"))
       params->mode = atoi(value);
    else if (!strcmp(name, "bitrate_plus"))
    {
@@ -924,20 +926,38 @@ static void parse_codec_test_data(char *name, char *value, codec_test_params_t *
       params->bitrate = params->bitrate_plus*1000;
    }
 /* add header formats, JHB Apr 2021 */
-   else if (strstr(name, "header_full"))  /* EVS header full */
+   else if (strcasestr(name, "header_full"))  {  /* EVS header full */
       params->header_format = atoi(value);
-   else if (strstr(name, "header_compact")) {
+   }
+   else if (strcasestr(name, "header_compact")) {
       params->header_format = !atoi(value);
    }
-   else if (strstr(name, "octet_align"))  /* AMR octet aligned */
+   else if (strcasestr(name, "octet_align"))  /* AMR octet aligned */
       params->header_format = atoi(value);
-   else if (strstr(name, "bandwidth_efficient")) {
+   else if (strcasestr(name, "bandwidth_efficient")) {
       params->header_format = !atoi(value);
+   }
+   else if (strcasestr(name, "header_format")) {  /* only 0 and 1 are valid, see "header format definitions" in voplib.h */
+
+      params->header_format = atoi(value);
+
+      if (params->header_format != 0 && params->header_format != 1) {  /* added some flexibility and readability to header_format entry, JHB Sep 2022 */
+         if (strcasestr(value, "full")) params->header_format = 1;
+         else if (strcasestr(value, "compact")) params->header_format = 0;
+         else if (strcasestr(value, "octet-aligned")) params->header_format = 1;
+         else if (strcasestr(value, "bandwidth-efficient")) params->header_format = 0;
+      }
+   }
+   else if (strcasestr(name, "framesize") || strcasestr(name, "frame_size")) {  /* added JHB Sep 2022 */
+      params->framesize = atoi(value);
+   }
+   else if (strcasestr(name, "payload_shift")) {  /*shift codec RTP payloads for debug/test purposes, added JHB Sep 2022 */
+      params->payload_shift = strtoul(value, NULL, 0);  /* we use strtoul() here to allow 0x entry. See comments in shared_include/session.h for range of shift amount and filter flags to control conditions of shift */
    }
 }
 
 /* parse x86 codec test mode config file */
-void parse_codec_test_params(FILE *fp, codec_test_params_t *params)
+void parse_codec_config(FILE *fp, codec_test_params_t *params)
 {
    char *name, *cmt_str;
    char *value, string[1024];
@@ -946,6 +966,8 @@ void parse_codec_test_params(FILE *fp, codec_test_params_t *params)
    params->codec_type = -1;  /* if mediaTest is run with old session config files that have a bitrate specified but not the codec type, then we default to EVS.  Note that codec_type can be "NONE" for pass-thru situations, for example no encoding, USB audio saved to wav file.  JHB Mar 2018 */
    params->bitrate = -1;
    params->num_chan = -1;
+   params->header_format = -1;
+   params->framesize = -1;
 
    while (1) 
    {
@@ -969,7 +991,7 @@ void parse_codec_test_params(FILE *fp, codec_test_params_t *params)
 
       name = strtok_r((char*)&string, "=", &value);
 
-      parse_codec_test_data(name, value, params);
+      parse_codec_params(name, value, params);
    }
    
    if ((int)params->codec_type == -1) {
@@ -1083,8 +1105,8 @@ char tmpstr[256];
 #ifdef _X86
       params->session_data.term1.sample_rate = atoi(value);
 #endif
-      if (atoi(value) > 3) params->session_data.term1.attr.voice_attr.u.evs.codec_flags |= (DSGetSampleRateValue(DS_VOICE_CODEC_TYPE_EVS, atoi(value)) & DS_EVS_SAMPLE_RATE);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
-      else params->session_data.term1.attr.voice_attr.u.evs.codec_flags |= (atoi(value) & DS_EVS_SAMPLE_RATE);
+      if (atoi(value) > 3) params->session_data.term1.attr.voice_attr.u.evs.codec_flags |= DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
+      else if (atoi(value) >= 0) params->session_data.term1.attr.voice_attr.u.evs.codec_flags |= atoi(value);
    }
    else if (strstr(name,"term1.evs_header_full") || strstr(name,"term1.header_format"))
       params->session_data.term1.attr.voice_attr.u.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
@@ -1175,8 +1197,8 @@ char tmpstr[256];
 #ifdef _X86
       params->session_data.term2.sample_rate = atoi(value);
 #endif
-      if (atoi(value) > 3) params->session_data.term2.attr.voice_attr.u.evs.codec_flags |= (DSGetSampleRateValue(DS_VOICE_CODEC_TYPE_EVS, atoi(value)) & DS_EVS_SAMPLE_RATE);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
-      else params->session_data.term2.attr.voice_attr.u.evs.codec_flags |= (atoi(value) & DS_EVS_SAMPLE_RATE);
+      if (atoi(value) > 3) params->session_data.term2.attr.voice_attr.u.evs.codec_flags |= DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
+      else if (atoi(value) >= 0) params->session_data.term2.attr.voice_attr.u.evs.codec_flags |= atoi(value);
    }
    else if (strstr(name,"term2.evs_header_full") || strstr(name,"term2.header_format"))
       params->session_data.term2.attr.voice_attr.u.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);

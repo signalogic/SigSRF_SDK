@@ -62,7 +62,7 @@
   Modified Jan 2021 JHB, fix warning for sampleRate_codec used uninitialized (no idea why this suddenly popped up)
   Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
   Modified Apr 2021 JHB, fix AMR problem with sequence of encoding audio to .amr or .awb, then decoding .amr or .awb to audio. Notes:
-                         -see comments near AMR handling of bitRate_code, also see variable fAMROctetAligned
+                         -see comments near AMR handling of bitrate_code, also see variable fAMROctetAligned
                          -applies to both AMR-NB and AMR-WB
                          -tested with bandwidth efficient and octet aligned coded file format
                          -bug did not affect back-to-back encode/decode (i.e. audio to audio)
@@ -77,6 +77,9 @@
   Modified Jun 2022 JHB, add delta change in heading to aggressive filter coefficient calculation in GPX track filtering
   Modified Aug 2022 JHB, add _NO_PKTLIB_ and _NO_MEDIAMIN_ in a few places to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
   Modified Sep 2022 JHB, for pcap output, make source/dest IP addr and port and payload type values compatible with "pcap_file_test_config" config file, which is referred to in several mediaTest demo command lines
+  Modified Sep 2022 JHB, add support for .cod to .pcap pass-thru case (i.e. convert an encoded bitstream file into a pcap)
+  Modified Oct 2022 JHB, change DSGetPayloadHeaderFormat() to DSGetPayloadInfo() in pcap_extract. See comments in voplib.h
+  Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo()
 */
 
 /* Linux header files */
@@ -119,13 +122,6 @@ static HPLATFORM hPlatform = -1;  /* platform handle, see DSAssignPlatform() cal
 int numChan = 1;  /* numChan is sitting out here because it's referred to in USB audio callback functions in aviolib. To-do: fix this by adding a caller data struct when registering callback functions (a pointer to which is then available pcm_callback in struct sent to callback functions) , JHB Feb2022 */
 
 extern PLATFORMPARAMS PlatformParams;  /* command line params */
-
-/* local functions */
-#if 0  /* replaced by DSGetCodecName() in voplib */
-int get_codec_name(int codec_type, char* szCodecName);
-const char* strrstr(const char* haystack, const char* needle);
-#endif
-
 
 #define AUDIO_SAMPLE_SIZE  2       /* in bytes.  Currently all codecs take 16-bit samples.  Some like AMR require 14-bit left-justified within 16 bits */
 
@@ -469,7 +465,7 @@ void x86_mediaTest(void) {
       HFILE hFile_in = (intptr_t)NULL;  /* filelib file handle, JHB Feb 2022 */
       int frame_count = 0;
       bool fRepeatIndefinitely = (nRepeat == 0); /* nRepeat is initialized in cmd_line_interface.c from -RN cmd line entry (if no entry nRepeat = -1). See also mediaMin usage of nRepeat, JHB Feb2022 */
-      char tmpstr[1024], tmpstr2[1024];
+      char tmpstr[1024] = "", tmpstr2[1024] = "", szConfigInfo[256];
       codec_test_params_t  codec_test_params;
       char default_config_file[] = "session_config/codec_test_config";
       char *config_file;
@@ -479,7 +475,6 @@ void x86_mediaTest(void) {
       char key;
       unsigned int sampleRate_input = 0, sampleRate_output = 0, sampleRate_codec = 8000, fs_divisor;
       bool fConfig_vs_InputChanConflict = false;
-      char chanstr[100] = "";
       int input_framesize = 0;  /* in bytes, determined by input sampling rate and codec or pass-thru framesize */
       int coded_framesize = 0;
       unsigned int __attribute__((unused)) output_framesize;  /* currently not used unless _ALSA_INSTALLED_ is defined, but likely to be used in the future */
@@ -516,7 +511,6 @@ void x86_mediaTest(void) {
       struct timeval tv;
       uint64_t t1, t2;
       char szCodecName[50] = "";
-      char szNumChan[20] = "";
       bool fFramePrint = false;
 
       bool fCreateCodec = true;  /* set to false for pass-thru case (no codecs specified) */
@@ -697,11 +691,11 @@ void x86_mediaTest(void) {
 
          sampleRate_output = sampleRate_input;
 
-         printf("No config file specified, assuming default parameters: ");
+         sprintf(szConfigInfo, "No config file specified, assuming default parameters: ");
       }
       else {
 
-         parse_codec_test_params(fp_cfg, &codec_test_params);
+         parse_codec_config(fp_cfg, &codec_test_params);
 
          sampleRate_output = codec_test_params.sample_rate;
          if (sampleRate_input == 0) sampleRate_input = sampleRate_output;  /* raw audio file with no header */
@@ -714,7 +708,7 @@ void x86_mediaTest(void) {
             fConfig_vs_InputChanConflict = true;
          }
 //printf("numChan = %d\n", numChan);
-         printf("Opened config file: ");
+         sprintf(szConfigInfo, "Opened config file: ");
       }
 
    /* update MediaInfo struct if it still doesn't have valid numbers */
@@ -724,21 +718,22 @@ void x86_mediaTest(void) {
       if (!MediaInfo.SampleWidth) MediaInfo.SampleWidth = DS_DP_SHORTINT;
       if (!MediaInfo.CompressionCode) MediaInfo.CompressionCode = DS_GWH_CC_PCM;
 
-      #if 0  /* replaced by DSGetCodecName() in voplib */
-      if (!get_codec_name(codec_test_params.codec_type, szCodecName)) {
-      #else
-      if (DSGetCodecName(codec_test_params.codec_type, szCodecName, DS_CODEC_INFO_TYPE) <= 0) {
-      #endif
+      if (DSGetCodecInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_NAME, 0, 0, szCodecName) <= 0) {
 
          printf("\rError: non-supported or invalid codec type found in config file\n");
          goto codec_test_cleanup;
       }
 
-      printf("codec = %s, ", szCodecName);
-      if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) printf("%d bitrate, ", codec_test_params.bitrate);
-      printf("sample rate = %d Hz, ", sampleRate_output);
-      if (fConfig_vs_InputChanConflict) sprintf(chanstr, "(note: input waveform header %d channels overrides config file value %d)", numChan, codec_test_params.num_chan);
-      printf("num channels = %d %s\n", codec_test_params.num_chan, chanstr);
+   /* print some config file items */
+ 
+      sprintf(&szConfigInfo[strlen(szConfigInfo)], "codec = %s, ", szCodecName);
+      if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) sprintf(&szConfigInfo[strlen(szConfigInfo)], "%d bitrate, ", codec_test_params.bitrate);
+      if (outFileType != ENCODED && outFileType != PCAP) sprintf(&szConfigInfo[strlen(szConfigInfo)], "output sample rate = %d Hz, ", sampleRate_output);
+      else sprintf(&szConfigInfo[strlen(szConfigInfo)], "framesize (bytes) = %d, ", codec_test_params.framesize);
+      sprintf(&szConfigInfo[strlen(szConfigInfo)], "num channels = %d", codec_test_params.num_chan);
+      if (fConfig_vs_InputChanConflict) sprintf(&szConfigInfo[strlen(szConfigInfo)], "(note: input waveform header %d channels overrides config file value %d)", numChan, codec_test_params.num_chan);
+
+      printf("%s \n", szConfigInfo);
 
       if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE && (int)codec_test_params.bitrate <= 0) {
 
@@ -766,7 +761,9 @@ void x86_mediaTest(void) {
             #else  /* change this to make encoder setup more clear, JHB Feb2022 */
             CodecParams.enc_params.bandwidth_limit = DS_EVS_BWL_FB;                    /* codec will set limit lower if required by specified sampling rate, JHB Feb2022 */
             #endif
-            CodecParams.enc_params.rtp_pyld_hdr_format.header_format = 1;              /* hard coded to 1 to match 3GPP encoder reference executable, which only writes header full format */
+
+            if ((int)codec_test_params.header_format == -1) CodecParams.enc_params.rtp_pyld_hdr_format.header_format = 1;  /* if no value given (default entry) then hard code to 1 to match 3GPP encoder reference executable, which only writes header full format */
+            else CodecParams.enc_params.rtp_pyld_hdr_format.header_format = codec_test_params.header_format;  /* otherwise use value given in codec config file */
 
          /* EVS codec DTX notes:
 
@@ -968,6 +965,9 @@ void x86_mediaTest(void) {
 
    /* set up and down factors for possible input sampling rate conversion (applied if sampleRate_input != sampleRate_output) */
 
+      sampleRate_input = max(sampleRate_input, 1);  /* don't allow zeros / avoid floating-point exceptions, JHB Sep 2022 */
+      sampleRate_output = max(sampleRate_output, 1);
+
       #if 1  /* use glibc greatest common demoninator function, JHB Feb2022 */
       fs_divisor = gcd(sampleRate_input, sampleRate_output);
       upFactor = sampleRate_output / fs_divisor;
@@ -997,12 +997,12 @@ void x86_mediaTest(void) {
 
          case DS_VOICE_CODEC_TYPE_G726:
 
-            coded_framesize = DSGetCompressedFramesize(codec_test_params.codec_type, codec_test_params.bitrate, 0);
+            coded_framesize = DSGetCodecInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params.bitrate, 0, NULL);
             break;
 
          case DS_VOICE_CODEC_TYPE_G729AB:
 
-            coded_framesize = DSGetCompressedFramesize(codec_test_params.codec_type, 0, 0);
+            coded_framesize = DSGetCodecInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params.bitrate, 0, NULL);
             break;
 
          case DS_VOICE_CODEC_TYPE_EVS:
@@ -1010,14 +1010,13 @@ void x86_mediaTest(void) {
          case DS_VOICE_CODEC_TYPE_AMR_WB:
          case DS_VOICE_CODEC_TYPE_AMR_WB_PLUS:
 
-            coded_framesize = DSGetCompressedFramesize(codec_test_params.codec_type, codec_test_params.bitrate, HEADERFULL);
-//            printf("input_framesize = %d, coded_framesize = %d\n", input_framesize, coded_framesize);
+            coded_framesize = DSGetCodecInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params.bitrate, codec_test_params.header_format, NULL);  /* header_format (3rd) param was previously hardcoded to HEADERFULL, now reflects what's in the config file. See voplib.h for "header format definitions", JHB Sep 2022 */
             break;
 
          case DS_VOICE_CODEC_TYPE_MELPE:
 
             if (!codec_test_params.bitDensity) codec_test_params.bitDensity = 54;  /* default bit density handling should be moved to transcoder_control.c */
-            coded_framesize = DSGetCompressedFramesize(codec_test_params.codec_type, codec_test_params.bitrate, codec_test_params.bitDensity);
+            coded_framesize = DSGetCodecInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params.bitrate, codec_test_params.bitDensity, NULL);
             break;
 
          case DS_VOICE_CODEC_TYPE_NONE:
@@ -1025,12 +1024,19 @@ void x86_mediaTest(void) {
 #if defined(_ALSA_INSTALLED_) && defined(ENABLE_USBAUDIO)
             if (fUSBTestMode) input_framesize = period_size_USBAudio*AUDIO_SAMPLE_SIZE;  /* for USB test mode, use hardcoded params (see above) */
 #endif
+            if (inFileType == ENCODED) {
+
+               if ((int)codec_test_params.framesize != -1) {
+                  input_framesize = codec_test_params.framesize;
+                  coded_framesize = codec_test_params.framesize;
+               }
+            }
             break;
       }
 
       if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE && !coded_framesize) {
 
-         printf("Error: DSGetCompressedFramesize() returns zero\n");
+         printf("Error: DSGetCodecInfo() with DS_CODEC_INFO_CODED_FRAMESIZE flag returns zero \n");
          goto codec_test_cleanup;
       }
 
@@ -1040,17 +1046,18 @@ void x86_mediaTest(void) {
 
    /* print some relevant params and stats */
 
-      sprintf(szNumChan, "%d channel", numChan);
-      if (numChan > 1) strcat(szNumChan, "s");
-      strcpy(tmpstr2, "");
-
       if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) {
          if (encoder_handle[0]) strcpy(tmpstr, "encoder");
          if (decoder_handle[0]) sprintf(tmpstr2, "decoder framesize (bytes) = %d, ", coded_framesize);
       }
-      else strcpy(tmpstr, "pass-thru");
+      else {
+         strcpy(tmpstr, "pass-thru");
+      }
 
-      printf("  input framesize (samples) = %d, %s framesize (samples) = %d, %sinput Fs = %d Hz, output Fs = %d Hz, %s\n", input_framesize/AUDIO_SAMPLE_SIZE, tmpstr, inbuf_size/AUDIO_SAMPLE_SIZE, tmpstr2, sampleRate_input, sampleRate_output, szNumChan);
+      if (inFileType == ENCODED)
+        printf("  %s framesize (bytes) = %d, %snum channel%s = %d \n", tmpstr, coded_framesize, tmpstr2, numChan > 1 ? "s" : "", numChan);
+      else
+        printf("  input framesize (samples) = %d, %s framesize (samples) = %d, %sinput Fs = %d Hz, output Fs = %d Hz, num channel%s = %d \n", input_framesize/AUDIO_SAMPLE_SIZE, tmpstr, inbuf_size/AUDIO_SAMPLE_SIZE, tmpstr2, sampleRate_input, sampleRate_output, numChan > 1 ? "s" : "", numChan);
 
 #if defined(_ALSA_INSTALLED_) && defined(ENABLE_USBAUDIO)
 
@@ -1113,7 +1120,15 @@ void x86_mediaTest(void) {
 
 // #define CODEC_FILE_DEBUG /* turn on for AMR encode/decode debug */
 
-   /* adjust encoded input file offset, if needed */
+   /* adjust encoded input file offset, if needed depending on file type. Notes:
+
+      -we assume EVS and AMR .cod files have MIME headers, with a magic number in first few bytes:
+        #!AMR\n          AMR-NB, defined in  RFC4867
+        #!AMR-WB\n       AMR-WB, defined in  RFC4867
+        #!EVS_MC1.0\n    EVS, defined in ETSI 3GPP 26.445
+
+      -MIME headers contain no frame size or sampling rate info
+   */
 
       if (inFileType == ENCODED) {
 
@@ -1135,8 +1150,16 @@ void x86_mediaTest(void) {
  
             fseek(fp_in, 16, SEEK_SET);  /* for input .cod files, skip EVS MIME header (only used for file i/o operations with decoder) */
          }
-         else {  /* note that .cod files don't necessarily have a leading header section, this is the case for G726 and G729AB, JHB Apr2021 */
-         
+         else {  /* note that .cod files don't necessarily have a header; e.g. this is the case for G726 and G729AB, JHB Apr2021 */
+
+         /* see if .cod file has a MIME header and if so seek to start of data accordingly, JHB Sep 2022 */
+
+            char header_buf[100];
+            if ((ret_val = fread(header_buf, sizeof(uint8_t), 16, fp_in)) != 16) goto codec_test_cleanup;  /* exit out if .cod value has less than 16 bytes ... not good */
+            if (strstr(header_buf, "#!EVS_MC1.0\n")) {}  /* no further adjustment, already at start of data offset (don't know what the trailing 4 bytes are for) */
+            else if (strstr(header_buf, "#!AMR\n")) fseek(fp_in, SEEK_CUR, -10);
+            else if (strstr(header_buf, "#!AMR-WB\n")) fseek(fp_in, SEEK_CUR, -7);
+            else fseek(fp_in, 0, SEEK_SET);  /* no supported MIME header, reset file pointer */
          }
       }
 
@@ -1481,8 +1504,12 @@ PollBuffer:
          }
          else {  /* encoded input */
 
-            int bitRate_code = 0, offset = 0;
+            int bitrate_code = 0, offset = 0;
             bool fAMROctetAligned = false;
+            #ifndef DSGETPAYLOADSIZE  /* DSGetPayloadSize() deprecated, now we use DSGetCodecInfo(), see comments in voplib.h, JHB Oct 2022 */
+            unsigned int uFlags = DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE;
+            unsigned int header_format = 0;
+            #endif
 
             if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_NB || codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB) {
 
@@ -1499,57 +1526,82 @@ PollBuffer:
 
                fAMROctetAligned = coded_buf[0] == 0xf0 && (coded_buf[1] & 3) == 0;  /* added Apr2021, JHB */
 
-               if (fAMROctetAligned) bitRate_code = (coded_buf[1] >> 3) & 0x0f;  /* bitrate code is a 4-bit field within 2nd byte for octet aligned format, and split across first two bytes for bandwidth efficient format. The field is labeled "FT" in RFC4867, JHB Apr2021 */
-               else bitRate_code = ((coded_buf[0] & 7) << 1) | (coded_buf[1] >> 7);
+               #ifndef DSGETPAYLOADSIZE
+               uFlags |= DS_CODEC_INFO_BITRATE_CODE;
+               #endif
+
+               if (fAMROctetAligned) bitrate_code = (coded_buf[1] >> 3) & 0x0f;  /* bitrate code is a 4-bit field within 2nd byte for octet aligned format, and split across first two bytes for bandwidth efficient format. The field is labeled "FT" in RFC4867, JHB Apr2021 */
+               else bitrate_code = ((coded_buf[0] & 7) << 1) | (coded_buf[1] >> 7);
 
                #ifdef CODEC_FILE_DEBUG
-               if (frame_count < 30) printf(" file pos = %d, in buf[0,1] = 0x%x, 0x%x, bitRate_code = 0x%x \n", (int)ftell(fp_in), coded_buf[0], coded_buf[1], bitRate_code);
+               if (frame_count < 30) printf(" file pos = %d, in buf[0,1] = 0x%x, 0x%x, bitrate code = 0x%x \n", (int)ftell(fp_in), coded_buf[0], coded_buf[1], bitrate_code);
                #endif
             }
 
             if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_EVS) {
 
                if ((ret_val = fread(coded_buf, sizeof(char), 1, fp_in)) != 1) break;  /* read ToC byte from .cod file (see pcap extract mode notes below about .cod file format) */
-               bitRate_code = coded_buf[0] & 0xf;  /* bitrate code is a bitfield within ToC byte */
-               offset = 1;
+               #ifndef DSGETPAYLOADSIZE
+               uFlags |= DS_CODEC_INFO_BITRATE_CODE;
+               #endif
+
+               bitrate_code = coded_buf[0] & 0x3f;  /* bitrate code is a bitfield within ToC byte (changed from 0x0f to 0x3f to support EVS AMR-WB IO mode, JHB Oct 2022) */
+               offset = 1;  /* we're using header-full format and we handle it using offset in fread(), so we don't indicate header-full (nInput2 = 1) in call to DSGetCodecInfo(DS_CODEC_INFO_CODED_FRAMESIZE) below */
             }
 
             if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_G726) {
 
-               bitRate_code = codec_test_params.bitrate;
+               bitrate_code = codec_test_params.bitrate;
             }
 
             if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_MELPE) {
 
-               bitRate_code = (codec_test_params.bitrate << 16) | codec_test_params.bitDensity;
+               #ifndef DSGETPAYLOADSIZE
+               uFlags |= DS_CODEC_INFO_SIZE_BITS;  /* MELPe framesize specified in bits */
+               bitrate_code = codec_test_params.bitrate;
+               header_format = codec_test_params.bitDensity;
+               #else
+               bitrate_code = (codec_test_params.bitrate << 16) | codec_test_params.bitDensity;
+               #endif
             }
 
          /* determine coded data frame size */
 
             if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB_PLUS) {
 
-               int i, break_out = 0;
+               int i, break_on_error = 0;
+               #ifndef DSGETPAYLOADSIZE
+               uFlags |= DS_CODEC_INFO_BITRATE_CODE;
+               #endif
 
                for (i = 0; i < 4; i++) /* read in 4 20ms frames to pass 1 80ms super frame to the decoder */
                {
-                  if ((ret_val = _fread(coded_buf + offset, sizeof(char), 2, fp_in)) != 2) {break_out = 1; break;}
+                  if ((ret_val = _fread(coded_buf + offset, sizeof(char), 2, fp_in)) != 2) {break_on_error = 1; break;}
                   offset += 2;
-                  bitRate_code = coded_buf[0];
-                  framesize = DSGetPayloadSize(codec_test_params.codec_type, bitRate_code);
+                  bitrate_code = coded_buf[0];
+                  #ifndef DSGETPAYLOADSIZE
+                  framesize = DSGetCodecInfo(codec_test_params.codec_type, uFlags, bitrate_code, header_format, NULL);
+                  #else
+                  framesize = DSGetPayloadSize(codec_test_params.codec_type, bitrate_code);
+                  #endif
                   if (framesize < 0)
                   {
                      printf("ERROR: Invalid frame size: %d\n", framesize);
                      break;
                   }
-                  if ((ret_val = _fread(coded_buf + offset, sizeof(char), framesize, fp_in)) != framesize) {break_out = 1; break;}
+                  if ((ret_val = _fread(coded_buf + offset, sizeof(char), framesize, fp_in)) != framesize) {break_on_error = 1; break;}
                   offset += framesize;
-                  if (!((bitRate_code >= 10 && bitRate_code <= 13) || bitRate_code > 15)) break; /* if not extension mode, only read 1 20 ms frame */
+                  if (!((bitrate_code >= 10 && bitrate_code <= 13) || bitrate_code > 15)) break; /* if not extension mode, only read 1 20 ms frame */
                }
-               if (break_out) break;
+               if (break_on_error) break;  /* fread() error of some type, break out of while loop */
             }
-            else {  /* all codecs except for AMR-WB+ */
-            
-               framesize = DSGetPayloadSize(codec_test_params.codec_type, bitRate_code); /* voplib API to get payload size */
+            else if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) {  /* all codecs except for AMR-WB+ */
+
+               #ifndef DSGETPAYLOADSIZE
+               framesize = DSGetCodecInfo(codec_test_params.codec_type, uFlags, bitrate_code, header_format, NULL);  /* voplib API to get payload size */
+               #else
+               framesize = DSGetPayloadSize(codec_test_params.codec_type, bitrate_code);  /* voplib API to get payload size (deprecated if DSGETPAYLOADSIZE not defined, see comments in voplib.h) */
+               #endif
 
                if (codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_NB || codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_AMR_WB) {
 
@@ -1557,9 +1609,13 @@ PollBuffer:
                   if (fAMROctetAligned) framesize++;
 
                   #ifdef CODEC_FILE_DEBUG
-                  if (framesize < 0) printf(" encoded input frame size < 0, bitRate_code = %d \n", bitRate_code);
+                  if (framesize < 0) printf(" encoded input frame size < 0, bitrate code = %d \n", bitrate_code);
                   #endif
                }
+            }
+            else {  /* codec type = none; i.e. pass-thru of some type like .cod to .pcap, JHB Sep 2022 */
+
+               framesize = coded_framesize;  /* set before I/O loop */
             }
 
             if (codec_test_params.uncompress && codec_test_params.codec_type == DS_VOICE_CODEC_TYPE_G729AB) {
@@ -1573,8 +1629,9 @@ PollBuffer:
 
             /* G726 uncompressed vs. compressed mode notes, JHB Apr2021:
  
-               -for uncompress mode we override DSGetPayloadSize() (see bitRate_code abve). uncompressed mode is not used in RTP packet transport (doing so would make compression pointless)
+               -for uncompress mode we override framesize result returned by DSGetCodecInfo() (see bitrate_code above). Uncompressed mode is not used in RTP packet transport (doing so would make compression pointless)
                -uncompressed mode should be used when comparing with reference vectors/program
+               -note that previously we used DSPayloadSize() instead of DSGetCodecInfo(), the former is now deprecated, JHB Oct 2022
             */
   
                if (codec_test_params.uncompress) framesize = codec_frame_duration*8*sizeof(short);
@@ -1616,7 +1673,7 @@ PollBuffer:
             }
 
             #ifdef CODEC_FILE_DEBUG
-            printf(" decode: duration = %d, uncompress = %d, bitrate code = %d, framesize = %d, ret_val = %d \n", (int)codec_frame_duration, codec_test_params.uncompress, bitRate_code, framesize, ret_val);
+            printf(" decode: duration = %d, uncompress = %d, bitrate code = %d, framesize = %d, ret_val = %d \n", (int)codec_frame_duration, codec_test_params.uncompress, bitrate_code, framesize, ret_val);
             #endif
          }
 
@@ -1697,7 +1754,7 @@ PollBuffer:
 
             addr = out_buf;
          }
-         else {  /* audio file format or USB output */
+         else {  /* audio file format, USB output, or pcap */
 
             len = coded_framesize;
             addr = coded_buf;
@@ -1993,7 +2050,7 @@ codec_test_cleanup:
 
       fp_cfg = fopen(config_file, "r");
 
-      while (parse_codec_params(fp_cfg, &ft_info) != -1) 
+      while (parse_codec_config_frame_mode(fp_cfg, &ft_info) != -1) 
       {
          if ((hCodec[nCodecs] = DSCodecCreate(&ft_info.term, DS_CODEC_CREATE_ENCODER | DS_CODEC_CREATE_DECODER | DS_CODEC_CREATE_USE_TERMINFO)) < 0)
          {
@@ -2204,7 +2261,11 @@ codec_test_cleanup:
          goto pcap_extract_cleanup;
       }
 
+      #ifdef USE_OLD_NETWORK_BYTE_ORDER_FLAG
       uFlags = DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_NETWORK_BYTE_ORDER;  /* used with DSGetPacketInfo() */
+      #else
+      uFlags = DS_BUFFER_PKT_IP_PACKET;  /* used with DSGetPacketInfo() */
+      #endif
 
    /* open pcap file and read its header, initialize link layer offset */
 
@@ -2232,7 +2293,7 @@ codec_test_cleanup:
 
       /* determine header format */
 
-         if (!DSGetPayloadHeaderFormat(DS_VOICE_CODEC_TYPE_EVS, pyld_len))  /* compact header format */
+         if (!DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, pyld_ptr, pyld_len, NULL, NULL))  /* returns zero if compact header format */
          {
             toc = DSGetPayloadHeaderToC(DS_VOICE_CODEC_TYPE_EVS, pyld_len);  /* add ToC byte based on payload size (convert to FH format) */
 

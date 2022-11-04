@@ -24,6 +24,7 @@
   Modified Jan 2021 JHB, don't include minmax.h for C++ code using std::min and std::max
   Modified Feb 2022 JHB, removed HFILE alias and modified streamTest.c to use FILE*, this was only app using HFILE, which is now defined in filelib.h for filelib file handles
   Modified Mar 2022 JHB, move MAXPATH outside of defined(__LIBRARYMODE__)
+  Modified Oct 2022 JHB, add GCC pragmas to ignore "-Wvariadic-macros" for #define PDEBUG in gcc versions 7.x and higher. This is mainly for 3GPP builds (e.g. codecs) that use C1999
 */
 
  
@@ -152,13 +153,19 @@
 		#endif
 	#else
       #if __STDC_VERSION__ >= 199901L  /* check if C90 is being used (for example 3GPP sources) */
+        #pragma GCC diagnostic push  /* if __STDC_VERSION__ less than 1999 */
+        #pragma GCC diagnostic ignored "-Wvariadic-macros"
 		  #define PDEBUG(fmt, args...)
+        #pragma GCC diagnostic pop
       #endif
 	#endif
 
 	#undef PDEBUGG
    #if __STDC_VERSION__ >= 199901L  /* check if C90 is being used (for example 3GPP sources) */
+   #pragma GCC diagnostic push  /* if __STDC_VERSION__ less than 1999 */
+   #pragma GCC diagnostic ignored "-Wvariadic-macros"
    #define PDEBUGG(fmt, args...)
+   #pragma GCC diagnostic pop
    #endif
 /* *************************************************************************** */
 

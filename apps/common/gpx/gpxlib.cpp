@@ -11,6 +11,7 @@
 
  Revision History
   Created Mar 2022 JHB
+  Modified Jun 2022 JHB, fix bug in subtract 1 after mktime() and add 1 after localtime()
 */
 
 #include <stdio.h>
@@ -89,7 +90,15 @@ frame_count++;
       str_remove_whitespace(line);
       str_remove_linebreaks(line);
 
+      #ifdef VALIDATION 
+      int valid = 0;
+      #endif
+
       if (state == TAG_SEARCH) {
+
+         #ifdef VALIDATION 
+         valid++;
+         #endif
 
          if (strstr(line, "<trkpt")) state = TRKPT;
          /* else if (strstr(line, "xxx")) state = XXX  <-- add states if needed */
@@ -107,21 +116,50 @@ frame_count++;
                if (frame_count < 20) printf(" inside trkpt, tag = %s \n", tag);
                #endif
 
-               if ((p = strstr(tag, "lat="))) get_val(p+4, gpx_point.lat);
-               if ((p = strstr(tag, "lon="))) get_val(p+4, gpx_point.lon);
+               if ((p = strstr(tag, "lat="))) {
+                  #ifdef VALIDATION
+                  valid++;
+                  #endif
+                  get_val(p+4, gpx_point.lat);
+               }
 
-               if ((p = strstr(tag, "<ele>"))) get_val(p+5, gpx_point.elev);  /* look for elevation (optional in trkpt tag) */
+               if ((p = strstr(tag, "lon="))) {
+                  #ifdef VALIDATION 
+                  valid++;
+                  #endif
+                  get_val(p+4, gpx_point.lon);
+               }
+
+               if ((p = strstr(tag, "<ele>"))) {  /* look for elevation (optional in trkpt tag) */
+                  #ifdef VALIDATION 
+                  valid++;
+                  #endif
+                  get_val(p+5, gpx_point.elev);
+               }
 
                if ((p = strstr(tag, "<time>"))) {  /* look for time (optional in trkpt tag) */
+
+                  #ifdef VALIDATION 
+                  valid++;
+                  #endif
 
                   struct tm t = { 0 };
                   time_t t1;
                   static time_t t0 = 0;
                   static bool fFirstPoint = true;
 
+//#define DATE_TIME_DEBUG
+
                   sscanf(p+6, "%04d-%02d-%02dT%02d:%02d:%02d", &t.tm_year, &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min, &t.tm_sec);
                   t.tm_year -= 1900;  /* note these adjustments (which are required, per mktime() doc) are mirrored in write_gpx_point() after call to localtime() */
-                  t.tm_mday -= 1;
+                  t.tm_mon -= 1;
+#ifdef DATE_TIME_DEBUG
+  static bool fOnce = false;
+  if (!fOnce) {
+     printf("before mktime t.tm_year = %d, t.tm_mday = %d \n", t.tm_year, t.tm_mday);
+     fOnce = true;
+  }
+#endif
                   t1 = mktime(&t);  /* t1 and t0 are raw time values, in sec since 1 Jan 1900 */
 
                   if ((uFlags & DS_GPX_INIT) && fFirstPoint) {
@@ -144,6 +182,14 @@ frame_count++;
 
             break;
       }
+   
+      #ifdef VALIDATION  /* first pass at adding validation, for example to find errors that prevent Strava or other GPX upload, JHB Sep 2022. To-do:
+                            check XML tag formats
+                            look for out-of-range entry (e.g. hours not between 0 and 23, minutes 0 and 59, etc)
+                          */
+
+      if (valid < 5) printf(" less than 5 items line %s \n", line);
+      #endif
    }
 
    if (!fPointFound || !pStr) return 0;
@@ -178,8 +224,17 @@ time_t t;
       t -= 3600;  /* if local timezone DST is in effect, subtract an hour */
       timeinfo = localtime(&t);  /* note - if there is an efficient way of knowing when DST is in effect, thus avoiding two localtime() calls, I couldn't find it. This thread https://stackoverflow.com/questions/70449323/offset-calculation-for-day-light-savingdst-without-using-localtime calls both gmtime and mktime so it can't be any faster, JHB Mar2022 */
    }
+
+#ifdef DATE_TIME_DEBUG
+  static bool fOnce = false;
+  if (!fOnce) {
+     printf("after localtime() timeinfo->tm_year = %d, timeinfo->tm_mday = %d \n", timeinfo->tm_year, timeinfo->tm_mday);
+     fOnce = true;
+  }
+#endif
+
    timeinfo->tm_year += 1900;  /* note these adjustments (which are required, per localtime() doc) are mirrored in read_gpx_point() before call to mktime() */
-   timeinfo->tm_mday += 1;
+   timeinfo->tm_mon += 1;
 
    sprintf(&line[strlen(line)], "%04d-%02d-%02dT%02d:%02d:%02d", timeinfo->tm_year, timeinfo->tm_mon, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
    if (gpx_point.time_zone == 0) strcat(line, "Z");  /* to-do: handle timezones other than UTC */

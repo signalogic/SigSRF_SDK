@@ -1,11 +1,11 @@
 /*
   $Header: /root/Signalogic/DirectCore/lib/pktlib/pktlib_logging.c
  
-  Description: API for writing log messages to file and printing to stdout
+  Description: SigSRF and EdgeStream event logging APIs
  
   Project: SigSRF, DirectCore
  
-  Copyright Signalogic Inc. 2017-2021
+  Copyright Signalogic Inc. 2017-2022
 
   Revision History
   
@@ -385,7 +385,7 @@ create_log_file_if_needed:
             if (!(loglevel & DS_LOG_LEVEL_IGNORE_LINE_CURSOR_POS) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) fNextLine = true;  /* fNextLine reflects leading \n decision */
             else if (log_string[slen-1] != '\n') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);
 
-         /* screen output method:  0 = printf() (default), 1 = fprintf(stdout), 2 = fprintf(stderr), 3 = none */
+         /* screen output method:  0 = printf() (buffered, default), 1 = fprintf(stdout), 2 = fprintf(stderr), 3 = none */
 
             if (lib_dbg_cfg.uPrintfControl == 0) printf("%s%s", fNextLine ? "\n" : "", log_string);
             else if (lib_dbg_cfg.uPrintfControl == 1) fprintf(stdout, "%s%s", fNextLine ? "\n" : "", log_string);

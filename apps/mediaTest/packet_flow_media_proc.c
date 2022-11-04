@@ -132,6 +132,9 @@
    Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
    Modified Aug 2022 JHB, adjust declaration of a few global vars to allow no_mediamin and no_pktlib options in mediaTest build (run, frame_mode, etc)
    Modified Sep 2022 JHB, for mediaTest operation (non mediaMin thread): (i) move event log file fclose() to be after WritePktLog(), (ii) add auto-breakout from key processing
+   Modified Sep 2022 JHB, adjust for deprecation of DS_PKT_INFO_NETWORK_BYTE_ORDER flag
+   Modified Oct 2022 JHB, add stat for total input SIDs per channel (see DS_JITTER_BUFFER_INFO_INPUT_SID_COUNT flag)
+   Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo(), update param usage for DSGetCodecInfo()
 */
 
 #ifndef _GNU_SOURCE
@@ -784,6 +787,8 @@ void* packet_flow_media_proc(void* pExecutionMode) {
 
    int nNumCleanupLoops = 0;
 
+   CODEC_OUTARGS OutArgs;  /* output data returned by voplib decoders, starting with EVS and AMR-WB Plus, JHB Oct 2022 */
+
 //#define DEBUGINPUTPACKETS
 #ifdef DEBUGINPUTPACKETS
    int pkt_chnum_ctr = 0;
@@ -1253,7 +1258,7 @@ init_sessions:
          MediaInfo_merge.Fs = DSGetCodecFs(session_data_t[i].group_term.codec_type, session_data_t[i].group_term.sample_rate);
 #else
          HCODEC hCodecGroup = DSGetSessionInfo(hSessions_t[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC, 0, NULL);
-         MediaInfo_merge.Fs = DSGetCodecSampleRate(hCodecGroup);
+         MediaInfo_merge.Fs = DSGetCodecInfo(hCodecGroup, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_SAMPLERATE, 0, 0, NULL);
 #endif
          MediaInfo_merge.SampleWidth = 16;  /* 16-bit audio */
          MediaInfo_merge.NumChan = 1;  /* mono */
@@ -1517,7 +1522,7 @@ run_loop:
 
    /* set cur_time, used for packet input interval timing */
 
-      cur_time = get_time(USE_CLOCK_GETTIME);
+      cur_time = get_time(USE_CLOCK_GETTIME);  /* in usec */
 
    /* measure and record thread CPU usage */
 
@@ -2187,7 +2192,11 @@ debug:
                      payload_info[j] = 0;
                      ret_val = 1;  /* ok to check for SSRC change and log packet */
 
+                     #ifdef USE_OLD_NETWORK_BYTE_ORDER_FLAG
                      uFlags_info = DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_NETWORK_BYTE_ORDER;  /* RTP header items still in network byte order */
+                     #else
+                     uFlags_info = DS_BUFFER_PKT_IP_PACKET;  /* RTP header items still in network byte order */
+                     #endif
                   }
 
                   unsigned int pkt_ctrs[3]; pkt_ctrs[0] = pkt_counters[thread_index].pkt_input_cnt; pkt_ctrs[1] = pkt_counters[thread_index].pkt_read_cnt; pkt_ctrs[2] = pkt_counters[thread_index].pkt_add_to_jb_cnt;
@@ -2570,7 +2579,11 @@ next_session:
                         if (DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_NUM_PKTS) && DSGetSessionInfo(chan_nums[n], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_DYNAMIC_CHANNELS, 0, NULL)) fFlushChan = true;
                         #endif
    
+                        #ifdef USE_OLD_NETWORK_BYTE_ORDER_FLAG
                         uFlags_get = DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_NETWORK_BYTE_ORDER | (fFlushChan ? DS_GETORD_PKT_FLUSH : 0) | (fParentOnly ? DS_GETORD_PKT_CHNUM_PARENT_ONLY : 0);
+                        #else
+                        uFlags_get = DS_BUFFER_PKT_IP_PACKET | (fFlushChan ? DS_GETORD_PKT_FLUSH : 0) | (fParentOnly ? DS_GETORD_PKT_CHNUM_PARENT_ONLY : 0);
+                        #endif
 
                      /* DS_GETORD_PKT_FTRT flag notes:
 
@@ -2794,7 +2807,11 @@ pull:
                   }
                   else {  /* frame mode, set num_pkts and pkt_ptr; packet_len[] and payload_info[] are not used in frame mode */
 
+                     #ifdef USE_OLD_NETWORK_BYTE_ORDER_FLAG
                      uFlags_get = DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_NETWORK_BYTE_ORDER;
+                     #else
+                     uFlags_get = DS_BUFFER_PKT_IP_PACKET;
+                     #endif
 
                      num_pkts = pkts_read[stream_indexes[n]];
                      pkt_ptr = pkt_in_buf;
@@ -2813,8 +2830,12 @@ pull:
 
                   uFlags_info = DS_BUFFER_PKT_IP_PACKET;
 
+                  #ifdef USE_OLD_NETWORK_BYTE_ORDER_FLAG
                   if (uFlags_get & DS_PKT_INFO_NETWORK_BYTE_ORDER) uFlags_info |= DS_PKT_INFO_NETWORK_BYTE_ORDER;
                   else uFlags_info |= DS_PKT_INFO_HOST_BYTE_ORDER;
+                  #else
+                  if (uFlags_get & DS_PKT_INFO_HOST_BYTE_ORDER) uFlags_info |= DS_PKT_INFO_HOST_BYTE_ORDER;
+                  #endif
 
                   #define NO_PACKET         0  /* some local definitions helpful in illustrating possible packet processing cases */
                   #define MEDIA_PACKET      1
@@ -2988,7 +3009,7 @@ pull:
                               break;
                            }
 
-                           media_data_len = DSGetCodecRawFrameSize(hCodec);
+                           media_data_len = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_RAW_FRAMESIZE, 0, 0, NULL);
                            memset(media_data_buffer, 0, media_data_len);  /* zeros */
                         }
                         else {
@@ -3003,7 +3024,7 @@ pull:
 
                         /* Decoding notes:
 
-                           -DSGetCodecRawFramesize() could also be used to get the raw audio frame length, as long as packets contain only one frame per payload. If they contain multiple frames, the return value from DSCodecDecode() should be used
+                           -DSGetCodecInfo() could also be used to get the raw audio frame length, as long as packets contain only one frame per payload. If they contain multiple frames, the return value from DSCodecDecode() should be used
                            -both input payload length and output media buffer length are in bytes
                            -for pass-thru case, DSCodecDecode() simply copies data from in to out buffer
                         */
@@ -3035,8 +3056,17 @@ pull:
       nOnce++;
    }
    #endif
+                           media_data_len = DSCodecDecode(&hCodec, 0, pyld_ptr, media_data_buffer, pyld_len, 1, &OutArgs);  /* call voplib decoder */
 
-                           media_data_len = DSCodecDecode(&hCodec, 0, pyld_ptr, media_data_buffer, pyld_len, 1, NULL);
+                           if (termInfo.codec_type == DS_VOICE_CODEC_TYPE_EVS) {  /* handle return data, JHB Oct 2022 */
+
+                              unsigned int bitrate_index = DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_BITRATE_TO_INDEX, *((unsigned int*)&OutArgs), 0, NULL);
+                              unsigned int bitrate_list = DSGetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST);
+      // fprintf(stderr, " bitrate_index = %d, bitrate_list = 0x%x \n", bitrate_index, bitrate_list);
+                              DSSetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST, bitrate_list | (1L << bitrate_index));  /* save bitrate used by decoder in list of bitrates */
+                           }
+
+//    printf(" after DSCodecDecode, pyld_len = %d, media_data_len = %d \n", pyld_len, media_data_len);
 
                            if (media_data_len < 0) {
 
@@ -3052,7 +3082,7 @@ pull:
 
                         if (termInfo.codec_type != DS_VOICE_CODEC_TYPE_NONE) {  /* check for term1 (decoder) pass-thru (codec type constants are in session.h) */
 
-                           in_media_sample_rate = DSGetCodecSampleRate(hCodec);
+                           in_media_sample_rate = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_SAMPLERATE, 0, 0, NULL);
                            pkt_decode_cnt++;
                         }
                         else {  /* codec type = none is pass-thru case */
@@ -3354,7 +3384,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                         if (termInfo_link.codec_type != DS_VOICE_CODEC_TYPE_NONE) {  /* check for term2 (encoder) pass-thru (codec type constants are in session.h) */
 
-                           out_media_sample_rate = DSGetCodecSampleRate(hCodec_link);
+                           out_media_sample_rate = DSGetCodecInfo(hCodec_link, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_SAMPLERATE, 0, 0, NULL);
                            pkt_xcode_cnt++;
                         }
                         else {  /* codec type = none is pass-thru case */
@@ -4130,6 +4160,8 @@ bool fChanFound = false;
 
    for (i=0; i<MAX_TERMS; i++) {
 
+      if ((unsigned int)DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, i+1, NULL) & TERM_DISABLE_DORMANT_SESSION_DETECTION) continue;  /* go no further, hSession's channel doesn't want to be considered dormant and flushed, JHB Sep 2022 */
+
       int ssrc_change_index = max(session_info_thread[hSession].num_SSRC_changes[i]-1, 0);
       unsigned int stream_ssrc = session_info_thread[hSession].last_rtp_SSRC[i][ssrc_change_index];  /* num_SSRC_changes[] and last_rtp_SSRC[] contain per-channel SSRC history */
 
@@ -4158,11 +4190,31 @@ bool fChanFound = false;
 
                /* is hSession's channel dormant ?  current rule is a dormant channel is the oldest. Hopefully they don't start bouncing back and forth ... */
 
+                  #if 0
                   if ((cur_time - last_buffer_time[chnum]) > (cur_time - last_buffer_time[chnum2])) {
+                  #else
+                  
+                  TERMINATION_INFO term1;
+                  DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, i+1, &term1);
+
+               /* check if we exceed time period before a channel SSRC can be considered dormant. Notes, JHB Sep 2022:
+               
+                  -before we didn't have any wait-time period, but now we've seen duplicated streams (or near duplicated) with same SSRCs active at same time, they may even alternate rapidly (within a few hundred msec)
+                  -default wait time is 1 sec, set in DSCreateSession() if not set by user code. See mediaMin.cpp for source code example setting this option at session create time
+                */
+  
+                  if ((int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000 > term1.dormant_SSRC_wait_time) {
+                  #endif
 
                      if (!nDormantChanFlush[hSession][i]) {
 
-                        Log_RT(4, "======== INFO: detected session %d channel %d now using dormant session %d channel %d SSRC value 0x%x, flushing dormant channel %d \n", hSession2, chnum2, hSession, chnum, stream_ssrc, chnum);
+                        #if 0  /* debug, JHB Sep 2022 */
+                        unsigned int uFlags = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, i+1, NULL);
+                        printf("  dormant_SSRC_wait_time= %d, uFlags = 0x%x, int64 calc = %ld \n", term1.dormant_SSRC_wait_time, uFlags, (int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000);
+                        #endif
+
+                        Log_RT(4, "======== INFO: detected session %d channel %d now using dormant session %d channel %d SSRC value 0x%x, flushing dormant channel %d last active %lld msec\n", hSession2, chnum2, hSession, chnum, stream_ssrc, chnum, (long long int)((cur_time - last_buffer_time[chnum])/1000));
+
                         nDormantChanFlush[hSession][i] = DSGetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_TARGET_DELAY);  /* if there was a way to force all remaining packets out at once, that would avoid the count-down */
                      }
                      else nDormantChanFlush[hSession][i]--;
@@ -4308,7 +4360,7 @@ bool fChanFound, fAnalyticsMode, fAnalyticsCompatibilityMode;
    
                   #if 0 /* use to debug pastdue flush conditions */
                   hCodec = DSGetSessionInfo(ch[j], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CODEC, 1, NULL);
-                  int ptime_bytes = DSGetCodecRawFrameSize(hCodec);
+                  int ptime_bytes = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_RAW_FRAMESIZE, 0, 0, NULL);
                   int timestamp_delta = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_TIMESTAMP_DELTA);
                   if (num_packets <= target_packets && DSGetStreamGroupContributorPastDue(ch[0]) >= ptime_bytes) {
                      printf("$$$ pastdue jb flush candidate, j = %d, timestamp delta = %d, num_chan = %d, parent ch = %d, ch = %d, num pkts = %d, pastdue = %d, avail data = %d, sid state = %d, ptime_bytes = %d, ptime = %d, ptime other term = %d, nMaxLossPtimes[hSession][i] = %d \n", j, timestamp_delta, num_chan, ch[0], chan, num_packets, DSGetStreamGroupContributorPastDue(ch[0]), DSGetStreamGroupData(ch[0], NULL, ptime_bytes, DS_GROUPDATA_PEEK), DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_SID_STATE), ptime_bytes, ptime[hSession][i], ptime[hSession][i ^ 1], nMaxLossPtimes[hSession][i]);
@@ -4323,7 +4375,7 @@ bool fChanFound, fAnalyticsMode, fAnalyticsCompatibilityMode;
 
                         if (!(contributor_flags & STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH) &&
                              (hCodec = DSGetSessionInfo(ch[j], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CODEC, 1, NULL)) > 0 &&  /* termId param non-zero retrieves codec handle based only on chnum (i.e. can be either parent or child) */
-                             (DSGetStreamGroupContributorPastDue(ch[0]) >= DSGetCodecRawFrameSize(hCodec) || !fAnalyticsMode)  /* DSGetCodecRawFrameSize() returns ptime (in bytes). Note that DSGetStreamGroupContributorPastDue() can return -1 for an error condition */
+                             (DSGetStreamGroupContributorPastDue(ch[0]) >= DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_RAW_FRAMESIZE, 0, 0, NULL) || !fAnalyticsMode)  /* compare with raw audio framesize (in bytes). Note that DSGetStreamGroupContributorPastDue() can return -1 for an error condition */
                         ) {
 
                            target_packets = min_packets;
@@ -4587,7 +4639,7 @@ int session_state, j;
          nOnHoldChan[hSession][j] = 0;
 
          nMaxLossPtimes[hSession][j] = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_MAX_LOSS_PTIMES, j+1, NULL);
-         if (nMaxLossPtimes[hSession][j] < 0) { Log_RT(4, "WARNING: InitSession() says max_loss_ptimes is not initialized for session %d\n", hSession); nMaxLossPtimes[hSession][j] = 0; }
+         if (nMaxLossPtimes[hSession][j] < -1) { Log_RT(4, "WARNING: InitSession() says max_loss_ptimes is not initialized for session %d\n", hSession); nMaxLossPtimes[hSession][j] = 0; }  /* -1 is allowed, disables maxLossPtimes, JHB Sep 2022 */
 
          uDisplayDTMFEventMsg[hSession][j] = 0;
          uDTMFState[hSession][j] = 0;
@@ -5191,7 +5243,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
    /* check if ptime has elapsed since last packet read */
 
-      cur_time = get_time(USE_CLOCK_GETTIME);
+      cur_time = get_time(USE_CLOCK_GETTIME);  /* in usec */
       
       static bool fDataAvailable = false;
 
@@ -5231,7 +5283,11 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
       for (i=threadid; i<nInFiles; i+=nThreads_gbl) if (fp_in[i] && !feof(fp_in[i])) fDataAvailable = true;  /* check if all file data consumed */
 
 
+      #ifdef USE_OLD_NETWORK_BYTE_ORDER_FLAG
       unsigned int uFlags_get = DS_BUFFER_PKT_IP_PACKET | (!fDataAvailable ? DS_GETORD_PKT_FLUSH : 0) | DS_PKT_INFO_NETWORK_BYTE_ORDER;
+      #else
+      unsigned int uFlags_get = DS_BUFFER_PKT_IP_PACKET | (!fDataAvailable ? DS_GETORD_PKT_FLUSH : 0);
+      #endif
 
       for (i = threadid; i < (int)nSessions_gbl; i += nThreads_gbl)
       {
@@ -5261,8 +5317,12 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
             uint32_t uFlags_info = DS_BUFFER_PKT_IP_PACKET;
 
+            #ifdef USE_OLD_NETWORK_BYTE_ORDER_FLAG
             if (uFlags_get & DS_PKT_INFO_HOST_BYTE_ORDER) uFlags_info = (uFlags_info & ~DS_PKT_INFO_NETWORK_BYTE_ORDER) | DS_PKT_INFO_HOST_BYTE_ORDER;
             else uFlags_info = (uFlags_info & ~DS_PKT_INFO_HOST_BYTE_ORDER) | DS_PKT_INFO_NETWORK_BYTE_ORDER;
+            #else
+            if (uFlags_get & DS_PKT_INFO_HOST_BYTE_ORDER) uFlags_info |= DS_PKT_INFO_HOST_BYTE_ORDER;
+            #endif
 
             pyld_ptr = pkt_ptr + DSGetPacketInfo(hSession, uFlags_info | DS_PKT_INFO_RTP_PYLDOFS, pkt_ptr, packet_length, NULL, NULL);
             pyld_len = DSGetPacketInfo(hSession, uFlags_info | DS_PKT_INFO_RTP_PYLDLEN, pkt_ptr, packet_length, NULL, NULL);
@@ -5562,8 +5622,9 @@ bool fNext, fOrganizeByStreamGroup = false, fShowOwnerOnce;
 HSESSION hSessionGroupOwner = -1, hSession_prev = -1;
 
 #define MAX_STATS_STRLEN 80
+#define MAX_STATS_STRLEN2 200 /* added for intermediate strings that can get longer (e.g. sessstr, ssrcstr), JHB Oct 2022 */
 char iptstr[MAX_STATS_STRLEN] = "", jbptstr[MAX_STATS_STRLEN] = "", jbrpstr[MAX_STATS_STRLEN] = "", jbzpstr[MAX_STATS_STRLEN] = "", mxooostr[MAX_STATS_STRLEN] = "", sidrstr[MAX_STATS_STRLEN] = "", tsastr[MAX_STATS_STRLEN] = "", plflstr[MAX_STATS_STRLEN] = "",
-     pdflstr[MAX_STATS_STRLEN] = "", ssrcstr[MAX_STATS_STRLEN] = "", missstr[MAX_STATS_STRLEN] = "", consstr[MAX_STATS_STRLEN] = "", pktlstr[MAX_STATS_STRLEN] = "", calcstr[MAX_STATS_STRLEN] = "", sessstr[MAX_STATS_STRLEN] = "", npktstr[MAX_STATS_STRLEN] = "",
+     pdflstr[MAX_STATS_STRLEN] = "", ssrcstr[MAX_STATS_STRLEN2] = "", missstr[MAX_STATS_STRLEN] = "", consstr[MAX_STATS_STRLEN] = "", pktlstr[MAX_STATS_STRLEN] = "", calcstr[MAX_STATS_STRLEN] = "", sessstr[MAX_STATS_STRLEN2] = "", npktstr[MAX_STATS_STRLEN] = "", spktstr[MAX_STATS_STRLEN] = "",
      undrstr[MAX_STATS_STRLEN] = "", ovrnstr[MAX_STATS_STRLEN] = "", medstr[MAX_STATS_STRLEN] = "", sidstr[MAX_STATS_STRLEN] = "", medxstr[MAX_STATS_STRLEN] = "", sidxstr[MAX_STATS_STRLEN] = "", maxdstr[MAX_STATS_STRLEN] = "", brststr[MAX_STATS_STRLEN] = "",
      sidistr[MAX_STATS_STRLEN] = "", tsamstr[MAX_STATS_STRLEN] = "", purgstr[MAX_STATS_STRLEN] = "", dupstr[MAX_STATS_STRLEN] = "", jbundrstr[MAX_STATS_STRLEN] = "", jboverstr[MAX_STATS_STRLEN] = "", iooostr[MAX_STATS_STRLEN] = "", jboooostr[MAX_STATS_STRLEN] = "",
      jbmxooostr[MAX_STATS_STRLEN] = "", jbdropstr[MAX_STATS_STRLEN] = "", jbdupstr[MAX_STATS_STRLEN] = "", jbtgapstr[MAX_STATS_STRLEN] = "", mxovrnstr[MAX_STATS_STRLEN] = "", mxnpktstr[MAX_STATS_STRLEN] = "", noutpkts[MAX_STATS_STRLEN] = "",
@@ -5666,26 +5727,41 @@ organize_by_ssrc:
                add_stats_str(maxdstr, MAX_STATS_STRLEN, " %d/%2.2f/%d", c, 1.0*packet_max_delta[c]/1000, max_delta_packet[c]);
             }
 
+            TERMINATION_INFO termInfo;
+            unsigned int bitrate_index, pkt_bitrate_list, bitrate;
+            char bratestr[256] = "";
+
+            DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, 1, &termInfo);
+
+            if ((pkt_bitrate_list = DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)) != 0) {
+
+               bitrate_index = DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_BITRATE_TO_INDEX, termInfo.bitrate, 0, NULL);
+
+  fprintf(stderr, " pkt_bitrate_list = 0x%x, bitrate_index = %d \n", pkt_bitrate_list, bitrate_index);
+
+               if ((1L << bitrate_index) != pkt_bitrate_list) {  /* show any mid-stream switching bitrates detected */
+
+                  for (j=0; j<(int)sizeof(uint32_t)*CHAR_BIT; j++) {
+
+                     if ((pkt_bitrate_list & (1L << j)) && (bitrate = DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_INDEX_TO_BITRATE, j, 0, NULL)) && bitrate != termInfo.bitrate) {
+
+                        if (strlen(bratestr) == 0) strcpy(bratestr, "(");
+                        else strcat(bratestr, ",");
+                        sprintf(&bratestr[strlen(bratestr)], "%d", bitrate);
+                     }
+                  }
+                  if (strlen(bratestr)) strcat(bratestr, ")");
+               }
+            }
+
             if (hSession != hSession_prev) {
 
-               TERMINATION_INFO termInfo;
                char codec_name[50] = "";
+               DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_NAME, 0, 0, codec_name);
 
-               DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, 1, &termInfo);
-
-               #if 0  /* example of how to use voplib DSGetCodecInfo() with a codec handle, JHB Oct2020 */
-               CODEC_PARAMS codec_params;  /* CODEC_PARAMS is in voplib.h */
-               HCODEC hCodec = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC, 1, NULL);  /*  1 = decoder, 2 = encoder ... see pktlib.h comments */
-               DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE, &codec_params);  /* voplib.h API */
-               strcpy(codec_name, codec_params.codec_name);
-               // printf(" bit rate = %d, sampling rate = %d \n", codec_params.dec_params.bitRate, codec_params.dec_params.samplingRate);
-               #else  /* or if codec type is already known and we just need the codec name... */
-               DSGetCodecName(termInfo.codec_type, codec_name, DS_CODEC_INFO_TYPE);
-               #endif
-
-               add_stats_str(sessstr, MAX_STATS_STRLEN, " %d%s/%d/%s/%d", hSession, hSession == hSessionGroupOwner && !fShowOwnerOnce ? "(grp owner)" : "", c, codec_name, termInfo.bitrate);
+               add_stats_str(sessstr, MAX_STATS_STRLEN2, " %d%s/%d/%s/%d%s", hSession, hSession == hSessionGroupOwner && !fShowOwnerOnce ? "(grp owner)" : "", c, codec_name, termInfo.bitrate, bratestr);
             }
-            else add_stats_str(sessstr, MAX_STATS_STRLEN, ",%d", c);  /* add channel to previous session string, showing it as a dynamic (child) channel */
+            else add_stats_str(sessstr, MAX_STATS_STRLEN2, ",%d%s", c, bratestr);  /* add channel to previous session string, showing it as a dynamic (child) channel */
 
             if (fOrganizeByStreamGroup) {
 
@@ -5697,7 +5773,7 @@ organize_by_ssrc:
                   HCODEC hCodec;
                   int framesize;
 
-                  if ((hCodec = DSGetSessionInfo(c, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CODEC, 1, NULL)) > 0 && (framesize = DSGetCodecRawFrameSize(hCodec)) > 0) add_stats_str(mxovrnstr, MAX_STATS_STRLEN, " %d/%2.2f", c, 100.0*nMaxStreamDataAvailable[c]/framesize/DSGetStreamGroupContributorMaxFrameCapacity(c));
+                  if ((hCodec = DSGetSessionInfo(c, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CODEC, 1, NULL)) > 0 && (framesize = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_RAW_FRAMESIZE, 0, 0, NULL)) > 0) add_stats_str(mxovrnstr, MAX_STATS_STRLEN, " %d/%2.2f", c, 100.0*nMaxStreamDataAvailable[c]/framesize/DSGetStreamGroupContributorMaxFrameCapacity(c));
                   #endif
                }
 
@@ -5708,8 +5784,9 @@ organize_by_ssrc:
 
          /* use post delete flag here, as app may have already marked sessions for deletion */
   
-            add_stats_str(ssrcstr, MAX_STATS_STRLEN, " %d/0x%x", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SSRC | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(ssrcstr, MAX_STATS_STRLEN2, " %d/0x%x", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SSRC | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
             add_stats_str(npktstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(spktstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_SID_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
             add_stats_str(brststr, MAX_STATS_STRLEN, " %d/%d", c, packet_in_bursts[c]);
             add_stats_str(pktlstr, MAX_STATS_STRLEN, " %d/%2.3f", c, 100.0*DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)/max(DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING), 1));
 
@@ -5789,7 +5866,7 @@ organize_by_ssrc:
       }
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Packet Stats\n");
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Input (ch/pkts)%s, RFC7198 duplicates%s, bursts%s\n", npktstr, dupstr, brststr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Input (ch/pkts)%s, SIDs%s, RFC7198 duplicates%s, bursts%s\n", npktstr, spktstr, dupstr, brststr);
 
       if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {
          add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Loss (ch/%%)%s, missing seq (ch/num)%s, max consec missing seq%s\n", pktlstr, missstr, consstr);

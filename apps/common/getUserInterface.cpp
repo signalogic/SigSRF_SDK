@@ -30,16 +30,21 @@
    Modified Feb 2022 JHB, in getUserInfo() display summary, show x86 clock rate instead of "Default", if coCPU executable file not used show "N/A" instead of nothing
    Modified Mar 2022 JHB, add -Fn flag for mediaTest gpx processing
    Modified Apr 2022 JHB, further clarify getUserInfo() display, Core List --> coCPU Core List and Clock --> coCPU Clock if applicable
+   Modified Aug 2022 JHB, more readability mods to getUserInfo() display, including a lock to keep program start info coherent within multiple threads
 */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
 #include <iomanip>
+#include <semaphore.h>
 
 #include "test_programs.h"
 #include "cmdLineOpt.h"
 #include "alias.h"
+
+static sem_t cout_sem;
+static bool fSem_Init = false;
 
 using namespace std;
 
@@ -395,14 +400,23 @@ char clkstr[100];
             if (!fCpuMHzFound) strcpy(clkstr, "Default");
          }
 
+#if 0  /* JHB Aug 2022 */
          char coCPU_executable[1000] = "N/A";
-         if (strlen(userIfs->targetFileName)) strcpy(coCPU_executable, userIfs->targetFileName);
-         
+         if (strlen(userIfs->targetFileName)) strcpy(coCPU_executable, );
+#endif
+
+         if (!fSem_Init) { sem_init(&cout_sem, 0, 1); fSem_Init = true; }  /* add a lock to keep program start info coherent within multiple threads, JHB Aug2022 */
+         sem_wait(&cout_sem);
+
          cout << "userSpecified = {" << labelstr << userIfs->cardDesignator <<  ", "
               << (fcoCPU ? "coCPU " : "") << "Clock = " << clkstr << ", "
-              << "coCPU Core List = 0x" << hex << setfill('0') << setw(8) << userIfs->coreBitMask << ", "
-              << "coCPU Executable = " << coCPU_executable << ", "              
-              << "Algorithm Flag = " << dec << userIfs->algorithmIdNum << "}" << endl;  /* use stream modifiers for hex output, JHB Feb2015 */
+              << "coCPU Core List = ";
+         if (fcoCPU) cout << "0x" << hex << setfill('0') << setw(8) << userIfs->coreBitMask << ", ";  /* avoid issues with conditional controlling multiple << , JHB Aug2022 */
+         else cout << "N/A, ";
+         cout << "coCPU Executable = " << (fcoCPU ? userIfs->targetFileName : "N/A") << ", "              
+              << "Algorithm Flag = " << dec << userIfs->algorithmIdNum << "}" << endl;  /* use stream modifiers for hex and decimal output, JHB Feb2015 */
+
+         sem_post(&cout_sem);
       }
 
       return EXIT_SUCCESS;    

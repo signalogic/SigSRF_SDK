@@ -42,6 +42,7 @@
 /* needed by get_time() */
 #include <sys/time.h>
 #include <time.h>
+/* #define USE_X86INTRIN */
 #ifdef USE_X86INTRIN  /* in get_time() below, we use __builtin_ia32_xxx() functions directly to avoid including 86intrin.h, which seems to get tangled up in build issues with different versions of gcc and/or Linux (e.g. gcc 4.8.2 on Red Hat) */
   #include <x86intrin.h>
 #endif

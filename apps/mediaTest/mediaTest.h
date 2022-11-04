@@ -30,6 +30,8 @@
    Modified Jan 2021 JHB, change AUDIO_FILE_TYPES macro to IS_AUDIO_FILE_TYPE, add extern reference for char szSDPFile[CMDOPT_MAX_INPUT_LEN]
    Modified Apr 2021 JHB, add "header_format" to codec_test_params_t struct
    Modified Mar 2022 JHB, add GPX file type and reference to gpx_process (cmd line handling)
+   Modified Sep 2022 JHB, add "framesize" option in codec_test_params_t, this allows a framesize to be specified in codec config files for for pass-thru cases such as .cod to .pcap, where no encoding/decoding is specified
+   Modified Sep 2022 JHB, add "payload_shift" option in codec_test_params_t, this is a special case to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/-
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -100,8 +102,9 @@ typedef struct
    float isf;
    unsigned int mode;
    float bitrate_plus;
-/* added Apr 2021, JHB */
-   unsigned int header_format;
+   unsigned int header_format;  /* added Apr 2021 JHB */
+   unsigned int framesize;  /* added Sep 2022 JHB */
+   int payload_shift;  /* special case to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/-, Sep 2022 JHB */
 
 } codec_test_params_t;
 
@@ -226,8 +229,8 @@ int create_sessions(PMEDIAPARAMS);
 int delete_sessions(void);
 
 int parse_session_config(FILE *fp, SESSION_DATA *params);
-int parse_codec_params(FILE *fp, FRAME_TEST_INFO *info);
-void parse_codec_test_params(FILE*, codec_test_params_t*);
+void parse_codec_config(FILE*, codec_test_params_t*);
+int parse_codec_config_frame_mode(FILE *fp, FRAME_TEST_INFO *info);
 int init_codec_test(PMEDIAPARAMS, codec_test_params_t*);
 
 void fill_pcie_buffer(uint8_t *buffer, int length, uint32_t chip_id, uint32_t core_id);

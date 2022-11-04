@@ -1,12 +1,10 @@
 # $Header: /install_path/apps/Signalogic/mediaTest/Makefile
-# 
-# Description: Makefile for "mediaTest" test and measurement program
-#
-# Purpose: (i) media transcoding and packet streaming / processing test program, (ii) example user application showing use of Pktlib and Voplib APIs, (iii) supports optional coCPU card(s) for very high server capacity
-# 
-# Makefile for mediaTest streaming, transcoding, and audio test and measurement program
 #
 # Copyright (C) Signalogic Inc. 2015-2022
+#
+# Description: Makefile for "mediaTest" audio, transcoding, and streaming test and measurement program
+#
+# Purposes: (i) media transcoding and packet streaming / processing test program, (ii) example user application showing use of pktlib and voplib APIs, (iii) run multiple concurrent mediaMin threads for ultra high capacity testing
 #
 # Revision History
 #
@@ -34,7 +32,8 @@
 #  Modified Apr 2022 JHB, link libm (required by -ffast-math compiler flag used in codec builds)
 #  Modified Apr 2022 JHB, add system-dependent linking for codecs built with --fast-math
 #  Modified Aug 2022 JHB, allow no_mediamin and no_pktlib cmd line build options, create _NO_MEDIAMIN_ and _NO_PKTLIB_ defines
-#  Modified Sep 2022 JHB, modify USE_OLD_CODEC_LIBS var for Debian
+#  Modified Sep 2022 JHB, modify USE_4p6_CODEC_LIBS var for Debian
+#  Modified Oct 2022 JHB, add codec_libs_version=N.nn cmd line option to force build with specific codec libs. For EVS_INSTALLED var, change logic to use * in wildcard() to look for different lib versions. Add logic to check for available codec libs and handle case where a selected version is not available
 
 # check make cmd line for "no_codecs" option
 
@@ -76,8 +75,8 @@ endif
 ifeq ($(no_evs),1)
   EVS_INSTALLED = n
 else
-  EVSPATH=/usr/lib/libevscom_sig.x86.so
-  ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
+  EVSPATH=/usr/lib/libevscom_sig.x86*.so  # use wildcard to allow for different lib versions based on Linux distro and/or OS version
+  ifneq ($(wildcard $(EVSPATH)),"")
     EVS_INSTALLED = y
   else
     EVS_INSTALLED = n
@@ -247,20 +246,84 @@ ifneq (,$(findstring CentOS,$(NAME)))
   VER_MAJOR := $(shell echo $(VERSION_ID) | cut -f1 -d.)
   VER_MINOR := $(shell echo $(VERSION_ID) | cut -f2 -d.)
   # CentOS version <= 7.07
-  USE_OLD_CODEC_LIBS := $(shell [ $(VER_MAJOR) -le 7 -o \( $(VER_MAJOR) -eq 7 -a $(VER_MINOR) -ge 7 \) ] && echo true)
-else ifneq  (,$(findstring Ubuntu,$(NAME)))
+  USE_4p6_CODEC_LIBS := $(shell [ $(VER_MAJOR) -le 7 -o \( $(VER_MAJOR) -eq 7 -a $(VER_MINOR) -ge 7 \) ] && echo true)
+else ifneq (,$(findstring Ubuntu,$(NAME)))
   VER_MAJOR := $(shell echo $(VERSION_ID) | cut -f1 -d.)
   VER_MINOR := $(shell echo $(VERSION_ID) | cut -f2 -d.)
   # Ubunto version <= 12.04
-  USE_OLD_CODEC_LIBS := $(shell [ $(VER_MAJOR) -le 12 -o \( $(VER_MAJOR) -eq 12 -a $(VER_MINOR) -ge 4 \) ] && echo true)
+  USE_4p6_CODEC_LIBS := $(shell [ $(VER_MAJOR) -le 12 -o \( $(VER_MAJOR) -eq 12 -a $(VER_MINOR) -ge 4 \) ] && echo true)
+else  # for os-release files without "VERSION_ID" field (like Debian) we assume newer libs. May need to change this on further OS testing
+  USE_4p6_CODEC_LIBS :=
+endif
+
+ifneq ($(USE_4p6_CODEC_LIBS),true)  # gcc 11.3 libs is the default
+  USE_11p3_CODEC_LIBS := true
+endif
+
+# check cmd line overrides for which codec libs to link
+ifeq ($(codec_libs_version),4.6)
+  USE_4p6_CODEC_LIBS := true
+  USE_11p3_CODEC_LIBS :=
+endif
+
+ifeq ($(codec_libs_version),11.3)
+  USE_11p3_CODEC_LIBS := true
+  USE_4p6_CODEC_LIBS :=
 endif
 
 ifeq ($(EVS_INSTALLED),y)
-  ifeq ($(USE_OLD_CODEC_LIBS),true)
+
+# determine versions of lib files available (user might delete one or the other from the base install, yes this has happened)
+
+  EVSPATH:=/usr/lib/libevscom_sig.x86_gcc4.6.so
+  ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
+    4p6_EVS_LIBS_FOUND := true
+  endif
+  EVSPATH:=/usr/lib/libevscom_sig.x86_gcc11.3.so
+  ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
+    11p3_EVS_LIBS_FOUND := true
+  endif
+
+# decide which of available versions should be linked in the build
+
+  ifeq ($(USE_4p6_CODEC_LIBS),true)
+    ifneq ($(4p6_EVS_LIBS_FOUND),true)
+      ifeq (,$(findstring clean,$(MAKECMDGOALS)))
+        $(info gcc 4.6 EVS codec libs not found)
+      endif
+      USE_4p6_CODEC_LIBS :=
+    endif
+  endif
+
+  ifneq ($(USE_4p6_CODEC_LIBS),true)
+    ifeq ($(11p3_EVS_LIBS_FOUND),true)
+      USE_11p3_CODEC_LIBS := true
+    else
+      ifeq (,$(findstring clean,$(MAKECMDGOALS)))
+        $(info gcc 11.3 EVS codec libs not found)
+      endif
+      USE_11p3_CODEC_LIBS :=
+    endif
+  endif
+
+  ifeq ($(USE_4p6_CODEC_LIBS),true)
+    ifeq ($(codec_libs_version),4.6)
+      $(info codec_libs_version=4.6 on cmd line, building with gcc 4.6 EVS codec libs)  # print build info if cmd line option was given
+    endif
     CODEC_LIBS += -levsenc_sig.x86_gcc4.6
     CODEC_LIBS += -levsdec_sig.x86_gcc4.6
     CODEC_LIBS += -levscom_sig.x86_gcc4.6
-  else 
+  else ifeq ($(USE_11p3_CODEC_LIBS),true)
+    ifeq ($(codec_libs_version),11.3)
+      $(info codec_libs_version=11.3 on cmd line, building with gcc 11.3 EVS codec libs)  # print build info if cmd line option was given
+    endif
+    CODEC_LIBS += -levsenc_sig.x86_gcc11.3
+    CODEC_LIBS += -levsdec_sig.x86_gcc11.3
+    CODEC_LIBS += -levscom_sig.x86_gcc11.3
+  else
+    ifeq (,$(findstring clean,$(MAKECMDGOALS)))
+      $(info building with generic EVS codec libs)  # print build info if generic fallback
+    endif
     CODEC_LIBS += -levsenc_sig.x86
     CODEC_LIBS += -levsdec_sig.x86
     CODEC_LIBS += -levscom_sig.x86

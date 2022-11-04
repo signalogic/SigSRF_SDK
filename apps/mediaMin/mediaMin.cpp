@@ -118,6 +118,8 @@
    Modified Dec 2021 JHB, add handling for IP non-RTP packets (e.g. ICMP, DHCP) in create_dynamic_session(). Note a change was made in pktlib to handle ICMPv6
    Modified Dec 2021 JHB, implement debug flags ENABLE_DER_DECODING_STATS and ENABLE_INTERMEDIATE_PCAP
    Modified Jan 2022 JHB, testing with separate cmd_line_debug_flags.h header file, included in mediaMin.h
+   Modified Sep 2022 JHB, add support for dormant_SSRC_wait_time in TERMINATION_INFO structs, DISABLE_DORMANT_SESSION_DETECTION flag defined in cmd_line_debug_flags.h
+   Modified Sep 2022 JHB, add ReadCodecConfig() to handle special case codec debug/test (for both static and dynamic sessions). See comments
 */
 
 
@@ -173,7 +175,7 @@ using namespace std;
 #define VALGRIND_DELAY 100  /* usleep delay value in usec for allowing valgrind to run multithreaded apps on the same core */
 #endif
 
-static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 3.2.0, Copyright (C) Signalogic 2018-2021\n";
+static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 3.2.1, Copyright (C) Signalogic 2018-2022\n";
 
 /* vars shared between app threads */
 
@@ -194,6 +196,8 @@ static bool   fInputsAllFinite = true;  /* set to false if inputs include UDP po
 static bool   fAutoQuit = false;        /* fAutoQuit determines whether program stops automatically.  This is the default for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests */
 bool          fRepeatIndefinitely = false;  /* true if -R0 is given on the cmd line */
 bool          fNChannelWavOutput = false;
+
+codec_test_params_t codec_config_params = { 0 };  /* added to support non-standard codec configurations. Notes: use -C cmd line option to specify a codec config file name, (ii) works for both dynamic and static sessions, (iii) not sure yet if this should be made per-thread or per-session; currently it's a test/debug option that applies to all mediaMin threads, JHB Sep 2022 */
 
 /* per application thread info */
 
@@ -380,6 +384,7 @@ char tmpstr[MAX_APP_STR_LEN];
          if (Mode & ENABLE_TIMING_MARKERS) printf("  debug: 1 sec timing markers will be injected in stream group output\n");
          if (Mode & ENABLE_PACKET_INPUT_ALARM) printf("  input packet alarm enabled, if DSPushPackets() is not called for the alarm time limit a warning will show in the event log\n");
          if (Mode & DISABLE_AUTOQUIT) printf("  auto-quit disabled\n");
+         if (Mode & DISABLE_DORMANT_SESSION_DETECTION) printf("  dormant session detection disabled\n");
 
          if (Mode & ENABLE_DEBUG_STATS) printf("  debug info and stats enabled\n");
          if (Mode & ENABLE_DER_DECODING_STATS) printf("  DER decoding stats enabled\n");
@@ -456,9 +461,20 @@ start:  /* note - label used only if test mode repeats are enabled */
 
    if (thread_info[thread_index].fDynamicCallMode) nSessionsConfigured = 0;
    else {
-      nSessionsConfigured = ReadSessionConfig(session_data, thread_index);  /* note - ReadSessionConfig() is in session_app.cpp */
+      nSessionsConfigured = ReadSessionConfig(session_data, thread_index);  /* ReadSessionConfig() is in session_app.cpp */
       if (!nSessionsConfigured) goto cleanup;
    }
+
+/* codec config info regardless of call mode.  Notes:
+
+   -codec config files are normally used by mediaTest
+   -this is intended only for items not session-specific or needed as an override, for example enabling/disabling a codec option for testing purposes
+*/
+
+   ReadCodecConfig(&codec_config_params, thread_index);
+   #if 0
+   printf(" codec_config_params.payload_shift = %d \n", codec_config_params.payload_shift);
+   #endif
 
 /* set up inputs and transcoded outputs */
    
@@ -1105,6 +1121,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t payload_len, uint8_
       case 6:  /* EVS SID frames, compact format, header full, or header full with CMR byte */
       case 7:
       case 8:
+ case 17:
       case 18: /* EVS primary 7.2 kbps, added JHB Dec2020 */
       case 33:  /* EVS 13200 bps, 33 for compact header format, 34 for full header format, 35 for full header with CMR byte */
       case 34:
@@ -1378,7 +1395,15 @@ non_rtp_packet:
 
 err_msg:
       if (fShowErrDebugInfo) {
-         fprintf(stderr, "%s%s, IP ver %d, payload type %d, ssrc = 0x%x, seq num = %d, pkt len %d, RTP pyld size %d, cat %d, pyld[0] %d, pyld[1] %d, pyld[2] %d \n", fPrevErr ? "" : "\n", errstr, ip_version, pyld_type, rtp_ssrc, rtp_seqnum, pkt_len_lib, rtp_pyld_len, cat, pkt[rtp_pyld_ofs], pkt[rtp_pyld_ofs+1], pkt[rtp_pyld_ofs+2]);
+
+         if (fPrevErr)
+           fprintf(stderr, "%s%s, IP ver %d, payload type %d, ssrc = 0x%x, seq num = %d, pkt len %d, RTP pyld size %d, cat %d, pyld[0] %d, pyld[1] %d, pyld[2] %d \n", fPrevErr ? "" : "\n", errstr, ip_version, pyld_type, rtp_ssrc, rtp_seqnum, pkt_len_lib, rtp_pyld_len, cat, pkt[rtp_pyld_ofs], pkt[rtp_pyld_ofs+1], pkt[rtp_pyld_ofs+2]);
+         else {  /* add to event log, JHB Sep 2022 */
+            char logstr[512];
+            sprintf(logstr, "%s, IP ver %d, payload type %d, ssrc = 0x%x, seq num = %d, pkt len %d, RTP pyld size %d, cat %d, pyld[0] %d, pyld[1] %d, pyld[2] %d \n", errstr, ip_version, pyld_type, rtp_ssrc, rtp_seqnum, pkt_len_lib, rtp_pyld_len, cat, pkt[rtp_pyld_ofs], pkt[rtp_pyld_ofs+1], pkt[rtp_pyld_ofs+2]);
+            Log_RT(4, "mediaMin INFO: %s ", logstr);
+         }
+
          fPrevErr = true;
       }
       else fprintf(stderr, "%s \n", errstr);
@@ -1447,6 +1472,17 @@ err_msg:
    session->term1.max_loss_ptimes = 3;
    session->term1.max_pkt_repair_ptimes = 4;
 
+   #if 0
+   /* dormant_SSRC_wait_time controls detection and flush time when a stream "takes over" another stream's SSRC, JHB Sep 2022. Notes:
+   
+       -set to non-zero (in msec) to override pktlib default of 1 sec
+       -set to 1 if immediate flush is needed (which helps avoid packets being dropped from the jitter buffer because they arrived too late)
+       -longer wait times can be needed if streams are legitimately alternating use of the same SSRC
+   */
+   session->term1.dormant_SSRC_wait_time = 1;
+   #endif
+   if (codec_config_params.payload_shift) session->term1.payload_shift = codec_config_params.payload_shift;
+
 /* jitter buffer target and max delay notes, JHB May2020:
 
    -defaults for stream group processing, in both analytics and telecom modes, are 10 and 14. Stream groups require high accuracy of stream alignment
@@ -1465,6 +1501,8 @@ err_msg:
       target_delay = 10;
       max_delay = 14;
    }
+   else {  /* otherwise pktlib sets target_delay to 5 and max_delay to 12 (i.e. if pktlib sees zero values at session-creation time) */
+   }
 
    if (target_delay) session->term1.jb_config.target_delay = target_delay;
    if (max_delay) session->term1.jb_config.max_delay = max_delay;
@@ -1475,6 +1513,7 @@ err_msg:
    if (!(Mode & DISABLE_PACKET_REPAIR)) session->term1.uFlags |= TERM_SID_REPAIR_ENABLE | TERM_PKT_REPAIR_ENABLE;  /* packet repair and overrun synchronization flags enabled by default */
    if (Mode & ENABLE_STREAM_GROUPS) session->term1.uFlags |= TERM_OVERRUN_SYNC_ENABLE;
    if (!(Mode & ANALYTICS_MODE) || target_delay > 7) session->term1.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
+   if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term1.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
 
    if (Mode & ENABLE_STREAM_GROUPS) {
 
@@ -1628,6 +1667,7 @@ err_msg:
 
    session->term2.max_loss_ptimes = 3;
    session->term2.max_pkt_repair_ptimes = 4;
+   if (codec_config_params.payload_shift) session->term2.payload_shift = codec_config_params.payload_shift;
 
    if (target_delay) session->term2.jb_config.target_delay = target_delay;
    if (max_delay) session->term2.jb_config.max_delay = max_delay;
@@ -1638,6 +1678,7 @@ err_msg:
    if (!(Mode & DISABLE_PACKET_REPAIR)) session->term2.uFlags |= TERM_SID_REPAIR_ENABLE | TERM_PKT_REPAIR_ENABLE;  /* packet repair and overrun synchronization flags enabled by default */
    if (Mode & ENABLE_STREAM_GROUPS) session->term2.uFlags |= TERM_OVERRUN_SYNC_ENABLE;
    if (!(Mode & ANALYTICS_MODE) || target_delay > 7) session->term2.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
+   if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term2.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
 
 /* group term setup */
 
@@ -1861,7 +1902,7 @@ read_packet:
          else
          #endif
 
-         uint16_t input_type = thread_info[thread_index].link_layer_len[j] >> 16;
+         uint16_t input_type = (thread_info[thread_index].link_layer_len[j] & PCAP_LINK_LAYER_FILE_TYPE_MASK) >> 16;
 
          if (input_type == PCAP_TYPE_LIBPCAP || input_type == PCAP_TYPE_PCAPNG) {
 
@@ -1869,19 +1910,19 @@ read_packet:
 
             if (pkt_len > 0) {  /* add non IP packet handing, JHB Dec2021 */
 
-               if (pkt_type == ETH_P_ARP) {  /* ignore ARP packets */
+               if (pkt_type == ETH_P_ARP) {  /* ignore ARP packets (ETH_P_ARP defined in if_ether.h Linu header file, typically value of 0x0806) */
                   #ifdef PKT_DISCARD_DEBUG
                   printf(" ************* ignoring ARP pkt \n");
                   #endif
                   goto read_packet;
                }
-               if (pkt_type <= 1536) { /* ignore 802.2 LLC frames (https://networkengineering.stackexchange.com/questions/50586/eth-ii-vs-802-2-llc-snap) */
+               if (pkt_type >= 82 && pkt_type <= 1536) { /* ignore 802.2 LLC frames (https://networkengineering.stackexchange.com/questions/50586/eth-ii-vs-802-2-llc-snap). Note - added the lower range check of 82 after some .pcapng test files with Ethernet prototype value of zero were misinterpreted as 802.2, JHB Sep 2022 */
                   #ifdef PKT_DISCARD_DEBUG
-                  printf(" ************* ignoring LLC frames, pkt_type = %d \n", pkt_type);
+                  printf(" ************* ignoring LLC frame, pkt_type = %d \n", pkt_type);
                   #endif
                   goto read_packet;
                }
-
+  
                ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL);  /* if IP version is invalid or there is some other basic packet problem, a warning message will be printed by DSGetPacketInfo() */
 
                if (ret_val < 0) {
@@ -1899,6 +1940,20 @@ read_packet:
                   #endif
                   goto read_packet;
                }
+
+/* packet filter example */
+
+#if 0
+   __uint128_t src_ip_addr = 0;
+   DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_SRC_ADDR, pkt_in_buf, -1, &src_ip_addr, NULL);
+   uint32_t rtp_ssrc = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SSRC, pkt_in_buf, -1, NULL, NULL);
+   uint32_t rtp_pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDLEN, pkt_in_buf, -1, NULL, NULL);
+   if (/*src_ip_addr == 0xc0a88615 || src_ip_addr == 0x0a0e0742 || */ rtp_ssrc == 0xBBF51B9C && (/*rtp_pyld_len == 63 || rtp_pyld_len == 35 || */ rtp_pyld_len == 8)) {  /* 192.168.134.21 */
+
+  printf(" filtering packet with src ip addr 0x%llx != 192.168.134.21 or rtp ssrc 0x%x \n", (long long unsigned int)src_ip_addr, rtp_ssrc);
+      goto read_packet;
+   }
+#endif
 
                protocol = ret_val;  /* save protocol and proceed */
             }
@@ -2278,11 +2333,23 @@ check_for_duplicated_headers:
                   if (term == 1) pyld_type_term = session_data[i].term1.attr.voice_attr.rtp_payload_type;
                   else if (term == 2) pyld_type_term = session_data[i].term2.attr.voice_attr.rtp_payload_type;
                   #endif
+
                   if (pyld_type_term != pyld_type) chnum = -1;
                }
                #endif
 
                if (chnum >= 0) {  /* if packet matches a stream (i.e. a term defined for a session), push to correct session queue.  Note that SSRC is not included in the session match because DSGetPacketInfo() was called with DS_PKT_INFO_CHNUM_PARENT */
+
+                  #if 0
+                  if (rtp_pyld_size < 4 && fShowWarnings) {
+
+                     int chnum2 = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM | DS_PKT_INFO_SUPPRESS_ERROR_MSG, pkt_in_buf, pkt_len, NULL, NULL);  /* get the stream's chnum (either parent or child) */ 
+                     uint32_t rtp_ssrc = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SSRC, pkt_in_buf, -1, NULL, NULL);
+                     uint32_t rtp_seqnum = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SEQNUM, pkt_in_buf, -1, NULL, NULL);
+                     Log_RT(4, "mediaMin INFO: PushPackets() says dropping RTP packet that matches session %d channel %d with payload size %d < 4, SSRC = 0x%x, seq num = %d \n", hSessions[i], chnum2, rtp_pyld_size, rtp_ssrc, rtp_seqnum);
+                     continue;  /* don't push this packet */
+                  }
+                  #endif
 
                   if (nFirstSession == -1) nFirstSession = hSessions[i];
                   else app_printf(APP_PRINTF_NEWLINE, thread_index, "######### Two pushes for same packet, nFirstSession = %d, hSession = %d, chnum = %d", nFirstSession, hSessions[i], chnum);  /* this should not happen, if it does call attention to it.  If it occurs, it means there are exactly duplicated sessions, including RTP payload type, and we need more information to differentiate */

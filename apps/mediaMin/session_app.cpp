@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/session_app.cpp
 
- Copyright (C) Signalogic Inc. 2021
+ Copyright (C) Signalogic Inc. 2021-2022
 
  License
 
@@ -20,6 +20,7 @@
  Revision History
 
    Created Apr 2021 JHB, split off from mediaMin.cpp
+   Modified Sep 2022 JHB, add ReadCodecConfig(), split out check_config_file(), used by both ReadSessionConfig() and ReadCodecConfig()
 */
 
 #include <stdio.h>
@@ -116,6 +117,7 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
 
    -determine uFlags for subsequent call to DSCreateSession() in pktlib
    -called by StaticSessionCreate() below and create_dynamic_session() in mediaMin.cpp
+   -DS_SESSION_MODE_IP_PACKET is in shared_include/session_cmd.h, other flags in pktlib.h
 */
 
 unsigned int GetSessionFlags() {
@@ -143,33 +145,83 @@ unsigned int GetSessionFlags() {
 }
 
 
+/* helper function used by ReadCodecConfig() and ReadSessionConfig() */
+
+int check_config_file(char* config_file, int thread_index) {
+
+char tmpstr[1024] = "";
+
+   if (strlen(MediaParams[0].configFilename) == 0 || access(MediaParams[0].configFilename, F_OK) == -1) {
+
+      if (strlen(MediaParams[0].configFilename) == 0) return -1;
+
+      strcpy(tmpstr, "../");  /* try up one subfolder, in case cmd user's line entry forgot the "../" prefix */
+      strcat(tmpstr, MediaParams[0].configFilename);
+
+      if (access(tmpstr, F_OK) == -1) return -1;
+      else strcpy(config_file, tmpstr);
+   }
+   else strcpy(config_file, MediaParams[0].configFilename);
+
+   if (!strlen(config_file)) return -1;
+
+   return 1;
+}
+
+/* codec config files are valid for both dynamic and static session creation */
+
+int ReadCodecConfig(codec_test_params_t* codec_test_params, int thread_index) {
+
+char codec_config_file[1024] = "";
+FILE* codec_cfg_fp = NULL;
+
+   if (thread_info[thread_index].init_err) return 0;
+
+   if (check_config_file(codec_config_file, thread_index) < 0) return 0;  /* no error message if not found ... optional on mediaMin cmd line, JHB Sep 2022 */
+
+   printf("Opening codec config file: %s\n", codec_config_file);
+
+/* open codec config file */
+
+   codec_cfg_fp = fopen(codec_config_file, "r");
+
+   if (codec_cfg_fp == NULL) {
+
+      fprintf(stderr, "mediaMin Error: ReadCodecConfig() says failed to open codec config file %s (%d)\n", MediaParams[0].configFilename, thread_index);
+      thread_info[thread_index].init_err = true;
+
+      return -1;
+   }
+
+/* parse codec config file */
+
+   parse_codec_config(codec_cfg_fp, codec_test_params);  /* in transcoder_control.c */
+
+/* close codec config file */
+
+   fclose(codec_cfg_fp);
+
+   return 1;
+}
+
+
 /* read session configuration file info needed to create static sessions. Note that static vs. dynamic session creation depends on -dN cmd line entry, see Mode var comments in mediaMin.h */
 
 int ReadSessionConfig(SESSION_DATA session_data[], int thread_index) {
 
 char default_session_config_file[] = "session_config/packet_test_config";
-char* session_config_file;
+char session_config_file[1024] = "";
 FILE* session_cfg_fp = NULL;
 int nSessionsConfigured = 0;
-char tmpstr[1024];
 
    if (thread_info[thread_index].init_err) return 0;
 
-   if (strlen(MediaParams[0].configFilename) == 0 || access(MediaParams[0].configFilename, F_OK) == -1) {
+   if (check_config_file(session_config_file, thread_index) < 0) {
 
-      if (strlen(MediaParams[0].configFilename) == 0) goto err;
-      
-      strcpy(tmpstr, "../");  /* try up one subfolder, in case the cmd line entry forgot the "../" prefix */
-      strcat(tmpstr, MediaParams[0].configFilename);
+      printf("mediaMin Info: cannot find specified session config file: %s, using default file (%d)\n", MediaParams[0].configFilename, thread_index);
 
-      if (access(tmpstr, F_OK) == -1) {
-err:
-         printf("Specified config file: %s does not exist, using default file\n", MediaParams[0].configFilename);
-         session_config_file = default_session_config_file;
-      }
-      else session_config_file = tmpstr;
+      strcpy(session_config_file, default_session_config_file);
    }
-   else session_config_file = MediaParams[0].configFilename;
 
    printf("Opening session config file: %s\n", session_config_file);
 
@@ -179,21 +231,21 @@ err:
 
    if (session_cfg_fp == NULL) {
 
-      fprintf(stderr, "Error: SessionConfiguration() says failed to open static session config file %s, exiting mediaMin (%d)\n", session_config_file, thread_index);
+      fprintf(stderr, "mediaMin Error: ReadSessionConfig() says failed to open static session config file %s, exiting mediaMin (%d)\n", session_config_file, thread_index);
       thread_info[thread_index].init_err = true;
 
       return 0;
    }
 
-/* parse session config file */
+/* parse session config file. Note there can be multiple sessions and we monitor run var in case the user exits using 'q' key */
 
-   while (run > 0 && (parse_session_config(session_cfg_fp, &session_data[nSessionsConfigured]) != -1)) nSessionsConfigured++;
+   while (run > 0 && (parse_session_config(session_cfg_fp, &session_data[nSessionsConfigured]) != -1)) nSessionsConfigured++;  /* in transcoder_control.c */
 
-   printf("Info: SessionConfiguration() says %d session(s) found in config file\n", nSessionsConfigured);
+   printf("mediaMin Info: ReadSessionConfig() says %d session(s) found in config file\n", nSessionsConfigured);
 
    if (nSessionsConfigured > MAX_SESSIONS) {
 
-      fprintf(stderr, "Warning: SessionConfiguration() says number of sessions exceeds pktlib max, reducing to %d\n", MAX_SESSIONS);
+      fprintf(stderr, "mediaMin Warning: ReadSessionConfig() says number of sessions exceeds pktlib max, reducing to %d\n", MAX_SESSIONS);
       nSessionsConfigured = MAX_SESSIONS;
    }
 

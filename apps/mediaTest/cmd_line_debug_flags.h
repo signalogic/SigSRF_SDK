@@ -8,6 +8,7 @@
   Revision History
 
    Created Jan 2022 JHB, debug flag definitions moved here from mediaMin.h to clarify which flags apply to mediaMin only and which to both mediaMin and mediaTest
+   Modified Sep 2022 JHB, add DISABLE_DORMANT_SESSION_DETECTION flag
 */
 
 #ifndef _CMDLINEDEBUGFLAGS_H_
@@ -57,6 +58,7 @@
 #define DISABLE_PACKET_REPAIR          0x800000  /* m | packet repair enabled by default. Missing SID and media packets (detected by sequence number and timestamp discontinuities after packet re-ordering) are repaired */
 #define DISABLE_CONTRIB_PACKET_FLUSH  0x1000000  /* m | group contributor streams are flushed from their jitter buffer when their contribution rate becomes slow, decreasing the need for FLC on stream group combined output. Enabled by default */
 #define DISABLE_AUTOQUIT              0x2000000  /* m | disable automatic quit for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests. Automatic quit is enabled by default */
+#define DISABLE_DORMANT_SESSION_DETECTION  0x4000000  /*m | disable dormant session detection and flush. Dormant sessions are defined as a session with a channel SSRC that was in used, has not been in use for some time, and then that SSRC is "taken over" by another session / channel. In that case the dormant session is flushed and any remaining media is cleared from session state information and jitter buffers. In cases where multiple sessions "overload" an SSRC value (i.e. duplicated SSRCs by actually different sessions) it's advisable to disable dormant session detection to avoid unwanted flushing */
 
 /* alarms, debug, mem, intermediate pcap output, and extra stats */
 

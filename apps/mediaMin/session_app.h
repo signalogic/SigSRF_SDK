@@ -29,6 +29,7 @@
 /* functions in session_app.cpp */
 
 int ReadSessionConfig(SESSION_DATA session_data[], int thread_index);
+int ReadCodecConfig(codec_test_params_t* codec_test_params, int thread_index);
 int StaticSessionCreate(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, int thread_index);
 void SetIntervalTiming(SESSION_DATA session_data[]);
 unsigned int GetSessionFlags();

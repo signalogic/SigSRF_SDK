@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/Directcore/lib/derlib/derlib.cpp
 
- Copyright (C) Signalogic Inc. 2021
+ Copyright (C) Signalogic Inc. 2021-2022
 
  License
 
@@ -28,6 +28,7 @@
                          -add DS_DER_INFO_DSTPORT_LIST to get/set the list in DSGetDerStreamInfo() and DSSetDerStreamInfo()
                          -change operation of DS_DER_INFO_DSTPORT to get/set a specific port in DSGetDerStreamInfo() and DSSetDerStreamInfo()
   Modified Dec 2021 JHB, continue to improve DSFindDerStream() flexibility in recognizing different LEA HI3 formats, both DER and BER
+  Modified Feb 2022 JHB, undefine IPV4DEBUG and IPV6DEBUG
 */
 
 /* Linux includes */
@@ -658,7 +659,7 @@ int i, ret_val = 0, asn_index = 0, pyld_len = -1;
                   checksum = ((uint16_t)p[asn_index + 11] << 8) | p[asn_index + 10];  /* 10 = byte offset of checksum in IPv4 header */
                   checksum_candidate = calc_checksum(&p[asn_index], 0, 20, 5, 16);    /* pointer to data, initial checksum, num bytes, omit index, width of checksum (in bits) */
 
-                  #define IPV4DEBUG
+                  //#define IPV4DEBUG
                   #ifdef IPV4DEBUG
                   static bool fOnce = false;
                   uint16_t prot = (uint16_t)p[asn_index + 9];
@@ -698,7 +699,7 @@ int i, ret_val = 0, asn_index = 0, pyld_len = -1;
                   checksum_candidate = calc_checksum(&p[asn_index + 40], checksum_candidate, 6, -1, 16);          /* UDP ports and length */
                   checksum_candidate = calc_checksum(&p[asn_index + 48], checksum_candidate, udp_len-8, -1, 16);  /* UDP body */
 
-                  #define IPV6DEBUG
+                  //#define IPV6DEBUG
                   #ifdef IPV6DEBUG
                   static bool fOnce = false;
                   if (!fOnce && prot == 0x1100) {
