@@ -11,6 +11,12 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+4Q 2022 - new releases of pktlib, voplib, mediaMin, and mediaTest, including:
+
+ - support for handsets and voice assistants found in the wild using non-compliant EVS "AMR-WB IO mode" format
+ - improved jitter buffer dyanmic adjust
+ - "hello codec" reference app to simplify codec integration into user-defined apps
+
 3Q 2022 - SigSRF™ and EdgeStream™ incorporated into the [RobotHPC™ Robotics Edge Platform](https://signalogic.com/RobotHPC) hardware + software solution
 
 3Q 2022 - "hello codec" minimal codec usage and integration example for codec-only users
