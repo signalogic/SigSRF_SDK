@@ -434,7 +434,7 @@ After <a href="https://github.com/signalogic/SigSRF_SDK#user-content-sdkdownload
  
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example2.pcap -L -d0x000c1c01 -r20
 
-The "openli_xxx" pcaps are included in the SDK and Docker containers, but user supplied pcaps can use the same command line. HI2, HI3, and OpenLI-generated pcaps typically contain BER or [DER encapsulated streams, as described above](#user-content-encapsulatedstreams). No ASN.1 compiler or other "preprocessing" or "batch processing" non-real-time steps are needed. Here are some notes about the above command lines and what to look for after they run:
+The "openli_xxx" pcaps are included in the SDK and Docker containers, but user supplied pcaps can use the same command line. HI2, HI3, and OpenLI-generated pcaps typically contain BER or [DER encapsulated streams, as described above](#user-content-encapsulatedstreams). No ASN.1 compiler or other "preprocessing" or "batch processing" non-real-time steps are needed. Here are some notes about the above command lines and what to look for when they run:
 
 1) An HI interception point ID should be detected and identified, as highlighted in the screen capture below.
 
