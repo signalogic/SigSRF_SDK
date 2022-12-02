@@ -57,11 +57,11 @@ Here are some new features added recently:
 <a name="SDKFunctionalLimits"></a>
 # SDK Functional Limits
 
-pktlib, voplib, and streamlib versions in the SDK are functionally limited as follows:
+pktlib, voplib, and streamlib versions in the SDK demo versions are functionally limited as follows:
 
-   1) Data limit. Processing is limited to 30000 frames / payloads of data. There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
+   1) Data limit. Processing is limited to 20000 frames / payloads of data. There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
 
-   2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
+   2) Concurrency limit. Maximum number of concurrent instances is two and maximum number of channels per instance is 4 (total of 8 concurrent channels).
 
 If you need an evaluation SDK with relaxed functional limits for a trial period, [contact us](https://github.com/signalogic/SigSRF_SDK#DocumentationSupport).
 
