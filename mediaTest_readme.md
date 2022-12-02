@@ -87,7 +87,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroupscmdline)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[OpenLI Support](#user-content-openlisupport)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
 
 &nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
 
@@ -422,16 +422,16 @@ See [Stream Groups](#user-content-streamgroups) below for more detailed informat
 
 mediaMin utilizes the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib module</a> to support encapsulated streams, for example HI3 intercept streams with DER encoded contents formatted per ETSI LI and ASN.1 standards. DER encoding stands for Distinguished Encoding Rules, a subset of <a href="https://en.wikipedia.org/wiki/X.690" target="_blank">X.690</a>. DER encoding allows a variety of information to be encapsulated within a TCP/IP stream, including fully formed UDP/IP RTP packets (in HI3 intercept streams these are referred to as CC, or Content of Communication, packets).
 
-<a name="OpenLISupport"></a>
-### OpenLI Support
+<a name="HI2_HI3_Stream_and_OpenLI_Support"></a>
+### HI2 and HI3 Stream and OpenLI Support
 
-After <a href="https://github.com/signalogic/SigSRF_SDK#user-content-sdkdownload" target="_blank">downloading the SigSRF SDK</a>, below are ready-to-run mediaMin examples with <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcaps:
+After <a href="https://github.com/signalogic/SigSRF_SDK#user-content-sdkdownload" target="_blank">downloading the SigSRF SDK</a> (or pulling one of the <a href="https://hub.docker.com/u/signalogic" target="_blank">available Docker containers</a>), below are ready-to-run mediaMin examples with pcaps containing HI2 or HI3 streams, or <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcaps:
 
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
  
     ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example2.pcap -L -d0x000c1c01 -r20
 
-OpenLI generated pcaps contain [DER encapsulated streams, as described above](#user-content-encapsulatedstreams). Here are some notes about the above command lines and what to look for after they run:
+The "openli_xxx" pcaps are included in the SDK and Docker containers, but user supplied pcaps can use the same command line. HI2, HI3, and OpenLI-generated pcaps typically contain BER or [DER encapsulated streams, as described above](#user-content-encapsulatedstreams). Here are some notes about the above command lines and what to look for after they run:
 
 1) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats) screen capture below. In the [stream group](#user-content-streamgroups) output, there should be no underrun (labeled as FLC, or frame loss concealment, in the [run-time stats](#user-content-runtimestats)), [packet logs](#user-content-packetlog) should be clean, and with no [event log](#user-content-eventlog) warnings or errors (highlighted in green).
 
@@ -439,7 +439,7 @@ OpenLI generated pcaps contain [DER encapsulated streams, as described above](#u
 
 2) For the first example [run-time stats](#user-content-runtimestats) should show a small amount of packet loss and repair (9 packets) in the second stream.
 
-3) In these OpenLI examples, DER encoded packet timestamps do not increment at ptime intervals, so the above mediaMin command lines enable "analytics mode" (0xc0000 flags set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above examples) to dynamically determine packet push rates. *(Note - In both analytics and telecom modes, the pktlib and streamlib modules make use of RTP timestamps for packet repair and interstream alignment.)*
+3) In these OpenLI examples, DER encoded packet arrival timestamps do not increment at ptime intervals, so the above mediaMin command lines enable "analytics mode" (0xc0000 flags set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above examples) to dynamically determine packet push rates. *(Note - In both analytics and telecom modes, the pktlib and streamlib modules make use of RTP timestamps for packet repair and interstream alignment.)*
 
 4) The above mediaMin command lines enable [dynamic session creation](#user-content-dynamicsessioncreation) (0x1 flag in the -dN argument) and DER stream detection (0x1000 flag in the -dN argument). When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type. HI3 DER stream detection, dynamic session creation, and codec auto-detection are highlighted in the mediaMin run-time screen captures below.
 
