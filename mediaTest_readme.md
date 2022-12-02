@@ -11,11 +11,12 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-4Q 2022 - new releases of pktlib, voplib, mediaMin, and mediaTest, including:
+3Q-4Q 2022 - new releases of pktlib, voplib, mediaMin, and mediaTest, including:
 
  - support for handsets and voice assistants found in the wild using non-compliant EVS "AMR-WB IO mode" format
- - improved jitter buffer dyanmic adjust
- - "hello codec" reference app to simplify codec integration into user-defined apps
+ - improved jitter buffer dynamic adjust supporting ultra-deep jitter buffer depths
+ - initial implementation of GPX track signal processing and road-matching library
+ - "hello codec" reference app demonstrating simple, fast codec integration into user-defined apps
 
 Complete info is in the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/Signalogic_software_errata_updates_2-3Q22.pdf"> errata and update PDF doc</a> (note - if Github shows "unable to render rich display" click on "Download" :-)
 
