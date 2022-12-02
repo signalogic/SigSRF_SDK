@@ -17,6 +17,8 @@ Input and output options include network I/O, pcap file, and audio file format f
  - improved jitter buffer dyanmic adjust
  - "hello codec" reference app to simplify codec integration into user-defined apps
 
+Complete info is in the <a href="https://github.com/signalogic/SigSRF_SDK/Signalogic_software_errata_updates_2-3Q22.pdf"> errata and update PDF doc 
+
 3Q 2022 - SigSRF™ and EdgeStream™ incorporated into the [RobotHPC™ Robotics Edge Platform](https://signalogic.com/RobotHPC) hardware + software solution
 
 3Q 2022 - "hello codec" minimal codec usage and integration example for codec-only users
