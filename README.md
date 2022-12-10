@@ -134,7 +134,7 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
   
   - hyperthreading for media + packet threads is effectively disabled through use of core affinity (aka CPU pinning)
   
-  - htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions (12*3*(13+1)) and 168 total stream groups. Streams consist of a mix of EVS and AMR-WB codecs
+  - htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions (12\*3\*(13+1)) and 168 total stream groups. Streams consist of a mix of EVS and AMR-WB codecs
 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
