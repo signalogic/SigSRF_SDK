@@ -112,7 +112,7 @@ SigSRF supports encapsulated streams, specifically ASN.1 DER encoded HI2 and HI3
 
 For information on DER decoding library API functions, see derlib.h in the SigSRF_SDK/libs/derlib folder.
 
-<a name="OpenLISupport"></a>
+<a name="HI2/HI3 and OpenLISupport"></a>
 ### OpenLI Support
 
 For information on HI2 and HI3 intercept decoding with <a href="https://openli.nz" target="_blank">OpenLI</a> example pcaps, see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-encapsulatedstreams">Encapsulated Streams section</a> on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>.
@@ -137,12 +137,12 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
   - htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions (12\*3\*(13+1)) and 168 total stream groups. Streams contain a mix of EVS and AMR-WB codecs
 
 Using the app/worker thread ratio and per stream workload, for N concurrent streams the number of CPUs and cores per core can be estimated as:
-```  
-num CPUs = *     N     *
-           mem size \* 256
+<pre>
+num CPUs = <u>     N     </u>
+           mem size * 256
 
 num cores per CPU = N / num CPUs
-```
+</pre>
   
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
