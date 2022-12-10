@@ -10,7 +10,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Stream Groups](#user-content-streamgroups)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Encapsulated Streams](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[OpenLI Support](#user-content-openlisupport)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[Multithreaded for High Performance](#user-content-multithreaded)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity Multithreaded Operation](#user-content-multithreaded)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
