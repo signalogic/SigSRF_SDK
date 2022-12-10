@@ -143,7 +143,12 @@ num CPUs = <u>     N     </u>
 
 num cores per CPU = N / num CPUs
 </pre>
-  
+
+  <pre><code>&lt;div class="footer"&gt;
+    &amp;copy; 2004 Foo Corporation
+&lt;/div&gt;
+<i>italic</i></code></pre>
+
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
 
