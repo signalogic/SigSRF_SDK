@@ -118,21 +118,21 @@ For information on DER decoding library API functions, see derlib.h in the SigSR
 For information on HI2 and HI3 intercept decoding with <a href="https://openli.nz" target="_blank">OpenLI</a> example pcaps, see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-encapsulatedstreams">Encapsulated Streams section</a> on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>.
 
 <a name="Multithreaded"></a>
-## Multithreaded for High Performance
+## High Capacity Multithreaded Operation
 
-Both SigSRF library modules and EdgeStream applications support multiple, concurrent packet + media processing threads. Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups.  Thread stats include profiling, performance, and session allocation.  Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet/media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
+Both SigSRF library modules and EdgeStream applications support multiple, concurrent packet + media processing threads. Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups. Thread stats include profiling, performance, and session allocation. Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet/media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
 
-High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
+High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers. The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop measurement and verification, Linux guidelines, etc.
 
 Below is a screen capture showing Linux htop measurement of SigSRF software high capacity operation with (i) multiple media/packet threads, and (ii) multiple application threads:
 
 ![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png?raw=true "SigSRF software high capacity operation")
 
-The measurement was taken on a HP DL380 server with 16 (sixteen) E5-2660 v0 cores (8 physical cores, 2 CPUs). Key aspects of the above screen cap include:
+The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cores (8 physical cores, 2 CPUs). Key aspects of the above screen cap include:
 
-  - a 5:3 ratio of media + packet worker threads and application threads. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, and calling DSPushPackets() and DSPullPackets() APIs to push and pull packets from pktlib (media + packet threads)
+  - a 5:3 ratio of media + packet worker threads to application threads. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, session management, and calling DSPushPackets() and DSPullPackets() APIs to push and pull packets from pktlib (media + packet threads)
   
-  - hyperthreading for media + packet threads is effectively disabled by use of core affinity (aka CPU pinning)
+  - hyperthreading for media + packet threads is effectively disabled through use of core affinity (aka CPU pinning)
   
   - each media + packet thread core is handling 50 concurrent sessions
 
