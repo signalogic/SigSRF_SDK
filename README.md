@@ -124,6 +124,18 @@ Both SigSRF library modules and EdgeStream applications support multiple, concur
 
 High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
+Below is a screen capture showing Linux htop measurement of SigSRF software high capacity operation with (i) multiple media/packet threads, and (ii) multiple application threads:
+
+![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png?raw=true "SigSRF software high capacity operation")
+
+The measurement was taken on a HP DL380 server with 16 (sixteen) E5-2660 v0 cores (8 physical cores, 2 CPUs). Key aspects of the above screen cap include:
+
+  - a 5:3 ratio of media + packet worker threads and application threads. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, and calling DSPushPackets() and DSPullPackets() APIs to push and pull packets from pktlib (media + packet threads)
+  
+  - hyperthreading for media + packet threads is effectively disabled by use of core affinity (aka CPU pinning)
+  
+  - each media + packet thread core is handling 50 concurrent sessions
+
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
 
