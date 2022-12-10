@@ -128,7 +128,7 @@ Below is a screen capture showing Linux htop measurement of SigSRF software high
 
 ![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png?raw=true "SigSRF software high capacity operation")
 
-The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cores (8 physical cores, 2 CPUs). Key aspects of the above screen cap include:
+The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cores, 8 physical cores per CPU, and 2 (two) CPUs) each with 16 GB of RAM. Key aspects of the above screen cap include:
 
   - a 5:3 ratio of media + packet worker threads to application threads. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, session management, and calling DSPushPackets() and DSPullPackets() APIs to push and pull packets from pktlib (media + packet threads)
   
@@ -136,6 +136,14 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
   
   - htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions (12\*3\*(13+1)) and 168 total stream groups. Streams contain a mix of EVS and AMR-WB codecs
 
+Using the app/worker thread ratio and per stream workload, for N concurrent streams the number of CPUs and cores per core can be estimated as:
+```  
+num CPUs = *     N     *
+           mem size \* 256
+
+num cores per CPU = N / num CPUs
+```
+  
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
 
