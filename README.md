@@ -144,7 +144,7 @@ Using the thread ratio and per stream workload given above, necessary per server
 
 ### &nbsp;&nbsp;&nbsp; $numCores = {N \over 32}$  
 
-where N is the target number of concurrent streams and memSize is RAM in GB. For example, a dual-socket socket server processing 2000 concurrent streams needs 64 GB per CPU and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
+where N is the target number of concurrent streams and memSize is RAM in GB. For example, a dual-socket socket server processing 2000 concurrent streams needs 64 GB and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
   <sup>1</sup> RAM and number of cores are overall figures, not per CPU
 
