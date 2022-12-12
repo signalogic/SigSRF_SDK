@@ -9,7 +9,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode Data Flow Diagram](#user-content-analyticsmodedataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Stream Groups](#user-content-streamgroups)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Encapsulated Streams](#user-content-encapsulatedstreams)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[OpenLI Support](#user-content-openlisupport)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2/HI3 OpenLI Support](#user-content-openlisupport)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[High Capacity Multithreaded Operation](#user-content-multithreaded)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
@@ -112,8 +112,8 @@ SigSRF supports encapsulated streams, specifically ASN.1 DER encoded HI2 and HI3
 
 For information on DER decoding library API functions, see derlib.h in the SigSRF_SDK/libs/derlib folder.
 
-<a name="HI2/HI3 and OpenLISupport"></a>
-### OpenLI Support
+<a name="OpenLISupport"></a>
+### HI2/HI3 OpenLI Support
 
 For information on HI2 and HI3 intercept decoding with <a href="https://openli.nz" target="_blank">OpenLI</a> example pcaps, see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-encapsulatedstreams">Encapsulated Streams section</a> on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>.
 
