@@ -132,8 +132,6 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
 
   - the measurement is with RTP packet decoding full packet processing features enabled, media stream merging, and real-time pcap and wav file generation. ASR (automatic speech recognition) is not included, as it has a substantial impact on capacity (see [ASR Notes](#user-content-asrnotes) below)
   
-  #user-content-asrnotes
-  
   - a 5:3 ratio of media + packet worker threads to application threads. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, session management, and calling DSPushPackets() and DSPullPackets() APIs to push and pull packets from pktlib (media + packet threads)
   
   - hyperthreading for media + packet threads is effectively disabled through use of core affinity (aka CPU pinning)
