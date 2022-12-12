@@ -124,13 +124,13 @@ Both SigSRF library modules and EdgeStream applications support multiple, concur
 
 High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers. The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop measurement and verification, Linux guidelines, etc.
 
-Below is a screen capture showing Linux htop measurement of SigSRF software high capacity operation with (i) multiple media/packet threads, and (ii) multiple application threads:
+Below is a Linux htop measurement showing SigSRF software high capacity operation with (i) multiple media/packet threads, and (ii) multiple application threads:
 
 ![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png?raw=true "SigSRF software high capacity operation")
 
-The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cores, 8 physical cores per CPU, and 2 (two) CPUs) each with 16 GB of RAM. Key aspects of the above screen cap include:
+The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cores, 8 physical cores per CPU, and 2 (two) CPUs) each with 16 GB of RAM. Some key aspects include:
 
-  - the measurement is with RTP packet media decoding, all packet processing features enabled, media stream merging, and real-time pcap and wav file generation. ASR (automatic speech recognition) is not included, as it has a substantial impact on capacity (see [ASR Notes](#user-content-asrnotes) below)
+  - RTP packet media decoding, all packet processing options, media stream merging, and real-time pcap and wav file generation are enabled. ASR (automatic speech recognition) is not enabled, as it has a substantial impact on capacity (see [ASR Notes](#user-content-asrnotes) below)
   
   - a 5:3 ratio of media + packet worker threads to application threads. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, session management, and calling DSPushPackets() and DSPullPackets() APIs to push and pull packets from pktlib (media + packet threads)
   
@@ -138,13 +138,15 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
   
   - htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions (12\*3\*(13+1)) and 168 total stream groups. Streams contain a mix of EVS and AMR-WB codecs
 
-Using the thread ratio and per stream workload given above, necessary per server amount of RAM and number cores can be estimated as:
+Using the thread ratio and per stream workload given above, necessary per server amount of RAM and number cores <sup>1</sup> can be estimated as:
 
-### $memSize = {N \over 32}$  
+### &nbsp;&nbsp;&nbsp; $memSize = {N \over 16}$  
 
-### $numCore = {N \over 32}$  
+### &nbsp;&nbsp;&nbsp; $numCore = {N \over 32}$  
 
-where N is the target number of concurrent streams and memSize is the amount of RAM in GB. For example, for one server to process 2000 concurrent streams it needs 64 GB of RAM and 64 cores. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
+where N is the target number of concurrent streams and memSize is RAM in GB. For example, for one server to process 2000 concurrent streams it needs 64 GB of RAM and 64 cores. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
+
+  <sup>1</sup> RAM and number of cores are overall figures, not per CPU
 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
