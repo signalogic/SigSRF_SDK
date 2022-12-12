@@ -144,14 +144,14 @@ Using the thread ratio and per stream workload given above, necessary per server
 
 ### &nbsp;&nbsp;&nbsp; $numCores = {N \over 32}$  
 
-where N is the target number of concurrent streams and memSize is RAM in GB. For example, for one server to process 2000 concurrent streams it needs 64 GB of RAM and 64 cores. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
+where N is the target number of concurrent streams and memSize is RAM in GB. For example, for one server to process 2000 concurrent streams it needs 128 GB of RAM and 64 cores. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
   <sup>1</sup> RAM and number of cores are overall figures, not per CPU
 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
 
-EdgeStream and SigSRF software are currently deployed by major carriers, LEAs, research organizations, and B2B enterprises.  Under NDA, and with end customer permission, it may be possible to provide more information on deployment use cases and/or locations.
+EdgeStream and SigSRF software are currently deployed by major carriers, LEAs, research organizations, and B2B enterprises. Under NDA, and with end customer permission, it may be possible to provide more information on deployment use cases and/or locations.
 
 EdgeStream and SigSRF software, unlike many open source repositories, are not experimental or prototype. Some of the signal processing modules have deployment histories dating back to 2005, including telecom, communications, and aviation systems. Packet processing modules include some components dating back to 2010, such as jitter buffer and some voice codecs.  The origins of SigSRF software are in telecom system deployment, with emphasis in the last few years on deep learning. Both EdgeStream and SigSRF continuously undergo rigorous customer production testing. 
 
