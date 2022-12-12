@@ -132,11 +132,11 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
 
   - **Workload** Dynamic session creation and management, RTP packet media decoding, all packet processing options, partial media stream processing options (including stream merging), and real-time pcap and wav file generation are enabled. ASR (automatic speech recognition) is not enabled, as it has a substantial impact on capacity (see [ASR Notes](#user-content-asrnotes) below). Streams contain a mix of EVS and AMR-WB codecs
   
-  - **Thread ratio** Creation of media/packet worker threads vs application threads follows a 5:3 ratio. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, session management, and APIs interfacing to packet/media threads <sup>1</sup>
+  - **Thread allocation ratio** Media/packet worker threads and application threads are allocated in a 5:3 ratio. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, session management, and APIs interfacing to packet/media threads <sup>1</sup>
   
-  - **Thread allocation** htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions <sup>2</sup> (12\*3\*(1+13)) and 168 total stream groups. As noted in **Workload**, streams contain a mix of EVS and AMR-WB codecs
+  - **Thread distribution** htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions <sup>2</sup> (12\*3\*(1+13)) and 168 total stream groups. As noted in **Workload**, streams contain a mix of EVS and AMR-WB codecs
 
-  - **Hyperthreading** Hyperthreading for media + packet threads is effectively disabled through use of core affinity (aka CPU pinning)
+  - **Hyperthreading** Hyperthreading for media + packet threads is effectively disabled through use of core affinity (aka CPU pinning). Application threads continue to utilize hyperthreading
   
 Using the thread ratio and per stream workload given above, necessary per CPU amount of RAM and number cores can be estimated as:
 
