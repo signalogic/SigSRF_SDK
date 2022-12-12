@@ -148,7 +148,7 @@ where N is the target number of concurrent streams, numCPUs is the number of ava
 
 <sup>1</sup> [pktlib](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) exposes packet/media APIs, examples include DSCreateSession(), DSPushPacket(), and DSPullPackets(), and DSGetSessionInfo()
   
-<sup>2</sup> Sessions create unique stream identifiers (from IP header, UDP port, and SSRC information) allowing management of a stream during its lifespan
+<sup>2</sup> [Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-sessions) create unique stream identifiers (from IP header, UDP port, and SSRC information) allowing management of a stream during its lifespan
 
 <sup>3</sup> Available CPUs can be located in one or more servers
 
