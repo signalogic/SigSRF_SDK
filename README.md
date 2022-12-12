@@ -130,24 +130,23 @@ Below is a screen capture showing Linux htop measurement of SigSRF software high
 
 The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cores, 8 physical cores per CPU, and 2 (two) CPUs) each with 16 GB of RAM. Key aspects of the above screen cap include:
 
+  - the measurement is with RTP packet decoding full packet processing features enabled, media stream merging, and real-time pcap and wav file generation. ASR (automatic speech recognition) is not included, as it has a substantial impact on capacity (see [ASR Notes](#user-content-asrnotes) below)
+  
+  #user-content-asrnotes
+  
   - a 5:3 ratio of media + packet worker threads to application threads. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, session management, and calling DSPushPackets() and DSPullPackets() APIs to push and pull packets from pktlib (media + packet threads)
   
   - hyperthreading for media + packet threads is effectively disabled through use of core affinity (aka CPU pinning)
   
   - htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions (12\*3\*(13+1)) and 168 total stream groups. Streams contain a mix of EVS and AMR-WB codecs
 
-Using the app/worker thread ratio and per stream workload, for N concurrent streams the number of CPUs and cores per core can be estimated as:
-<pre>
-num CPUs = <u>     N     </u>
-           mem size * 256
+Using the thread ratio and per stream workload given above, necessary per server amount of RAM and number cores can be estimated as:
 
-num cores per CPU = N / num CPUs
-</pre>
+### $memSize = {N \over 32}$  
 
-  <pre><code>&lt;div class="footer"&gt;
-    &amp;copy; 2004 Foo Corporation
-&lt;/div&gt;
-<i>italic</i></code></pre>
+### $numCore = {N \over 32}$  
+
+where N is the target number of concurrent streams and memSize is the amount of RAM in GB. For example, for one server to process 2000 concurrent streams it needs 64 GB of RAM and 64 cores. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
