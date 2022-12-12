@@ -146,7 +146,7 @@ Using the thread ratio and per stream workload given above, necessary per CPU am
 
 where N is the target number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
-<sup>1</sup> [pktlib](#user-content-pktlib) exposes packet/media APIs, examples include DSCreateSession(), DSPushPacket(), and DSPullPackets(), and DSGetSessionInfo()
+<sup>1</sup> [pktlib](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) exposes packet/media APIs, examples include DSCreateSession(), DSPushPacket(), and DSPullPackets(), and DSGetSessionInfo()
   
 <sup>2</sup> Sessions are created from stream IP header, UDP port, and SSRC information; i.e. sessions are unique stream identifiers allowing management of a stream during its lifespan
 
