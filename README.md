@@ -138,15 +138,15 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
   
   - htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions (12\*3\*(1+13)) and 168 total stream groups. Streams contain a mix of EVS and AMR-WB codecs
 
-Using the thread ratio and per stream workload given above, necessary per server amount of RAM and number cores <sup>1</sup> can be estimated as:
+Using the thread ratio and per stream workload given above, necessary per CPU amount of RAM and number cores can be estimated as:
 
-### &nbsp;&nbsp;&nbsp; $memSize = {N \over 16}$  
+### &nbsp;&nbsp;&nbsp; $memSize = {N \over 16numCPUs}$  
 
-### &nbsp;&nbsp;&nbsp; $numCores = {N \over 32}$  
+### &nbsp;&nbsp;&nbsp; $numCores = {N \over 32numCPUs}$  
 
-where N is the target number of concurrent streams and memSize is RAM in GB. For example, a dual-socket socket server processing 2000 concurrent streams needs 64 GB and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
-
-  <sup>1</sup> RAM and number of cores are overall figures, not per CPU
+where N is the target number of concurrent streams, numCPUs is the number of available CPUs <sup>1</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
+  
+  <sup>1</sup> Available CPUs can be located in one or more servers
 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
