@@ -262,7 +262,7 @@ mediaMin supports dynamic and static sessions. Dynamic sessions are created "on 
 <a name="DynamicSessionCreation"></a>
 ### Dynamic Session Creation
 
-mediaMin supports dynamic session creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.  mediaMin supports both UDP and TCP/IP streams, and also auto-detects encapsulated streams, for example BER encoded streams.
+mediaMin supports dynamic session creation, recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.  mediaMin supports both UDP and TCP/IP streams, and also auto-detects encapsulated streams, for example [DER or BER encoded streams](#user-content-encapsulatedstreams).
 
 In cases where input streams have a definitive end, for instance one or more command line input pcaps, mediaMin will automatically do session cleanup and delete.
 
