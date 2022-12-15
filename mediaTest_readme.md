@@ -482,7 +482,7 @@ In the above displays, note the "Max Delta" stat. This is an indicator of both a
 
 mediaMin also generates [stream group](#user-content-streamgroups) output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
 
-<a name="HighCapacity"</a>
+<a name="HighCapacity"></a>
 ## High Capacity
 
 The [High Capacity Multithreaded Operation](https://github.com/signalogic/SigSRF_SDK#user-content-multithreaded) section on the SigSRF SDK page has basic information on mediaMin high capacity, including an example htop measurement screen capture. More detailed information is given here.
