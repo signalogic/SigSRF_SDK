@@ -92,6 +92,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
 
+&nbsp;&nbsp;&nbsp;[**High Capacity**](#user-content-highcapacity)<br/>
+
 &nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
 
 &nbsp;&nbsp;&nbsp;[**RTP Malware Detection**](#user-content-rtpmalwaredetection)<br/>
@@ -479,6 +481,25 @@ In the second example, the child streams contain early media (ring tones), which
 In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF [pktlib](#user-content-pktlib) and  [streamlib](#user-content-streamlib) module processing prioritize stability of this metric, as well as accurate time-alignment of individual stream contributors relative to each other. For information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
 
 mediaMin also generates [stream group](#user-content-streamgroups) output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
+
+<a name="HighCapacity"</a>
+## High Capacity
+
+The [High Capacity Multithreaded Operation](https://github.com/signalogic/SigSRF_SDK#user-content-multithreaded) section on the SigSRF SDK page has basic information on mediaMin high capacity, including an example htop measurement screen capture. More detailed information is given here.
+
+In the htop screen cap on the SigSRF SDK page:
+
+![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png?raw=true "SigSRF software high capacity operation")
+
+we can see 12 (twelve) mediaTest threads running. Actually these are mediaMin threads; how does this take place ? mediaTest has a command line mode option (-tN) where it will start N mediaMin threads. In this case three key things happen:
+
+    main() inside mediaMin becomes a thread entry point, rather than a process resulting from a command line executable
+    
+    mediaMin shares the mediaTest command line (of course ignoring anything not for it, like -tN)
+    
+    mediaMin threads are not assigned core affinity; i.e. they are allowed to hyperthread
+
+When mediaMin detects that it's running in "thread mode", it assigns a master thread to maintain thread-related information, including "thread index" and "number of threads". The master thread handles thread synchroniztion; for example, making sure all threads wait until everyone else is fully initialized, and the thread index is used to manage separate arrays of information for I/O, sessions, profiling, etc.
 
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
