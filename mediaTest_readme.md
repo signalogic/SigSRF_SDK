@@ -491,7 +491,7 @@ In the htop screen cap on the SigSRF SDK page:
 
 ![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png?raw=true "SigSRF software high capacity operation")
 
-we can see 12 (twelve) mediaTest threads running. Actually these are mediaMin threads; how does this take place ? mediaTest has command line mode optiond (-Ex and -tN) where it will start N mediaMin threads. In this case three key things happen:
+we can see 12 (twelve) mediaTest threads running. Actually these are mediaMin threads; how does this take place ? mediaTest has command line mode options (-Ex, execution mode, and -tN, number of threads) where it will start N mediaMin threads. In this case three key things happen:
 
     main() inside mediaMin becomes a thread entry point, rather than a process resulting from a command line executable
     
