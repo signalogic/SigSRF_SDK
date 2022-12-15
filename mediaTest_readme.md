@@ -493,11 +493,11 @@ In the htop screen cap on the SigSRF SDK page:
 
 we can see 12 (twelve) mediaTest threads running. Actually these are mediaMin threads; how does this take place ? mediaTest has command line mode options (-Ex, execution mode, and -tN, number of threads) where it will start N mediaMin threads. In this case three key things happen:
 
-    main() inside mediaMin becomes a thread entry point, rather than a process resulting from a command line executable
-    
-    mediaMin shares the mediaTest command line -- of course ignoring anything not intended for it, like -Ex (execution mode) and -tN (number of threads)
-    
-    mediaMin threads are not assigned core affinity; i.e. they are allowed to hyperthread
+> 1) main() inside mediaMin becomes a thread entry point, rather than a process resulting from a command line executable
+> 
+> 2) mediaMin shares the mediaTest command line -- of course ignoring anything not intended for it, like -Ex (execution mode) and -tN (number of threads)
+> 
+> 3) mediaMin threads are not assigned core affinity; i.e. they are allowed to hyperthread
 
 When mediaMin detects that it's running in "thread mode", it assigns a master thread to maintain thread-related information, including "thread index" and "number of threads". The master thread handles thread synchroniztion; for example, making sure all threads wait until everyone else is fully initialized, and the thread index is used to manage separate arrays of information for I/O, sessions, profiling, etc.
 
