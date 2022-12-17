@@ -997,7 +997,9 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 <a name="ConvertingPcaps2Wav"></a>
 ### Converting Pcaps to Wav and Playing Pcaps
 
-Simple mediaTest command lines can be used to convert Pcaps to wav file, listen to Pcaps over USB audio, or both.
+Simple mediaTest command lines can be used to convert pcaps containing one RTP stream to wav file, playout over USB audio, or both. This functionality is intended for testing codec functionality, audio quality, etc.  Pcaps are expected to not contain jitter or packet loss.
+
+To convert pcaps containing multiple RTP streams with different codecs to wav files, see the mediaMin section above [Dynamic Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). mediaMin generates wav files for each stream and also a "merged" stream wav file that combines all input streams. mediaMin uses pktlib packet processing APIs that handle jitter, packet loss/repair, child channels (RFC8108), etc, including very high amounts of packet ooo (out of order). Also mediaMin allows .sdp file input to override codec auto-detection and/or give specific streams to decode while ignoring others.
 
 <a name="EVSPlayer"></a>
 ### EVS Player
