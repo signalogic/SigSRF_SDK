@@ -196,7 +196,7 @@ See [User-Defined Signal Processing Insertion Points](#user-content-userdefineds
 <a name="DecodingAndTranscoding"></a>
 ### Decoding and Transcoding
 
-The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is intermediate pcap and [wav file output](#user-content-wavfileoutput) from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, [SDP support](#user-content-sdpsupport), and more. A static session config file is optional.
+The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is intermediate pcap and [wav file output](#user-content-wavfileoutput) from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, [SDP Support](#user-content-sdpsupport), and more. A static session config file is optional.
 
 Below are some transcoding command line examples. The first command does the following:
 
@@ -277,6 +277,43 @@ Below are some dynamic session command line examples:
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
 
 The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps streams, the second has two (2) AMR-NB 12200 bps streams and the third has two (EVS) 13200 bps streams and three (3) AMR-WB 12650 bps streams (one of the AMR-WB streams is an RFC8108, or "child" channel).
+
+Below is "quick-reference" mediaMin command line documentation:
+
+#### Inputs
+
+Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP port. An example of a port specification is -i192.168.1.2:52000
+
+#### Outputs
+
+Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP port.
+
+#### Options and Flags
+
+The -dN command line argument specifies options and flags. Here are some of the key ones:
+
+> 0x01 dynamic sessions
+> 0x08 enable stream group ASR
+> 0x10 use packet arrival times. Should be omitted if input packets (e.g. pcap file) have no arrival timestamps, or timestamps are incorrect
+> 0x400 enable stream groups
+> 0x800 enable wav output
+> 0x40000 enable analytics mode
+> 0x80000  use a queue balancing algorithm to determine the packet push rate
+
+#### Event Log
+
+mediaMin always generates an event log, with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input.  Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
+
+#### Packet Log
+
+Packet history logging is controlled by the -Lxxx command line option.
+
+> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input.
+> -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt
+
+#### Real-Time Interval
+
+-rN specifies a "real-time interval", which mediaMin uses to control overall timing. For example, -r20 specifies 20 msec interval timing real-time outputfor packet/media threads, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize.  -r0 specifies 
 
 <a name="StaticSessionConfig"></a>
 ### Static Session Configuration
