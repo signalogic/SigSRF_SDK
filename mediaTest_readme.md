@@ -1989,7 +1989,7 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 Below are general command line notes and arguments that apply to both mediaMin and mediaTest, then followed by command line arguments specific to mediaMin or mediaTest.
 
 > case sensitive<br>
-> enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest). Mandatory command line options are shown with '!'<br>
+> enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest). Mandatory command line options are shown with !<br>
 > cmd_line_options_flags.h uses 'm" and 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br>
 
 ### Mode and Platform
@@ -2001,6 +2001,10 @@ Below are general command line notes and arguments that apply to both mediaMin a
 ### Event Log
 
 mediaMin and mediaTest always generate [event logs](#user-content-eventlog), with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input. Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
+
+### Repeat
+
+The -RN command line argument enables "repeat mode", where mediaMin or mediaTest will repeat the operation or test specified in its command line. -RN enables N number of repeats, and -R0 enables indefinite repeat. <b><i>Caution -- if using indefinite repeat, output audio and pcap files can consume available disk space at a fast rate.</i></b>
 
 <a name="mediaMinCommandLineQuick-Reference"></a>
 ## mediaMin Command Line Quick-Reference
@@ -2030,13 +2034,15 @@ In addition to the event log, mediaMin generates a number of outputs automatical
 
 The -dN command line argument specifies options and flags. Here are some of the key ones:
 
-> 0x01 dynamic sessions<br>
+> 0x01 enable dynamic sessions<br>
 > 0x08 enable stream group ASR<br>
 > 0x10 use packet arrival times. Omit if input packets (e.g. pcap file) have no arrival timestamps, or timestamps are incorrect<br>
 > 0x400 enable stream groups<br>
 > 0x800 enable wav output<br>
 > 0x40000 enable analytics mode<br>
-> 0x80000  use a queue balancing algorithm to determine the packet push rate<br>
+> 0x80000 use a queue balancing algorithm to determine the packet push rate<br>
+
+Note that options and flags may be combined together.
 
 ### Packet Log
 
