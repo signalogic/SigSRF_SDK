@@ -1986,21 +1986,28 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 <a name="CommandLineQuick-Reference"></a>
 # Command Line Quick-Reference
 
-Below are mediaMin and mediaTest command line quick-references. General command line rules include:
+General command line rules include:
 
-> case sensitive
-> enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest)
-
-<a name="mediaMinCommandLineQuick-Reference"></a>
-## mediaMin Command Line Quick-Reference
-
-Below is "quick-reference" mediaMin command line documentation:
+> case sensitive<br>
+> enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest). Mandatory command line options are shown with a '!'<br>
+> cmd_line_options_flags.h uses 'm" and 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br>
 
 ### Mode and Platform
 
 -cXXX specifies a base platform. Currently for the Github .rar packages and Docker containers this option should always be given as -cx86.
 
 -MN specifies an optional operating mode N. Currently for the Github .rar packages and Docker containers no mode option should be given.
+
+### Event Log
+
+mediaMin and mediaTest always generate [event logs](#user-content-eventlog), with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input. Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
+
+Below are mediaMin and mediaTest command line quick-references. 
+
+<a name="mediaMinCommandLineQuick-Reference"></a>
+## mediaMin Command Line Quick-Reference
+
+Below is "quick-reference" mediaMin command line documentation:
 
 ### Inputs
 
@@ -2032,10 +2039,6 @@ The -dN command line argument specifies options and flags. Here are some of the 
 > 0x800 enable wav output<br>
 > 0x40000 enable analytics mode<br>
 > 0x80000  use a queue balancing algorithm to determine the packet push rate<br>
-
-### Event Log
-
-mediaMin always generates an [event log](#user-content-eventlog), with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input. Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
 
 ### Packet Log
 
