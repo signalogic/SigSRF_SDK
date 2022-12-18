@@ -1986,10 +1986,10 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 <a name="CommandLineQuick-Reference"></a>
 # Command Line Quick-Reference
 
-General command line rules include:
+Below are general command line notes and arguments that apply to both mediaMin and mediaTest, then followed by command line arguments specific to mediaMin or mediaTest.
 
 > case sensitive<br>
-> enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest). Mandatory command line options are shown with a '!'<br>
+> enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest). Mandatory command line options are shown with '!'<br>
 > cmd_line_options_flags.h uses 'm" and 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br>
 
 ### Mode and Platform
@@ -2001,8 +2001,6 @@ General command line rules include:
 ### Event Log
 
 mediaMin and mediaTest always generate [event logs](#user-content-eventlog), with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input. Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
-
-Below are mediaMin and mediaTest command line quick-references. 
 
 <a name="mediaMinCommandLineQuick-Reference"></a>
 ## mediaMin Command Line Quick-Reference
