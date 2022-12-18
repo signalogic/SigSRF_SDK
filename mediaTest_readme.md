@@ -313,7 +313,7 @@ Packet history logging is controlled by the -Lxxx command line option.
 
 #### Real-Time Interval
 
--rN specifies a "real-time interval", which mediaMin uses to control overall timing. For example, -r20 specifies 20 msec interval timing real-time outputfor packet/media threads, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize.  -r0 specifies 
+-rN specifies a "real-time interval", which mediaMin uses for a target push rate and to control overall timing, and which pktlib uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push packets as fast as possible
 
 <a name="StaticSessionConfig"></a>
 ### Static Session Configuration
