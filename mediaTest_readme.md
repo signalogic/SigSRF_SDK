@@ -2055,7 +2055,7 @@ Note that options and flags may be combined together.
 
 ### Real-Time Interval
 
--rN specifies a "real-time interval", which mediaMin uses for a target push rate and to control overall timing, and which pktlib uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push packets as fast as possible
+-rN specifies a "real-time interval", which mediaMin uses for a target packet push rate and to control overall timing, and which [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push packets as fast as possible
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
