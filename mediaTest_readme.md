@@ -217,9 +217,9 @@ The second command line is similar, but also does the following:
 * sends over the network any additional streams beyond the number of output files given
 
 ```C
-./mediaMin -M0 -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L
+./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L
 
-./mediaMin -M0 -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -C../session_config/pcap_file_test_config -L
+./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ostream1_xcoded.pcap -ostream2_xcoded.pcap -C../session_config/pcap_file_test_config -L
 ```
 
 The screencap below shows mediaTest output after the second command line.
@@ -231,9 +231,9 @@ The screencap below shows mediaTest output after the second command line.
 
 As explained in [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below, [pktlib](#user-content-pktlib) implements RFC8108, which specifies multiple RTP streams within a session, created and switching based on SSRC transitions. Below are mediaMin command line examples for testing multiple RTP streams:
 
-    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
+    ./mediaMin -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
  
-    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
+    ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
 
 The first command line above uses dynamic session creation, analytics mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
 
@@ -248,9 +248,9 @@ Packet stats and history log files produced by the above commands (mediaplayout_
 
 As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams) below, [pktlib](#user-content-pktlib) implements RFC7198 in order to detect and deal withstreams with packets duplicated for redundancy. Below are mediaMin command line examples included in the SigSRF SDK for RFC7198:
 
-    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
+    ./mediaMin -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
 
-    ./mediaMin -M0 -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -C../session_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
+    ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -C../session_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
 
 The first command line above uses dynamic session creation, telecom mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
 
@@ -277,11 +277,11 @@ In cases where input streams have a definitive end, for instance one or more com
 
 Below are some dynamic session command line examples:
 
-    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
+    ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
 
-    ./mediaMin -M0 -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r20
+    ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r20
 
-    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
+    ./mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
 
 The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps streams, the second has two (2) AMR-NB 12200 bps streams and the third has two (EVS) 13200 bps streams and three (3) AMR-WB 12650 bps streams (one of the AMR-WB streams is an RFC8108, or "child" channel).
 
@@ -353,7 +353,7 @@ SDP input is processed by mediaMin in two (2) ways
 1) As a command line argument with an "-s" option, as shown in the following command line example:
 
     ```C
-    ./mediaMin -M0 -cx86 -i../pcaps/input.pcapng -L -d0x100c0c01 -r20 -sexample.sdp
+    ./mediaMin -cx86 -i../pcaps/input.pcapng -L -d0x100c0c01 -r20 -sexample.sdp
     ```
     .sdp files should be basic text files, with either CR line endings (typical for Linux) or CRLF (typical for Windows).
 
@@ -417,7 +417,7 @@ mediaMin enables stream groups with the 0x400 flag in the command line -dN optio
 
 The mediaMin command below processes an input pcap containing two (2) AMR-WB 12650 bps RTP streams, of which the first stream creates three (3) additional dynamic RTP streams, for a total of five (5) RTP streams.
 
-    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0xc0c01 -r20
+    ./mediaMin -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0xc0c01 -r20
 
 Stream group output for the above command is
 
@@ -451,9 +451,9 @@ mediaMin utilizes the <a href="https://github.com/signalogic/SigSRF_SDK/tree/mas
 
 After <a href="https://github.com/signalogic/SigSRF_SDK#user-content-sdkdownload" target="_blank">downloading the SigSRF SDK</a> (or pulling one of the <a href="https://hub.docker.com/u/signalogic" target="_blank">available Docker containers</a>), below are ready-to-run mediaMin examples with pcaps containing HI2 or HI3 streams, or <a href="https://openli.nz" target="_blank">OpenLI</a> generated pcaps:
 
-    ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
+    ./mediaMin -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20
  
-    ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example2.pcap -L -d0x000c1c01 -r20
+    ./mediaMin -cx86 -i../pcaps/openli-voip-example2.pcap -L -d0x000c1c01 -r20
 
 The "openli_xxx" pcaps are included in the SDK and Docker containers, but user supplied pcaps can use the same command line. HI2, HI3, and OpenLI-generated pcaps typically contain BER or [DER encapsulated streams, as described above](#user-content-encapsulatedstreams). No ASN.1 compiler or other "preprocessing" or "batch processing" non-real-time steps are needed.
 
@@ -517,7 +517,7 @@ When mediaMin detects that it's running in "thread mode", it assigns a master th
 
 mediaMin supports ASR processing simultaneously with packet handling, media codec, stream group, signal processing, and other options. ASR is performed on stream group output, which can be a single audio stream input or multiple audio streams after merging. Below are some command line examples showing pcap input along with ASR output:
 
-    ./mediaMin -M0 -cx86 -i../pcaps/asr_test1.pcap -L -d0x10000c19 -r20
+    ./mediaMin -cx86 -i../pcaps/asr_test1.pcap -L -d0x10000c19 -r20
 
 <pre><code>:
 :
@@ -1016,15 +1016,15 @@ To convert pcaps containing multiple RTP streams with different codecs to wav fi
 The following mediaTest command lines convert EVS pcaps to wav files:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
 
-./mediaTest -M0 -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config -L
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config -L
 ```
 
 The following command line will play an EVS pcap over USB audio:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/pcap_file_test_config -L
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/pcap_file_test_config -L
 ```
 
 The above command lines will work on any EVS pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes mediaTest an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
@@ -1039,15 +1039,15 @@ Depending on the number of sessions defined in the session config file, multiple
 The following mediaTest command lines convert AMR pcaps to wav files:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -oamr_WB_23850bps.wav -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
+./mediaTest -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -oamr_WB_23850bps.wav -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
 
-./mediaTest -M0 -cx86 -ipcaps/AMR-12.2kbps-20ms_bw.pcap -oAMR-12.2kbps-20ms_bw.wav -Camr_packet_test_config_AMR-12.2kbps-20ms_bw -L
+./mediaTest -cx86 -ipcaps/AMR-12.2kbps-20ms_bw.pcap -oAMR-12.2kbps-20ms_bw.wav -Camr_packet_test_config_AMR-12.2kbps-20ms_bw -L
 ```
 
 The following command line will play an AMR pcap over USB audio:
 
 ```C
-./mediaTest -M0 -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -ousb0 -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
+./mediaTest -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -ousb0 -Csession_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -L
 ```
 The above command lines will work on any AMR pcap, including octet aligned and bandwidth efficient formats.  Combined with the .cod file input described above, this makes mediaTest an "AMR player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
 
@@ -1063,7 +1063,7 @@ Simple mediaTest command lines can be used to convert wav and other audio format
 
 The following mediaTest command line converts a wav file to EVS wideband pcap:
 
-    ./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/evs_16kHz_13200bps_config
+    ./mediaTest -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/evs_16kHz_13200bps_config
 
 A similar command line can be used with other audio format files. The config file allows EVS bitrate, header format, and other options to be specified. mediaTest automatically performs sample rate conversion if the wav file Fs is different than the sample rate specified in the config file.
 
@@ -1073,7 +1073,7 @@ A similar command line can be used with other audio format files. The config fil
 The following mediaTest command line converts a wav file to AMR-WB pcap:
 
 ```C
-./mediaTest -M0 -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/amrwb_16kHz_12650bps_config
+./mediaTest -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/amrwb_16kHz_12650bps_config
 ```
 <a name="Transcoding"></a>
 ## Transcoding
@@ -1161,11 +1161,11 @@ Variable ptimes refers to endpoints that have unequal payload times (ptimes); fo
 Here are mediaMin command lines that convert incoming pcaps with 20 msec ptime to outgoing pcaps with 40 msec ptime:
 
 ```C
-./mediaMin -cx86 -M0 -C../session_config/g711_20ptime_g711_40ptime_test_config -i../pcaps/pcmutest.pcap -opcmutest_40ptime.pcap -opcmutest_40ptime.wav -L
+./mediaMin -cx86 -C../session_config/g711_20ptime_g711_40ptime_test_config -i../pcaps/pcmutest.pcap -opcmutest_40ptime.pcap -opcmutest_40ptime.wav -L
 ```
 
 ```C
-./mediaMin -cx86 -M0 -C../session_config/evs_20ptime_g711_40ptime_test_config -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ovptime_test1.pcap -L
+./mediaMin -cx86 -C../session_config/evs_20ptime_g711_40ptime_test_config -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ovptime_test1.pcap -L
 ```
 
 For the above command lines, note in the [run-time stats](#user-content-runtimestats) displayed by mediaMin, the number of transcoded frames is half of the number of buffered / pulled frames, because of the 20 to 40 msec ptime conversion.
@@ -1173,7 +1173,7 @@ For the above command lines, note in the [run-time stats](#user-content-runtimes
 Here is a mediaMin command line that converts an incoming pcap with 240 msec ptime to 20 msec:
 
 ```C
-./mediaMin -cx86 -M0 -C../session_config/evs_240ptime_g711_20ptime_test_config -i../pcaps/EVS_16khz_16400bps_ptime240_FH_IPv4.pcap -ovptime_test2.pcap -ovptime_test2.wav -L
+./mediaMin -cx86 -C../session_config/evs_240ptime_g711_20ptime_test_config -i../pcaps/EVS_16khz_16400bps_ptime240_FH_IPv4.pcap -ovptime_test2.pcap -ovptime_test2.wav -L
 ```
 
 Note however that 240 msec is a very large ptime more suited to unidirectional media streams. For a bidirectional real-time media stream, for example a 2-way voice conversation, large ptimes would cause excessive delay and intelligibility problems between endpoints.
@@ -1186,7 +1186,7 @@ DTMF event handling can be enabled/disabled on per session basis, and is enabled
 Here is a mediaMin command line that processes a pcap containing DTMF event packets:
 
 ```C
-./mediaMin -M0 -cx86 -i../pcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
+./mediaMin -cx86 -i../pcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
 ```
 A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in [Packet Log](#user-content-packetlog) below.
 
@@ -1209,7 +1209,7 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 
 mediaMin supports a "-rN" command line options to control packet push rate, where N is given in msec. For example typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for analytics applications, or for offline purposes (testing, analysis, speech recognition training, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line below includes -r0 (same as no entry) to specify a fast-as-possible push rate:
 
-    ./mediaMin -M0 -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
+    ./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
 
 In addition to this level of control, mediaMin also implements an average packet push rate algorithm, which can be applied when pktlib is operating in analytics mode. The average push rate algorithm enable is the 0x80000 flag in the mediaMin -dN command line argument, and analytics mode is the 0x40000 flag.
 
@@ -1220,7 +1220,7 @@ Note that entering a session configuration file on the command line that contain
 
 The [pktlib](#user-content-pktlib) jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. mediaMin supports a "-jN" command line option, where N specifies depth as number of packets. For example, using the OpenLI example command line shown above, the jitter buffer depth could be specified as having max depth of 12 and target depth of 7:
 
-    ./mediaMin -M0 -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20 -j0x0c07
+    ./mediaMin -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20 -j0x0c07
   
 Note that N is a 16-bit value accepting two (2) 8-bit values, one for max depth and one for target depth (for this reason N is normally given as a hex value, but it's not necessary).
 
@@ -1994,6 +1994,12 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
 Below is "quick-reference" mediaMin command line documentation:
 
+### Mode and Platform
+
+-cXXX specifies a base platform. Currently for the Github .rar packages and Docker containers this option should always be given as -cx86.
+
+-MN specifies an optional operating mode N. Currently for the Github .rar packages and Docker containers no mode option should be given.
+
 ### Inputs
 
 Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP port. An example of a port specification is -i192.168.1.2:52000
@@ -2002,7 +2008,7 @@ Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP 
 
 Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP port. Currently mediaMin command line outputs are limited to pcap files containing transcoded output. For example in this command line:
 
-    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
+    ./mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
 
 the -oxxx_xcN.pcap files are transcoded outputs of the first three (3) streams found in the incoming packet flow.
 
@@ -2019,7 +2025,7 @@ The -dN command line argument specifies options and flags. Here are some of the 
 
 > 0x01 dynamic sessions<br>
 > 0x08 enable stream group ASR<br>
-> 0x10 use packet arrival times. Should be omitted if input packets (e.g. pcap file) have no arrival timestamps, or timestamps are incorrect<br>
+> 0x10 use packet arrival times. Omit if input packets (e.g. pcap file) have no arrival timestamps, or timestamps are incorrect<br>
 > 0x400 enable stream groups<br>
 > 0x800 enable wav output<br>
 > 0x40000 enable analytics mode<br>
@@ -2027,13 +2033,11 @@ The -dN command line argument specifies options and flags. Here are some of the 
 
 ### Event Log
 
-[**Event Log**](#user-content-eventlog)<br/>
-
-mediaMin always generates an [event log](#user-content-eventlog), with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input.  Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
+mediaMin always generates an [event log](#user-content-eventlog), with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input. Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
 
 ### Packet Log
 
-[Packet history logging](#user-content-packetlog)is controlled by the -Lxxx command line option.
+[Packet history logging](#user-content-packetlog) is controlled by the -Lxxx command line option:
 
 > -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input<br>
 > -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt<br>
