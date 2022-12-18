@@ -161,6 +161,13 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
 
+[**Command Line Quick-Reference**](#user-content-commandlinequick-reference)<br/>
+
+&nbsp;&nbsp;&nbsp;[**mediaMin Command Line Quick-Reference**](#user-content-mediamincommandlinequick-reference)<br/>
+
+&nbsp;&nbsp;&nbsp;[**mediaTest Command Line Quick-Reference**](#user-content-mediatestcommandlinequick-reference)<br/>
+
+
 <a name="mediaMin"></a>
 # mediaMin
 
@@ -277,43 +284,6 @@ Below are some dynamic session command line examples:
     ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
 
 The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps streams, the second has two (2) AMR-NB 12200 bps streams and the third has two (EVS) 13200 bps streams and three (3) AMR-WB 12650 bps streams (one of the AMR-WB streams is an RFC8108, or "child" channel).
-
-Below is "quick-reference" mediaMin command line documentation:
-
-#### Inputs
-
-Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP port. An example of a port specification is -i192.168.1.2:52000
-
-#### Outputs
-
-Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP port.
-
-#### Options and Flags
-
-The -dN command line argument specifies options and flags. Here are some of the key ones:
-
-> 0x01 dynamic sessions<br>
-> 0x08 enable stream group ASR<br>
-> 0x10 use packet arrival times. Should be omitted if input packets (e.g. pcap file) have no arrival timestamps, or timestamps are incorrect<br>
-> 0x400 enable stream groups<br>
-> 0x800 enable wav output<br>
-> 0x40000 enable analytics mode<br>
-> 0x80000  use a queue balancing algorithm to determine the packet push rate<br>
-
-#### Event Log
-
-mediaMin always generates an event log, with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input.  Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
-
-#### Packet Log
-
-Packet history logging is controlled by the -Lxxx command line option.
-
-> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input<br>
-> -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt<br>
-
-#### Real-Time Interval
-
--rN specifies a "real-time interval", which mediaMin uses for a target push rate and to control overall timing, and which pktlib uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push packets as fast as possible
 
 <a name="StaticSessionConfig"></a>
 ### Static Session Configuration
@@ -2010,3 +1980,49 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
     When .au save format is specified as shown in step 2, Wireshark performs uLaw or ALaw conversion internally (based on the payload type in the RTP packets) and writes out 16-bit linear (PCM) audio samples. If for some reason you are using .raw format, then you will have to correctly specify uLaw vs. ALaw to sox, Audacity, Hypersignal, or other conversion program.  If that doesn't match the mediaMin or mediaTest session config file payload type value, then the output audio data may still be audible but incorrect (for example it may have a dc offset or incorrect amplitude scale).
 
     *Note: the above instructions apply to Wireshark version 2.2.6.*
+
+<a name="CommandLineQuick-Reference"></a>
+# Command Line Quick-Reference
+
+<a name="mediaTestdCommandLineQuick-Reference"></a>
+## Command Line Quick-Reference
+
+<a name="mediaMinCommandLineQuick-Reference"></a>
+## mediaMin Command Line Quick-Reference
+
+Below is "quick-reference" mediaMin command line documentation:
+
+### Inputs
+
+Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP port. An example of a port specification is -i192.168.1.2:52000
+
+### Outputs
+
+Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP port.
+
+### Options and Flags
+
+The -dN command line argument specifies options and flags. Here are some of the key ones:
+
+> 0x01 dynamic sessions<br>
+> 0x08 enable stream group ASR<br>
+> 0x10 use packet arrival times. Should be omitted if input packets (e.g. pcap file) have no arrival timestamps, or timestamps are incorrect<br>
+> 0x400 enable stream groups<br>
+> 0x800 enable wav output<br>
+> 0x40000 enable analytics mode<br>
+> 0x80000  use a queue balancing algorithm to determine the packet push rate<br>
+
+### Event Log
+
+mediaMin always generates an event log, with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input.  Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
+
+### Packet Log
+
+Packet history logging is controlled by the -Lxxx command line option.
+
+> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input<br>
+> -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt<br>
+
+### Real-Time Interval
+
+-rN specifies a "real-time interval", which mediaMin uses for a target push rate and to control overall timing, and which pktlib uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push packets as fast as possible
