@@ -1994,7 +1994,7 @@ Below are general command line notes and arguments that apply to both mediaMin a
 > <br>
 > <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> uses 'm" and 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br>
 
-### Mode and Platform
+### Platform and Operating Mode
 
 -cXXX specifies a base platform. Currently for the Github .rar packages and Docker containers this option should always be given as -cx86.
 
