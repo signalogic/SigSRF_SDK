@@ -285,7 +285,7 @@ Below are some dynamic session command line examples:
 
 The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps streams, the second has two (2) AMR-NB 12200 bps streams and the third has two (EVS) 13200 bps streams and three (3) AMR-WB 12650 bps streams (one of the AMR-WB streams is an RFC8108, or "child" channel).
 
-mediaMin command line arguments in the above examples are explained in [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference).
+Command line arguments in the above examples are explained in [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference).
 
 <a name="StaticSessionConfig"></a>
 ### Static Session Configuration
@@ -2000,7 +2000,18 @@ Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP 
 
 ### Outputs
 
-Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP port.
+Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP port. Currently mediaMin command line outputs are limited to pcap files containing transcoded output. For example in this command line:
+
+    ./mediaMin -M0 -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
+
+the -oxxx_xcN.pcap files are transcoded outputs of the first three (3) streams found in the incoming packet flow.
+
+In addition to the event log, mediaMin generates a number of outputs automatically:
+
+> per stream jitter buffer output pcap<br>
+> per stream wav file if the -dN command line argument (below) enables stream groups and wav file output<br>
+> stream group output pcap if the -dN command line argument (below) enables stream groups<br>
+> stream group output wav file if the -dN command line argument (below) enables stream groups and wav file output<br>
 
 ### Options and Flags
 
@@ -2016,11 +2027,13 @@ The -dN command line argument specifies options and flags. Here are some of the 
 
 ### Event Log
 
-mediaMin always generates an event log, with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input.  Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
+[**Event Log**](#user-content-eventlog)<br/>
+
+mediaMin always generates an [event log](#user-content-eventlog), with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input.  Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
 
 ### Packet Log
 
-Packet history logging is controlled by the -Lxxx command line option.
+[Packet history logging](#user-content-packetlog)is controlled by the -Lxxx command line option.
 
 > -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input<br>
 > -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt<br>
