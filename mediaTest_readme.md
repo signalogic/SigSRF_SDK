@@ -285,6 +285,8 @@ Below are some dynamic session command line examples:
 
 The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps streams, the second has two (2) AMR-NB 12200 bps streams and the third has two (EVS) 13200 bps streams and three (3) AMR-WB 12650 bps streams (one of the AMR-WB streams is an RFC8108, or "child" channel).
 
+mediaMin command line arguments in the above examples are explained in [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference).
+
 <a name="StaticSessionConfig"></a>
 ### Static Session Configuration
 
@@ -551,7 +553,7 @@ The above mediaMin command can be run with wideband audio pcaps included in the 
 
 The original wav files are included in the mediaTest/test_files subfolder; they are recordings from a speech corpus known as the <a href="https://www.cs.columbia.edu/~hgs/audio/harvard.html">"Harvard Sentences"</a>, prepared in the 1960s by the IEEE Subcommittee on Subjective Measurements as part of their recommended practices for speech quality measurements.
 
-In general, to enable ASR with any arbitrary mediaMin command, including mediaMin commands documented on this page, you can set the "ENABLE_STREAM_GROUP_ASR" bit in the -dN command line option (-dN command line options and debug flags are documented in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_debug_flags.h">cmd_line_debug_flags.h</a>).
+In general, to enable ASR with any arbitrary mediaMin command, including mediaMin commands documented on this page, you can set the "ENABLE_STREAM_GROUP_ASR" bit in the -dN command line option (-dN command line options and debug flags are documented in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
 Here are some notes about ASR operation:
 
@@ -874,7 +876,7 @@ Note the highlighted CPU and memory usage display areas, showing 100% core usage
 
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -d0x80000000
     
- Debug flag options are defined in cmd_line_debug_flags.h.
+ Debug flag options are defined in cmd_line_options_flags.h in the mediaTest source code folder.
  
  Below is an htop screencap showing CPU core consumption during a multithreaded codec max capacity test:
 	
