@@ -1986,8 +1986,10 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 <a name="CommandLineQuick-Reference"></a>
 # Command Line Quick-Reference
 
-<a name="mediaTestdCommandLineQuick-Reference"></a>
-## Command Line Quick-Reference
+Below are mediaMin and mediaTest command line quick-references. General command line rules include:
+
+> case sensitive
+> enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest)
 
 <a name="mediaMinCommandLineQuick-Reference"></a>
 ## mediaMin Command Line Quick-Reference
@@ -2045,3 +2047,6 @@ mediaMin always generates an [event log](#user-content-eventlog), with a default
 ### Real-Time Interval
 
 -rN specifies a "real-time interval", which mediaMin uses for a target push rate and to control overall timing, and which pktlib uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push packets as fast as possible
+
+<a name="mediaTestCommandLineQuick-Reference"></a>
+## mediaTest Command Line Quick-Reference
