@@ -292,13 +292,13 @@ Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP
 
 The -dN command line argument specifies options and flags. Here are some of the key ones:
 
-> 0x01 dynamic sessions
-> 0x08 enable stream group ASR
-> 0x10 use packet arrival times. Should be omitted if input packets (e.g. pcap file) have no arrival timestamps, or timestamps are incorrect
-> 0x400 enable stream groups
-> 0x800 enable wav output
-> 0x40000 enable analytics mode
-> 0x80000  use a queue balancing algorithm to determine the packet push rate
+> 0x01 dynamic sessions<br>
+> 0x08 enable stream group ASR<br>
+> 0x10 use packet arrival times. Should be omitted if input packets (e.g. pcap file) have no arrival timestamps, or timestamps are incorrect<br>
+> 0x400 enable stream groups<br>
+> 0x800 enable wav output<br>
+> 0x40000 enable analytics mode<br>
+> 0x80000  use a queue balancing algorithm to determine the packet push rate<br>
 
 #### Event Log
 
@@ -308,8 +308,8 @@ mediaMin always generates an event log, with a default log filename of name_even
 
 Packet history logging is controlled by the -Lxxx command line option.
 
-> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input.
-> -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt
+> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input<br>
+> -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt<br>
 
 #### Real-Time Interval
 
