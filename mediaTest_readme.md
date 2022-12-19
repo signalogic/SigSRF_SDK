@@ -2015,23 +2015,30 @@ Below is "quick-reference" mediaMin command line documentation:
 
 ### Inputs
 
-Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP port. An example of a port specification is -i192.168.1.2:52000
+Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP port. Supported file types include .pcap, .pcapng, and .wav. Here are some example port specifications:
+
+> -i192.168.1.2:52000<br>
+> <br>
+> -ifd00:5d2::11:123:5222:52000<br>
 
 ### Outputs
 
-Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP port. Currently mediaMin command line outputs are limited to pcap files containing transcoded output. For example in this command line:
+Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP port. Currently mediaMin command line outputs are limited to pcap files containing transcoded outputs. For example in this command line:
 
     ./mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
 
 the -oxxx_xcN.pcap files are transcoded outputs of the first three (3) streams found in the incoming packet flow.
 
+mediaMin also auto-generates per stream jitter buffer output pcap files. Jitter buffer output streams are de-jittered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>. 
+
 In addition to the event log, mediaMin generates a number of outputs automatically:
 
 > per stream jitter buffer output pcap<br>
-> per stream wav file if the -dN command line argument (below) enables stream groups and wav file output<br>
-> stream group output pcap if the -dN command line argument (below) enables stream groups<br>
-> stream group output wav file if the -dN command line argument (below) enables stream groups and wav file output<br>
+> per stream wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br>
+> stream group output pcap if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups<br>
+> stream group output wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br>
 
+<a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
 
 The -dN command line argument specifies options and flags. Here are some of the key ones:
