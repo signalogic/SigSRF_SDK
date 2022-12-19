@@ -2029,14 +2029,14 @@ Outputs are given by one or more "-oxxx" options, where xxx is a filename or UDP
 
 the -oxxx_xcN.pcap files are transcoded outputs of the first three (3) streams found in the incoming packet flow.
 
-mediaMin also auto-generates per stream jitter buffer output pcap files. Jitter buffer output streams are de-jittered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>. 
-
 In addition to the event log, mediaMin generates a number of outputs automatically:
 
 > per stream jitter buffer output pcap<br>
 > per stream wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br>
 > stream group output pcap if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups<br>
 > stream group output wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br>
+
+Auto-generated per stream jitter buffer output streams are de-jittered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>.
 
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
