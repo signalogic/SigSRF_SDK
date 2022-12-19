@@ -874,7 +874,7 @@ Below is an htop screencap showing CPU core consumption during a codec max capac
 
 Note the highlighted CPU and memory usage display areas, showing 100% core usage and approx 18.6 MB memory usage for mediaTest (audio buffers etc) and 21 EVS encoder and decoder instances. To see exact codec memory usage stats, the ENABLE_MEM_STATS flag can be set in the command line debug flags option:
 
-    ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -d0x80000000
+    ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -d0x100000000
     
  Debug flag options are defined in cmd_line_options_flags.h in the mediaTest source code folder.
  
