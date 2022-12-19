@@ -2044,12 +2044,12 @@ In addition to the event log, mediaMin generates a number of outputs automatical
 The -dN command line argument specifies options and flags. Here are some of the key ones:
 
 > 0x01 enable dynamic sessions<br>
-> 0x08 enable stream group ASR<br>
+> 0x08 apply ASR to stream group output<br>
 > 0x10 use packet arrival times. Omit if input packets (e.g. pcap file) have no arrival timestamps, or timestamps are incorrect<br>
 > 0x400 enable stream groups<br>
 > 0x800 enable wav output<br>
-> 0x40000 enable analytics mode<br>
-> 0x80000 use a queue balancing algorithm to determine the packet push rate<br>
+> 0x40000 enable analytics mode (telecom mode is the default)<br>
+> 0x80000 use a queue balancing algorithm to determine the packet push rate. Typically applied when packet arrival timestamps can't be used<br>
 
 Note that options and flags may be combined together.
 
