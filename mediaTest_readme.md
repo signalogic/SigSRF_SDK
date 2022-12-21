@@ -436,7 +436,7 @@ The mediaMin Makefile brings in SDP source code from the <a href="https://github
 <a name="MinimumAPIInterface"></a>
 ## Minimum API Interface
 
-mediaMin uses only a few high-level [pklib](#user-content-pktlib) APIs to process media. These include:
+mediaMin uses only a few high-level [pktlib](#user-content-pktlib) APIs to process media. These include:
 
 > DSCreateSession()<br/>
 > DSPushPackets()<br/>
