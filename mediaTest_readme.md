@@ -287,6 +287,15 @@ The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps 
 
 Command line arguments in the above examples are explained in [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference).
 
+<a name="codecauto-detection"></a>
+#### Codec Auto-Detection
+
+In dynamic session mode, when mediaMin finds a new unique combination of IP address, port, and payload type, it creates a new session. In that process mediaMin examines the RTP payload type and payload header to determine the codec type. The code in mediaMin.cpp that does this is surprisingly accurate for dynamic payload types (tested against more than 100 pcaps with a variety of codecs) but it's still an estimate and not guaranteed correct. If not, SDP information can be used to override codec auto-detection. mediaMin supports three (3) types of SDP info:
+
+> .sdp file given on the command line, for example -sinfo.sdp. See [SDP Support](#user-content-sdpsupport) below<br/>
+> SIP invite packet in the pcap (occurring before RTP packets)<br/>
+> SAP/SDP protocol packet in the pcap<br/>
+
 <a name="StaticSessionConfig"></a>
 ### Static Session Configuration
 
@@ -1988,11 +1997,11 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
 Below are general command line notes and arguments that apply to both mediaMin and mediaTest, then followed by command line arguments specific to mediaMin or mediaTest.
 
-> case sensitive<br>
-> <br>
-> enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest). Mandatory command line options are shown with !<br>
-> <br>
-> <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> uses 'm" and 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br>
+> case sensitive<br/>
+> <br/>
+> enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest). Mandatory command line options are shown with !<br/>
+> <br/>
+> <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> uses 'm" and 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
 
 ### Platform and Operating Mode
 
@@ -2017,9 +2026,9 @@ Below is "quick-reference" mediaMin command line documentation:
 
 Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP port. Supported file types include .pcap, .pcapng, and .wav. Here are some example port specifications:
 
-> -i192.168.1.2:52000<br>
-> <br>
-> -ifd00:5d2::11:123:5222:52000<br>
+> -i192.168.1.2:52000<br/>
+> <br/>
+> -ifd00:5d2::11:123:5222:52000<br/>
 
 ### Outputs
 
@@ -2031,10 +2040,10 @@ the -oxxx_xcN.pcap files are transcoded outputs of the first three (3) streams f
 
 In addition to the event log, mediaMin generates a number of outputs automatically:
 
-> per stream jitter buffer output pcap<br>
-> per stream wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br>
-> stream group output pcap if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups<br>
-> stream group output wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br>
+> per stream jitter buffer output pcap<br/>
+> per stream wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br/>
+> stream group output pcap if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups<br/>
+> stream group output wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br/>
 
 Auto-generated per stream jitter buffer output streams are de-jittered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>.
 
@@ -2043,13 +2052,13 @@ Auto-generated per stream jitter buffer output streams are de-jittered, DTX expa
 
 The -dN command line argument specifies options and flags. Here are some of the key ones:
 
-> 0x01 enable dynamic sessions<br>
-> 0x08 apply ASR to stream group output<br>
-> 0x10 use packet arrival times. Omit if input packets (e.g. pcap file) have incorrect (or no) arrival timestamps<br>
-> 0x400 enable stream groups<br>
-> 0x800 enable wav output<br>
-> 0x40000 enable analytics mode (telecom mode is the default)<br>
-> 0x80000 use a queue balancing algorithm for packet push rate. Typically applied when packet arrival timestamps can't be used<br>
+> 0x01 enable dynamic sessions<br/>
+> 0x08 apply ASR to stream group output<br/>
+> 0x10 use packet arrival times. Omit if input packets (e.g. pcap file) have incorrect (or no) arrival timestamps<br/>
+> 0x400 enable stream groups<br/>
+> 0x800 enable wav output<br/>
+> 0x40000 enable analytics mode (telecom mode is the default)<br/>
+> 0x80000 use a queue balancing algorithm for packet push rate. Typically applied when packet arrival timestamps can't be used<br/>
 
 Note that options and flags may be combined together.
 
@@ -2057,8 +2066,8 @@ Note that options and flags may be combined together.
 
 [Packet history logging](#user-content-packetlog) is controlled by the -Lxxx command line option:
 
-> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input<br>
-> -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt<br>
+> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input<br/>
+> -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt<br/>
 
 ### Real-Time Interval
 
