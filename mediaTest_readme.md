@@ -88,6 +88,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
+&nbsp;&nbsp;&nbsp;[**Minimum API Interface**](#user-content-minimumapiinterface)<br/>
+
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroupscmdline)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
@@ -361,7 +363,7 @@ Note that each session typically has one or two "terminations", or endpoints (te
 <a name="UserManagedSessions"></a>
 ### User Managed Sessions
 
-Whether sessions are created [dynamically "on-the-fly"](#user-content-dynamicsessioncreation) or [statically from a configuration file](#user-content-staticsessioncreation), mediaMin manages sessions for their duration, including session creation, updating as needed, and session deletion. This approach is known as user-managed sessions. CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> gives a detailed example of initializing TERMINATION_INFO structs and then calling the DSCreateSession() API in [pktlib](#user-content-pktlib).
+Whether sessions are created [dynamically "on-the-fly"](#user-content-dynamicsessioncreation) or [statically from a configuration file](#user-content-staticsessionconfig), mediaMin manages sessions for their duration, including session creation, updating or retrieving status info, and session deletion. This approach is known as user-managed sessions. CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> gives a detailed example of initializing SESSION_DATA and TERMINATION_INFO structs and then calling the DSCreateSession() API in [pktlib](#user-content-pktlib).
 
 <a name="SessionConfigDiagram"></a>
 ### Session Endpoint Flow Diagram
@@ -431,8 +433,19 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 
 The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path.
 
+<a name="MinimumAPIInterface"></a>
+## Minimum API Interface
+
+mediaMin uses only a few high-level [pklib](#user-content-pktlib) APIs to process media. These include:
+
+> DSCreateSession()
+> DSPushPackets()
+> DSPullPackets()
+
+DSPushPackets() and DSPullPackets() queue and dequeue packets to and from packet/media threads that handle all packet processing (jitter buffer, DTX, etc), media decoding and encoding (APIs in [voplib](#user-content-pktlib)), and audio processing APIs for merging, conferencing, speech recognition, etc. (APIs in [streamlib](#user-content-streamlib)).
+
 <a name="StreamGroupsCmdLine"></a>
-## Stream Groups
+## Stream Groups Usage
 
 Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. For detailed information about how stream groups function and how [streamlib](#user-content-streamgroups) operates, see [Stream Groups](#user-content-streamgroups) below. 
  
