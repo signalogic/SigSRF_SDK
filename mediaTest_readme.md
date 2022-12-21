@@ -90,7 +90,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**Minimum API Interface**](#user-content-minimumapiinterface)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Stream Group Usage**](#user-content-streamgroupscmdline)<br/>
+&nbsp;&nbsp;&nbsp;[**Stream Group Usage**](#user-content-streamgroupusage)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
@@ -178,7 +178,7 @@ The mediaMin reference application runs optimized, high-capacity media packet st
 
 For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet worker threads), voplib (voice-over-packet interface), [streamlib](#user-content-streamlib) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
 
-To provide a simple, ready-to-use interface, mediaMin provides additional functionality. mediaMin command line options instruct pktlib to operate in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to [stream groups](#user-content-streamgroups), which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packet output.
+To provide a simple, ready-to-use interface, mediaMin provides additional functionality. mediaMin command line options instruct pktlib to operate in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to [stream groups](#user-content-streamgroupusage), which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packet output.
 
 In addition to providing a ready-to-use application, <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a> demonstrates use of pktlib APIs <sup>[2]</sup> for session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating). <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source</a> code used by pktlib is also available to show use of voplib and streamlib APIs <sup>[2]</sup>.  
 
@@ -438,14 +438,14 @@ The mediaMin Makefile brings in SDP source code from the <a href="https://github
 
 mediaMin uses only a few high-level [pklib](#user-content-pktlib) APIs to process media. These include:
 
-> DSCreateSession()
-> DSPushPackets()
-> DSPullPackets()
+> DSCreateSession()<br/>
+> DSPushPackets()<br/>
+> DSPullPackets()<br/>
 
 DSPushPackets() and DSPullPackets() queue and dequeue packets to and from packet/media threads that handle all packet processing (jitter buffer, DTX, etc), media decoding and encoding (APIs in [voplib](#user-content-pktlib)), and audio processing APIs for merging, conferencing, speech recognition, etc. (APIs in [streamlib](#user-content-streamlib)).
 
-<a name="StreamGroupsCmdLine"></a>
-## Stream Groups Usage
+<a name="StreamGroupUsage"></a>
+## Stream Group Usage
 
 Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. For detailed information about how stream groups function and how [streamlib](#user-content-streamgroups) operates, see [Stream Groups](#user-content-streamgroups) below. 
  
@@ -499,7 +499,7 @@ Here are some notes about the above command lines and what to look for when they
 
     ![OpenLI HI interception point_ID detection at mediaMin run-time](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_HI_interception_point_ID_example_screen_cap.png?raw=true "OpenLI HI interception point ID detection, mediaMin run-time stats")
 
-2) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats) screen capture below. In the [stream group](#user-content-streamgroups) output, there should be no underrun (labeled as FLC, or frame loss concealment, in the [run-time stats](#user-content-runtimestats)), [packet logs](#user-content-packetlog) should be clean, and with no [event log](#user-content-eventlog) warnings or errors (highlighted in green).
+2) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats) screen capture below. In the [stream group](#user-content-streamgroupusage) output, there should be no underrun (labeled as FLC, or frame loss concealment, in the [run-time stats](#user-content-runtimestats)), [packet logs](#user-content-packetlog) should be clean, and with no [event log](#user-content-eventlog) warnings or errors (highlighted in green).
 
     ![OpenLI HI3 intercept processing, mediaMin run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_run-time_stats.png?raw=true "OpenLI HI3 intercept processing, mediaMin run-time stats")
 
@@ -513,7 +513,7 @@ Here are some notes about the above command lines and what to look for when they
 
     Note that [static session configuration](#user-content-staticsessionconfig), using a session config file supplied on the command line, is also available, depending on application needs.
 
-6) The above mediaMin command lines have [stream groups](#user-content-streamgroups) enabled (0x400 flag in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be applied to stream group output.
+6) The above mediaMin command lines have [stream groups](#user-content-streamgroupusage) enabled (0x400 flag in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be applied to stream group output.
 
 After loading stream group outputs in Wireshark (openli-voip-example_group0_am.pcap and openli-voip-example2_group0_am.pcap) you should see the following waveform displays:
 
@@ -525,7 +525,7 @@ In the second example, the child streams contain early media (ring tones), which
 
 In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF [pktlib](#user-content-pktlib) and  [streamlib](#user-content-streamlib) module processing prioritize stability of this metric, as well as accurate time-alignment of individual stream contributors relative to each other. For information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
 
-mediaMin also generates [stream group](#user-content-streamgroups) output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
+mediaMin also generates [stream group](#user-content-streamgroupusage) output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
 
 <a name="HighCapacity"></a>
 ## High Capacity
@@ -1849,7 +1849,7 @@ Below are some items to keep in mind when measuring audio quality of both indivi
 
 2) When authenticating audio quality for a customer application in which it's important to know precisely which audio audio occurred when, wav files -- although convenient -- should not be used alone. Wav files assume a linear sampling rate and do not encode sampling points, and can thus obscure audio delays/gaps and interstream alignment issues. This is why real-time packet audio should always be included for audio quality authentication purposes. Real-time packet audio can be linear output, G711, or encoded with wideband codecs (e.g. AMR-WB, EVS) -- the key point is that sampling time is included in the analysis, preferably with a granularity of 10 to 40 msec. However, if you're using Wireshark then the codec type should be one that Wireshark "understands", which currently includes G711 u/a, AMR, and AMR-WB.
 
-    To help with time domain analysis, [streamlib](#user-content-streamlib) supports audio markers, which are inserted into [stream group](#user-content-streamgroups) output at regular intervals (default of 1 sec). Below is a screen capture showing audio markers in action:
+    To help with time domain analysis, [streamlib](#user-content-streamlib) supports audio markers, which are inserted into [stream group](#user-content-streamgroupusage) output at regular intervals (default of 1 sec). Below is a screen capture showing audio markers in action:
 
     ![Stream group output with 1 sec audio markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/DeepLI_1sec_timing_marker_example.png?raw=true "Stream group output with 1 sec audio markers")
     
@@ -1966,7 +1966,7 @@ Note the 3GPP decoder will produce only a raw audio format file, so you will nee
 
 As a quick reference, basic procedures for analyzing and playing packet audio from within Wireshark is given here.
 
-1. If you run mediaMin with [dynamic session creation](#user-content-dynamicsessioncreation) and [stream groups](#user-content-streamgroups) enabled, then you can load stream group packet audio output in Wireshark. Stream group output file naming convention is explained in [Stream Groups](#user-content-streamgroupscmdline) above. Note that stream group output packet audio is set to G711u by default (this can be modified if needed). *Note - mediaMin also allows per stream transcoded packet audio outputs to be specified on the cmd line using "-o" (output) specs. These are also set to G711u by default, unless specified otherwise in a static session config file (or modified in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>).*
+1. If you run mediaMin with [dynamic session creation](#user-content-dynamicsessioncreation) and [stream groups](#user-content-streamgroups) enabled, then you can load stream group packet audio output in Wireshark. Stream group output file naming convention is explained in [Stream Group Usage](#user-content-streamgroupusage) above. Note that stream group output packet audio is set to G711u by default (this can be modified if needed). *Note - mediaMin also allows per stream transcoded packet audio outputs to be specified on the cmd line using "-o" (output) specs. These are also set to G711u by default, unless specified otherwise in a static session config file (or modified in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>).*
 
 2. If you run mediaMin with static session configuation, make sure your session config file has:
 
