@@ -90,7 +90,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**Minimum API Interface**](#user-content-minimumapiinterface)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroupscmdline)<br/>
+&nbsp;&nbsp;&nbsp;[**Stream Group Usage**](#user-content-streamgroupscmdline)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
