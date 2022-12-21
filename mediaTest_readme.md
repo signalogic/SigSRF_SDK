@@ -442,7 +442,7 @@ mediaMin uses only a few high-level [pklib](#user-content-pktlib) APIs to proces
 > DSPushPackets()<br/>
 > DSPullPackets()<br/>
 
-DSPushPackets() and DSPullPackets() queue and dequeue packets to and from packet/media threads that handle all packet processing (jitter buffer, DTX, etc), media decoding and encoding (APIs in [voplib](#user-content-pktlib)), and audio processing APIs for merging, conferencing, speech recognition, etc. (APIs in [streamlib](#user-content-streamlib)).
+DSPushPackets() and DSPullPackets() queue and dequeue packets to and from packet/media threads that handle all packet processing (jitter buffer, DTX, etc), media decoding and encoding (APIs in [voplib](#user-content-voplib)), and audio processing APIs for merging, conferencing, speech recognition, etc. (APIs in [streamlib](#user-content-streamlib)).
 
 <a name="StreamGroupUsage"></a>
 ## Stream Group Usage
