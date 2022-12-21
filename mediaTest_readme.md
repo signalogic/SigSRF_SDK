@@ -290,11 +290,11 @@ Command line arguments in the above examples are explained in [mediaMin Command 
 <a name="codecauto-detection"></a>
 #### Codec Auto-Detection
 
-In dynamic session mode, when mediaMin finds a new unique combination of IP address, port, and payload type, it creates a new session. In that process mediaMin examines the RTP payload type and payload header to determine the codec type. The code in mediaMin.cpp that does this is surprisingly accurate for dynamic payload types (tested against more than 100 pcaps with a variety of codecs) but it's still an estimate and not guaranteed correct. If not, SDP information can be used to override codec auto-detection. mediaMin supports three (3) types of SDP info:
+In dynamic session mode, when mediaMin finds a new unique combination of IP address, port, and payload type, it creates a new session. In that process mediaMin examines the RTP payload type and payload header to determine the codec type. The code in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> that does this is surprisingly accurate for dynamic payload types (tested against more than 100 pcaps with a variety of codecs) but it's still an estimate and not guaranteed to be correct. In case of a detection error, SDP information can be used to override codec auto-detection. mediaMin supports three (3) types of SDP info:
 
-> .sdp file given on the command line, for example -sinfo.sdp. See [SDP Support](#user-content-sdpsupport) below<br/>
-> SIP invite packet in the pcap (occurring before RTP packets)<br/>
-> SAP/SDP protocol packet in the pcap<br/>
+> 1. .sdp file given on the command line, for example -sinfo.sdp. See [SDP Support](#user-content-sdpsupport) below<br/>
+> 2. SIP invite packet in the input packet flow (occurring before RTP packets)<br/>
+> 3. SAP/SDP protocol packet in the input packet flow<br/>
 
 <a name="StaticSessionConfig"></a>
 ### Static Session Configuration
