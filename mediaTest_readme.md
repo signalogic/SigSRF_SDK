@@ -290,7 +290,7 @@ Command line arguments in the above examples are explained in [mediaMin Command 
 <a name="codecauto-detection"></a>
 #### Codec Auto-Detection
 
-In dynamic session mode, when mediaMin finds a new unique combination of IP address, port, and payload type, it creates a new session. In that process mediaMin examines the RTP payload type and payload header to determine the codec type. The code that does this is surprisingly accurate for dynamic payload types (tested against more than 100 pcaps with a variety of codecs) but it's still an estimate and not guaranteed to be correct. In case of a detection error, SDP information can be used to override codec auto-detection. mediaMin supports three (3) types of SDP info:
+In dynamic session mode, when mediaMin finds a new unique combination of IP address, port, and RTP payload type, it creates a new session. In that process mediaMin examines the payload type and payload header to determine the codec type. The code that does this is surprisingly accurate for dynamic payload types (tested against more than 100 pcaps with a variety of codecs) but it's still an estimate and not guaranteed to be correct. In case of a detection error, SDP information can be used to override codec auto-detection. mediaMin supports three (3) types of SDP info:
 
 > 1. .sdp file given on the command line, for example -sinfo.sdp. See [SDP Support](#user-content-sdpsupport) below<br/>
 > 2. SIP invite packet in the input packet flow (occurring before RTP packets)<br/>
