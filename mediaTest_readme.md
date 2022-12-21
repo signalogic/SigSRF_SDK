@@ -84,8 +84,9 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Static Session Configuration](#user-content-staticsessionconfig)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[User Managed Sessions](#user-content-usermanagedsessions)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroupscmdline)<br/>
 
@@ -292,8 +293,14 @@ Command line arguments in the above examples are explained in [mediaMin Command 
 
 In dynamic session mode, when mediaMin finds a new unique combination of IP address, port, and RTP payload type, it creates a new session. In that process mediaMin examines the payload type and payload header to determine the codec type. The code that does this is surprisingly accurate for dynamic payload types (tested against more than 100 pcaps with a variety of codecs) but it's still an estimate and not guaranteed to be correct. In case of a detection error, SDP information can be used to override codec auto-detection. mediaMin supports three (3) types of SDP info:
 
-> 1. .sdp file given on the command line, for example -sinfo.sdp. See [SDP Support](#user-content-sdpsupport) below<br/>
+> 1. .sdp file given on the command line, for example:<br/>
+> <br/>
+>   -sinfo.sdp<br/>
+> <br/>
+> See [SDP Support](#user-content-sdpsupport) below<br/>
+>
 > 2. SIP INVITE packet in the input packet flow (occurring before RTP packets)<br/>
+> <br/>
 > 3. SAP/SDP protocol packet in the input packet flow<br/>
 
 To review or modify codec auto-detection, look for detect_codec_type_and_bitrate() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
@@ -350,6 +357,20 @@ term2.header_format = 1  # Header format, applies to some codecs (EVS, AMR), 0 =
 ```
 
 Note that each session typically has one or two "terminations", or endpoints (term1 and term2). A session with only term1 can accept and send streaming data with one endpoint, and perform processing on the data required by the endpoint, by the server running mediaMin, or both.  A session with term1 and term2 can exchange streaming data between endpoints, and perform intermediate processing, such as transcoding, speech recognition, overlaying or adding data to the streams, etc.  The number of sessions defined is limited only by the performance of the platform.
+
+<a name="UserManagedSessions"></a>
+### User Managed Sessions
+
+Whether sessions are created [dynamically "on-the-fly"](#user-content-dynamicsessioncreation) or [statically from a configuration file](#user-content-staticsessioncreation), mediaMin manages sessions for their duration, including session creation, updating as needed, and session deletion. This approach is known as user-managed sessions. CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> gives a detailed example of initializing TERMINATION_INFO structs and then calling the DSCreateSession() API in [pktlib](#user-content-pktlib).
+
+<a name="SessionConfigDiagram"></a>
+### Session Endpoint Flow Diagram
+
+As described in Static Session Configuration above, "remote" IP addr and UDP port values refer to stream source, and "local" values refer to stream destination, where a "stream" is a network socket or pcap.  Rx traffic (i.e. received by the user application or mediaMin reference app) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, or sent by the user application or mediaMin app) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
+
+![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
+
+Although terminations can be defined in any order, in general term1 remote should match incoming source values, and term1 local should match incoming destination values. If an outgoing stream is simply a pcap file or a UDP port that nobody is listening to, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
 
 <a name="SDPSupport"></a>
 ### SDP Support
@@ -409,15 +430,6 @@ a=rtpmap:100 telephone-event/16000
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
 
 The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path.
-
-<a name="SessionConfigDiagram"></a>
-### Session Endpoint Flow Diagram
-
-As described in Static Session Configuration above, "remote" IP addr and UDP port values refer to stream source, and "local" values refer to stream destination, where a "stream" is a network socket or pcap.  Rx traffic (i.e. received by the user application or mediaMin reference app) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, or sent by the user application or mediaMin app) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
-
-![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
-
-Although terminations can be defined in any order, in general term1 remote should match incoming source values, and term1 local should match incoming destination values. If an outgoing stream is simply a pcap file or a UDP port that nobody is listening to, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
 
 <a name="StreamGroupsCmdLine"></a>
 ## Stream Groups
