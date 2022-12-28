@@ -104,9 +104,15 @@ Applications include user-defined apps and the mediaMin and mediaTest reference 
 <a name="MinimumAPIInterface"></a>
 ## Minimum API Interface
 
-At a high-level the SigSRF API interface is a basic, continuous push-pull loop, as shown in the mediaMin source code excerpt below:
+At a high-level the SigSRF API allows simple interfaces, for example a basic, continuous push-pull loop using bare minimum APIs, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin</a> source code excerpt below:
   
 ![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface")
+
+Here are some notes about the above example:
+
+> 1. PushPackets() and PullPackets() call [pktlib](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
+> 2. Sessions are created dynamically inside PushPackets()
+> 3. PullPackets() saves transcoded results to local pcap files, and writes continuous merged audio to pcap or UDP port
 
 <a name="StreamGroups"></a>
 ## Stream Groups
