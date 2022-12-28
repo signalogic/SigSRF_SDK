@@ -7,6 +7,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Telecom Mode Data Flow Diagram](#user-content-telecommodedataflowdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode](#user-content-analyticsmode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Analytics Mode Data Flow Diagram](#user-content-analyticsmodedataflowdiagram)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[Minimum API Interface](#user-content-minimumapiinterface)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Stream Groups](#user-content-streamgroups)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Encapsulated Streams](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2/HI3 and OpenLI Support](#user-content-openlisupport)<br/>
@@ -99,6 +100,13 @@ Applications include user-defined apps and the mediaMin and mediaTest reference 
 ![SigSRF software analytics mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_analytics_mode_RevA9b.png?raw=true "SigSRF analytics mode data flow diagram")
 
 Applications include user-defined apps and the mediaMin and mediaTest reference apps described on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin / mediaTest page</a>.
+
+<a name="MinimumAPIInterface"></a>
+## Minimum API Interface
+
+At a high-level the SigSRF API interface is a basic, continuous push-pull loop, as shown in the mediaMin source code excerpt below:
+  
+![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface"
 
 <a name="StreamGroups"></a>
 ## Stream Groups
