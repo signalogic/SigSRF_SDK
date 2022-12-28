@@ -436,13 +436,17 @@ The mediaMin Makefile brings in SDP source code from the <a href="https://github
 <a name="MinimumAPIInterface"></a>
 ## Minimum API Interface
 
-mediaMin uses only a few high-level [pktlib](#user-content-pktlib) APIs to process media. These include:
+mediaMin uses a few high-level APIs to process media. In the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> source example below, PushPackets() and PullPackets() call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets() to queue and dequeue packets to/from packet/media threads that handle all packet processing (jitter buffer, DTX, etc). In turn, packet/media threads call [voplib](#user-content-voplib) APIs for media decoding and encoding, and [streamlib](#user-content-streamlib) APIs for audio processing, merging, speech recognition, etc.
 
-> DSCreateSession()<br/>
-> DSPushPackets()<br/>
-> DSPullPackets()<br/>
+![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface")
 
-DSPushPackets() and DSPullPackets() queue and dequeue packets to and from packet/media threads that handle all packet processing (jitter buffer, DTX, etc), media decoding and encoding (APIs in [voplib](#user-content-voplib)), and audio processing APIs for merging, conferencing, speech recognition, etc. (APIs in [streamlib](#user-content-streamlib)).
+The above example:
+
+> 1. implements a continuous push-pull loop
+> 2. calls PushPackets() and PullPackets() which call pktlib APIs DSPushPackets() and DSPullPackets()
+> 3. reads input packet flow from pcaps and/or UDP ports inside PushPackets()
+> 4. creates sessions dynamically inside PushPackets()
+> 5. saves (i) de-jittered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio to pcap or UDP port inside PullPackets()
 
 <a name="StreamGroupUsage"></a>
 ## Stream Group Usage
