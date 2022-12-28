@@ -2106,27 +2106,40 @@ Note that options and flags may be combined together.
 
 ### Performance Improvements
 
-Below are guidelines, recommendations, and command line entries that may improve mediaMin and user application performance.
+Below are guidelines, recommendations, and command line entries that may improve mediaMin and user application performance, in particular real-time performance.
+
+#### Remote Console
+
+When using mediaMin remotely, for example with Putty or other remote terminal utility, keep these guidelines in mind:
+
+> 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off all packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)</br>
+> </br>
+> 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact read and write seek times.
+
+#### Linux Housekeeping
+
+Periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time oepration.
+
 
 #### Stream Group Output Wav Path
 
-The -gWavOutputPath command line option specifies a path for intermediate wav output, including individual streams and merged streams. Because packet/media threads write wav files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating media) drives. In general, for HDD based wav output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over time may fragment files during writes (i.e. files with some sectors seperated by a long physical distance on the disk platter), thus resulting in longer seek times.
+The -gWavOutputPath command line option specifies a path for intermediate stream group wav output, including individual streams and merged streams. Because packet/media threads write wav files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating media) drives. In general, for HDD based wav output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over long time periods may fragment files during writes (i.e. files with some sectors seperated by a long physical distance on the disk platter), thus resulting in longer seek times.
 
 If mediaMin display output and event log shows pre-emption warning messages such as:
 
-```CoffeeScript
+```
 WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.02, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
 ```
 
 this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec. It's unlikely that streamlib spent that much time on any one or more streams, so we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag in the mediaMin cmd line -dN option to further check:
 
-```CoffeeScript
+```
 -d0x20000000c11
 ```
 
 the above -dN entry specifies dynamic session creation, valid packet arrival timestamps should be used, and stream group output wav file seek time alarm set to 10 msec. If mediaMin display output and event log shows a warning message such as:
 
-```CoffeeScript
+```
 WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
 ```
 
@@ -2134,20 +2147,20 @@ then it's clear that wav file write seek times are an issue.
 
 Here are some example of -g entry. If a ramdisk exists, then the mediaMin command line might contain:
 
-```CoffeeScript
+```
 -g/mnt/ramdisk
 ```
 
 or
 
-```CoffeeScript
+```
 -g/tmp/ramdisk
 ```
 
-or as appropriate depending on the system (look in /etc/fstab to see if a ramdisk is active and if so its path). Or if a folder exists specifically for wav file output, for example a separate drive, then the mediaMin command line might contain:
+or as appropriate depending on the system (look in /etc/fstab to see if a ramdisk is active and if so its path). Or if a folder exists specifically for wav file output, for example a separate SSD drive, then the mediaMin command line might contain:
 
-```CoffeeScript
--g/wavdrive/mediamin/streamgroups
+```
+-g/ssddrive/mediamin/streamgroupwavs
 ```
 
 If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished).
@@ -2157,10 +2170,10 @@ If -g is not entered, then wav files are generated on the mediaMin app subfolder
 The DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag can be set in the mediaMin -dN command line option, for example:
 
 ```CoffeeScript
-  -d0x20008000c11
+-d0x20008000c11
 ```
   
-specifies dynamic session creation, valid packet arrival timestamps should be used, intermediate jitter buffer pcaps disabled, and stream group output wav file seek time alarm set to 10 msec.
+specifies dynamic session creation, valid packet arrival timestamps should be used, intermediate jitter buffer output pcaps disabled, and stream group output wav file seek time alarm set to 10 msec. If the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is not set, then jitter buffer output pcaps are generated on the mediaMin app subfolder.
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
