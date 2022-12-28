@@ -108,11 +108,11 @@ At a high-level the SigSRF API allows simple interfaces, for example a basic, co
   
 ![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface")
 
-Here are some notes about the above example:
+Some notes about the above example:
 
 > 1. PushPackets() and PullPackets() call [pktlib](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
 > 2. Sessions are created dynamically inside PushPackets()
-> 3. PullPackets() saves transcoded results to local pcap files, and writes continuous merged audio to pcap or UDP port
+> 3. PullPackets() saves (i) de-jittered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio to pcap or UDP port
 
 <a name="StreamGroups"></a>
 ## Stream Groups
