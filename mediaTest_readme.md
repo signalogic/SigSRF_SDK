@@ -2055,8 +2055,10 @@ Below is "quick-reference" mediaMin command line documentation:
 
 ### Inputs
 
-Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP port. Supported file types include .pcap, .pcapng, and .wav. Here are some example port specifications:
+Inputs are given by one or more "-ixxx" options, where xxx is a filename or UDP port. Supported file types include .pcap, .pcapng, and .wav. Here are some examples:
 
+> -imytestinput.pcap<br/>
+> <br/>
 > -i192.168.1.2:52000<br/>
 > <br/>
 > -ifd00:5d2::11:123:5222:52000<br/>
@@ -2112,9 +2114,9 @@ Below are guidelines, recommendations, and command line entries that may improve
 
 When using mediaMin remotely, for example with Putty or other remote terminal utility, keep these guidelines in mind:
 
-> 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off all packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)</br>
-> </br>
-> 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact read and write seek times</br>
+> 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off all packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)<br/>
+> <br/>
+> 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact read and write seek times<br/>
 
 #### Other Applications and Linux Housekeeping
 
