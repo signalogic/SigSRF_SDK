@@ -443,9 +443,9 @@ mediaMin uses a few high-level APIs to process media. In the <a href="https://gi
 The above example:
 
 > 1. implements a continuous push-pull loop
-> 2. calls PushPackets() and PullPackets() which call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
+> 2. calls PushPackets() and PullPackets(), which call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
 > 3. reads input packet flow from pcaps and/or UDP ports inside PushPackets()
-> 4. creates sessions dynamically inside PushPackets()
+> 4. creates sessions dynamically inside PushPackets(), which calls [pktlib](#user-content-pktlib) API DSCreateSession()
 > 5. saves (i) de-jittered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio streams to pcaps or UDP ports inside PullPackets()
 
 <a name="StreamGroupUsage"></a>
@@ -2103,6 +2103,64 @@ Note that options and flags may be combined together.
 ### Real-Time Interval
 
 -rN specifies a "real-time interval", which mediaMin uses for a target packet push rate and to control overall timing, and which [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push packets as fast as possible
+
+### Performance Improvements
+
+Below are guidelines, recommendations, and command line entries that may improve mediaMin and user application performance.
+
+#### Stream Group Output Wav Path
+
+The -gWavOutputPath command line option specifies a path for intermediate wav output, including individual streams and merged streams. Because packet/media threads write wav files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating media) drives. In general, for HDD based wav output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over time may fragment files during writes (i.e. files with some sectors seperated by a long physical distance on the disk platter), thus resulting in longer seek times.
+
+If mediaMin display output and event log shows pre-emption warning messages such as:
+
+```CoffeeScript
+WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.02, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
+```
+
+this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec. It's unlikely that streamlib spent that much time on any one or more streams, so we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag in the mediaMin cmd line -dN option to further check:
+
+```CoffeeScript
+-d0x20000000c11
+```
+
+the above -dN entry specifies dynamic session creation, valid packet arrival timestamps should be used, and stream group output wav file seek time alarm set to 10 msec. If mediaMin display output and event log shows a warning message such as:
+
+```CoffeeScript
+WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
+```
+
+then it's clear that wav file write seek times are an issue.
+
+Here are some example of -g entry. If a ramdisk exists, then the mediaMin command line might contain:
+
+```CoffeeScript
+-g/mnt/ramdisk
+```
+
+or
+
+```CoffeeScript
+-g/tmp/ramdisk
+```
+
+or as appropriate depending on the system (look in /etc/fstab to see if a ramdisk is active and if so its path). Or if a folder exists specifically for wav file output, for example a separate drive, then the mediaMin command line might contain:
+
+```CoffeeScript
+-g/wavdrive/mediamin/streamgroups
+```
+
+If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished).
+
+#### Intermediate pcap Output Disable
+
+The DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag can be set in the mediaMin -dN command line option, for example:
+
+```CoffeeScript
+  -d0x20008000c11
+```
+  
+specifies dynamic session creation, valid packet arrival timestamps should be used, intermediate jitter buffer pcaps disabled, and stream group output wav file seek time alarm set to 10 msec.
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
