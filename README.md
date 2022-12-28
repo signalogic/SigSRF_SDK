@@ -106,7 +106,7 @@ Applications include user-defined apps and the mediaMin and mediaTest reference 
 
 At a high-level the SigSRF API interface is a basic, continuous push-pull loop, as shown in the mediaMin source code excerpt below:
   
-![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface"
+![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface")
 
 <a name="StreamGroups"></a>
 ## Stream Groups
