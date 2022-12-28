@@ -2114,12 +2114,13 @@ When using mediaMin remotely, for example with Putty or other remote terminal ut
 
 > 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off all packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)</br>
 > </br>
-> 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact read and write seek times.
+> 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact read and write seek times</br>
 
-#### Linux Housekeeping
+#### Other Applications and Linux Housekeeping
 
-Periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time oepration.
+To achieve real-time performance and highest audio quality, other applications and periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time operations. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (as shown below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting real-time performance.
 
+It's importnat to note that mediaMin, pktlib, and streamlib all have automatic packet and audio "repair" facilities to activiate when latencies, packet loss, or other stream impairments are encountered. To some extent these compensate to packet/media thread pre-emption. For example, streamlib will tolerate and repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Even so, frequent and sustained thread pre-emption will have unrecoverable impacts on audio quality.
 
 #### Stream Group Output Wav Path
 
