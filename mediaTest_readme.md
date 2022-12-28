@@ -443,10 +443,10 @@ mediaMin uses a few high-level APIs to process media. In the <a href="https://gi
 The above example:
 
 > 1. implements a continuous push-pull loop
-> 2. calls PushPackets() and PullPackets() which call pktlib APIs DSPushPackets() and DSPullPackets()
+> 2. calls PushPackets() and PullPackets() which call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
 > 3. reads input packet flow from pcaps and/or UDP ports inside PushPackets()
 > 4. creates sessions dynamically inside PushPackets()
-> 5. saves (i) de-jittered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio to pcap or UDP port inside PullPackets()
+> 5. saves (i) de-jittered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio streams to pcaps or UDP ports inside PullPackets()
 
 <a name="StreamGroupUsage"></a>
 ## Stream Group Usage
