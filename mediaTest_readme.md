@@ -2138,7 +2138,7 @@ If mediaMin display output and event log shows pre-emption warning messages such
 WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.02, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
 ```
 
-this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec. It's unlikely that streamlib spent that much time on any one or more streams, so we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag in the mediaMin cmd line -dN option to further check:
+this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec. It's unlikely that streamlib spent that much time on any one or more streams, so we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag in the mediaMin cmd line -dN option to further investigate:
 
     -d0x20000000c11
 
