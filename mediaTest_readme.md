@@ -2087,7 +2087,7 @@ Auto-generated per stream jitter buffer output streams are de-jittered, DTX expa
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
 
-The -dN command line argument specifies options and flags. Here are some of the key ones, including command line value listed, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) flag name given in ():
+The -dN command line argument specifies options and flags. Here are some of the key ones, including command line value, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) flag name given in ():
 
 > 0x01 enable dynamic sessions (DYNAMIC_SESSIONS)<br/>
 > 0x08 apply ASR to stream group output (ENABLE_STREAM_GROUP_ASR)<br/>
@@ -2102,10 +2102,10 @@ Note that options and flags may be combined together.
 
 ### Packet Log
 
-[Packet history logging](#user-content-packetlog) is controlled by the -Lxxx command line option:
+[Packet history logging](#user-content-packetlog) is controlled by the -L command line option:
 
 > -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input<br/>
-> -Lxxx enables packet history logging with a log filename of xxx_pkt_log.txt<br/>
+> -LlogFile enables packet history logging with a filename of logFile_pkt_log.txt<br/>
 
 ### Real-Time Interval
 
