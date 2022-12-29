@@ -2087,15 +2087,16 @@ Auto-generated per stream jitter buffer output streams are de-jittered, DTX expa
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
 
-The -dN command line argument specifies options and flags. Here are some of the key ones:
+The -dN command line argument specifies options and flags. Here are some of the key ones, with command line value listed first and flag name in cmd_line_options_flags.h in ():
 
-> 0x01 enable dynamic sessions<br/>
-> 0x08 apply ASR to stream group output<br/>
-> 0x10 use packet arrival times. Omit if input packets (e.g. pcap file) have incorrect (or no) arrival timestamps<br/>
-> 0x400 enable stream groups<br/>
-> 0x800 enable wav output<br/>
-> 0x40000 enable analytics mode (telecom mode is the default)<br/>
-> 0x80000 use a queue balancing algorithm for packet push rate. Typically applied when packet arrival timestamps can't be used<br/>
+> 0x01 enable dynamic sessions (DYNAMIC_SESSIONS)<br/>
+> 0x08 apply ASR to stream group output (ENABLE_STREAM_GROUP_ASR)<br/>
+> 0x10 use packet arrival times (USE_PACKET_ARRIVAL_TIMES). Omit if input packets (e.g. pcap file) have incorrect (or no) arrival timestamps<br/>
+> 0x400 enable stream groups (ENABLE_STREAM_GROUPS)<br/>
+> 0x800 enable wav output (ENABLE_WAV_OUTPUT)<br/>
+> 0x1000 enable DER stream decode (ENABLE_DER_STREAM_DECODE). Enables decoding of encapsulated streams
+> 0x40000 operate in analytics mode (ANALYTICS_MODE). Telecom mode is the default<br/>
+> 0x80000 use a queue balancing algorithm for packet push rate (ENABLE_AUTO_ADJUST_PUSH_RATE). Typically applied when packet arrival timestamps can't be used<br/>
 
 Note that options and flags may be combined together.
 
@@ -2126,7 +2127,7 @@ When using mediaMin remotely, for example with Putty or other remote terminal ut
 
 To achieve consistent real-time performance and highest audio quality, other applications and periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time operations. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (as shown below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting real-time performance.
 
-It's important to note that mediaMin, pktlib, and streamlib all have automatic packet and audio repair facilities that activiate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. To some extent auto-repairs will compensate for packet/media thread pre-emption. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have unrecoverable impacts on audio quality.
+It's important to note that mediaMin, pktlib, and streamlib all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have unrecoverable impacts on audio quality.
 
 #### Stream Group Output Wav Path
 
@@ -2160,7 +2161,7 @@ or as appropriate depending on the system (look in /etc/fstab to see if a ramdis
 
     -g/ssddrive/mediamin/streamgroupwavs
 
-If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished).
+If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including the ENABLE_WAV_OUTPUT flag in -dN command line options.
 
 #### Intermediate pcap Output Disable
 
