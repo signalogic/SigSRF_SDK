@@ -2055,7 +2055,7 @@ Below is "quick-reference" mediaMin command line documentation:
 
 ### Inputs
 
-Inputs are given by one or more "-iInput" options, where Input is a filename or UDP port. Supported file types include .pcap, .pcapng, and .wav. Here are some examples:
+Inputs are given by one or more "<span style="font-family: 'Courier New';">-iInput</span>" options, where Input is a filename or UDP port. Supported file types include .pcap, .pcapng, and .wav. Here are some examples:
 
 > -imytestinput.pcap<br/>
 > <br/>
@@ -2069,7 +2069,7 @@ Inputs are given by one or more "-iInput" options, where Input is a filename or 
 
 ### Outputs
 
-Outputs are given by one or more "-oOutput" options, where Output is a filename or UDP port. Currently mediaMin command line outputs are limited to pcap files containing transcoded outputs. For example in this command line:
+Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. Currently mediaMin command line outputs are limited to pcap files containing transcoded outputs. For example in this command line:
 
     ./mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
 
@@ -2140,35 +2140,25 @@ WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num s
 
 this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec. It's unlikely that streamlib spent that much time on any one or more streams, so we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag in the mediaMin cmd line -dN option to further check:
 
-```
--d0x20000000c11
-```
+    -d0x20000000c11
 
 the above -dN entry specifies dynamic session creation, valid packet arrival timestamps should be used, and stream group output wav file seek time alarm set to 10 msec. If mediaMin display output and event log shows a warning message such as:
 
-```
-WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
-```
+    WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
 
 then it's clear that wav file write seek times are an issue.
 
 Here are some example of -g entry. If a ramdisk exists, then the mediaMin command line might contain:
 
-```
--g/mnt/ramdisk
-```
+    -g/mnt/ramdisk
 
 or
 
-```
--g/tmp/ramdisk
-```
+    -g/tmp/ramdisk
 
 or as appropriate depending on the system (look in /etc/fstab to see if a ramdisk is active and if so its path). Or if a folder exists specifically for wav file output, for example a separate SSD drive, then the mediaMin command line might contain:
 
-```
--g/ssddrive/mediamin/streamgroupwavs
-```
+    -g/ssddrive/mediamin/streamgroupwavs
 
 If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished).
 
@@ -2176,9 +2166,7 @@ If -g is not entered, then wav files are generated on the mediaMin app subfolder
 
 The DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag can be set in the mediaMin -dN command line option, for example:
 
-```CoffeeScript
--d0x20008000c11
-```
+    -d0x20008000c11
   
 specifies dynamic session creation, valid packet arrival timestamps should be used, intermediate jitter buffer output pcaps disabled, and stream group output wav file seek time alarm set to 10 msec. If the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is not set, then jitter buffer output pcaps are generated on the mediaMin app subfolder.
 
