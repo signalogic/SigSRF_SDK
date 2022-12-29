@@ -2087,7 +2087,7 @@ Auto-generated per stream jitter buffer output streams are de-jittered, DTX expa
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
 
-The -dN command line argument specifies options and flags. Here are some of the key ones, including command line value, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) flag name given in ():
+The -dN command line argument specifies options and flags. Here are some of the key ones, including command line value, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> flag name given in ():
 
 > 0x01 enable dynamic sessions (DYNAMIC_SESSIONS)<br/>
 > 0x08 apply ASR to stream group output (ENABLE_STREAM_GROUP_ASR)<br/>
