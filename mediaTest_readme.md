@@ -2087,14 +2087,14 @@ Auto-generated per stream jitter buffer output streams are de-jittered, DTX expa
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
 
-The -dN command line argument specifies options and flags. Here are some of the key ones, with command line value listed first <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) flag given in ():
+The -dN command line argument specifies options and flags. Here are some of the key ones, including command line value listed, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) flag name given in ():
 
 > 0x01 enable dynamic sessions (DYNAMIC_SESSIONS)<br/>
 > 0x08 apply ASR to stream group output (ENABLE_STREAM_GROUP_ASR)<br/>
 > 0x10 use packet arrival times (USE_PACKET_ARRIVAL_TIMES). Omit if input packets (e.g. pcap file) have incorrect (or no) arrival timestamps<br/>
 > 0x400 enable stream groups (ENABLE_STREAM_GROUPS)<br/>
 > 0x800 enable wav output (ENABLE_WAV_OUTPUT)<br/>
-> 0x1000 enable DER stream decode (ENABLE_DER_STREAM_DECODE). Enables decoding of encapsulated streams
+> 0x1000 enable DER stream decode (ENABLE_DER_STREAM_DECODE). Enables decoding of encapsulated streams<br/>
 > 0x40000 operate in analytics mode (ANALYTICS_MODE). Telecom mode is the default<br/>
 > 0x80000 use a queue balancing algorithm for packet push rate (ENABLE_AUTO_ADJUST_PUSH_RATE). Typically applied when packet arrival timestamps can't be used<br/>
 
