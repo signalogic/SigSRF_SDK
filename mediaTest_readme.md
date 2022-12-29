@@ -916,7 +916,7 @@ Note the highlighted CPU and memory usage display areas, showing 100% core usage
 
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -d0x100000000
     
- Debug flag options are defined in cmd_line_options_flags.h in the mediaTest source code folder.
+ Debug flag options are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in the mediaTest source code folder.
  
  Below is an htop screencap showing CPU core consumption during a multithreaded codec max capacity test:
 	
@@ -2087,7 +2087,7 @@ Auto-generated per stream jitter buffer output streams are de-jittered, DTX expa
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
 
-The -dN command line argument specifies options and flags. Here are some of the key ones, with command line value listed first and flag name in cmd_line_options_flags.h in ():
+The -dN command line argument specifies options and flags. Here are some of the key ones, with command line value listed first <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) flag given in ():
 
 > 0x01 enable dynamic sessions (DYNAMIC_SESSIONS)<br/>
 > 0x08 apply ASR to stream group output (ENABLE_STREAM_GROUP_ASR)<br/>
