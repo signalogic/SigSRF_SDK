@@ -2139,7 +2139,7 @@ If mediaMin display output and event log shows pre-emption warning messages such
 WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.02, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
 ```
 
-this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec. It's unlikely that streamlib spent that much time on any one or more streams, so we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag in the mediaMin cmd line -dN option to further investigate:
+this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec. It's unlikely that streamlib spent that much time on any one or more streams, so we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in mediaMin cmd line -dN options to further investigate:
 
     -d0x20000000c11
 
@@ -2161,11 +2161,11 @@ or as appropriate depending on the system's configuration (look in /etc/fstab to
 
     -g/ssd/mediamin/streamgroupwavs
 
-If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including in -dN command line options the ENABLE_WAV_OUTPUT flag (located in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
+If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including in -dN command line options the ENABLE_WAV_OUTPUT flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
 #### Intermediate pcap Output Disable
 
-The DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (located in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set in the mediaMin -dN command line option, for example:
+The DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set in the mediaMin -dN command line option, for example:
 
     -d0x20008000c11
   
