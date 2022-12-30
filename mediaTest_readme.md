@@ -546,9 +546,9 @@ we can see 12 (twelve) mediaTest threads running. Actually these are mediaMin th
 > 
 > 2) mediaMin shares the mediaTest command line (of course ignoring anything not intended for it)
 > 
-> 3) mediaMin threads are not assigned core affinity; i.e. they are allowed to hyperthread
+> 3) unlike packet/media threads, mediaMin threads are not assigned core affinity; i.e. they are allowed to hyperthread
 
-When mediaMin detects that it's running in "thread mode", it assigns a master thread to maintain thread-related information, including thread index and number of threads. The master thread handles thread synchroniztion; for example, making sure all threads wait until everyone else is fully initialized, and the thread index is used to manage separate arrays of information for I/O, sessions, profiling, etc.
+When mediaMin detects that it's running in "thread mode", it assigns a master thread to maintain thread-related information, including thread index and number of threads (look for isMasterThread in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). The master thread handles thread synchroniztion; for example, making sure all threads wait until everyone else is fully initialized, and the thread index is used to manage separate arrays of information for I/O, sessions, profiling, etc.
 
 <sup>1</sup> -Ex = execution mode, -tN = number of threads. Look in mediaMin.cpp source code for "thread_index" and "num_app_threads"
 
