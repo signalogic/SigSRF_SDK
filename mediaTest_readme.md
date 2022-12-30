@@ -534,7 +534,7 @@ mediaMin also generates [stream group](#user-content-streamgroupusage) output .w
 <a name="HighCapacity"></a>
 ## High Capacity
 
-The [High Capacity Multithreaded Operation](https://github.com/signalogic/SigSRF_SDK#user-content-multithreaded) section on the SigSRF SDK page has basic information on mediaMin high capacity, including an example htop measurement screen capture. More detailed information is given here.
+The [High Capacity Multithreaded Operation](https://github.com/signalogic/SigSRF_SDK#user-content-multithreaded) section on the SigSRF SDK page has basic information on SigSRF high capacity, including an example htop measurement screen capture. More detailed information, specific for mediaTest and mediaMin, is given here.
 
 In the htop screen cap on the SigSRF SDK page:
 
