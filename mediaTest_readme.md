@@ -2161,15 +2161,22 @@ or as appropriate depending on the system (look in /etc/fstab to see if a ramdis
 
     -g/ssddrive/mediamin/streamgroupwavs
 
-If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including the ENABLE_WAV_OUTPUT flag in -dN command line options.
+If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including in -dN command line options the ENABLE_WAV_OUTPUT flag (located in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
 #### Intermediate pcap Output Disable
 
-The DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag can be set in the mediaMin -dN command line option, for example:
+The DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (located in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set in the mediaMin -dN command line option, for example:
 
     -d0x20008000c11
   
-specifies dynamic session creation, valid packet arrival timestamps should be used, intermediate jitter buffer output pcaps disabled, and stream group output wav file seek time alarm set to 10 msec. If the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is not set, then jitter buffer output pcaps are generated on the mediaMin app subfolder.
+which specifies:
+
+> dynamic session creation<br/>
+> packet arrival timestamps are valid and should be used<br/>
+> intermediate jitter buffer output pcaps disabled<br/>
+> stream group output wav file seek time alarm set to 10 msec<br/>
+
+If the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is not set, then jitter buffer output pcaps are generated on the mediaMin app subfolder.
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
