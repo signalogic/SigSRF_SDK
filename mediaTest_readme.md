@@ -2127,7 +2127,7 @@ When using mediaMin remotely, for example with Putty or other remote terminal ut
 
 To achieve consistent real-time performance and highest audio quality, other applications and periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time operations. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (as shown below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting real-time performance.
 
-It's important to note that mediaMin, pktlib, and streamlib all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have unrecoverable impacts on audio quality.
+It's important to note that mediaMin, pktlib, and streamlib all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
 
 #### Stream Group Output Wav Path
 
@@ -2147,9 +2147,9 @@ the above -dN entry specifies dynamic session creation, valid packet arrival tim
 
     WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
 
-then it's clear that wav file write seek times are an issue.
+then it's clear that wav file write seek times are an issue. To change the write time alarm threshold, look for uStreamGroupOutputWavFileSeekTimeAlarmThreshold in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> (a member of the DEBUG_CONFIG struct defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/config.h</a>).
 
-Here are some example of -g entry. If a ramdisk exists, then the mediaMin command line might contain:
+Below are some example of -g entry, including ramdisk and dedicated media folder. If a ramdisk exists, then the mediaMin command line might contain:
 
     -g/mnt/ramdisk
 
@@ -2157,9 +2157,9 @@ or
 
     -g/tmp/ramdisk
 
-or as appropriate depending on the system (look in /etc/fstab to see if a ramdisk is active and if so its path). Or if a folder exists specifically for wav file output, for example a separate SSD drive, then the mediaMin command line might contain:
+or as appropriate depending on the system's configuration (look in /etc/fstab to see if a ramdisk is active and if so its path). For a folder dedicated to wav file output, such as a separate SSD drive, then the mediaMin command line might contain something like:
 
-    -g/ssddrive/mediamin/streamgroupwavs
+    -g/ssd/mediamin/streamgroupwavs
 
 If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including in -dN command line options the ENABLE_WAV_OUTPUT flag (located in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
