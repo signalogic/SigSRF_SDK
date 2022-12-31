@@ -2115,7 +2115,7 @@ Note that options and flags may be combined together.
 
 ### Performance Improvements
 
-Below are guidelines, recommendations, and command line entries that may improve mediaMin and user application performance, in particular real-time performance and audio quality.
+Below are guidelines, recommendations, and command line options that may improve mediaMin and user application performance, in particular real-time performance and audio quality.
 
 #### Remote Console
 
