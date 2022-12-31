@@ -550,14 +550,14 @@ we can see 12 (twelve) mediaTest threads running. Actually these are mediaMin th
 
 Hyperthreading for application threads makes sense, as they typically handle I/O, data management, and user-interface rather than the calculation/compute intensive packet and signal processing inside packet/media threads.
 
-When mediaMin detects that it's running in "thread mode", it assigns a master thread to maintain thread-related information, including thread index and number of threads (look for "isMasterThread" in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). The master thread handles thread synchronization; for example, making sure all threads wait until all are fully initialized, and the thread index is used to manage per-thread information for I/O, sessions, profiling, etc.
+When mediaMin detects that it's running in thread mode, it assigns a master thread to maintain thread-related information, including thread index and number of threads (look for "isMasterThread" in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). The master thread handles thread synchronization; for example, making sure all threads wait until others are fully initialized, and the thread index is used to manage per-thread information for I/O, sessions, profiling, etc.
 
 <sup>1</sup> -Ex = execution mode, -tN = number of threads. Look in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp source code</a> for "thread_index" and "num_app_threads"
 
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
 
-mediaMin supports ASR processing simultaneously with packet handling, media codec, stream group, signal processing, and other options. ASR is performed on stream group output, which can be a single audio stream input or multiple audio streams after merging. Below are some command line examples showing pcap input along with ASR output:
+mediaMin supports ASR processing simultaneously with packet handling, media codec, stream group, signal processing, and other options. ASR is performed on stream group output, which can be a single audio stream input or multiple audio streams after merging. Below are some command line examples showing pcap input with ASR enabled:
 
     ./mediaMin -cx86 -i../pcaps/asr_test1.pcap -L -d0x10000c19 -r20
 
@@ -595,12 +595,12 @@ The above mediaMin command can be run with wideband audio pcaps included in the 
 
 The original wav files are included in the mediaTest/test_files subfolder; they are recordings from a speech corpus known as the <a href="https://www.cs.columbia.edu/~hgs/audio/harvard.html">"Harvard Sentences"</a>, prepared in the 1960s by the IEEE Subcommittee on Subjective Measurements as part of their recommended practices for speech quality measurements.
 
-In general, to enable ASR with any arbitrary mediaMin command, including mediaMin commands documented on this page, you can set the "ENABLE_STREAM_GROUP_ASR" bit in the -dN command line option (-dN command line options and debug flags are documented in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
+In general, to enable ASR with any arbitrary mediaMin command, including mediaMin commands documented on this page, you can set the ENABLE_STREAM_GROUP_ASR flag in the -dN command line option (-dN command line options and debug flags are documented in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
 Here are some notes about ASR operation:
 
 1. Input is expected to be wideband audio (i.e. 16 kHz sampling rate); in the case of pcap input this implies wideband codecs such as AMR-WB, EVS, G711.1, or clear mode with 256 kbps data
-2. The SDK version of mediaMin currently supports pcap input with RTP encoded voice (e.g. VoLTE codecs). A version that also handles wav and USB audio input is expected in 2Q22. As shown in [Converting Wav to Pcaps](#user-content-convertingwav2pcaps), pcaps can be generated from wav files using mediaTest commands
+2. The SDK version of mediaMin currently supports pcap input with RTP encoded voice (e.g. VoLTE codecs). A version that also handles wav and USB audio input is expected in 1Q23. As shown in [Converting Wav to Pcaps](#user-content-convertingwav2pcaps), pcaps can be generated from wav files using mediaTest commands
 3. Capacity with ASR enabled is substantially reduced. For more information on ASR capacity / real-time performance, see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-asrnotes">ASR Notes</a>
 	
 <a name="rtpmalwaredetection"><a/>
