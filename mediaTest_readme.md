@@ -2028,29 +2028,37 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 <a name="CommandLineQuick-Reference"></a>
 # Command Line Quick-Reference
 
-Below are general command line notes and arguments that apply to both mediaMin and mediaTest:
+Below are general command line notes, arguments, and options that apply to both mediaMin and mediaTest:
 
 > All command line options are case sensitive<br/>
 > <br/>
 > Enter ./prog -h or ./prog -? to see a list of command line options (where "prog" = mediaMin or mediaTest). Mandatory command line options are shown with "!"<br/>
 > <br/>
 > Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
+> <br/>
+> mediaMin and mediaTest always generate an [event log](#user-content-eventlog), with a default log filename of name_event_log.txt, where "name" is the filename (without extension) of the first command line input. Event log filenames can be changed programmatically (as one example, look for LOG_EVENT_SETUP in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). No command line entry affects event log generation<br/>
+> <br/>
+> Application modes and functionality are controlled by -dN command line options, where N is a hex value containing up to 64 flags. These flags are referenced throughout the sections below.
 
-Below are command line options that apply to both mediaMin and mediaTest, followed by (i) a [section specific to mediaMin](#user-content-mediamincommandlinequick-reference) and (ii) a [section specific to mediaTest](#user-content-mediatestcommandlinequick-reference).
+Below are command line arguments and options that apply to both mediaMin and mediaTest, followed by (i) a [section specific to mediaMin](#user-content-mediamincommandlinequick-reference) and (ii) a [section specific to mediaTest](#user-content-mediatestcommandlinequick-reference).
 
 ### Platform and Operating Mode
 
--cXXX specifies a base platform. Currently for the Github .rar packages and Docker containers this option should always be given as -cx86.
+-cXXX is an argument specifying a base platform. Currently for the Github .rar packages and Docker containers this argument should always be given as -cx86.
 
 -MN specifies an optional operating mode N. Currently for the Github .rar packages and Docker containers no operating mode should be given.
 
-### Event Log
-
-mediaMin and mediaTest always generate an [event log](#user-content-eventlog), with a default log filename of name_event_log.txt, where "name" is the filename (without extension) of the first command line input. Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
-
 ### Repeat
 
-The -RN command line argument enables "repeat mode", where mediaMin or mediaTest will repeat the operation or test specified in its command line. -RN enables N number of repeats, and -R0 enables indefinite repeat. <b><i>Caution -- if using indefinite repeat, output audio and pcap files can consume available disk space at a fast rate.</i></b>
+The -RN command line argument enables "repeat mode", where mediaMin or mediaTest will repeat the operation or test specified in its command line. -RN enables N number of repeats, and -R0 enables indefinite repeat. <b><i>Caution -- if using indefinite repeat, output audio and pcap files can rapidly consume available disk space !</i></b>
+
+### Debug Stats
+
+The -dN option ENABLE_DEBUG_STATUS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) enables debug information and stats, including information and warning messages output by (i) mediaMin and mediaTest, (ii) packet/media threads, (iii) stream audio processing, and (iv) encapsulated stream decoding.
+
+### Memory Stats
+
+The -dN option ENABLE_MEM_STATS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) enables memory usage stats.
 
 <a name="mediaMinCommandLineQuick-Reference"></a>
 ## mediaMin Command Line Quick-Reference
@@ -2071,6 +2079,8 @@ Inputs are given by one or more "<span style="font-family: 'Courier New';">-iInp
 > <br/>
 > -imytestinput1.pcap -imytestinput2.pcap -i192.168.1.2:52000<br/>
 
+Technically inputs are command line arguments, in the sense that mediaMin requires at least one input.
+
 ### Outputs
 
 Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. Currently mediaMin command line outputs are limited to pcap files containing transcoded outputs. For example in this command line:
@@ -2087,6 +2097,8 @@ In addition to the event log, mediaMin generates a number of outputs automatical
 > stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
 
 Auto-generated per stream jitter buffer output streams are de-jittered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>.
+
+The mediaMin command line does need to contain an output option.
 
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
@@ -2108,7 +2120,7 @@ Note that options and flags may be combined together.
 
 [Packet history logging](#user-content-packetlog) is controlled by the -L command line option:
 
-> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where name is the filename (without extension) of the first command line input<br/>
+> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where "name" is the filename (without extension) of the first command line input<br/>
 > -LlogFile enables packet history logging with a filename of logFile_pkt_log.txt<br/>
 
 ### Real-Time Interval
