@@ -546,11 +546,11 @@ we can see 12 (twelve) mediaTest threads running. Actually these are mediaMin th
 > 
 > 2) mediaMin shares the mediaTest command line (of course ignoring anything not intended for it)
 > 
-> 3) unlike packet/media threads, mediaMin threads are not assigned core affinity; i.e. they are allowed to hyperthread
+> 3) Unlike packet/media threads, mediaMin threads are not assigned core affinity; i.e. they are allowed to hyperthread
 
 Hyperthreading for application threads makes sense, as they typically handle I/O, data management, and user-interface rather than the calculation/compute intensive packet and signal processing inside packet/media threads.
 
-When mediaMin detects that it's running in "thread mode", it assigns a master thread to maintain thread-related information, including thread index and number of threads (look for "isMasterThread" in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). The master thread handles thread synchroniztion; for example, making sure all threads wait until everyone else is fully initialized, and the thread index is used to manage separate arrays of information for I/O, sessions, profiling, etc.
+When mediaMin detects that it's running in "thread mode", it assigns a master thread to maintain thread-related information, including thread index and number of threads (look for "isMasterThread" in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). The master thread handles thread synchronization; for example, making sure all threads wait until all are fully initialized, and the thread index is used to manage per-thread information for I/O, sessions, profiling, etc.
 
 <sup>1</sup> -Ex = execution mode, -tN = number of threads. Look in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp source code</a> for "thread_index" and "num_app_threads"
 
@@ -1354,7 +1354,7 @@ When a stream group's members have a time relationship to each other, for exampl
     underrun - gaps due to lost packets or call drop-outs
     overrun - bursts or sustained rate mismatches where packets arrive faster than expected
     
-Both underrun and overrun may substantially mis-match the expected packet rate (i.e. expected ptime interval for individual stream group contributors). In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or encapsulated streams sent TCP/IP or inaccurate packet timestamps.
+Both underrun and overrun may substantially mis-match the expected packet rate (i.e. expected ptime interval for individual stream group contributors). In analytics mode, stream alignment may need to overcome additional problems, such as large numbers of ooo (out-of-order) packets, or [encapsulated streams](#user-content-encapsulatedstreams) sent TCP/IP or inaccurate packet timestamps.
 
 Regardless of what packet flow problems are encountered, streams must stay in time-alignment true to their origin in order to maintain overall call audio accuracy and intelligibility. The SigSRF streamlib module implements several algorithms to deal with underrun, overrun, and stream alignment, and can handle up to 20% sustained underrun and overrun conditions.
 
@@ -1810,7 +1810,7 @@ In addition to the above mentioned In SigSRF source codes, look also for the API
 <a name="APIUsage"></a>
 ## API Usage
 
-Below is source code example showing a basic packet processing loop with push/pull APIs.  PushPackets() accepts both IP/UDP/RTP packets and encapsulated TCP/IP streams, for example HI3 intercept streams.
+Below is source code example showing a basic packet processing loop with push/pull APIs.  PushPackets() accepts both IP/UDP/RTP packets and TCP/IP [encapsulated streams](#user-content-encapsulatedstreams), for example HI3 intercept streams.
 
 ```C
 do {
@@ -2034,17 +2034,17 @@ Below are general command line notes and arguments that apply to both mediaMin a
 > <br/>
 > enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest). Mandatory command line options are shown with !<br/>
 > <br/>
-> <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> uses 'm" and 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
+> Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
 
 ### Platform and Operating Mode
 
 -cXXX specifies a base platform. Currently for the Github .rar packages and Docker containers this option should always be given as -cx86.
 
--MN specifies an optional operating mode N. Currently for the Github .rar packages and Docker containers no mode option should be given.
+-MN specifies an optional operating mode N. Currently for the Github .rar packages and Docker containers no operating mode should be given.
 
 ### Event Log
 
-mediaMin and mediaTest always generate [event logs](#user-content-eventlog), with a default log filename of name_event_log.txt, where name is the filename (without extension) of the first command line input. Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
+mediaMin and mediaTest always generate an [event log](#user-content-eventlog), with a default log filename of name_event_log.txt, where "name" is the filename (without extension) of the first command line input. Event log filenames can be changed programmatically (look for LOG_EVENT_SETUP in mediaMin.cpp)
 
 ### Repeat
 
@@ -2080,9 +2080,9 @@ the -oxxx_xcN.pcap files are transcoded outputs of the first three (3) streams f
 In addition to the event log, mediaMin generates a number of outputs automatically:
 
 > per stream jitter buffer output pcap<br/>
-> per stream wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br/>
-> stream group output pcap if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups<br/>
-> stream group output wav file if the [-dN command line argument](#user-content-mediaMinCommandLineOptions) enables stream groups and wav file output<br/>
+> per stream wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
+> stream group output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups<br/>
+> stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
 
 Auto-generated per stream jitter buffer output streams are de-jittered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>.
 
@@ -2093,10 +2093,10 @@ The -dN command line argument specifies options and flags. Here are some of the 
 
 > 0x01 enable dynamic sessions (DYNAMIC_SESSIONS)<br/>
 > 0x08 apply ASR to stream group output (ENABLE_STREAM_GROUP_ASR)<br/>
-> 0x10 use packet arrival times (USE_PACKET_ARRIVAL_TIMES). Omit if input packets (e.g. pcap file) have incorrect (or no) arrival timestamps<br/>
+> 0x10 use packet arrival timestamps (USE_PACKET_ARRIVAL_TIMES). Omit if input packets (e.g. pcap file) have incorrect (or no) arrival timestamps<br/>
 > 0x400 enable stream groups (ENABLE_STREAM_GROUPS)<br/>
 > 0x800 enable wav output (ENABLE_WAV_OUTPUT)<br/>
-> 0x1000 enable DER stream decode (ENABLE_DER_STREAM_DECODE). Enables decoding of encapsulated streams<br/>
+> 0x1000 enable DER stream decode (ENABLE_DER_STREAM_DECODE). Enables decoding of [encapsulated streams](#user-content-encapsulatedstreams) (e.g. UDP/RTP encapsulated in TCP/IP)<br/>
 > 0x40000 operate in analytics mode (ANALYTICS_MODE). Telecom mode is the default<br/>
 > 0x80000 use a queue balancing algorithm for packet push rate (ENABLE_AUTO_ADJUST_PUSH_RATE). Typically applied when packet arrival timestamps can't be used<br/>
 
@@ -2129,7 +2129,7 @@ When using mediaMin remotely, for example with Putty or other remote terminal ut
 
 To achieve consistent real-time performance and highest audio quality, other applications and periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time operations. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (as shown below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting real-time performance.
 
-It's important to note that mediaMin, pktlib, and streamlib all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
+It's important to note that mediaMin, [pktlib](#user-content-pktlib), and [streamlib](#user-content-streamlib) all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
 
 #### Stream Group Output Wav Path
 
@@ -2138,14 +2138,14 @@ The -gWavOutputPath command line option specifies a path for intermediate stream
 If mediaMin display output and event log shows pre-emption warning messages such as:
 
 ```
-WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.02, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
+WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.02, last encode time = 0.04, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
 ```
 
-this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec. It's unlikely that streamlib spent that much time on any one or more streams, so we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in mediaMin cmd line -dN options to further investigate:
+this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec spent while other thread processing sections show minimal or no time spent. In such a case we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in mediaMin cmd line -dN options to further investigate:
 
     -d0x20000000c11
 
-the above -dN entry specifies dynamic session creation, valid packet arrival timestamps should be used, and stream group output wav file seek time alarm set to 10 msec. If mediaMin display output and event log shows a warning message such as:
+the above -dN entry specifies dynamic session creation, packet arrival timestamps are valid and should be applied, and stream group output wav file seek time alarm set to 10 msec. If mediaMin display output and event log shows a warning message such as:
 
     WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
 
