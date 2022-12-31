@@ -2032,7 +2032,7 @@ Below are general command line notes and arguments that apply to both mediaMin a
 
 > All command line options are case sensitive<br/>
 > <br/>
-> Enter ./prog -h or ./prog -? to see a list of command line options (where prog = mediaMin or mediaTest), where "prog" is mediaTest or mediaMin. Mandatory command line options are shown with "!"<br/>
+> Enter ./prog -h or ./prog -? to see a list of command line options (where "prog" = mediaMin or mediaTest). Mandatory command line options are shown with "!"<br/>
 > <br/>
 > Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
 
