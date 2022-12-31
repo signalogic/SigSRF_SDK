@@ -2151,7 +2151,7 @@ the above -dN entry specifies dynamic session creation, packet arrival timestamp
 
 then it's clear that wav file write seek times are an issue. To change the write time alarm threshold, look for uStreamGroupOutputWavFileSeekTimeAlarmThreshold in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> (a member of the DEBUG_CONFIG struct defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/config.h</a>).
 
-Below are some example of -g entry, including ramdisk and dedicated media folder. If a ramdisk exists, then the mediaMin command line might contain:
+Below are some examples of -g entry, including ramdisk and dedicated media folder. If a ramdisk exists, then the mediaMin command line might contain:
 
     -g/mnt/ramdisk
 
