@@ -297,9 +297,9 @@ In dynamic session mode, when mediaMin finds a new unique combination of IP addr
 
 > 1. .sdp file given on the command line, for example:
 > 
->   -sinfo.sdp
+>      -sinfo.sdp
 > 
-> See [SDP Support](#user-content-sdpsupport) below
+>      See [SDP Support](#user-content-sdpsupport) below
 >
 > 2. SIP INVITE packet in the input packet flow (occurring before RTP packets)
 > 
