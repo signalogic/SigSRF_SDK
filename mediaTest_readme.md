@@ -2135,7 +2135,7 @@ Below are guidelines, recommendations, and command line options that may improve
 
 When using mediaMin remotely, for example with Putty or other remote terminal utility, keep these guidelines in mind:
 
-> 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off all packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)
+> 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off most packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)
 > 
 > 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact packet/media thread read and write seek times
 
