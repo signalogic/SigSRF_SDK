@@ -96,7 +96,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Performance**](#user-content-performance)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Remote Console](#user-content-remoteconsole)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Remote Console](#user-content-remoteconsole)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity](#user-content-highcapacity)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Performance](#user-content-realtimeperformance)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality](#user-content-audioquality)<br/>
@@ -168,9 +168,9 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 [**Command Line Quick-Reference**](#user-content-commandlinequick-reference)<br/>
 
-&nbsp;&nbsp;&nbsp;[**mediaMin Command Line Quick-Reference**](#user-content-mediamincommandlinequick-reference)<br/>
+&nbsp;&nbsp;&nbsp;[mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference)<br/>
 
-&nbsp;&nbsp;&nbsp;[**mediaTest Command Line Quick-Reference**](#user-content-mediatestcommandlinequick-reference)<br/>
+&nbsp;&nbsp;&nbsp;[mediaTest Command Line Quick-Reference](#user-content-mediatestcommandlinequick-reference)<br/>
 
 
 <a name="mediaMin"></a>
@@ -543,7 +543,7 @@ From an audio quality perspective, it's important to note that mediaMin, [pktlib
 The following sections give detailed information on achieving consistent high capacity, real-time performance, and best audio quality.
 
 <a name="RemoteConsole"></a>
-#### Remote Console
+### Remote Console
 
 When using mediaMin remotely, for example with Putty or other remote terminal utility, keep these guidelines in mind:
 
