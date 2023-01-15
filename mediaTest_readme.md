@@ -96,7 +96,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Performance**](#user-content-performance)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Remote Console](#user-content-remoteconsole)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Remote Console](#user-content-remoteconsole)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity](#user-content-highcapacity)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Performance](#user-content-realtimeperformance)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality](#user-content-audioquality)<br/>
