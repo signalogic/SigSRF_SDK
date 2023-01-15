@@ -95,8 +95,11 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
 
-&nbsp;&nbsp;&nbsp;[**High Capacity**](#user-content-highcapacity)<br/>
-
+&nbsp;&nbsp;&nbsp;[**Performance**](#user-content-performance)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**High Capacity**](#user-content-highcapacity)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Real-Time Performance**](#user-content-realtimeperformance)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Audio Quality**](#user-content-audioquality)<br/>
+	
 &nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
 
 &nbsp;&nbsp;&nbsp;[**RTP Malware Detection**](#user-content-rtpmalwaredetection)<br/>
@@ -154,8 +157,6 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**RFCs**](#user-content-supportedrfcs)<br/>
 [**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
 [**API Usage**](#user-content-apiusage)<br/>
-[**Audio Quality Notes**](#user-content-audioqualitynotes)<br/>
-[**Real-Time Performance**](#user-content-realtimeperformance)<br/>
 [**SigSRF x86 Codec Notes**](#user-content-x86codecnotes)<br/>
 [**3GPP Reference Code Notes**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
@@ -531,8 +532,11 @@ In the above displays, note the "Max Delta" stat. This is an indicator of both a
 
 mediaMin also generates [stream group](#user-content-streamgroupusage) output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
 
+<a name="Peformance"></a>
+## Performance
+
 <a name="HighCapacity"></a>
-## High Capacity
+### High Capacity
 
 The [High Capacity Multithreaded Operation](https://github.com/signalogic/SigSRF_SDK#user-content-multithreaded) section on the SigSRF SDK page has basic information on SigSRF high capacity, including an example htop measurement screen capture. More detailed information, specific for mediaTest and mediaMin, is given here.
 
@@ -553,6 +557,68 @@ Hyperthreading for application threads makes sense, as they typically handle I/O
 When mediaMin detects that it's running in thread mode, it assigns a master thread to maintain thread-related information, including thread index and number of threads (look for "isMasterThread" in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). The master thread handles thread synchronization; for example, making sure all threads wait until others are fully initialized, and the thread index is used to manage per-thread information for I/O, sessions, profiling, etc.
 
 <sup>1</sup> -Ex = execution mode, -tN = number of threads. Look in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp source code</a> for "thread_index" and "num_app_threads"
+
+<a name="RealTimePerformance"><a/>
+### Real-Time Performance
+
+There are a number of complex factors involved in real-time performance, and by extension, high capacity operation. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
+
+For purposes of this SigSRF SDK github page, here is a summary of important points in achieving and sustaining real-time performance:
+
+1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).  For DSConfigMediaService() usage see StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
+
+2. Packet/media threads should not be preempted. To safeguard against this, the following basic guidelines are recommended:
+
+    - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, also consider the larger picture of what is running outside the VM or container
+    - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run at regular intervals should temporarily be disabled 
+    - network I/O should be limited to packet flow handled by pktlib and/or applications using pktlib
+ 
+    Non-deterministic OS are notorious for running what they want when they want, and Linux and its myriad of 3rd party install packages is no exception. Signalogic has seen cases where max capacity stress tests running 24/7 showed bursts of thread preemption messages repeating at intervals. In one case, on a Ubuntu system that was thought to be a minimal installation, messages appeared every 1 hour, like clockwork. It took days of sleuthing to figure out the cause; there were no obvious scheduled Linux or installed application tasks advertising a one hour interval.
+    
+    To mitigate such cases, there are various methods to prioritize threads and minimize interaction with the OS, some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward.<sup> [1]</sup>
+
+    To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
+
+    <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
+
+    A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
+
+3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few concurrent sessions. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
+
+4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow system performance can cause packet delta stats to fluctuate even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both real-time performance and audio quality, and any deviation is considered problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
+
+    ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
+
+    See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) below for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
+    
+<sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
+
+<a name="AudioQuality"><a/>
+### Audio Quality
+
+Below are some items to keep in mind when measuring audio quality of both individual streams and stream group output. The subject is complex and extensive, partly subjective as well as quantifiable, so these are key points, not an in-depth discussion.
+
+1) Wav files are indispensable for audio quality measurements, in particular for amplitude envelope, background noise, and intelligibility. In particular wav files allow background noise and discontinuities (spikes, glitches, audio drop-outs) to be studied with a greater resolution and bandwidth (sampling rate) than narrowband audio (e.g. G711, AMR-NB, G729, EVRC, etc). Wav files generated by mediaMin and mediaTest are typically 16-bit PCM with 16 kHz sampling rate and are thus suitable for this purpose.
+
+2) When authenticating audio quality for a customer application in which it's important to know precisely which audio audio occurred when, wav files -- although convenient -- should not be used alone. Wav files assume a linear sampling rate and do not encode sampling points, and can thus obscure audio delays/gaps and interstream alignment issues. This is why real-time packet audio should always be included for audio quality authentication purposes. Real-time packet audio can be linear output, G711, or encoded with wideband codecs (e.g. AMR-WB, EVS) -- the key point is that sampling time is included in the analysis, preferably with a granularity of 10 to 40 msec. However, if you're using Wireshark then the codec type should be one that Wireshark "understands", which currently includes G711 u/a, AMR, and AMR-WB.
+
+    To help with time domain analysis, [streamlib](#user-content-streamlib) supports audio markers, which are inserted into [stream group](#user-content-streamgroupusage) output at regular intervals (default of 1 sec). Below is a screen capture showing audio markers in action:
+
+    ![Stream group output with 1 sec audio markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/DeepLI_1sec_timing_marker_example.png?raw=true "Stream group output with 1 sec audio markers")
+    
+    Any "flexing" in audio marker spacing indicates timing issues -- frame loss (possibly resulting from packet loss or out-of-order packets), packet rate overrun or underrun, etc.
+    
+    In the mediaMin command line, audio markers can be enabled with a 0x8000000 flag in the -dN options cmd line argument. For more information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
+
+3) Continuous, real-time packet repair is crucial to achieving high quality audio. Both missing (lost) SID and media packets must be repaired. [Pktlib](#user-content-pktlib) uses a variety of methods, including packet re-ordering (due to out-of-order, or ooo, packets), packet loss concealment, SID insertion, and more. To identify packet loss and ooo problems, pktlib looks at missing sequence numbers, mismatched timestamps, and packet delta (rate). When verifying / measuring audio quality, you can look at both [run-time stats](#user-content-runtimestats) and [packet logs](#user-content-packetlog) for anomalies that might indicate audio quality problems. Even issues that may not be perceptible when listening can be identified this way; for example, during long periods of silence or background noise there may be packet flow issues unidentifiable by listening.
+
+4) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained embedded "chime markers" with very specific timing and tonal content.
+
+    ![Audio quality frequency domain analysis, chime markers, zoom in](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_chimes.png?raw=true "Audio quality frequency domain analysis, chime markers, zoom in")
+
+    ![Audio quality frequency domain analysis, chime markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_overall.png?raw=true "Audio quality frequency domain analysis, chime markers")
+
+    In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right in time relative to other streams (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
 
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
@@ -1845,69 +1911,6 @@ do {
 
    } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* handle user input or other loop control */
 ```
-
-<a name="AudioQualityNotes"></a>
-## Audio Quality Notes
-
-Below are some items to keep in mind when measuring audio quality of both individual streams and stream group output. The subject is complex and extensive, partly subjective as well as quantifiable, so these are key points, not an in-depth discussion.
-
-1) Wav files are indispensable for audio quality measurements, in particular for amplitude envelope, background noise, and intelligibility. In particular wav files allow background noise and discontinuities (spikes, glitches, audio drop-outs) to be studied with a greater resolution and bandwidth (sampling rate) than narrowband audio (e.g. G711, AMR-NB, G729, EVRC, etc). Wav files generated by mediaMin and mediaTest are typically 16-bit PCM with 16 kHz sampling rate and are thus suitable for this purpose.
-
-2) When authenticating audio quality for a customer application in which it's important to know precisely which audio audio occurred when, wav files -- although convenient -- should not be used alone. Wav files assume a linear sampling rate and do not encode sampling points, and can thus obscure audio delays/gaps and interstream alignment issues. This is why real-time packet audio should always be included for audio quality authentication purposes. Real-time packet audio can be linear output, G711, or encoded with wideband codecs (e.g. AMR-WB, EVS) -- the key point is that sampling time is included in the analysis, preferably with a granularity of 10 to 40 msec. However, if you're using Wireshark then the codec type should be one that Wireshark "understands", which currently includes G711 u/a, AMR, and AMR-WB.
-
-    To help with time domain analysis, [streamlib](#user-content-streamlib) supports audio markers, which are inserted into [stream group](#user-content-streamgroupusage) output at regular intervals (default of 1 sec). Below is a screen capture showing audio markers in action:
-
-    ![Stream group output with 1 sec audio markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/DeepLI_1sec_timing_marker_example.png?raw=true "Stream group output with 1 sec audio markers")
-    
-    Any "flexing" in audio marker spacing indicates timing issues -- frame loss (possibly resulting from packet loss or out-of-order packets), packet rate overrun or underrun, etc.
-    
-    In the mediaMin command line, audio markers can be enabled with a 0x8000000 flag in the -dN options cmd line argument. For more information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
-
-3) Continuous, real-time packet repair is crucial to achieving high quality audio. Both missing (lost) SID and media packets must be repaired. [Pktlib](#user-content-pktlib) uses a variety of methods, including packet re-ordering (due to out-of-order, or ooo, packets), packet loss concealment, SID insertion, and more. To identify packet loss and ooo problems, pktlib looks at missing sequence numbers, mismatched timestamps, and packet delta (rate). When verifying / measuring audio quality, you can look at both [run-time stats](#user-content-runtimestats) and [packet logs](#user-content-packetlog) for anomalies that might indicate audio quality problems. Even issues that may not be perceptible when listening can be identified this way; for example, during long periods of silence or background noise there may be packet flow issues unidentifiable by listening.
-
-4) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained embedded "chime markers" with very specific timing and tonal content.
-
-    ![Audio quality frequency domain analysis, chime markers, zoom in](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_chimes.png?raw=true "Audio quality frequency domain analysis, chime markers, zoom in")
-
-    ![Audio quality frequency domain analysis, chime markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_overall.png?raw=true "Audio quality frequency domain analysis, chime markers")
-
-    In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right in time relative to other streams (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
-
-<a name="RealTimePerformance"></a>
-## Real-Time Performance
-
-There are a number of complex factors involved in real-time performance, and by extension, high capacity operation. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
-
-For purposes of this SigSRF SDK github page, here is a summary of important points in achieving and sustaining real-time performance:
-
-1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).  For DSConfigMediaService() usage see StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
-
-2. Packet/media threads should not be preempted. To safeguard against this, the following basic guidelines are recommended:
-
-    - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, also consider the larger picture of what is running outside the VM or container
-    - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run at regular intervals should temporarily be disabled 
-    - network I/O should be limited to packet flow handled by pktlib and/or applications using pktlib
- 
-    Non-deterministic OS are notorious for running what they want when they want, and Linux and its myriad of 3rd party install packages is no exception. Signalogic has seen cases where max capacity stress tests running 24/7 showed bursts of thread preemption messages repeating at intervals. In one case, on a Ubuntu system that was thought to be a minimal installation, messages appeared every 1 hour, like clockwork. It took days of sleuthing to figure out the cause; there were no obvious scheduled Linux or installed application tasks advertising a one hour interval.
-    
-    To mitigate such cases, there are various methods to prioritize threads and minimize interaction with the OS, some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward.<sup> [1]</sup>
-
-    To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
-
-    <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
-
-    A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
-
-3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few concurrent sessions. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
-
-4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow system performance can cause packet delta stats to fluctuate even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both real-time performance and audio quality, and any deviation is considered problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
-
-    ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
-
-    See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) below for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
-    
-<sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
-
 <a name="x86CodecNotes"></a>
 ## SigSRF x86 Codec Notes
 
