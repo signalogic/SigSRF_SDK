@@ -96,6 +96,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Performance**](#user-content-performance)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**General Performance Recommendations**](#user-content-generalperformancerecommendations)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Remote Console**](#user-content-remoteconsole)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**High Capacity**](#user-content-highcapacity)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Real-Time Performance**](#user-content-realtimeperformance)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Audio Quality**](#user-content-audioquality)<br/>
@@ -535,6 +537,24 @@ mediaMin also generates [stream group](#user-content-streamgroupusage) output .w
 <a name="Peformance"></a>
 ## Performance
 
+<a name="GeneralPerformanceRecommendations"></a>
+### General Performance Recommendations
+
+To achieve consistent high capacity, real-time performance, and best audio quality, other applications and periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time operations. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (see examples below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting performance.
+
+From an audio quality perspective, it's important to note that mediaMin, [pktlib](#user-content-pktlib), and [streamlib](#user-content-streamlib) all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
+
+The following sections give detailed information on achieving consistent high capacity, real-time performance, and best audio quality.
+
+<a name="RemoteConsole"></a>
+#### Remote Console
+
+When using mediaMin remotely, for example with Putty or other remote terminal utility, keep these guidelines in mind:
+
+> 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off most packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)
+> 
+> 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact packet/media thread read and write seek times
+
 <a name="HighCapacity"></a>
 ### High Capacity
 
@@ -592,20 +612,6 @@ Here is a summary of important points in achieving and sustaining real-time perf
     See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) below for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
     
 <sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
-
-#### Remote Console
-
-When using mediaMin remotely, for example with Putty or other remote terminal utility, keep these guidelines in mind:
-
-> 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off most packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)
-> 
-> 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact packet/media thread read and write seek times
-
-#### Other Applications and Linux Housekeeping
-
-To achieve consistent real-time performance and highest audio quality, other applications and periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time operations. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (as shown above), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting real-time performance.
-
-It's important to note that mediaMin, [pktlib](#user-content-pktlib), and [streamlib](#user-content-streamlib) all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
 
 <a name="AudioQuality"><a/>
 ### Audio Quality
