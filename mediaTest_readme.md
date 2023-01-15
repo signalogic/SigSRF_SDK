@@ -96,7 +96,6 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Performance**](#user-content-performance)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[General Performance Recommendations](#user-content-generalperformancerecommendations)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Remote Console](#user-content-remoteconsole)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity](#user-content-highcapacity)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Performance](#user-content-realtimeperformance)<br/>
@@ -537,10 +536,7 @@ mediaMin also generates [stream group](#user-content-streamgroupusage) output .w
 <a name="Peformance"></a>
 ## Performance
 
-<a name="GeneralPerformanceRecommendations"></a>
-### General Performance Recommendations
-
-To achieve consistent high capacity, real-time performance, and best audio quality, other applications and periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time operations. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (see examples below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting performance.
+From a general performance perspective, to achieve consistent high capacity, real-time performance, and audio quality, other applications and periodic Linux housekeeping operations (e.g. logging, network I/O, SQL, etc) should be limited to a minimum or even disabled during mediaMin operation. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (see examples below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting performance.
 
 From an audio quality perspective, it's important to note that mediaMin, [pktlib](#user-content-pktlib), and [streamlib](#user-content-streamlib) all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
 
