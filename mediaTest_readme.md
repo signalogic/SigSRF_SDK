@@ -563,7 +563,7 @@ When mediaMin detects that it's running in thread mode, it assigns a master thre
 
 There are a number of complex factors involved in real-time performance, and by extension, high capacity operation. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
 
-For purposes of this SigSRF SDK github page, here is a summary of important points in achieving and sustaining real-time performance:
+Here is a summary of important points in achieving and sustaining real-time performance:
 
 1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).  For DSConfigMediaService() usage see StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
 
@@ -592,6 +592,20 @@ For purposes of this SigSRF SDK github page, here is a summary of important poin
     See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) below for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
     
 <sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
+
+#### Remote Console
+
+When using mediaMin remotely, for example with Putty or other remote terminal utility, keep these guidelines in mind:
+
+> 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off most packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)
+> 
+> 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact packet/media thread read and write seek times
+
+#### Other Applications and Linux Housekeeping
+
+To achieve consistent real-time performance and highest audio quality, other applications and periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time operations. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (as shown above), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting real-time performance.
+
+It's important to note that mediaMin, [pktlib](#user-content-pktlib), and [streamlib](#user-content-streamlib) all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
 
 <a name="AudioQuality"><a/>
 ### Audio Quality
@@ -2132,21 +2146,7 @@ Note that options and flags may be combined together.
 
 ### Performance Improvements
 
-Below are guidelines, recommendations, and command line options that may improve mediaMin and user application performance, in particular real-time performance and audio quality.
-
-#### Remote Console
-
-When using mediaMin remotely, for example with Putty or other remote terminal utility, keep these guidelines in mind:
-
-> 1. Application output to remote terminals, if slow or intermittent due to unreliable network and/or Internet connections, can partially or fully block the application. Thus it's advisable to limit screen output. mediaMin has several ways to help with this, including (i) an interactive keyboard 'o' entry which turns off most packet/media thread screen output, and (ii) source code options in LoggingSetup() (look for LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY)
-> 
-> 2. WinSCP file manipulation should be limited during mediaMin operation. Any additional HDD or SSD activity during real-time mediaMin operation may impact packet/media thread read and write seek times
-
-#### Other Applications and Linux Housekeeping
-
-To achieve consistent real-time performance and highest audio quality, other applications and periodic Linux logging and other housekeeping operations should be limited to a bare minimum or even disabled during sensitive real-time operations. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (as shown below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting real-time performance.
-
-It's important to note that mediaMin, [pktlib](#user-content-pktlib), and [streamlib](#user-content-streamlib) all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
+General guidelines and recommendations for high capacity and real-time performance are given in [Performance](#user-content-performance) above. Below are command line options that may improve mediaMin and user application performance, in particular real-time performance and audio quality.
 
 #### Stream Group Output Wav Path
 
@@ -2167,6 +2167,8 @@ the above -dN entry specifies dynamic session creation, packet arrival timestamp
     WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
 
 then it's clear that wav file write seek times are an issue. To change the write time alarm threshold, look for uStreamGroupOutputWavFileSeekTimeAlarmThreshold in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> (a member of the DEBUG_CONFIG struct defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/config.h</a>).
+
+Note that additional example of event log pre-emption warning messages are given in [Real-Time Performance]("user-content-realtimeperformance") above.
 
 Below are some examples of -g entry, including ramdisk and dedicated media folder. If a ramdisk exists, then the mediaMin command line might contain:
 
