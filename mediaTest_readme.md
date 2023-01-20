@@ -2215,10 +2215,10 @@ mediaMin and mediaTest both support .pcap and .pcapng formats.  Currently the fo
 
 | Link Layer Type     | Pcap Header Value | Length (bytes) | Comments |
 | ------------------- | ----------------- | -------------- | -------- |
-| LINKTYPE_ETHERNET   | 11                | 14             | standard Ethernet header |
+| LINKTYPE_ETHERNET   | 1                 | 14             | standard Ethernet header |
 | LINKTYPE_LINUX_SLL  | 113               | 16             | Linux "cooked" capture encapsulation |
 | LINKTYPE_RAW        | 101               | 0              | Raw IP |
-| LINKTYPE_RAW        | 12                | 0              | 12 seems to be an OpenBSD compatibility value |
+| LINKTYPE_RAW        | 12                | 0              | 12 seems to be an OpenBSD compatibility value for Raw IP |
 | LINKTYPE_IPV4       | 228               | 0              | Raw, frame starts with IPv4 packet |
 | LINKTYPE_IPV6       | 229               | 0              | Raw, frame starts with IPv6 packet |
 
