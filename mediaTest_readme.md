@@ -2209,5 +2209,26 @@ which specifies:
 
 If the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is not set, then jitter buffer output pcaps are generated on the mediaMin app subfolder.
 
+### Pcap Formats
+
+mediaMin and mediaTest both support .pcap and .pcapng formats.  Currently the following Link Layer types are supported:
+
+| Link Layer Type     | Pcap Header Value | Length (bytes) | Comments |
+| ------------------- | ----------------- | -------------- | -------- |
+| LINKTYPE_ETHERNET   | 11                | 14             | standard Ethernet header |
+| LINKTYPE_LINUX_SLL  | 113               | 16             | Linux "cooked" capture encapsulation |
+| LINKTYPE_RAW        | 101               | 0              | Raw IP |
+| LINKTYPE_RAW        | 12                | 0              | 12 seems to be an OpenBSD compatibility value |
+| LINKTYPE_IPV4       | 228               | 0              | Raw, frame starts with IPv4 packet |
+| LINKTYPE_IPV6       | 229               | 0              | Raw, frame starts with IPv6 packet |
+
+When additional headers are needed, please let the developers know.
+
+Below are are pcap format related command line options.
+
+#### Out-of-Spec RTP Padding
+
+The ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to Suppresses error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
+
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
