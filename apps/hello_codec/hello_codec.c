@@ -29,6 +29,7 @@
   Created Aug 2022 JHB
   Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo() per updates in voplib.h
   Modified Dec 2022 JHB, change references to cmd_line_debug_flags.h to cmd_line_options_flags.h
+  Modified Dec 2022, misc items in the way of understanding how to use codecs moved to hello_codec.h
 */
 
 /* Linux header files */

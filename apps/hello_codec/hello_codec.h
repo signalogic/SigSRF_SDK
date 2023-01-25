@@ -4,6 +4,7 @@
 
    Revision History
      Created Aug 2022
+     Modified Dec 2022, misc items in the way of understanding how to use codecs moved here
 */
 
 #ifndef _HELLO_CODEC_H
