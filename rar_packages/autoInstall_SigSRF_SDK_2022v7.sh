@@ -1,8 +1,8 @@
 #!/bin/bash
 #================================================================================================
 # Bash script to install/uninstall SigSRF SDK and EdgeStream apps
-# Copyright (C) Signalogic Inc 2017-2022
-# Rev 1.7.4
+# Copyright (C) Signalogic Inc 2017-2023
+# Rev 1.7.5
 
 # Requirements
    # Internet connection
@@ -35,15 +35,15 @@
 #  Modified Aug 2022 JHB, add hello_codec to post-install build and "Apps check" section in installCheckVerify()
 #  Modified Aug 2022 JHB, check exit status of unrar command
 #  Modified Sep 2022 JHB, minor mods after testing Ubuntu .rar install on Debian 12.0
-#  Modified Feb 2023 JHB, change order of hello_codec and mediaMin builds, mediaMin last
+#  Modified Feb 2023 JHB, replace "target" terminology with "platform". Change order of hello_codec and mediaMin builds (mediaMin last)
 #================================================================================================
 
 depInstall_wo_dpkg() {
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 		yum localinstall $line_pkg
-#	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
-   else  # else includes Ubuntu, Debian, VM target, or anything else
+#	elif [ "$platform" = "VM" -o "$OS" = "Ubuntu" ]; then
+   else  # else includes Ubuntu, Debian, VM platform, or anything else
 		apt-get install $line_pkg
 	fi
 }
@@ -52,7 +52,7 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 
    # match SigSRF .rar files by ASR version and distro type, ignore the following:  JHB Jan2021
    #  -SDK vs license
-   #  -host vs target
+   #  -host vs VM
    #  -distro version and date
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
@@ -150,7 +150,7 @@ unrarCheck() {
                            && apt-get update \
                            && apt-get install unrar
 
-                     else  # includes Ubuntu, VM target, or anything else
+                     else  # includes Ubuntu, VM platform, or anything else
                         echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
                         sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
                         depInstall_wo_dpkg;
@@ -190,8 +190,8 @@ depInstall() {
 
 	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 		yum localinstall $line
-#	elif [ "$target" = "VM" -o "$OS" = "Ubuntu" ]; then
-   else  # else includes Ubuntu, Debian, VM target, or anything else
+#	elif [ "$platform" = "VM" -o "$OS" = "Ubuntu" ]; then
+   else  # else includes Ubuntu, Debian, VM platform, or anything else
 		dpkg -i $line
 		if [ $? -gt 0 ]; then
 			apt-get -f --force-yes --yes install  # package name not needed if run immediately after dpkg, JHB Sep2020
@@ -222,7 +222,7 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 			ln -s /usr/src/kernels/$kernel_version /usr/src/linux
 		fi 
 #	elif [ "$OS" = "Ubuntu" ]; then
-   else  # else includes Ubuntu, Debian, VM target, or anything else
+   else  # else includes Ubuntu, Debian, VM platform, or anything else
 		if [ ! -L /usr/src/linux ]; then
 			ln -s /usr/src/linux-headers-$kernel_version /usr/src/linux
 		fi
@@ -403,7 +403,7 @@ swInstall() {  # install Signalogic SW on specified path
    if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
       cp_prefix="/bin/"
 #   elif [ "$OS" = "Ubuntu" ]; then
-   else  # else includes Ubuntu, Debian, VM target, or anything else
+   else  # else includes Ubuntu, Debian, VM platform, or anything else
       cp_prefix=""
    fi
 
@@ -413,13 +413,13 @@ swInstall() {  # install Signalogic SW on specified path
 		echo "Loading coCPU driver ..."
 		echo
 
-		if [ "$target" = "Host" ]; then
+		if [ "$platform" = "Host" ]; then
 
          if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
             distribution=$(cat /etc/centos-release)
          elif [ "$OS" = "Ubuntu" -a "$lsbReleaseInstalled" != "" ]; then
             distribution=$(cat /etc/lsb-release)
-         else  # else includes Debian, VM target, or anything else
+         else  # else includes Debian, VM platform, or anything else
             distribution=$(cat /etc/os-release)  # os-release is supposedly the Linux standard
          fi
 
@@ -452,7 +452,7 @@ swInstall() {  # install Signalogic SW on specified path
 				echo "coCPU driver is loaded"
 				echo
 			fi
-		elif [ "$target" = "VM" ]; then
+		elif [ "$platform" = "VM" ]; then
 			cd $installPath/Signalogic/DirectCore/virt_driver;
 			make load;
 			echo
@@ -460,11 +460,11 @@ swInstall() {  # install Signalogic SW on specified path
 
 		echo "Setting up autoload of coCPU driver on boot"
 
-		if [ "$target" = "Host" ]; then
+		if [ "$platform" = "Host" ]; then
 			if [ ! -f /lib/modules/$kernel_version//sig_mc_hw.ko ]; then
 				ln -s $installPath/Signalogic/DirectCore/driver/sig_mc_hw.ko /lib/modules/$kernel_version
 			fi
-		elif [ "$target" = "VM" ]; then
+		elif [ "$platform" = "VM" ]; then
 			if [ ! -L /lib/modules/$kernel_version ]; then
 				ln -s $installPath/Signalogic/DirectCore/virt_driver/virtio-sig.ko /lib/modules/$kernel_version
 			fi
@@ -478,7 +478,7 @@ swInstall() {  # install Signalogic SW on specified path
 			echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.d/rc.local
 			chmod 755 /etc/rc.d/rc.local
 #		elif [ "$OS" = "Ubuntu" ]; then
-      else  # else includes Ubuntu, Debian, VM target, or anything else
+      else  # else includes Ubuntu, Debian, VM platform, or anything else
 			echo "sig_mc_hw" >> /etc/modules
 			sed -i '/exit*/d' /etc/rc.local
 			echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.local
@@ -578,16 +578,16 @@ unInstall() { # uninstall Signalogic SW completely
 		fi
 	
 		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
-			if [ $target = "Host" ]; then
+			if [ $platform = "Host" ]; then
 				rm -rf /usr/lib/modules/$kernel_version/sig_mc_hw.ko
-			elif [ $target = "VM" ]; then
+			elif [ $platform = "VM" ]; then
 				rm -rf /usr/lib/modules/$kernel_version/virtio-sig.ko
 			fi
 #		elif [ "$OS" = "Ubuntu" ]; then
-      else  # else includes Ubuntu, Debian, VM target, or anything else
-			if [ $target = "Host" ]; then
+      else  # else includes Ubuntu, Debian, VM platform, or anything else
+			if [ $platform = "Host" ]; then
 				rm -rf /lib/modules/$kernel_version/sig_mc_hw.ko
-			elif [ $target = "VM" ]; then
+			elif [ $platform = "VM" ]; then
 				rm -rf /lib/modules/$kernel_version/virtio-sig.ko
 			fi
 		fi
@@ -595,7 +595,7 @@ unInstall() { # uninstall Signalogic SW completely
 		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
 			sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.d/rc.local 
 #		elif [ "$OS" = "Ubuntu" ]; then
-      else  # else includes Ubuntu, Debian, VM target, or anything else
+      else  # else includes Ubuntu, Debian, VM platform, or anything else
 			sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.local
 		fi
 	fi
@@ -673,8 +673,8 @@ installCheckVerify() {
       cat /etc/centos-release | tee -a $diagReportFile
    elif [ "$OS" = "Ubuntu" -a "$lsbReleaseInstalled" != "" ]; then  # use /etc/lsb-release for Ubuntu, unless lsb-release package not found (maybe installing it earlier ran into trouble)
       cat /etc/lsb-release | tee -a $diagReportFile
-#  elif [ "$target" = "VM" -o "$OS" = "Debian" ]; then
-   else   # else includes Debian, VM target, or anything else
+#  elif [ "$platform" = "VM" -o "$OS" = "Debian" ]; then
+   else   # else includes Debian, VM platform, or anything else
       cat /etc/os-release | tee -a $diagReportFile
    fi
 
@@ -784,10 +784,10 @@ OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed
 kernel_version=`uname -r`
 echo "OS distro: $OS, kernel version: $kernel_version"
 echo
-PS3="Please select target for SigSRF and EdgeStream software install [1-2]: "
-select target in "Host" "VM" 
+PS3="Please select platform for SigSRF and EdgeStream software install [1-2]: "
+select platform in "Host" "VM" 
 do
-	case $target in
+	case $platform in
 		"Host") break;;
 		"VM") break;;
 	esac
