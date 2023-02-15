@@ -409,7 +409,7 @@ After entering an install path, you will be prompted for confirmation. After con
 
 If at any time you want to abort the install and start over, press Ctrl-C.
 
-<sup>[1]</sup> Selecting a VM platform enables additional resource management needed when host and guest share DirectCore resources.
+<sup>[1]</sup> Selecting a VM platform enables additional resource management needed when host and guest share DirectCore and/or hardware resources.
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes. The Check / Verify option also generates screen output, here is an example:
 
