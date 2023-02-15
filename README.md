@@ -383,7 +383,7 @@ The script will then prompt as follows:
     2) VM
     Please select platform for SigSRF software install [1-2]:
 
-Host is the default. VM should only be selected when (i) acceleration hardware is in use, for example a coCPU card, DPDK, GPU board inference, etc. <sup>1</sup> and (ii) you are not running in a container. After choosing a platform, the script will next prompt for an install option:
+Host is the default. VM should only be selected when (i) acceleration hardware is in use, for example a coCPU card, DPDK, GPU board inference, etc. <sup>[1]</sup> and (ii) you are not running in a container. After choosing a platform, the script will next prompt for an install option:
 
     1) Install EdgeStream and SigSRF Software
     2) Install EdgeStream and SigSRF Software with ASR Option
@@ -409,7 +409,7 @@ After entering an install path, you will be prompted for confirmation. After con
 
 If at any time you want to abort the install and start over, press Ctrl-C.
 
-<sup>1</sup> Selecting a VM platform enables additional resource management needed when host and guest share DirectCore resources.
+<sup>[1]</sup> Selecting a VM platform enables additional resource management needed when host and guest share DirectCore resources.
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes. The Check / Verify option also generates screen output, here is an example:
 
