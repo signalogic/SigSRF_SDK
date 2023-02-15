@@ -158,7 +158,7 @@ Using the thread ratio and per stream workload given above, necessary per CPU am
 
 ### &nbsp;&nbsp;&nbsp; $numCores = {N \over 32numCPUs}$  
 
-where N is the target number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
+where N is the required number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
 <sup>1</sup> [pktlib](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) provides packet/media APIs, examples include DSCreateSession(), DSPushPacket(), and DSPullPackets(), and DSGetSessionInfo()
   
@@ -381,9 +381,9 @@ The script will then prompt as follows:
 
     1) Host
     2) VM
-    Please select target for SigSRF software install [1-2]:
+    Please select platform for SigSRF software install [1-2]:
 
-Host is the default. Selecting VM causes additional resource management to be installed that's needed if host and guest share DirectCore resources. If you are running in a container, either case still applies. After choosing either Host or VM, the script will next prompt for an install option:
+Host is the default. VM should only be selected when (i) acceleration hardware is in use, for example a coCPU, DPDK, GPU inference, etc. <super>1</super> and (ii) you are not running in a container. After choosing a platform, the script will next prompt for an install option:
 
     1) Install EdgeStream and SigSRF Software
     2) Install EdgeStream and SigSRF Software with ASR Option
@@ -408,6 +408,8 @@ If no path is entered the default path is /usr/local. <i>Do not enter a path suc
 After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail). During the install, if g++/gcc build tools are not found on your system, the install script will ask permission to install them, and then build EdgeStream applications as part of the install process. This is important, as the EdgeStream app Makefiles look for OS distro version, tools version, libraries such as libmvec, and packages like ALSA and Kaldi, and set compiler defines based on what is found on the system. For example, if you are installing the ASR option, and Kaldi is not found on your system, then the mediaMin Makefile will set compiler defines to use Kaldi libs included in the Rar package.
 
 If at any time you want to abort the install and start over, press Ctrl-C.
+
+<super>1</super> Selecting a VM platform enables additional resource management needed when host and guest share DirectCore resources.
 
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes. The Check / Verify option also generates screen output, here is an example:
 
@@ -553,7 +555,7 @@ If you would prefer an evaluation version with increased data and concurrency li
 
 The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
 
-mediaMin is a production reference application, using a minimum set of APIs (create/delete session, push/pull packets), it can handle a wide range of RTP audio packet inputs. mediaTest targets test and measurement functionality and accepts USB and wav file audio input. Some things you can do with mediaMin and mediaTest command lines:
+mediaMin is a production reference application, using a minimum set of APIs (create/delete session, push/pull packets), it can handle a wide range of RTP audio packet inputs. mediaTest is focused on test and measurement functionality and accepts USB and wav file audio input. Some things you can do with mediaMin and mediaTest command lines:
 
   * transcode between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc.
   * "AMR Player", play an AMR pcap (either AMR-WB or AMR-NB)
