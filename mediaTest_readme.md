@@ -100,6 +100,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity](#user-content-highcapacity)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Performance](#user-content-realtimeperformance)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality](#user-content-audioquality)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Building Applications](#user-content-buildingapplications)<br/>
 	
 &nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
 
@@ -636,6 +637,11 @@ Below are some items to keep in mind when measuring audio quality of both indivi
 
     In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right in time relative to other streams (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
 
+<a name="BuildingApplications"><a/>
+## Building Applications
+
+
+	
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
 
@@ -892,7 +898,7 @@ To test max codec capacity, a 21 channel .wav file is provided in the Rar packag
 	
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config
 
-Running the above command on a Xeon E5-2660 R0 @ 2.20GHz core gives display output similar to:
+Running the above command on a Xeon E5-2660 R0 @ 2.20GHz core, and using a gcc/g++ v11.3 build, gives display output similar to:
 
 ```C	
 Running on x86 cores, no coCPU cores specified
@@ -907,7 +913,7 @@ Opened config file: codec = EVS, 13200 bitrate, sample rate = 16000 Hz, num chan
 Opened output audio file Nchan21_evs.wav
 Running encoder-decoder data flow ...
 Processing frame 1467...
-Run-time: 15.406819s
+Run-time: 12.306819s
 x86 codec test end
 x86 mediaTest end
 ```
@@ -940,12 +946,14 @@ Opened config file: codec = AMR-WB, 23850 bitrate, sample rate = 16000 Hz, num c
 Opened output audio file Nchan21_amrwb.wav
 Running encoder-decoder data flow ...
 Processing frame 1467...
-Run-time: 12.880760s
+Run-time: 10.730760s
 x86 codec test end
 x86 mediaTest end
 ```
 
 In the above example, the test takes about 10.7 sec to encode/decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 58 channels of encode + decode to stay in real-time. Of course processing time varies depending on your system's core type and speed.
+
+Note that highest performance is obtained with later versions of gcc/g++ that utilize vector math functions (which require x86 with SSE and preferably with both SSE and AVX). In our tests, versions v9.4 and higher show significant performance improvements; the above examples were run with v11.3. See [Building Applications](#user-content-buildingapplications) for more detailed information.
 
 To help analyze audio quality, below is a table showing what's in each channel of NChan21.wav, along with sox commands for playing individual channels.
 
