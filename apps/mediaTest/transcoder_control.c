@@ -1004,7 +1004,7 @@ void parse_codec_config(FILE *fp, codec_test_params_t *params)
 }
 
 
-#ifndef MEDIAMIN  /* code needed for mediaTest build but not mediaMin */
+#ifndef _MEDIAMIN_  /* code needed for mediaTest build but not mediaMin */
 
 /* c66x config file parsing */
 static int parse_session_data(char *name, char *value, session_params_t* params) 
@@ -1500,4 +1500,4 @@ int delete_sessions(void)
    return 0;
 }
 
-#endif  /* MEDIAMIN */
+#endif  /* _MEDIAMIN_ */

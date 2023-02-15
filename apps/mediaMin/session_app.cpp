@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/session_app.cpp
 
- Copyright (C) Signalogic Inc. 2021-2022
+ Copyright (C) Signalogic Inc. 2021-2023
 
  License
 
@@ -21,6 +21,8 @@
 
    Created Apr 2021 JHB, split off from mediaMin.cpp
    Modified Sep 2022 JHB, add ReadCodecConfig(), split out check_config_file(), used by both ReadSessionConfig() and ReadCodecConfig()
+   Modified Dec 2022 JHB, change references to DYNAMIC_CALL to DYNAMIC_SESSIONS
+   Modified Jan 2023 JHB, added reference to extern fUntimedMode, in case it should be needed in SetIntervalTiming(). See comments in mediaMin.cpp
 */
 
 #include <stdio.h>
@@ -35,11 +37,12 @@ using namespace std;
 #include "user_io.h"    /* bring in app_printf() */
 
 extern HPLATFORM hPlatform;        /* initialized by DSAssignPlatform() API in DirectCore lib */
-extern THREAD_INFO thread_info[MAX_MEDIAMIN_THREADS];  /* THREAD_INFO struct defined in mediaMin.h, MAX_MEDIAMIN_THREADS defined in mediaTest.h */
+extern THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h */
 extern bool fStressTest;           /* determined from cmd line options, number of app threads, and session re-use */
 extern bool fCapacityTest;         /*    ""    ""   */
 extern bool fNChannelWavOutput;
-extern int nRepeatsRemaining[MAX_MEDIAMIN_THREADS];
+extern bool fUntimedMode;  /* set if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is true of some old test scripts with -r0 push-pull rate (as fast as possible), which is why we call it "untimed" */
+extern int nRepeatsRemaining[];
 
 void JitterBufferOutputSetup(int thread_index);  /* set up jitter buffer output for sessions created */
 void StreamGroupOutputSetup(HSESSION hSessions[], int nInput, int thread_index);  /* set up stream group output output for sessions created */
@@ -73,10 +76,10 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
       else session_data->term2.input_buffer_interval = frameInterval[0];
    }
 
-   if (session_data->term1.input_buffer_interval == -1) session_data->term1.input_buffer_interval = session_data->term1.ptime;  /*  if buffer_interval values are not given in either programmatic session setup (dynamic calls) or session config file, then set to ptime */
+   if (session_data->term1.input_buffer_interval == -1) session_data->term1.input_buffer_interval = session_data->term1.ptime;  /*  if buffer_interval values are not given in either programmatic session setup (dynamic sessions) or session config file, then set to ptime */
    if (session_data->term2.input_buffer_interval == -1) session_data->term2.input_buffer_interval = session_data->term2.ptime;
 
-   if (Mode & ENABLE_AUTO_ADJUST_PUSH_RATE) {  /* set in situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
+   if (Mode & AUTO_ADJUST_PUSH_RATE) {  /* set in situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
 
       session_data->term1.uFlags |= TERM_IGNORE_ARRIVAL_TIMING;
       session_data->term2.uFlags |= TERM_IGNORE_ARRIVAL_TIMING;
@@ -88,15 +91,15 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
    -required for accurate stream group output timing (i.e. should be set if stream groups are active)
 */
 
-   if (session_data->term1.output_buffer_interval == -1 || (Mode & DYNAMIC_CALL)) {
+   if (session_data->term1.output_buffer_interval == -1 || (Mode & DYNAMIC_SESSIONS)) {
 
       if ((Mode & ANALYTICS_MODE) || session_data->term1.input_buffer_interval) session_data->term1.output_buffer_interval = session_data->term2.ptime;  /* output intervals use ptime from opposite terms */
       else session_data->term1.output_buffer_interval = 0;
    }
 
-   if (session_data->term2.output_buffer_interval == -1 || (Mode & DYNAMIC_CALL)) {
+   if (session_data->term2.output_buffer_interval == -1 || (Mode & DYNAMIC_SESSIONS)) {
 
-      if ((Mode & ANALYTICS_MODE) || session_data->term2.input_buffer_interval)session_data->term2.output_buffer_interval = session_data->term1.ptime;
+      if ((Mode & ANALYTICS_MODE) || session_data->term2.input_buffer_interval) session_data->term2.output_buffer_interval = session_data->term1.ptime;
       else session_data->term2.output_buffer_interval = 0;
    }
 
@@ -331,7 +334,7 @@ HSESSION hSession;
             session_data[i].term2.group_mode |= STREAM_CONTRIBUTOR_ONHOLD_FLUSH_DETECTION_ENABLE;
          }
 
-         if ((Mode & DISABLE_CONTRIB_PACKET_FLUSH) || (!(Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & ENABLE_AUTO_ADJUST_PUSH_RATE))) {
+         if ((Mode & DISABLE_CONTRIB_PACKET_FLUSH) || (!(Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & AUTO_ADJUST_PUSH_RATE))) {
             session_data[i].term1.group_mode |= STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH;  /* auto-adjust push rate (i.e. not based on timestamp timing) disqualifies use of packet flush, JHB Dec2019 */
             session_data[i].term2.group_mode |= STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH;
          }
@@ -362,14 +365,14 @@ HSESSION hSession;
 
          if (Mode & CREATE_DELETE_TEST_PCAP) break;
       }
-      else app_printf(APP_PRINTF_NEWLINE | APP_PRINTF_EVENT_LOG, thread_index, "mediaMin INFO: Failed to create static session %d, continuing test with already created sessions \n", i);
+      else app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG, thread_index, "mediaMin INFO: Failed to create static session %d, continuing test with already created sessions \n", i);
    }
 
    if (nSessionsCreated) {
 
       JitterBufferOutputSetup(thread_index);  /* set up jitter buffer output for all static sessions created */
 
-      if (Mode & ENABLE_STREAM_GROUPS) {  /* stream group output depends on session creation results, so we do after all static sessions are created. In Dynamic Call mode, it's done when sessions are created after first appearing in the input stream */
+      if (Mode & ENABLE_STREAM_GROUPS) {  /* stream group output depends on session creation results, so we do after all static sessions are created. In dynamic sessions mode, it's done when sessions are created after first appearing in the input stream */
    
          StreamGroupOutputSetup(hSessions, 0, thread_index);  /* if any sessions created have a group term, set up stream group output */
       }

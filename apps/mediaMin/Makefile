@@ -1,6 +1,6 @@
 # $Header: /install_path/apps/Signalogic/mediaTest/mediaMin/Makefile
 # 
-# Copyright (C) Signalogic Inc. 2018-2022
+# Copyright (C) Signalogic Inc. 2018-2023
 #
 # Description: Makefile for mediaMin reference application
 #
@@ -32,6 +32,8 @@
 #  Modified Sep 2022 JHB, modify USE_4p6_CODEC_LIBS var for Debian
 #  Modified Sep 2022 JHB, include lpthread in 'linker' target ("In the past the linker considered symbols in dependencies ... to be available. But that changed in some later version and now the linker enforces a more strict view of what is available" https://stackoverflow.com/questions/19901934/libpthread-so-0-error-adding-symbols-dso-missing-from-command-line)
 #  Modified Oct 2022 JHB, add codec_libs_version=N.nn cmd line option to force build with specific codec libs. For EVS_INSTALLED var, change logic to use * in wildcard() to look for different lib versions. Add logic to check for available codec libs and handle case where a selected version is not available
+#  Modified Jan 2023 JHB, change -DMEDIAMIN to -D_MEDIAMIN_, make source code searching for mediaMin and mediaTest build references easier
+#  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc version and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below)
 
 # check make cmd line for "no_codecs" option
 
@@ -180,7 +182,7 @@ CC_FLAGS += -Wall -g3 -O3 -flto -pthread -std=c++0x
 #   _SIGRT_     indicates to use real-time options where applicable
 #   _X86        indicates host platform is x86
 #   MEDIAMIN    indicates the build is a minimum API interface using packet flow and media processing thread provided by pktlib
-CC_FLAGS += -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_USE_PCIE_ -D_SIGRT -D_X86 -DMEDIAMIN
+CC_FLAGS += -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_USE_PCIE_ -D_SIGRT -D_X86 -D_MEDIAMIN_
 
 ifeq ($(ALSA_INSTALLED),y)
   CC_FLAGS += -D_ALSA_INSTALLED_
@@ -246,11 +248,13 @@ endif
 ifeq ($(codec_libs_version),4.6)
   USE_4p6_CODEC_LIBS := true
   USE_11p3_CODEC_LIBS :=
-endif
-
-ifeq ($(codec_libs_version),11.3)
-  USE_11p3_CODEC_LIBS := true
+else ifeq ($(codec_libs_version),9.4)
   USE_4p6_CODEC_LIBS :=
+  USE_9p4_CODEC_LIBS := true
+  USE_11p3_CODEC_LIBS :=
+else ifeq ($(codec_libs_version),11.3)
+  USE_4p6_CODEC_LIBS :=
+  USE_11p3_CODEC_LIBS := true
 endif
 
 ifeq ($(EVS_INSTALLED),y)
@@ -260,6 +264,10 @@ ifeq ($(EVS_INSTALLED),y)
   EVSPATH:=/usr/lib/libevscom_sig.x86_gcc4.6.so
   ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
     4p6_EVS_LIBS_FOUND := true
+  endif
+  EVSPATH:=/usr/lib/libevscom_sig.x86_gcc9.4.so
+  ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
+    9p4_EVS_LIBS_FOUND := true
   endif
   EVSPATH:=/usr/lib/libevscom_sig.x86_gcc11.3.so
   ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
@@ -275,9 +283,14 @@ ifeq ($(EVS_INSTALLED),y)
       endif
       USE_4p6_CODEC_LIBS :=
     endif
-  endif
-
-  ifneq ($(USE_4p6_CODEC_LIBS),true)
+  else ifeq ($(USE_9p4_CODEC_LIBS),true)
+    ifneq ($(9p4_EVS_LIBS_FOUND),true)
+      ifeq (,$(findstring clean,$(MAKECMDGOALS)))
+        $(info gcc 9.4 EVS codec libs not found)
+      endif
+      USE_9p4_CODEC_LIBS :=
+    endif
+  else
     ifeq ($(11p3_EVS_LIBS_FOUND),true)
       USE_11p3_CODEC_LIBS := true
     else
@@ -289,20 +302,39 @@ ifeq ($(EVS_INSTALLED),y)
   endif
 
   ifeq ($(USE_4p6_CODEC_LIBS),true)
+
     ifeq ($(codec_libs_version),4.6)
       $(info codec_libs_version=4.6 on cmd line, building with gcc 4.6 EVS codec libs)  # print build info if cmd line option was given
     endif
+
     CODEC_LIBS += -levsenc_sig.x86_gcc4.6
     CODEC_LIBS += -levsdec_sig.x86_gcc4.6
     CODEC_LIBS += -levscom_sig.x86_gcc4.6
+
   else ifeq ($(USE_11p3_CODEC_LIBS),true)
-    ifeq ($(codec_libs_version),11.3)
+
+    GCC_VERSION := $(shell gcc -dumpfullversion | awk -F. '{print $$1}')
+    $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
+
+# note - currently gcc v5 through 10 are using v9.4 libs and v11 and higher are using v11.3 libs. This is approximate; more gcc specific lib versions may be needed. While all codec libs are typically built with --ffast-math and -O3, vll.3 uses vectorized math functions and produces substantially faster code. If you hear glitches or pops in decoded output there may be a link mismatch between 11.3 libs and your application gcc version. In that case you can  (i) modify the Makefile so CODEC_LIBS includes xxx_sig.x86_gcc4.6 (old and slow but never fails to link) (ii) force an available lib version to be used (add codec_libs_version=N.n after Make all, where N.n can be 4.6, 9.4, or 11.3) or (iii) contact Signalogic for a specific lib version
+
+    ifeq ($(codec_libs_version),11.3)  # command line forces v11.3
       $(info codec_libs_version=11.3 on cmd line, building with gcc 11.3 EVS codec libs)  # print build info if cmd line option was given
+
+      CODEC_LIBS += -levsenc_sig.x86_gcc11.3
+      CODEC_LIBS += -levsdec_sig.x86_gcc11.3
+      CODEC_LIBS += -levscom_sig.x86_gcc11.3
+
+    else ifeq ($(shell expr $(GCC_VERSION) \< 11), 1)  # v9.4 is known to be incompatible with v11.3
+      CODEC_LIBS += -levsenc_sig.x86_gcc9.4
+      CODEC_LIBS += -levsdec_sig.x86_gcc9.4
+      CODEC_LIBS += -levscom_sig.x86_gcc9.4
+    else
+      CODEC_LIBS += -levsenc_sig.x86_gcc11.3
+      CODEC_LIBS += -levsdec_sig.x86_gcc11.3
+      CODEC_LIBS += -levscom_sig.x86_gcc11.3
     endif
-    CODEC_LIBS += -levsenc_sig.x86_gcc11.3
-    CODEC_LIBS += -levsdec_sig.x86_gcc11.3
-    CODEC_LIBS += -levscom_sig.x86_gcc11.3
-  else
+  else  # currently this won't work as the install .rar and Docker containers do not have generic libs
     ifeq (,$(findstring clean,$(MAKECMDGOALS)))
       $(info building with generic EVS codec libs)  # print build info if generic fallback
     endif

@@ -13,7 +13,7 @@
   
     Support for c66x coCPU card PCIe and ATCA blade SRIO interfaces
 
-  Copyright (C) Signalogic, Inc, 2016-2022
+  Copyright (C) Signalogic, Inc, 2016-2023
 
     Add APIs to (i) encapsulate c66x PCIe and SRIO interfaces, and (ii) support x86-only or combined x86 and c66x server usage.  APIs are consistent between all use cases
 
@@ -106,6 +106,9 @@
     Sep 2022 JHB
       -add TERM_DISABLE_DORMANT_SESSION_DETECTION flag and dormant_SSRC_wait_time item to TERMINATION_INFO struct. See comments
       -add "payload_shift" shift amount and filter flags in TERMINATION_INFO struct. See comments
+      
+    Jan 2023 JHB
+      -add TERM_INFO_DYNAMIC_SESSION flag definition
 */
 
 #ifndef _SESSION_H_
@@ -632,15 +635,16 @@ typedef struct {
 
 /* "uFlags" definitions */
 
-  #define TERM_DTX_ENABLE                         1     /* enable DTX handling for termN */
-  #define TERM_SID_REPAIR_ENABLE                  2     /* enable SID repair for termN: correct SID packet loss when possible */
-  #define TERM_PKT_REPAIR_ENABLE                  4     /* enable packet repair for termN:  correct media packet loss when possible */
-  #define TERM_OVERRUN_SYNC_ENABLE                8     /* enable overrun synchronization in streamlib */
-  #define TERM_EXPECT_BIDIRECTIONAL_TRAFFIC       0x10  /* applications should set this flag for telecom mode applications. If not set, packet/media thread receive queue handling performance is increased for unidirectional traffic (analytics mode) */
-  #define TERM_IGNORE_ARRIVAL_TIMING              0x20  /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
-  #define TERM_OOO_HOLDOFF_ENABLE                 0x40  /* see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF comments in pktlib.h */
-  #define TERM_DISABLE_DORMANT_SESSION_DETECTION  0x80  /* see comments in mediaTest/cmd_line_debug_flags.h */
-  
+  #define TERM_DTX_ENABLE                         1      /* enable DTX handling for termN */
+  #define TERM_SID_REPAIR_ENABLE                  2      /* enable SID repair for termN: correct SID packet loss when possible */
+  #define TERM_PKT_REPAIR_ENABLE                  4      /* enable packet repair for termN:  correct media packet loss when possible */
+  #define TERM_OVERRUN_SYNC_ENABLE                8      /* enable overrun synchronization in streamlib */
+  #define TERM_EXPECT_BIDIRECTIONAL_TRAFFIC       0x10   /* applications should set this flag for telecom mode applications. If not set, packet/media thread receive queue handling performance is increased for unidirectional traffic (analytics mode) */
+  #define TERM_IGNORE_ARRIVAL_TIMING              0x20   /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
+  #define TERM_OOO_HOLDOFF_ENABLE                 0x40   /* see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF comments in pktlib.h */
+  #define TERM_DISABLE_DORMANT_SESSION_DETECTION  0x80   /* see comments in mediaTest/cmd_line_debug_flags.h */
+  #define TERM_INFO_DYNAMIC_SESSION               0x100  /* flag set by mediaMin in term1 and term2 structs when creating dynamic sessions. This is an "informational only" flag, useful only for status and information during a session lifespan, JHB Jan 2023 */
+ 
   uint32_t sample_rate;
   uint32_t input_sample_rate;
   uint32_t buffer_depth;

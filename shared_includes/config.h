@@ -10,7 +10,7 @@
 
     Support for c66x card PCIe and SRIO interfaces
 
-  Copyright (C) Signalogic, Inc, 2016-2021
+  Copyright (C) Signalogic, Inc, 2016-2022
 
     Add APIs to support x86-only or combined x86 and coCPU platforms.  APIs are now consistent between all use cases (for example, no difference betweeen coCPU platforms that use PCIe or SRIO interfaces)
 
@@ -24,10 +24,10 @@
 
     Modified Dec 2016 JHB
      -add DS_JITTER_BUFFER_RTPGEN_COMPENSATE enum (see comments below)
-     
+
     Modified Aug 2017 CKJ
       -added uLogFile (log file handle) to DEBUG_CONFIG struct
-      
+
     Modified Sep-Oct 2018 JHB
       -add items to DEBUG_CONFIG struct
       -add uMaxSessionsPerThread to GLOBAL_CONFIG struct
@@ -37,10 +37,10 @@
 
     Modified Jan 2019 JHB
       -add uEnablePktTracing to DEBUG_CONFIG struct
-      
+
     Modified Apr 2019 JHB
       -add uEnableDataObjectStats to DEBUG_CONFIG struct
-      
+
     Modified Nov 2019 JHB
       -additional DEBUG_MODE enums for uDebugMode in DEBUG_CONFIG struct
 
@@ -62,6 +62,9 @@
 
    Modified Jan 2021 JHB
       -add DS_LOG_LEVEL_DISPLAY_ONLY flag. See comments
+
+   Modified Dec 2022 JHB
+      -add uStreamGroupOutputWavFileSeekTimeAlarmThreshold in DEBUG_CONFIG struct (no change in struct size, uses uReserved1)
 */
 
 #ifndef _CONFIG_H_
@@ -113,7 +116,7 @@ typedef struct {
    uint32_t uThreadEnergySaverSleepTime;  /* amount of time a thread in energy saver state sleeps before checking for input again (in usec) */
    uint32_t uThreadEnergySaverWaitForAppQueuesEmptyTime;  /* additional amount of time to wait for application queues to empty out (in msec).  Default is zero (disabled) */
 
-   uint32_t uThreadPreemptionElapsedTimeAlarm;  /* amount of elapsed time before p/m thread preemption warning will appear in the event log.  If left at zero, DSConfigPktlib() will set to default of 40 msec */
+   uint32_t uThreadPreemptionElapsedTimeAlarm;  /* amount of elapsed time (in msec) before p/m thread preemption warning will appear in the event log. If left at zero, DSConfigPktlib() will set to default of 40 msec */
 
    uint32_t uReserved1;
    uint32_t uReserved2;
@@ -271,7 +274,7 @@ typedef struct {
    uint8_t uEnableDataObjectStats;  /* session, channel, codec instance stats, including min amount of free handles.  Has small but significant impact on session and dynamic channel creation performance, should only be enabled for measurement/debug purposes */
    uint32_t uPushPacketsElapsedTimeAlarm;  /* if DSPushPackets() is not called for this amount of time, a warning will show in the event log (in msec).  The DS_ENABLE_PUSHPACKETS_ELAPSED_TIME_ALARM flag (uDebugMode) must be set */ 
 
-   uint32_t uReserved1;
+   uint32_t uStreamGroupOutputWavFileSeekTimeAlarmThreshold;  /* amount of elapsed time (in msec) before stream group output wav file seek time warnings will appear in the event log. Zero disables (default at initialization). A typical value might be 10 msec, JHB Dec 2022 */
    uint32_t uReserved2;
    uint32_t uReserved3;
    uint32_t uReserved4;

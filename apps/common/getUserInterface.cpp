@@ -25,12 +25,13 @@
    Modified Sep 2019 JHB, check uFlags for CLI_MEDIA_APPS flag to handle input re-use, audio segmentation, and other cmd line options specific to mediaMin and mediaTest apps.  NB - because getUserInfo() is used by both apps and shared libs (e.g. cimlib.so) need to avoid build-time hard-codes.  Anything app-specific should be controlled by uFlags to allow run-time decisions
    Modified Dec 2019 JHB, add -jN cmd line entry for jitter buffer params (for mediaMin app usage), sets nJitterBufferOptions in userIfs (UserInterface struct in userInfo.h)
    Modified Jan 2020 JHB, add -RN cmd line entry for repeat number of times
-   Modified Jan 2021 JHB, add -s option specific to mediaMin to handle SDP file input on cmd line
+   Modified Jan 2021 JHB, add -s option specific to mediaMin to allow SDP file input on cmd line
    Modified Dec 2021 JHB, make -d option (mode/debug flags) 64-bit integer
    Modified Feb 2022 JHB, in getUserInfo() display summary, show x86 clock rate instead of "Default", if coCPU executable file not used show "N/A" instead of nothing
    Modified Mar 2022 JHB, add -Fn flag for mediaTest gpx processing
    Modified Apr 2022 JHB, further clarify getUserInfo() display, Core List --> coCPU Core List and Clock --> coCPU Clock if applicable
    Modified Aug 2022 JHB, more readability mods to getUserInfo() display, including a lock to keep program start info coherent within multiple threads
+   Modified Dec 2022 JHB, add -g option specific to mediaMin to allow stream group wav output path cmd line input
 */
 
 #include <stdlib.h>
@@ -127,6 +128,8 @@ CmdLineOpt::Record options[] = {
           (char *)"Jitter buffer parameters, lower 8 bits is target delay, next 8 bits is max delay (in number of packets)", {{(void*)-1}} },
 	{'R', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Repeat number of times", {{(void*)-1}} },
+	{'g', CmdLineOpt::STRING, NOTMANDATORY,
+          (char *)"stream group output path" },  /* added JHB 2022 */
 
    /* gpx processing flags */
 
@@ -168,7 +171,7 @@ char labelstr[CMDOPT_MAX_INPUT_LEN];
 char tmpstr[CMDOPT_MAX_INPUT_LEN];
 char clkstr[100];
 
-/*int rc = EXIT_FAILURE; - unused variable CJ 4/25/17*/
+/* int rc = EXIT_FAILURE; - unused variable CJ 4/25/17 */
 
    if (userIfs != NULL) {
 
@@ -266,13 +269,15 @@ char clkstr[100];
            for (i=0; i<instances; i++) userIfs->yres[i] = cmdOpts.getInt('y', i, 0);
 
          if (uFlags & CLI_MEDIA_APPS) {
-            if ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) && cmdOpts.getStr('s', 0) != NULL) strncpy(userIfs->szSDPFile, cmdOpts.getStr('s', 0), CMDOPT_MAX_INPUT_LEN);  /* added for mediaMin SDP file input, JHB Jul 2019 */
+            if ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) && cmdOpts.getStr('s', 0) != NULL) strncpy(userIfs->szSDPFile, cmdOpts.getStr('s', 0), CMDOPT_MAX_INPUT_LEN);  /* added for mediaMin SDP file input, JHB Jan 2021 */
             else userIfs->nSegmentation = cmdOpts.getInt('s', 0, 0);  /* added for mediaTest segmentation, silence detection, strip, chunk rewrite, etc, JHB Jul 2019 */
          }
          else {
             if ((instances = cmdOpts.nInstances('s')))
               for (i=0; i<instances; i++) userIfs->streamingMode[i] = cmdOpts.getInt('s', i, 0);
          }
+
+         if ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) && cmdOpts.getStr('g', 0) != NULL) strncpy(userIfs->szStreamGroupOutputPath, cmdOpts.getStr('g', 0), CMDOPT_MAX_INPUT_LEN);  /* added for mediaMin stream group output path (including ramdisk), JHB Dec 2022 */
 
          if ((instances = cmdOpts.nInstances('r')))
            for (i=0; i<instances; i++) userIfs->frameRate[i] = cmdOpts.getInt('r', i, 0);

@@ -3,7 +3,7 @@
 
   header file for mediaMin application and mediaTest test and measurement program
 
-  Copyright (C) Signalogic, 2015-2022
+  Copyright (C) Signalogic, 2015-2023
 
   Revision History
 
@@ -32,6 +32,9 @@
    Modified Mar 2022 JHB, add GPX file type and reference to gpx_process (cmd line handling)
    Modified Sep 2022 JHB, add "framesize" option in codec_test_params_t, this allows a framesize to be specified in codec config files for for pass-thru cases such as .cod to .pcap, where no encoding/decoding is specified
    Modified Sep 2022 JHB, add "payload_shift" option in codec_test_params_t, this is a special case to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/-
+   Modified Dec 2022 JHB, add extern references for char szSDPFile[CMDOPT_MAX_INPUT_LEN] and sig_lib_event_log_filename
+   Modified Jan 2023 JHB, add extern reference to fCtrl_C_pressed (see ctrl-C event handler in mediaTest/see cmd_line_interface.c)
+   Modified Jan 2023 JHB, add szAppFullCmdLine and GetCommandLine() references
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -72,7 +75,9 @@
 /* number of possible input streams, including streams that are re-used for multithread and high capacity testing */
 #define MAX_INPUT_STREAMS MAX_SESSIONS
 
-#define MAX_MEDIAMIN_THREADS  64
+#define MAX_APP_THREADS       64
+
+#define MAX_CMDLINE_STR_LEN   1024
 
 /* params for codec test modes */
 typedef struct
@@ -192,6 +197,7 @@ extern int               nJitterBufferParams;
 extern int               nRepeat;
 extern char              szSDPFile[CMDOPT_MAX_INPUT_LEN];
 extern int               nSamplingFrequency;
+extern char              szStreamGroupOutputPath[CMDOPT_MAX_INPUT_LEN];
 
 extern QWORD             nCoreList;                         /* bitwise core list given in command line */
 extern HCARD             hCard;
@@ -207,6 +213,12 @@ extern uint8_t           pm_sync[];
 #ifdef FIRST_TIME_TIMING  /* reserved for timing debug purposes */
 extern unsigned long long base_time, first_push_time, first_buffer_time, first_pull_time, first_contribute_time;
 #endif
+
+extern char              sig_lib_event_log_filename[];  /* moved here from packet_flow_media_proc.c, JHB Dec 2022 */
+extern bool              fCtrl_C_pressed;
+extern char              full_cmd_line[];  /* app command line, filled in by cmdLineInterface(), which calls GetCommandLine(), JHB Jan 2023 */
+
+#define szAppFullCmdLine (((const char*)full_cmd_line))  /* szAppFullCmdLine is what apps should use. full_cmd_line should not be modified so this is a half-attempt to remind user apps that it should be treated as const char* */
 
 int sigMRF_init(void);
 void sigMRF_cleanup(void);
@@ -240,15 +252,30 @@ void check_for_c66x_to_host_xfer(int (*process_buffer)(unsigned char *, int));
 extern volatile int send_sock_fd;
 void send_packet(uint8_t *packet, uint32_t length);
 
-/* x86 mediaTest items */
+/* mediaMin and mediaTest helper functions */
 
 extern void x86_mediaTest(void);
 //extern void* packet_flow_media_proc(void*);
 extern void* mediaMin_thread(void*);
 extern int cmdLineInterface(int argc, char **argv, unsigned int uFlags);
 extern int GetOutputFilename(char* out_filename, int output_type_file, const char* output_type_content);
+int GetCommandLine(char* cmdlinestr, int str_size);
+
+/* x86_mediaTest.cpp items */
 
 extern char x86_frame_test, x86_pkt_test, pcap_extract;
+
+/* _fread() is a wrapper to avoid the following linker warning, should it be needed:
+
+    /usr/include/x86_64-linux-gnu/bits/stdio2.h:285:71: warning: call to ¡®__fread_chk_warn¡¯ declared with attribute warning: fread called with bigger size * nmemb than length of destination buffer [enabled by default] return __fread_chk_warn (__ptr, __bos0 (__ptr), __size, __n, __stream);
+
+  this warning can occur when the -flto linker option is enabled and the compiler is building -O2 or -O3 code. Not all freads() encounter this
+*/
+
+static size_t __attribute__((optimize("O1"))) __attribute__((unused)) _fread(void *ptr, size_t size, size_t count, FILE *stream) {
+
+   return fread(ptr, size, count, stream);
+}
 
 #ifdef __cplusplus
 extern "C" {

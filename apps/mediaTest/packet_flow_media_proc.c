@@ -1,140 +1,149 @@
 /*
- $Header: /root/Signalogic/apps/mediaTest/packet_flow_media_proc.c
+$Header: /root/Signalogic/apps/mediaTest/packet_flow_media_proc.c
 
- Copyright (C) Signalogic Inc. 2017-2022
+Copyright (C) Signalogic Inc. 2017-2023
 
- License
+License
 
-  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+ Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
 
- Description
+Description
 
-  Source code for packet/media thread processing
+ Source code for packet/media thread processing
 
- Purposes
+Purposes
 
-  1) Provide multithread capability in SigSRF software, enabling fully concurrent multiple packet streams, codecs, and jitter buffers
+ 1) Provide multithread capability in SigSRF software, enabling fully concurrent multiple packet streams, codecs, and jitter buffers
 
-  2) Per thread, implement SigSRF library APIs to provide packet flow/media processing functionality, test, and measurement, and transcoding, including:
+ 2) Per thread, implement SigSRF library APIs to provide packet flow/media processing functionality, test, and measurement, and transcoding, including:
 
-     -multiple RFC compliant packet flow, advanced jitter buffer, DTX handling, DTMF event handling, multichannel packets, ptime conversion, and more
-     -measurements, including:
-       -x86 server performance
-       -verify bitexactness for codecs, measure audio quality.  Interoperate at encoded bitstream level with 3GPP test vectors and reference codes
-       -packet loss and other packet statistics
+    -multiple RFC compliant packet flow, advanced jitter buffer, DTX handling, DTMF event handling, multichannel packets, ptime conversion, and more
+    -measurements, including:
+      -x86 server performance
+      -verify bitexactness for codecs, measure audio quality.  Interoperate at encoded bitstream level with 3GPP test vectors and reference codes
+      -packet loss and other packet statistics
 
-  3) Implement push/pull packet queues to allow applications, including mediaMin, to use only a small, minimal subset of the SigSRF API
+ 3) Implement push/pull packet queues to allow applications, including mediaMin, to use only a small, minimal subset of the SigSRF API
 
-     -support stress and capacity testing by applications by providing a cmd line option to open multiple mediaMin app threads
-     -support UDP network socket packet data flow both directly and via push/pull queues
+    -support stress and capacity testing by applications by providing a cmd line option to open multiple mediaMin app threads
+    -support UDP network socket packet data flow both directly and via push/pull queues
 
-  4) Implement insertion points for application and user-defined signal processing and deep learning
+ 4) Implement insertion points for application and user-defined signal processing and deep learning
 
-  5) Act as key source code component of the SigSRF SDK, providing API source code examples, including correct transcoding data flow and API usage for SigSRF libs including pktlib, voplib, streamlib, diaglib, and aviolib
+ 5) Act as key source code component of the SigSRF SDK, providing API source code examples, including correct transcoding data flow and API usage for SigSRF libs including pktlib, voplib, streamlib, diaglib, and aviolib
 
-  6) Provide basis for limited, demo/eval version available on Github
+ 6) Provide basis for limited, demo/eval version available on Github
 
- Revision History
+Revision History
 
-   Created Jul 2018 JHB, separated packet mode processing section from x86_mediaTest.c.  See revision history in x86_mediaTest.c
+ Created Jul 2018 JHB, separated packet mode processing section from x86_mediaTest.c.  See revision history in x86_mediaTest.c
 
-   Modified Jun CKJ 2017, added support for simultaneously using input pcap files of different link layer types 
-                          added support for ipv6 in pcap extract mode, added check to exit cleanly if internet layer is not ipv4 or ipv6
-   Modified Jun 2017 JHB, added pcap to wav support, single exit point for success + most errors in pcap extract mode
-   Modified Jun 2017 JHB, added pcap and jitter buffer stats logging
-   Modified Jun 2017 JHB, added frame mode option for pcap input (see "packet mode" and "frame mode" comments)
-   Modified Jul 2017 JHB, modified packet info log to group data by SSRC.  Currently a max of 8 unique SSRCs are supported in one session
-   Modified Jul 2017 JHB, added multithread operation test code (see ENABLE_MULTITHREAD_OPERATION)
-   Modified Jul 2017 JHB, added DSOpenPcap(), DSReadPcapRecord(), and DSWritePcapRecord() APIs to consolidate and reduce pcap file handling code
-   Modified Jul 2017 CKJ, moved pcap file related structs and functions to pktlib
-   Modified Jul 2017 JHB, added example showing use of DS_GETORD_PKT_RETURN_ALL_DELIVERABLE flag for multiple SSRC streams within the same session.  The flag is applied briefly to force remaining packets for the current stream out of the buffer when a new stream starts
-   Modified Aug 2017 JHB, fixed problem in .cod to .wav conversion (codec test mode) where varying frame sizes were not handled correctly
-   Modified Aug 2017 CKJ, added mode to test / demonstrate background process (see ALLOW_BACKGROUND_PROCESS and use_bkgnd_process)
-   Modified Aug 2017 JHB, added DTX handling example, using the termN.flags field in session config files to enable/disable.  Default is enabled (flags has TERM_DTX_ENABLED set).  If not enabled a one-time message is printed when mediaTest runs.  If enabled the packet stats log file will show both SID and "SID Reuse" packets in the output stream
-   Modified Sep 2017 CKJ, added DTMF handling example per RFC4733, including DTMF event processing and output packet forwarding.  In the packet stats log, look for packets labeled "DTMF Event"
-   Modified Oct 2017 CKJ, added variable ptime handling and use of DSStoreStreamData() and DSGetStreamData() APIs.  Decoupled stream data processing from ordered buffering, highlight user-defined media data processing insertion point
-   Modified Jun 2018 CKJ, add audio stream merging; see stream group API usage (such as DSAttachStreamToGroup) and code at "media processing insertion point"
-   Modified Jul 2018 CKJ, change LIB_LOG_TO_FILE define to general case LOG_OUTPUT and use the Log_RT() file + screen output constants defined in diaglib.h
-   Modified Jul 2018 CKJ, modify get_wav_index() to select correct channel from current session (when multiple sessions are active)
-   Modified Jul 2018 JHB, create GetMergeInfo() and DisableStreamMerging() local functions and otherwise simplify and reduce stream merging source code example
-   Modified Jul 2018 JHB, add references to executionMode to handle differences in command line vs. thread execution.  Add calls to DSRecvPackets() and DSSendPackets() for thread execution
-   Modified Jul 2018 JHB, implement changes that make packet processing less dependent on input stream index, which allows packets to arrive in any order from any stream.  These include:
-                            -modify CheckForSSRCChange() to use packet's channel number instead of stream index to keep track of SSRC changes (chan number is determined by packet hashing, parent channel is used for dynamic channels)
-                            -a few places where channel number can be used for indexing instead of stream number
+ Modified Jun CKJ 2017, added support for simultaneously using input pcap files of different link layer types 
+                        added support for ipv6 in pcap extract mode, added check to exit cleanly if internet layer is not ipv4 or ipv6
+ Modified Jun 2017 JHB, added pcap to wav support, single exit point for success + most errors in pcap extract mode
+ Modified Jun 2017 JHB, added pcap and jitter buffer stats logging
+ Modified Jun 2017 JHB, added frame mode option for pcap input (see "packet mode" and "frame mode" comments)
+ Modified Jul 2017 JHB, modified packet info log to group data by SSRC.  Currently a max of 8 unique SSRCs are supported in one session
+ Modified Jul 2017 JHB, added multithread operation test code (see ENABLE_MULTITHREAD_OPERATION)
+ Modified Jul 2017 JHB, added DSOpenPcap(), DSReadPcapRecord(), and DSWritePcapRecord() APIs to consolidate and reduce pcap file handling code
+ Modified Jul 2017 CKJ, moved pcap file related structs and functions to pktlib
+ Modified Jul 2017 JHB, added example showing use of DS_GETORD_PKT_RETURN_ALL_DELIVERABLE flag for multiple SSRC streams within the same session.  The flag is applied briefly to force remaining packets for the current stream out of the buffer when a new stream starts
+ Modified Aug 2017 JHB, fixed problem in .cod to .wav conversion (codec test mode) where varying frame sizes were not handled correctly
+ Modified Aug 2017 CKJ, added mode to test / demonstrate background process (see ALLOW_BACKGROUND_PROCESS and use_bkgnd_process)
+ Modified Aug 2017 JHB, added DTX handling example, using the termN.flags field in session config files to enable/disable.  Default is enabled (flags has TERM_DTX_ENABLED set).  If not enabled a one-time message is printed when mediaTest runs.  If enabled the packet stats log file will show both SID and "SID Reuse" packets in the output stream
+ Modified Sep 2017 CKJ, added DTMF handling example per RFC4733, including DTMF event processing and output packet forwarding.  In the packet stats log, look for packets labeled "DTMF Event"
+ Modified Oct 2017 CKJ, added variable ptime handling and use of DSStoreStreamData() and DSGetStreamData() APIs.  Decoupled stream data processing from ordered buffering, highlight user-defined media data processing insertion point
+ Modified Jun 2018 CKJ, add audio stream merging; see stream group API usage (such as DSAttachStreamToGroup) and code at "media processing insertion point"
+ Modified Jul 2018 CKJ, change LIB_LOG_TO_FILE define to general case LOG_OUTPUT and use the Log_RT() file + screen output constants defined in diaglib.h
+ Modified Jul 2018 CKJ, modify get_wav_index() to select correct channel from current session (when multiple sessions are active)
+ Modified Jul 2018 JHB, create GetMergeInfo() and DisableStreamMerging() local functions and otherwise simplify and reduce stream merging source code example
+ Modified Jul 2018 JHB, add references to executionMode to handle differences in command line vs. thread execution.  Add calls to DSRecvPackets() and DSSendPackets() for thread execution
+ Modified Jul 2018 JHB, implement changes that make packet processing less dependent on input stream index, which allows packets to arrive in any order from any stream.  These include:
+                          -modify CheckForSSRCChange() to use packet's channel number instead of stream index to keep track of SSRC changes (chan number is determined by packet hashing, parent channel is used for dynamic channels)
+                          -a few places where channel number can be used for indexing instead of stream number
    Modified Aug 2018 JHB, modifications to allow this file to be included in pklib build, in order to support the DSPushPackets() and DSPullPackets() minimum API interface with packet_flow_media_proc() running as a thread.  These include
-                            -eliminate warnings in the pktlib build which uses -Wall
-                            -use of __LIBRARYMODE__ for a few sections of code that not be included in .so build
-   Modified Aug 2018 JHB, fix merged output pcap timestamp problem (see merge_timestamp)
-   Modified Aug 2018 JHB, in pktlib thread build (__LIBRARYMODE__ defined), eliminate I/O related code and most global vars
-   Modified Aug 2018 JHB, add initial support for on-the-fly session create/delete, including InitSession() and InitStream() functions
-   Modified Aug 2018 JHB, add sub loop for cases where DSRecvPackets() returns more than one packet
-   Modified Sep 2018 JHB, implement "master buffer" scheme for stream audio merging, allowing stream contributions at unequal and varying rates
-   Modified Sep 2018 JHB, further refinement to stream audio merging (i) ensure exact time-alignment and start offset of all streams, and (ii) fill in missing contributions with audio zeros under certain conditions
-   Modified Sep 2018 JHB, debug and test multiple merge groups. Add merge group initialization to InitSession()
-   Modified Oct 2018 JHB, implement multiple packet/media threads. Modifications / optimizations include thread_index initialization, ManageSessions(), get_session_handle(), ThreadDebugOutput(), sig_printf(), isMasterThread references, etc
-   Modified Oct 2018 JHB, additional error checking for cases when asynchronous pkt/media threads may be concurrently processing same stream groups
-   Modified Oct 2018 JHB, optimize usage of DSGetStreamData(). This also fixed a crash case with multiple pkt/media threads "seeing" each other's active channels.  See USE_CHAN_NUMS define and associated comments
-   Modified Nov 2018 JHB, move merging related codes to streamlib.so (streamlib.c).  streamlib API calls here include DSInitMergeGroup() and DSProcessStreamGroupContributors()
-   Modified Nov 2018 JHB, add CheckForDormantSSRC() to detect and flush channels with dormant SSRCs that are "taken over" by another channel, for example due to call-waiting or on-hold situations
-   Modified Dec 2018 JHB, add packet/media thread energy saver mode (see fThreadInputActive and fThreadOutputActive flags and comments below about CPU usage)
-   Modified Dec 2018 JHB, improve ThreadDebugOutput() to show group info for any thread sessions attached to a group.  Notes:
-                          -this is needed to see exact effects of the STREAM_GROUP_WHOLE_THREAD_ALLOCATE and DS_CONFIG_MEDIASERVICE_ROUND_ROBIN flags (streamlib.h and pktlib.h)
-                          -correct whole group allocation requires STREAM_GROUP_WHOLE_THREAD_ALLOCATE to be added to the term1 group mode field at session creation time, and DS_CONFIG_MEDIASERVICE_ROUND_ROBIN flag to be set when creating a packet/media thread. Without the round robin flag there can still be some groups split across threads
-                          -see the nomenclature comments in ThreadDebugOutput() to interpret the screen output
-   Modified Dec 2018 JHB, more info printed in ThreadDebugOutput(), including some system wide stats
-   Modified Feb 2019 JHB, add DS_GETORD_PKT_ENABLE_SID_REPAIR usage. Applying this flag enables "CNG fill-in" when damage to long silence durations is detected (audio that contains long SID periods can be significantly shortened/mis-aligned by packet loss.  Test with 13572.0 pcap)
-   Modified Feb 2019 JHB, add RecordPacketTimeStats() to keep track of packet timestamp and RTP timestamp duration (both before and after jitter buffer)
-   Modified Feb 2019 JHB, add CheckForPacketLossFlush() for packet loss mitigation (monitors jitter buffer levels for parent and child channels).  See max_loss_ptimes in TERMINATION_INFO struct (shared_include/session.h)
-   Modified Mar 2019 JHB, add packet time and loss stats. See PACKET_TIME_STATS define, see also fPacketTimeStatsEnabled and fPacketLossStatsEnabled in PACKETMEDIATHREADINFO struct and DS_CONFIG_MEDIASERVICE_EN/DISABLE_THREAD_PACKET_TIME/LOSS_STATS flags (pktlib.h)
-   Modified Mar 2019 JHB, improve profiling, give each category its own independent running sum index and increase running sum length to 16 (THREAD_STATS_TIME_MOVING_AVG defined in pktlib.h)
-   Modified May 2019 JHB, when acting on payload content type returned by DSGetOrderedPackets(), check for both DS_PKT_PYLD_CONTENT_DTMF_SESSION (indicating a match to a session-defined DTMF payload type), and for generic DS_PKT_PYLD_CONTENT_DTMF content type
-   Modified Aug 2019 JHB, add extern C to definition of functions used externally (sig_printf, ResetPktStats), limit number of channels that can be tracked in profiling (see MAX_CHAN_TRACKED below), add an error string param to ThreadAbort()
-   Modified Sep 2019 JHB, fix incorrect nDormantChanFlush[] indexing and one case of nOnHoldChanFlush[] incorrect indexing:  session + term based, not channel
-   Modified Sep 2019 JHB, remove sig_sprintf() function, no longer used
-   Modified Sep 2019 JHB, change include folder for udp.h and ip.h from "linux" to "netinet" to fix -Wodr (one definition rule) warning with gcc 5.4.  Remove if_ether.h and arpa/inet.h includes (already in pktlib.h)
-   Modified Oct 2019 JHB, implement pastdue in CheckForPacketLossFlush()
-   Modified Oct 2019 JHB, act on STREAM_GROUP_OVERFLOW_STOP_GROUP_ON_DETECTION flag (one of overrun compensation related flags added to shared_include/streamlib.h). More detailed info in warning message if DSStoreStreamGroupContributorData() returns -1
-   Modified Dec 2019 JHB, make pkt_counters[] global (needed in packet.c), include chnum and idx information in PKT_STATS collection (see DSGetStreamGroupInfo() with DS_GETGROUPINFO_HANDLE_CHNUM flag)
-   Modified Dec 2019 JHB, implement DSWritePacketStatsHistoryLog() and DSLogRunTimeStats() APIs.  The latter collates, formats, and prints run-time packet stats to the event log
-   Modified Jan 2020 JHB, use DSGetStreamGroupInfo() when collecting packet history stats (PKT_STATS), ensure run-time packet stats are not logged twice for same session prior to deletion
-   Modified Jan 2020 JHB, define SECONDARY_THREADS_DEPRECATED, which deprecates old "secondary thread" code.  Since early 2018, packet_flow_media_proc() is thread-safe and allows multiple packet/media "worker" threads.  Multiple app threads are implemented using mediaTest -Et ant -tN cmd line options, which invoke one or more mediaMin application threads
-   Modified Jan 2020 JHB, call DSCreateFilelibThread() in p/m thread initialization. See comments in filelib.h and filemgr.cpp
-   Modified Jan 2020 JHB, implement p/m thread preemption alarm
-   Modified Jan-Feb 2020 JHB, disallow past due flush if the channel's jb output is currently in SID state.  This avoids generation of possibly extra SID reuse packets and leaves the SID reuse responsibility completely with pktlib packet repair
-   Modified Feb 2020 JHB, optimize jitter output packet processing loop and stream data loop (after variable ptime):  obtain decoder codec handle, termInfo, termInfo_link, etc only if chnum changes between loop iterations (see prev_chnum)
-   Modified Feb 2020 JHB, improve p/m thread preemption alarm logic, add profile times and other stats in preemption event log messages
-   Modified Mar 2020 JHB, fix dormant session countdown which was hardwired to a constant, but should be equal to jitter buffer target delay
-   Modified Mar 2020 JHB, fix consecutive same-channel packet (channel burst) stat, which was not being recorded correctly
-   Modified Mar 2020 JHB, move session flush check before session delete check in ManageSessions()
-   Modified Mar 2020 JHB, implement TERM_EXPECT_BIDIRECTIONAL_TRAFFIC flag in receive queue handling, which reduces calls to DSRecvPackets() with DS_RECV_PKT_QUEUE_COPY (look ahead) flag set. This increases performance for unidirectional traffic (analytics mode)
-   Modified Mar 2020 JHB, add case to pastdue processing for sessions not a stream group member
-   Modified Apr 2020 JHB, move session_info_thread[] to pktlib, instead of being on the stack for each p/m thread. Remove session_info_thread[] param from several functions
-   Modified Apr 2020 JHB, in telecom mode set last_pull_time[] only if DSGetOrderedPackets() returns non-zero, instead of each time it's called as in analytics mode
-   Modified Apr 2020 JHB, modify pastdue processing to use instantaneous jitter buffer number of packets (see DS_JITTER_BUFFER_INFO_NUM_PKTS usage in pktlib.h, rtp_jubf.c)
-   Modified Apr 2020 JHB, fix pkt_ptr increment bug in packet processing loop following DSGetOrderedPackets() (loop decodes and stores stream data). See comment near end of loop
-   Modified Apr 2020 JHB, new support for telecom mode and hybrid analytics/telecom mode:
-                          -DSGetOrderedPackets() post processing to maintain jitter buffer mem usage limits (see comments)
-                          -rewrite CheckForDormantSSRC() to handle all modes and termN endpoints. This includes the addition of last_buffer_time[]
-                          -new jitter buffer run-time stats added, including max packets, resyncs, and overrun buffer percent full
-   Modified Apr 2020 JHB, fix problem with "average stats calc" run-time stat not being displayed correctly
-   Modified May 2020 JHB, implement analytics mode improvements in CheckForPacketLossFlush(). Continue to support "analytics compatibility mode" by implementing a separate code path for it
-   Modified May 2020 JHB, in ManageSessions() fix integer-out-of-range problem with state_clear_flags that was causing DSSetSessionInfo() with DS_SESSION_INFO_STATE flag to be called every time, even if session state flags had not changed (they change rarely)
-   Modified May 2020 JHB, add pm_sync[] flag toggle in pm thread loop
-   Modified May 2020 JHB, after call to DSGetOrderedPackets(), implement telecom mode packet loss flush, based on cumulative time vs. cumulative timestamp
-   Modified May 2020 JHB, add fFirstGroupContribution[] to fix ptime msec wobble in first contribution to a stream group. See comments near DSProcessStreamGroupContributors()
-   Modified Oct 2020 JHB, include codec type and bitrate in run-time stats session description info, other minor changes to run-time stats output. Codec info uses DSGetCodecInfo() API added to voplib
-   Modified Oct 2020 JHB, clarify stream change/resume log info message, include new channel in the message
-   Modified Jan 2021 JHB, change units of session_info_thread[hSession].merge_audio_chunk_size from size (bytes) to time (msec), part of change to make stream group processing independent of sampling rate
-   Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
-   Modified Mar 2021 JHB, change DSLogPacketTimeLossStats() to DSLogRunTimeStats(), incorporate use of DS_LOG_RUNTIME_STATS_XX flags
-   Modified Jan 2022 JHB, fix "symbol size changed" linker build warnings in CentOS 8 g++ 8.3 by not including last_buffer_time, nMaxStreamDataAvailable, and uFramesDropped in __LIBRARYMODE__ build
-   Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for hSessionOwner ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized
-   Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
-   Modified Aug 2022 JHB, adjust declaration of a few global vars to allow no_mediamin and no_pktlib options in mediaTest build (run, frame_mode, etc)
-   Modified Sep 2022 JHB, for mediaTest operation (non mediaMin thread): (i) move event log file fclose() to be after WritePktLog(), (ii) add auto-breakout from key processing
-   Modified Sep 2022 JHB, adjust for deprecation of DS_PKT_INFO_NETWORK_BYTE_ORDER flag
-   Modified Oct 2022 JHB, add stat for total input SIDs per channel (see DS_JITTER_BUFFER_INFO_INPUT_SID_COUNT flag)
-   Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo(), update param usage for DSGetCodecInfo()
+                          -eliminate warnings in the pktlib build which uses -Wall
+                          -use of __LIBRARYMODE__ for a few sections of code that not be included in .so build
+ Modified Aug 2018 JHB, fix merged output pcap timestamp problem (see merge_timestamp)
+ Modified Aug 2018 JHB, in pktlib thread build (__LIBRARYMODE__ defined), eliminate I/O related code and most global vars
+ Modified Aug 2018 JHB, add initial support for on-the-fly session create/delete, including InitSession() and InitStream() functions
+ Modified Aug 2018 JHB, add sub loop for cases where DSRecvPackets() returns more than one packet
+ Modified Sep 2018 JHB, implement "master buffer" scheme for stream audio merging, allowing stream contributions at unequal and varying rates
+ Modified Sep 2018 JHB, further refinement to stream audio merging (i) ensure exact time-alignment and start offset of all streams, and (ii) fill in missing contributions with audio zeros under certain conditions
+ Modified Sep 2018 JHB, debug and test multiple merge groups. Add merge group initialization to InitSession()
+ Modified Oct 2018 JHB, implement multiple packet/media threads. Modifications / optimizations include thread_index initialization, ManageSessions(), get_session_handle(), ThreadDebugOutput(), sig_printf(), isMasterThread references, etc
+ Modified Oct 2018 JHB, additional error checking for cases when asynchronous pkt/media threads may be concurrently processing same stream groups
+ Modified Oct 2018 JHB, optimize usage of DSGetStreamData(). This also fixed a crash case with multiple pkt/media threads "seeing" each other's active channels.  See USE_CHAN_NUMS define and associated comments
+ Modified Nov 2018 JHB, move merging related codes to streamlib.so (streamlib.c).  streamlib API calls here include DSInitMergeGroup() and DSProcessStreamGroupContributors()
+ Modified Nov 2018 JHB, add CheckForDormantSSRC() to detect and flush channels with dormant SSRCs that are "taken over" by another channel, for example due to call-waiting or on-hold situations
+ Modified Dec 2018 JHB, add packet/media thread energy saver mode (see fThreadInputActive and fThreadOutputActive flags and comments below about CPU usage)
+ Modified Dec 2018 JHB, improve ThreadDebugOutput() to show group info for any thread sessions attached to a group.  Notes:
+                        -this is needed to see exact effects of the STREAM_GROUP_WHOLE_THREAD_ALLOCATE and DS_CONFIG_MEDIASERVICE_ROUND_ROBIN flags (streamlib.h and pktlib.h)
+                        -correct whole group allocation requires STREAM_GROUP_WHOLE_THREAD_ALLOCATE to be added to the term1 group mode field at session creation time, and DS_CONFIG_MEDIASERVICE_ROUND_ROBIN flag to be set when creating a packet/media thread. Without the round robin flag there can still be some groups split across threads
+                        -see the nomenclature comments in ThreadDebugOutput() to interpret the screen output
+ Modified Dec 2018 JHB, more info printed in ThreadDebugOutput(), including some system wide stats
+ Modified Feb 2019 JHB, add DS_GETORD_PKT_ENABLE_SID_REPAIR usage. Applying this flag enables "CNG fill-in" when damage to long silence durations is detected (audio that contains long SID periods can be significantly shortened/mis-aligned by packet loss.  Test with 13572.0 pcap)
+ Modified Feb 2019 JHB, add RecordPacketTimeStats() to keep track of packet timestamp and RTP timestamp duration (both before and after jitter buffer)
+ Modified Feb 2019 JHB, add CheckForPacketLossFlush() for packet loss mitigation (monitors jitter buffer levels for parent and child channels).  See max_loss_ptimes in TERMINATION_INFO struct (shared_include/session.h)
+ Modified Mar 2019 JHB, add packet time and loss stats. See PACKET_TIME_STATS define, see also fPacketTimeStatsEnabled and fPacketLossStatsEnabled in PACKETMEDIATHREADINFO struct and DS_CONFIG_MEDIASERVICE_EN/DISABLE_THREAD_PACKET_TIME/LOSS_STATS flags (pktlib.h)
+ Modified Mar 2019 JHB, improve profiling, give each category its own independent running sum index and increase running sum length to 16 (THREAD_STATS_TIME_MOVING_AVG defined in pktlib.h)
+ Modified May 2019 JHB, when acting on payload content type returned by DSGetOrderedPackets(), check for both DS_PKT_PYLD_CONTENT_DTMF_SESSION (indicating a match to a session-defined DTMF payload type), and for generic DS_PKT_PYLD_CONTENT_DTMF content type
+ Modified Aug 2019 JHB, add extern C to definition of functions used externally (sig_printf, ResetPktStats), limit number of channels that can be tracked in profiling (see MAX_CHAN_TRACKED below), add an error string param to ThreadAbort()
+ Modified Sep 2019 JHB, fix incorrect nDormantChanFlush[] indexing and one case of nOnHoldChanFlush[] incorrect indexing:  session + term based, not channel
+ Modified Sep 2019 JHB, remove sig_sprintf() function, no longer used
+ Modified Sep 2019 JHB, change include folder for udp.h and ip.h from "linux" to "netinet" to fix -Wodr (one definition rule) warning with gcc 5.4.  Remove if_ether.h and arpa/inet.h includes (already in pktlib.h)
+ Modified Oct 2019 JHB, implement pastdue in CheckForPacketLossFlush()
+ Modified Oct 2019 JHB, act on STREAM_GROUP_OVERFLOW_STOP_GROUP_ON_DETECTION flag (one of overrun compensation related flags added to shared_include/streamlib.h). More detailed info in warning message if DSStoreStreamGroupContributorData() returns -1
+ Modified Dec 2019 JHB, make pkt_counters[] global (needed in packet.c), include chnum and idx information in PKT_STATS collection (see DSGetStreamGroupInfo() with DS_GETGROUPINFO_HANDLE_CHNUM flag)
+ Modified Dec 2019 JHB, implement DSWritePacketStatsHistoryLog() and DSLogRunTimeStats() APIs.  The latter collates, formats, and prints run-time packet stats to the event log
+ Modified Jan 2020 JHB, use DSGetStreamGroupInfo() when collecting packet history stats (PKT_STATS), ensure run-time packet stats are not logged twice for same session prior to deletion
+ Modified Jan 2020 JHB, define SECONDARY_THREADS_DEPRECATED, which deprecates old "secondary thread" code.  Since early 2018, packet_flow_media_proc() is thread-safe and allows multiple packet/media "worker" threads.  Multiple app threads are implemented using mediaTest -Et ant -tN cmd line options, which invoke one or more mediaMin application threads
+ Modified Jan 2020 JHB, call DSCreateFilelibThread() in p/m thread initialization. See comments in filelib.h and filemgr.cpp
+ Modified Jan 2020 JHB, implement p/m thread preemption alarm
+ Modified Jan-Feb 2020 JHB, disallow past due flush if the channel's jb output is currently in SID state.  This avoids generation of possibly extra SID reuse packets and leaves the SID reuse responsibility completely with pktlib packet repair
+ Modified Feb 2020 JHB, optimize jitter output packet processing loop and stream data loop (after variable ptime):  obtain decoder codec handle, termInfo, termInfo_link, etc only if chnum changes between loop iterations (see prev_chnum)
+ Modified Feb 2020 JHB, improve p/m thread preemption alarm logic, add profile times and other stats in preemption event log messages
+ Modified Mar 2020 JHB, fix dormant session countdown which was hardwired to a constant, but should be equal to jitter buffer target delay
+ Modified Mar 2020 JHB, fix consecutive same-channel packet (channel burst) stat, which was not being recorded correctly
+ Modified Mar 2020 JHB, move session flush check before session delete check in ManageSessions()
+ Modified Mar 2020 JHB, implement TERM_EXPECT_BIDIRECTIONAL_TRAFFIC flag in receive queue handling, which reduces calls to DSRecvPackets() with DS_RECV_PKT_QUEUE_COPY (look ahead) flag set. This increases performance for unidirectional traffic (analytics mode)
+ Modified Mar 2020 JHB, add case to pastdue processing for sessions not a stream group member
+ Modified Apr 2020 JHB, move session_info_thread[] to pktlib, instead of being on the stack for each p/m thread. Remove session_info_thread[] param from several functions
+ Modified Apr 2020 JHB, in telecom mode set last_pull_time[] only if DSGetOrderedPackets() returns non-zero, instead of each time it's called as in analytics mode
+ Modified Apr 2020 JHB, modify pastdue processing to use instantaneous jitter buffer number of packets (see DS_JITTER_BUFFER_INFO_NUM_PKTS usage in pktlib.h, rtp_jubf.c)
+ Modified Apr 2020 JHB, fix pkt_ptr increment bug in packet processing loop following DSGetOrderedPackets() (loop decodes and stores stream data). See comment near end of loop
+ Modified Apr 2020 JHB, new support for telecom mode and hybrid analytics/telecom mode:
+                        -DSGetOrderedPackets() post processing to maintain jitter buffer mem usage limits (see comments)
+                        -rewrite CheckForDormantSSRC() to handle all modes and termN endpoints. This includes the addition of last_buffer_time[]
+                        -new jitter buffer run-time stats added, including max packets, resyncs, and overrun buffer percent full
+ Modified Apr 2020 JHB, fix problem with "average stats calc" run-time stat not being displayed correctly
+ Modified May 2020 JHB, implement analytics mode improvements in CheckForPacketLossFlush(). Continue to support "analytics compatibility mode" by implementing a separate code path for it
+ Modified May 2020 JHB, in ManageSessions() fix integer-out-of-range problem with state_clear_flags that was causing DSSetSessionInfo() with DS_SESSION_INFO_STATE flag to be called every time, even if session state flags had not changed (they change rarely)
+ Modified May 2020 JHB, add pm_sync[] flag toggle in pm thread loop
+ Modified May 2020 JHB, after call to DSGetOrderedPackets(), implement telecom mode packet loss flush, based on cumulative time vs. cumulative timestamp
+ Modified May 2020 JHB, add fFirstGroupContribution[] to fix ptime msec wobble in first contribution to a stream group. See comments near DSProcessStreamGroupContributors()
+ Modified Oct 2020 JHB, include codec type and bitrate in run-time stats session description info, other minor changes to run-time stats output. Codec info uses DSGetCodecInfo() API added to voplib
+ Modified Oct 2020 JHB, clarify stream change/resume log info message, include new channel in the message
+ Modified Jan 2021 JHB, change units of session_info_thread[hSession].merge_audio_chunk_size from size (bytes) to time (msec), part of change to make stream group processing independent of sampling rate
+ Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
+ Modified Mar 2021 JHB, change DSLogPacketTimeLossStats() to DSLogRunTimeStats(), incorporate use of DS_LOG_RUNTIME_STATS_XX flags
+ Modified Jan 2022 JHB, fix "symbol size changed" linker build warnings in CentOS 8 g++ 8.3 by not including last_buffer_time, nMaxStreamDataAvailable, and uFramesDropped in __LIBRARYMODE__ build
+ Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for hSessionOwner ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized
+ Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
+ Modified Aug 2022 JHB, adjust declaration of a few global vars to allow no_mediamin and no_pktlib options in mediaTest build (run, frame_mode, etc)
+ Modified Sep 2022 JHB, for mediaTest operation (non mediaMin thread): (i) move event log file fclose() to be after WritePktLog(), (ii) add auto-breakout from key processing
+ Modified Sep 2022 JHB, adjust for deprecation of DS_PKT_INFO_NETWORK_BYTE_ORDER flag
+ Modified Sep 2022 JHB, implement TERM_DISABLE_DORMANT_SESSION_DETECTION flag (see shared_include/session.h), implement dormant session minimum time threshold (see comments for additional info)
+ Modified Oct 2022 JHB, add stat for total input SIDs per channel (see DS_JITTER_BUFFER_INFO_INPUT_SID_COUNT flag)
+ Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo(), update param usage for DSGetCodecInfo()
+ Modified Oct 2022 JHB, add stats print out for detected bitrates. See DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST
+ Modified Dec 2022 JHB, move fp_sig_lib_event_log and sig_lib_event_log_filename to cmd_line_interface.c
+ Modified Jan 2023 JHB, modify thread_index handling to allow DSConfigMediaService() threads and others (e.g. mediaTest) to run concurrently
+ Modified Jan 2023 JHB, add DSDeleteFilelibThread() at packet/media thread exit
+ Modified Jan 2023 JHB, make logging and lib initialization flexible so DSInitLogging(), DSConfigVoplib(), and DSConfigPktlilb() are called if initialization has not yet been performed by the calling app
+ Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
+ Modified Jan 2023 JHB, in DSLogRunTimeStats() use DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM with DSGetSessionInfo() to include bidirectional session channels
+ Modified Jan 2023 JHB, improve operation of packet input alarm, see comments near session_last_push_time[] and in cmd_line_options_flags.h
 */
 
 #ifndef _GNU_SOURCE
@@ -175,7 +184,7 @@
 
 //#define DEBUG_CONSISTENCY_MARKERS
 #ifdef DEBUG_CONSISTENCY_MARKERS
-  #ifdef MEDIATEST
+  #ifdef _MEDIATEST_
     #define _USE_CM_
     #define _MAVMOD_UAG_
     #define _SIGMOD_RTAFv5_
@@ -285,14 +294,15 @@ extern unsigned int frameInterval[];
 
 /* Logging notes:
 
-  1) SigSRF libraries use the Log_RT() API for logging.  Applications can use this API also (located in diaglib)
+  1) SigSRF libraries use the Log_RT() API for event logging.  Applications also should use this API (located in diaglib)
 
-  2) mediaTest uses the LOG_OUTPUT define (below) to enable and manage Log_RT() output.  Default is LOG_SCREEN_ONLY
+  2) If an application does not define/enable event logging, ptklib uses the LOG_OUTPUT define (below) to enable and manage Log_RT() output (default
+     definition is LOG_SCREEN_FILE). In this case, applications are responsible for opening and closing log files, and if so, then passing a log file
+     handle within a DEBUG_CONFIG struct (uEventLogFile) and giving a pointer to the struct in DSConfigPktlib(). DEBUG_CONFIG is defined in shared_include/config.h
+ 
+  3) If applications do not define/enable event logging, then pktlib does it
 
-  2) The application is responsible for opening and closing a og file, and if so, then passing a log file handle within a DEBUG_CONFIG struct
-     (uEventLogFile) and giving a pointer to the struct in DSConfigPktlib().  DEBUG_CONFIG is defined in config.h
-
-  3) The log level can be controlled (uLogLevel within a DEBUG_CONFIG struct).  Log levels are defined in config.h (more or less they follow the Linux standard,
+  4) The log level can be controlled (uLogLevel within a DEBUG_CONFIG struct).  Log levels are defined in config.h (more or less they follow the Linux standard,
      e.g. http://man7.org/linux/man-pages/man2/syslog.2.html)
 */
 
@@ -367,14 +377,15 @@ extern DEBUG_CONFIG lib_dbg_cfg;  /* in diaglib, which is set by calls to DSConf
 extern GLOBAL_CONFIG pktlib_gbl_cfg;  /* in pktlib, set by calls to DSConfigPktlib() with DS_CP_GLOBALCONFIG flag */
 
 extern sem_t pktlib_sem;  /* pktlib.so */
-extern sem_t pcap_write_sem;  /* declared in streamlib, semaphore used to ensure no more than 1 thread writes to a particular output file at a time */
+extern sem_t pcap_write_sem;  /* declared in streamlib, semaphore used in some cases to ensure no more than 1 thread writes to a particular output file at a time */
 
-extern uint32_t num_jb_zero_pulls[NCORECHAN];  /* values set inside get_chan_packets() in pktlib */
+extern uint32_t num_jb_zero_pulls[];  /* values set inside get_chan_packets() in pktlib */
 
-extern uint8_t uShowGroupContributorAmounts[MAX_SESSIONS];  /* streamlib */
+extern uint8_t uShowGroupContributorAmounts[];  /* streamlib */
+extern int num_missed_interval_index[];  /* declared in streamlib.so */
+extern int num_flc_applied[];
+extern int num_flc_holdoffs[];
 
-int num_missed_interval_index[MAX_STREAM_GROUPS] = { 0 };  /* referenced in streamlib.so */
-int num_flc_applied[MAX_STREAM_GROUPS] = { 0 };
 #ifdef __LIBRARYMODE__
 uint32_t uFramesDropped[NCORECHAN] = { 0 };
 int nMaxStreamDataAvailable[NCORECHAN] = { 0 };  /* per contributor max data available, used as a run-time stat in DSLogRunTimeStats(). Updated by DSStoreStreamData() in streamlib */
@@ -430,7 +441,7 @@ static int ReuseInputs(uint8_t*, unsigned int, uint32_t, SESSION_DATA*);
 /* New approach to maintaining and logging packet stats history and analysis, JHB Dec2019:
 
   -per-channel tracking instead of pool of stats containing all SSRCs across all threads
-  -DSWritePacketLogStats() API allows packet stats history and analysis to be logged by (i) session (all channels for the session) (ii) stream group (all channels for the group) and (iii) all active channels, which supports the legacy functionality
+  -DSWritePacketHistoryLogStats() API allows packet stats history and analysis to be logged by (i) session (all channels for the session) (ii) stream group (all channels for the group) and (iii) all active channels, which supports the legacy functionality
   -channels use malloc/realloc to increase their stats mem by PKT_STATS_CHUNK number of bytes as needed.  PKT_STATS_CHUNK should be a multiple of the PKT_STATS struct defined in diaglib.h (currently 20 bytes)
 */
 
@@ -456,7 +467,7 @@ static int ReuseInputs(uint8_t*, unsigned int, uint32_t, SESSION_DATA*);
 
 #define PKT_COUNTERS_GLOBAL
 #ifdef PKT_COUNTERS_GLOBAL  /* made global var, indexed by thread, to allow use as (i) param in DSPktStatsWriteLogFile() and (ii) return value in DSGetThreadInfo(), JHB Dec2019 */
-   PKT_COUNTERS pkt_counters[MAX_PKTMEDIA_THREADS] = {{ 0 }};
+   PKT_COUNTERS pkt_counters[MAX_PKTMEDIA_THREADS] = {{ 0 }};  /* PKT_COUNTERS struct defined in diaglib.h */
 #endif
 
 /* multiple pkt/media thread management */
@@ -681,7 +692,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
 
    bool packet_mode = !frame_mode;
 
-   int thread_index = 0;
+   int thread_index = 0;  /* note for mediaTest or other non packet/media thread use, thread_index = 0 assumed */
    bool fThreadInputActive = false;
    bool fThreadOutputActive = false;
 
@@ -709,7 +720,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
 
    int pyld_len, data_length, packet_length, packet_len[256];
    unsigned payload_info[256];
-   uint8_t *pkt_ptr, *pyld_ptr;
+   uint8_t *pkt_ptr, *rtp_pyld_ptr;
 
    int recv_len = 0, send_len = 0;
    unsigned char pkt_in_buf[32*MAX_RTP_PACKET_LEN] = {0}, pkt_out_buf[MAX_RTP_PACKET_LEN] = {0}, media_data_buffer[4*MAX_RTP_PACKET_LEN] = {0}, encoded_data_buffer[2*MAX_RTP_PACKET_LEN] = {0};
@@ -740,7 +751,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
    FILE *fp_dbg = fopen("dbg_data.raw", "wb");
    #endif
    unsigned int uFlags_add, uFlags_info, uFlags_get, uFlags_format;
-   int rtp_ofs;
+   int rtp_pyld_ofs;
 
    int stream_indexes[MAX_INPUT_STREAMS] = { 0 };
 
@@ -758,9 +769,11 @@ void* packet_flow_media_proc(void* pExecutionMode) {
    PKT_COUNTERS pkt_counters = { 0 };
 #endif
 
+   #if 0  /* moved to cmd_line_interface.c, JHB Dec 2022 */
    #if (LOG_OUTPUT != LOG_SCREEN_ONLY)
-   FILE *fp_sig_lib_log = NULL;
-   char sig_lib_log_filename[] = { "sig_lib_log.txt" };
+   FILE *fp_sig_lib_event_log = NULL;
+   char sig_lib_event_log_filename[] = { "sig_lib_event_log.txt" };
+   #endif
    #endif
 
    #ifdef ENABLE_STREAM_GROUPS
@@ -786,6 +799,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
    bool fPreemptAlarm;
 
    int nNumCleanupLoops = 0;
+   int num_static_streams = 0;
 
    CODEC_OUTARGS OutArgs;  /* output data returned by voplib decoders, starting with EVS and AMR-WB Plus, JHB Oct 2022 */
 
@@ -818,42 +832,59 @@ void* packet_flow_media_proc(void* pExecutionMode) {
    strcat(tmpstr, "\n");
    sig_printf(tmpstr, PRN_LEVEL_INFO, -1);
 
-   if (!fMediaThread) {  /* in thread mode platform and/or data plane config and logging are handled by user app */
+/* check if logging and libraries need to be initialized. Should be done by the app, but we check anyway, JHB Jan 2023 */
 
-      #ifndef __LIBRARYMODE__
-      hPlatform = DSAssignPlatform(NULL, PlatformParams.szCardDesignator, 0, 0, 0);  /* assign platform handle, needed for concurrency and VM management */
-      #endif
+   if (!DSInitLogging(NULL, 0)) {  /* if logging not already initialized, then we take care of it. Note that even if initialization isn't needed, DSInitLogging() will still add a thread index for the current packet/media thread if needed (i.e. one didn't already exist), JHB Jan 2023 */
 
-   /* Configure packet lib debug logging */
+   /* configure event logging if needed, JHB Dec 2022 */
 
       dbg_cfg.uDisableMismatchLog = 1;
       dbg_cfg.uDisableConvertFsLog = 1;
       dbg_cfg.uLogLevel = 8;  /* 5 is default, set to 8 to see INFO messages, including jitter buffer */
-      dbg_cfg.uEventLogMode = LOG_OUTPUT;
+      dbg_cfg.uEventLogMode = LOG_OUTPUT | DS_LOG_LEVEL_UPTIME_TIMESTAMP;  /* enable timestamps */
 
       #if (LOG_OUTPUT != LOG_SCREEN_ONLY)
-      fp_sig_lib_log = fopen(sig_lib_log_filename, "w");
-      dbg_cfg.uEventLogFile = fp_sig_lib_log;
+      strcpy(dbg_cfg.szEventLogFilePath, sig_lib_event_log_filename);  /* set event log filename (sig_lib_event_log_filename is initialized in cmd_line_interface.c) */
       #endif
 
       dbg_cfg.uPrintfLevel = 5;
 
-      DSConfigPktlib(NULL, &dbg_cfg, DS_CP_INIT | DS_CP_DEBUGCONFIG);
-      DSConfigVoplib(NULL, NULL, DS_CV_INIT);
+      DSInitLogging(&dbg_cfg, 0);  /* initialize logging (DSInitLogging() is in diaglib). Note that DSInitLogging() should not be called twice without a matching DSCloseLogging() call, as it increments a semaphore count to track multithread usage, JHB Dec 2022 */
    }
 
-   #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
-   if (!fMediaThread) nThreads_gbl = PlatformParams.cimInfo[0].taskAssignmentCoreLists[0];  /* this is the -tN cmd line value, if entered */
-   #endif
+   if (isMasterThread) {
+ 
+      #ifndef __LIBRARYMODE__  /* apps always should assign a platform handle, not threads, so we only do this if packet_flow_media_proc() is being called as a function */
+      if (!fMediaThread) hPlatform = DSAssignPlatform(NULL, PlatformParams.szCardDesignator, 0, 0, 0);  /* assign platform handle, needed for concurrency and VM management */
+      #endif
 
-   if (isMasterThread && nThreads_gbl <= 0) nThreads_gbl = 1;
+   /* configure pktlib and voplib if needed, JHB Jan 2023 */
 
-   if (isMasterThread && demo_build && nThreads_gbl > 2)
-   {
-      fprintf(stderr, "Number of threads exceeds demo limit, reducing number of threads to 2\n");
-      nThreads_gbl = 2;
+      if (!DSConfigPktlib(NULL, NULL, 0)) DSConfigPktlib(NULL, NULL, DS_CP_INIT | DS_CP_DEBUGCONFIG);
+      if (!DSConfigVoplib(NULL, NULL, 0)) DSConfigVoplib(NULL, NULL, DS_CV_INIT);
+
+      #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
+      if (!fMediaThread) nThreads_gbl = PlatformParams.cimInfo[0].taskAssignmentCoreLists[0];  /* this is the -tN cmd line value, if entered */
+      #endif
+
+      if (nThreads_gbl <= 0) nThreads_gbl = 1;
+
+      if (demo_build && nThreads_gbl > 2) {
+
+         fprintf(stderr, "Number of threads exceeds demo limit, reducing number of threads to 2\n");
+         nThreads_gbl = 2;
+      }
    }
 
+/* check for too many threads */
+
+   if (num_pktmedia_threads >= MAX_PKTMEDIA_THREADS) {
+
+too_many_threads:
+
+      Log_RT(2, "ERROR: limit of %d packet/media threads reached, not able to initialize new thread, thread index = %d \n", MAX_PKTMEDIA_THREADS, thread_index);
+      return NULL;
+   }
 
 /* init thread level items */
 
@@ -868,7 +899,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
       #if 0
       i = 0;
       pthread_t threadid = pthread_self();
-      Log_RT(8, "DEBUG2: before thread init, packet_media_thread_info[%d].threadid = 0x%llx, numSessions = %d, sizeof(packet_media_thread_info[0]) = %lu, sizeof(packet_media_thread_info.threadid) = %lu, sizeof(packet_media_thread_info.fMediaThread) = %lu, threadid = 0x%llx\n", i, (unsigned long long)packet_media_thread_info[i].threadid, packet_media_thread_info[i].numSessions, sizeof(packet_media_thread_info[0]), sizeof(packet_media_thread_info[0].threadid), sizeof(packet_media_thread_info[0].fMediaThread), (unsigned long long)threadid);
+      Log_RT(8, "DEBUG2: before thread init, packet_media_thread_info[%d].threadid = 0x%llx, numSessions = %d, sizeof(packet_media_thread_info[0]) = %lu, sizeof(packet_media_thread_info.threadid) = %lu, sizeof(packet_media_thread_info.fMediaThread) = %lu, threadid = 0x%llx \n", i, (unsigned long long)packet_media_thread_info[i].threadid, packet_media_thread_info[i].numSessions, sizeof(packet_media_thread_info[0]), sizeof(packet_media_thread_info[0].threadid), sizeof(packet_media_thread_info[0].fMediaThread), (unsigned long long)threadid);
       #endif
 
       bool fFound = false;
@@ -881,7 +912,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
             #if 0
             static int fOnce[MAX_PKTMEDIA_THREADS] = { 0 };
             if (fOnce[i] < 100) {
-               Log_RT(8, "DEBUG2: packet_media_thread_info[%d].threadid = 0x%llx, numSessions = %d, threadid = 0x%llx\n", i, (unsigned long long)packet_media_thread_info[i].threadid, packet_media_thread_info[i].numSessions, (unsigned long long)threadid);
+               Log_RT(8, "DEBUG2: packet_media_thread_info[%d].threadid = 0x%llx, numSessions = %d, threadid = 0x%llx \n", i, (unsigned long long)packet_media_thread_info[i].threadid, packet_media_thread_info[i].numSessions, (unsigned long long)threadid);
                fOnce[i]++;
             }
             #endif
@@ -910,6 +941,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
                thread_index = i;
 
                sem_wait(&pktlib_sem);  /* protect any mod to num_pktmedia_threads. ManageSessions() runs immediately upon creation of first p/m thread, JHB Jan2020 */
+
                num_pktmedia_threads++;
                num_pktmedia_threads_local =  num_pktmedia_threads;
 
@@ -927,7 +959,38 @@ void* packet_flow_media_proc(void* pExecutionMode) {
          else Log_RT(4, "INFO: initializing packet/media thread %d, uFlags = 0x%x, threadid = 0x%llx, total num pkt/med threads = %d\n", thread_index, packet_media_thread_info[thread_index].uFlags, (unsigned long long)packet_media_thread_info[thread_index].threadid, num_pktmedia_threads_local);
       }
    }
-   else packet_media_thread_info[thread_index].threadid = pthread_self();
+   else {
+
+      sem_wait(&pktlib_sem);
+
+   /* find next available slot in packet_media_thread_info[]. Don't allow concurrent DSConfigMediaService() generated threads and others (e.g. mediaTest) to overwrite each other, JHB Jan 2023 */
+
+      for (i=0; i<MAX_PKTMEDIA_THREADS; i++) if (packet_media_thread_info[i].threadid == pthread_self()) {  /* check if already exists */
+         thread_index = i;
+         sem_post(&pktlib_sem);
+      }
+      else {
+
+         i = 0;
+         while (packet_media_thread_info[i].threadid != 0 && i < MAX_PKTMEDIA_THREADS) i++;
+
+         if (i < MAX_PKTMEDIA_THREADS) {
+            thread_index = i;
+            __sync_add_and_fetch(&nPktMediaThreads, 1);  /* increment number of threads in packet_media_thread_info[] */
+         }
+         else {
+
+            sem_post(&pktlib_sem);
+            goto too_many_threads;
+         }
+
+         packet_media_thread_info[thread_index].threadid = pthread_self();
+
+         DSCreateFilelibThread();  /* see comments for DSConfigMediaService() call to DSCreateFilelibThread() above, JHB Jan 2023 */
+
+         sem_post(&pktlib_sem);
+      }
+   }
 
    packet_media_thread_info[thread_index].fMediaThread = fMediaThread;
    packet_media_thread_info[thread_index].packet_mode = packet_mode;
@@ -1327,7 +1390,25 @@ set_session_flags:
       if (InitStream(hSessions_t, i, thread_index, &fFTRTInUse)) nStreamsInit++;
    }
 
-   sprintf(tmpstr, "Initialized %d static sessions(s) and %d stream(s)\n", nSessionsInit, nStreamsInit);
+/* determine number of static sessions and streams associated with static sessions, JHB Jan 2023 */
+
+   for (i = threadid; i < nSessionsCreated; i += nThreads_gbl) {
+
+      for (j=0; j<MAX_TERMS; j++) {
+
+         #if 0  /* two different ways shown here. Getting a full TERMINATION_INFO is more flexible and contains everything, but slightly slower, JHB Jan 2023 */
+         TERMINATION_INFO termInfo;
+         DSGetSessionInfo(hSessions_t[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, j+1, &termInfo);
+         if (!(termInfo.uFlags & TERM_INFO_DYNAMIC_SESSION)) num_static_streams++;
+         #else
+         unsigned int uFlags = DSGetSessionInfo(hSessions_t[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, j+1, NULL);
+         if (!(uFlags & TERM_INFO_DYNAMIC_SESSION)) num_static_streams++;
+         #endif
+      }
+   }
+
+   sprintf(tmpstr, "Static session initialization: %d session%s and %d stream termination%s \n", nSessionsInit, nSessionsInit != 1 ? "s" : "", num_static_streams, num_static_streams != 1 ? "s" : "");
+  
    sig_printf(tmpstr, PRN_LEVEL_INFO, thread_index);
 
    #ifndef __LIBRARYMODE__
@@ -1345,7 +1426,7 @@ run_loop:
 
    if (!start_time) start_time = get_time(USE_CLOCK_GETTIME);
    
-/* packet/media thread loop */
+/* continuous packet/media thread loop */
 
    do {
 
@@ -1507,7 +1588,9 @@ run_loop:
       bool fDebugPass = false;
       bool fAllSessionsDataAvailable = true;
 
-      numSessions = ManageSessions(hSessions_t, pkt_counters, INPUT_PKTS, PULLED_PKTS, &fAllSessionsDataAvailable, thread_index);  /* last two args are #defines depending on ENABLE_PKT_STATS (defined above) */
+//static bool fPrevAllSessionsDataAvailable = false;
+
+      numSessions = ManageSessions(hSessions_t, pkt_counters, INPUT_PKTS, PULLED_PKTS, &fAllSessionsDataAvailable, thread_index);  /* args 3 and 4 are #defines depending on ENABLE_PKT_STATS (defined above) */
 
       if (numSessions >= 1) __sync_xor_and_fetch(&pm_sync[thread_index], 1);  /* toggle pm thread sync flag for any app that needs it */
 
@@ -1534,9 +1617,9 @@ run_loop:
 
          elapsed_thread_time = cur_time - prev_thread_CPU_time;
 
-         if (!packet_media_thread_info[thread_index].nChannelWavProc && packet_media_thread_info[thread_index].fFTRTPtime) {  /* N channel wav file processing is post-processing, not real-time, so we don't include this in preemption checks */
+         if (!packet_media_thread_info[thread_index].nChannelWavProc && packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled) {  /* N channel wav file processing is post-processing, not real-time, so we don't include this in preemption checks */
 
-            if (elapsed_thread_time > (uint64_t)pktlib_gbl_cfg.uThreadPreemptionElapsedTimeAlarm*1000) {  /* anything more than warning limit (default is 40 msec) we consider that Linux may have pre-empted the thread.  Not good, but we need to know. JHB Jan2020 */
+            if (elapsed_thread_time > (uint64_t)pktlib_gbl_cfg.uThreadPreemptionElapsedTimeAlarm*1000) {  /* anything more than warning limit (default is 40 msec) we consider that Linux may have pre-empted the thread. Not good, but we need to know. JHB Jan2020 */
 
                last_decode_time = packet_media_thread_info[thread_index].decode_time[(packet_media_thread_info[thread_index].decode_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)];
                last_encode_time = packet_media_thread_info[thread_index].encode_time[(packet_media_thread_info[thread_index].encode_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)];
@@ -1579,7 +1662,11 @@ run_loop:
 
       if (fPreemptAlarm) {
 
-         sprintf(tmpstr, "WARNING: p/m thread %d has not run for %4.2f msec, may have been preempted, num sessions = %d", thread_index, 1.0*elapsed_thread_time/1000, numSessions);
+         #if 0
+         sprintf(tmpstr, "WARNING: p/m thread %d has not run for %4.2f msec, may have been preempted, num sessions = %d, fAllSessionsDataAvailable = %d, fPrevAllSessionsDataAvailable = %d", thread_index, 1.0*elapsed_thread_time/1000, numSessions, fAllSessionsDataAvailable, fPrevAllSessionsDataAvailable);
+         #else
+         sprintf(tmpstr, "WARNING: p/m thread %d has not run for %4.2f msec, may have been preempted, num sessions = %d, fAllSessionsDataAvailable = %d", thread_index, 1.0*elapsed_thread_time/1000, numSessions, fAllSessionsDataAvailable);
+         #endif
 
          sprintf(&tmpstr[strlen(tmpstr)], ", creation history =");
          for (i=0; i<MS_HISTORY_LEN; i++) sprintf(&tmpstr[strlen(tmpstr)], " %d", packet_media_thread_info[thread_index].manage_sessions_creation_history[(i-1) & (MS_HISTORY_LEN-1)]);
@@ -1604,6 +1691,8 @@ run_loop:
 
          Log_RT(3, "%s \n", tmpstr);
       }
+
+  //fPrevAllSessionsDataAvailable = fAllSessionsDataAvailable;
 
       if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
@@ -1667,7 +1756,7 @@ run_loop:
 #ifdef PERFORMANCE_MEASUREMENT
 get_pkt_info:
 #endif
-                     chnum_parent = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKT_INFO_SUPPRESS_ERROR_MSG, pkt_in_buf, pkt_len[0], NULL, NULL);
+                     chnum_parent = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_in_buf, pkt_len[0], NULL, NULL);
 
                      if (chnum_parent >= 0) {
 
@@ -1761,12 +1850,19 @@ get_pkt_info:
 
          if (lib_dbg_cfg.uDebugMode & DS_ENABLE_PUSHPACKETS_ELAPSED_TIME_ALARM) {
 
-            if (!(session_input_flags[hSession] & 1) && session_last_push_time[hSession] && ((int64_t)cur_time - (int64_t)__sync_fetch_and_add(&session_last_push_time[hSession], 0))/1000 >= lib_dbg_cfg.uPushPacketsElapsedTimeAlarm) {  /* note -- need to use int64_t calculation here as DSPushPackets() is an asynchronous (user) thread and might update session_last_push_time[] after we update cur_time, JHB Jan2020 */
+            int64_t last_push_time = __sync_fetch_and_add(&session_last_push_time[hSession], 0);  /* note -- we use an atomic int64_t read as DSPushPackets() is an asynchronous (user) thread and might concurrently write session_last_push_time[], JHB Jan2020 */
 
-//  printf(" ================= cur_time = %llu, session_last_push_time[hSession] = %llu \n", cur_time, session_last_push_time[hSession]); 
+            if (!(session_input_flags[hSession] & 1) && !(session_input_flags[hSession] & 2) && last_push_time && ((int64_t)cur_time - last_push_time)/1000 >= lib_dbg_cfg.uPushPacketsElapsedTimeAlarm) {
 
-               Log_RT(3, "WARNING: p/m thread %d says DSPushPackets() has pushed no packets for session %d for %d msec \n", thread_index, hSession, lib_dbg_cfg.uPushPacketsElapsedTimeAlarm);
-               __sync_lock_test_and_set(&session_last_push_time[hSession], cur_time);  /* update the push time so we won't log another warning message for another uPushPacketsElapsedTimeAlarm number of msec */
+               char fstr[50];
+               sprintf(fstr, "%4.2f", 1.0*lib_dbg_cfg.uPushPacketsElapsedTimeAlarm/1000);
+               int i=strlen(fstr)-1; while (i > 0 && fstr[i] == '0') i--;  /* remove trailing zeros if any */
+               if (i > 0 && fstr[i] == '.') i--;
+               fstr[i+1] = 0;
+
+               Log_RT(3, "WARNING: p/m thread %d says DSPushPackets() has pushed no packets for session %d for %s sec. The stream associated with this session may have stopped for a normal reason or there may be a problem \n", thread_index, hSession, fstr);
+
+               __sync_or_and_fetch(&session_input_flags[hSession], 2);  /* update the alarm flag so we don't continue to log more messages for this session unless it "returns to life" and has more input packets, JHB Jan 2023 */
             }
          }
 
@@ -1880,7 +1976,7 @@ get_pkt_info:
 
             for (j=0; j<numPkts; j++) {  /* find channels matching this session */
 
-               chnums_lookahead[j] = DSGetPacketInfo(hSession_flags, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKT_INFO_SUPPRESS_ERROR_MSG, pkt_ptr, pkt_len[j], NULL, &chnums[j]);
+               chnums_lookahead[j] = DSGetPacketInfo(hSession_flags, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_ptr, pkt_len[j], NULL, &chnums[j]);
                pkt_ptr += pkt_len[j];
 
                if (chnums_lookahead[j] >= 0) {  /* channel matches ? */
@@ -1975,7 +2071,7 @@ get_pkt_info:
                   chnum_parent = chnums_lookahead[j];  /* parent (and child if applicable) already filled in, JHB Jan2020 */
                   chnum = chnums[j];
                }
-               else chnum_parent = DSGetPacketInfo(hSession_flags, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKT_INFO_SUPPRESS_ERROR_MSG, pkt_ptr, pkt_len[j], NULL, &chnum);
+               else chnum_parent = DSGetPacketInfo(hSession_flags, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_ptr, pkt_len[j], NULL, &chnum);
 
                if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_RECEIVE) DSLogPktTrace(hSession_flags, pkt_ptr, pkt_len[j], thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_RECEIVE);
 
@@ -2062,7 +2158,7 @@ debug:
 
                 /* In packet mode, DSBufferPackets() adds packets to a jitter buffer.  Packet mode notes:
 
-                    1) DSBufferPackets() expects packet headers in network byte order by default.  The DS_PKT_INFO_HOST_BYTE_ORDER flag can be used if headers are in host byte order
+                    1) DSBufferPackets() expects packet headers in network byte order by default.  The DS_PKTLIB_HOST_BYTE_ORDER flag can be used if headers are in host byte order
 
                     2) DTX packets are processed, out-of-order packets are handled, and packets duplicated per RFC7198 are stripped out
 
@@ -2122,7 +2218,7 @@ debug:
                         if (!fOnce) { printf("\n === time from first push to first buffer %llu \n", (unsigned long long)((first_buffer_time = get_time(USE_CLOCK_GETTIME)) - first_push_time)); fOnce = true; }
                         #endif
 
-                        ret_val = DSBufferPackets(hSession_flags, uFlags_add, pkt_ptr, packet_len, &payload_info[j], &chnum);  /* buffer one or more packets for this session, applying flags as required. chnum[] is returned as the packet match, either parent or child, as applicable, JHB Jan2020 */
+                        ret_val = DSBufferPackets(hSession_flags, uFlags_add, pkt_ptr, packet_len, &payload_info[j], &chnum);  /* buffer one or more packets for this session, applying flags as required. chnum[] is returned as the packet match, either parent or child, as applicable, JHB Jan2020. Note that DS_PKTLIB_SUPPRESS_ERROR_MSG and DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG are not set, so display and/or event log is going to show any packet issues */
 
                         if (ret_val > 0) {
 
@@ -2183,7 +2279,7 @@ debug:
 
                      uFlags_info = DS_BUFFER_PKT_IP_PACKET;
 
-                     if (session_info_thread[hSession].fUseJitterBuffer && (uFlags_add & DS_PKT_INFO_HOST_BYTE_ORDER)) uFlags_info |= DS_PKT_INFO_HOST_BYTE_ORDER;  /* if user app packet headers are in host byte order, then adjust uFlags for subsequent DSGetPacketInfo() calls.  mediaTest doesn't do this, so this line is here just as an example */
+                     if (session_info_thread[hSession].fUseJitterBuffer && (uFlags_add & DS_PKTLIB_HOST_BYTE_ORDER)) uFlags_info |= DS_PKTLIB_HOST_BYTE_ORDER;  /* if user app packet headers are in host byte order, then adjust uFlags for subsequent DSGetPacketInfo() calls.  mediaTest doesn't do this, so this line is here just as an example */
                   }
                   else {  /* frame mode */
 
@@ -2267,7 +2363,7 @@ debug:
 
                      if (ret_val > 0 || (uPktStatsLogging & DS_LOG_BAD_PACKETS)) { 
 
-                     /* fill in session and stream group info.  Note that group index (idx) may be -1 if session does not belong to a stream group, JHB Dec2019 */
+                     /* fill in session and stream group info. Note that group index (idx) may be -1 if session does not belong to a stream group, and if so we fill this in so it can be later referenced by packet stats processing JHB Dec2019 */
 
                         input_pkts[pkt_counters[thread_index].num_input_pkts].chnum = chnum;
                         input_pkts[pkt_counters[thread_index].num_input_pkts].idx = DSGetStreamGroupInfo(chnum, DS_GETGROUPINFO_HANDLE_CHNUM, NULL, NULL, NULL);
@@ -2603,7 +2699,7 @@ next_session:
                         #ifdef FTRTDEBUG
                         static bool fOnce[MAX_SESSIONS][MAX_TERMS] = {{ false }};
                         if (!fOnce[hSession][term]) {
-                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %d, ptime = %d, timing = %s%s\n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval[hSession][term], ptime[hSession][term], (uFlags_get & DS_GETORD_PKT_FTRT) ? "analytics" : "telecom", (uFlags_get & DS_GETORD_PKT_FTRT) && DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? ", compatibilty mode" : "");
+                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %d, ptime = %d, %s timing%s, preemption monitoring %s \n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval[hSession][term], ptime[hSession][term], (uFlags_get & DS_GETORD_PKT_FTRT) ? "analytics" : "telecom", (uFlags_get & DS_GETORD_PKT_FTRT) && DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? " (compatibilty mode)" : "", packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled ? "enabled" : "disabled");
                            sig_printf(tmpstr, PRN_LEVEL_INFO, thread_index);
                            fOnce[hSession][term] = true;
                         }
@@ -2832,9 +2928,9 @@ pull:
 
                   #ifdef USE_OLD_NETWORK_BYTE_ORDER_FLAG
                   if (uFlags_get & DS_PKT_INFO_NETWORK_BYTE_ORDER) uFlags_info |= DS_PKT_INFO_NETWORK_BYTE_ORDER;
-                  else uFlags_info |= DS_PKT_INFO_HOST_BYTE_ORDER;
+                  else uFlags_info |= DS_PKTLIB_HOST_BYTE_ORDER;
                   #else
-                  if (uFlags_get & DS_PKT_INFO_HOST_BYTE_ORDER) uFlags_info |= DS_PKT_INFO_HOST_BYTE_ORDER;
+                  if (uFlags_get & DS_PKTLIB_HOST_BYTE_ORDER) uFlags_info |= DS_PKTLIB_HOST_BYTE_ORDER;
                   #endif
 
                   #define NO_PACKET         0  /* some local definitions helpful in illustrating possible packet processing cases */
@@ -2864,9 +2960,9 @@ pull:
 
                      if (payload_info[j] != DS_PKT_PYLD_CONTENT_PROBATION) {
 
-                        rtp_ofs = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags_info, pkt_ptr, packet_len[j], NULL, NULL);
+                        rtp_pyld_ofs = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags_info, pkt_ptr, packet_len[j], NULL, NULL);
 
-                        if (rtp_ofs < 0) {
+                        if (rtp_pyld_ofs < 0) {
                            Log_RT(2, "ERROR: p/m thread %d says invalid packet pointer or length given to DSGetPacketInfo(), packet len = %d, num pkts = %d\n", thread_index, packet_len[j], num_pkts);
                            break;
                         }
@@ -2903,7 +2999,7 @@ pull:
 
                            if (isMasterThread && DSIsPktStatsHistoryLoggingEnabled(thread_index)) {
 
-                           /* fill in session and stream group info.  Note that group index (idx) may be -1 if session does not belong to a stream group, JHB Dec2019 */
+                           /* fill in session and stream group info. Note that group index (idx) may be -1 if session does not belong to a stream group, and if so we fill this in so it can be later referenced by packet stats processing, JHB Dec2019 */
 
                               pulled_pkts[pkt_counters[thread_index].num_pulled_pkts].chnum = chnum;
                               pulled_pkts[pkt_counters[thread_index].num_pulled_pkts].idx = DSGetStreamGroupInfo(chnum, DS_GETGROUPINFO_HANDLE_CHNUM, NULL, NULL, NULL);
@@ -2928,14 +3024,14 @@ pull:
                            }
                         }
 
-                        pyld_ptr = pkt_ptr + rtp_ofs;
+                        rtp_pyld_ptr = pkt_ptr + rtp_pyld_ofs;
                         pyld_len = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDLEN | uFlags_info, pkt_ptr, packet_len[j], NULL, NULL);
                      }
                      else {
 
                         packet_type = PROBATION_PACKET;
 
-                        pyld_ptr = pkt_ptr;  /* only here to avoid compiler warnings about possible uninit vaar */
+                        rtp_pyld_ptr = pkt_ptr;  /* only here to avoid compiler warnings about possible uninit vaar */
                         pyld_len = 0;
                      }
 
@@ -2965,7 +3061,7 @@ pull:
 
                         struct dtmf_event dtmf_info = { 0 };
 
-                        DSGetDTMFInfo(-1, (uintptr_t)NULL, pyld_ptr, pyld_len, &dtmf_info);
+                        DSGetDTMFInfo(-1, (uintptr_t)NULL, rtp_pyld_ptr, pyld_len, &dtmf_info);
 
                         if (isMasterThread && uDisplayDTMFEventMsg[hSession][term] < dtmf_display_msg_limit) {  /* arbitrary limit on how many DTMF events to display during normal operation; to see all events look at the packet stats log generated when the program exits */
 
@@ -2984,7 +3080,7 @@ pull:
 
                            sprintf(&tmpstr[strlen(tmpstr)], ", Event = %d, Duration = %d, Volume = %d", dtmf_info.event, dtmf_info.duration, dtmf_info.volume);
 
-                           if (pyld_ptr[1] & 0x80) {
+                           if (rtp_pyld_ptr[1] & 0x80) {
 
                               strcat(tmpstr, ", End of Event");
 
@@ -3043,12 +3139,12 @@ pull:
    if (termInfo.codec_type == DS_VOICE_CODEC_TYPE_EVS) {
 
       if (nOnce == 0) {
-         memcpy(pyld_save, pyld_ptr, pyld_len);
+         memcpy(pyld_save, rtp_pyld_ptr, pyld_len);
          pyld_len_save = pyld_len;
       }
 
       if (nOnce == 5) {  /* overwrite frame 5 with frame 0 */
-         memcpy(pyld_ptr, pyld_save, pyld_len_save);
+         memcpy(rtp_pyld_ptr, pyld_save, pyld_len_save);
          pyld_len = pyld_len_save;
          printf("\n === EVS frame overwrite \n");
       }
@@ -3056,7 +3152,7 @@ pull:
       nOnce++;
    }
    #endif
-                           media_data_len = DSCodecDecode(&hCodec, 0, pyld_ptr, media_data_buffer, pyld_len, 1, &OutArgs);  /* call voplib decoder */
+                           media_data_len = DSCodecDecode(&hCodec, 0, rtp_pyld_ptr, media_data_buffer, pyld_len, 1, &OutArgs);  /* call voplib decoder */
 
                            if (termInfo.codec_type == DS_VOICE_CODEC_TYPE_EVS) {  /* handle return data, JHB Oct 2022 */
 
@@ -3149,7 +3245,7 @@ pull:
 
                         DSStoreStreamData(chnum, (uintptr_t)NULL, media_data_buffer, media_data_len);  /* store decoded media data */
                      }
-                     else if (packet_type == DTMF_PACKET) DSStoreStreamData(chnum, (uintptr_t)NULL, pyld_ptr, pyld_len);  /* store DTMF event */
+                     else if (packet_type == DTMF_PACKET) DSStoreStreamData(chnum, (uintptr_t)NULL, rtp_pyld_ptr, pyld_len);  /* store DTMF event */
 
                      num_thread_decode_packets++;
 
@@ -3257,14 +3353,14 @@ pull:
 
                      #else  /* #ifdef DECOUPLE_STREAM_PROCESSING */
 
-                  /* Note -- for combined packet/payload + stream processing, chnum, pyld_ptr, and pyld_len values set earlier may be used */
+                  /* Note -- for combined packet/payload + stream processing, chnum, rtp_pyld_ptr, and pyld_len values set earlier may be used */
 
                      if (packet_type == MEDIA_PACKET) {
                         stream_ptr = media_data_buffer;
                         data_length = out_media_data_len;
                      }
                      else if (packet_type == DTMF_PACKET) {
-                        stream_ptr = pyld_ptr;
+                        stream_ptr = rtp_pyld_ptr;
                         data_length = pyld_len;
                      }
                      else continue;  /* packet_type == NO_PACKET */
@@ -3799,7 +3895,7 @@ sync_exit:
 
    if (!fSyncExit[thread_index]) {
    
-      if (isMasterThread) {
+      if (isMasterThread || !fMediaThread) {
          #ifdef ENABLE_PKT_STATS  /* log stats for input and jitter buffer packets */
          WritePktLog(-1, pkt_counters, input_pkts, pulled_pkts, thread_index);  /* note there is a published API DSWritePacketStatsHistoryLog() that also does this */
          #endif
@@ -3808,24 +3904,26 @@ sync_exit:
       fSyncExit[thread_index] = true;
       goto sync_exit;
    }
-   else for (i=0; i < (int)num_pktmedia_threads; i++) if (!fSyncExit[i]) {
+   else for (i=0; i < (int)num_pktmedia_threads; i++) if (packet_media_thread_info[i].fMediaThread && !fSyncExit[i]) {
 
       usleep(1000);
       goto sync_exit;
    }
 
-   if (!fMediaThread) {  /* moved here for mediaTest operation (fMediaThread = false), after WritePktLog() which is last possible use of event log file, JHB Sep 2022 */
+   DSDeleteFilelibThread();  /* delete thread index in filelib, if any. See comments for DSCreateFilelibThread() above, JHB Jan2023 */
 
-      #if (LOG_OUTPUT != LOG_SCREEN_ONLY)
-      if (fp_sig_lib_log) fclose(fp_sig_lib_log);
+   if (!fMediaThread) {  /* cleanup for non DSConfigMediaService() threads, JHB Sep 2022 */
+
+      sem_wait(&pktlib_sem);
+      memset(&packet_media_thread_info[thread_index], 0, sizeof(PACKETMEDIATHREADINFO));  /* clear thread info mem. Note that pthread_join() is app responsibility, JHB Jan 2023 */
+      sem_post(&pktlib_sem);
+
+      #ifndef __LIBRARYMODE__
+      if (hPlatform != -1) DSFreePlatform((intptr_t)hPlatform);  /* free platform handle. We moved this to be just before logging shutdown, last possible use of event log, JHB Dec 2022 */
       #endif
+
+      DSCloseLogging(0);  /* close logging (DSCloseLogging() is in diaglib) */
    }
-
-/* free platform handle */
-
-   #ifndef __LIBRARYMODE__
-   if (!fMediaThread && hPlatform != -1) DSFreePlatform((intptr_t)hPlatform);
-   #endif
 
    sprintf(tmpstr, "x86 pkt/media%s end\n", num_pktmedia_threads ? " thread" : "");
    sig_printf(tmpstr, PRN_LEVEL_INFO, thread_index);
@@ -3966,25 +4064,27 @@ static inline int get_channels(HSESSION hSession, int stream_indexes[], int chan
 int chnum0 = -1, chnum1 = -1, num_chan = 0;
 char errstr[50];
 
-/* chan_num[] notes:
+/* chan_nums[] notes:
 
-  1) chan_num[] and num_chan values are used to determine number of, and which, active (buffered) channels to use when calling DSGetOrderedPackets().  This is efficient because it gives us an option to save processing time when we already know a channel does not have data buffered
+  1a) chan_nums[] and num_chan values are used to determine number of, and which, active (buffered) channels to use when calling DSGetOrderedPackets().  This is efficient because it gives us an option to save processing time when we already know a channel does not have data buffered
+
+  1b) chan_nums[] returns only parent channels
 
   2) For FTRT timing:
-  
+
     -chnum_map[] values are saved in the input/buffering loop that calls DSBufferPackets().  The values are dynamic, reset each time input streams/queues are processed
-  
-    -when data runs out in cmd line execution, or the user app flushes a session in thread execution, fDataAvailable goes to false and in that case we use either the last known chnum_map[] values, or the channel number corresponding to the session's term definitions
+
+    -when stream input data finishes or terminates, or the user app flushes a session in thread execution, thread_info[].fDataAvailable goes to false and in that case we use either the last known chnum_map[] values, or the channel number corresponding to the session's term definitions. It's user app responsibility to set thread_info[].fDataAvailable as needed, for example if input stream is a pcap file, fDataAvailable should be cleared when the file ends
 
   3) For real-time (ptime interval) timing:
-   
-    -chnum_map[] values are not used.  DSGetOrderedPackets() is called independently (and frequently) of the input/buffering loop, and packet timestamps dictate how many packets are returned per session
+
+    -chnum_map[] values are not used. DSGetOrderedPackets() is called independently (and frequently) of the input/buffering loop, and packet timestamps dictate how many packets are returned per session
 
     -chan_nums[] and num_chan depend solely on the channel number assigned to the sessions's term definition
 
   4) FTRT timing is enabled when (i) buffer_interval set to zero for thread execution, or (ii) -r0 entry is given for cmd line execution
-  
-  5) Channels assigned to session term definitions ("termN" are unique values over all sessions
+
+  5) Channels assigned to session term definitions ("termN" are unique values over all sessions)
 */
 
    int input_buffer_interval1 = input_buffer_interval[hSession][0];
@@ -4076,7 +4176,7 @@ char szSSRCStatus[200];
    for (j=0; j<num_pkts; j++) {
 
 #if 0
-      chnum = DSGetPacketInfo((uFlags_session & DS_SESSION_USER_MANAGED) ? hSession : -1, uFlags_info | DS_PKT_INFO_CHNUM_PARENT | DS_PKT_INFO_SUPPRESS_ERROR_MSG, pkt_in_buf + offset, packet_len[j], NULL, NULL);
+      chnum = DSGetPacketInfo((uFlags_session & DS_SESSION_USER_MANAGED) ? hSession : -1, uFlags_info | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_in_buf + offset, packet_len[j], NULL, NULL);
       if (chnum == -1) return -1;  /* error condition */
 #endif
 
@@ -4554,7 +4654,7 @@ int session_state, j;
       if ((int)ptime_config[hSession] < 5) ptime_config[hSession] = 5;  /* min supported ptime */
       #endif
 
-   /* check for sessions created before any media threads were started, if found then initialize their threadid */
+   /* check for sessions created by an app before it started packet/media thread(s), if found then initialize the session's threadid */
 
       if (!DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_THREAD_ID, 0, NULL)) DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_THREAD_ID, pthread_self(), NULL);
 
@@ -4604,6 +4704,7 @@ int session_state, j;
       #endif
 
       session_info_thread[hSession].fAllContributorsPresent = false;
+      packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled = true;
 
       for (j=0; j<MAX_GROUP_CONTRIBUTORS; j++) {  /* this should be in DSInitMergeGroup() in streamlib, but session_info_thread[] is not passed to DSInitMergeGroup() */
 
@@ -4632,7 +4733,7 @@ int session_state, j;
             output_buffer_interval[hSession][j] = 0;
          }
 
-         packet_media_thread_info[thread_index].fFTRTPtime = output_buffer_interval[hSession][j] > 0;  /* any session with FTRT + ptime set makes this true. If it stays false thread pre-emption alarms are disabled due to expected super fast push rate, JHB Jan2020 */ 
+         if (!output_buffer_interval[hSession][j]) packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled = false;  /* any session without FTRT + ptime set makes this false. If it stays false thread pre-emption alarms are disabled due to expected super fast push rate, JHB Jan2020. Modified the logic slightly so result would not depend only on term2, JHB Jan 2023 */ 
 
          nDormantChanFlush[hSession][j] = 0;
          nOnHoldChanFlush[hSession][j] = 0;  /* reset session's on-hold flush state */
@@ -5112,7 +5213,7 @@ char* szLocalLogFilename = NULL;
 
    if (thread_index < 0 || thread_index >= nPktMediaThreads) {
    
-      Log_RT(3, "WARNING: DSWritePacketLogStats() says invalid %s %d \n", uFlags & DS_WRITE_PKT_STATS_HISTORY_LOG_THREAD_INDEX ? "thread index" : "hSession", thread_index);
+      Log_RT(3, "WARNING: DSWritePacketHistoryLogStats() says invalid %s %d \n", uFlags & DS_WRITE_PKT_STATS_HISTORY_LOG_THREAD_INDEX ? "thread index" : "hSession", thread_index);
       return -1;  /* thread index limited to currently active packet/media threads */
    }
 
@@ -5131,10 +5232,10 @@ char* szLocalLogFilename = NULL;
       if (strlen((char*)pktStatsLogFile)) {
 
          szLocalLogFilename = (char*)pktStatsLogFile;
-         Log_RT(4, "INFO: DSWritePacketLogStats() szLogFilename param NULL or empty string, using pktStatsLogFile var = %s \n", pktStatsLogFile);
+         Log_RT(4, "INFO: DSWritePacketHistoryLogStats() szLogFilename param NULL or empty string, using pktStatsLogFile var = %s \n", pktStatsLogFile);
       }
       else {
-         Log_RT(3, "WARNING: DSWritePacketLogStats() szLogFilename param NULL or empty string \n");
+         Log_RT(3, "WARNING: DSWritePacketHistoryLogStats() szLogFilename param NULL or empty string \n");
          return -1;
       }
    }
@@ -5166,7 +5267,7 @@ uint64_t          cur_time;
 uint64_t          last_time[MAX_INPUT_STREAMS] = { 0 };
 unsigned int      packet_length, pyld_len;
 int               chnum, pkts_buffered, ret_val, i, j;
-uint8_t           *pkt_ptr, *pyld_ptr;
+uint8_t           *pkt_ptr, *rtp_pyld_ptr;
 HCODEC            hCodec, hCodec_link;
 uint32_t          threadid, nSessions = 0, uFlags_session, hSession;
 int               media_data_len, out_media_data_len;
@@ -5318,13 +5419,13 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
             uint32_t uFlags_info = DS_BUFFER_PKT_IP_PACKET;
 
             #ifdef USE_OLD_NETWORK_BYTE_ORDER_FLAG
-            if (uFlags_get & DS_PKT_INFO_HOST_BYTE_ORDER) uFlags_info = (uFlags_info & ~DS_PKT_INFO_NETWORK_BYTE_ORDER) | DS_PKT_INFO_HOST_BYTE_ORDER;
-            else uFlags_info = (uFlags_info & ~DS_PKT_INFO_HOST_BYTE_ORDER) | DS_PKT_INFO_NETWORK_BYTE_ORDER;
+            if (uFlags_get & DS_PKTLIB_HOST_BYTE_ORDER) uFlags_info = (uFlags_info & ~DS_PKT_INFO_NETWORK_BYTE_ORDER) | DS_PKTLIB_HOST_BYTE_ORDER;
+            else uFlags_info = (uFlags_info & ~DS_PKTLIB_HOST_BYTE_ORDER) | DS_PKT_INFO_NETWORK_BYTE_ORDER;
             #else
-            if (uFlags_get & DS_PKT_INFO_HOST_BYTE_ORDER) uFlags_info |= DS_PKT_INFO_HOST_BYTE_ORDER;
+            if (uFlags_get & DS_PKTLIB_HOST_BYTE_ORDER) uFlags_info |= DS_PKTLIB_HOST_BYTE_ORDER;
             #endif
 
-            pyld_ptr = pkt_ptr + DSGetPacketInfo(hSession, uFlags_info | DS_PKT_INFO_RTP_PYLDOFS, pkt_ptr, packet_length, NULL, NULL);
+            rtp_pyld_ptr = pkt_ptr + DSGetPacketInfo(hSession, uFlags_info | DS_PKT_INFO_RTP_PYLDOFS, pkt_ptr, packet_length, NULL, NULL);
             pyld_len = DSGetPacketInfo(hSession, uFlags_info | DS_PKT_INFO_RTP_PYLDLEN, pkt_ptr, packet_length, NULL, NULL);
 
             if ((hCodec = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CODEC, pkt_ptr, packet_length, &termInfo, NULL)) < 0)
@@ -5333,7 +5434,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
                break;
             }
 
-            media_data_len = DSCodecDecode(&hCodec, 0, pyld_ptr, media_data_buffer, pyld_len, 1, NULL);
+            media_data_len = DSCodecDecode(&hCodec, 0, rtp_pyld_ptr, media_data_buffer, pyld_len, 1, NULL);
 
             if ((chnum = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, packet_length, &termInfo, NULL)) < 0)
             {
@@ -5622,7 +5723,7 @@ bool fNext, fOrganizeByStreamGroup = false, fShowOwnerOnce;
 HSESSION hSessionGroupOwner = -1, hSession_prev = -1;
 
 #define MAX_STATS_STRLEN 80
-#define MAX_STATS_STRLEN2 200 /* added for intermediate strings that can get longer (e.g. sessstr, ssrcstr), JHB Oct 2022 */
+#define MAX_STATS_STRLEN2 400 /* added for intermediate strings that can get longer (e.g. sessstr, ssrcstr), JHB Oct 2022 */
 char iptstr[MAX_STATS_STRLEN] = "", jbptstr[MAX_STATS_STRLEN] = "", jbrpstr[MAX_STATS_STRLEN] = "", jbzpstr[MAX_STATS_STRLEN] = "", mxooostr[MAX_STATS_STRLEN] = "", sidrstr[MAX_STATS_STRLEN] = "", tsastr[MAX_STATS_STRLEN] = "", plflstr[MAX_STATS_STRLEN] = "",
      pdflstr[MAX_STATS_STRLEN] = "", ssrcstr[MAX_STATS_STRLEN2] = "", missstr[MAX_STATS_STRLEN] = "", consstr[MAX_STATS_STRLEN] = "", pktlstr[MAX_STATS_STRLEN] = "", calcstr[MAX_STATS_STRLEN] = "", sessstr[MAX_STATS_STRLEN2] = "", npktstr[MAX_STATS_STRLEN] = "", spktstr[MAX_STATS_STRLEN] = "",
      undrstr[MAX_STATS_STRLEN] = "", ovrnstr[MAX_STATS_STRLEN] = "", medstr[MAX_STATS_STRLEN] = "", sidstr[MAX_STATS_STRLEN] = "", medxstr[MAX_STATS_STRLEN] = "", sidxstr[MAX_STATS_STRLEN] = "", maxdstr[MAX_STATS_STRLEN] = "", brststr[MAX_STATS_STRLEN] = "",
@@ -5712,32 +5813,42 @@ organize_by_ssrc:
             else session_run_time_stats[c] |= 1;
          }
 
-         if (DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)) {  /* show stats for any stream with at least one packet. Note this will exclude streams that didn't start yet, for example mediaMin was terminated early */
+      /* Parse the channel list and build stats display strings. Notes:
+      
+         -we show stats for any stream with at least one packet. Note this will exclude streams that didn't start yet, for example mediaMin was terminated early
+
+         -for each session, 2 channels (2 terminations) are created when the session is created, so they always exist, which is why DSGetSessionInfo() calls with a session handle and specifying either channel or term succeed as long as the session handle is valid. But they may not be active (no media), which is why we use the "at least one packet" filter
+      */
+  
+         if (DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)) {
 
             num_ch_stats++;
 
             if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS) {
 
-               add_stats_str(iptstr, MAX_STATS_STRLEN, " %d/%2.2f/%2.2f", c, 1.0*packet_in_time[c]/1000000L, 1.0*packet_rtp_time[c]/1000);
-               add_stats_str(jbptstr, MAX_STATS_STRLEN, " %d/%2.2f/%2.2f", c, 1.0*packet_in_time_pull[c]/1000000L, 1.0*packet_rtp_time_pull[c]/1000);
-               add_stats_str(medstr, MAX_STATS_STRLEN, " %d/%2.2f", c, 1.0*packet_media_delta[c]/media_stats_pkt_count[c]/1000);
-               add_stats_str(sidstr, MAX_STATS_STRLEN, " %d/%2.2f", c, 1.0*packet_sid_delta[c]/sid_stats_pkt_count[c]/1000);
-               add_stats_str(medxstr, MAX_STATS_STRLEN, " %d/%2.2f/%d", c, 1.0*packet_max_media_delta[c]/1000, max_media_delta_packet[c]);
-               add_stats_str(sidxstr, MAX_STATS_STRLEN, " %d/%2.2f/%d", c, 1.0*packet_max_sid_delta[c]/1000, max_sid_delta_packet[c]);
-               add_stats_str(maxdstr, MAX_STATS_STRLEN, " %d/%2.2f/%d", c, 1.0*packet_max_delta[c]/1000, max_delta_packet[c]);
+               add_stats_str(iptstr, MAX_STATS_STRLEN, " %d:%2.2f/%2.2f", c, 1.0*packet_in_time[c]/1000000L, 1.0*packet_rtp_time[c]/1000);
+               add_stats_str(jbptstr, MAX_STATS_STRLEN, " %d:%2.2f/%2.2f", c, 1.0*packet_in_time_pull[c]/1000000L, 1.0*packet_rtp_time_pull[c]/1000);
+               add_stats_str(medstr, MAX_STATS_STRLEN, " %d:%2.2f", c, 1.0*packet_media_delta[c]/media_stats_pkt_count[c]/1000);
+               add_stats_str(sidstr, MAX_STATS_STRLEN, " %d:%2.2f", c, 1.0*packet_sid_delta[c]/sid_stats_pkt_count[c]/1000);
+               add_stats_str(medxstr, MAX_STATS_STRLEN, " %d:%2.2f/%d", c, 1.0*packet_max_media_delta[c]/1000, max_media_delta_packet[c]);
+               add_stats_str(sidxstr, MAX_STATS_STRLEN, " %d:%2.2f/%d", c, 1.0*packet_max_sid_delta[c]/1000, max_sid_delta_packet[c]);
+               add_stats_str(maxdstr, MAX_STATS_STRLEN, " %d:%2.2f/%d", c, 1.0*packet_max_delta[c]/1000, max_delta_packet[c]);
             }
 
             TERMINATION_INFO termInfo;
             unsigned int bitrate_index, pkt_bitrate_list, bitrate;
             char bratestr[256] = "";
+            char codec_name[50] = "";
+            bool fSubRates = false;
 
-            DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, 1, &termInfo);
+            DSGetSessionInfo(c, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM, 0, &termInfo);  /* get termInfo for the channel (use DS_SESSION_INFO_CHNUM to include bidirectional session channels, JHB Jan 2023) */
+            DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_NAME, 0, 0, codec_name);
+
+            sprintf(bratestr, "%s/%d", codec_name, termInfo.bitrate);
 
             if ((pkt_bitrate_list = DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)) != 0) {
 
                bitrate_index = DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_BITRATE_TO_INDEX, termInfo.bitrate, 0, NULL);
-
-  fprintf(stderr, " pkt_bitrate_list = 0x%x, bitrate_index = %d \n", pkt_bitrate_list, bitrate_index);
 
                if ((1L << bitrate_index) != pkt_bitrate_list) {  /* show any mid-stream switching bitrates detected */
 
@@ -5745,91 +5856,88 @@ organize_by_ssrc:
 
                      if ((pkt_bitrate_list & (1L << j)) && (bitrate = DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_INDEX_TO_BITRATE, j, 0, NULL)) && bitrate != termInfo.bitrate) {
 
-                        if (strlen(bratestr) == 0) strcpy(bratestr, "(");
-                        else strcat(bratestr, ",");
+                        sprintf(&bratestr[strlen(bratestr)], "%s", !fSubRates ? "(" : ",");
                         sprintf(&bratestr[strlen(bratestr)], "%d", bitrate);
+                        fSubRates = true;
                      }
                   }
-                  if (strlen(bratestr)) strcat(bratestr, ")");
+                  sprintf(&bratestr[strlen(bratestr)], "%s", fSubRates ? ")" : "");
                }
             }
 
             if (hSession != hSession_prev) {
 
-               char codec_name[50] = "";
-               DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_NAME, 0, 0, codec_name);
-
-               add_stats_str(sessstr, MAX_STATS_STRLEN2, " %d%s/%d/%s/%d%s", hSession, hSession == hSessionGroupOwner && !fShowOwnerOnce ? "(grp owner)" : "", c, codec_name, termInfo.bitrate, bratestr);
+               add_stats_str(sessstr, MAX_STATS_STRLEN2, " %d%s:%d:%s", hSession, hSession == hSessionGroupOwner && !fShowOwnerOnce ? "(grp owner)" : "", c, bratestr);
             }
-            else add_stats_str(sessstr, MAX_STATS_STRLEN2, ",%d%s", c, bratestr);  /* add channel to previous session string, showing it as a dynamic (child) channel */
+            else add_stats_str(sessstr, MAX_STATS_STRLEN2, ",%d:%s", c, bratestr);  /* add channel to previous session string, showing it as either additional termination or dynamic (child) channel */
 
             if (fOrganizeByStreamGroup) {
 
                if (DSGetSessionInfo(c, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CHNUM_PARENT, 0, NULL) == c) {  /* add overrun stats only for parent channels (as explained in streamlib.h, child channels contribute to their parent group member stream), JHB Apr2020 */
 
                   #ifdef __LIBRARYMODE__
-                  add_stats_str(ovrnstr, MAX_STATS_STRLEN, " %d/%u", c, uFramesDropped[c]);
+                  add_stats_str(ovrnstr, MAX_STATS_STRLEN, " %d:%u", c, uFramesDropped[c]);
 
                   HCODEC hCodec;
                   int framesize;
 
-                  if ((hCodec = DSGetSessionInfo(c, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CODEC, 1, NULL)) > 0 && (framesize = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_RAW_FRAMESIZE, 0, 0, NULL)) > 0) add_stats_str(mxovrnstr, MAX_STATS_STRLEN, " %d/%2.2f", c, 100.0*nMaxStreamDataAvailable[c]/framesize/DSGetStreamGroupContributorMaxFrameCapacity(c));
+                  if ((hCodec = DSGetSessionInfo(c, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CODEC, 1, NULL)) > 0 && (framesize = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_RAW_FRAMESIZE, 0, 0, NULL)) > 0) add_stats_str(mxovrnstr, MAX_STATS_STRLEN, " %d:%2.2f", c, 100.0*nMaxStreamDataAvailable[c]/framesize/DSGetStreamGroupContributorMaxFrameCapacity(c));
                   #endif
                }
 
-               if (!fShowOwnerOnce) add_stats_str(undrstr, MAX_STATS_STRLEN, " %d/%d/%d", idx, num_missed_interval_index[idx], num_flc_applied[idx]);
+               if (!fShowOwnerOnce) add_stats_str(undrstr, MAX_STATS_STRLEN, " %d:%d/%d/%d", idx, num_missed_interval_index[idx], num_flc_applied[idx], num_flc_holdoffs[idx]);
 
                fShowOwnerOnce = true;
             }
 
          /* use post delete flag here, as app may have already marked sessions for deletion */
   
-            add_stats_str(ssrcstr, MAX_STATS_STRLEN2, " %d/0x%x", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SSRC | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(npktstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(spktstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_SID_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(brststr, MAX_STATS_STRLEN, " %d/%d", c, packet_in_bursts[c]);
-            add_stats_str(pktlstr, MAX_STATS_STRLEN, " %d/%2.3f", c, 100.0*DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)/max(DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING), 1));
+            add_stats_str(ssrcstr, MAX_STATS_STRLEN2, " %d:0x%x", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SSRC | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(npktstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(spktstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_SID_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(brststr, MAX_STATS_STRLEN, " %d:%d", c, packet_in_bursts[c]);
+            add_stats_str(pktlstr, MAX_STATS_STRLEN, " %d:%2.3f", c, 100.0*DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)/max(DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING), 1));
 
-            add_stats_str(plflstr, MAX_STATS_STRLEN, " %d/%d", c, pkt_loss_flush[c]);
-            add_stats_str(pdflstr, MAX_STATS_STRLEN, " %d/%d", c, pkt_pastdue_flush[c]);
-            add_stats_str(lvflstr, MAX_STATS_STRLEN, " %d/%d", c, pkt_level_flush[c]);
+            add_stats_str(plflstr, MAX_STATS_STRLEN, " %d:%d", c, pkt_loss_flush[c]);
+            add_stats_str(pdflstr, MAX_STATS_STRLEN, " %d:%d", c, pkt_pastdue_flush[c]);
+            add_stats_str(lvflstr, MAX_STATS_STRLEN, " %d:%d", c, pkt_level_flush[c]);
 
-            add_stats_str(dupstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_7198_DUPLICATE_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(dupstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_7198_DUPLICATE_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
 
             if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {  /* run-time packet loss stats can be disabled in pktlib in case they cause any issue, JHB Mar2020 */
 
-               add_stats_str(missstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-               add_stats_str(consstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MAX_CONSEC_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-               add_stats_str(iooostr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_INPUT_OOO | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-               add_stats_str(mxooostr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MAX_INPUT_OOO | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-               add_stats_str(calcstr, MAX_STATS_STRLEN, " %d/%2.2f", c, 1.0*DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_STATS_CALC_PER_PKT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)/max(DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING), 1));
+               add_stats_str(missstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+               add_stats_str(consstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MAX_CONSEC_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+               add_stats_str(iooostr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_INPUT_OOO | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+               add_stats_str(mxooostr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MAX_INPUT_OOO | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+               add_stats_str(calcstr, MAX_STATS_STRLEN, " %d:%2.2f", c, 1.0*DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_STATS_CALC_PER_PKT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)/max(DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING), 1));
             }
 
-            add_stats_str(jbrpstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));  /* residual num pkts */
-            add_stats_str(jbzpstr, MAX_STATS_STRLEN, " %d/%d", c, num_jb_zero_pulls[c]);
+            add_stats_str(jbrpstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));  /* residual num pkts */
+            add_stats_str(jbzpstr, MAX_STATS_STRLEN, " %d:%d", c, num_jb_zero_pulls[c]);
 
          /* repair stats */
 
-            add_stats_str(sidrstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SID_REPAIR | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(tsastr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SID_TIMESTAMP_ALIGN | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(tsamstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MEDIA_TIMESTAMP_ALIGN | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(sidistr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SID_REPAIR_INSTANCE | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(sidrstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SID_REPAIR | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(tsastr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SID_TIMESTAMP_ALIGN | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(tsamstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MEDIA_TIMESTAMP_ALIGN | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(sidistr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SID_REPAIR_INSTANCE | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
 
          /* jitter buffer stats */
 
-            add_stats_str(noutpkts, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_OUTPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(mxnpktstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MAX_NUM_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(jbdropstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_OUTPUT_DROP_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(jbdupstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_OUTPUT_DUPLICATE_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(jboooostr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_OUTPUT_OOO | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(jbmxooostr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MAX_OUTPUT_OOO | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(purgstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_PURGES | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(jbundrstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_UNDERRUN_RESYNC_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(jboverstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_OVERRUN_RESYNC_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(jbtgapstr, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_TIMESTAMP_GAP_RESYNC_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(jbhldadj, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_HOLDOFF_ADJUSTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(jbhlddel, MAX_STATS_STRLEN, " %d/%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_HOLDOFF_DELIVERIES | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
-            add_stats_str(pobrststr, MAX_STATS_STRLEN, " %d/%d", c, packet_out_bursts[c]);
+            add_stats_str(noutpkts, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_OUTPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(mxnpktstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MAX_NUM_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(jbdropstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_OUTPUT_DROP_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(jbdupstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_OUTPUT_DUPLICATE_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(jboooostr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_OUTPUT_OOO | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(jbmxooostr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MAX_OUTPUT_OOO | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(purgstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_PURGES | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(jbundrstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_UNDERRUN_RESYNC_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(jboverstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_OVERRUN_RESYNC_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(jbtgapstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_TIMESTAMP_GAP_RESYNC_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(jbhldadj, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_HOLDOFF_ADJUSTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(jbhlddel, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_HOLDOFF_DELIVERIES | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(pobrststr, MAX_STATS_STRLEN, " %d:%d", c, packet_out_bursts[c]);
          }
 
          if (hSession != hSession_prev) num_sessions++;
@@ -5855,42 +5963,47 @@ organize_by_ssrc:
    */
 
       if (fOrganizeByStreamGroup) add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "stream group \"%s\", grp %d, p/m thread %d, num packets %d \n", szGroupId, idx, thread_index, pkt_count_group[idx]);
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "%session%s (hSession/ch/codec/bitrate[,ch...])%s\n", fOrganizeByStreamGroup ? "  S" : "s", num_sessions > 1 ? "s" : "", sessstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "%session%s (hSession:ch:codec/bitrate[,ch...])%s\n", fOrganizeByStreamGroup ? "  S" : "s", num_sessions > 1 ? "s" : "", sessstr);
 
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  SSRC%s (ch/ssrc)%s\n", num_ch_stats > 1 ? "s" : "", ssrcstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  SSRC%s (ch:ssrc)%s\n", num_ch_stats > 1 ? "s" : "", ssrcstr);
 
       if (fOrganizeByStreamGroup) {
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Overrun (ch/frames dropped)%s, (ch/max %%)%s\n", ovrnstr, mxovrnstr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Underrun (grp/missed intervals/FLCs)%s\n", undrstr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Pkt flush (ch/num) loss%s, pastdue%s, level%s\n", plflstr, pdflstr, lvflstr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Overrun (ch:frames dropped)%s, (ch:max %%)%s\n", ovrnstr, mxovrnstr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Underrun (grp:missed intervals/FLCs/holdoffs)%s\n", undrstr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Pkt flush (ch:num) loss%s, pastdue%s, level%s\n", plflstr, pdflstr, lvflstr);
       }
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Packet Stats\n");
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Input (ch/pkts)%s, SIDs%s, RFC7198 duplicates%s, bursts%s\n", npktstr, spktstr, dupstr, brststr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Input (ch:pkts)%s, SIDs%s, RFC7198 duplicates%s, bursts%s\n", npktstr, spktstr, dupstr, brststr);
 
       if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Loss (ch/%%)%s, missing seq (ch/num)%s, max consec missing seq%s\n", pktlstr, missstr, consstr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Ooo (ch/pkts)%s, max%s\n", iooostr, mxooostr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Avg stats calcs (ch/num)%s\n", calcstr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Loss (ch:%%)%s, missing seq (ch:num)%s, max consec missing seq%s\n", pktlstr, missstr, consstr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Ooo (ch:pkts)%s, max%s\n", iooostr, mxooostr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Avg stats calcs (ch:num)%s\n", calcstr);
       }
 
       if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS) {
 
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Delta avg (ch/msec) media%s, SID%s\n", medstr, sidstr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Delta max (ch/msec/pkt) media%s, SID%s, overall%s\n", medxstr, sidxstr, maxdstr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Cumulative input times         (sec) (ch/inp/rtp)%s\n", iptstr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Cumulative jitter buffer times (sec) (ch/out/rtp)%s\n", jbptstr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Delta avg (ch:msec) media%s, SID%s\n", medstr, sidstr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Delta max (ch:msec/pkt) media%s, SID%s, overall%s\n", medxstr, sidxstr, maxdstr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Cumulative input times         (sec) (ch:inp/rtp)%s\n", iptstr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Cumulative jitter buffer times (sec) (ch:out/rtp)%s\n", jbptstr);
       }
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Packet Repair\n");
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    SID repair (ch/num) instance%s, total%s\n", sidistr, sidrstr);
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Timestamp repair (ch/num) SID%s, media%s\n", tsastr, tsamstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    SID repair (ch:num) instance%s, total%s\n", sidistr, sidrstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Timestamp repair (ch:num) SID%s, media%s\n", tsastr, tsamstr);
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Jitter Buffer\n");
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Output (ch/pkts)%s, max%s, residual%s, bursts%s\n", noutpkts, mxnpktstr, jbrpstr, pobrststr);
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Ooo (ch/pkts)%s, max%s, drops%s, duplicates%s\n", jboooostr, jbmxooostr, jbdropstr, jbdupstr);
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Resyncs (ch/num) underrun%s, overrun%s, timestamp gap%s, purges (ch/num)%s\n", jbundrstr, jboverstr, jbtgapstr, purgstr);
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Holdoffs (ch/num) adj%s, dlvr%s, zero pulls (ch/num)%s\n", jbhldadj, jbhlddel, jbzpstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Output (ch:pkts)%s, max%s, residual%s, bursts%s\n", noutpkts, mxnpktstr, jbrpstr, pobrststr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Ooo (ch:pkts)%s, max%s, drops%s, duplicates%s\n", jboooostr, jbmxooostr, jbdropstr, jbdupstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Resyncs (ch:num) underrun%s, overrun%s, timestamp gap%s, purges (ch:num)%s\n", jbundrstr, jboverstr, jbtgapstr, purgstr);
+
+      char allocscurstr[50], allocsmaxstr[50];
+      sprintf(allocscurstr, "%llu", (long long unsigned int)DSGetJitterBufferInfo(0, DS_JITTER_BUFFER_INFO_CURRENT_ALLOCS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+      sprintf(allocsmaxstr, "%llu", (long long unsigned int)DSGetJitterBufferInfo(0, DS_JITTER_BUFFER_INFO_MAX_ALLOCS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Holdoffs (ch:num) adj%s, dlvr%s, zero pulls (ch:num)%s, allocs (cur/max) %s/%s\n", jbhldadj, jbhlddel, jbzpstr, allocscurstr, allocsmaxstr);
 
    /* include event log stats, to make it easier to see if anything happened to worry about, JHB May2020 */
    
@@ -6007,7 +6120,6 @@ int group_idx[MAX_STREAM_GROUPS] = { 0 };
 int group_member_count[MAX_STREAM_GROUPS] = { 0 };
 int group_member_sessions[MAX_STREAM_GROUPS][MAX_GROUP_CONTRIBUTORS] = {{ 0 }};
 char szGroupId[MAX_STREAM_GROUPS][MAX_GROUPID_LEN] = { "" };
-char group_name[MAX_GROUPID_LEN] = "";
 char tmpstr[8000] = "";
 
    for (i=0; i<THREAD_STATS_TIME_MOVING_AVG; i++) {
@@ -6083,10 +6195,9 @@ char tmpstr[8000] = "";
 
             if (idx >= 0) {
 
-               if ((idx = DSGetStreamGroupInfo(hSessions_t[i], DS_GETGROUPINFO_CHECK_GROUPTERM, NULL, NULL, group_name)) >= 0) {
+               if ((idx = DSGetStreamGroupInfo(hSessions_t[i], DS_GETGROUPINFO_CHECK_GROUPTERM, NULL, NULL, szGroupId[idx])) >= 0) {
 
                   group_member_sessions[idx][group_member_count[idx]-1] |= 0x10000;  /* flag indicating the session is also a group owner */
-                  strcpy(szGroupId[idx], group_name);
                }
             }
          }
@@ -6120,6 +6231,8 @@ char tmpstr[8000] = "";
 
       sprintf(&tmpstr[strlen(tmpstr)], "group info[0..%d] =", group_info_count-1);
 
+   /* format group info into tmpstr, note that we aim for very abbreviate/compressed format, as we may have a lot of groups to print, JHB Jan 2023 */
+
       for (i=0; i<MAX_STREAM_GROUPS; i++) {
 
          if (group_idx[i]) {
@@ -6149,6 +6262,8 @@ char tmpstr[8000] = "";
             }
 
             if (!fOwnerMemberFound && !fMemberFound) sprintf(&tmpstr[strlen(tmpstr)], " o%d", group_idx[i]-1);  /* session is group owner only without any members */
+            sprintf(&tmpstr[strlen(tmpstr)], " flc%d/%d/%d", num_missed_interval_index[i], num_flc_applied[i], num_flc_holdoffs[i]);  /* add current missed merge intervals, FLCs, and FLC holdoffs to group info string, JHB Jan 2023 */
+
             if ((int)fOwnerMemberFound ^ (int)fMemberFound) numSplitGroups++;
          }
       }

@@ -3,11 +3,9 @@
 
   Description:  File management library for various types of audio and waveform files, including header handling and manipulation for .wav, Hypersignal .tim, and Matlab (includes gateway function for MATLAB calls)
 
-  Copyright (c) 1993-2022 Signalogic, Inc.
-  All Rights Reserved
+  Copyright (c) 1993-2023 Signalogic, Inc.  All Rights Reserved
 
   Revision History
-  
    Created Nov 1993, Varsha Shamabhat
    Modified 1995-1998, Jeff Brower
    Modified 2002-2010
@@ -16,6 +14,10 @@
    Modified Apr 2018 JHB, added compression codes for AMRNB, AMRWB, MELPe, and EVS
    Modified Jan 2020 JHB, add MAXTHREADS definition and DSCreateFilelibThread()
    Modified Feb 2022 JHB, add DS_ prefix to DSSeekPos() flags, add HFILE alias to HFILEW for app use, add DS_SEEKPOS_RETURN_BYTES flag for DSSeekPos()
+   Modified Dec 2022 JHB, add DSGetOSFileHandle() return FILE* handle maintained internally by filelib, bump MAXTHREADS to 64
+   Modified Dec 2022 JHB, add DSDeleteFilelibThread()
+   Modified Jan 2023 JHB, add DSGetFileHandle()
+   Modified Jan 2023 JHB, add DS_CREATE_TMP and DS_CREATE_BAK options for use with DS_CREATE in DSOpenFile(). See comments
 */
 
 /* temporary "strict" literals for BOOL and UINT */
@@ -67,7 +69,7 @@
 
 #define MAXFILES                 128   /* max number of files that can be open at one time */
 #define MAXFILECHANNELS          64
-#define MAXTHREADS               32    /* max application threads, see change in filemgr.cpp, JHB Jan2020 */
+#define MAXTHREADS               64    /* max application threads, see change in filemgr.cpp, JHB Jan2020 */
 
 #define DS_START_POS             22    /* seek constants, add DS_ prefix and use with DSSeekPos(), JHB Feb2022 */
 #define DS_END_POS               23
@@ -83,14 +85,23 @@
 #define CHUNK_LEN                60000L
 #define CHUNK                    32768L
 
-#define DS_CREATE                1      /* create new file */
-#define DS_OPEN                  2      /* open existing file */
-#define DS_EXISTS                4      /* see if file exists (does not leave file open) */
-#define DS_CLOSE                 8      /* close the file */
+/* flags used by mode param DSOpenFile(), and uFlags param in DSSaveDataFile() and DSLoadDataFile() in hwlib.h */
+
+#define DS_CREATE                1      /* create new file for read-write, if file already exists it's overwritten */
+#define DS_OPEN                  2      /* open existing file for read-write */
+#define DS_EXISTS                4      /* check if file exists without opening the file */
 #define DS_WRITE                 0x10   /* write to file */
 #define DS_READ                  0x20   /* read from file */
 
-/* header types (note:  constants used are minimum length of header in bytes, but actual header length could be longer) */
+#define DS_CREATE_TMP            0x40   /* can be combined with DS_CREATE - if the specified file already exists, a tmp file is created and used for subsequent read/write operations. On DSCloseFile(), the existing file is deleted and the tmp file renamed to the specified filename. This option is intended for real-time output media streams (e.g. wav files), minimizing time lost to file open and initialization. The tradeoff is that twice the file size of disk space is used until the media stream is finished, at which time the tmp file is renamed and the existing file deleted */ 
+
+#define DS_CREATE_BAK            0x80   /* same as DS_CREATE_TMP option, but on DSCloseFile() the existing file is renamed to .bak instead of being deleted. Twice the file size of disk space is always consumed */
+
+/* flag used by uFlags param in DSSaveDataFile() and DSLoadDataFile() in hwlib.h */
+
+#define DS_CLOSE                 8      /* close the file */
+
+/* waveform header types (note:  constants used are minimum length of header in bytes, but actual header length could be longer) */
 
 #define DS_RAWAUDIO              0
 #define DS_TON                   2
@@ -196,38 +207,44 @@ DECLSPEC HWND LIBAPI DSInitFileLib();  /* Entry point code for DLL */
 typedef short int HFILEW;
 #define HFILE HFILEW  /* removed from alias.h so it's Ok to use for Linux, but WinXX would be a conflict, JHB Feb2022 */
 
-DECLSPEC short int LIBAPI DSOpenFile(LPCSTR, HFILEW); /* open / create File -> returns handle to file (returns 0 on error) */
+DECLSPEC HFILE LIBAPI DSOpenFile(LPCSTR, short int mode); /* open / create File -> returns handle to file (returns 0 on error) */
 
-DECLSPEC short int LIBAPI DSCloseFile(HFILEW);  /* close File -> returns 0 on errors */
+DECLSPEC short int LIBAPI DSCloseFile(HFILE);  /* close File -> returns 0 on errors */
+
+DECLSPEC short int LIBAPI DSGetFileHandle(FILE*);  /* get filelib handle from OS file pointer, JHB Jan 2023 */
 
 DECLSPEC short int LIBAPI DSCopyFile(LPCSTR, LPCSTR, short int, short int, float);  /* copy a file; also can convert data precisions and perform scaling if needed (sf != 1) */
 
 DECLSPEC short int LIBAPI DSDeleteFile(LPCSTR);  /* delete a file (should not already be open) */
 
-DECLSPEC short int LIBAPI DSReadWvfrmHeader(HFILEW);  /* read waveform file header into current header image (in memory), leaving the file pointer at the end of the header (start of data).  Returns number of bytes read */
+DECLSPEC short int LIBAPI DSReadWvfrmHeader(HFILE);  /* read waveform file header into current header image (in memory), leaving the file pointer at the end of the header (start of data).  Returns number of bytes read */
 
-DECLSPEC short int LIBAPI DSWriteWvfrmHeader(HFILEW);  /* write the current header image to a waveform file header, leaving the file pointer at the end of the header (start of data).  Returns number of bytes written */
+DECLSPEC short int LIBAPI DSWriteWvfrmHeader(HFILE);  /* write the current header image to a waveform file header, leaving the file pointer at the end of the header (start of data).  Returns number of bytes written */
 
-DECLSPEC long_t LIBAPI DSGetWvfrmHeader(HFILEW, short int);  /* get specified values from the current header image (in memory) */
+DECLSPEC long_t LIBAPI DSGetWvfrmHeader(HFILE, short int);  /* get specified values from the current header image (in memory) */
 
-DECLSPEC void LIBAPI DSSetWvfrmHeader(HFILEW, short int, long_t);  /* set specified values into the current header image (in memory) */
+DECLSPEC void LIBAPI DSSetWvfrmHeader(HFILE, short int, long_t);  /* set specified values into the current header image (in memory) */
 
-DECLSPEC void LIBAPI DSInheritHeader(HFILEW, HFILEW, short int, short int);  /* inherit header values form one file to another */
+DECLSPEC void LIBAPI DSInheritHeader(HFILE, HFILE, short int, short int);  /* inherit header values form one file to another */
 
-DECLSPEC long LIBAPI DSReadWvfrmData(HFILEW, void far*, long_t, short int);  /* read data from the waveform file into the specified buffer, using the specified precision */
+DECLSPEC long LIBAPI DSReadWvfrmData(HFILE, void far*, long_t, short int);  /* read data from the waveform file into the specified buffer, using the specified precision */
 
-DECLSPEC void LIBAPI DSWriteWvfrmData(HFILEW, void far*, long_t, short int); /* write data from the specified buffer to the waveform file, using the specified precision */
+DECLSPEC void LIBAPI DSWriteWvfrmData(HFILE, void far*, long_t, short int); /* write data from the specified buffer to the waveform file, using the specified precision */
 
-DECLSPEC void LIBAPI DSUpdateHeader(HFILEW, short int, long_t);  /* update specified values in header */
+DECLSPEC void LIBAPI DSUpdateHeader(HFILE, short int, long_t);  /* update specified values in header */
 
-DECLSPEC short int LIBAPI DSInitWvfrmHeader(HFILEW, short int);  /* initialize waveform file headers in specified format, using default values.  Should be called if a new file has been created and before header values are set */
+DECLSPEC short int LIBAPI DSInitWvfrmHeader(HFILE, short int);  /* initialize waveform file headers in specified format, using default values.  Should be called if a new file has been created and before header values are set */
 
-DECLSPEC long LIBAPI DSSeekPos(HFILEW, short int, long_t);  /* seek to a specified location in the waveform file */
+DECLSPEC long LIBAPI DSSeekPos(HFILE, short int, long_t);  /* seek to a specified location in the waveform file */
 
-DECLSPEC void LIBAPI DSCreateFilelibThread(void);  /* create a thread index for multithreaded / multiple application concurrent filelib usage */
+DECLSPEC int LIBAPI DSCreateFilelibThread(void);  /* create a thread index for multithreaded / multiple app concurrent filelib usage */
+
+DECLSPEC int LIBAPI DSDeleteFilelibThread(void);  /* delete a thread index for multithreaded / multiple app concurrent filelib usage */
+
+DECLSPEC FILE* LIBAPI DSGetOSFileHandle(HFILE);  /* return FILE* handle maintained internally by filelib, JHB Dec 2022 */
 
 #ifdef _MATLAB_INTERFACE_
-DECLSPEC void LIBAPI DSCloseFigureFiles(HFILEW);
+DECLSPEC void LIBAPI DSCloseFigureFiles(HFILE);
 #endif
 
 DECLSPEC short int LIBAPI DSDeleteFile(LPCSTR);  /* delete a file (should not already be open) */

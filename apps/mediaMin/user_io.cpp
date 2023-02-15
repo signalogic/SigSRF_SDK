@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/user_io.cpp
 
- Copyright (C) Signalogic Inc. 2021
+ Copyright (C) Signalogic Inc. 2021-2023
 
  License
 
@@ -20,6 +20,9 @@
  Revision History
 
    Created Apr 2021 JHB, split off from mediaMin.cpp
+   Modified Jan 2023 JHB, add debugMode to thread info printout ('d' key interactive command)
+   Modified Jan 2023 JHB, add fCtrl_C_pressed handling in ProcessKeys() (see comments in mediaTest/see cmd_line_interface.c)
+   Modified Jan 2023 JHB, add command line to interactive 'd' key command (real-time debug output)
 */
 
 #include <stdio.h>
@@ -34,12 +37,11 @@ using namespace std;
 #include "shared_include/config.h"     /* configuration structs and definitions */
 
 #include "mediaTest.h"  /* bring in constants needed by mediaMin.h */
-
 #include "mediaMin.h"
 #include "user_io.h"
 
 extern unsigned int num_app_threads;   /* see comments in mediaMin.h */
-extern THREAD_INFO thread_info[MAX_MEDIAMIN_THREADS];  /* THREAD_INFO struct defined in mediaMin.h, MAX_MEDIAMIN_THREADS defined in mediaTest.h */
+extern THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h */
 
 extern bool fQuit;         /* set if 'q' (quit) key is pressed */
 extern bool fPause;        /* "" 'p' (pause).  Pauses operation, another 'p' resumes.  Can be combined with 'd' (display) key to read out internal p/m thread debug, capacity, stats, and other info */ 
@@ -47,7 +49,7 @@ extern bool fStop;         /* "" 's' (stop).  Stop prior to next repeat (only ap
 
 extern int num_pktmed_threads;    /* number of packet/media threads running */
 extern bool fRepeatIndefinitely;  /* true if -R0 is given on the cmd line */
-extern int nRepeatsRemaining[MAX_MEDIAMIN_THREADS];
+extern int nRepeatsRemaining[];
 
 
 /* update screen counters */
@@ -76,7 +78,7 @@ static uint64_t last_time[MAX_PKTMEDIA_THREADS] = { 0 };
       thread_info[thread_index].prev_pkt_pull_streamgroup_ctr = thread_info[thread_index].pkt_pull_streamgroup_ctr;
    }
 
-   if (strlen(tmpstr)) app_printf(APP_PRINTF_SAMELINE | APP_PRINTF_THREAD_INDEX_SUFFIX, thread_index, tmpstr);  /* use fully buffered I/O; i.e. not stdout (line buffered) or stderr (per character) */
+   if (strlen(tmpstr)) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX, thread_index, tmpstr);  /* use fully buffered I/O; i.e. not stdout (line buffered) or stderr (per character) */
 }
 
 
@@ -102,14 +104,16 @@ static uint8_t save_uPrintfLevel = 0;
 
       key = (char)tolower(getkey());
 
-      if (key == 'q' || run <= 0) {  /* quit key, Ctrl-C, or p/m thread error condition */
+      if (key == 'q' || run <= 0 || fCtrl_C_pressed) {  /* quit key, Ctrl-C, or p/m thread error condition */
 
          strcpy(tmpstr, "#### ");
          if (key == 'q') sprintf(&tmpstr[strlen(tmpstr)], "q key entered");
-         else if (run == 0) sprintf(&tmpstr[strlen(tmpstr)], "Ctrl-C entered");
+         else if (run == 0) sprintf(&tmpstr[strlen(tmpstr)], "p/m run abort (run = 0)"); 
          else if (run < 0) sprintf(&tmpstr[strlen(tmpstr)], "p/m thread error and abort condition"); 
+         else if (fCtrl_C_pressed) sprintf(&tmpstr[strlen(tmpstr)], "Ctrl-C entered");
+
          sprintf(&tmpstr[strlen(tmpstr)], ", exiting mediaMin");
-         app_printf(APP_PRINTF_NEWLINE, thread_index, tmpstr);
+         app_printf(APP_PRINTF_NEW_LINE, thread_index, tmpstr);
 
          fQuit = true;
          return true;
@@ -159,7 +163,7 @@ static uint8_t save_uPrintfLevel = 0;
          if (!fRepeatIndefinitely && nRepeatsRemaining[thread_index] >= 0) sprintf(repeatstr, ", repeats remaining = %d", nRepeatsRemaining[thread_index]);  /* if cmd line entry includes -RN with N >= 0, nRepeatsRemaining will be > 0 for repeat operation, JHB Jan2020 */
          else if (nRepeatsRemaining[thread_index] == -1) strcpy(repeatstr, ", no repeats");  /* nRepeat is -1 if cmd line has no -RN entry (no repeats). For cmd line entry -R0, fRepeatIndefinitely will be set */
 
-         printf("%s#### (App Thread) %sDebug info for app thread %d, run = %d%s \n", uLineCursorPos ? "\n" : "", tmpstr, app_thread_index_debug, run, fRepeatIndefinitely ? ", repeating indefinitely" : repeatstr);
+         printf("%s#### (App Thread) %sDebug info for app thread %d, run = %d%s, command line %s \n", uLineCursorPos ? "\n" : "", tmpstr, app_thread_index_debug, run, fRepeatIndefinitely ? ", repeating indefinitely" : repeatstr, szAppFullCmdLine);
 
          strcpy(tmpstr, "");
          for (i=0; i<thread_info[app_thread_index_debug].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " %d", thread_info[app_thread_index_debug].flush_state[i]);
@@ -226,7 +230,7 @@ static uint8_t save_uPrintfLevel = 0;
 }
 
 
-/* local function to handle application screen output and cursor position update */
+/* handy function to handle application screen output, event logging, and cursor position update. For uFlags, see flags in user_io.h */
 
 void app_printf(unsigned int uFlags, int thread_index, const char* fmt, ...) {
 
@@ -250,13 +254,13 @@ int slen;
    -race conditions in determining when the cursor is mid-line can still occur, but they are greatly reduced
 */
 
-   while (pm_thread_printf);  /* wait for any p/m threads printing to finish. No locks are involved so this is quick */
+   while (pm_thread_printf);  /* wait for any p/m threads printing to finish. No locks involved so this is quick */
 
-   if ((slen = strlen(p)) && !(uFlags & APP_PRINTF_SAMELINE) && p[slen-1] != '\n') { strcat(p, " \n"); slen += 2; }
+   if ((slen = strlen(p)) && !(uFlags & APP_PRINTF_SAME_LINE) && p[slen-1] != '\n') { strcat(p, " \n"); slen += 2; }  /* if not same line, suffix with newline */
 
    if (slen) {
 
-      if ((uFlags & APP_PRINTF_NEWLINE) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) *(--p) = '\n';  /* update isCursorMidLine if needed */
+      if ((uFlags & APP_PRINTF_NEW_LINE) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) *(--p) = '\n';  /* prefix with newline, update isCursorMidLine if needed */
       else if (p[slen-1] != '\n') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);
 
       uLineCursorPos = p[slen-1] != '\n' ? slen : 0;  /* update line cursor position */

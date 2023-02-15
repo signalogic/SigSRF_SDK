@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/cmd_line_interface.c
 
- Copyright (C) Signalogic Inc. 2018-2022
+ Copyright (C) Signalogic Inc. 2018-2023
  
  Description
  
@@ -30,6 +30,10 @@
    Modified Dec 2021 JHB, make debugMode 64-bit int
    Modified Mar 2022 JHB, add GPX file input handling, -Fn flag for mediaTest gpx processing
    Modified Aug 2022 JHB, adjust declaration of a few global vars to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
+   Modified Dec 2022 JHB, add char szStreamGroupOutputPath[CMDOPT_MAX_INPUT_LEN]
+   Modified Dec 2022 JHB, move sig_lib_event_log_filename here from packet_flow_media_proc.c
+   Modified Jan 2023 JHB, in ctrl-c event handler call DSConfigLogging() with DS_PKTLOG_ABORT flag and set fCtrl_C_pressed. Don't set run = 0 for mediaMin
+   Modified Jan 2023 JHB, add szAppFullCmdLine var and GetCommandLine()
 */
 
 
@@ -51,6 +55,8 @@
   #include "aviolib.h"
 #endif
 
+#include "diaglib.h"  /* event log and packet log APIs. Currently we only use DSConfigLogging() here, JHB Jan 2023 */
+
 /* global vars filled by cimGetCmdLine() */
 
 PLATFORMPARAMS PlatformParams = {{ 0 }};
@@ -71,23 +77,35 @@ int              nAmplitude = 0;
 int              nJitterBufferParams = 0;
 int              nRepeat = 0;
 char             szSDPFile[CMDOPT_MAX_INPUT_LEN] = "";
-int              nSamplingFrequency;
+int              nSamplingFrequency;  /* rate of gps point recording in gpx file processing, Mar 2022 JHB */
+char             szStreamGroupOutputPath[CMDOPT_MAX_INPUT_LEN] = "";
 #ifndef __LIBRARYMODE__  /* this group declared here in non-library build, otherwise declared in packet_flow_media_proc.c, Aug 2022 JHB */
 volatile char    pktStatsLogFile[CMDOPT_MAX_INPUT_LEN] = "";
 volatile int     send_sock_fd = -1, send_sock_fd_ipv6 = -1;
 volatile bool    frame_mode = false, use_bkgnd_process = false, use_log_file = false;
 #endif
+char             sig_lib_event_log_filename[] = { "sig_lib_event_log.txt" };  /* moved here from packet_flow_media_proc.c, JHB Dec 2022 */
+bool             fCtrl_C_pressed = false;
+char             full_cmd_line[MAX_CMDLINE_STR_LEN] = "";  /* app full command line, filled in by cmdLineInterface(), which calls GetCommandLine(). Note that mediaTest.h publishes this as this as const char* szAppFullCmdLine, JHB Jan 2023 */
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 
-#ifndef MEDIAMIN
+#ifndef _MEDIAMIN_
 extern int     nInFiles, nOutFiles, numStreams, num_wav_outputs, num_pcap_outputs;
 extern int     out_type[MAX_SESSIONS];
 #endif
 
-/* ctrl-c control variable and signal handler */
+/* ctrl-c signal handler */
+
 void intHandler(int sig) {
+
+   #ifndef _MEDIAMIN_  /* mediaMin has orderly cleanup so don't do any shortcuts, JHB Jan 2023 */
    run = 0;  /* global var in packet/media thread processing (packet_flow_media_proc.c) */
+   #endif
+   
+   fCtrl_C_pressed = true;
+
+   DSConfigLogging(DS_CONFIG_LOGGING_SET_FLAG, DS_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS, NULL);  /* tell possibly time-consuming packet logging functions to abort. Currently we combine with "ALL_THREADS" flag which will terminate packet logging for any apps running. See additional comments in mediaMin.cpp JHB Jan 2023 */
 }
 
 /* global vars used by other files in the build */
@@ -116,6 +134,8 @@ bool fAudioInputFile, fAudioOutputFile, fPcapInputFile, fCodedInputFile, fCodedO
 bool __attribute__ ((unused)) fTextOutputFile, fCSVOutputFile;  /* added Nov 2019 JHB */
 
 unsigned int cim_uFlags;
+
+   GetCommandLine((char*)szAppFullCmdLine, MAX_CMDLINE_STR_LEN);  /* save full command in szAppFullCmdLine global var, for use by apps as needed, JHB Jan 2023 */
 
 /* Process command line, results are in PlatformParams, MediaParms, and userIfs structs */
 
@@ -229,6 +249,7 @@ unsigned int cim_uFlags;
    nRepeat = (int)userIfs.nRepeatTimes;  /* -1 = no entry (no repeat), 0 = repeat forever, > 1 is repeat number of times, JHB Jan2020 */
    if (strlen(userIfs.szSDPFile)) strcpy(szSDPFile, userIfs.szSDPFile);
    nSamplingFrequency = userIfs.nSamplingFrequency;  /* sampling frequency for gpx processing */
+   if (strlen(userIfs.szStreamGroupOutputPath)) strcpy(szStreamGroupOutputPath, userIfs.szStreamGroupOutputPath);
 
 /* register signal handler to catch Ctrl-C signal and cleanly exit mediaTest, mediaMin, and other test programs */
 
@@ -292,7 +313,7 @@ char *tmpptr1, *tmpptr2;
 int ret_val = -1;
 int i;
 
-#ifndef MEDIAMIN
+#ifndef _MEDIAMIN_
 
    if (output_type_file == WAV_AUDIO)
    {
@@ -453,4 +474,25 @@ content_label:
    }
 
    return ret_val;
+}
+
+/* read command line from /proc/self/cmdline, JHB Jan 2023 */
+
+
+int GetCommandLine(char* cmdlinestr, int str_size) {
+
+int ret = 0;
+
+   FILE* fpCmdLine = fopen("/proc/self/cmdline", "rb");
+
+   if (fpCmdLine) {
+
+      ret = _fread(cmdlinestr, sizeof(char), str_size, fpCmdLine);  /* unknown as to why size must be 1 and count must be size, I got that from https://stackoverflow.com/questions/1406635/parsing-proc-pid-cmdline-to-get-function-parameters which mentions cmd line params are separated by NULLs. But still doesn't make sense since file is opened in binary mode. Maybe because OS forces the file to open in text mode. As for _fread() wrapper see comment in mediaTest.h */
+
+      fclose(fpCmdLine);
+
+      for (int i=0; i<ret; i++) if (cmdlinestr[i] == 0) cmdlinestr[i] = ' ';  /* replace NULLs with spaces */
+   }
+
+   return ret;
 }

@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/user_io.h
 
- Copyright (C) Signalogic Inc. 2021
+ Copyright (C) Signalogic Inc. 2021-2023
 
  License
 
@@ -20,13 +20,15 @@
  Revision History
 
    Created Apr 2021 JHB, split off from mediaMin.cpp
+   Modified Jan 2023 JHB, add APP_PRINTF_PRINT_ONLY flag
 */
 
 #ifndef _USER_IO_H_
 #define _USER_IO_H_
 
-#define APP_PRINTF_SAMELINE                1           /* app_printf() flags */
-#define APP_PRINTF_NEWLINE                 2
+#define APP_PRINTF_PRINT_ONLY              0           /* doesn't do anything, but can make it clear no log entry will happen */
+#define APP_PRINTF_SAME_LINE               1           /* app_printf() flags */
+#define APP_PRINTF_NEW_LINE                2
 #define APP_PRINTF_THREAD_INDEX_SUFFIX     4
 #define APP_PRINTF_EVENT_LOG               8
 #define APP_PRINTF_EVENT_LOG_NO_TIMESTAMP  0x10

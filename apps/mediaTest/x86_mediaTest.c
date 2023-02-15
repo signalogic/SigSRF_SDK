@@ -80,6 +80,8 @@
   Modified Sep 2022 JHB, add support for .cod to .pcap pass-thru case (i.e. convert an encoded bitstream file into a pcap)
   Modified Oct 2022 JHB, change DSGetPayloadHeaderFormat() to DSGetPayloadInfo() in pcap_extract. See comments in voplib.h
   Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo()
+  Modified Dec 2022 JHB, change references to cmd_line_debug_flags.h to cmd_line_options_flags.h
+  Modified Dec 2022 JHB, replace ancient event log config with new diaglib APIs DSInitLogging() and DSCloseLogging()
 */
 
 /* Linux header files */
@@ -95,7 +97,7 @@
 
 #include "mediaTest.h"
 #include "minmax.h"
-#include "cmd_line_debug_flags.h"  /* bring in ENABLE_xxx definitions used when parsing -dN cmd line flag (look for "debugMode"), JHB Jan2022 */
+#include "cmd_line_options_flags.h"  /* bring in ENABLE_xxx definitions used when parsing -dN cmd line flag (look for "debugMode"), JHB Jan2022 */
 #include "dsstring.h"
 #include "gpx/gpxlib.h"
 
@@ -190,18 +192,6 @@ unsigned int uFlags = DS_AVIO_BUFFER_USE_UPPER_16BITS;
 }
 
 #endif  /* _ALSA_INSTALLED_ && ENABLE_USBAUDIO */
-
-/* fread() wrapper to avoid this:
-
-    /usr/include/x86_64-linux-gnu/bits/stdio2.h:285:71: warning: call to ¡®__fread_chk_warn¡¯ declared with attribute warning: fread called with bigger size * nmemb than length of destination buffer [enabled by default] return __fread_chk_warn (__ptr, __bos0 (__ptr), __size, __n, __stream);
-
-  when -flto linker option is enabled with binutils 2.22.  This requires binutils 2.26 or 2.28 to fix
-*/
-
-static size_t __attribute__((optimize("O1"))) _fread(void *ptr, size_t size, size_t count, FILE *stream) {
-
-   return fread(ptr, size, count, stream);
-}
 
 #define STRIP_FRAME_SILENCE    1
 #define STRIP_FRAME_DTX        2
@@ -545,13 +535,53 @@ void x86_mediaTest(void) {
       uint64_t nsec_pcap = 0;
       #endif
 
+   /* Logging notes:
+
+      1) SigSRF libraries use the Log_RT() API for event logging.  Applications also should use this API (located in diaglib)
+
+      2) If an application does not define/enable event logging, ptklib uses the LOG_OUTPUT define (below) to enable and manage Log_RT() output (default
+         definition is LOG_SCREEN_FILE). In this case, applications are responsible for opening and closing log files, and if so, then passing a log file
+         handle within a DEBUG_CONFIG struct (uEventLogFile) and giving a pointer to the struct in DSConfigPktlib(). DEBUG_CONFIG is defined in shared_include/config.h
+ 
+      3) If applications do not define/enable event logging, then pktlib does it
+
+      4) The log level can be controlled (uLogLevel within a DEBUG_CONFIG struct).  Log levels are defined in config.h (more or less they follow the Linux standard,
+         e.g. http://man7.org/linux/man-pages/man2/syslog.2.html)
+   */
+
+      //#define LOG_OUTPUT  LOG_SCREEN_ONLY  /* screen output only */
+      //#define LOG_OUTPUT  LOG_FILE_ONLY  /* file output only */
+      #define LOG_OUTPUT  LOG_SCREEN_FILE  /* screen + file output */
+
+      DEBUG_CONFIG dbg_cfg = { 0 };  /* added JHB Dec 2022 */
+
+
    /* start of code for codec test mode */
 
       printf("x86 codec test start, debug flags = 0x%llx \n", (unsigned long long)debugMode);
 
+      #ifndef _NO_PKTLIB_
+      /* Configure (i) event logging, (ii) voplib, and (iii) pktlib if it will be needed. Note that we check the global event log FILE* first, in case an application (e.g. mediaTest) has already opened it, JHB Dec 2022 */
+
+      dbg_cfg.uDisableMismatchLog = 1;
+      dbg_cfg.uDisableConvertFsLog = 1;
+      dbg_cfg.uLogLevel = 8;  /* 5 is default, set to 8 to see INFO messages, including jitter buffer */
+      dbg_cfg.uEventLogMode = LOG_OUTPUT | DS_LOG_LEVEL_UPTIME_TIMESTAMP;  /* enable timestamps */
+
+      #if (LOG_OUTPUT != LOG_SCREEN_ONLY)
+      strcpy(dbg_cfg.szEventLogFilePath, sig_lib_event_log_filename);  /* set event log filename */
+      #endif
+
+      dbg_cfg.uPrintfLevel = 5;
+      #endif
+
+      DSInitLogging(&dbg_cfg, 0);  /* initialize event logging. Note that DSInitLogging() should not be called twice without a matching DSCloseLogging() call, as it increments a semaphore count to track multithread usage. DSInitLogging() is in diaglib, JHB Dec 2022 */
+
       hPlatform = DSAssignPlatform(NULL, PlatformParams.szCardDesignator, 0, 0, 0);  /* assign platform handle, needed for concurrency and VM management */
 
       DSConfigVoplib(NULL, NULL, DS_CV_INIT);  /* initialize voplib */
+
+      if (inFileType == PCAP || outFileType == PCAP) DSConfigPktlib(NULL, &dbg_cfg, DS_CP_INIT | DS_CP_DEBUGCONFIG);  /* config pktlib if needed */
 
    /* look at in and out file types (see cmd line parsing at start of main() in mediaTest.c */
 
@@ -945,7 +975,7 @@ void x86_mediaTest(void) {
 
          CodecParams.enc_params.frameSize = CodecParams.dec_params.frameSize = codec_frame_duration;  /* in msec */
          CodecParams.codec_type = codec_test_params.codec_type;
-         unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in cmd_line_debug_flags.h, JHB Jan2022 */
+         unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in cmd_line_options_flags.h, JHB Jan2022 */
 
          for (i=0; i<numChan; i++) {
 
@@ -1576,7 +1606,7 @@ PollBuffer:
 
                for (i = 0; i < 4; i++) /* read in 4 20ms frames to pass 1 80ms super frame to the decoder */
                {
-                  if ((ret_val = _fread(coded_buf + offset, sizeof(char), 2, fp_in)) != 2) {break_on_error = 1; break;}
+                  if ((ret_val = _fread(coded_buf + offset, sizeof(char), 2, fp_in)) != 2) { break_on_error = 1; break; }  /* _fread is an fread() wrapper defined in mediaTest.h. See comments there about why in some cases it's needed */
                   offset += 2;
                   bitrate_code = coded_buf[0];
                   #ifndef DSGETPAYLOADSIZE
@@ -1932,6 +1962,8 @@ codec_test_cleanup:
 
       if (hPlatform != -1) DSFreePlatform((intptr_t)hPlatform);  /* free platform handle */
 
+      DSCloseLogging(0);
+
       printf("x86 codec test end\n");
    }
    else if (x86_pkt_test || frame_mode)
@@ -1978,7 +2010,7 @@ codec_test_cleanup:
                uint32_t* arg;
                int i, tc_ret, num_threads_started = 0;
                pthread_attr_t* ptr_attr = NULL;
-               pthread_t mediaMinThreads[MAX_MEDIAMIN_THREADS];  /* MAX_MEDIAMIN_THREADS is defined in mediaTest.h */
+               pthread_t mediaMinThreads[MAX_APP_THREADS];  /* MAX_APP_THREADS defined in mediaTest.h */
 
                for (i=0; i<num_threads; i++) {
       
@@ -2166,11 +2198,11 @@ codec_test_cleanup:
 
    /* The pcap extract mode extracts RTP payloads from pcap files and writes to 3GPP decoder compatible .cod files.  Notes:
    
-      1) The 3GPP decoder supports MIME and G.192 file formats.  In the case of MIME it expects consecutive RTP payloads in FH (Full Header) format, each including a leading ToC byte
+      1) The 3GPP decoder supports MIME and G.192 file formats.  In the case of MIME it expects consecutive RTP payloads in FH (Header-Full) format, each including a leading ToC byte
 
       2) Currently the pcap extract mode only supports MIME format
 
-      3) If pcap RTP payloads are in CH (Compact Header) format, they are converted to FH format (ToC byte added)
+      3) If pcap RTP payloads are in CH (Compact Header) format, they are converted to FH (header-full) format by adding a ToC payload header byte
    */
 
       MEDIAINFO MediaInfo = {0};
@@ -2183,8 +2215,8 @@ codec_test_cleanup:
       uint8_t pkt_buffer[MAX_RTP_PACKET_LEN];
       char toc;
 
-      int packet_length, link_layer_length, pyld_len;
-      uint8_t *pyld_ptr;
+      int packet_length, link_layer_length, rtp_pyld_len;
+      uint8_t *rtp_pyld_ptr;
       unsigned int uFlags;
 
    /* define STRIP_SID to remove SID frames from .cod output */
@@ -2193,7 +2225,7 @@ codec_test_cleanup:
       int pyld_datatype, SID_drop_count = 0;
       #endif
 
-   /* define LIST_TOCS to list unique ToC values found (displayed after the extract finishes).  ToC values are "table of contents" bytes in the payload header */
+   /* define LIST_TOCS to list unique ToC values found (displayed after pcap extraction finishes). ToC values are one or more "table of contents" bytes in the RTP payload header, as defined in the EVS spec */
       #define LIST_TOCS
       #ifdef LIST_TOCS
       int i, num_tocs = 0, sav_tocs[256] = { 0 };
@@ -2288,14 +2320,14 @@ codec_test_cleanup:
          }
          #endif
 
-         pyld_ptr = pkt_buffer + DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDOFS, pkt_buffer, packet_length, NULL, NULL);
-         pyld_len = DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDLEN, pkt_buffer, packet_length, NULL, NULL);
+         rtp_pyld_ptr = pkt_buffer + DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDOFS, pkt_buffer, packet_length, NULL, NULL);
+         rtp_pyld_len = DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDLEN, pkt_buffer, packet_length, NULL, NULL);
 
       /* determine header format */
 
-         if (!DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, pyld_ptr, pyld_len, NULL, NULL))  /* returns zero if compact header format */
+         if (!DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, rtp_pyld_ptr, rtp_pyld_len, NULL, NULL))  /* returns zero if compact header format */
          {
-            toc = DSGetPayloadHeaderToC(DS_VOICE_CODEC_TYPE_EVS, pyld_len);  /* add ToC byte based on payload size (convert to FH format) */
+            toc = DSGetPayloadHeaderToC(DS_VOICE_CODEC_TYPE_EVS, rtp_pyld_len);  /* add ToC byte based on payload size (convert to FH format) */
 
             ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)&toc, 1, DS_WRITE, &MediaInfo);  /* write ToC byte (DSSaveDataFile returns bytes written) */
 
@@ -2307,12 +2339,12 @@ codec_test_cleanup:
          }
          else {  /* full header format */
 
-            toc =  pyld_ptr[0];  /* save toc value */
+            toc =  rtp_pyld_ptr[0];  /* save toc value */
 
-            if (pyld_ptr[0] & 0x80)  /* check for CMR byte */
+            if (rtp_pyld_ptr[0] & 0x80)  /* check for CMR byte */
             {
-               pyld_ptr++;
-               pyld_len--;
+               rtp_pyld_ptr++;
+               rtp_pyld_len--;
             }
          }
 
@@ -2328,9 +2360,9 @@ codec_test_cleanup:
          if (!found) sav_tocs[num_tocs++] = toc;  /* if not found then add this toc value to saved list */
          #endif
 
-         ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)pyld_ptr, pyld_len, DS_WRITE, &MediaInfo);
+         ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)rtp_pyld_ptr, rtp_pyld_len, DS_WRITE, &MediaInfo);
 
-         if (ret_val != pyld_len) 
+         if (ret_val != rtp_pyld_len) 
          {
             printf("Error writing frame %d, wrote %d bytes\n", frame_count, ret_val);
             goto pcap_extract_cleanup;

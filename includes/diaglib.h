@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/include/diaglib.h
  
- Copyright Signalogic Inc. 2016-2021
+ Copyright Signalogic Inc. 2016-2023
 
  License
 
@@ -9,7 +9,7 @@
 
  Description
 
-  Packet diagnostic library API, including packet stats history and logging APIs, status and error code APIs, memory diagnostics, and more
+  Event logging and packet logging library, including packet stats history and logging APIs, status and error code APIs, memory diagnostics, and more
  
  Projects
 
@@ -33,6 +33,9 @@
   Modified Apr 2020 JHB, add DSGetLogTimeStamp() API. Initially this is used in mediaMin interactive keyboard debug info printouts, to make it easy to see uptime of ongoing tests that are not printing onscreen log output
   Modified May 2020 JHB, in STREAM_STATS struct, rename numRepair to numSIDRepair and add numMediaRepair
   Modified Jan 2021 JHB, change loglevel param in Log_RT() from uint16_t to uint32_t
+  Modified Dec 2022 JHB, add DSInitLogging() and DSCloseLogging() APIs to simplify application and multithread interface to diaglib
+  Modified Jan 2023 JHB, per-thread support for DSGetAPIStatus()
+  Modified Jan 2023 JHB, implement DSConfigLogging() to allow apps to (i) configure packet logging and (ii) set/retrieve mid-operation data and flags. One example is ability to abort DSPktStatsWriteLogFile() and other potentially time-consuming APIs
 */
 
 #ifndef _DIAGLIB_H_
@@ -45,7 +48,13 @@
 extern "C" {
 #endif
 
-/* SigSRF library logging function, applies to all libs */
+/* SigSRF diaglib event logging APIs */
+
+int DSInitLogging(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags);  /* initialize event logging. Note that DSInitLogging() should not be called twice without a matching DSCloseLogging() call, as it increments a semaphore count to track multithread usage */
+
+int DSCloseLogging(unsigned int uFlags);  /* close event logging (decrement usage count and close event log file if zero) */
+
+FILE* DSGetLogFileHandle(unsigned int uFlags);
 
 void Log_RT(uint32_t loglevel, const char *fmt, ...);  /* loglevel can be combined with DS_LOG_LEVEL_xxx flags, and also DS_EVENT_LOG__XXX_TIMESTAMPS flags, defined in shared_include/config.h */
 
@@ -53,6 +62,8 @@ void Log_RT(uint32_t loglevel, const char *fmt, ...);  /* loglevel can be combin
 #define DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP  DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS
 
 void DSGetLogTimeStamp(char* timestamp, int max_str_len, unsigned int uFlags);
+
+int DSGetAPIStatus(unsigned int uFlags);  /* get per-thread API status */
 
 /* diaglib version string */
 
@@ -154,9 +165,9 @@ int DSFindSSRCGroups(PKT_STATS*, int num_pkts, uint32_t ssrcs[], int first_pkt_i
 int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, char* label, uint32_t ssrcs[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[]);
 
 
-/* DSPktStatsWriteLogFile() writes packet stats (previously added to PKT_STATS structs by DSPktStatsAddEntries) to a log file.  Notes:
+/* DSPktStatsWriteLogFile() writes packet stats (previously added to PKT_STATS structs by DSPktStatsAddEntries) to a log file. Notes:
 
-  1) Writes in 3 sections
+  1) Writes packet log in 3 sections
 
     a) input, if num_input_pkts in the PKT_COUNTERS struct is non-zero
     b) jitter buffer, if num_pulled_pkts is non-zero
@@ -166,7 +177,7 @@ int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int
 
   2) Log output is grouped by SSRC values; each group has a stats summary before the next group
 
-  3) Use the DS_PKTSTATS_LOG_COLLATE_STREAMS flag if SSRCs should be collated and grouped together in log output.  See notes below on when and when not to use this flag
+  3) Use the DS_PKTSTATS_LOG_COLLATE_STREAMS flag if SSRCs should be collated and grouped together in log output. See notes below on when and when not to use this flag
 
   4) Use the DS_PKTSTATS_LOG_APPEND flag to add entries to an existing log file
 */
@@ -214,27 +225,47 @@ int DSGetAPIStatus(unsigned int uFlags);
 
 /* error / warning codes and API identifiers returned by DSGetAPIStatus() */
 
-#define DS_API_STATUS_CODE_ERROR       0x01
-#define DS_API_STATUS_CODE_WARNING     0x02
+#define DS_API_STATUS_CODE_ERROR               0x01
+#define DS_API_STATUS_CODE_WARNING             0x02
 
 /* API identifiers for published APIs */
 
-#define DS_API_CODE_CREATESESSION      0x100
-#define DS_API_CODE_DELETESESSION      0x200
-#define DS_API_CODE_BUFFERPKTS         0x300
-#define DS_API_CODE_GETORDEREDPKTS     0x400
-#define DS_API_CODE_GETPACKETINFO      0x500
-#define DS_API_CODE_GETSESSIONINFO     0x600
-#define DS_API_CODE_GETDTMFINFO        0x700
-#define DS_API_CODE_FORMATPACKET       0x800
-#define DS_API_CODE_STORESTREAMDATA    0x900
-#define DS_API_CODE_GETSTREAMDATA      0xA00
+#define DS_API_CODE_CREATESESSION              0x100
+#define DS_API_CODE_DELETESESSION              0x200
+#define DS_API_CODE_BUFFERPKTS                 0x300
+#define DS_API_CODE_GETORDEREDPKTS             0x400
+#define DS_API_CODE_GETPACKETINFO              0x500
+#define DS_API_CODE_GETSESSIONINFO             0x600
+#define DS_API_CODE_GETDTMFINFO                0x700
+#define DS_API_CODE_FORMATPACKET               0x800
+#define DS_API_CODE_STORESTREAMDATA            0x900
+#define DS_API_CODE_GETSTREAMDATA              0xA00
 
 /* identifiers for internal APIs -- these may be combined with identifers returned by published APIs */
 
-#define DS_API_CODE_VALIDATERTP        0x10000
-#define DS_API_CODE_GETCHANPACKETS     0x20000
-#define DS_API_CODE_CREATEDYNAMICCHAN  0x40000
+#define DS_API_CODE_VALIDATERTP                0x10000
+#define DS_API_CODE_GETCHANPACKETS             0x20000
+#define DS_API_CODE_CREATEDYNAMICCHAN          0x40000
+
+/* config packet logging */
+
+unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, void* pLogInfo);
+
+/* actions */
+
+#define DS_CONFIG_LOGGING_SET_FLAG             1         /* set one or more flags */
+#define DS_CONFIG_LOGGING_CLEAR_FLAG           2         /* clear one or more flags */
+#define DS_CONFIG_LOGGING_SET_UFLAGS           3         /* set all flags */
+#define DS_CONFIG_LOGGING_GET_UFLAGS           4         /* get all flags */ 
+#define DS_CONFIG_LOGGING_SET_DEBUG_CONFIG     5         /* update lib_dbg_cfg (event logging) */
+
+#define DS_CONFIG_LOGGING_ACTION_MASK          0xff
+
+/* uFlags */
+
+#define DS_CONFIG_LOGGING_ALL_THREADS          0x100     /* apply set/clear action to all currently active threads */
+
+#define DS_PKTLOG_ABORT                        0x1000    /* set this flag if for any reason it's necessary to abort DSPktStatsWriteLogFile() or other packet logging APIs with potentially long processing times. To be effective, DSConfigLogging() should be called from a thread separate from one calling packet logging APIs, JHB Jan 2023 */
 
 #ifdef __cplusplus
 }

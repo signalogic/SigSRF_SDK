@@ -34,7 +34,8 @@
 #  Modified Mar 2022 JHB, set installOptions immediately after user menu and before any functions are called. Without this fix, if an ASR or coCPU package is selected, but the appropriate .rar is not found, no error message is given
 #  Modified Aug 2022 JHB, add hello_codec to post-install build and "Apps check" section in installCheckVerify()
 #  Modified Aug 2022 JHB, check exit status of unrar command
-#  Modified Sep 2022 JHB, minor mods after testing Ubuntu .rar with Debian
+#  Modified Sep 2022 JHB, minor mods after testing Ubuntu .rar install on Debian 12.0
+#  Modified Feb 2023 JHB, change order of hello_codec and mediaMin builds, mediaMin last
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -60,7 +61,7 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 		else
 			rarFile="Signalogic_sw_host_SigSRF_*CentOS*.rar"
 		fi
-	else  # add other distro types later.  Currently Debian defaults to Ubuntu .rar, JHB Jan2021
+	else  # add other distro types as needed.  Currently Debian defaults to Ubuntu .rar, with some minor differences (look for "Debian" below), JHB Jan2021
 		if [ "$installOptions" = "ASR" ]; then
 			rarFile="Signalogic_sw_host_SigSRF_*_ASR_*Ubuntu*.rar"
 		else
@@ -114,7 +115,7 @@ unrarCheck() {
 			case $yn in
 				[Yy]* ) line_pkg="unrar"
 
-						depInstall_wo_dpkg;  # try installing package way
+						depInstall_wo_dpkg;  # try package install
 
                   unrarInstalled=`type -p unrar`  # recheck
 
@@ -125,27 +126,31 @@ unrarCheck() {
 
                 			wgetInstalled=`type -p wget`  # wget should already be installed, but check anyway
 			               if [ "$wgetInstalled" == "" ]; then
-                           echo "wget not found, attempting to install wget ..."
+                           echo "wget not found, attempting to install ..."
                            apt-get install wget
                         fi
 
                         wget --no-check-certificate https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
                         tar -zxvf rarlinux-x64-6.0.2.tar.gz
                         mv rar/rar rar/unrar /usr/local/bin/
+
                      elif [ "$OS" = "Debian GNU/Linux" ]; then
                         echo "Attempting to install non-free unrar for Debian ..."
 
                 			wgetInstalled=`type -p wget`  # wget should already be installed, but check anyway
 			               if [ "$wgetInstalled" == "" ]; then
-                           echo "wget not found, attempting to install wget ..."
+                           echo "wget not found, attempting to install ..."
                            apt-get install wget && apt-get -y install gnupg
                         fi
+
+                      # add unrar install for Debian, JHB Sep 2022
 
                         wget -qO - https://ftp-master.debian.org/keys/archive-key-10.asc | apt-key add - \
                            && echo deb http://deb.debian.org/debian buster main contrib non-free | tee -a /etc/apt/sources.list \
                            && apt-get update \
                            && apt-get install unrar
-                     else  # else includes Ubuntu, VM target, or anything else
+
+                     else  # includes Ubuntu, VM target, or anything else
                         echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
                         sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
                         depInstall_wo_dpkg;
@@ -306,11 +311,11 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 			fi
    	fi
 
-      if [ "$OS" = "Ubuntu" ]; then  # lsb_release needed only for Ubuntu (not CentOS, Debian, etc)
+      if [ "$OS" = "Ubuntu" ]; then  # lsb-release package needed only for Ubuntu (not CentOS, Debian, etc)
 
   			lsbReleaseInstalled=`type -p lsb_release`
 			if [ "$lsbReleaseInstalled" == "" ]; then
-		  		echo "lsb_release package is needed"
+		  		echo "lsb-release package is needed, installing ..."
 				apt-get install lsb-release
 			fi
 		fi
@@ -412,7 +417,7 @@ swInstall() {  # install Signalogic SW on specified path
 
          if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
             distribution=$(cat /etc/centos-release)
-         elif [ "$OS" = "Ubuntu" ]; then
+         elif [ "$OS" = "Ubuntu" -a "$lsbReleaseInstalled" != "" ]; then
             distribution=$(cat /etc/lsb-release)
          else  # else includes Debian, VM target, or anything else
             distribution=$(cat /etc/os-release)  # os-release is supposedly the Linux standard
@@ -525,16 +530,16 @@ swInstall() {  # install Signalogic SW on specified path
 	cd $installPath/Signalogic/apps/iaTest
 	make clean; make all;
 
+	cd $installPath/Signalogic/apps/mediaTest/hello_codec
+	make clean; make all;
+
 	cd $installPath/Signalogic/apps/mediaTest
 	make clean; make all;
 
 	cd $installPath/Signalogic/apps/mediaTest/mediaMin
 	make clean; make all;
 
-	cd $installPath/Signalogic/apps/mediaTest/hello_codec
-	make clean; make all;
-
-	cd $wdPath
+	cd $startPath
 }
 
 unInstall() { # uninstall Signalogic SW completely
@@ -662,14 +667,17 @@ installCheckVerify() {
 
 	echo
 	echo "Distro Info" | tee -a $diagReportFile
+   lsbreleaseInstalled=`type -p lsb_release`
+
    if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
       cat /etc/centos-release | tee -a $diagReportFile
-   elif [ "$OS" = "Ubuntu" ]; then
-      cat /etc/lsb-release | tee -a $diagReportFile  # use this in case installing lsb-release package ran into trouble
+   elif [ "$OS" = "Ubuntu" -a "$lsbReleaseInstalled" != "" ]; then  # use /etc/lsb-release for Ubuntu, unless lsb-release package not found (maybe installing it earlier ran into trouble)
+      cat /etc/lsb-release | tee -a $diagReportFile
 #  elif [ "$target" = "VM" -o "$OS" = "Debian" ]; then
    else   # else includes Debian, VM target, or anything else
       cat /etc/os-release | tee -a $diagReportFile
    fi
+
    echo "Kernel Version: $kernel_version" | tee -a $diagReportFile
 
 	echo | tee -a $diagReportFile
@@ -746,8 +754,8 @@ installCheckVerify() {
 
 	appfile="iaTest"; appname="iaTest"; diagAppPrint;
 	appfile="mediaTest"; appname="mediaTest"; diagAppPrint;
-	appfile="mediaTest/mediaMin"; appname="mediaMin"; diagAppPrint;
 	appfile="mediaTest/hello_codec"; appname="hello_codec"; diagAppPrint;
+	appfile="mediaTest/mediaMin"; appname="mediaMin"; diagAppPrint;
 
 	# Leftover /dev/shm hwlib files check
 
@@ -771,7 +779,7 @@ installCheckVerify() {
 
 # *********** script entry point ************
 
-wdPath=$PWD
+startPath=$PWD
 OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')  # OS var is used throughout script
 kernel_version=`uname -r`
 echo "OS distro: $OS, kernel version: $kernel_version"

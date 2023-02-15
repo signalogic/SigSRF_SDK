@@ -1,11 +1,11 @@
 /*
-  $Header: /root/Signalogic/DirectCore/lib/pktlib/pktlib_logging.c
+  $Header: /root/Signalogic/DirectCore/lib/diaglib/lib_logging.c
  
   Description: SigSRF and EdgeStream event logging APIs
  
   Project: SigSRF, DirectCore
  
-  Copyright Signalogic Inc. 2017-2022
+  Copyright Signalogic Inc. 2017-2023
 
   Revision History
   
@@ -24,7 +24,11 @@
    Modified Mar 2020 JHB, implement uLineCursorPos and isCursorMidLine in screen output handling; isCursorPosMidLine determines leading \n decisions. uLineCursorPos records line cursor position
    Modified Apr 2020 JHB, implement DSGetLogTimeStamp() API
    Modified Jan 2021 JHB, include string.h with _GNU_SOURCE defined, change loglevel param in Log_RT() from uint16_t to uint32_t, implement DS_LOG_LEVEL_SUBSITUTE_WEC flag (config.h). See comments
-   Modified Mar 2021 JHB, minor adjustments to removal of unncessary Makefile defines, add DIAGLIB_STANDALONE #define option to build without IsPmThread()
+   Modified Mar 2021 JHB, minor adjustments to removal of unncessary Makefile defines, add DIAGLIB_STANDALONE #define option to build without isPmThread()
+   Modified Dec 2022 JHB, add DSInitLogging(), DSUpdateLogConfig(), and DSCloseLogging() APIs to (i) simply interface from apps, and (ii) clarify multiprocess use of diaglib
+   Modified Jan 2023 JHB, put in place new method of handling per-thread API status. See references to LogInfo[] and comments
+   Modified Jan 2023 JHB, in Log_RT(), replace strstr() with strcasestr(), avoid additional upper case copy to a temporary string
+   Modified Jan 2023 JHB, make GetThreadIndex() not static, callable from diaglib.c
 */
 
 /* Linux and/or other OS includes */
@@ -38,8 +42,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <semaphore.h>
 
-/* Sig public includes */
+/* SigSRF includes */
 
 #ifndef DIAGLIB_STANDLONE
   #define __LIBRARYMODE__
@@ -50,15 +55,19 @@
 #include "diaglib.h"
 #include "shared_include/config.h"
 
-/* Sig private includes */
+/* private includes */
 
 #include "diaglib_priv.h"
 
+/* semaphores for thread safe logging init and close. Logging itself is lockless */
+
+sem_t diaglib_sem;
+int diaglib_sem_init = 0;
+
 /* global vars */
 
-static pthread_key_t status_key;
-static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 static uint64_t last_size = 0;
+static int app_log_file_count = 0;
 
 DEBUG_CONFIG lib_dbg_cfg = { 5 };  /* moved here from pktlib.c, JHB Sep017.  Init to log level 5 for apps that don't make a DSConfigPktlib() call, JHB Jul2019 */
 
@@ -70,48 +79,96 @@ uint32_t event_log_critical_errors = 0;  /* keep track of event log errors and w
 uint32_t event_log_errors = 0;
 uint32_t event_log_warnings = 0;
 
-/* private APIs */
+/* private APIs and definitions */
 
+/* create, get, and delete per-thread indexes for use in LogInfo[nThread].xxx access, JHB Jan2023:
+
+  -pre-thread indexes are created by DSInitLogging() which calls private CreateThreadIndex(), and deleted by DSCloseLogging() which calls private DeleteThreadIndex(). Both use diaglib_sem to control multithread access
+  -pktlib packet/media threads and mediaMin and mediaTest app threads call DSInitLogging() and DSCloseLogging()
+  -the "zeroth" index is reserved for any applications or threads not calling DSInitLogging(); i.e. if GetThreadIndex() does not find a thread index, these share a thread index
+*/
+
+LOGINFO LogInfo[MAXTHREADS] = {{ 0 }};  /* also referenced in diaglib.c */
+
+
+static int CreateThreadIndex(void) {  /* local API */
+
+int i;
+
+   for (i=1; i<MAXTHREADS; i++) if (LogInfo[i].ThreadId == pthread_self()) return i;  /* first check to see if current thread already has a slot */
+
+   for (i=1; i<MAXTHREADS; i++) if (LogInfo[i].ThreadId == 0) {  /* get a new slot */
+
+      LogInfo[i].ThreadId = pthread_self();
+//      printf("thread[%d] id = %llu \n", i, (long long unsigned int)Threads[i]);
+      break;
+   }
+
+   if (i < MAXTHREADS) return i;
+   else return -1;
+}
+
+int GetThreadIndex(bool fUseSem) {  /* diaglib-private API, also called by functions in lib_logging.c */
+
+int i, ret_val = 0;
+bool fUseSemLocal = false;
+
+   if (fUseSem && diaglib_sem_init) { fUseSemLocal = true; sem_wait(&diaglib_sem); }
+
+   for (i=1; i<MAXTHREADS; i++) if (LogInfo[i].ThreadId == pthread_self()) { ret_val = i; break; }
+
+   if (fUseSemLocal) sem_post(&diaglib_sem);
+
+   return ret_val;  /* return zeroth slot -- any/all apps or threads not calling DSInitLogging() */
+}
+
+static int DeleteThreadIndex(void) {  /* local API */
+
+int nIndex = GetThreadIndex(false);
+
+   if (nIndex >= 0) { LogInfo[nIndex].ThreadId = 0; return nIndex; }
+   else return -1;
+}
+
+
+#if 0  /* use of problematic pthread_key_create() and pthread_setspecific() ripped out, new method in place; see LogInfo[] and comments above, JHB Jan 2023 */
 static void make_key()
 {
    pthread_key_create(&status_key, NULL);
 }
+#endif
 
-void set_api_status(int status_code, unsigned int uFlags) {
-
+static int set_api_status(int status_code, unsigned int uFlags) {  /* local API */
+#if 0
 int *ptr;
 
    (void)uFlags;  /* avoid compiler warning (Makefile has -Wextra flag) */
    
    pthread_once(&key_once, make_key);
    
-   /* if the value stored is NULL, this is the first time this thread is setting this value - allocate memory */
-   if ((ptr = pthread_getspecific(status_key)) == NULL)
-      ptr = (int *)malloc(sizeof(int));
+   /* if the value stored is NULL, this is the first time current thread is setting this value - allocate memory */
+   if ((ptr = pthread_getspecific(status_key)) == NULL) ptr = (int *)malloc(sizeof(int));
    
    *ptr = status_code;
    pthread_setspecific(status_key, ptr);
    
    /* valgrind reports still reachable memory for the above malloc 
-      I think pthread_setspecific frees the pointer when it's set to a new value so another call with a NULL pointer would be needed to correctly cleanup all mallocs here -cj */
-}
+      I think pthread_setspecific() frees the pointer when it's set to a new value so another call with a NULL pointer would be needed to correctly cleanup all mallocs here -cj */
+#else
 
-
-/* public APIs */
-
-int DSGetAPIStatus(unsigned int uFlags) {
-
-int *ptr = pthread_getspecific(status_key);
+int nIndex;
 
    (void)uFlags;  /* avoid compiler warning (Makefile has -Wextra flag) */
-   
-/* if no value has been set, ptr will be NULL and we return 0 indicating no status */
 
-   if (ptr != NULL) return *ptr;
-   else return 0;
+   nIndex = GetThreadIndex(false);
+   if (nIndex >= 0) LogInfo[nIndex].status_code = status_code;
+
+   return nIndex;
+
+#endif
 }
 
-bool isFileDeleted(FILE* fp) {  /* check if file has been deleted, possibly be an external process.  Note we cannot use fwrite() or other error codes, we need to look at file descriptor level, JHB Dec2019 */
+static bool isFileDeleted(FILE* fp) {  /* check if file has been deleted, possibly be an external process.  Note we cannot use fwrite() or other error codes, we need to look at file descriptor level, JHB Dec2019 */
 
 bool fRet = false;
 struct stat fd_stat;
@@ -134,6 +191,182 @@ static inline void strlcpy(char* dst, const char* src, int maxlen) {  /* impleme
    dst[cpylen] = (char)0;
 }
 
+static int open_log_file(bool fAllowAppend, bool fUseSem) {
+
+   if (!lib_dbg_cfg.uEventLogFile && strlen(lib_dbg_cfg.szEventLogFilePath)) {  /* create event log file (or open it for appending), if needed, JHB Dec2019 */
+
+      if (fUseSem) sem_wait(&diaglib_sem);
+
+      bool fAppend = (lib_dbg_cfg.uEventLogMode & DS_EVENT_LOG_APPEND) && fAllowAppend;
+
+      lib_dbg_cfg.uEventLogFile = fopen(lib_dbg_cfg.szEventLogFilePath, fAppend ? "a" : "w");
+
+      if (!lib_dbg_cfg.uEventLogFile) {
+
+         if (fUseSem) sem_post(&diaglib_sem);
+
+         fprintf(stderr, "ERROR: Log_RT() says unable to %s event log file %s, errno = %d \n", fAppend ? "open for appending" : "create", lib_dbg_cfg.szEventLogFilePath, errno);
+         return -1;  /* < 0 indicates an error condition */
+      }
+      else {
+
+         #if 0
+         struct stat stats;
+         int fd = fileno(lib_dbg_cfg.uEventLogFile);
+         static char buffer[BUFSIZ];
+
+         if (fstat(fd, &stats) != -1) {
+            int ret = setvbuf(lib_dbg_cfg.uEventLogFile, buffer, _IOFBF, BUFSIZ/*stats.st_blksize*/);
+            printf("\n *** diaglib setvbuf ret = %d, BUFSIZ is %d, stats optimal block size is %ld, __fbufsize = %lu \n", ret, BUFSIZ, stats.st_blksize, __fbufsize(lib_dbg_cfg.uEventLogFile));
+         }
+         #endif
+
+         app_log_file_count++;  /* increase app count */
+      }
+
+#if 0
+      else {
+
+         int fd = fileno(lib_dbg_cfg.uEventLogFile);  /* convert file pointer to file descriptor */
+         int flags = fcntl(fd, F_GETFL);
+         fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+      }
+#endif
+//      else fwrite("\xEF\xBB\xBF", 3, 1, lib_dbg_cfg.uEventLogFile);  /* set BOM to UTF-8 */
+
+      if (fUseSem) sem_post(&diaglib_sem);
+
+      return 1;  /* 1 indicates event log file successfully opened */
+   }
+
+   return 0;  /* 0 indicates event log file aleady open */
+}
+
+int update_log_config(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags, bool fUseSem) {  /* not static, called by DSConfigLogging() in diaglib.c */
+
+   (void)uFlags;
+
+   if (!dbg_cfg) return -1;
+
+   if (fUseSem) sem_wait(&diaglib_sem);
+
+   if (!lib_dbg_cfg.uEventLogFile) lib_dbg_cfg.uEventLogFile = dbg_cfg->uEventLogFile;  /* don't initialize event log file handle if for any reason it's already set */
+   if (dbg_cfg->szEventLogFilePath) strcpy(lib_dbg_cfg.szEventLogFilePath, dbg_cfg->szEventLogFilePath);
+
+   lib_dbg_cfg.uEventLogMode = dbg_cfg->uEventLogMode;
+   lib_dbg_cfg.uLogLevel = dbg_cfg->uLogLevel;
+   lib_dbg_cfg.uEventLog_fflush_size = dbg_cfg->uEventLog_fflush_size;
+   lib_dbg_cfg.uEventLog_max_size = dbg_cfg->uEventLog_max_size;
+   lib_dbg_cfg.uPrintfControl = dbg_cfg->uPrintfControl;
+   lib_dbg_cfg.uDisableMismatchLog = dbg_cfg->uDisableMismatchLog;
+   lib_dbg_cfg.uDisableConvertFsLog = dbg_cfg->uDisableConvertFsLog;
+
+   if (fUseSem) sem_post(&diaglib_sem);
+
+   return 1;
+}
+
+/* public APIs */
+
+int DSGetAPIStatus(unsigned int uFlags) {  /* per-thread API status */
+
+   (void)uFlags;  /* avoid compiler warning (Makefile has -Wextra flag) */
+   
+#if 0  /* use of problematic pthread_key_create() and pthread_setspecific() ripped out, new method in place; see LogInfo[] and comments above, JHB Jan 2023 */
+int *ptr = pthread_getspecific(status_key);
+
+/* if no value has been set, ptr will be NULL and we return 0 indicating no status */
+
+   if (ptr != NULL) return *ptr;
+   else return 0;
+#else
+
+int nIndex = GetThreadIndex(false);
+
+   if (nIndex >= 0) return LogInfo[nIndex].status_code;  /* return current API status code */
+   else return -1;
+
+#endif
+}
+
+FILE* DSGetLogFileHandle(unsigned int uFlags) {
+
+   (void)uFlags;
+
+   return lib_dbg_cfg.uEventLogFile;
+}
+
+/* initialize event logging */
+
+int DSInitLogging(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags) {
+
+int ret_val;
+static uint8_t lock = 0;
+
+/* set a memory barrier, prevent multiple uncoordinated threads from initializing the semaphore more than once, JHB Jan 2023 */
+
+   while (__sync_lock_test_and_set(&lock, 1) != 0);  /* wait until the lock is zero then write 1 to it. While waiting keep writing a 1 */
+
+   if (!diaglib_sem_init) {
+
+      if (sem_init(&diaglib_sem, 0, 1)) {
+
+         fprintf(stderr, "CRITICAL: failed to initialize diaglib semaphore: %s %s:%d \n", strerror(errno), __FILE__, __LINE__);
+         __sync_lock_release(&lock);
+         return -1;
+      }
+
+      diaglib_sem_init = 1;
+   }
+   
+   __sync_lock_release(&lock);  /* clear the mem barrier (write 0 to the lock) */
+
+/* Init global lib_dbg_cfg. Notes:
+
+   -purpose is early set up of logging relevant section of lib_dbg_cfg, allowing logging to be up and running before anything else, including library init's
+
+   -multithreaded operation:
+     -we're using a semaphore inside init and close (DSCloseLogging)
+     -each process will use a different semaphore, and presumably a different event log filename
+     -for multithreaded apps (like mediaMin), it's expected the app has a master thread handling logging (i.e. only one of its threads). If not then app_log_file_count increments for each thread when calling DSInitLogging() and decrements when calling DSCloseLogging()
+
+   -DSConfigPktlib() will also init lib_dbg_cfg, but that should be an overwrite with same data if DSInitLogging() has already been called with the same dbg_cfg (or vice versa). Note that in both cases the file handle is not overwritten if already opened
+*/
+
+   sem_wait(&diaglib_sem);
+
+   CreateThreadIndex();  /* get a slot for current thread (if it doesn't already exist) */
+
+   if (dbg_cfg) update_log_config(dbg_cfg, uFlags, false);  /* note that DSInitLogging() can be called with a NULL dbg_cfg, for example another thread has already set the defaults */
+
+   if (!dbg_cfg && uFlags == 0) ret_val = diaglib_sem_init == 2 ? 1 : 0;  /* handle initialization status request (dbg_cfg NULL and uFlags zero):  if any thread has made it past this point then at least one full initialization has happened */
+   else ret_val = open_log_file(true, false);
+
+   diaglib_sem_init = 2;  /* set to fully initialized */
+
+   sem_post(&diaglib_sem);
+
+   return ret_val;
+}
+
+int DSCloseLogging(unsigned int uFlags) {
+
+   (void)uFlags;
+
+   sem_wait(&diaglib_sem);
+
+   if (lib_dbg_cfg.uEventLogFile && --app_log_file_count == 0) {
+
+      fclose(lib_dbg_cfg.uEventLogFile);
+      lib_dbg_cfg.uEventLogFile = NULL;
+   }
+
+   DeleteThreadIndex();  /* clear slot belonging to current thread */
+
+   sem_post(&diaglib_sem);
+
+   return app_log_file_count;
+}
 
 #define ERROR_PARSE_LOGMSG
 #define MAX_STR_SIZE 4000
@@ -143,12 +376,8 @@ static uint64_t usec_init = 0;
 
 void Log_RT(uint32_t loglevel, const char* fmt, ...) {
 
-#ifdef ERROR_PARSE_LOGMSG
-static int status_code = 0;  /* to-do: not thread safe, need some way to keep a status_code per thread, JHB Sep2017 */
-#endif
-
 va_list va;
-char tmpstr[MAX_ERRSTR_SIZE], log_string[MAX_STR_SIZE];
+char log_string[MAX_STR_SIZE];
 int slen, fmt_start = 0;
 
    if (lib_dbg_cfg.uEventLogMode & DS_EVENT_LOG_DISABLE) return;  /* event log is (temporarily) disabled */
@@ -180,21 +409,21 @@ int slen, fmt_start = 0;
 
       if (!(loglevel & DS_LOG_LEVEL_NO_TIMESTAMP)) DSGetLogTimeStamp(&log_string[fmt_start], sizeof(log_string), (unsigned int)lib_dbg_cfg.uEventLogMode);
 
-      int log_str_len = strlen(log_string);
+      int ts_str_len = strlen(log_string);
 
    /* add and format Log_RT() string */
 
       va_start(va, fmt);
 
-      vsnprintf(&log_string[log_str_len], sizeof(log_string) - log_str_len, &fmt[fmt_start], va);
+      vsnprintf(&log_string[ts_str_len], sizeof(log_string) - ts_str_len, &fmt[fmt_start], va);
 
       va_end(va);  /* added JHB Nov 2019 */
 
    /* leading newline handling: if first char in user string is a newline, move the newline to be in front of the timestamp, JHB Mar2020 */
 
-      if (log_string[log_str_len] == '\n') {
+      if (log_string[ts_str_len] == '\n') {
          int i;
-         for (i=log_str_len; i>0; i--) log_string[i] = log_string[i-1];  /* this is a rare thing, so ok to do a slow move here */
+         for (i=ts_str_len; i>0; i--) log_string[i] = log_string[i-1];  /* this is a rare thing, so ok to do a slow move here */
          log_string[0] = '\n';
       }
 
@@ -225,37 +454,31 @@ int slen, fmt_start = 0;
 
          if ((loglevel & DS_LOG_LEVEL_MASK) < 4) {  /* check only 0-3 for error/warning, JHB Jan2020 */
 
-            strlcpy(tmpstr, log_string, MAX_ERRSTR_SIZE);  /* would use strncpy, except for its padding, JHB Jan2020 */
-            strupr(tmpstr);
+            int status_code = 0;
 
-            int status_code_temp = 0;
-
-            if (strstr(tmpstr, "ERROR") || strstr(tmpstr, "CRITICAL")) status_code_temp |= DS_API_STATUS_CODE_ERROR;
-            if (strstr(tmpstr, "WARNING")) status_code_temp |= DS_API_STATUS_CODE_WARNING;
+            if (strcasestr(log_string, "ERROR") || strcasestr(log_string, "CRITICAL")) status_code |= DS_API_STATUS_CODE_ERROR;
+            if (strcasestr(log_string, "WARNING")) status_code |= DS_API_STATUS_CODE_WARNING;
 
          /* published APIs */
 
-            if (strstr(tmpstr, "DSCREATESESSION")) status_code_temp |= DS_API_CODE_CREATESESSION;
-            else if (strstr(tmpstr, "DSDELETESESSION")) status_code_temp |= DS_API_CODE_DELETESESSION;
-            else if (strstr(tmpstr, "DSBUFFERPACKETS")) status_code_temp |= DS_API_CODE_BUFFERPKTS;
-            else if (strstr(tmpstr, "DSGETORDEREDPACKETS")) status_code_temp |= DS_API_CODE_GETORDEREDPKTS;
-            else if (strstr(tmpstr, "DSGETPACKETINFO")) status_code_temp |= DS_API_CODE_GETPACKETINFO;
-            else if (strstr(tmpstr, "DSGETSESSININFO")) status_code_temp |= DS_API_CODE_GETSESSIONINFO;
-            else if (strstr(tmpstr, "DSGETDTMFINFO")) status_code_temp |= DS_API_CODE_GETDTMFINFO;
-            else if (strstr(tmpstr, "DSFORMATPACKET")) status_code_temp |= DS_API_CODE_FORMATPACKET;
-            else if (strstr(tmpstr, "DSSTORESTREAMDATA")) status_code_temp |= DS_API_CODE_STORESTREAMDATA;
-            else if (strstr(tmpstr, "DSGETSTREAMDATA")) status_code_temp |= DS_API_CODE_GETSTREAMDATA;
+            if (strcasestr(log_string, "DSCREATESESSION")) status_code |= DS_API_CODE_CREATESESSION;
+            else if (strcasestr(log_string, "DSDELETESESSION")) status_code |= DS_API_CODE_DELETESESSION;
+            else if (strcasestr(log_string, "DSBUFFERPACKETS")) status_code |= DS_API_CODE_BUFFERPKTS;
+            else if (strcasestr(log_string, "DSGETORDEREDPACKETS")) status_code |= DS_API_CODE_GETORDEREDPKTS;
+            else if (strcasestr(log_string, "DSGETPACKETINFO")) status_code |= DS_API_CODE_GETPACKETINFO;
+            else if (strcasestr(log_string, "DSGETSESSININFO")) status_code |= DS_API_CODE_GETSESSIONINFO;
+            else if (strcasestr(log_string, "DSGETDTMFINFO")) status_code |= DS_API_CODE_GETDTMFINFO;
+            else if (strcasestr(log_string, "DSFORMATPACKET")) status_code |= DS_API_CODE_FORMATPACKET;
+            else if (strcasestr(log_string, "DSSTORESTREAMDATA")) status_code |= DS_API_CODE_STORESTREAMDATA;
+            else if (strcasestr(log_string, "DSGETSTREAMDATA")) status_code |= DS_API_CODE_GETSTREAMDATA;
 
          /* internal APIs, note these may be combined with published APIs */
 
-            if (strstr(tmpstr, "VALIDATE_RTP")) status_code_temp |= DS_API_CODE_VALIDATERTP;
-            else if (strstr(tmpstr, "GET_CHAN_PACKETS")) status_code_temp |= DS_API_CODE_GETCHANPACKETS;
-            else if (strstr(tmpstr, "CREATE_DYNAMIC_CHAN")) status_code_temp |= DS_API_CODE_CREATEDYNAMICCHAN;
+            if (strcasestr(log_string, "VALIDATE_RTP")) status_code |= DS_API_CODE_VALIDATERTP;
+            else if (strcasestr(log_string, "GET_CHAN_PACKETS")) status_code |= DS_API_CODE_GETCHANPACKETS;
+            else if (strcasestr(log_string, "CREATE_DYNAMIC_CHAN")) status_code |= DS_API_CODE_CREATEDYNAMICCHAN;
 
-            if (status_code_temp) {
-               status_code = status_code_temp;
-               set_api_status(status_code, (intptr_t)NULL);
-            }
+            if (status_code) set_api_status(status_code, 0);  /* set API status for current thread */
          } 
       }
 #endif  /* ERROR_PARSE_LOGMSG */
@@ -264,27 +487,12 @@ int slen, fmt_start = 0;
 
       if (((lib_dbg_cfg.uEventLogMode & LOG_MODE_MASK) != LOG_SCREEN_ONLY) && !(loglevel & DS_LOG_LEVEL_DISPLAY_ONLY)) {
 
-         bool fOpenWriteOnly = false;
+         bool fAllowAppend = true;
+         bool fUseSem = true;
 
 create_log_file_if_needed:
 
-         if (!lib_dbg_cfg.uEventLogFile && strlen(lib_dbg_cfg.szEventLogFilePath)) {  /* create event log file (or open it for appending), if needed, JHB Dec2019 */
-
-            bool fAppend = (lib_dbg_cfg.uEventLogMode & DS_EVENT_LOG_APPEND) && !fOpenWriteOnly;
-
-            lib_dbg_cfg.uEventLogFile = fopen(lib_dbg_cfg.szEventLogFilePath, fAppend ? "a" : "w");
-
-            if (!lib_dbg_cfg.uEventLogFile) fprintf(stderr, "ERROR: Log_RT() says unable to %s event log file %s, errno = %d \n", fAppend ? "open for appending" : "create", lib_dbg_cfg.szEventLogFilePath, errno);
-#if 0
-            else {
-
-               int fd = fileno(lib_dbg_cfg.uEventLogFile);  /* convert file pointer to file descriptor */
-               int flags = fcntl(fd, F_GETFL);
-               fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-            }
-#endif
-//            else fwrite("\xEF\xBB\xBF", 3, 1, lib_dbg_cfg.uEventLogFile);  /* set BOM to UTF-8 */
-         }
+         open_log_file(fAllowAppend, fUseSem);
 
          if (lib_dbg_cfg.uEventLogFile) {
 
@@ -325,11 +533,11 @@ create_log_file_if_needed:
 
                fprintf(stderr, "\nERROR: Log_RT() says not able to write to event log file %s, errno = %d \n", lib_dbg_cfg.szEventLogFilePath, errno);
             }
-            else if (isFileDeleted(lib_dbg_cfg.uEventLogFile)) {
+            else if (isFileDeleted(lib_dbg_cfg.uEventLogFile)) {  /* fwrite() won't show an error if file has been deleted, so we always call isFileDeleted() which calls fstat(), JHB Jan 2023 */
 
                fprintf(stderr, "\nERROR: Log_RT() says event log file %s may have been deleted, errno = %d, attempting to recreate file ... \n", lib_dbg_cfg.szEventLogFilePath, errno);
                lib_dbg_cfg.uEventLogFile = NULL;
-               fOpenWriteOnly = true;
+               fAllowAppend = false;
                goto create_log_file_if_needed;
             }
             else {  /* log file operating normally, check for flush_size and/or max_size in effect */
@@ -379,7 +587,7 @@ create_log_file_if_needed:
           */
 
             #ifndef DIAGLIB_STANDALONE
-            if (IsPmThread(-1, &thread_index)) __sync_or_and_fetch(&pm_thread_printf, 1 << thread_index);  /* if this is a p/m thread, set corresponding bit in pm_thread_printf. IsPmThread() is in pktlib.h; if pktlib is not used then this call can be stubbed out in a placeholder .so to always return 0 */
+            if (isPmThread(-1, &thread_index)) __sync_or_and_fetch(&pm_thread_printf, 1 << thread_index);  /* if this is a p/m thread, set corresponding bit in pm_thread_printf. isPmThread() is in pktlib.h; if pktlib is not used then this call can be stubbed out in a placeholder .so to always return 0 */
             #endif
 
             if (!(loglevel & DS_LOG_LEVEL_IGNORE_LINE_CURSOR_POS) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) fNextLine = true;  /* fNextLine reflects leading \n decision */
@@ -389,7 +597,7 @@ create_log_file_if_needed:
 
             if (lib_dbg_cfg.uPrintfControl == 0) printf("%s%s", fNextLine ? "\n" : "", log_string);
             else if (lib_dbg_cfg.uPrintfControl == 1) fprintf(stdout, "%s%s", fNextLine ? "\n" : "", log_string);
-            else if (lib_dbg_cfg.uPrintfControl == 2) fprintf(stderr,  "%s%s", fNextLine ? "\n" : "", log_string);
+            else if (lib_dbg_cfg.uPrintfControl == 2) fprintf(stderr, "%s%s", fNextLine ? "\n" : "", log_string);
 
             uLineCursorPos = log_string[slen-1] != '\n' ? slen : 0;  /* update line cursor position */
 

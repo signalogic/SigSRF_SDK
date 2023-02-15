@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/audio_domain_processing.c
 
- Copyright (C) Signalogic Inc. 2018-2022
+ Copyright (C) Signalogic Inc. 2018-2023
 
  License
 
@@ -29,6 +29,7 @@
   Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
   Modified Feb 2022 JHB, modify calling format to DSConvertFs(), see comments in alglib.h
   Modified Oct 2022 JHB, change DSGetCodeSampleRate() to DSGetCodecInfo()
+  Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
 */
 
 
@@ -366,7 +367,7 @@ send_group_packet:
 //  if (!fOnce) { printf("sending merge packets, packet_length = %d, hSession = %d\n", packet_length, hSession); fOnce = true; }
 
             #if 0  /* debug */
-            int pkt_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN | DS_PKT_INFO_SUPPRESS_ERROR_MSG, group_audio_packet, 0, NULL);
+            int pkt_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN | DS_PKTLIB_SUPPRESS_ERROR_MSG, group_audio_packet, 0, NULL);
             if (pkt_len <= 0) Log_RT(4, " ================ pkt_len <= 0 inside SendMerge, j = %d, hSession = %d, idx = %d, chnum = %d, num_frames = %d, packet_length = %d, ret_val = %d \n", j, hSession, idx, chnum, num_frames, packet_length, ret_val);
             #endif
 

@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/hello_codec/hello_codec.c
 
- Copyright (C) Signalogic Inc. 2022
+ Copyright (C) Signalogic Inc. 2022-2023
  
  License
 
@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
 
  /* prepare to run the codec example */
 
-   prolog();
+   profile_setup();
 
  /* run the example: encode-decode loop for NUM_FRAMES number of frames */
 
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
 
 /* show profiling stats */
 
-   epilog();
+   profile_results();
 
 /* as a convenient way to verify encode/decode, write output data to wav file */
 
@@ -589,7 +589,7 @@ char tmpstr[500], tmpstr2[500], szNumChan[30];
    printf("  input framesize (samples) = %d, %s framesize (samples) = %d, %sinput Fs = %d Hz, codec Fs = %d, output Fs = %d Hz, %s\n", input_framesize/AUDIO_SAMPLE_SIZE, tmpstr, inbuf_size/AUDIO_SAMPLE_SIZE, tmpstr2, input_sampleRate, codec_sampleRate, output_sampleRate, szNumChan);
 }
 
-void prolog() {
+void profile_setup() {
 
    gettimeofday(&tv, NULL);
    t1 = (uint64_t)tv.tv_sec*1000000L + (uint64_t)tv.tv_usec;
@@ -600,7 +600,7 @@ void prolog() {
    else printf("Running pass-thru ...\n");
 }
 
-void epilog() {
+void profile_results() {
 
    printf("\n");  /* leave existing status line, including any error messages (don't clear them) */
 

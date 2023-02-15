@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/sdp_app.h
 
- Copyright (C) Signalogic Inc. 2021
+ Copyright (C) Signalogic Inc. 2021-2023
 
  License
 
@@ -9,7 +9,11 @@
 
  Description
 
-  Header file for SDP related source for mediaMin reference application
+  Header file for SDP related parsing and object management, SIP Invite and other SIP message processing
+
+ Purpose
+
+  support for mediaMin reference application
 
  Documentation
 
@@ -20,20 +24,60 @@
  Revision History
 
    Created Apr 2021 JHB, split off from mediaMin.cpp
+   Modified Jan 2023 JHB, change SDPAdd() to SDPParseInfo() and expand its functionality to handle Origin objects
+   Modified Jan 2023 JHB, change FindSIPInvite() to ProcessSessionControl() add uFlags and szKeyword params
 */
 
 #ifndef _SDP_APP_H_
 #define _SDP_APP_H_
 
-/* uFlags options for SDPAdd() */
+/* uFlags options for SDPParseInfo() */
 
-#define SDP_ADD_FILE    1
-#define SDP_ADD_STRING  2
+#define SDP_PARSE_NOADD                           0      /* use this or no flag to parse only, without adding to thread_info[].xxx[stream] SDP database */
+#define SDP_PARSE_ADD                             1 
+#define SDP_PARSE_IGNORE_ORIGINS                  2
+
+/* uFlags options for ProcessSessionControl() */
+
+#define SESSION_CONTROL_SHOW_SIP_INVITE_MESSAGES  1
+#define SESSION_CONTROL_SHOW_ALL_MESSAGES         0x0f
+
+#define SESSION_CONTROL_ADD_SIP_INVITE_SDP_INFO   0x100
+#define SESSION_CONTROL_ADD_SAP_SDP_INFO          0x200
+
+#define SESSION_CONTROL_ADD_ITEM_MASK             0xf00
+
+#define SESSION_CONTROL_FOUND_SIP_INVITE          1
+#define SESSION_CONTROL_FOUND_SIP_TRYING          2
+#define SESSION_CONTROL_FOUND_SIP_RINGING         3
+#define SESSION_CONTROL_FOUND_SIP_ACK             4
+#define SESSION_CONTROL_FOUND_SIP_PROV_ACK        5  /* PRACK (provisional ACK) */
+#define SESSION_CONTROL_FOUND_SIP_OK              6
+#define SESSION_CONTROL_FOUND_SIP_BYE             7
+#define SESSION_CONTROL_FOUND_SAP_SDP             8
+
+#ifdef __cplusplus
+  extern "C" {
+#endif
+
+/* SIP message struct used in ProcessSessionControl() in sdp_app.cpp */
+
+typedef struct {
+
+  char szTextStr[20];  /* string pattern to search for in packet payload */
+  char szType[20];     /* SIP message description that will be displayed/logged by ProcessSessionControl() */
+  int  val;            /* SESSION_CONTROL_FOUND_xxx values (defined above) */
+
+} SIP_MESSAGES;
 
 /* functions in sdp_app.cpp */
 
-bool SDPAdd(const char* szInvite, unsigned int uFlags, int nInput, int thread_index);
-void SDPSetup(const char* szSDPFile, int thread_index);
-bool FindSIPInvite(uint8_t* pkt_in_buf, int nInput, int thread_index);
+int SDPSetup(const char* szSDPFile, int thread_index);
+int SDPParseInfo(std::string szSDP, unsigned int uFlags, int nInput, int thread_index);
+int ProcessSessionControl(uint8_t* pkt_in_buf, unsigned int uFlags, int nInput, int thread_index, char* szKeyword);
 
+#ifdef __cplusplus
+  }
 #endif
+
+#endif  /* _SDP_APP_H_ */

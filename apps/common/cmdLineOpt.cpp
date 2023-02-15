@@ -3,7 +3,7 @@
  
  Purpose: parse commanmd line options for SigSRF and DirectCore programs
   
- Copyright (C) Signalogic Inc. 2005-2021
+ Copyright (C) Signalogic Inc. 2005-2022
   
  Revision History
 
@@ -17,6 +17,7 @@
    Modified Jul 2018 JHB, changed mandatory requirements to handle x86 and coCPU separately
    Modified Dec 2019 JHB, fix bug in int value parsing, where suffix char code would strip off last a-f digit of hex values
    Modified Jan 2021 JHB, allow overloaded options, for example '-sN' integer for app type A, and '-sfilename' string for app type B. See comments below and in getUserInterface.cpp
+   Modified Dec 2022 JHB, start work on allowing input specs to include IP addr:port type of input, e.g. -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm. Inputs are strings, so we first look for xx.xx... and xx:xx patterns, if found convert those to IP addr:port, if not then assume it's a path/file input. Code for IPADR input type can be re-used
 */
 
 #include <stdint.h>
@@ -104,7 +105,7 @@ char       tmpstr[CMDOPT_MAX_INPUT_LEN];
 
    // Parse the command line string looking for the commands.
 
-      optionFound = getopt(argc, argv, optionString);  /* Linux API */
+      optionFound = getopt(argc, argv, optionString);  /* GNU lib API. Note that we need to start using getopt_long(), which allows input form --option  (where '--' indicates a "long" option), JHB Dec 2022 */
 
       while (-1 != optionFound && ':' != optionFound) {
 
@@ -185,7 +186,7 @@ char       tmpstr[CMDOPT_MAX_INPUT_LEN];
                      fNoOptionsFound = false;
                      break;
 
-                  case IPADDR:  /* accept entry in format -Daa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm, where a, b, c, d, and port are decimal numbers, and mm are hex digits */
+                  case IPADDR:  /* accept entry in format -Daa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm, where a, b, c, d, and port are decimal numbers, and mm are hex digits. Also allow -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm for input UDP ports, JHB Dec 2022 */
 
                      strcpy(tmpstr, optarg);
                      p = strstr(tmpstr, ":");
@@ -302,7 +303,7 @@ char       tmpstr[CMDOPT_MAX_INPUT_LEN];
             return false;
          }
 
-         optionFound = getopt(argc, argv, optionString);  /* Linux API, get next option */
+         optionFound = getopt(argc, argv, optionString);  /* get next option */
       }
 
       /* Disable mandatories for x86 - CJ Jan2017 */

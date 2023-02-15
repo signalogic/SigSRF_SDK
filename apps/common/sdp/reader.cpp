@@ -4,7 +4,7 @@
  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
- Copyright (c) 2021 Signalogic, Dallas, Texas
+ Copyright (c) 2021-2023 Signalogic, Dallas, Texas
 
  Revision History
   Modified Jan 2021 JHB, add a=rtpmap attribute support
@@ -12,6 +12,7 @@
   Modified Mar 2021 JHB, fix problem with possible trailing '/' after rtpmap clock rate, add reading of optional number of channels
   Modified Mar 2021 JHB, for "not numeric" error messages, include bad part of token. Always try to give users some idea of what's wrong
   Modified Mar 2021 JHB, in getToken() handle Win style CRLF line endings
+  Modified Jan 2023 JHB, don't allow search for "a=" token to get snagged on "application/xxx" line that shows up on SAP packets
 */
 
 #include <sdp/reader.h>
@@ -114,6 +115,7 @@ namespace sdp {
    }
 
    std::string Line::readString(char until) {
+
       Token t = getToken(until);
       if (t.size() == 0) {
          throw ParseException("Invalid Token. Token is empty.");
@@ -187,7 +189,7 @@ namespace sdp {
          throw ParseException("IP address token is empty");
          return SDP_ADDRTYPE_NONE;
       }
-    
+
       AddrType result = t.toAddrType();
       if (result == SDP_ADDRTYPE_NONE) {
          throw ParseException("Invalid IP address type");
@@ -282,7 +284,7 @@ namespace sdp {
 
       for (size_t i = index; i < value.size(); ++i) {
          index++;
-         if (value[i] == until || value[i] == 0x0d) {  /* look for line Win style CRLF line breaks, in which case C++ leaves in 0x0d. For some reason Diedrick didn't handle this, JHB Mar2021 */
+         if (value[i] == until || value[i] == 0x0d || value[i] == 0x0a) {  /* look for Win style CRLF line breaks, in which case C++ leaves in 0x0d. For some reason Diedrick didn't handle this, JHB Mar2021 */
             break;
          }
          result.push_back(value[i]);
@@ -303,11 +305,9 @@ namespace sdp {
       return value.at(dx);
    }
 
-   int Reader::parse(std::string source, SDP* result) {
+   int Reader::parse(std::string source, SDP* result, unsigned int uFlags) {
 
-      if (!source.size()) {
-         return -1;  
-      }
+      if (!source.size()) return -1;  
 
       std::vector<std::string> lines;    
       if (tokenize(source, '\n', lines) < 0) {
@@ -319,14 +319,17 @@ namespace sdp {
       for (size_t i = 0; i < lines.size(); ++i) {
 
          Line line(lines[i]);
+
          Node* node = parseLine(line);
 
          if (!node) {
             //printf("Error: cannot parse line: %ld\n", i);
-            continue;  /* this just skips empty lines, which are not a problem. Diedrick shoulda said so when he commented out the printf(), JHB Feb2021 */
+            continue;  /* this just skips empty lines, which are not a problem. Diedrick should of said so when he commented out the printf(), JHB Feb2021 */
          }
 
-         if (node->type == SDP_MEDIA) {
+      /* m= (media), o= (origin) are parent (top-level) items. a= (attribute) are children, assigned to parent media nodes, JHB Jan 2023 */
+
+         if (node->type == SDP_MEDIA) {// || node->type == SDP_ORIGIN) {
             result->addNode(node);
             parent = node;
          }
@@ -344,14 +347,14 @@ namespace sdp {
 
    Node* Reader::parseLine(Line& l) {
 
+ //printf(" parsing line %s \n", l.value.c_str());
+
    /* ignore comment section of line, JHB Feb2021 */
 
       char* p = strchr((char*)l.value.c_str(), '#');  /* look for comment symbol */
       if (p) *p = 0;
 
-// printf(" parsing line %s \n", tmpstr);
-
-      if (strlen((char*)l.value.c_str())) switch (l[0]) {  /* don't process empty line, for example if whole line was a comment */
+      if (strlen(l.value.c_str())) switch (l[0]) {  /* don't process empty lines, for example original blank lines or ones that became blank because whole line was a comment, JHB Feb 2021*/
 
          case 'v': { return parseVersion(l);             }
          case 'o': { return parseOrigin(l);              }
@@ -363,7 +366,7 @@ namespace sdp {
          case 'c': { return parseConnectionData(l);      }
          case 't': { return parseTiming(l);              }
          case 'm': { return parseMedia(l);               }
-         case 'a': { return parseAttribute(l);           }
+         case 'a': { if (!strstr(l.value.c_str(), "application")) return parseAttribute(l); }  /* ignore "application/xxx" line in SAP protocol packets, JHB Jan 2023 */
          case 'b': { return parseBandwidth(l);           }
 
          /* unhandled line */
@@ -404,8 +407,10 @@ namespace sdp {
          return NULL;
       }
 
+// fprintf(stderr, "+++inside reader adding origin %s \n", line.value.c_str());
+
       Origin* node = new Origin();
-    
+  
       try {
          node->username         = line.readString();     /* e.g. "roxlu", "-" */
          node->sess_id          = line.readString();     /* e.g. "621762799816690644" */
@@ -419,6 +424,8 @@ namespace sdp {
          delete node;
          node = NULL;
       }
+
+//fprintf(stderr, "+++inside reader nodes size = %d \n", nodes.size());
 
       return node;
    }
@@ -586,7 +593,7 @@ namespace sdp {
       Media* node = new Media();
 
       try {
-         node->media = line.readMediaType();
+         node->media_type = line.readMediaType();
          node->port = line.readInt();
          node->proto = line.readMediaProto();
          node->fmt = line.readInt();

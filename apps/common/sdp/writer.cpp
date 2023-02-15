@@ -95,7 +95,7 @@ namespace sdp {
     std::stringstream ss;
 
     ss << "m="
-       << sdp::media_type_to_string(m->media) << " "
+       << sdp::media_type_to_string(m->media_type) << " "
        << m->port << " "
        << sdp::media_proto_to_string(m->proto) << " "
        << m->fmt

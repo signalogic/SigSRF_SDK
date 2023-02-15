@@ -276,10 +276,7 @@ extern "C" {
 
   int DSGetPayloadHeaderToC(unsigned int codec_type, unsigned int pyld_len);
 
-/*
-   #define DSGETPAYLOADSIZE // define to allow use of deprecated DSGetPayloadSize()
-*/
-
+/* #define DSGETPAYLOADSIZE // define to allow use of deprecated DSGetPayloadSize() */
 #ifdef DSGETPAYLOADSIZE
 
 /* DSGetPayloadSize() returns payload size, given a codec type and bitrate code. Notes:

@@ -1,14 +1,15 @@
 /* hello_codec.h
 
-   Copyright (C) Signalogic 2022-2023
+ Copyright (C) Signalogic 2022-2023
 
-   Revision History
-     Created Aug 2022
-     Modified Dec 2022, misc items in the way of understanding how to use codecs moved here
+ Revision History
+   Created Aug 2022
+   Modified Dec 2022, misc items not relevant to understanding how to use codecs moved here
+   Modified Jan 2023 JHB, new naming for profile_setup() and profile_results()
 */
 
-#ifndef _HELLO_CODEC_H
-#define _HELLO_CODEC_H
+#ifndef _HELLO_CODEC_H_
+#define _HELLO_CODEC_H_
 
 /* definitions */
 
@@ -28,12 +29,14 @@ int read_codec_config_file(codec_test_params_t* codec_test_params, int* input_sa
 bool set_codec_params(codec_test_params_t* codec_test_params, CODEC_PARAMS* CodecParams, float* codec_frame_duration, int* codec_sampleRate);
 int set_frame_sizes(codec_test_params_t* codec_test_params, float codec_frame_duration, int input_sampleRate, int output_sampleRate, int* input_framesize, int* coded_framesize, int* output_framesize, int* inbuf_size, int*outbuf_size);
 
+/* helper functions */
+
 void generate_test_waveform(uint8_t* buffer, int numFrames, int input_framesize, int Fs, int Fc, int Amp);
 int write_wav_file(uint8_t* buffer, int input_sampleRate, int numChan, int len);
 int cmdline(int argc, char** argv);
 void print_info();
-void prolog();
-void epilog();
+void profile_setup();
+void profile_results();
 
 /* vars */
 
@@ -75,4 +78,4 @@ float codec_frame_duration = 0.0;  /* codec frame duration, in msec. Note this i
 
 int input_framesize = 0, coded_framesize = 0, output_framesize = 0, inbuf_size = 0, outbuf_size = 0, __attribute__((unused)) len; /* note: in bytes, not samples */
 
-#endif
+#endif  /* _HELLO_CODEC_H_ */

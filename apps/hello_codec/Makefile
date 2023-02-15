@@ -21,6 +21,7 @@
 #  Created Aug 2022 JHB
 #  Modified Sep 2022 JHB, modify USE_4p6_CODEC_LIBS var for Debian
 #  Modified Oct 2022 JHB, add codec_libs_version=N.nn cmd line option to force build with specific codec libs. For EVS_INSTALLED var, change logic to use * in wildcard() to look for different lib versions. Add logic to check for available codec libs and handle case where a selected version is not available
+#  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc version and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below)
 
 ifeq ($(no_codecs),1)
   no_evs = 1
@@ -36,6 +37,7 @@ endif
 INSTALLPATH=../../../../..
 
 # auto-discover which codecs are installed. no_xxx indicates an override to exclude xxx from the build
+# NOTE - for user apps, anything referring to codecs not being used can be removed. See also the Build Libs Table comment below
 
 ifeq ($(no_evs),1)
   EVS_INSTALLED = n
@@ -188,15 +190,17 @@ ifneq ($(USE_4p6_CODEC_LIBS),true)  # gcc 11.3 libs is the default
   USE_11p3_CODEC_LIBS := true
 endif
 
-# check cmd line overrides for which codec libs to link
+## check cmd line overrides for which codec libs to link
 ifeq ($(codec_libs_version),4.6)
   USE_4p6_CODEC_LIBS := true
   USE_11p3_CODEC_LIBS :=
-endif
-
-ifeq ($(codec_libs_version),11.3)
-  USE_11p3_CODEC_LIBS := true
+else ifeq ($(codec_libs_version),9.4)
   USE_4p6_CODEC_LIBS :=
+  USE_9p4_CODEC_LIBS := true
+  USE_11p3_CODEC_LIBS :=
+else ifeq ($(codec_libs_version),11.3)
+  USE_4p6_CODEC_LIBS :=
+  USE_11p3_CODEC_LIBS := true
 endif
 
 ifeq ($(EVS_INSTALLED),y)
@@ -206,6 +210,10 @@ ifeq ($(EVS_INSTALLED),y)
   EVSPATH:=/usr/lib/libevscom_sig.x86_gcc4.6.so
   ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
     4p6_EVS_LIBS_FOUND := true
+  endif
+  EVSPATH:=/usr/lib/libevscom_sig.x86_gcc9.4.so
+  ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
+    9p4_EVS_LIBS_FOUND := true
   endif
   EVSPATH:=/usr/lib/libevscom_sig.x86_gcc11.3.so
   ifeq ($(wildcard $(EVSPATH)),$(EVSPATH))
@@ -221,9 +229,14 @@ ifeq ($(EVS_INSTALLED),y)
       endif
       USE_4p6_CODEC_LIBS :=
     endif
-  endif
-
-  ifneq ($(USE_4p6_CODEC_LIBS),true)
+  else ifeq ($(USE_9p4_CODEC_LIBS),true)
+    ifneq ($(9p4_EVS_LIBS_FOUND),true)
+      ifeq (,$(findstring clean,$(MAKECMDGOALS)))
+        $(info gcc 9.4 EVS codec libs not found)
+      endif
+      USE_9p4_CODEC_LIBS :=
+    endif
+  else
     ifeq ($(11p3_EVS_LIBS_FOUND),true)
       USE_11p3_CODEC_LIBS := true
     else
@@ -235,20 +248,39 @@ ifeq ($(EVS_INSTALLED),y)
   endif
 
   ifeq ($(USE_4p6_CODEC_LIBS),true)
+
     ifeq ($(codec_libs_version),4.6)
       $(info codec_libs_version=4.6 on cmd line, building with gcc 4.6 EVS codec libs)  # print build info if cmd line option was given
     endif
+
     CODEC_LIBS += -levsenc_sig.x86_gcc4.6
     CODEC_LIBS += -levsdec_sig.x86_gcc4.6
     CODEC_LIBS += -levscom_sig.x86_gcc4.6
+
   else ifeq ($(USE_11p3_CODEC_LIBS),true)
-    ifeq ($(codec_libs_version),11.3)
+
+    GCC_VERSION := $(shell gcc -dumpfullversion | awk -F. '{print $$1}')
+    $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
+
+# note - currently gcc v5 through 10 are using v9.4 libs and v11 and higher are using v11.3 libs. This is approximate; more gcc specific lib versions may be needed. While all codec libs are typically built with --ffast-math and -O3, vll.3 uses vectorized math functions and produces substantially faster code. If you hear glitches or pops in decoded output there may be a link mismatch between 11.3 libs and your application gcc version. In that case you can  (i) modify the Makefile so CODEC_LIBS includes xxx_sig.x86_gcc4.6 (old and slow but never fails to link) (ii) force an available lib version to be used (add codec_libs_version=N.n after Make all, where N.n can be 4.6, 9.4, or 11.3) or (iii) contact Signalogic for a specific lib version
+
+    ifeq ($(codec_libs_version),11.3)  # command line forces v11.3
       $(info codec_libs_version=11.3 on cmd line, building with gcc 11.3 EVS codec libs)  # print build info if cmd line option was given
+
+      CODEC_LIBS += -levsenc_sig.x86_gcc11.3
+      CODEC_LIBS += -levsdec_sig.x86_gcc11.3
+      CODEC_LIBS += -levscom_sig.x86_gcc11.3
+
+    else ifeq ($(shell expr $(GCC_VERSION) \< 11), 1)  # v9.4 is known to be incompatible with v11.3
+      CODEC_LIBS += -levsenc_sig.x86_gcc9.4
+      CODEC_LIBS += -levsdec_sig.x86_gcc9.4
+      CODEC_LIBS += -levscom_sig.x86_gcc9.4
+    else
+      CODEC_LIBS += -levsenc_sig.x86_gcc11.3
+      CODEC_LIBS += -levsdec_sig.x86_gcc11.3
+      CODEC_LIBS += -levscom_sig.x86_gcc11.3
     endif
-    CODEC_LIBS += -levsenc_sig.x86_gcc11.3
-    CODEC_LIBS += -levsdec_sig.x86_gcc11.3
-    CODEC_LIBS += -levscom_sig.x86_gcc11.3
-  else
+  else  # currently this won't work as the install .rar and Docker containers do not have generic libs
     ifeq (,$(findstring clean,$(MAKECMDGOALS)))
       $(info building with generic EVS codec libs)  # print build info if generic fallback
     endif
@@ -285,7 +317,7 @@ ifeq ($(AMRWBPLUS_INSTALLED),y)
   CODEC_LIBS += -lamrwbplusdec_sig.x86
 endif
 
-# build libs
+# Build Libs Table
 #
 #  lib      Description                                     R/O (Required/Optional)
 #  ---      -----------                                     -----------------------
@@ -298,7 +330,7 @@ endif
 #  cimlib      command line handling                        O
 #  stublib     defines null APIs for codecs not installed   O
 
-SIG_LIBS = -lvoplib $(CODEC_LIBS) -ldiaglib -lhwlib -lcimlib -lstublib
+SIG_LIBS = -lvoplib $(CODEC_LIBS) -ldiaglib -lhwlib -lcimlib
 
 AR_FLAGS += -flto -Xlinker -Map=hello_codec.map
 
@@ -322,9 +354,9 @@ $(c_mediatest_objects): %.o: $(INSTALLPATH)/apps/mediaTest/%.c
 $(c_objects): %.o: %.c
 	$(CC) $(CC_FLAGS) -c $< -o $@ 
 
-# link object files, essential libs, and cimlib which provides cmd line handling
+# link object files, essential Sig libs and Linux libs (e.g. thread and math libs), and then stublib which fills in things that might typically be missing but not used (like uninstalled codecs, missing vector math functions, etc)
 link:
-	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(c_common_objects) $(c_mediatest_objects) $(c_objects) $(LINKER_INCLUDES) -o ./hello_codec -lstdc++ $(SIG_LIBS) -ldl -lpthread -lm
+	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(c_common_objects) $(c_mediatest_objects) $(c_objects) $(LINKER_INCLUDES) -o ./hello_codec -lstdc++ $(SIG_LIBS) -ldl -lpthread -lm -lstublib
 
 .PHONY: clean all 
 clean:

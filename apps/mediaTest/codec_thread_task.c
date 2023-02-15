@@ -5,7 +5,7 @@
  
    Functions for encoding or decoding pre-configured files as a separate thread
  
- Copyright (C) Signalogic Inc. 2017-2022
+ Copyright (C) Signalogic Inc. 2017-2023
  
  Revision History
  
@@ -13,6 +13,7 @@
   Modified Feb 2022 JHB, modify calling format to DSCodecDecode() and DSCodecEncode(), see comments in voplib.h
   Modified Mar 2022 JHB, add some missing initializer brackets that cause warnings with gcc compiler
   Modified Oct 2022 JHB, change DSGetCodecRawFramesize() to DSGetCodecInfo()
+  Modified Jan 2023 JHB, moved _fread() wrapper to mediaTest.h - make available to all apps
 */
 
 #include <stdio.h>
@@ -27,18 +28,6 @@ extern int encoded_frame_cnt[MAX_CODEC_INSTANCES];
 extern int decoded_frame_cnt[MAX_CODEC_INSTANCES];
 
 extern char thread_status[2*MAX_CODEC_INSTANCES];
-
-/* wrapper to avoid this:
-
-    /usr/include/x86_64-linux-gnu/bits/stdio2.h:285:71: warning: call to ¡®__fread_chk_warn¡¯ declared with attribute warning: fread called with bigger size * nmemb than length of destination buffer [enabled by default] return __fread_chk_warn (__ptr, __bos0 (__ptr), __size, __n, __stream);
-
-  when -flto linker option is enabled
-*/
-
-static size_t __attribute__((optimize("O1"))) _fread(void *ptr, size_t size, size_t count, FILE *stream) {
-
-   return fread(ptr, size, count, stream);
-}
 
 void *encode_thread_task(void *arg)
 {

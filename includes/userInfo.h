@@ -4,7 +4,7 @@
  *
  * Project: DirectCore, SigSRF
  *
- * Copyright Signalogic Inc. 1994-2021
+ * Copyright Signalogic Inc. 1994-2022
  * 
  * 2     10/10/05 12:32p
  * 8 DSP support.
@@ -23,9 +23,10 @@
    Modified Feb 2019 JHB, add #define for nReuseInputs, overloaded on fftOrder.  This is to support input reuse in mediaMin, for high capacity / load testing
    Modified Jul 2019 JHB, add #defines for nSegmentation, overloaded on inputType, and for nAmplitude, overloaded on baseAddr.  These are to support silence detection, strip, and chunk rewrite functionality in mediaTest (e.g. for Kaldi group users)
    Modified Dec 2019 JHB, add #define for nJitterBufferParams, for mediaMin app usage
-   Modified Jan 2020 JHB, add #define for nRepeat, for mediaMin app usage
-   Modified Jan 2021 JHB, add #define for szSDPFile for mediaMin app SDP file input
+   Modified Jan 2020 JHB, add #define for nRepeat, for mediaMin app cmd line usage
+   Modified Jan 2021 JHB, add #define for szSDPFile for mediaMin app SDP file cmd line input
    Modified Dec 2021 JHB, make debugMode 64-bit int
+   Modified Dec 2022 JHB, add #define for szStreamGroupOutputPath for mediaMin app stream group output path cmd line input
 */
 
 #ifndef _USERINFO_H_
@@ -139,7 +140,8 @@ typedef struct {
    #define   nAmplitude baseAddr                   /* mediaTest app usage of -A cmd line entry, JHB Jul2019 */
    #define   nJitterBufferOptions scryptParamp     /* mediaMin app usage of -j cmd line entry, JHB Dec2019 */ 
    #define   nRepeatTimes scryptdklen              /* mediaMin app usasge of -R cmd line entry, JHB Jan2020 */
-   #define   szSDPFile szScryptFile                /* mediaMin app usasge of -s cmd line entry for SDP file input. Note that mediaTest uses -s for audio file segmentation JHB Jan2021 */
+   #define   szSDPFile szScryptFile                /* mediaMin app usasge of -s cmd line entry for SDP file input. Note that mediaTest uses -s for audio file segmentation, JHB Jan2021 */
+   #define   szStreamGroupOutputPath scryptpasswd  /* mediaMin app usasge of -g cmd line entry for stream group output path, JHB Dec2022 */
    #define   nSamplingFrequency scryptParamp       /* mediaTest app Fs for gpx processing, JHB Mar2022 */
 
 } UserInterface;

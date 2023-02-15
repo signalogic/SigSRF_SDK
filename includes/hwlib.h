@@ -53,8 +53,6 @@
 #include "sig_mc_hw.h"  /* c66x driver header file */
 #include "filelib.h"  /* HFILE definition, JHB Feb2022 */
 
-extern const char HWLIB_VERSION[256];
-
 /* temporary in-file "strict" literals for Win16 BOOL and UINT */
 #if !defined(__WIN32__) && !defined(__MSVC__) && !defined(_LINUX_) && !defined(_WIN32_WINNT)
 
@@ -265,6 +263,8 @@ typedef ARRAY_APPPROPERTIES* PAPPPROPERTIES;  /* pointer to array of APPPROPERTI
 extern "C" {
 #endif
 
+extern const char HWLIB_VERSION[256];  /* DirectCore version string */
+
 /* library error handling and status */
 
 int LIBAPI DSGetHWLibErrorStatus(UINT);
@@ -328,8 +328,8 @@ DECLSPEC UINT      LIBAPI DSRunDevices               (HCARD, QWORD);
 #define DSGetCoreStatus DSGetProcessorStatus
 
 /* memory and variable transfers, IEEE conversion */
-DECLSPEC INT       DSLoadDataFile                    (HCARD, FILE**, const char*, uintptr_t, UINT, UINT, PMEDIAINFO, HFILE*);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_OPEN flag), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
-DECLSPEC INT       DSSaveDataFile                    (HCARD, FILE**, const char*, uintptr_t, UINT, UINT, PMEDIAINFO);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_CREATE or DS_OPEN flags), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
+DECLSPEC INT       DSLoadDataFile                    (HCARD, FILE**, const char*, uintptr_t, UINT, UINT uFlags, PMEDIAINFO, HFILE*);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_OPEN flag), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
+DECLSPEC INT       DSSaveDataFile                    (HCARD, FILE**, const char*, uintptr_t, UINT, UINT uFlags, PMEDIAINFO);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_CREATE or DS_OPEN flags), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
 
 DECLSPEC UINT      LIBAPI DSPutMem                   (HCARD, UINT, DWORD, UINT, void far*, DWORD);
 DECLSPEC UINT      LIBAPI DSGetMem                   (HCARD, UINT, DWORD, UINT, void far*, DWORD);
@@ -683,7 +683,7 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
 /* memory type attribute flags usable with card handles. Notes:
 
   -currently supported only by DSSaveDataFile() and DSLoadDataFile() APIs
-  -example: DSSaveDataFile(hCard | DS_GM_HOST_MEM, filename, bufferAddr, numBytes, pMediaInfo);  // hCard can be NULL, if so other DS_GM_xx types may be combined
+  -example: DSSaveDataFile(hCard | DS_GM_HOST_MEM, filename, bufferAddr, numBytes, uFlags, pMediaInfo);  // hCard can be NULL, if so other DS_GM_xx types may be combined
 
   JHB Jan2017
 */

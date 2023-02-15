@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaTest.c
 
- Copyright (C) Signalogic Inc. 2015-2022
+ Copyright (C) Signalogic Inc. 2015-2023
  
  Description:
  
@@ -1176,7 +1176,7 @@ char              libstr[256];
 
 /* code starts, display banner messages */
 
-  	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms, Rev 2.9.5, Copyright (C) Signalogic 2015-2022\n");
+  	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms, Rev 2.9.6, Copyright (C) Signalogic 2015-2023\n");
 
    sprintf(libstr, "  Libraries in use: DirectCore v%s", HWLIB_VERSION);
    #ifndef _NO_PKTLIB_  /* JHB Aug 2022 */

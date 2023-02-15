@@ -21,6 +21,8 @@
 #include <sdp/sdp.h>
 #include <sdp/types.h>
 
+#define SDP_READER_PARSE_FORMAT_ONLY 1
+
 namespace sdp { 
 
   /* parse exception */
@@ -86,7 +88,7 @@ namespace sdp {
   /* parses an SDP */
   class Reader {
   public:
-    int parse(std::string source, SDP* result);
+    int parse(std::string source, SDP* result, unsigned int uFlags);
 
   private:
     Node*               parseLine(Line& line);    

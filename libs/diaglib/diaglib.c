@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/lib/diaglib/diaglib.c
 
- Copyright Signalogic Inc. 2017-2021
+ Copyright Signalogic Inc. 2017-2023
 
  License
 
@@ -52,6 +52,7 @@
   Modified Apr 2020 JHB, fix bug in timestamp mismatch output where output sequence number didn't include wrap count
   Modified May 2020 JHB, implement STREAM_STATS struct changes to rename numRepair to numSIDRepair and add numMediaRepair
   Modified Mar 2021 JHB, add DIAGLIB_STANDALONE #define option to build without DirectCore header file
+  Modified Jan 2023 JHB, add DSConfigLogging() to allow apps to abort DSPktStatsWriteLogFile() and other potentially time-consuming APIs if needed
 */
 
 /* Linux includes */
@@ -59,7 +60,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Sig includes */
+/* SigSRF includes */
 
 #include "diaglib.h"
 #include "pktlib.h"
@@ -70,11 +71,20 @@
 
 extern DEBUG_CONFIG lib_dbg_cfg;  /* in lib_logging.c */
 
+extern sem_t diaglib_sem;
+extern int diaglib_sem_init;
+extern int update_log_config(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags, bool fUseSem);
+
+/* private includes */
+
+#include "diaglib_priv.h"
+
+extern LOGINFO LogInfo[];
 
 #define DS_PKT_PYLD_CONTENT_DTMF_END  1         /* DTMF Event End, determined in DSPktStatsAddEntries and then passed thru to other functions, JHB Jun 2019 */
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.5.0";
+const char DIAGLIB_VERSION[256] = "1.6.2";
 
 int DSPktStatsAddEntries(PKT_STATS* pkt_stats, int num_pkts, uint8_t* pkt_buffer, unsigned int packet_length[], unsigned int packet_info[], unsigned int uFlags) {
 
@@ -107,6 +117,8 @@ unsigned int offset = 0;
    return j;  /* return number of entries added */
 }
 
+/* #define SIMULATE_SLOW_TIME 1  // turn this on to simulate time-consuming packet logging, for example if app debug is needed when aborting during packet logging, JHB Jan 2023 */
+
 /* group data by unique SSRCs */
 
 int DSFindSSRCGroups(PKT_STATS* pkts, int num_pkts, uint32_t ssrcs[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], unsigned int uFlags) {
@@ -123,6 +135,8 @@ bool       fDebug = lib_dbg_cfg.uLogLevel > 8;  /* lib_dbg_cfg is in lib_logging
 #define SEARCH_WINDOW        30
 #define MAX_MISSING_SEQ_GAP  20000  /* max missing seq number gap we can tolerate */
 
+   int nThreadIndex = GetThreadIndex(true);
+
 group_ssrcs:
 
 /* SSRC discovery stage */
@@ -130,6 +144,11 @@ group_ssrcs:
    num_ssrcs = 0;
 
    for (j=0; j<num_pkts; j++) {
+
+      #ifdef SIMULATE_SLOW_TIME
+      usleep(SIMULATE_SLOW_TIME);
+      #endif
+      if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
    /* first check if we've already seen this SSRC */
 
@@ -256,6 +275,11 @@ find_transition:
 
          for (j=sorted_point+1; j<num_pkts; j++) {
 
+            #ifdef SIMULATE_SLOW_TIME
+            usleep(SIMULATE_SLOW_TIME);
+            #endif
+            if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+
             if (pkts[j].rtp_SSRC != ssrcs[k]) {
 
                if (!i) {
@@ -288,6 +312,8 @@ find_transition:
       goto group_ssrcs;  /* re-do packet indexing after collation */
    }
 
+exit:
+
    return num_ssrcs;  /* return number of SSRC groups found */
 }
 
@@ -303,9 +329,16 @@ int           seq_wrap[MAX_SSRC_TRANSITIONS] = { 0 };
 uint32_t      max_consec_missing[MAX_SSRC_TRANSITIONS] = { 0 };
 char          szLastSeq[100];
 
+   int nThreadIndex = GetThreadIndex(true);
+
 /* first group data by unique SSRCs */
 
    num_ssrcs = DSFindSSRCGroups(pkts, num_pkts, ssrcs, first_pkt_idx, last_pkt_idx, first_rtp_seqnum, last_rtp_seqnum, uFlags);
+
+   #ifdef SIMULATE_SLOW_TIME
+   usleep(SIMULATE_SLOW_TIME);
+   #endif
+   if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
    #if 0  /* debug -- see if sort looks ok */
    fprintf(fp_log, "%s sorted by SSRC (no analysis), numpkts = %d\n", label, num_pkts);
@@ -355,6 +388,11 @@ char          szLastSeq[100];
       rtp_seqnum = first_rtp_seqnum[i];
 
       while (rtp_seqnum <= last_rtp_seqnum[i] && j <= last_pkt_idx[i]) {
+
+         #ifdef SIMULATE_SLOW_TIME
+         usleep(SIMULATE_SLOW_TIME);
+         #endif
+         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
          if (StreamStats[i].chnum[max(StreamStats[i].num_chnum - 1, 0)] != pkts[j].chnum) {  /* handle"dormant SSRCs" that are taken over by another channel, JHB Jan2020 */
 
@@ -495,6 +533,8 @@ char          szLastSeq[100];
       }
    }
 
+exit:
+
    return num_ssrcs;
 }
 
@@ -529,6 +569,7 @@ typedef struct {
 GROUPMAP* GroupMap = NULL;
 int nGroupIndex, stream_count, nNumGroups = 0;
 
+   int nThreadIndex = GetThreadIndex(true);
 
    if (num_ssrcs <= 0 || !fp_log) {
    
@@ -668,6 +709,11 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       #endif
 
       for (j=in_first_pkt_idx[i+in_ssrc_start]; j<=in_last_pkt_idx[i+in_ssrc_start]; j++) {
+
+         #ifdef SIMULATE_SLOW_TIME
+         usleep(SIMULATE_SLOW_TIME);
+         #endif
+         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
       /* look for seq numbers in input / buffered packets that don't appear in output / pulled packets, JHB Aug2017:
 
@@ -881,6 +927,8 @@ next_i:
 
    } while (fNext);
 
+exit:
+
    if (GroupMap) free(GroupMap);
 
    return 1;
@@ -944,6 +992,8 @@ unsigned long long t1, t2;
       ret_code = 0;
       goto cleanup;
    }
+
+   int nThreadIndex = GetThreadIndex(true);
 
    in_first_pkt_idx = calloc(MAX_SSRCS, sizeof(int));
    in_last_pkt_idx = calloc(MAX_SSRCS, sizeof(int));
@@ -1040,6 +1090,11 @@ unsigned long long t1, t2;
    /* log ingress packet info -- grouped by SSRC values, including ooo and missing seq numbers */
 
       in_ssrc_groups = DSPktStatsLogSeqnums(fp_log, uFlags, input_pkts, input_idx, "Ingress", in_ssrcs, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats);
+
+      #ifdef SIMULATE_SLOW_TIME
+      usleep(SIMULATE_SLOW_TIME);
+      #endif
+      if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
    }
 
 /* log jitter buffer stats */
@@ -1088,6 +1143,11 @@ unsigned long long t1, t2;
    /* log jitter buffer output packet info -- grouped by SSRC values, including ooo and missing seq numbers */
 
       out_ssrc_groups = DSPktStatsLogSeqnums(fp_log, uFlags, output_pkts, output_idx, "Jitter Buffer", out_ssrcs, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats);
+
+      #ifdef SIMULATE_SLOW_TIME
+      usleep(SIMULATE_SLOW_TIME);
+      #endif
+      if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
 
       #ifndef DIAGLIB_STANDALONE
       t2 = get_time(USE_CLOCK_GETTIME);
@@ -1182,18 +1242,33 @@ unsigned long long t1, t2;
 
          uFlags_as = uFlags & ~DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP & ~DS_PKTSTATS_ORGANIZE_BY_CHNUM;
          ret_val = analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
+
+         #ifdef SIMULATE_SLOW_TIME
+         usleep(SIMULATE_SLOW_TIME);
+         #endif
+         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
 
       if (ret_val > 0 && (uFlags & DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP)) {
 
          uFlags_as = uFlags & ~DS_PKTSTATS_ORGANIZE_BY_SSRC & ~DS_PKTSTATS_ORGANIZE_BY_CHNUM;
          analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
+
+         #ifdef SIMULATE_SLOW_TIME
+         usleep(SIMULATE_SLOW_TIME);
+         #endif
+         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
 
       if (ret_val > 0 && (uFlags & DS_PKTSTATS_ORGANIZE_BY_CHNUM)) {
 
          uFlags_as = uFlags & ~DS_PKTSTATS_ORGANIZE_BY_SSRC & ~DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP;
          analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
+
+         #ifdef SIMULATE_SLOW_TIME
+         usleep(SIMULATE_SLOW_TIME);
+         #endif
+         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
    }
 
@@ -1223,7 +1298,7 @@ unsigned long long t1, t2;
    ret_code = 1;
 
 cleanup:
-   
+
    if (fp_log) fclose(fp_log);
 
    if (in_first_pkt_idx) free(in_first_pkt_idx);
@@ -1245,4 +1320,61 @@ cleanup:
    if (OutputStreamStats) free(OutputStreamStats);
 
    return ret_code;
+}
+
+/* DSConfigLogging - set/get LogInfo[] items. We use the thread based indexes set by DSInitLogging() in lib_logging.c */
+
+unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, void* pLogInfo) {
+
+unsigned int ret_val = (unsigned int)-1;
+int i, nIndex, start, end;
+bool fUseSem = false;
+
+   (void)pLogInfo;
+
+      nIndex = GetThreadIndex(true);  /* get LogInfo[] index for the current thread */
+
+   if (uFlags & DS_CONFIG_LOGGING_ALL_THREADS) { start = 0; end = MAXTHREADS-1; }
+   else {
+
+      nIndex = GetThreadIndex(true);  /* get LogInfo[] index for the current thread */
+      if (nIndex < 0) return (unsigned int)-1;
+ 
+      start = nIndex; end = nIndex;
+   }
+
+   if (diaglib_sem_init) { fUseSem = true; sem_wait(&diaglib_sem); }
+
+   for (i=start; i<=end; i++) {
+
+      switch (action & DS_CONFIG_LOGGING_ACTION_MASK) {
+
+         case DS_CONFIG_LOGGING_SET_FLAG:
+            ret_val = LogInfo[i].uFlags;
+            LogInfo[i].uFlags |= uFlags;
+            break;
+
+         case DS_CONFIG_LOGGING_CLEAR_FLAG:
+            ret_val = LogInfo[i].uFlags;
+            LogInfo[i].uFlags &= ~uFlags;
+            break;
+
+         case DS_CONFIG_LOGGING_SET_UFLAGS:
+            ret_val = LogInfo[i].uFlags;
+            LogInfo[i].uFlags = uFlags;
+            break;
+
+         case DS_CONFIG_LOGGING_GET_UFLAGS:
+            ret_val = LogInfo[i].uFlags;
+            break;
+
+         case DS_CONFIG_LOGGING_SET_DEBUG_CONFIG:
+            ret_val = update_log_config((DEBUG_CONFIG*)pLogInfo, uFlags, false);  /* update event log configuration dynamically */
+            break;
+      }
+   }
+
+   if (fUseSem) sem_post(&diaglib_sem);
+
+   return ret_val;
 }

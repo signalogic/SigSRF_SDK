@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/apps/SigC641x_C667x/streamTest/streamlib.h
 
- Copyright (C) Signalogic Inc. 2014-2021
+ Copyright (C) Signalogic Inc. 2014-2023
 
  License
 
@@ -48,6 +48,7 @@
   Modified Jan 2021 JHB, reduced MAX_GROUP_BUFFER_SIZE from 64000 to 32000 bytes, see comments
   Modified Jan 2021 JHB, add MAX_GROUP_BUFFER_TIME_8KHZ definition, to make stream group buffer processing independent of output sampling rate. Units in msec
   Modified Mar 2021 JHB, change DSMergeStreamGroupContributors() API to DSProcessStreamGroupContributors()
+  Modified Jan 2023 JHB, add STREAM_GROUP_FLC_HOLDOFFS_ENABLE flag
 */
 
 #ifndef _STREAMLIB_H_
@@ -374,6 +375,8 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
 
   #define STREAM_GROUP_FLC_DISABLE                                   0x100000L  /* disable FLC applied to output merged audio that compensates (avoids gaps in output audio) due to ingress packet loss or slow arrival rate */
   #define STREAM_GROUP_RTP_TIMESTAMP_ONHOLD_ADVANCE_DISABLE          0x400000L  /* disable RTP timestamp advance.  Merged output RTP timestamp advance occurs when all contributors are on hold or call-waiting and then resume after some time */
+
+  #define STREAM_GROUP_FLC_HOLDOFFS_ENABLE                           0x200000L  /* enable FLC holdoffs, JHB Jan 2023 */
 
   /* debug / stats output flags */
 
