@@ -644,7 +644,7 @@ Building reference and user applications is straightforward; the mediaMin and me
 
 One area of Makefile complexity involves codecs, which need to be high performance but are sensitive to many factors, including underlying machine specs and gcc/g++ version. To achieve high performance, at compile-time codecs are built with --fast-math and -O3, and at link-time the Makefiles look at OS distribution and gcc version to decide which version of codec lib to link, with higher gcc versions linked when possible. The objective is to link as recent a gcc version as possible to take advantage of generated code optimized with vector math functions. Vector functions operate on arrays of floating-point data, for example 8x 32-bit single-precision floating-point or 4x double-precision. Here are some additional notes:
 
-* vector math functions result from --fast-math + -O3, which in gcc v9 and higher contribute to significantly faster codec performance\
+* vector math functions result from --fast-math + -O3, which in gcc v9 and higher contribute to significantly faster codec performance
 
 * normally vector math funtions link with the gnu mvec library (libmvec), which was introduced with glibc 2.22 in 2016. Currently mediaMin and mediaTest Makefiles link with libm, which is a gnu script that pulls in libmvec depending on glibc version and whether libmvec.so is present on the system (e.g. /usr/lib64 on CentOS 8, and /usr/lib/x86_64-linux-gnu on Ubuntu 20.04)
 
