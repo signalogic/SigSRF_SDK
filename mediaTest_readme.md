@@ -640,7 +640,15 @@ Below are some items to keep in mind when measuring audio quality of both indivi
 <a name="BuildingApplications"><a/>
 ## Building Applications
 
+Building reference and user applications is straightforward; the mediaMin and mediaTest Makefiles can be used as-is or as a starting point and modified as needed. These Makefiles are deliberately written with a minimum of cryptic Make syntax, in the style of basic, sequential shell scripts to the extent possible.
 
+One area of Makefile complexity involves codecs, which need to be high performance but are sensitive to many factors, including underlying machine specs and gcc/g++ version. To achieve codec performance, at compile-time codecs are built with --fast-math and -O3, and at link-time the SigSRF Makefiles look at OS distribution and gcc version to decide which version of codec lib to link, with higher gcc versions linked when possible. The objective is to link as recent a gcc version as possible to take advantage of generated code optimized with vector math functions. These functions operate on arrays of floating-point data, for example 8x 32-bit single-precision floating-point or 4x double-precision. Here are some additional notes:
+
+    -vector math functions result from --fast-math + -O3, which in gcc v9 and higher contribute to significantly faster codec performance\
+
+    -normally vector math funtions link with the gnu mvec library (libmvec), which was introduced with glibc 2.22 in 2016. Currently mediaMin and mediaTest Makefiles link with libm, which is a gnu script that pulls in libmvec depending on glibc version and whether libmvec.so is present on the system (e.g. /usr/lib64 on CentOS 8, and /usr/lib/x86_64-linux-gnu on Ubuntu 20.04)
+
+This approach enables per-system optimized performance, but adds build complexity as it seems that later versions of gcc (v9 and higher, at least as known so far) do not always maintain vector function name compatibility with earlier versions. For example, a v11.3 lib may not link with a v9.4 application. To address this problem we are continuing to add gcc version-specific codec lib versions (currently this includes v4.6, v9.4, and v11.3). Also in the event of a failed link the Makefiles employ a worst-case fallback that maps vector functions to non-vectorized versions. This is not a functionally correct solution; for example a codec decode might produce intermittent pops and glitches. However, this method at least produces run-time executables with intelligible results. If you encounter this t you can (i) modify the Makefile so the CODEC_LIBS variable includes the v4.6 version codec name (old and slow but never fails to link) (ii) force an available lib version to be used (enter codec_libs_version=N.n after Make all, where N.n can be 4.6, 9.4, or 11.3) or (iii) contact Signalogic for a specific lib version.
 	
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
