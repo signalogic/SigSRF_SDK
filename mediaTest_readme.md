@@ -100,7 +100,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity](#user-content-highcapacity)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Performance](#user-content-realtimeperformance)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality](#user-content-audioquality)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Building Applications](#user-content-buildingapplications)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Building High Performance Applications](#user-content-buildinghighperformanceapplications)<br/>
 	
 &nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
 
@@ -637,16 +637,12 @@ Below are some items to keep in mind when measuring audio quality of both indivi
 
     In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right in time relative to other streams (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
 
-<a name="BuildingApplications"><a/>
-## Building Applications
+<a name="BuildingHighPerformanceApplications"><a/>
+## Building High Performance Applications
 
 Building reference and user applications is straightforward; the mediaMin and mediaTest Makefiles can be used as-is or as a starting point and modified as needed. These Makefiles are deliberately written with a minimum of cryptic Make syntax, in the style of simple, sequential programs to the extent possible, with descriptive variable names and numerous comments.
 
-One area of Makefile complexity involves codecs, which need to be high performance but are sensitive to many factors, including underlying machine specs and gcc/g++ version. To achieve high performance, at compile-time codecs are built with --fast-math and -O3, and at link-time the Makefiles look at OS distribution and gcc version to decide which build version of codec lib to link, with higher build versions linked when possible. The objective is to link as high a build version as possible to take advantage of generated code optimized with vector math functions. Vector functions operate on arrays of floating-point data, for example 8x 32-bit single-precision floating-point or 4x double-precision. Here are some additional notes:
-
-* vector math functions result from --fast-math + -O3, which in gcc v9 and higher contribute to significantly faster codec performance
-
-* normally vector math funtions link with the gnu mvec library (libmvec), which was introduced with glibc 2.22 in 2016. Currently mediaMin and mediaTest Makefiles link with libm, which is a gnu script that pulls in libmvec depending on glibc version and whether libmvec.so is present on the system (e.g. /usr/lib64 on CentOS 8, and /usr/lib/x86_64-linux-gnu on Ubuntu 20.04)
+One area of Makefile complexity involves codecs, which need to be high performance but are sensitive to many factors, including underlying machine specs and gcc/g++ version. To achieve high performance, at compile-time codecs are built with --fast-math and -O3, and at link-time the Makefiles look at OS distribution and gcc version to decide which build version of codec libs to link, with higher build versions linked when possible. The objective is to link as high a build version as possible to take advantage of generated code optimized with [vectorized math functions](#user-content-vectorizedmathfunctions).
 
 This approach enables per-system optimized performance, but unfortunately later versions of gcc (approximately v9 and higher, at least as known so far) do not always maintain vector function name compatibility with earlier versions. For example, a v11.x codec lib may not link with a v9.x application. To address this complexity the Makefiles include a chunk of code that decides which codec lib build version to link (current options include v4.6, v9.4, and v11.3). Also in the event of a failed link the Makefiles employ a worst-case fallback that maps vector functions to non-vectorized versions. This fallback is not a functionally correct solution; for example a codec decode might produce intermittent pops and glitches. However, it does produce run-time executables with intelligible results. If you encounter this situation you can (i) modify the Makefile CODEC_LIBS variable to include v4.6 version codec names (old and slow but never fail to link and produce accurate results), (ii) force an available codec lib version to be used, or (iii) contact Signalogic for a specific codec lib version.
 
@@ -657,7 +653,18 @@ Make all codec_libs_version=N.n
 ```
 	
 where N.n can be 4.6, 9.4, or 11.3, or as needed for future codec lib versions.
-	
+
+<a name="VectorizedMathFunctions"><a/>
+### Vectorized Math Functions
+
+Vector functions operate on arrays of floating-point data, for example 8x 32-bit single-precision floating-point or 4x double-precision. Here are some additional notes about vectorized math functions:
+
+* vector math functions result from --fast-math -O3, which contribute to significantly faster codec performance
+
+* normally vector math funtions link with the gnu mvec library (libmvec), which was introduced with glibc 2.22 in 2016. mediaMin and mediaTest Makefiles link with libm, which is a gnu script that pulls in libmvec depending on glibc version and whether libmvec.so is present on the system (e.g. /usr/lib64 on CentOS 8, and /usr/lib/x86_64-linux-gnu on Ubuntu 20.04)
+
+* for notes on performance of codecs built with different gcc versions, see [High Capacity Codec Test](#user-content-highcapacitycodectest)
+
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
 
@@ -969,7 +976,7 @@ x86 mediaTest end
 
 In the above example, the test takes about 10.7 sec to encode/decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 58 channels of encode + decode to stay in real-time. Of course processing time varies depending on your system's core type and speed.
 
-Note that highest performance is obtained with later versions of gcc/g++ that utilize vector math functions (which require x86 with SSE and preferably with both SSE and AVX). In our tests, versions v9.4 and higher show significant performance improvements; the above examples were run with v11.3. See [Building Applications](#user-content-buildingapplications) for more detailed information.
+Note that highest performance is obtained with later versions of gcc/g++ that utilize vector math functions (which require x86 with SSE and preferably with both SSE and AVX). In our tests, versions v9.4 and higher show significant performance improvements; the above examples were run with v11.3. See [Building High Performance Applications](#user-content-buildinghighperformanceapplications) for more detailed information.
 
 To help analyze audio quality, below is a table showing what's in each channel of NChan21.wav, along with sox commands for playing individual channels.
 
