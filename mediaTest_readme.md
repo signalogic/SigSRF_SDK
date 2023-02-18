@@ -659,7 +659,7 @@ where N.n can be 4.6, 9.4, or 11.3, or as needed for future codec lib versions.
 
 Vector functions operate on arrays of floating-point data, for example 8x 32-bit single-precision floating-point or 4x double-precision. Here are some additional notes about vectorized math functions:
 
-* vector math functions result from --fast-math -O3, which contribute to significantly faster codec performance
+* vector math functions contribute to significantly faster codec performance. They appear in generated code built with --fast-math -O3 compiler options
 
 * normally vector math funtions link with the gnu mvec library (libmvec), which was introduced with glibc 2.22 in 2016. mediaMin and mediaTest Makefiles link with libm, which is a gnu script that pulls in libmvec depending on glibc version and whether libmvec.so is present on the system (e.g. /usr/lib64 on CentOS 8, and /usr/lib/x86_64-linux-gnu on Ubuntu 20.04)
 
