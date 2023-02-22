@@ -648,9 +648,10 @@ This approach enables per-system optimized performance, but unfortunately later 
 
 | gcc | ldd |
 |-----|-----|
-| 11.3  | 2.35, 2.36 |
-| 11.2  | 2.31, 2.33 |
-| 9.4   | 2.31 |
+| 11.3 | 2.35, 2.36 |
+| 11.2 | 2.31, 2.33 |
+| 9.4 | 2.31 |
+| 8.3.1-5 | 2.28 |
 | 4.6.4 | 2.15 |
 
 If after building applications you encounter a failed link or unresolved run-time symbols you can (i) modify the Makefile CODEC_LIBS variable to include v4.6 version codec names (old and slow but never fail to link and produce accurate results), (ii) force an available codec lib version to be used, or (iii) raise an issue for a Makefile fix and/or contact Signalogic for a specific codec lib version.
