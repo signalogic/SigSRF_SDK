@@ -644,7 +644,7 @@ Building reference and user applications is straightforward; the mediaMin and me
 
 One area of Makefile complexity involves codecs, which need to be high performance but are sensitive to many factors, including underlying machine specs and gcc/g++ version. To achieve high performance, at compile-time codecs are built with --fast-math and -O3, and at link-time the Makefiles look at OS distribution and gcc version to decide which build version of codec libs to link, with higher build versions linked when possible. The objective is to link as high a build version as possible to take advantage of generated code optimized with [vectorized math functions](#user-content-vectorizedmathfunctions).
 
-This approach enables per-system optimized performance, but unfortunately later versions of gcc (approximately v9 and higher, at least as known so far) do not always maintain vector function name compatibility with earlier versions. For example, a v11.x codec lib may not link with a v9.x application. To address this complexity the Makefiles include a chunk of code that decides which codec lib build version to link (current options include v4.6, v9.4, and v11.3). The Makefiles are tested on continuously with the following combinations:
+This approach enables per-system optimized performance, but unfortunately later versions of gcc (approximately v9 and higher, at least as known so far) do not always maintain vector function name compatibility with earlier versions. For example, a v11.x codec lib may not link with a v9.x application. To address this complexity the Makefiles include a chunk of code that decides which codec lib build version to link (current options include v4.6, v9.4, and v11.3). The Makefiles are tested continuously with the following combinations:
 
 | gcc | ldd (normally same as glibc version) |
 |-----|-----|
@@ -654,7 +654,7 @@ This approach enables per-system optimized performance, but unfortunately later 
 | 8.3.1-5 | 2.28 |
 | 4.6.4 | 2.15 |
 
-If after building applications you encounter a failed link or unresolved run-time symbols you can (i) modify the Makefile CODEC_LIBS variable to include v4.6 version codec names (old and slow but never fail to link and produce accurate results), (ii) force an available codec lib version to be used, or (iii) raise an issue for a Makefile fix and/or contact Signalogic for a specific codec lib version.
+If after building applications you encounter a failed link or unresolved run-time symbols you can (i) modify the Makefile CODEC_LIBS variable to include v4.6 version codec names (old and slow but never fail to link and produce accurate results), (ii) force an available codec lib version to be used, (iii) raise an issue for a Makefile fix, or (iv) contact Signalogic for a specific codec lib version.
 
 To force a specific codec lib version to link, when building the mediaMin or mediaTest reference application (or user-defined application, assuming it incorporates reference Makefile code), you can enter:
 	
