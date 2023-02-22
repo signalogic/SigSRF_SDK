@@ -647,7 +647,7 @@ One area of Makefile complexity involves codecs, which need to be high performan
 This approach enables per-system optimized performance, but unfortunately later versions of gcc (approximately v9 and higher, at least as known so far) do not always maintain vector function name compatibility with earlier versions. For example, a v11.x codec lib may not link with a v9.x application. To address this complexity the Makefiles include a chunk of code that decides which codec lib build version to link (current options include v4.6, v9.4, and v11.3). The Makefiles are tested on continuously with the following combinations:
 
 | gcc | ldd |
-|-----------|
+|-----|-----|
 | 11.3  | 2.35, 2.36 |
 | 11.2  | 2.31, 2.33 |
 | 9.4   | 2.31 |
