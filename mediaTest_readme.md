@@ -653,9 +653,9 @@ This approach enables per-system optimized performance, but unfortunately later 
 | 9.4   | 2.31 |
 | 4.6.4 | 2.15 |
 
-If after building applications you encounter a failed link or unresolved run-time symbols you can (i) modify the Makefile CODEC_LIBS variable to include v4.6 version codec names (old and slow but never fail to link and produce accurate results), (ii) force an available codec lib version to be used, or (iii) raise an issue a Makefile fix and/or contact Signalogic for a specific codec lib version.
+If after building applications you encounter a failed link or unresolved run-time symbols you can (i) modify the Makefile CODEC_LIBS variable to include v4.6 version codec names (old and slow but never fail to link and produce accurate results), (ii) force an available codec lib version to be used, or (iii) raise an issue for a Makefile fix and/or contact Signalogic for a specific codec lib version.
 
-To force a specific codec lib version to link, when building the mediaMin or mediaTest reference applications (or user-defined applications, assuming they incorporate reference Makefile code), you can enter:
+To force a specific codec lib version to link, when building the mediaMin or mediaTest reference application (or user-defined application, assuming it incorporates reference Makefile code), you can enter:
 	
 ```
 Make all codec_libs_version=N.n
