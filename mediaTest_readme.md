@@ -648,7 +648,7 @@ This approach enables per-system optimized performance, but unfortunately later 
 
 | gcc | ldd |
 |-----|-----|
-| 11.3 | 2.35, 2.36 |
+| 11.3 | 2.33, 2.35, 2.36 |
 | 11.2 | 2.31, 2.33 |
 | 9.4 | 2.31 |
 | 8.3.1-5 | 2.28 |
