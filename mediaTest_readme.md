@@ -667,7 +667,7 @@ where N.n can be 4.6, 9.4, or 11.3, or as needed for future codec lib versions.
 <a name="VectorizedMathFunctions"><a/>
 ### Vectorized Math Functions
 
-Vector functions operate on arrays of floating-point data, for example 8x 32-bit single-precision floating-point or 4x double-precision. Here are some additional notes about vectorized math functions:
+Vector functions operate on arrays of floating-point data using SIMD instructions included in SSEn and AVXn CPU extensions. SIMD examples include 8x 32-bit single-precision floating-point operations calculated in a single CPU clock cycle, or 4x double-precision. Here are some additional notes about vectorized math functions:
 
 * vector math functions contribute to significantly faster codec performance. They appear in generated code built with --fast-math -O3 compiler options
 
