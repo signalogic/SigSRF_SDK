@@ -21,7 +21,7 @@
 #  Created Aug 2022 JHB
 #  Modified Sep 2022 JHB, modify USE_4p6_CODEC_LIBS var for Debian
 #  Modified Oct 2022 JHB, add codec_libs_version=N.nn cmd line option to force build with specific codec libs. For EVS_INSTALLED var, change logic to use * in wildcard() to look for different lib versions. Add logic to check for available codec libs and handle case where a selected version is not available
-#  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc version and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below)
+#  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc version and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below). Include GLIBC v2.35 libmvec lib files as needed
 
 ifeq ($(no_codecs),1)
   no_evs = 1
@@ -162,7 +162,8 @@ ifeq ($(AMRWBPLUS_INSTALLED),y)
   CC_FLAGS += -D_AMRWBPLUS_INSTALLED_
 endif
 
-LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L/usr/lib
+# linker search paths
+LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L$(INSTALLPATH)/SIG_LIBS/glibc_2.35 -L/usr/lib
 
 # determine linking for codec libs built with --ffast-math
 #
@@ -224,7 +225,7 @@ ifeq ($(EVS_INSTALLED),y)
 
   ifeq ($(USE_4p6_CODEC_LIBS),true)
     ifneq ($(4p6_EVS_LIBS_FOUND),true)
-      ifeq (,$(findstring clean,$(MAKECMDGOALS)))
+      ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
         $(info gcc 4.6 EVS codec libs not found)
       endif
       USE_4p6_CODEC_LIBS :=
@@ -260,7 +261,9 @@ ifeq ($(EVS_INSTALLED),y)
   else ifeq ($(USE_11p3_CODEC_LIBS),true)
 
     GCC_VERSION := $(shell gcc -dumpfullversion | awk -F. '{print $$1}')
-    $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
+    ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
+      $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
+    endif
 
 # note - currently gcc v5 through 10 are using v9.4 libs and v11 and higher are using v11.3 libs. This is approximate; more gcc specific lib versions may be needed. While all codec libs are typically built with --ffast-math and -O3, vll.3 uses vectorized math functions and produces substantially faster code. If you hear glitches or pops in decoded output there may be a link mismatch between 11.3 libs and your application gcc version. In that case you can  (i) modify the Makefile so CODEC_LIBS includes xxx_sig.x86_gcc4.6 (old and slow but never fails to link) (ii) force an available lib version to be used (add codec_libs_version=N.n after Make all, where N.n can be 4.6, 9.4, or 11.3) or (iii) contact Signalogic for a specific lib version
 
@@ -270,6 +273,7 @@ ifeq ($(EVS_INSTALLED),y)
       CODEC_LIBS += -levsenc_sig.x86_gcc11.3
       CODEC_LIBS += -levsdec_sig.x86_gcc11.3
       CODEC_LIBS += -levscom_sig.x86_gcc11.3
+      GLIB_2-35_LIBMVEC = -l:libmvec.so.1
 
     else ifeq ($(shell expr $(GCC_VERSION) \< 11), 1)  # v9.4 is known to be incompatible with v11.3
       CODEC_LIBS += -levsenc_sig.x86_gcc9.4
@@ -279,6 +283,7 @@ ifeq ($(EVS_INSTALLED),y)
       CODEC_LIBS += -levsenc_sig.x86_gcc11.3
       CODEC_LIBS += -levsdec_sig.x86_gcc11.3
       CODEC_LIBS += -levscom_sig.x86_gcc11.3
+      GLIB_2-35_LIBMVEC = -l:libmvec.so.1
     endif
   else  # currently this won't work as the install .rar and Docker containers do not have generic libs
     ifeq (,$(findstring clean,$(MAKECMDGOALS)))
@@ -334,6 +339,13 @@ SIG_LIBS = -lvoplib $(CODEC_LIBS) -ldiaglib -lhwlib -lcimlib
 
 AR_FLAGS += -flto -Xlinker -Map=hello_codec.map
 
+# add $(INSTALLPATH)/SIG_LIBS/glibc_2.35 to run-time executable path. Notes:
+#  -this is part of high performance codec lib handling
+#  -glibc_2.35 contains libmvec.so.1, which is specified with -l: in link target
+#  -these items are used when the host system GLIBC version is lower than 2.35
+
+AR_FLAGS += -Wl,-rpath=$(INSTALLPATH)/SIG_LIBS/glibc_2.35
+
 cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
 c_common_objects = keybd.o
 c_mediatest_objects = transcoder_control.o cmd_line_interface.o 
@@ -356,7 +368,7 @@ $(c_objects): %.o: %.c
 
 # link object files, essential Sig libs and Linux libs (e.g. thread and math libs), and then stublib which fills in things that might typically be missing but not used (like uninstalled codecs, missing vector math functions, etc)
 link:
-	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(c_common_objects) $(c_mediatest_objects) $(c_objects) $(LINKER_INCLUDES) -o ./hello_codec -lstdc++ $(SIG_LIBS) -ldl -lpthread -lm -lstublib
+	$(CC) $(AR_FLAGS) $(cpp_common_objects) $(c_common_objects) $(c_mediatest_objects) $(c_objects) $(LINKER_INCLUDES) -o ./hello_codec -lstdc++ $(SIG_LIBS) -ldl -lpthread -lm $(GLIB_2-35_LIBMVEC) -lstublib
 
 .PHONY: clean all 
 clean:
