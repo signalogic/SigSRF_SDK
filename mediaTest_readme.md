@@ -652,6 +652,7 @@ This approach enables per-system optimized performance, but unfortunately later 
 | 11.2 | 2.31, 2.33 |
 | 9.4 | 2.31 |
 | 8.3.1-5 | 2.28 |
+| 7.4.0 | 2.23 |
 | 5.5.0 | 2.17 |
 | 5.3.1 | 2.17 |
 | 4.6.4 | 2.15 |
