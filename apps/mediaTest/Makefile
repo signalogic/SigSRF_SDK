@@ -36,6 +36,8 @@
 #  Modified Oct 2022 JHB, add codec_libs_version=N.n cmd line option to force build with specific codec libs. For EVS_INSTALLED var, change logic to use * in wildcard() to look for different lib versions. Add logic to check for available codec libs and handle case where a selected version is not available
 #  Modified Jan 2023 JHB, change -DMEDIATEST to -D_MEDIATEST_, make source code searching for mediaMin and mediaTest build references easier
 #  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc version and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below). Include GLIBC v2.35 libmvec lib files as needed
+#  Modified Feb 2023 JHB, fix -flto issue with gcc 7.x. See comments near GCC_VERSION
+
 # check make cmd line for "no_codecs" option
 
 ifeq ($(no_codecs),1)
@@ -187,8 +189,20 @@ INCLUDES = -I./ -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALL
 # compile flags
 CC_FLAGS = $(INCLUDES) 
 
-# compile / build flags
-CC_FLAGS += -Wall -g3 -O3 -flto -pthread -std=c++0x
+# get installed gcc version
+GCC_VERSION := $(shell gcc -dumpversion | awk -F. '{print $$1}')
+ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
+  $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
+endif
+
+# more compile flags
+ifeq ($(shell expr $(GCC_VERSION) \= 7), 1)  # with LTO enabled, linking with gcc 7.x built objects will produce an error message like "hidden symbol `pm_run' in /tmp/ccb53n6a.ltrans4.ltrans.o is referenced by DSO". So far, this is specific to mediaTest. See comment by "Signalogic" at https://github.com/MesserLab/SLiM/issues/33
+
+  CC_FLAGS += -Wall -g3 -O3 -pthread -std=c++0x
+else
+  CC_FLAGS += -Wall -g3 -O3 -flto -pthread -std=c++0x
+endif
+
 
 # add necessary defines
 #   _LINUX_     if not set, then a Win32 system is assumed
@@ -331,11 +345,6 @@ ifeq ($(EVS_INSTALLED),y)
 
   else ifeq ($(USE_11p3_CODEC_LIBS),true)
 
-    GCC_VERSION := $(shell gcc -dumpfullversion | awk -F. '{print $$1}')
-    ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
-      $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
-    endif
-
 # note - currently gcc v5 through 10 are using v9.4 libs and v11 and higher are using v11.3 libs. This is approximate; more gcc specific lib versions may be needed. While all codec libs are typically built with --ffast-math and -O3, vll.3 uses vectorized math functions and produces substantially faster code. If you hear glitches or pops in decoded output there may be a link mismatch between 11.3 libs and your application gcc version. In that case you can  (i) modify the Makefile so CODEC_LIBS includes xxx_sig.x86_gcc4.6 (old and slow but never fails to link) (ii) force an available lib version to be used (add codec_libs_version=N.n after Make all, where N.n can be 4.6, 9.4, or 11.3) or (iii) contact Signalogic for a specific lib version
 
     ifeq ($(codec_libs_version),11.3)  # command line forces v11.3
@@ -394,17 +403,19 @@ ifeq ($(AMRWBPLUS_INSTALLED),y)
 endif
 
 # essential libs for user apps
-#  pktlib - packet handling
 #  voplib - voice-over-packet (including codecs)
+#  pktlib - packet handling
 #  diaglib - diagnostics
 #  hwlib - DirectCore
 #  streamlib - stream groups and merging
 
-SIG_LIBS = -lvoplib $(CODEC_LIBS) -ldiaglib -lhwlib -lalglib
+SIG_LIBS = -lvoplib $(CODEC_LIBS)
 
 ifneq ($(no_pktlib),1)
   SIG_LIBS += -lpktlib
 endif
+
+SIG_LIBS += -ldiaglib -lhwlib -lalglib
 
 ifneq ($(no_mediamin),1)
   SIG_LIBS += -lstreamlib -lderlib
@@ -421,7 +432,7 @@ else
   AR_FLAGS =
 endif
 
-AR_FLAGS += -flto -Xlinker -Map=mediaTest.map
+AR_FLAGS += -flto -Xlinker -Map=mediaTest.map -Wl,--disable-new-dtags
 
 # if Kaldi ASR present on the system, link inferlib, Kaldi libs, and ATLAS and BLAS linear algebra libs. Notes:
 # -if not found stublib will fill in inferlib API stubs (which won't be called)

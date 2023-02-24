@@ -69,7 +69,7 @@ void *encode_thread_task(void *arg)
    
    in_frame_size = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_RAW_FRAMESIZE, 0, 0, NULL);
 
-   while (run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size)) {
+   while (pm_run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size)) {
 
       out_frame_size = DSCodecEncode(&hCodec, 0, in_buf, out_buf, in_frame_size, 1, NULL);
 
@@ -79,7 +79,7 @@ void *encode_thread_task(void *arg)
    }
    
    /* Check if loop exit condition was error */
-   if (run && !feof(in_fp))
+   if (pm_run && !feof(in_fp))
    {
       printf("Error did not reach EOF, last fread() read %d bytes\n", ret_val);
    }
@@ -128,7 +128,7 @@ void *decode_thread_task(void *arg)
    fseek(in_fp, 16, SEEK_SET);
 }
 
-   while (run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size)) {
+   while (pm_run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size)) {
 
       out_frame_size = DSCodecDecode(&hCodec, 0, in_buf, out_buf, in_frame_size, 1, NULL);
 
@@ -138,7 +138,7 @@ void *decode_thread_task(void *arg)
    }
    
    /* Check if loop exit condition was error or EOF */
-   if (run && !feof(in_fp))
+   if (pm_run && !feof(in_fp))
    {
       printf("Error did not reach EOF, last fread() read %d bytes\n", ret_val);
    }

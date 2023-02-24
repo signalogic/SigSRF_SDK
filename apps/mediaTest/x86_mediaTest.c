@@ -1363,11 +1363,11 @@ void x86_mediaTest(void) {
       else if (decoder_handle[0]) printf("Running decoder ...\n");
       else printf("Running pass-thru ...\n");
 
-      while (run) {
+      while (pm_run) {
 loop:
          key = toupper(getkey());
          if (key == 'Q') {  /* break out of while(run) loop */
-            run = 0;
+            pm_run = 0;
             break;
          }
 
@@ -1894,7 +1894,7 @@ PollBuffer:
 
       printf("\n");  /* leave existing status line, including any error messages (don't clear it) */
 
-      if (!run) printf("Exiting test\n");
+      if (!pm_run) printf("Exiting test\n");
 
       gettimeofday(&tv, NULL);
       t2 = (uint64_t)tv.tv_sec*1000000L + (uint64_t)tv.tv_usec;
@@ -1927,7 +1927,7 @@ PollBuffer:
 
    /* check if loop exit condition was an error */
 
-      if (!USBAudioInput && run && !feof(fp_in))
+      if (!USBAudioInput && pm_run && !feof(fp_in))
       {
          printf("Error -- did not reach input file EOF, last fread() read %d bytes\n", ret_val);
       }
@@ -2135,7 +2135,7 @@ codec_test_cleanup:
       }
 
       printf("Waiting for %d processing threads to complete...\n", nThreads);
-      while (run && !threads_finished)
+      while (pm_run && !threads_finished)
       {
          threads_finished = 1;
          for (i = 0; i < 2*nCodecs; i++) 
@@ -2301,7 +2301,7 @@ codec_test_cleanup:
 
    /* open pcap file and read its header, initialize link layer offset */
 
-      while (run) {
+      while (pm_run) {
 
       /* read next pcap packet */
 
@@ -2469,11 +2469,11 @@ pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB
 
       printf("Running gpx data flow ... \n");
 
-      while (run) {
+      while (pm_run) {
 
          key = toupper(getkey());
          if (key == 'Q') {  /* break out of while loop */
-            run = 0;
+            pm_run = 0;
             break;
          }
 
@@ -2482,7 +2482,7 @@ pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB
 
       /* read gpx data frame */
 
-         if ((ret_val = gpx::read_gpx_frame(fp_in, gpx_points_in, NUM_GPX_POINTS_PER_FRAME)) < 0) run = 0;  /* read_gpx_frame() returns number of gpx points read. Break out of while loop on error condition */
+         if ((ret_val = gpx::read_gpx_frame(fp_in, gpx_points_in, NUM_GPX_POINTS_PER_FRAME)) < 0) pm_run = 0;  /* read_gpx_frame() returns number of gpx points read. Break out of while loop on error condition */
 
       /* apply signal processing flow:
 
@@ -2617,7 +2617,7 @@ pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB
          memcpy(gpx_points_in_buffer, &gpx_points_in[NUM_GPX_POINTS_PER_FRAME - N_LOOKBACK], N_LOOKBACK*sizeof(GPX_POINT));
          memcpy(gpx_points_out_buffer, &gpx_points_out[NUM_GPX_POINTS_PER_FRAME - N_LOOKBACK], N_LOOKBACK*sizeof(GPX_POINT));
 
-         if (ret_val < NUM_GPX_POINTS_PER_FRAME) run = 0;  /* break out of while loop on end of data */
+         if (ret_val < NUM_GPX_POINTS_PER_FRAME) pm_run = 0;  /* break out of while loop on end of data */
       }
 
       printf("\n");

@@ -1171,7 +1171,7 @@ char              pthread_created = 0;
 int               i;
 DWORD             dw_mainprobe_addr, main_probe;
 DWORD             dw_chipid_addr, chip_id;
-char              modestr[20], debugstr[100];
+char              modestr[20], debugstr[200];
 char              libstr[256];
 
 /* code starts, display banner messages */

@@ -242,7 +242,7 @@ int nSessionsConfigured = 0;
 
 /* parse session config file. Note there can be multiple sessions and we monitor run var in case the user exits using 'q' key */
 
-   while (run > 0 && (parse_session_config(session_cfg_fp, &session_data[nSessionsConfigured]) != -1)) nSessionsConfigured++;  /* in transcoder_control.c */
+   while (pm_run > 0 && (parse_session_config(session_cfg_fp, &session_data[nSessionsConfigured]) != -1)) nSessionsConfigured++;  /* in transcoder_control.c */
 
    printf("mediaMin Info: ReadSessionConfig() says %d session(s) found in config file\n", nSessionsConfigured);
 

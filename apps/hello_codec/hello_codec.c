@@ -29,7 +29,8 @@
   Created Aug 2022 JHB
   Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo() per updates in voplib.h
   Modified Dec 2022 JHB, change references to cmd_line_debug_flags.h to cmd_line_options_flags.h
-  Modified Dec 2022, misc items in the way of understanding how to use codecs moved to hello_codec.h
+  Modified Dec 2022 JHB, misc items in the way of understanding how to use codecs moved to hello_codec.h
+  Modified Feb 2023 JHB, change run to pm_run
 */
 
 /* Linux header files */
@@ -114,9 +115,9 @@ int main(int argc, char** argv) {
 
  /* run the example: encode-decode loop for NUM_FRAMES number of frames */
 
-   while (run && frame_count < NUM_FRAMES) {
+   while (pm_run && frame_count < NUM_FRAMES) {
 
-      if (toupper(getkey()) == 'Q') { run = 0; break; }  /* user can press 'q' key to break out of while loop */
+      if (toupper(getkey()) == 'Q') { pm_run = 0; break; }  /* user can press 'q' key to break out of while loop */
 
       for (int i=0; i<numChan; i++) {  /* to specify multichannel audio data (e.g. stereo, N-channel wav), set numChan > 1 */
       
@@ -604,7 +605,7 @@ void profile_results() {
 
    printf("\n");  /* leave existing status line, including any error messages (don't clear them) */
 
-   if (!run) printf("Exiting test\n");  /* run == 0 indicates an early exit; e.g. user pressed quit key or an error occurred */
+   if (!pm_run) printf("Exiting test\n");  /* pm_run == 0 indicates an early exit; e.g. user pressed quit key or an error occurred */
 
    gettimeofday(&tv, NULL);
    t2 = (uint64_t)tv.tv_sec*1000000L + (uint64_t)tv.tv_usec;

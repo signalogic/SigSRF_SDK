@@ -169,7 +169,7 @@ extern unsigned int      frameInterval[];
 extern volatile char     pktStatsLogFile[CMDOPT_MAX_INPUT_LEN];
 extern volatile bool     demo_build;
 extern volatile bool     frame_mode, use_bkgnd_process, use_log_file;
-extern volatile int8_t   run;  /* "q" (quit) key and ctrl-C handler variable.  In thread mode, this is direct access to thread state variable if needed:  1 = run (default, set when pktlib is loaded), 0 = exit, 2 = debug info */
+extern volatile int8_t   pm_run;  /* "q" (quit) key and ctrl-C handler variable.  In thread mode, this is direct access to thread state variable if needed:  1 = run (default, set when pktlib is loaded), 0 = exit, 2 = debug info */
 extern volatile char     fPMMasterThreadExit;
 extern volatile char     fPMThreadsClosing;
 extern volatile uint8_t  uQueueRead;

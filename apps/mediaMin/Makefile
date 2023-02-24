@@ -35,6 +35,7 @@
 #  Modified Jan 2023 JHB, change -DMEDIAMIN to -D_MEDIAMIN_, make source code searching for mediaMin and mediaTest build references easier
 #  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc version and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below). Include GLIBC v2.35 libmvec lib files as needed
 
+
 # check make cmd line for "no_codecs" option
 
 ifeq ($(no_codecs),1)
@@ -170,7 +171,13 @@ ifneq ($(wildcard $(CC)),$(CC))
 endif
 
 # includes
-INCLUDES =  -I../ -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/apps/common
+INCLUDES = -I../ -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/apps/common
+
+# get installed gcc version
+GCC_VERSION := $(shell gcc -dumpversion | awk -F. '{print $$1}')
+ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
+  $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
+endif
 
 # compile flags
 CC_FLAGS = $(INCLUDES)
@@ -313,11 +320,6 @@ ifeq ($(EVS_INSTALLED),y)
     CODEC_LIBS += -levscom_sig.x86_gcc4.6
 
   else ifeq ($(USE_11p3_CODEC_LIBS),true)
-
-    GCC_VERSION := $(shell gcc -dumpfullversion | awk -F. '{print $$1}')
-    ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
-      $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
-    endif
 
 # note - currently gcc v5 through 10 are using v9.4 libs and v11 and higher are using v11.3 libs. This is approximate; more gcc specific lib versions may be needed. While all codec libs are typically built with --ffast-math and -O3, vll.3 uses vectorized math functions and produces substantially faster code. If you hear glitches or pops in decoded output there may be a link mismatch between 11.3 libs and your application gcc version. In that case you can (i) modify the Makefile so CODEC_LIBS includes xxx_sig.x86_gcc4.6 (old and slow but never fails to link) (ii) force an available lib version to be used (add codec_libs_version=N.n after Make all, where N.n can be 4.6, 9.4, or 11.3) or (iii) contact Signalogic for a specific lib version
 

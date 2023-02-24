@@ -76,7 +76,7 @@
    Modified Jan 2020 JHB, implement per-session flush, session delete in last flush state (for dynamic sessions mode only). Upon deletion hSession[] handles are marked as deleted (set to -1), allowing their stats to stay available but preventing any further pktlib API usage
    Modified Jan 2020 JHB, PushPackets() now takes cur_time as a param instead of calling get_time().  This is a little faster but more importantly all input packet flows use the same reference when calculating packet timestamps vs. elapsed time. This fixes a slight variability seen in multiple input flow handling (for example with repeat enabled, stream group output FLCs might vary between repeats)
    Modified Jan 2020 JHB, add TERM_PKT_REPAIR_ENABLE and TERM_OVERRUN_SYNC_ENABLE flags to termN.uFlags during dynamic session creation
-   Modified Feb 2020 JHB, make sure all sessions are fully deleted before exiting or repeating.  This is more efficient than sleeping some arbitary amount of time, and is also more reliable in the case of very long output wav files
+   Modified Feb 2020 JHB, make sure all sessions are fully deleted before exit or repeat. This is more efficient than sleeping some arbitary amount of time, and is also more reliable in the case of very long output wav files
    Modified Feb 2020 JHB, for real-time packet input (e.g. pcaps with packet timestamps, UDP input), move session flush to be immediately after input flow ends.  Session delete continues to take place after all queues are empty
    Modified Mar 2020 JHB, change DISABLE_SID_REPAIR flag to DISABLE_PACKET_REPAIR -- the flag, if included in -dN cmd line entry, now applies to both SID and media packet repair
    Modified Mar 2020 JHB, rework auto-adjust push rate algorithm and fix a problem it had when nReuseInputs is active. See comments in PushPackets() near AUTO_ADJUST_PUSH_RATE
@@ -91,7 +91,7 @@
    Modified Apr 2020 JHB, telecom mode updates:
                           -fix a few places where timing was incorrect; modified to look for combination of ((Mode & ANALYTICS_MODE) || term1.input_buffer_interval) to indicate "timed situations"
                           -set default jitter buffer max and target delay to 14 and 10
-   Modified Apr 2020 JHB, clean up handling of DS_SESSION_INFO_DELETE_STATUS when exiting or repeating
+   Modified Apr 2020 JHB, clean up handling of DS_SESSION_INFO_DELETE_STATUS when exit or repeat
    Modified Apr 2020 JHB, app_printf() enhancements (in user_io.cpp)
    Modified May 2020 JHB, add handling for TERM_IGNORE_ARRIVAL_TIMING and TERM_OOO_HOLDOFF_ENABLE flags
    Modified Jun 2020 JHB, fix bug where string size wasn't large enough to handle multiple session stats summary print out (just prior to program exit)
@@ -292,21 +292,21 @@ int isNonDynamicPortAllowed(uint16_t port, int thread_index);
 
    -one mediaMin application thread is active if mediaMin is run from the cmd line. This includes standard operating mode for reference apps (SBC, lawful interception, ASR, malware detection, etc)
 
-   -multiple mediaMin application threads may be active if invoked from the mediaTest cmd line, using the -Et and -tN arguments. This is the case for (i) high capacity operation and (ii) stress tests
+   -multiple mediaMin application threads may be active if invoked from the mediaTest cmd line, using the -Et and -tN arguments. This is the case for high capacity operation and stress tests
 
    -in either case, the first mediaMin application thread is the master app thread:
-    -the master thread handles initialization, housekeeping, and exit cleanup
-    -in addition the master thread manages one or more packet/media threads, starting p/m threads depending on need (determined from cmd line entry)
-    -in the case of multiple mediaMin threads, the var "thread_index" indicates the current app thread (thread_index = 0 for app thread 0, 1 for app thread 1, etc)
+     -the master thread handles initialization, housekeeping, and exit cleanup
+     -in addition the master thread manages one or more packet/media threads, starting p/m threads depending on need (determined from cmd line entry)
+     -in the case of multiple mediaMin threads, the var "thread_index" indicates the current app thread (thread_index = 0 for app thread 0, 1 for app thread 1, etc)
 
-   -application threads are separate from packet/media threads -- these should not be confused. Packet/media threads run in the pktlib shared library. Section 5, High Capacity Operation, in the SigSRF documentation includes htop screen caps showing both application and packet/media threads, and notes about CPU core usage, thread affinity, and other multithreading issues 
+   -application threads are separate from packet/media threads; these should not be confused. Packet/media threads run in the pktlib shared library. The High Capacity Operation section SigSRF documentation includes htop screen caps showing both application and packet/media threads, and notes about CPU core usage, thread affinity, and other multithreading issues 
 
-   -mediaMin accepts the same command line as mediaTest, except that mediaMin (i) recognizes -dN entry for operating mode options (ignored by mediaTest), and (ii) ignores -Ex and -tN entry, which is used only by mediaTest (ignored by mediaMin)
+   -mediaMin and mediaTest have the same command line format. Key differences include (i) mediaMin recognizes many more -dN options for operating modes and flags, (ii) handling of I/O (different sets of input file types), and (iii) mediaMin ignores -Ex and -tN entry (used only by mediaTest)
 */
 
 #ifdef _MEDIAMIN_  /* _MEDIAMIN_ is defined in the mediaMin Makefile. This is true when mediaMin is run from the command line, in which case only one mediaMin application thread is active */
 int main(int argc, char **argv) {
-#else  /* _MEDIAMIN_ not defined is the case when mediaTest is run from the command line with the -Et and -tN options, in which case (i) mediaTest is the process, (ii) instead of main() the entry point here is mediaMin_thread(), a callable function, and (iii) mediaTest starts one or more mediaMin application threads with entry point mediaMin_thread() */
+#else  /* _MEDIAMIN_ is not defined when mediaTest is run from the command line with the -Et and -tN options, in which case (i) mediaTest is the process, (ii) the entry point here is mediaMin_thread() instead of main(), and (iii) mediaTest starts one or more mediaMin application threads with mediaMin_thread() as the callable function entry point */
 void* mediaMin_thread(void* thread_arg) {  /* see the "executionMode[0]" switch statement in x86_mediaTest.c.  In that switch statement, the 't' case arrives here */
 #endif
 
@@ -354,7 +354,7 @@ char tmpstr[MAX_APP_STR_LEN];
 
    #endif  /* #ifdef _MEDIAMIN_ */
 
-   if (Mode == -1) Mode = 0;  /* default value if no cmd line entry given is -1 (Mode is defined in mediaTest.h, same as debugMode which is set on the command line by -d argument) */
+   if (Mode == -1) Mode = 0;  /* default value if no cmd line entry given is -1 (Mode is defined from "debugMode" in mediaTest.h. debugMode is set in cmd_line_interface.c from the command line by -d argument) */
 
    if (nRepeat == 0) fRepeatIndefinitely = true;  /* nRepeat is initialized in cmd_line_interface.c from -RN cmd line entry (if no entry nRepeat = -1). Note that some stress tests already have repeat built in, so -RN entry may be ignored or treated differently in those cases */
    nRepeatsRemaining[thread_index] = nRepeat;  /* each app thread keeps an independent repeat count, as they may repeat at different times (for example if ENABLE_RANDOM_WAIT is set) */
@@ -631,11 +631,11 @@ session_create:  /* note - label used only if test mode repeats are enabled */
    app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, "Total sessions created = %d, deleted = %d", thread_info[thread_index].total_sessions_created, thread_info[thread_index].nSessionsDeleted);
 
 
-/* cleanup before exiting or repeating */
+/* cleanup before exit or repeat */
 
 cleanup:
 
-/* make sure all sessions are fully deleted before exiting or repeating.  Notes:
+/* make sure all sessions are fully deleted before exit or repeat.  Notes:
 
    -there could be some wait time if (i) wav file output has been specified for stream groups (especially N-channel wav file generation) or (ii) a lot of sessions are open
    -for dynamic sessions operation, if the cmd line had multiple groups, sessions for already completed groups should aleady be deleted, but some groups might still be in the process of deletion 
@@ -667,7 +667,7 @@ cleanup:
 
       if (isMasterThread) {  /* only master thread does exit cleanup */
 
-         run = 0;            /* instruct packet/media thread(s) to exit.  Note that in case of error condition, none may have been started or still be running */
+         pm_run = 0;  /* instruct packet/media thread(s) to exit.  Note that in case of error condition, none may have been started or still be running */
 
          if (!fExitErrorCond) {
 
@@ -982,7 +982,7 @@ uint8_t before_sync, after_sync;
 uint8_t keys[MAX_APP_THREADS][MAX_KEYS][KEY_LENGTH] = {{ 0 }};
 uint32_t nKeys[MAX_APP_THREADS] = { 0 };
 
-/* FindSession() looks for new streams in the specified and returns 1 if found.  Notes:
+/* FindSession() looks for new streams in the specified packet and returns 1 if found.  Notes:
 
   -finding a new stream means a new session should be created "on the fly" (i.e. dynamic session creation). A new stream is determined by (i) new IP addr:port header and/or (ii) new RTP payload type
   -this info is combined into a "key" that defines the session and is saved to compare with possible new sessions

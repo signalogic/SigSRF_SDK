@@ -65,7 +65,7 @@ unsigned int frameInterval[MAX_INPUT_STREAMS] = { 20 };
 
 /* global vars referenced in mediaMin.c, x86_mediaTest.c, and packet_flow_media_proc.c */
 
-volatile int8_t  run = 1;  /* may be cleared by application signal handler to stop packet / media processing loops */
+volatile int8_t  pm_run = 1;  /* may be cleared by application signal handler to stop packet / media processing loops */
 unsigned int     inFileType, outFileType, outFileType2 = 0, USBAudioInput = 0, USBAudioOutput = 0;
 char             executionMode[2] = { 'a', 'c' }; /* default is app execution mode, cmd line */
 int64_t          debugMode = 0;
@@ -100,7 +100,7 @@ extern int     out_type[MAX_SESSIONS];
 void intHandler(int sig) {
 
    #ifndef _MEDIAMIN_  /* mediaMin has orderly cleanup so don't do any shortcuts, JHB Jan 2023 */
-   run = 0;  /* global var in packet/media thread processing (packet_flow_media_proc.c) */
+   pm_run = 0;  /* global var in packet/media thread processing (packet_flow_media_proc.c) */
    #endif
    
    fCtrl_C_pressed = true;

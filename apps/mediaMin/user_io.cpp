@@ -104,12 +104,12 @@ static uint8_t save_uPrintfLevel = 0;
 
       key = (char)tolower(getkey());
 
-      if (key == 'q' || run <= 0 || fCtrl_C_pressed) {  /* quit key, Ctrl-C, or p/m thread error condition */
+      if (key == 'q' || pm_run <= 0 || fCtrl_C_pressed) {  /* quit key, Ctrl-C, or p/m thread error condition */
 
          strcpy(tmpstr, "#### ");
          if (key == 'q') sprintf(&tmpstr[strlen(tmpstr)], "q key entered");
-         else if (run == 0) sprintf(&tmpstr[strlen(tmpstr)], "p/m run abort (run = 0)"); 
-         else if (run < 0) sprintf(&tmpstr[strlen(tmpstr)], "p/m thread error and abort condition"); 
+         else if (pm_run == 0) sprintf(&tmpstr[strlen(tmpstr)], "p/m run abort (run = 0)"); 
+         else if (pm_run < 0) sprintf(&tmpstr[strlen(tmpstr)], "p/m thread error and abort condition"); 
          else if (fCtrl_C_pressed) sprintf(&tmpstr[strlen(tmpstr)], "Ctrl-C entered");
 
          sprintf(&tmpstr[strlen(tmpstr)], ", exiting mediaMin");
@@ -163,7 +163,7 @@ static uint8_t save_uPrintfLevel = 0;
          if (!fRepeatIndefinitely && nRepeatsRemaining[thread_index] >= 0) sprintf(repeatstr, ", repeats remaining = %d", nRepeatsRemaining[thread_index]);  /* if cmd line entry includes -RN with N >= 0, nRepeatsRemaining will be > 0 for repeat operation, JHB Jan2020 */
          else if (nRepeatsRemaining[thread_index] == -1) strcpy(repeatstr, ", no repeats");  /* nRepeat is -1 if cmd line has no -RN entry (no repeats). For cmd line entry -R0, fRepeatIndefinitely will be set */
 
-         printf("%s#### (App Thread) %sDebug info for app thread %d, run = %d%s, command line %s \n", uLineCursorPos ? "\n" : "", tmpstr, app_thread_index_debug, run, fRepeatIndefinitely ? ", repeating indefinitely" : repeatstr, szAppFullCmdLine);
+         printf("%s#### (App Thread) %sDebug info for app thread %d, run = %d%s, command line %s \n", uLineCursorPos ? "\n" : "", tmpstr, app_thread_index_debug, pm_run, fRepeatIndefinitely ? ", repeating indefinitely" : repeatstr, szAppFullCmdLine);
 
          strcpy(tmpstr, "");
          for (i=0; i<thread_info[app_thread_index_debug].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " %d", thread_info[app_thread_index_debug].flush_state[i]);
@@ -189,7 +189,7 @@ static uint8_t save_uPrintfLevel = 0;
             printf("%s \n", tmpstr);
 
 #if 0  /* deprecated, don't use this method */
-            run = 2;
+            pm_run = 2;
 #else  /* ask for run-time debug output from one or more packet / media threads */
             uint64_t uThreadList = 1UL << pm_thread_index_debug;  /* uThreadList is a bitwise list of threads to display.  In this example only one bit is set */
             DSDisplayThreadDebugInfo(uThreadList, DS_DISPLAY_THREAD_DEBUG_INFO_SCREEN_OUTPUT, "#### (PM Thread) ");  /* display run-time debug info for one or more packet/media threads.  Note that DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT could also be used to print to the event log */
@@ -219,8 +219,8 @@ static uint8_t save_uPrintfLevel = 0;
       }
 
       if (key == 'z') {  /* do not use -- reserved for Linux / system stall simulation (p/m thread "zap" function, hehe) */
-         if (run == 99) run = 1;
-         else run = 99;
+         if (pm_run == 99) pm_run = 1;
+         else pm_run = 99;
       }
 
       return false;
