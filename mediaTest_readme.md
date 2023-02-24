@@ -650,12 +650,11 @@ This approach enables per-system optimized performance, but unfortunately later 
 |-----|-----|
 | 11.3 | 2.33, 2.35, 2.36 |
 | 11.2 | 2.31, 2.33 |
-| 10.3 | 2.31 |
+| 10.3, 9.4 | 2.31 |
 | 9.4 | 2.31 |
 | 8.3.1-5 | 2.28 |
 | 7.4.0 | 2.23 |
-| 5.5.0 | 2.17 |
-| 5.3.1 | 2.17 |
+| 6.5.0, 6.2.0, 5.5.0, 5.3.1 | 2.17 |
 | 4.6.4 | 2.15 |
 
 If after building applications you encounter a failed link or unresolved run-time symbols you can (i) modify the Makefile CODEC_LIBS variable to include v4.6 version codec names (old and slow but never fail to link and produce accurate results), (ii) force an available codec lib version to be used, (iii) raise an issue for a Makefile fix, or (iv) contact Signalogic for a specific codec lib version.
