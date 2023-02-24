@@ -650,7 +650,7 @@ This approach enables per-system optimized performance, but unfortunately later 
 |-----|-----|
 | 11.3 | 2.33, 2.35, 2.36 |
 | 11.2 | 2.31, 2.33 |
-| 10.2 | 2.31 |
+| 10.3 | 2.31 |
 | 9.4 | 2.31 |
 | 8.3.1-5 | 2.28 |
 | 7.4.0 | 2.23 |
