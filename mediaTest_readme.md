@@ -685,7 +685,7 @@ As noted above, the mediaTest and mediaMin Makefiles are tested with a wide rang
 
 | OS Distribution | Release |
 |-----|-----|
-| Ubuntu | 12.04.1, 12.04.5, 16.04.6, 18.04.5, 20.04.2, 22.04 |
+| Ubuntu | 12.04.1, 12.04.5, 16.04.6, 18.04.5, 20.04.2, 22.04.1 |
 | CentOS (Core) | 7.2.1511, 7.9.2009, 7.6.1810, 8.2.2004 |
 | Debian | 12.0 |
 
