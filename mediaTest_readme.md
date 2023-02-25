@@ -681,7 +681,7 @@ Vector functions operate on arrays of floating-point data using SIMD instruction
 <a name="SystemCompatibilityTesting"><a/>
 ### System Compatibility Testing
 
-As noted above, the mediaTest and mediaMin Makefiles are tested with a wide range of gcc/g++ and ldd versions. Testing also includes Ubuntu, CentOS, and Debian Linux distributions from 2012 to current, as listed in the table below.
+As noted above, the mediaTest and mediaMin Makefiles are tested with a wide range of gcc/g++ and ldd versions. Testing also includes Ubuntu, CentOS, and Debian Linux distributions from 2012 to present, as listed in the table below.
 
 | OS Distribution | Release |
 |-----|-----|
@@ -689,7 +689,7 @@ As noted above, the mediaTest and mediaMin Makefiles are tested with a wide rang
 | CentOS (Core) | 7.2.1511, 7.9.2009, 7.6.1810, 8.2.2004 |
 | Debian | 12.0 |
 
-Note this is functional testing. Stress testing occurs on a smaller subset of the above systems. For more information on stress testing, please contact Signalogic.
+Note this is functional testing. Stress testing occurs on a subset of the above system OS and build combinations. For more information on systems used for stress testing, please contact Signalogic.
 	
 <a name="SystemCompatibilityBuildNotes"><a/>
 ### System Compatibility Build Notes
