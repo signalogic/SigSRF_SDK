@@ -678,10 +678,23 @@ Vector functions operate on arrays of floating-point data using SIMD instruction
 
 * for notes on performance of codecs built with different gcc versions, see [High Capacity Codec Test](#user-content-highcapacitycodectest)
 
+<a name="SystemCompatibilityTesting"><a/>
+### System Compatibility Testing
+
+As noted above, the mediaTest and mediaMin Makefiles are tested with a wide range of gcc/g++ and ldd versions. Testing also includes Ubuntu, CentOS, and Debian Linux distributions from 2012 to current.
+
+| OS Distribution | Release |
+|-----|-----|
+| Ubuntu | 12.04.1, 12.04.5, 16.04.6, 18.04.5, 20.04.2, 22.04 |
+| CentOS (Core) | 7.2.1511, 7.9.2009, 7.6.1810, 8.2.2004 |
+| Debian | 12.0 |
+
+Note this is functional testing. Stress testing occurs on a smaller subset of the above systems. For more information on stress testing, please contact Signalogic.
+	
 <a name="SystemCompatibilityBuildNotes"><a/>
 ### System Compatibility Build Notes
 
-As noted above, the mediaTest and mediaMin Makefiles are tested with a wide range of gcc/g++ and ldd versions. Testing also includes Ubuntu, CentOS, and Debian Linux distributions from 2012 to current. Below is a list of system compatibility exceptions in the Makefiles.
+Below is a list of system compatibility exceptions in the Makefiles.
 
 1) For gcc 7.x, LTO (Link Time Optimization) is not applied during compilation. Further notes on this can be found in the Makefiles and the issue list of the [SLiM project at Cornell Univ](https://github.com/MesserLab/SLiM/issues/33) (look for the Signalogic comment).
 	
