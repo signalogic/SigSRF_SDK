@@ -696,7 +696,7 @@ Note this is functional testing. Stress testing occurs on a smaller subset of th
 
 Below is a list of system compatibility exceptions in the Makefiles.
 
-1) For gcc 7.x, LTO (Link Time Optimization) is not applied during compilation. Further notes on this can be found in the Makefiles and the issue list of the [SLiM project at Cornell Univ](https://github.com/MesserLab/SLiM/issues/33) (look for the Signalogic comment).
+1) For gcc 7.x, LTO (Link Time Optimization) is not applied during compilation. Further notes on this can be found in the Makefiles and the [SLiM project at Cornell Univ](https://github.com/MesserLab/SLiM/issues/33) issue list (look for the Signalogic comment).
 	
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
