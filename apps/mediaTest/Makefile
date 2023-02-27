@@ -35,7 +35,7 @@
 #  Modified Sep 2022 JHB, modify USE_4p6_CODEC_LIBS var for Debian
 #  Modified Oct 2022 JHB, add codec_libs_version=N.n cmd line option to force build with specific codec libs. For EVS_INSTALLED var, change logic to use * in wildcard() to look for different lib versions. Add logic to check for available codec libs and handle case where a selected version is not available
 #  Modified Jan 2023 JHB, change -DMEDIATEST to -D_MEDIATEST_, make source code searching for mediaMin and mediaTest build references easier
-#  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc version and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below). Include GLIBC v2.35 libmvec lib files as needed
+#  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc and glibc versions and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below). Include GLIBC v2.35 libmvec lib files as needed
 #  Modified Feb 2023 JHB, fix -flto issue with gcc 7.x. See comments near GCC_VERSION
 
 # check make cmd line for "no_codecs" option
@@ -248,7 +248,7 @@ ifeq ($(KALDIASR_INSTALLED),y)
 endif
 
 # linker search paths
-LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L$(INSTALLPATH)/SIG_LIBS/glibc_2.35 -L/usr/lib
+LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L$(INSTALLPATH)/SIG_LIBS/glibc -L/usr/lib
 
 # determine linking for codec libs built with --ffast-math
 #
@@ -458,12 +458,16 @@ ifeq ($(KALDIASR_INSTALLED),y)
   endif
 endif
 
-# add $(INSTALLPATH)/SIG_LIBS/glibc_2.35 to run-time executable path. Notes:
+# add $(INSTALLPATH)/SIG_LIBS/glibc to run-time executable path. Notes:
 #  -this is part of high performance codec lib handling
-#  -glibc_2.35 contains libmvec.so.1, which is specified with -l: in link target
-#  -these items are used when the host system GLIBC version is lower than 2.35
+#  -glibc contains glibc 2.35 versions of libmvec.so.1 and libm.so.6, which is specified with -l: in link target if host system GLIBC version is lower than 2.35
 
-AR_FLAGS += -Wl,-rpath=$(INSTALLPATH)/SIG_LIBS/glibc_2.35
+AR_FLAGS += -Wl,-rpath=$(INSTALLPATH)/SIG_LIBS/glibc
+
+# turn on verbose link if in command line (e.g. Make all verbose_link=1)
+ifeq ($(verbose_link),1)
+  AR_FLAGS += -Wl,--verbose
+endif
 
 # create vars for source code objects
 

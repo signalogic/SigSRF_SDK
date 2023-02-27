@@ -36,6 +36,7 @@
 #  Modified Aug 2022 JHB, check exit status of unrar command
 #  Modified Sep 2022 JHB, minor mods after testing Ubuntu .rar install on Debian 12.0
 #  Modified Feb 2023 JHB, replace "target" terminology with "platform". Change order of hello_codec and mediaMin builds (mediaMin last)
+#  Modified Feb 2023 JHB, fix coCPU symlink
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -228,7 +229,7 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 		fi
 	fi
 
-   # Create symlinks. Assume _2xxx in the name, otherwise ln command might try to symlink the .rar file :-(
+   # Create symlinks. Assume _2xxx (year) in the name, otherwise ln command might try to symlink the .rar file :-(
 
 	if [ ! -L $installPath/Signalogic ]; then
 		ln -s $installPath/Signalogic_2* $installPath/Signalogic
@@ -239,7 +240,7 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 	fi
 
 	if [ ! -L $installPath/Signalogic/DirectCore/apps/coCPU ]; then
-		ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/DirectCore/apps/coCPU 
+		ln -s $installPath/Signalogic_2*/mCPU_target $installPath/Signalogic/coCPU 
 	fi
 }
 
@@ -489,6 +490,7 @@ swInstall() {  # install Signalogic SW on specified path
 
 	echo
 	echo "Installing SigSRF libs for packet handling, stream group processing, inference, diagnostic, etc..."
+	echo
 	cd $installPath/Signalogic/DirectCore/lib/
 	for d in *; do
 		cd $d; "$cp_prefix"cp -p lib* /usr/lib; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue

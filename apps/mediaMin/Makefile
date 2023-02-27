@@ -33,7 +33,7 @@
 #  Modified Sep 2022 JHB, include lpthread in 'linker' target ("In the past the linker considered symbols in dependencies ... to be available. But that changed in some later version and now the linker enforces a more strict view of what is available" https://stackoverflow.com/questions/19901934/libpthread-so-0-error-adding-symbols-dso-missing-from-command-line)
 #  Modified Oct 2022 JHB, add codec_libs_version=N.nn cmd line option to force build with specific codec libs. For EVS_INSTALLED var, change logic to use * in wildcard() to look for different lib versions. Add logic to check for available codec libs and handle case where a selected version is not available
 #  Modified Jan 2023 JHB, change -DMEDIAMIN to -D_MEDIAMIN_, make source code searching for mediaMin and mediaTest build references easier
-#  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc version and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below). Include GLIBC v2.35 libmvec lib files as needed
+#  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc and glibc versions and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below). Include GLIBC v2.35 libmvec lib files as needed
 
 
 # check make cmd line for "no_codecs" option
@@ -224,7 +224,7 @@ ifeq ($(KALDIASR_INSTALLED),y)
 endif
 
 # linker search paths
-LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L$(INSTALLPATH)/SIG_LIBS/glibc_2.35 -L/usr/lib
+LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L$(INSTALLPATH)/SIG_LIBS/glibc -L/usr/lib
 
 # determine linking for codec libs built with --ffast-math
 #
@@ -329,7 +329,10 @@ ifeq ($(EVS_INSTALLED),y)
       CODEC_LIBS += -levsenc_sig.x86_gcc11.3
       CODEC_LIBS += -levsdec_sig.x86_gcc11.3
       CODEC_LIBS += -levscom_sig.x86_gcc11.3
-      GLIB_2-35_LIBMVEC = -l:libmvec.so.1
+      GLIBC_VERSION := $(shell ldd --version | head -1 | awk '{print $$NF}')
+      ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.35" 'BEGIN{print(a<b)}'), 1)
+        GLIB_2-35_LIBMVEC = -l:libmvec.so.1
+      endif
 
     else ifeq ($(shell expr $(GCC_VERSION) \< 11), 1)  # v9.4 is known to be incompatible with v11.3
       CODEC_LIBS += -levsenc_sig.x86_gcc9.4
@@ -339,7 +342,10 @@ ifeq ($(EVS_INSTALLED),y)
       CODEC_LIBS += -levsenc_sig.x86_gcc11.3
       CODEC_LIBS += -levsdec_sig.x86_gcc11.3
       CODEC_LIBS += -levscom_sig.x86_gcc11.3
-      GLIB_2-35_LIBMVEC = -l:libmvec.so.1
+      GLIBC_VERSION := $(shell ldd --version | head -1 | awk '{print $$NF}')
+      ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.35" 'BEGIN{print(a<b)}'), 1)
+        GLIB_2-35_LIBMVEC = -l:libmvec.so.1
+      endif
     endif
   else  # currently this won't work as the install .rar and Docker containers do not have generic libs
     ifeq (,$(findstring clean,$(MAKECMDGOALS)))
@@ -387,7 +393,7 @@ ifeq ($(ALSA_INSTALLED),y)
 endif
 
 # link flags
-AR_FLAGS = -flto -Xlinker -Map=mediaMin.map -Wl,--disable-new-dtags  # get the RUNPATH crap out of there
+AR_FLAGS = -flto -Xlinker -Map=mediaMin.map -Wl,--disable-new-dtags
 
 # if Kaldi ASR present on the system, link inferlib, Kaldi libs, and ATLAS and BLAS linear algebra libs. Notes:
 # -if not found stublib will fill in inferlib API stubs (which won't be called)
@@ -442,12 +448,16 @@ ifeq ($(KALDIASR_INSTALLED),y)
 
 endif
 
-# add $(INSTALLPATH)/SIG_LIBS/glibc_2.35 to run-time executable path. Notes:
+# add $(INSTALLPATH)/SIG_LIBS/glibc to run-time executable path. Notes:
 #  -this is part of high performance codec lib handling
-#  -glibc_2.35 contains libmvec.so.1, which is specified with -l: in link target
-#  -these items are used when the host system GLIBC version is lower than 2.35
+#  -glibc contains glibc 2.35 versions of libmvec.so.1 and libm.so.6, which is specified with -l: in link target if host system GLIBC version is lower than 2.35
 
-AR_FLAGS += -Wl,-rpath=$(INSTALLPATH)/SIG_LIBS/glibc_2.35
+AR_FLAGS += -Wl,-rpath=$(INSTALLPATH)/SIG_LIBS/glibc
+
+# turn on verbose link if in command line (e.g. Make all verbose_link=1)
+ifeq ($(verbose_link),1)
+  AR_FLAGS += -Wl,--verbose
+endif
 
 cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
 c_common_objects = keybd.o
