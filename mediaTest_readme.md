@@ -656,7 +656,7 @@ This approach enables per-system optimized performance, but unfortunately later 
 | 6.5.0, 6.2.0, 5.5.0, 5.3.1 | 2.17 |
 | 4.6.4 | 2.15 |
 
-If after building applications you encounter a failed link or unresolved run-time symbols you can (i) modify the Makefile CODEC_LIBS variable to include v4.6 version codec names (old and slow but never fail to link and produce accurate results), (ii) force an available codec lib version to be used, (iii) raise an issue for a Makefile fix, or (iv) contact Signalogic for a specific codec lib version.
+If after building an application you encounter a failed link or unresolved run-time symbols you can (i) modify the Makefile CODEC_LIBS variable to include v4.6 version codec names (old and slow but never fail to link and produce accurate results), (ii) force an available codec lib version to be used, (iii) raise an issue for a Makefile fix, or (iv) contact Signalogic for a specific codec lib version.
 
 To force a specific codec lib version to link, when building the mediaMin or mediaTest reference application (or user-defined application, assuming it incorporates reference Makefile code), you can enter:
 	
