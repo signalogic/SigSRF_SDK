@@ -353,7 +353,10 @@ ifeq ($(EVS_INSTALLED),y)
       CODEC_LIBS += -levsenc_sig.x86_gcc11.3
       CODEC_LIBS += -levsdec_sig.x86_gcc11.3
       CODEC_LIBS += -levscom_sig.x86_gcc11.3
-      GLIB_2-35_LIBMVEC = -l:libmvec.so.1
+      GLIBC_VERSION := $(shell ldd --version | head -1 | awk '{print $$NF}')
+      ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.35" 'BEGIN{print(a<b)}'), 1)
+        GLIB_2-35_LIBMVEC = -l:libmvec.so.1
+      endif
 
     else ifeq ($(shell expr $(GCC_VERSION) \< 11), 1)  # v9.4 is known to be incompatible with v11.3
       CODEC_LIBS += -levsenc_sig.x86_gcc9.4
@@ -363,7 +366,10 @@ ifeq ($(EVS_INSTALLED),y)
       CODEC_LIBS += -levsenc_sig.x86_gcc11.3
       CODEC_LIBS += -levsdec_sig.x86_gcc11.3
       CODEC_LIBS += -levscom_sig.x86_gcc11.3
-      GLIB_2-35_LIBMVEC = -l:libmvec.so.1
+      GLIBC_VERSION := $(shell ldd --version | head -1 | awk '{print $$NF}')
+      ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.35" 'BEGIN{print(a<b)}'), 1)
+        GLIB_2-35_LIBMVEC = -l:libmvec.so.1
+      endif
     endif
   else  # currently this won't work as the install .rar and Docker containers do not have generic libs
     ifeq (,$(findstring clean,$(MAKECMDGOALS)))
