@@ -299,7 +299,7 @@ Below are more command line examples, taken from pcaps found in the [the Brno Un
 
     ./mediaMin -cx86 -i../test_files/codecs3-amr-wb.pcap -L -d0x20010000c11 -r20
 
-"codecs-amr-12.pcap" is an AMR 12.2 kbps stream, in octet aligned format, around 8 min run length. "codecs3-amr-wb.pcap" is an AMR-WB 23.85 kbps stream, in octet aligned format, containing a number of SIP messages. Note that the stream start with a number of SIP messages and a long pause before RTP, then terminates with a SIP BYE message, as shown below:
+"codecs-amr-12.pcap" is an AMR 12.2 kbps stream, in octet aligned format, around 8 min run length. "codecs3-amr-wb.pcap" is an AMR-WB 23.85 kbps stream, in octet aligned format, containing a number of SIP messages. Note that the stream starts with a number of SIP messages and an 8 sec pause before RTP traffic flows, then terminates with a SIP BYE message, as shown below:
 
 ![SIP message example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_waiting_for_long_gap.png?raw=true "mediaMin SIP message and RTP pause example")
 
