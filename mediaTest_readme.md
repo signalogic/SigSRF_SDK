@@ -293,6 +293,18 @@ The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps 
 
 Command line arguments in the above examples are explained in [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference).
 
+Below are more command line examples, taken from pcaps found in the [the Brno University Nesfit repository](https://github.com/nesfit/Codecs/tree/master/PCAPs):
+
+    ./mediaMin -cx86 -i../test_files/codecs-amr-12.pcap -L -d0x20010000c11 -r20
+
+    ./mediaMin -cx86 -i../test_files/codecs3-amr-wb.pcap -L -d0x20010000c11 -r20
+
+"codecs-amr-12.pcap" is an AMR 12.2 kbps stream, in octet aligned format, around 8 min run length. "codecs3-amr-wb.pcap" is an AMR-WB 23.85 kbps stream, in octet aligned format, containing a number of SIP messages. Note that the stream start with a number of SIP messages and a long pause before RTP, then terminates with a SIP BYE message, as shown below:
+
+![SIP message example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_waiting_for_long_gap.png?raw=true "mediaMin SIP message and RTP pause example")
+
+![stream termination on BYE message](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_termination_bye_stream.png?raw=true "mediaMin stream termination on BYE message")
+
 <a name="codecauto-detection"></a>
 #### Codec Auto-Detection
 
