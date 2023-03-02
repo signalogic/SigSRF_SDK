@@ -97,9 +97,20 @@ static uint64_t last_time = 0;
 static uint8_t save_uPrintfLevel = 0;
 static bool fSetStdoutNonBuffered = false;
 
-   if (isMasterThread) {  /* master application threads (thread_index = 0) thread handles interactive keyboard commands */
+   if (isMasterThread) {  /* master application thread (thread_index = 0) handles interactive keyboard commands */
 
-      if (!fSetStdoutNonBuffered) { setvbuf(stdout, NULL, _IONBF, 0); fSetStdoutNonBuffered = true; } /* for some reason if getkey() in keybd.c uses read(fileno(stdin)...) instead of fgetc() then subsequent stdout like printf("\rxxx") won't appear until at least one "\n" is output unless we explicitly set stdout to non-buffered. Fortunately if we do it here one-time before calling getkey() that's a fix. Maybe fget() affects one or more flags not included in termios ? The reason why fgetc() is not used is due to it not working in Docker containers; see comments in getkey() in keybd.c JHB Feb 2023 */
+   /* One-time set stdout to non-buffered, JHB Feb 2023:
+   
+       -for some reason if getkey() in keybd.c uses read(fileno(stdin)...) instead of fgetc() then subsequent stdout like printf("\rxxx") won't appear until at least one "\n" is output. Fortunately if we set stdout to non-buffered here one-time before calling getkey() that's a fix
+
+       -more discussion on this here: https://stackoverflow.com/questions/68943683/strange-behavior-in-terminal-raw-mode
+
+       -the reason why fgetc() is no longer used is due to it not working inside Docker containers; see comments in getkey() in keybd.c
+
+       -maybe fget() affects one or more flags not included in termios ?
+    */
+
+      if (!fSetStdoutNonBuffered) { setvbuf(stdout, NULL, _IONBF, 0); fSetStdoutNonBuffered = true; }
 
       if (last_time == 0) last_time = cur_time;
       if ((int64_t)cur_time - (int64_t)last_time < 100*1000 && !fPause) return false;  /* check keys every 100 msec. Make an exception for pause key, otherwise we never get out of pause */
