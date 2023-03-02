@@ -565,6 +565,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    if (!fRepeatFromStart) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "Starting packet push-pull loop, press 'q' to exit");
 
+  setvbuf(stdout, NULL, _IONBF, 0);
 
 /* all initialization complete, begin continuous packet push-pull loop */
 
@@ -710,7 +711,7 @@ cleanup:
                   uQuitMessage = 2;
                }
 
-               if (cur_time - check_time > 30*1000000L) {  /* print a dot every 30 sec -- let user know we're alive if packet logging is taking time due to very long streams */
+               if (cur_time - check_time > 5*1000000L) {  /* print a dot every 5 sec -- let user know we're alive if packet logging is taking time due to very long streams */
                   printf(".");
                   check_time = cur_time;
                }

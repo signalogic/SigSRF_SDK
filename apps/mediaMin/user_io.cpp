@@ -23,6 +23,7 @@
    Modified Jan 2023 JHB, add debugMode to thread info printout ('d' key interactive command)
    Modified Jan 2023 JHB, add fCtrl_C_pressed handling in ProcessKeys() (see comments in mediaTest/see cmd_line_interface.c)
    Modified Jan 2023 JHB, add command line to interactive 'd' key command (real-time debug output)
+   Modified Feb 2023 JHB, one-time set stdout to non-buffered in ProcessKeys(). See comments
 */
 
 #include <stdio.h>
@@ -94,8 +95,11 @@ char tmpstr[500] = "";
 PACKETMEDIATHREADINFO PacketMediaThreadInfo;
 static uint64_t last_time = 0;
 static uint8_t save_uPrintfLevel = 0;
+static bool fSetStdoutNonBuffered = false;
 
    if (isMasterThread) {  /* master application threads (thread_index = 0) thread handles interactive keyboard commands */
+
+      if (!fSetStdoutNonBuffered) { setvbuf(stdout, NULL, _IONBF, 0); fSetStdoutNonBuffered = true; } /* for some reason if getkey() in keybd.c uses read(fileno(stdin)...) instead of fgetc() then subsequent stdout like printf("\rxxx") won't appear until at least one "\n" is output unless we explicitly set stdout to non-buffered. Fortunately if we do it here one-time before calling getkey() that's a fix. Maybe fget() affects one or more flags not included in termios ? The reason why fgetc() is not used is due to it not working in Docker containers; see comments in getkey() in keybd.c JHB Feb 2023 */
 
       if (last_time == 0) last_time = cur_time;
       if ((int64_t)cur_time - (int64_t)last_time < 100*1000 && !fPause) return false;  /* check keys every 100 msec. Make an exception for pause key, otherwise we never get out of pause */

@@ -9,7 +9,7 @@
 
    Created May 2007, NR
    Modified May-Jun 2010, VR, JHB, adjusted to updated DirectCore (merged with SigC641x)
-   Modified Feb 2023, in getkey(), add simple multithread semaphore lock and fix problem in Docker containers where fgetc() input is ignored
+   Modified Feb 2023 JHB, in getkey(), add simple multithread semaphore lock and fix problem in Docker containers where fgetc() input is ignored
 */
 
 #include <stdlib.h>
@@ -165,7 +165,7 @@ static int sem = 0;
    while (__sync_lock_test_and_set(&sem, 1) != 0);  /* wait until the lock is zero then write 1 to it. While waiting keep writing a 1 */
    #endif
 
-/* set the terminal to raw mode */
+/* set terminal to raw mode, this uses non-blocking and doesn't wait for char input (i.e. doesn't wait for entry + Enter key) */
 
    tcgetattr(fileno(stdin), &orig_term_attr);
    memcpy(&new_term_attr, &orig_term_attr, sizeof(struct termios));
@@ -174,7 +174,7 @@ static int sem = 0;
    new_term_attr.c_cc[VMIN] = 0;
    tcsetattr(fileno(stdin), TCSANOW, &new_term_attr);
 
-   #if 0
+   #ifdef USE_FGETC
    ch = fgetc(stdin);  /* read a character from the stdin stream without blocking, returns EOF (-1) if no character is available */
    #else  /* fix problem in Docker containers where fgetc() input is ignored */
    if (!read(fileno(stdin), (char*)&ch, 1)) ch = -1;  /* if no chars available, set to -1 to be compatible with fgetc() JHB Feb 2023 */
