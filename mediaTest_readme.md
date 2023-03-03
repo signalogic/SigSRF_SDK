@@ -1075,9 +1075,9 @@ Note the highlighted CPU and memory usage display areas, showing 100% core usage
 
     ./mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -d0x100000000
     
-For the EVS codec, typical per instance memory usage figures are:
+For an EVS 13.2 kbps bitstream, typical per instance memory usage figures are:
 
-    encoder 177k
+    encoder 177k (16 kHz sampling rate)
     decoder 240k
 
 Debug flag options are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in the mediaTest source code folder.
