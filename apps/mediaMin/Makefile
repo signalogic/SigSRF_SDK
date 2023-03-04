@@ -34,6 +34,7 @@
 #  Modified Oct 2022 JHB, add codec_libs_version=N.nn cmd line option to force build with specific codec libs. For EVS_INSTALLED var, change logic to use * in wildcard() to look for different lib versions. Add logic to check for available codec libs and handle case where a selected version is not available
 #  Modified Jan 2023 JHB, change -DMEDIAMIN to -D_MEDIAMIN_, make source code searching for mediaMin and mediaTest build references easier
 #  Modified Feb 2023 JHB, modify codec lib build logic to look at gcc and glibc versions and decide between v4.x, v9.4, and v11.3 (the latter using vectorized math functions, giving fastest performance. See additional comments below). Include GLIBC v2.35 libmvec lib files as needed
+#  Modified Mar 2023 JHB, fix -flto issue with ldd versions 2.23-2.24. See comments near GLIBC_VERSION
 
 
 # check make cmd line for "no_codecs" option
@@ -173,15 +174,26 @@ endif
 # includes
 INCLUDES = -I../ -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/apps/common
 
-# get installed gcc version
+# compile flags
+CC_FLAGS += $(INCLUDES) -Wall -g3 -O3 -pthread -std=c++0x
+
+# get gcc version
 GCC_VERSION := $(shell gcc -dumpversion | awk -F. '{print $$1}')
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
   $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
 endif
 
-# compile flags
-CC_FLAGS = $(INCLUDES)
-CC_FLAGS += -Wall -g3 -O3 -flto -pthread -std=c++0x
+# get ldd version (should match GLIBC version)
+GLIBC_VERSION := $(shell ldd --version | head -1 | awk '{print $$NF}')
+
+# apply flto exception if needed. LTO is not included for ldd versions 2.23 and 2.24 due to a link error similar to "hidden symbol `pm_run' in /tmp/xxx.ltrans4.ltrans.o is referenced by DSO". ldd versions lower and higher do not have this issue, JHB Mar 2023
+
+ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.23" 'BEGIN{print(a==b)}'), 1)
+else ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.24" 'BEGIN{print(a==b)}'), 1)
+else ifneq ($(no_flto),1) # check for command line option; e.g. make all no_flto=1
+  # add -flto to compile flags
+  CC_FLAGS += -flto
+endif
 
 # add necessary defines
 #   _LINUX_     if not set, then a Win32 system is assumed
@@ -329,7 +341,6 @@ ifeq ($(EVS_INSTALLED),y)
       CODEC_LIBS += -levsenc_sig.x86_gcc11.3
       CODEC_LIBS += -levsdec_sig.x86_gcc11.3
       CODEC_LIBS += -levscom_sig.x86_gcc11.3
-      GLIBC_VERSION := $(shell ldd --version | head -1 | awk '{print $$NF}')
       ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.35" 'BEGIN{print(a<b)}'), 1)
         GLIB_2-35_LIBMVEC = -l:libmvec.so.1
       endif
@@ -342,7 +353,6 @@ ifeq ($(EVS_INSTALLED),y)
       CODEC_LIBS += -levsenc_sig.x86_gcc11.3
       CODEC_LIBS += -levsdec_sig.x86_gcc11.3
       CODEC_LIBS += -levscom_sig.x86_gcc11.3
-      GLIBC_VERSION := $(shell ldd --version | head -1 | awk '{print $$NF}')
       ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.35" 'BEGIN{print(a<b)}'), 1)
         GLIB_2-35_LIBMVEC = -l:libmvec.so.1
       endif

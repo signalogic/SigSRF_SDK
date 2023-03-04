@@ -239,7 +239,7 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 		ln -s $installPath/Signalogic_2*/DirectCore/apps/SigC641x_C667x $installPath/Signalogic/apps
 	fi
 
-	if [ ! -L $installPath/Signalogic/DirectCore/apps/coCPU ]; then
+	if [ ! -L $installPath/Signalogic/coCPU ]; then
 		ln -s $installPath/Signalogic_2*/mCPU_target $installPath/Signalogic/coCPU 
 	fi
 }
@@ -491,6 +491,7 @@ swInstall() {  # install Signalogic SW on specified path
 	echo
 	echo "Installing SigSRF libs for packet handling, stream group processing, inference, diagnostic, etc..."
 	echo
+
 	cd $installPath/Signalogic/DirectCore/lib/
 	for d in *; do
 		cd $d; "$cp_prefix"cp -p lib* /usr/lib; ldconfig; cd ~-; cd -; cd ~-  # go back with no output, then go to subfolder again to show it onscreen, then go back and continue
@@ -516,6 +517,7 @@ swInstall() {  # install Signalogic SW on specified path
 
 	echo
 	echo "Building EdgeStream applications..."
+   echo
 
 	if [ "$installOptions" = "coCPU" ]; then
 
