@@ -73,7 +73,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 # Table of Contents
 
-[**mediaMin**](#user-content-mediamin)<br/>
+[**_mediaMin_**](#user-content-mediamin)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
@@ -106,7 +106,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**RTP Malware Detection**](#user-content-rtpmalwaredetection)<br/>
 
-[**mediaTest**](#user-content-mediatest)<br/>
+[**_mediaTest_**](#user-content-mediatest)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Test & Measurement](#user-content-x86codectestmeasurement)<br/>
@@ -130,7 +130,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**mediaTest Notes**](#user-content-mediatestnotes)<br/>
 &nbsp;&nbsp;&nbsp;[**hello codec**](#user-content-hellocodec)<br/>
 
-[**pktlib**](#user-content-pktlib)<br/>
+[**_pktlib_**](#user-content-pktlib)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandling)<br/>
@@ -141,7 +141,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Multiple RTP Streams (RFC8108)**](#user-content-multiplertpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[**Duplicated RTP Streams (RFC7198)**](#user-content-duplicatedrtpstreams)<br/>
 
-[**streamlib**](#user-content-streamlib)<br/>
+[**_streamlib_**](#user-content-streamlib)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Packet Output](#user-content-realtimepacketoutput)<br/>
@@ -150,24 +150,24 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Audio Quality Processing**](#user-content-audioqualityprocessing)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Frame Loss Concealment (FLC)](#user-content-framelossconcealment)<br/>
 
-[**Run-Time Stats**](#user-content-runtimestats)<br/>
-[**Event Log**](#user-content-eventlog)<br/>
+[**_Run-Time Stats_**](#user-content-runtimestats)<br/>
+[**_Event Log_**](#user-content-eventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Verifying a Clean Event Log](#user-content-verifyingcleaneventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Packet Log Summary](#user-content-packetlogsummary)<br/>
-[**Packet Log**](#user-content-packetlog)<br/>
+[**_Packet Log_**](#user-content-packetlog)<br/>
 
-[**RFCs**](#user-content-supportedrfcs)<br/>
-[**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
-[**API Usage**](#user-content-apiusage)<br/>
-[**SigSRF x86 Codec Notes**](#user-content-x86codecnotes)<br/>
-[**3GPP Reference Code Notes**](#user-content-3gppnotes)<br/>
+[**_RFCs_**](#user-content-supportedrfcs)<br/>
+[**_User-Defined Signal Processing Insertion Points_**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
+[**_API Usage_**](#user-content-apiusage)<br/>
+[**_SigSRF x86 Codec Notes_**](#user-content-x86codecnotes)<br/>
+[**_3GPP Reference Code Notes_**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
 &nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#user-content-verifyingevspcap)<br/>
-[**Wireshark Notes**](#user-content-wiresharknotes)<br/>
+[**_Wireshark Notes_**](#user-content-wiresharknotes)<br/>
 &nbsp;&nbsp;&nbsp;[Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
 
-[**Command Line Quick-Reference**](#user-content-commandlinequick-reference)<br/>
+[**_Command Line Quick-Reference_**](#user-content-commandlinequick-reference)<br/>
 
 &nbsp;&nbsp;&nbsp;[mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference)<br/>
 
