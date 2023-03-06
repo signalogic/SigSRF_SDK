@@ -1559,39 +1559,44 @@ Run-time stats include the following main categories:
 Below is a run-time stats example from a mediaMin screen capture.
 
 <pre>
-00:02:24.417.743 Stream Info + Stats, stream group "mediaplayout_music_1malespeaker_5xAMRWB_notimestamps", grp 0, p/m thread 0, num packets 7359
-  Sessions (hSession/ch/codec/bitrate[,ch...]) 0(grp owner)/0/AMR-WB/12650,4,5,6 1/2/AMR-WB/12650
-  SSRCs (ch/ssrc) 0/0x63337c03 4/0xd9913891 5/0xa97bef88 6/0xa034a9d2 2/0x545d19db
-  Overrun (ch/frames dropped) 0/0 2/0, (ch/max %) 0/17.36 2/12.50
-  Underrun (grp/missed intervals/FLCs) 0/0/0
-  Pkt flush (ch/num) loss 0/0 4/0 5/11 6/74 2/0, pastdue 0/0 4/0 5/0 6/0 2/0, level 0/0 4/2 5/0 6/0 2/0
+00:02:24.582.168 Stream Info + Stats, stream group "mediaplayout_music_1malespeaker_5xAMRWB_notimestamps", grp 0, p/m thread 0, num packets 7359
+  Sessions (hSession:ch:codec/bitrate[,ch...]) 0(grp owner):0:AMR-WB/12650,4:AMR-WB/12650,5:AMR-WB/12650,6:AMR-WB/12650 1:2:AMR-WB/12650
+  SSRCs (ch:ssrc) 0:0x63337c03 4:0xd9913891 5:0xa97bef88 6:0xa034a9d2 2:0x545d19db
+  Overrun (ch:frames dropped) 0:0 2:0, (ch:max %) 0:16.41 2:12.41
+  Underrun (grp:missed intervals/FLCs/holdoffs) 0:0/0/0
+  Pkt flush (ch:num) loss 0:0 4:0 5:11 6:81 2:50, pastdue 0:0 4:0 5:0 6:0 2:0, level 0:0 4:2 5:0 6:0 2:0
   Packet Stats
-    Input (ch/pkts) 0/181 4/1463 5/2230 6/983 2/2502, RFC7198 duplicates 0/0 4/0 5/0 6/0 2/0, bursts 0/0 4/0 5/0 6/0 2/0
-    Loss (ch/%) 0/0.000 4/0.205 5/0.000 6/0.000 2/0.000, missing seq (ch/num) 0/0 4/3 5/0 6/0 2/0, max consec missing seq 0/0 4/2 5/0 6/0 2/0
-    Ooo (ch/pkts) 0/0 4/43 5/0 6/0 2/58, max 0/0 4/2 5/0 6/0 2/1
-    Avg stats calcs (ch/num) 0/0.00 4/8.17 5/0.00 6/0.00 2/3.32
-    Delta avg (ch/msec) media 0/20.00 4/29.13 5/20.56 6/25.61 2/28.90, SID 0/-nan 4/88.38 5/19.98 6/89.83 2/210.66
-    Delta max (ch/msec/pkt) media 0/20.35/38 4/497.59/2236 5/957.47/3514 6/497.35/6744 2/517.75/3052, SID 0/0.00/0 4/839.68/3054 5/20.15/3591 6/480.00/7253 2/46237.48/5734, overall 0/20.35/38 4/839.68/3054 5/957.47/3514 6/660.02/5979 2/46237.48/5734
-    Cumulative input times         (sec) (ch/inp/rtp) 0/3.60/3.58 4/60.34/64.22 5/45.80/45.98 6/31.14/29.54 2/137.83/140.66
-    Cumulative jitter buffer times (sec) (ch/out/rtp) 0/3.64/3.58 4/61.36/64.36 5/45.28/45.98 6/30.88/29.54 2/137.75/140.66
+    Input (ch:pkts) 0:181 4:1463 5:2230 6:983 2:2502, SIDs 0:0 4:365 5:17 6:96 2:480, RFC7198 duplicates 0:0 4:0 5:0 6:0 2:0, bursts 0:0 4:0 5:0 6:0 2:0
+    Loss (ch:%) 0:0.000 4:0.205 5:0.000 6:0.000 2:0.000, missing seq (ch:num) 0:0 4:3 5:0 6:0 2:0, max consec missing seq 0:0 4:2 5:0 6:0 2:0
+    Ooo (ch:pkts) 0:0 4:43 5:0 6:0 2:58, max 0:0 4:2 5:0 6:0 2:1
+    Avg stats calcs (ch:num) 0:0.00 4:8.17 5:0.00 6:0.00 2:3.32
+    Delta avg (ch:msec) media 0:20.00 4:29.14 5:20.56 6:24.09 2:27.89, SID 0:-nan 4:88.41 5:20.00 6:100.84 2:220.09
+    Delta max (ch:msec/pkt) media 0:20.29/167 4:499.29/2236 5:959.28/3514 6:780.00/6565 2:519.28/3052, SID 0:0.00/0 4:840.00/3054 5:20.06/3592 6:1440.01/5750 2:46239.36/5
+    Cumulative input times         (sec) (ch:inp/rtp) 0:3.60/3.58 4:60.34/64.22 5:45.80/45.98 6:31.06/29.54 2:137.76/140.66
+    Cumulative jitter buffer times (sec) (ch:out/rtp) 0:3.64/3.58 4:61.36/64.36 5:45.28/45.98 6:30.82/29.54 2:137.66/140.66
   Packet Repair
-    SID repair (ch/num) instance 0/0 4/1 5/0 6/0 2/0, total 0/0 4/8 5/0 6/0 2/0
-    Timestamp repair (ch/num) SID 0/0 4/0 5/0 6/0 2/63, media 0/0 4/2 5/0 6/0 2/0
+    SID repair (ch:num) instance 0:0 4:1 5:0 6:0 2:0, total 0:0 4:8 5:0 6:0 2:0
+    Timestamp repair (ch:num) SID 0:0 4:0 5:0 6:0 2:66, media 0:0 4:2 5:0 6:0 2:0
   Jitter Buffer
-    Output (ch/pkts) 0/181 4/3219 5/2300 6/1478 2/4723, max 0/11 4/11 5/11 6/11 2/11, residual 0/0 4/0 5/0 6/0 2/0, bursts 0/0 4/0 5/0 6/0 2/0
-    Ooo (ch/pkts) 0/0 4/0 5/0 6/0 2/0, max 0/0 4/0 5/0 6/0 2/0, drops 0/0 4/0 5/0 6/0 2/0, duplicates 0/0 4/0 5/0 6/0 2/0
-    Resyncs (ch/num) underrun 0/0 4/0 5/1 6/7 2/0, overrun 0/0 4/0 5/0 6/0 2/0, timestamp gap 0/0 4/0 5/0 6/0 2/1, purges (ch/num) 0/0 4/0 5/0 6/0 2/0
-    Holdoffs (ch/num) adj 0/0 4/0 5/0 6/0 2/0, dlvr 0/0 4/0 5/0 6/0 2/0, zero pulls (ch/num) 0/4763 4/3299 5/1068 6/74 2/10
+    Output (ch:pkts) 0:181 4:3219 5:2300 6:1478 2:4723, max 0:11 4:11 5:11 6:11 2:11, residual 0:0 4:0 5:0 6:0 2:0, bursts 0:0 4:0 5:0 6:0 2:0
+    Ooo (ch:pkts) 0:0 4:0 5:0 6:0 2:0, max 0:0 4:0 5:0 6:0 2:0, drops 0:0 4:0 5:0 6:0 2:0, duplicates 0:0 4:0 5:0 6:0 2:0
+    Resyncs (ch:num) underrun 0:0 4:0 5:1 6:10 2:3, overrun 0:0 4:0 5:0 6:0 2:0, timestamp gap 0:0 4:0 5:0 6:0 2:1, purges (ch:num) 0:0 4:0 5:0 6:0 2:0
+    Holdoffs (ch:num) adj 0:0 4:0 5:0 6:0 2:1, dlvr 0:0 4:0 5:0 6:0 2:1, zero pulls (ch:num) 0:4770 4:3306 5:1075 6:91 2:59, allocs (cur/max) 0/22
   Event log warnings, errors, critical 0, 0, 0
 </pre>
 
 Here are some notational conventions used in run-time stats formatting:
 
-1. At sub-category level, stats are separated by a comma, followed by a new sub-category description. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ..., max 0/0 4/2 ...which indicates number of ooo packets followed by max ooo packets 
-2. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat shows 0/0 4/43 ... indicating channel 0 has no ooo packets,. channel 4 has 43, etc
-3. Input vs. output jitter buffer times are vertically aligned to make comparison easier
-4. hSession (session), ch (channel), and grp (stream group) values range from 0 to max allowed (depending on version of SigSRF software)
-5. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
+1. Session and channel identifiers are followed by a colon (":")
+2. At sub-category level, stats are separated by a comma, followed by a new sub-category description. For example the Ooo (ch/pkts) stat shows 0:0 4:43 ..., max 0:0 4:2 ...which indicates number of ooo packets followed by max ooo packets 
+3. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat shows 0:0 4:43 ... indicating channel 0 has no ooo packets, channel 4 has 43, etc
+4. Input vs. output jitter buffer times are vertically aligned to make comparison easier
+5. hSession (session), ch (channel), and grp (stream group) values range from 0 to max allowed (depending on version of SigSRF software)
+6. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
+
+The screencap shows a run-time stats example, with all streams (sessions), all channels for each session, and bitrate for each channel highlighted.
+
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_multirate_multiformat_example.png" width="800" alt="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted" title="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted"/></br>
 
 <a name="EventLog"></a>
 # Event Log
