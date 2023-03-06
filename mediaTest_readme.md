@@ -1596,7 +1596,7 @@ Here are some notational conventions used in run-time stats formatting:
 
 The screencap shows a run-time stats example, with all streams (sessions), all channels for each session, and bitrate for each channel highlighted.
 
-<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_multirate_multiformat_example.png" width="800" alt="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted" title="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted"/></br>
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_multirate_multiformat_example.png" width="1024" alt="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted" title="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted"/></br>
 
 <a name="EventLog"></a>
 # Event Log
