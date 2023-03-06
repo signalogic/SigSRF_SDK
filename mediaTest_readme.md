@@ -1594,7 +1594,7 @@ Here are some notational conventions used in run-time stats formatting:
 5. hSession (session), ch (channel), and grp (stream group) values range from 0 to max allowed (depending on version of SigSRF software)
 6. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
 
-The screencap shows a run-time stats example, with all streams (sessions), all channels for each session, and bitrate for each channel highlighted.
+The screencap below shows a run-time stats example, with highlighting around the line showing streams (sessions), channels for each session, and bitrate for each channel.
 
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_multirate_multiformat_example.png" width="1024" alt="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted" title="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted"/></br>
 
