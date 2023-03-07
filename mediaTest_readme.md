@@ -1587,7 +1587,7 @@ Below is a run-time stats example from a mediaMin screen capture.
 
 Here are some notational conventions used in run-time stats formatting:
 
-1. Session (hSession), channel identifiers (ch), and stream group owners (grp) are followed by a colon (":"). Values of each range from 0 to max allowed (depending on version of SigSRF software)
+1. Session identifers (hSession), channel identifiers (ch), and stream group owners (grp) are followed by a colon (":"). Values of each range from 0 to max allowed (depending on version of SigSRF software)
 2. At sub-category level, stats are separated by a comma. For example the Ooo (ch/pkts) stat above shows 0:0 4:43 ..., max 0:0 4:2 ...which indicates number of ooo packets followed by one or more stats, followed by max ooo packets 
 3. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat above shows 0:0 4:43 ... indicating channel 0 has no ooo packets, channel 4 has 43, etc
 4. Input vs. output jitter buffer times are vertically aligned to make comparison easier
