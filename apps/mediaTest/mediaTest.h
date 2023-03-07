@@ -35,6 +35,7 @@
    Modified Dec 2022 JHB, add extern references for char szSDPFile[CMDOPT_MAX_INPUT_LEN] and sig_lib_event_log_filename
    Modified Jan 2023 JHB, add extern reference to fCtrl_C_pressed (see ctrl-C event handler in mediaTest/see cmd_line_interface.c)
    Modified Jan 2023 JHB, add szAppFullCmdLine and GetCommandLine() references
+   Modified Mar 2023 JHB, add frac() helper, does modf() but needs only one argument
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -42,6 +43,7 @@
 
 #include <asm/byteorder.h>    /* get platform byte ordering */
 #include <netinet/in.h>
+#include <math.h>
 
 #include "hwlib.h"            /* DirectCore API */
 #include "cimlib.h"           /* CIM lib API */
@@ -309,6 +311,10 @@ extern "C" {
      return sum;
   }
 
+  static inline double frac(double x) {  /* added JHB Mar 2023 */
+     double not_used;
+     return modf(x, &not_used);
+  }
 #ifdef __cplusplus
 }
 #endif

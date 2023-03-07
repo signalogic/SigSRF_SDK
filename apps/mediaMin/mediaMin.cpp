@@ -182,7 +182,7 @@ using namespace std;
 
 #define NON_DYNAMIC_UDP_PORT_RANGE  4096  /* non-dynamic UDP port range. Change this if less or more UDP ports should be ignored. See FILTER_UDP_PACKETS below, JHB Jan 2023 */
 
-PORT_INFO_LIST NonDynamic_UDP_Port_Allow_List[] = { 1234 };  /* add exceptions here for non-dynamic UDP ports that should be allowed */
+PORT_INFO_LIST NonDynamic_UDP_Port_Allow_List[] = { 1234, 3078, 3079 };  /* add exceptions here for non-dynamic UDP ports that should be allowed. Currently the list has arbitrary port values found in some legacy test pcaps used for mediaMin regression test */
 
 #define SIP_UDP_PORT                5060  /* default UDP port for processing SIP messages */
 #define SIP_UDP_PORT_ENCRYPTED      5061  /* same, encrypted (currently not used) */
@@ -563,9 +563,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    if ((num_app_threads > 1 && (Mode & ENABLE_RANDOM_WAIT)) || (Mode & ENERGY_SAVER_TEST)) ThreadWait(0, thread_index);  /* staggered start for threads */
 
-   if (!fRepeatFromStart) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "Starting packet push-pull loop, press 'q' to exit");
-
-  setvbuf(stdout, NULL, _IONBF, 0);
+   if (!fRepeatFromStart) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "Starting packet push-pull loop, press 'q' to exit, 'd' for real-time debug output, and other keys as described in online documentation");
 
 /* all initialization complete, begin continuous packet push-pull loop */
 
@@ -2389,12 +2387,6 @@ read_packet:
             #endif
          }
 
-//  static int pkt_cnt = 0;
-//  printf(" \n pkt %d, prot = %d \n", pkt_cnt++, DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, pkt_len, NULL, NULL));
-
-//  static int push_cnt = 0;
-//  printf("pushing a packet if possible %d \n", push_cnt++);
-
          #define FILTER_UDP_PACKETS
          #ifdef FILTER_UDP_PACKETS  /* filter UDP packets. Notes:
          
@@ -2407,13 +2399,13 @@ read_packet:
          char szKeyword[50] = "UDP";
          int nMsgTypeFound = 0;
          static int udp_ignore_count = 0;
-         bool fNewLine;
 
-         if (dest_port < NON_DYNAMIC_UDP_PORT_RANGE) {  /* ignore non-dynamic UDP ports. Check for any that might be on the "allow list". Currently the list includes a couple of artificial port numbers used by some old pcaps in the huge pcap test set that mediaMin has to pass. To allow more ports add them to NonDynamic_UDP_Port_Allow_List[] above, JHB Jan 2023 */
+         if (dest_port < NON_DYNAMIC_UDP_PORT_RANGE) {  /* ignore non-dynamic UDP ports. Check for any that might be on the "allow list", JHB Jan 2023 */
 
-            int nAllowed = isNonDynamicPortAllowed(dest_port, thread_index);
+            int nAllowed = isNonDynamicPortAllowed(dest_port, thread_index);  /* currently the allow list includes a few artificial port numbers used by some old pcaps in the huge pcap test set that mediaMin has to pass. To remove or allow ports edit the NonDynamic_UDP_Port_Allow_List[] array above, JHB Jan 2023 */
+
             if (!nAllowed) goto ignore_udp_packet;  /* unknown - ignore it */
-            else if (nAllowed == 1) goto read_packet;  /* known but not media - display/log it (isNonDynamicPortAllowed does that) */
+            else if (nAllowed == 1) goto read_packet;  /* known but not media - display/log it (isNonDynamicPortAllowed() does that) */
             else {};  /* on the allow list -- fall through and process it */
          }
          else if (dest_port ==  SIP_UDP_PORT || dest_port == SIP_UDP_PORT_ENCRYPTED || dest_port == SAP_UDP_PORT) {  /* SIP/SDP over UDP handling */
@@ -2457,10 +2449,9 @@ read_packet:
 
 ignore_udp_packet:
 
-               fNewLine = (udp_ignore_count == 0 && isCursorMidLine) || (udp_ignore_count > 0 && udp_ignore_count < 10);  /* at some point start refreshing the same line; we don't want to endlessly use up screen if the input has a lot unknown UDP packets */
                char tmpstr[200], tmpstr2[20];
                sprintf(tmpstr2, " [%d]", udp_ignore_count+1);
-               sprintf(tmpstr, "%signoring %s packet%s, dst port = %d%s", fNewLine ? "\n" : "\r", szKeyword, udp_ignore_count ? tmpstr2 : "", dest_port, !udp_ignore_count ? ". To allow port add to NonDynamic_UDP_Port_Allow_List[]" : "");
+               sprintf(tmpstr, "ignoring %s packet%s, dst port = %d%s\r", szKeyword, udp_ignore_count ? tmpstr2 : "", dest_port, (frac(log10(udp_ignore_count+1)) == 0.0) ? ". To allow port add to NonDynamic_UDP_Port_Allow_List[]" : "");  /* note we use \r to avoid new lines and using up screen to report ignored UDP ports, also this makes sure the message and port number is visible, JHB Feb 2023 */
                app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%s", tmpstr);
                udp_ignore_count++;
             }
