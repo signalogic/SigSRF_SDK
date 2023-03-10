@@ -129,6 +129,7 @@
    Modified Jan 2023 JHB, in PushPackets() use DS_PKT_INFO_ITEMS_STRUCT flag in DSGetPacketInfo() to help minimize packet handling overhead
    Modified Jan 2023 JHB, add support for SAP/SDP protocol
    Modified Jan 2023 JHB, add rudimentary support for SIP message session control. Look for SESSION_CONTROL_FOUND_SIP_xxx flags. The SIP BYE message will terminate a stream (this can be disabled by the DISABLE_TERMINATE_STREAM_ON_BYE flag in -dN cmd line options)
+   Modified Mar 2023 JHB, handle SIP messages when source port is 5060 (show but not parse)
 */
 
 
@@ -2014,7 +2015,7 @@ int session_push_cnt[128] = { 0 };
 static uint8_t queue_full_warning[MAX_SESSIONS] = { 0 };
 uint64_t fp_sav_pos, wait_time;
 int auto_adj_push_count = 0;
-uint16_t pkt_type, dest_port = 0, pyld_len = 0;
+uint16_t pkt_type, dest_port = 0, src_port = 0, pyld_len = 0;
 uint8_t protocol = 0;
 
 static uint64_t last_cur_time = 0, last_wait_check_time = 0, wait_gap = 0;  /* only used by master app thread */
@@ -2121,6 +2122,7 @@ read_packet:
             /* valid packet from pcap or port input found, set any persistent params needed and proceed ... */
 
                dest_port = PktInfo.dst_port;
+               src_port = PktInfo.src_port;
                pyld_len = PktInfo.pyld_len;
             }
          }
@@ -2293,8 +2295,6 @@ read_packet:
 
          /* look for SIP invite packets */
 
- //  printf("\n *** are we printing 2x mediaMin ? \n");
-
             if (ProcessSessionControl(pkt_in_buf, SESSION_CONTROL_SHOW_SIP_INVITE_MESSAGES | SESSION_CONTROL_ADD_SIP_INVITE_SDP_INFO, j, thread_index, NULL) == SESSION_CONTROL_FOUND_SIP_INVITE) {  /* ProcessSessionControl() in sdp_app.cpp will show messages if Invites are invalid, repeats of existing session IDs, or valid and added to thread_info[] SDP database. Return value is type of SIP message found, if any, JHB Jan 2023 */
 
                uint16_t der_dest_port_list[MAX_DER_DSTPORTS] = { 0 };
@@ -2399,6 +2399,7 @@ read_packet:
          char szKeyword[50] = "UDP";
          int nMsgTypeFound = 0;
          static int udp_ignore_count = 0;
+         bool fSIP = false;
 
          if (dest_port < NON_DYNAMIC_UDP_PORT_RANGE) {  /* ignore non-dynamic UDP ports. Check for any that might be on the "allow list", JHB Jan 2023 */
 
@@ -2410,7 +2411,9 @@ read_packet:
          }
          else if (dest_port ==  SIP_UDP_PORT || dest_port == SIP_UDP_PORT_ENCRYPTED || dest_port == SAP_UDP_PORT) {  /* SIP/SDP over UDP handling */
 
-          /* ProcessSessionControl() in sdp_app.cpp, notes:
+            fSIP = true;
+
+         /* ProcessSessionControl() in sdp_app.cpp, notes:
 
              -accepts flags specifying types of SDP info to find, including SIP Invite messages and SAP/SDP protocol payloads. In the usage below we set uFlags SESSION_CONTROL_ADD_SIP_INVITE_SDP_INFO and SESSION_CONTROL_ADD_SAP_SDP_INFO
              -accepts flags specifying other types of SIP messages to find and report
@@ -2418,9 +2421,9 @@ read_packet:
              -displays/logs session ID related messages including (i) invalid ID (ii) repeat of existing ID (iii) valid + new ID added to thread_info[].xx[stream] SDP database
              -returns type of message found (see sdp_app.h)
              -see sdp_app.cpp for detailed comments and info
-          */
+         */
   
-            if ((nMsgTypeFound = ProcessSessionControl(pkt_in_buf, SESSION_CONTROL_SHOW_ALL_MESSAGES | ((Mode & ENABLE_STREAM_SDP_INFO) ? SESSION_CONTROL_ADD_SIP_INVITE_SDP_INFO | SESSION_CONTROL_ADD_SAP_SDP_INFO : 0), j, thread_index, szKeyword)) > 0) {
+            if ((nMsgTypeFound = ProcessSessionControl(pkt_in_buf, SESSION_CONTROL_SHOW_SIP_INVITE_MESSAGES | ((Mode & ENABLE_STREAM_SDP_INFO) ? SESSION_CONTROL_ADD_SIP_INVITE_SDP_INFO | SESSION_CONTROL_ADD_SAP_SDP_INFO : 0), j, thread_index, szKeyword)) > 0) {
 
                switch (nMsgTypeFound) {
 
@@ -2451,12 +2454,22 @@ ignore_udp_packet:
 
                char tmpstr[200], tmpstr2[20];
                sprintf(tmpstr2, " [%d]", udp_ignore_count+1);
-               sprintf(tmpstr, "ignoring %s packet%s, dst port = %d%s\r", szKeyword, udp_ignore_count ? tmpstr2 : "", dest_port, (frac(log10(udp_ignore_count+1)) == 0.0) ? ". To allow port add to NonDynamic_UDP_Port_Allow_List[]" : "");  /* note we use \r to avoid new lines and using up screen to report ignored UDP ports, also this makes sure the message and port number is visible, JHB Feb 2023 */
+               sprintf(tmpstr, "ignoring %s%s packet%s, dst port = %d%s\r", szKeyword, fSIP ? " SIP" : "", udp_ignore_count ? tmpstr2 : "", dest_port, !fSIP && (frac(log10(udp_ignore_count+1)) == 0.0) ? ". To allow port add to NonDynamic_UDP_Port_Allow_List[]" : "");  /* note we use \r to avoid new lines and using up screen to report ignored UDP ports, also this makes sure the message and port number is visible, JHB Feb 2023 */
                app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%s", tmpstr);
                udp_ignore_count++;
             }
 
             goto read_packet;
+         }
+         else if (src_port == SIP_UDP_PORT) {  /* if source port is UDP SIP we look for SIP messages but don't act on them, JHB Mar 2023 */
+
+            fSIP = true;
+
+            if ((nMsgTypeFound = ProcessSessionControl(pkt_in_buf, SESSION_CONTROL_NO_PARSE | SESSION_CONTROL_SHOW_ALL_MESSAGES, j, thread_index, szKeyword)) > 0) {
+               udp_ignore_count = 0;
+               goto read_packet;
+            }
+            else goto ignore_udp_packet;
          }
 
          udp_ignore_count = 0;

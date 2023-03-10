@@ -31,6 +31,7 @@
    Modified Jan 2023 JHB, handle session IDs in Origin objects. We are seeing a lot of pcaps with repeated SIP Invites (for various reasons, like the receiver was slow so the sender repeats with PSH,ACK) so we need to add SDP info to an input stream's SDP database only when it has a unique session ID
    Modified Jan 2023 JHB, add rudimentary SIP message parsing and status to ProcessSessionControl()
    Modified Jan 2023 JHB, add support for SAP/SDP protocol payloads to ProcessSessionControl()
+   Modified Mar 2023 JHB, implement SESSION_CONTROL_NO_PARSE uFlag, add more SIP message types, fix bug in searching for BYE message
 */
 
 #include <fstream>
@@ -358,7 +359,16 @@ find_comment:
 
 /* list of SIP messages we look for. SIP_MESSAGES struct is defined in sdp_app.h */
 
-static SIP_MESSAGES SIP_Messages[] = { {"100 Trying", "100 Trying", SESSION_CONTROL_FOUND_SIP_TRYING}, {"180 Ringing", "180 Ringing", SESSION_CONTROL_FOUND_SIP_RINGING}, {"ACK sip", "ACK", SESSION_CONTROL_FOUND_SIP_ACK}, {"PRACK", "Prov ACK", SESSION_CONTROL_FOUND_SIP_PROV_ACK}, {"200 OK", "200 OK", SESSION_CONTROL_FOUND_SIP_OK}, {"BYE", "BYE", SESSION_CONTROL_FOUND_SIP_BYE}, {"Invite", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE} };
+static SIP_MESSAGES SIP_Messages[] = { {"100 Trying", "100 Trying", SESSION_CONTROL_FOUND_SIP_TRYING},
+                                       {"180 Ringing", "180 Ringing", SESSION_CONTROL_FOUND_SIP_RINGING},
+                                       {"183 Session", "183 Session Progress", SESSION_CONTROL_FOUND_SIP_PROGRESS},
+                                       {"PRACK sip", "Prov ACK", SESSION_CONTROL_FOUND_SIP_PROV_ACK},
+                                       {"ACK sip", "ACK", SESSION_CONTROL_FOUND_SIP_ACK},
+                                       {"200 OK", "200 OK", SESSION_CONTROL_FOUND_SIP_OK},
+                                       {"BYE\r", "BYE", SESSION_CONTROL_FOUND_SIP_BYE},  /* BYE followed by either carriage return or line feed, per RFC 2327, JHB Mar 2023 */
+                                       {"BYE\n", "BYE", SESSION_CONTROL_FOUND_SIP_BYE},
+                                       {"Invite", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE}
+                                     };
 
 uint8_t* find_keyword(uint8_t* buffer, uint16_t buflen, const char* szKeyword) {
 
@@ -392,7 +402,7 @@ type_check:
 
 // if (index > pyld_len) fprintf(stderr, " ==== index %d > pyld_len %d \n", index, pyld_len);
 
-   if (pyld_len > index && (p = find_keyword(&pkt_in_buf[pyld_ofs+index], pyld_len-index, search_str))) {  /* first find rtpmap, then back up and look for length field or application keyword */
+   if (!(uFlags & SESSION_CONTROL_NO_PARSE) && pyld_len > index && (p = find_keyword(&pkt_in_buf[pyld_ofs+index], pyld_len-index, search_str))) {  /* first find rtpmap, then back up and look for length field or application keyword. Check for SESSION_CONTROL_NO_PARSE uFlag first, JHB Mar 2023 */
 
       strcpy(search_str, "Length:");
       p = find_keyword(&pkt_in_buf[pyld_ofs+index], (uint16_t)(p - &pkt_in_buf[index]), search_str);
@@ -497,7 +507,7 @@ type_check:
          }
       }
    }
-   else if (uFlags & SESSION_CONTROL_SHOW_ALL_MESSAGES) {  /* if requested, return other (i.e. non-Invite) SIP message types */
+   else if (uFlags & SESSION_CONTROL_SHOW_ALL_MESSAGES) {  /* if requested, parse other (i.e. non-Invite) SIP message types */
 
       strcpy(search_str, "");
       int i, num_session_types = sizeof(SIP_Messages)/sizeof(SIP_MESSAGES);
@@ -508,7 +518,7 @@ type_check:
          session_pkt_type_found = SIP_Messages[i].val;
 
          uint16_t dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL);
-         Log_RT(4, "mediaMin INFO: %s SIP message found, dst port = %u, pyld len = %d, index = %d \n", search_str, dest_port, pyld_len, index);
+         Log_RT(4, "mediaMin INFO: SIP %s message found, dst port = %u, pyld len = %d, index = %d \n", search_str, dest_port, pyld_len, index);
          break;
       }
    }
