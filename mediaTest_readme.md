@@ -151,9 +151,11 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Frame Loss Concealment (FLC)](#user-content-framelossconcealment)<br/>
 
 [**_Run-Time Stats_**](#user-content-runtimestats)<br/>
+
 [**_Event Log_**](#user-content-eventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Verifying a Clean Event Log](#user-content-verifyingcleaneventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Packet Log Summary](#user-content-packetlogsummary)<br/>
+
 [**_Packet Log_**](#user-content-packetlog)<br/>
 
 [**_RFCs_**](#user-content-supportedrfcs)<br/>
@@ -171,6 +173,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference)<br/>
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**_mediaMin Run-Time Key Commands_**](#user-content-runtimekeycommands)<br/>
+	
 &nbsp;&nbsp;&nbsp;[mediaTest Command Line Quick-Reference](#user-content-mediatestcommandlinequick-reference)<br/>
 
 
