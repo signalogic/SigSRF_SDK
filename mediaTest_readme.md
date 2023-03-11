@@ -172,7 +172,6 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**_Command Line Quick-Reference_**](#user-content-commandlinequick-reference)<br/>
 
 &nbsp;&nbsp;&nbsp;[mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference)<br/>
-
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin Run-Time Key Commands](#user-content-runtimekeycommands)<br/>
 	
 &nbsp;&nbsp;&nbsp;[mediaTest Command Line Quick-Reference](#user-content-mediatestcommandlinequick-reference)<br/>
