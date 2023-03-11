@@ -168,12 +168,9 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**_Wireshark Notes_**](#user-content-wiresharknotes)<br/>
 &nbsp;&nbsp;&nbsp;[Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark)<br/>
 &nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
-
 [**_Command Line Quick-Reference_**](#user-content-commandlinequick-reference)<br/>
-
 &nbsp;&nbsp;&nbsp;[mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin Run-Time Key Commands](#user-content-runtimekeycommands)<br/>
-	
 &nbsp;&nbsp;&nbsp;[mediaTest Command Line Quick-Reference](#user-content-mediatestcommandlinequick-reference)<br/>
 
 
