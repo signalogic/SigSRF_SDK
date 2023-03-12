@@ -2332,7 +2332,7 @@ mediaMin supports run-time keyboard input. Here is a list of key commands:
 | t | Display debug output for the current packet/media thread index (which by default starts with 0) |
 | s | Stop gracefully. Unlike the Quit command, which stops all packet/media and application threads immediately, a graceful stop waits for each application thread to finish processing inputs and flush sessions. Any remaining repeats specified on the command line are ignored |
 
-The following key commands can be used change application and packet/media thread indexes:
+The following key commands set or change application and packet/media thread indexes:
 
 | Key | Description |
 |-----|-----|
@@ -2341,7 +2341,7 @@ The following key commands can be used change application and packet/media threa
 
 The thread index commands do not change the current display before a subsequent 'd' or 't' command. All commands happen independently of ongoing processing. All key commands are case-insensitive.
 
-Below is a screencap showing 'd' key debug display.
+Below is a screen cap showing 'd' key debug display.
 
 ![mediaMin run-time key command example, showing debug display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/runtime_debug_output_screencap.png?raw=true "mediaMin run-time key command example, showing debug display")
 
