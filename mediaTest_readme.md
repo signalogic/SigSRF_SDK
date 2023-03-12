@@ -2349,9 +2349,9 @@ Debug output is highlighted in red. Below is a description individual highlighte
 
 | Highlight | Description |
 |-----|-----|
-| Red underline | 1st #### application thread, 2nd #### packet/media thread |
+| Red underline | 1st #### application thread, 2nd #### packet/media thread. Packet/media thread "usage" figures are profiling measurements (in msec) |
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
-| Blue | Stream group |
+| Blue | Stream group, gN indicates group index, mN indicates group member index, o indicates group owner, and flc indicates frame loss concealment |
 | Green | System wide info |
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
