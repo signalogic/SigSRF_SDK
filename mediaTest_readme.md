@@ -2327,10 +2327,10 @@ mediaMin supports run-time keyboard input, without pausing processing. Here is a
 |-----|-----|
 | q | Quit |
 | d | Display debug output, including application threads, packet/media threads, and overall. See screen cap example below |
-| o | Disables packet/media thread display output. Can be useful for remote terminal testing when slow network transmission affects application performance. Presing again re-enables |
+| o | Disable packet/media thread display output. This commnd can be useful for remote terminal testing when slow network transmission affects application performance. Pressing again re-enables |
 | p | Pause processing. Pressing again resumes |
-| t | Displays debug output for the current packet/media thread index (which by default starts with 0) |
-| s | Graceful stop. Unlike a Quit command, which stops all packet/media and application threads immediately, a graceful stop waits for each application thread to finish processing its inputs, flush sessions, and disables any repeats specified on the command line |
+| t | Display debug output for the current packet/media thread index (which by default starts with 0) |
+| s | Stop gracefully. Unlike a Quit command, which stops all packet/media and application threads immediately, a graceful stop waits for each application thread to finish processing its inputs, flushes sessions, and ignores any remaining repeats specified on the command line |
 
 The following key commands can be used change application and packet/media thread indexes:
 
@@ -2341,5 +2341,9 @@ The following key commands can be used change application and packet/media threa
 
 All key input is case-insensitive.
 
+Below is a screencap showing 'd' key debug display.
+
+![mediaMin run-time key command example, showing debug display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/runtime_debug_output_screencap.png?raw=true "mediaMin run-time key command example, showing debug display")
+	
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
