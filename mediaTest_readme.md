@@ -2321,7 +2321,7 @@ The ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/sig
 <a name="RunTimeKeyCommands"></a>
 ### mediaMin Run-Time Key Commands
 
-mediaMin supports run-time keyboard input, without pausing processing. Here is a list of key commands:
+mediaMin supports run-time keyboard input. Here is a list of key commands:
 
 | Key | Description |
 |-----|-----|
@@ -2330,7 +2330,7 @@ mediaMin supports run-time keyboard input, without pausing processing. Here is a
 | o | Disable packet/media thread display output. This commnd can be useful for remote terminal testing when slow network transmission affects application performance. Pressing again re-enables |
 | p | Pause processing. Pressing again resumes |
 | t | Display debug output for the current packet/media thread index (which by default starts with 0) |
-| s | Stop gracefully. Unlike the Quit command, which stops all packet/media and application threads immediately, a graceful stop waits for each application thread to finish processinginputs and flush sessions. Any remaining repeats specified on the command line are ignored |
+| s | Stop gracefully. Unlike the Quit command, which stops all packet/media and application threads immediately, a graceful stop waits for each application thread to finish processing inputs and flush sessions. Any remaining repeats specified on the command line are ignored |
 
 The following key commands can be used change application and packet/media thread indexes:
 
@@ -2339,7 +2339,7 @@ The following key commands can be used change application and packet/media threa
 | 0-9 | Set the current packet/media thread index |
 | +, - | Change the current application thread index |
 
-The thread index commands do not change the current display until a subsequent 'd' or 't' command happens. All key input is case-insensitive.
+The thread index commands do not change the current display until a subsequent 'd' or 't' command happens. All commands happen in real-time, without pausing processing (except for the Pause command). All key input is case-insensitive.
 
 Below is a screencap showing 'd' key debug display.
 
