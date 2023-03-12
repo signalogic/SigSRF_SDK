@@ -2339,9 +2339,7 @@ The following key commands can be used change application and packet/media threa
 | 0-9 | Set the current packet/media thread index |
 | +, - | Change the current application thread index |
 
-The thread index commands do not change the current display until a subsequent 'd' or 't' command happens.
-
-All key input is case-insensitive.
+The thread index commands do not change the current display until a subsequent 'd' or 't' command happens. All key input is case-insensitive.
 
 Below is a screencap showing 'd' key debug display.
 
@@ -2352,7 +2350,7 @@ Debug output is highlighted in red. Below is a description individual highlighte
 | Highlight | Description |
 |-----|-----|
 | Red underline | 1st #### application thread, 2nd #### packet/media thread |
-| Yellow | Session information, including values of all possible session handles. -1 indicate not used |
+| Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group |
 | Green | System wide info |
 
