@@ -2318,5 +2318,28 @@ Below are are pcap format related command line options.
 
 The ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
 
+<a name="RunTimeKeyCommands"></a>
+### mediaMin Run-Time Key Commands
+
+mediaMin supports run-time keyboard input, without pausing processing. Here is a list of key commands:
+
+| Key | Description |
+|-----|-----|
+| q | Quit |
+| d | Display debug output, including application threads, packet/media threads, and overall. See screen cap example below |
+| o | Disables packet/media thread display output. Can be useful for remote terminal testing when slow network transmission affects application performance. Presing again re-enables |
+| p | Pause processing. Pressing again resumes |
+| t | Displays debug output for the current packet/media thread index (which by default starts with 0) |
+| s | Graceful stop. Unlike a Quit command, which stops all packet/media and application threads immediately, a graceful stop waits for each application thread to finish processing its inputs, flush sessions, and disables any repeats specified on the command line |
+
+The following key commands can be used change application and packet/media thread indexes:
+
+| Key | Description |
+|-----|-----|
+| 0-9 | Set the current packet/media thread index |
+| +, - | Change the current application thread index |
+
+All key input is case-insensitive.
+
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
