@@ -2339,13 +2339,13 @@ The following key commands can be used change application and packet/media threa
 | 0-9 | Set the current packet/media thread index |
 | +, - | Change the current application thread index |
 
-The thread index commands do not change the current display until a subsequent 'd' or 't' command happens. All commands happen in real-time, without pausing processing (except for the Pause command). All key input is case-insensitive.
+The thread index commands do not change the current display before a subsequent 'd' or 't' command. All commands happen independently of ongoing processing. All key commands are case-insensitive.
 
 Below is a screencap showing 'd' key debug display.
 
 ![mediaMin run-time key command example, showing debug display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/runtime_debug_output_screencap.png?raw=true "mediaMin run-time key command example, showing debug display")
 
-Debug output is highlighted in red. Below is a description individual highlighted areas.
+Debug output is highlighted in red. Below is a description individual highlighted areas:
 
 | Highlight | Description |
 |-----|-----|
