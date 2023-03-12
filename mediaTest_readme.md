@@ -2345,13 +2345,13 @@ Below is a screen cap showing 'd' key debug display.
 
 ![mediaMin run-time key command example, showing debug display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/runtime_debug_output_screencap.png?raw=true "mediaMin run-time key command example, showing debug display")
 
-Debug output is highlighted in red. Below is a description individual highlighted areas:
+Debug output is highlighted in red. Individual highlighted areas are described below:
 
 | Highlight | Description |
 |-----|-----|
 | Red underline | 1st #### application thread, 2nd #### packet/media thread. Packet/media thread "usage" figures are profiling measurements (in msec) |
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
-| Blue | Stream group, gN indicates group index, mN indicates group member index, o indicates group owner, and flc indicates frame loss concealment |
+| Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, and flc indicates frame loss concealment |
 | Green | System wide info |
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
