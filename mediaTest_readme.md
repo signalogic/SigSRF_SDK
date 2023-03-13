@@ -486,7 +486,9 @@ In general, mediaMin uses the following naming convention for stream group outpu
 
 where groupID is typically taken from the first input spec on the command line ("-i" spec), NN is the stream group index, TT is the mediaMin application thread index, and MM is the mode (none or "tm" for telecom mode, "am" for analytics mode).  If only one mediaMin thread is active, then TT is omitted.
 
-Note the above command line also enables [wav file outputs](#user-content-wavfileoutput) for the stream group and its individual contributors (the 0x800 flag in -dN options). An N-channel wav file is also created (where N is the number of group contributors).
+Note the above command line also enables [wav file outputs](#user-content-wavfileoutput) for the stream group and its individual contributors the ENABLE_WAV_OUTPUT flag in -dN options (defined as 0x800 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). An N-channel wav file is also created (where N is the number of group contributors).
+
+For a large number of stream groups, the WHOLE_GROUP_THREAD_ALLOCATE flag can be set in -dN cmd line options (defined as 0x8000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), which will prevent stream groups from splitting across packet/media threads. This avoids use of spinlocks (semaphores) for the stream group and improves performance.
 
 Screen captures below show [run-time stats](#user-content-runtimestats) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
@@ -2351,7 +2353,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 |-----|-----|
 | Red underline | 1st #### application thread, 2nd #### packet/media thread. Packet/media thread "usage" figures are profiling measurements (in msec) |
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
-| Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, and flc indicates frame loss concealment |
+| Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide info |
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
