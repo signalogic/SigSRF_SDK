@@ -486,7 +486,7 @@ In general, mediaMin uses the following naming convention for stream group outpu
 
 where groupID is typically taken from the first input spec on the command line ("-i" spec), NN is the stream group index, TT is the mediaMin application thread index, and MM is the mode (none or "tm" for telecom mode, "am" for analytics mode).  If only one mediaMin thread is active, then TT is omitted.
 
-Note the above command line also enables [wav file outputs](#user-content-wavfileoutput) for the stream group and its individual contributors the ENABLE_WAV_OUTPUT flag in -dN options (defined as 0x800 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). An N-channel wav file is also created (where N is the number of group contributors).
+Note the above command line also enables [wav file outputs](#user-content-wavfileoutput) for the stream group and its individual contributors the ENABLE_WAV_OUTPUT flag in -dN cmd line options (defined as 0x800 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). An N-channel wav file is also created (where N is the number of group contributors).
 
 For a large number of stream groups, the WHOLE_GROUP_THREAD_ALLOCATE flag can be set in -dN cmd line options (defined as 0x8000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), which will prevent stream groups from splitting across packet/media threads. This avoids use of spinlocks (semaphores) for the stream group and improves performance.
 
