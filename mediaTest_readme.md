@@ -2329,7 +2329,7 @@ mediaMin supports run-time keyboard input. Here is a list of key commands:
 |-----|-----|
 | q | Quit |
 | d | Display debug output, including application threads, packet/media threads, and overall. See screen cap example below |
-| o | Disable packet/media thread display output. This commnd can be useful for remote terminal testing when slow network transmission affects application performance. Pressing again re-enables |
+| o | Disable packet/media thread display output. This command can be useful for remote terminal testing when slow network transmission affects application performance. Pressing again re-enables |
 | p | Pause processing. Pressing again resumes |
 | t | Display debug output for the current packet/media thread index (which by default starts with 0) |
 | s | Stop gracefully. Unlike the Quit command, which stops all packet/media and application threads immediately, a graceful stop waits for each application thread to finish processing inputs and flush sessions. Any remaining repeats specified on the command line are ignored |
@@ -2354,7 +2354,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Red underline | 1st #### application thread, 2nd #### packet/media thread. Packet/media thread "usage" figures are profiling measurements (in msec) |
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
-| Green | System wide info |
+| Green | System wide informatin, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
