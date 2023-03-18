@@ -1592,14 +1592,17 @@ Below is a run-time stats example from a mediaMin screen capture.
 Here are some notational conventions used in run-time stats formatting:
 
 1. Session identifers (hSession), channel identifiers (ch), and stream group owners (grp) are followed by a colon (":"). Values of each range from 0 to max allowed (depending on version of SigSRF software)
-2. At sub-category level, stats are separated by a comma. For example the Ooo (ch/pkts) stat above shows 0:0 4:43 ..., max 0:0 4:2 ...which indicates number of ooo packets followed by one or more stats, followed by max ooo packets 
-3. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat above shows 0:0 4:43 ... indicating channel 0 has no ooo packets, channel 4 has 43, etc
-4. Input vs. output jitter buffer times are vertically aligned to make comparison easier
-5. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
+2. Session information includes session, channel, codec type, initial bitrate (separated from codec type by a "/"), and any subsequent dynamic bitrates <sup>1</sup>. 
+3. At sub-category level, stats are separated by a comma. For example the Ooo (ch/pkts) stat above shows 0:0 4:43 ..., max 0:0 4:2 ...which indicates number of ooo packets followed by one or more stats, followed by max ooo packets 
+4. Within a single stat at sub-category level, channels are separated by one (1) space. For example the Ooo (ch/pkts) stat above shows 0:0 4:43 ... indicating channel 0 has no ooo packets, channel 4 has 43, etc
+5. Input vs. output jitter buffer times are vertically aligned to make comparison easier
+6. A time value that displays as "nan" or "-nan" indicates no instance of that stat was recorded
 
 The screencap below shows a run-time stats example, with highlighting around the sessions summary, including channels for each session and codec type and bitrate for each channel.
 
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_multirate_multiformat_example.png" width="1024" alt="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted" title="Run-time stats example with session, channels for each session, and bitrates for each channel highlighted"/></br>
+
+<sup>1</sup> Dynamic bitrates occur when the bitrate changes on-the-fly, due to a codec mode request or re-negotiation by transmit and receive endpoints
 
 <a name="EventLog"></a>
 # Event Log
