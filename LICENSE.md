@@ -6,12 +6,12 @@ This Github SigSRF License Agreement Version 1.0 (the “Agreement”) is a modi
 
 ### 1.1 Software Scope and Definitions
 
-SigSRF software has been developed and commercialized by Signalogic since the 1990s as a series of libraries, drivers, and reference applications, primarily focused on packet, media, and signal, and neural net processing, and is currently deployed worldwide by analytics, telecom, and gov/mil customers and end-customers of Signalogic. Github SigSRF Software is a subset of SigSRF Software and is available on the Github SigSRF_SDK repository intended for demonstration ("demo"), evaluation, Research & Development ("R&D"), test and measurement, and limited commercial purposes. Github SigSRF Software makes available certain source codes used in the SigSRF Software, including, but not limited to, C/C++ source code for:
+SigSRF software has been developed and commercialized by Signalogic since the 1990s as a series of libraries, drivers, and reference applications, primarily focused on packet, media, and signal, and neural net processing, and is currently deployed worldwide by analytics, telecom, and gov/mil customers and end-customers of Signalogic. Github SigSRF Software is a subset of SigSRF Software and is available on the Github SigSRF_SDK repository intended for demonstration ("demo"), evaluation, Research & Development ("R&D"), test and measurement, and limited commercial purposes. Github SigSRF Software makes available certain C/C++ source codes for use-cases including, but not limited to:
 
 <ol type="a">
   <li>Media + packet real-time threads, including SigSRF API usage for packet queue receive/send, jitter buffer add/retrieve, codec decode/encode, stream group processing, and packet diagnostics</li>
-  <li>Reference applications, including SigSRF API usage for session create/modify/delete, packet push/pull, and event and packet logging. Also included are static and dynamic session creation, RTP stream auto-detect, packet pcap and UDP input</li>
-  <li>Stream group output audio processing, speech recognition, and user-defined signal processing</li>
+  <li>Reference applications, including SigSRF API usage for session create/modify/delete, packet push/pull, and event and packet logging. Also included are static and dynamic session creation, RTP stream auto-detect, packet pcap and UDP input, and UDP encapsulated TCP protocols</li>
+  <li>Stream group output audio processing for lawful intelligence, lawful interception, speech recognition, robotics, robotaxis, and user-defined signal processing</li>
 </ol>
 
 As a Software Development Kit (SDK), Github SigSRF software includes Makefiles and header files (.h files) needed to build modified reference applications and generate new, user-defined applications.
