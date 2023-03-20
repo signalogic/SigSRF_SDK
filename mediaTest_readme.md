@@ -977,8 +977,9 @@ Running the above command on a Xeon E5-2660 R0 @ 2.20GHz core, and using a gcc/g
 Running on x86 cores, no coCPU cores specified
 x86 mediaTest start
 x86 codec test start, debug flags = 0x0
-INFO: DSAssignPlatform() system CPU architecture supports rdtscp instruction, TSC integrity monitoring enabled
-INFO: DSConfigVoplib() voplib and codecs initialized, flags = 0x1d
+00:00:00.000.001 INFO: DSAssignPlatform() says system clock rate 2194.618 MHz, CPU architecture supports rdtscp instruction, TSC integrity monitoring enabled
+00:00:00.000.118 INFO: DSAssignPlatform() says hwlib shared mem initialized, hPlatform handle 201906926 returned
+00:00:00.000.163 INFO: DSConfigVoplib() voplib and codec libs initialized, flags = 0x1
 Opened audio input file test_files/Nchan21.wav
 Opening codec config file: session_config/evs_16kHz_13200bps_config
 Opened config file: codec = EVS, 13200 bitrate, sample rate = 16000 Hz, num channels = 1 (note: input waveform header 21 channels overrides config file value 1)
@@ -986,12 +987,12 @@ Opened config file: codec = EVS, 13200 bitrate, sample rate = 16000 Hz, num chan
 Opened output audio file Nchan21_evs.wav
 Running encoder-decoder data flow ...
 Processing frame 1467...
-Run-time: 12.306819s
+Run-time: 11.506294s
 x86 codec test end
 x86 mediaTest end
 ```
 	
-In this example, the test takes about 12.3 sec to encode and decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 51 channels of encode + decode to stay in real-time. On an Atom C2358 @ 2 GHz, the same command takes about 33 sec. Of course processing time varies depending on your system's core type and speed.
+In this example, the test takes about 11.5 sec to encode and decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 54 channels of encode + decode to stay in real-time. On an Atom C2358 @ 2 GHz, the same command takes about 33 sec. Of course processing time varies depending on your system's core type and speed.
 	
 To make the test longer, for example to allow htop inspection of core activity and memory usage, the input waveform file can be "wrapped" using the repeat command line option, for example:
 
