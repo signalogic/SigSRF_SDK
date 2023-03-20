@@ -987,12 +987,12 @@ Opened config file: codec = EVS, 13200 bitrate, sample rate = 16000 Hz, num chan
 Opened output audio file Nchan21_evs.wav
 Running encoder-decoder data flow ...
 Processing frame 1467...
-Run-time: 11.506294s
+Run-time: 11.376301s 
 x86 codec test end
 x86 mediaTest end
 ```
 	
-In this example, the test takes about 11.5 sec to encode and decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 54 channels of encode + decode to stay in real-time. On an Atom C2358 @ 2 GHz, the same command takes about 33 sec. Of course processing time varies depending on your system's core type and speed.
+In this example, the test takes about 11.4 sec to encode and decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 55 channels of encode + decode to stay in real-time. On an Atom C2358 @ 2 GHz, the same command takes about 33 sec. Of course processing time varies depending on your system's core type and speed.
 	
 To make the test longer, for example to allow htop inspection of core activity and memory usage, the input waveform file can be "wrapped" using the repeat command line option, for example:
 
