@@ -1605,7 +1605,7 @@ The screencaps below show run-time stats examples, with highlighting around the 
 
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_multirate_multiformat_example_annotated.png" width="1024" alt="Run-time stats example with session summary fields annotated" title="Run-time stats example with session summary fields annotated"/></br>
 
-<sup>1</sup> Dynamic bitrates occur when a stream's bitrate changes on-the-fly, due to a codec mode request or re-negotiation by transmit and receive endpoints. Dynamic bitrates also include DTX bitrates, for example for telecom codecs (not LBR codecs like MELPe) low values such as 1750 or 2400 bps are DTX rates
+<sup>1</sup> Dynamic bitrates occur when a stream's bitrate changes on-the-fly, due to a codec mode request (known as a CMR) or re-negotiation by transmit and receive endpoints. Dynamic bitrates also include DTX bitrates, for example for telecom codecs (not LBR codecs like MELPe) low values such as 1750 or 2400 bps are DTX rates
 
 <a name="EventLog"></a>
 # Event Log
