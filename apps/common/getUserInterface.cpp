@@ -129,7 +129,7 @@ CmdLineOpt::Record options[] = {
 	{'R', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Repeat number of times", {{(void*)-1}} },
 	{'g', CmdLineOpt::STRING, NOTMANDATORY,
-          (char *)"stream group output path" },  /* added JHB 2022 */
+          (char *)"stream group output path" },  /* added JHB Dec 2022 */
 
    /* gpx processing flags */
 

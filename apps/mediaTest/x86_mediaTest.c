@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/x86_mediaTest.c
 
- Copyright (C) Signalogic Inc. 2017-2022
+ Copyright (C) Signalogic Inc. 2017-2023
  
  License
 
@@ -82,6 +82,7 @@
   Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo()
   Modified Dec 2022 JHB, change references to cmd_line_debug_flags.h to cmd_line_options_flags.h
   Modified Dec 2022 JHB, replace ancient event log config with new diaglib APIs DSInitLogging() and DSCloseLogging()
+  Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode()
 */
 
 /* Linux header files */
@@ -780,7 +781,7 @@ void x86_mediaTest(void) {
          case DS_VOICE_CODEC_TYPE_EVS:
          {
             CodecParams.enc_params.samplingRate = codec_test_params.sample_rate;       /* in Hz. Note that for fullband (FB, 48 kHz) sampling rate (Fs) with cutoff frequency (Fc) of 20 kHz, a minimum bitrate of 24.4 kbps is required. If you give 13.2 kbps bitrate, then the codec enforces an Fc of 14.4 kHz */
-            CodecParams.enc_params.bitRate = codec_test_params.bitrate;                /* in bps */
+            CodecParams.enc_params.bitRate = codec_test_params.bitrate;                /* in bps. Note that bitrate determines whether Primary or AMR-WB IO mode payload format is used (see the EVS specification for valid rates for each mode) */
             CodecParams.enc_params.dtx.dtx_enable = codec_test_params.dtx_enable;      /* 0 = DTX disabled, 1 = enabled */
             CodecParams.enc_params.sid_update_interval = codec_test_params.dtx_value ? codec_test_params.dtx_value : (codec_test_params.dtx_enable ? 8 : 0);  /* if DTX is enabled then default SID update interval is 8.  A zero update interval enables "adaptive SID" */
             CodecParams.enc_params.rf_enable = codec_test_params.rf_enable;
@@ -866,6 +867,9 @@ void x86_mediaTest(void) {
             CodecParams.enc_params.isf = codec_test_params.isf;
             CodecParams.enc_params.low_complexity = codec_test_params.low_complexity;
             CodecParams.enc_params.dtx.vad = codec_test_params.vad;
+            #if 0
+            CodecParams.enc_params.rtp_pyld_hdr_format.oct_align = codec_test_params.header_format;  /* no mention of CMR in RFC 4352, so we assume CMR is not used in AMR-WB+, JHB Mar 2023 */
+            #endif
             CodecParams.enc_params.nChannels = codec_test_params.num_chan;
             CodecParams.enc_params.mono = codec_test_params.mono;
 
@@ -1507,7 +1511,7 @@ PollBuffer:
 
 //   if (frame_count < 200) memset(in_buf, 0, 640);
 
-               coded_framesize = DSCodecEncode(encoder_handle, 0, in_buf, coded_buf, inbuf_size, numChan, &encOutArgs);  /* call voplib codec encode API */
+               coded_framesize = DSCodecEncode(encoder_handle, 0, in_buf, coded_buf, inbuf_size, numChan, NULL, &encOutArgs);  /* call voplib codec encode API */
 
                #ifdef CODEC_FILE_DEBUG
                printf(" encode: duration = %d, uncompress = %d, coded frame size = %d \n", (int)codec_frame_duration, codec_test_params.uncompress, coded_framesize);

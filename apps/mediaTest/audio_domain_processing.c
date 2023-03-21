@@ -30,6 +30,7 @@
   Modified Feb 2022 JHB, modify calling format to DSConvertFs(), see comments in alglib.h
   Modified Oct 2022 JHB, change DSGetCodeSampleRate() to DSGetCodecInfo()
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
+  Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode(). See voplib.h comments
 */
 
 
@@ -295,7 +296,7 @@ HASRDECODER hASRDecoder;
 
       /* encode audio */
 
-         pyld_len = DSCodecEncode(&hCodec, 0, pAudioBuffer, group_audio_encoded_frame, frame_size*up_factor/down_factor, 1, NULL);
+         pyld_len = DSCodecEncode(&hCodec, 0, pAudioBuffer, group_audio_encoded_frame, frame_size*up_factor/down_factor, 1, NULL, NULL);
 
          if (pyld_len < 0) {  /* if merge codec doesn't exist or has already been deleted */
             Log_RT(3, "WARNING: DSProcessGroupAudio() says DSCodecEncode() returns %d error code, hSession = %d, idx = %d \n", pyld_len, hSession, idx);

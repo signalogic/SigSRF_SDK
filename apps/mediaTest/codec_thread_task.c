@@ -14,6 +14,7 @@
   Modified Mar 2022 JHB, add some missing initializer brackets that cause warnings with gcc compiler
   Modified Oct 2022 JHB, change DSGetCodecRawFramesize() to DSGetCodecInfo()
   Modified Jan 2023 JHB, moved _fread() wrapper to mediaTest.h - make available to all apps
+  Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode()
 */
 
 #include <stdio.h>
@@ -71,7 +72,7 @@ void *encode_thread_task(void *arg)
 
    while (pm_run && ((ret_val = _fread(in_buf, sizeof(char), in_frame_size, in_fp)) == (int)in_frame_size)) {
 
-      out_frame_size = DSCodecEncode(&hCodec, 0, in_buf, out_buf, in_frame_size, 1, NULL);
+      out_frame_size = DSCodecEncode(&hCodec, 0, in_buf, out_buf, in_frame_size, 1, NULL, NULL);
 
       ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &out_fp, NULL, (uintptr_t)out_buf, out_frame_size, DS_WRITE, &MediaInfo);
 

@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/include/voplib.h
 
- Copyright (C) Signalogic Inc. 2010-2022
+ Copyright (C) Signalogic Inc. 2010-2023
 
  License
 
@@ -35,6 +35,7 @@
   Modified Oct 2022 JHB, change DSGetPayloadHeaderFormat() to DSGetPayloadHeaderInfo() to reflect updates for additional params and info retrieval
   Modified Oct 2022 JHB, add pBitrateIndex param to DSGetCompressedFramesize()
   Modified Oct 2022 JHB, consolidate DSGetCodecName() and several others into DSGetCodecInfo() API, following pktlib model
+  Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode(), add CODEC_INARGS struct definition, add bitRate and CMR params to CODEC_OUTARGS struct. These were previously in license-only versions now they are public. See comments
 */
  
 #ifndef _VOPLIB_H_
@@ -111,7 +112,7 @@ extern "C" {
 
 /* generic items */
 
-   int bitRate;
+   int bitRate;               /* bitrate in bps */
    int samplingRate;          /* most codecs are based on a fixed sampling rate so this is used only for advanced codecs such as EVS and Opus */
    float frameSize;           /* amount of data (in msec) processed by the codec per frame, for example 20 msec for AMR or EVS, 22.5 msec for MELPe, etc */
 
@@ -180,13 +181,48 @@ extern "C" {
 
   } CODEC_DEC_PARAMS;
 
-  typedef struct {  /* additional output from DSCodecEncode() and DSCodecDecode() APIs */
+  enum encoder_frametype {
+ 
+    ENCODER_FRAMETYPE_SPEECH = 0,      /* speech frame */
+    ENCODER_FRAMETYPE_SIDFRAME = 1,    /* SID frames for codecs that support DTX */
+    ENCODER_FRAMETYPE_NODATA = 2,      /* untransmitted frame for codecs that support DTX */
+    ENCODER_FRAMETYPE_NOISE = 3,       /* background noise for codecs that support audio classification */
+    ENCODER_FRAMETYPE_SOUND = 4,       /* sound for codecs that support audio classification */
+    ENCODER_FRAMETYPE_MUSIC = 5        /* music for codecs that support audio classification */
 
-   short int size;            /* generic size field, used differently by codecs */
-   short int frameType;       /* encoder frame types */
+  };
+ 
+  typedef struct {  /* optional additional output from DSCodecEncode() and DSCodecDecode() APIs */
+
+   short int size;                     /* generic size field, used differently by codecs */
+   short int frameType;                /* possible frame types after encoder classifies audio */
    int extendedError;
 
+   uint8_t CMR;                        /* CMR (Codec Mode Request) received from remote endpoint, if supported by the codec type. Notes:
+
+                                          -for AMR codecs CMR is always the value in the payload header being decoded. Examples include 0xf0 (no mode request), 0x20 (AMR-WB 12.65 bps), 0x70 (AMR-NB 1.20 kbps), etc. If the remote endpoint sent "no mode request", CMR will be 0xf0
+                                          -for EVS codecs CMR will be non-zero only if sent by the remote endpoint. Examples include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. CMR will be non-zero if (a) the remote endpoint is sending in headerfull format and includes a CMR byte or (b) the remote endpoint is sending in AMR-WB IO mode compact format
+                                          -received CMR values are not shifted in any way. For octet aligned and headerfull formats, CMR contains the whole byte as received (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR contains the partial 4 or 3 bits, in the exact position they were received, with the rest of CMR zero'ed
+                                       */
+
+   int bitRate;                        /* bitrate detected by the decoder (in bps), if supported by the codec type */
+
   } CODEC_OUTARGS;
+
+  typedef struct {  /* optional additional input to DSCodecEncode() API */
+
+   uint8_t CMR;                        /* CMR (Codec Mode Request) to be sent to remote endpoint, if any. Notes:
+
+                                          -for AMR codecs if pInArgs is non-NULL then CMR will be sent regardless of value, in both octet-aligned and bandwdith efficient formats. If "no mode request" should be sent, then specify 0xf0. When pInArgs is NULL, 0xf0 is sent by voplib
+                                          -for EVS codecs using headerfull format, if pInArgs is non-NULL then non-zero CMR values will be sent. Examples include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. Note the CMR value msb should be set in order to comply with section A.2.2.1.1 in the EVS specification (the "H" bit). When pInArgs is NULL, or when compact format is in use, no CMR is sent
+                                          -for EVS codecs using AMR-WB IO mode in compact format CMR will contain the CMR value sent by the remote endpoint. Example include 0 (6.6 kbps), 0xc0 (23.85 kbps), 0xe0 (no mode request), etc.
+                                          -CMR should not be shifted in any way. For octet aligned and headerfull formats, CMR should give the whole byte to insert in outgoing payloads (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR should give the partial 4 or 3 bits, in the exact position within a payload byte as shown in the codec spec, with the rest of CMR zero'ed
+                                       */
+
+   CODEC_ENC_PARAMS* pCodecEncParams;  /* to change bitRate or codec-specific parameters within the duration of a codec instance, specify a CODEC_ENC_PARAMS struct. Note this only applies to newer, advanced codecs such as EVS and OPUS, JHB Mar 2023 */
+
+  } CODEC_INARGS;
+
 
 /* CODEC_PARAMS struct used in DSCodecCreate() and DSGetCodecInfo() */
 
@@ -198,13 +234,13 @@ extern "C" {
      uint16_t coded_frame_size;    /*   "    "    " */
      int payload_shift;            /* special case item, when non-zero indicates shift payload after encoding or before decoding, depending on which codec and the case. Initially needed to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/-, JHB Sep 2022 */
 
-     CODEC_ENC_PARAMS enc_params;  /* if encoder instance is being created, this must point to desired encoder params. See examples in x86_mediaTest.c */
-     CODEC_DEC_PARAMS dec_params;  /* if decoder instance is being created, this must point to desired decoder params. See examples in x86_mediaTest.c */
+     CODEC_ENC_PARAMS enc_params;  /* if encoder instance is being created, this must point to desired encoder params. See examples in x86_mediaTest.c or hello_codec.c */
+     CODEC_DEC_PARAMS dec_params;  /* if decoder instance is being created, this must point to desired decoder params. See examples in x86_mediaTest.c or hello_codec.c */
 
   } CODEC_PARAMS;
 
 
-  HCODEC DSCodecCreate(void* pCodecInfo, unsigned int uFlags);  /* if DS_CC_USE_TERMINFO flag is given, pCodecInfo is interpreted as TERMINATION_INFO* (shared_include/session.h), otherwise as CODEC_PARAMS* (above) */
+  HCODEC DSCodecCreate(void* pCodecInfo, unsigned int uFlags);  /* by default pCodecInfo should point to a CODEC_PARAMS struct; for example usage see x86_mediaTest.c or hello_codec.c. If the DS_CC_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing) */
 
   void DSCodecDelete(HCODEC hCodec);
 
@@ -214,7 +250,8 @@ extern "C" {
                     uint8_t*         outData,       /* pointer to output coded bitstream data */
                     uint32_t         in_frameSize,  /* size of input audio data, in bytes */
                     int              numChan,       /* number of channels to be encoded. Multichannel data must be interleaved */
-                    CODEC_OUTARGS*   pOutArgs);     /* optional encoding parameters. Typically this value is NULL */
+                    CODEC_INARGS*    pInArgs,       /* optional parameters for encoding the audio frame (only supported by newer codecs) */
+                    CODEC_OUTARGS*   pOutArgs);     /* optional encoding parameters. If not used this param should be NULL */
 
   int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
                     unsigned int     uFlags,        /* flags, see DS_CD_xxx flags below */
@@ -222,7 +259,7 @@ extern "C" {
                     uint8_t*         outData,       /* pointer to output audio data */
                     uint32_t         in_frameSize,  /* size of coded bitstream data, in bytes */
                     int              numChan,       /* number of channels to be decoded. Multichannel data must be interleaved */
-                    CODEC_OUTARGS*   pOutArgs);     /* optional decoding parameters. Typically this value is NULL */
+                    CODEC_OUTARGS*   pOutArgs);     /* optional decoding parameters. If not used this param should be NULL */
 
   int DSCodecTranscode(HCODEC*       hCodecSrc,
                        HCODEC*       hCodecDst,

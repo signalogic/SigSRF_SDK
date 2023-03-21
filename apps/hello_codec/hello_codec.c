@@ -31,6 +31,7 @@
   Modified Dec 2022 JHB, change references to cmd_line_debug_flags.h to cmd_line_options_flags.h
   Modified Dec 2022 JHB, misc items in the way of understanding how to use codecs moved to hello_codec.h
   Modified Feb 2023 JHB, change run to pm_run
+  Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode()
 */
 
 /* Linux header files */
@@ -121,7 +122,7 @@ int main(int argc, char** argv) {
 
       for (int i=0; i<numChan; i++) {  /* to specify multichannel audio data (e.g. stereo, N-channel wav), set numChan > 1 */
       
-         coded_framesize = DSCodecEncode(encoder_handles, 0, &in_buf[frame_count*inbuf_size], coded_buf, inbuf_size, numChan, &encOutArgs);  /* call codec encode API (in voplib)*/
+         coded_framesize = DSCodecEncode(encoder_handles, 0, &in_buf[frame_count*inbuf_size], coded_buf, inbuf_size, numChan, NULL, &encOutArgs);  /* call codec encode API (in voplib)*/
 
       /*
          :
@@ -180,7 +181,7 @@ bool fCreateCodec = true;
          case DS_VOICE_CODEC_TYPE_EVS:
          {
             CodecParams->enc_params.samplingRate = codec_test_params->sample_rate;       /* in Hz. Note that for fullband (FB, 48 kHz) sampling rate (Fs) with cutoff frequency (Fc) of 20 kHz, a minimum bitrate of 24.4 kbps is required. If you give 13.2 kbps bitrate, then the codec enforces an Fc of 14.4 kHz */
-            CodecParams->enc_params.bitRate = codec_test_params->bitrate;                /* in bps */
+            CodecParams->enc_params.bitRate = codec_test_params->bitrate;                /* in bps. Note that bitrate determines whether Primary or AMR-WB IO mode payload format is used (see the EVS specification for valid rates for each mode) */
             CodecParams->enc_params.dtx.dtx_enable = codec_test_params->dtx_enable;      /* 0 = DTX disabled, 1 = enabled */
             CodecParams->enc_params.sid_update_interval = codec_test_params->dtx_value ? codec_test_params->dtx_value : (codec_test_params->dtx_enable ? 8 : 0);  /* if DTX is enabled then default SID update interval is 8.  A zero update interval enables "adaptive SID" */
             CodecParams->enc_params.rf_enable = codec_test_params->rf_enable;

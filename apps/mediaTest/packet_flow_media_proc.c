@@ -144,6 +144,7 @@ Revision History
  Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
  Modified Jan 2023 JHB, in DSLogRunTimeStats() use DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM with DSGetSessionInfo() to include bidirectional session channels
  Modified Jan 2023 JHB, improve operation of packet input alarm, see comments near session_last_push_time[] and in cmd_line_options_flags.h
+ Modified Mar 2023 JHB, add pInArgs param in DSCodecEncode(). See comments in voplib.h
 */
 
 #ifndef _GNU_SOURCE
@@ -353,7 +354,6 @@ extern unsigned int inFileType, outFileType, outFileType2, USBAudioInput, USBAud
 
 volatile bool    fNetIOAllowed = false;  /* set true if UDP socket input should be handled.  Will be set false if program / process permissions do not allow network sockets and/or USB ports to be opened. Default is disabled */
 volatile bool    fUSBIOAllowed = false;
-//volatile int8_t  run = 1;                /* may be cleared by application signal handler to stop packet / media processing loop */
 volatile char    fPMMasterThreadExit = 0;
 volatile char    fPMThreadsClosing = 0;
 volatile uint8_t uQueueRead = 0;
@@ -801,7 +801,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
    int nNumCleanupLoops = 0;
    int num_static_streams = 0;
 
-   CODEC_OUTARGS OutArgs;  /* output data returned by voplib decoders, starting with EVS and AMR-WB Plus, JHB Oct 2022 */
+   CODEC_OUTARGS OutArgs = { 0 };  /* output data returned by voplib decoders, starting with EVS and AMR-WB Plus, JHB Oct 2022 */
 
 //#define DEBUGINPUTPACKETS
 #ifdef DEBUGINPUTPACKETS
@@ -1056,7 +1056,7 @@ too_many_threads:
    }
 
 /* parse config file */
-   while (run > 0 && (parse_session_config(fp_cfg, &session_data_t[nSessions_gbl]) != -1)) nSessions_gbl++;
+   while (pm_run > 0 && (parse_session_config(fp_cfg, &session_data_t[nSessions_gbl]) != -1)) nSessions_gbl++;
 
    printf("%d session(s) found in config file\n", nSessions_gbl);
 
@@ -1430,7 +1430,7 @@ run_loop:
 
    do {
 
-      if (run == 99) continue;  /* reserved for system stall stress testing (p/m threads are stalled / preempted for whatever reason), JHB Apr2020 */
+      if (pm_run == 99) continue;  /* reserved for system stall stress testing (p/m threads are stalled / preempted for whatever reason), JHB Apr2020 */
 
       if (fFTRTInUse || (cur_time - prev_display_time > 20000)) {  /* print counters and check keyboard input every 20 msec */
 
@@ -1567,7 +1567,7 @@ run_loop:
             if (key == 'Q')
             {
                printf("\nQ key entered, exiting packet/media processing\n");  /* leave existing status line, including any error messages (don't clear it) */
-               run = 0;
+               pm_run = 0;
                break;
             }
          }
@@ -1594,9 +1594,9 @@ run_loop:
 
       if (numSessions >= 1) __sync_xor_and_fetch(&pm_sync[thread_index], 1);  /* toggle pm thread sync flag for any app that needs it */
 
-      if (thread_index == debug_thread && (run == 2 || run == 3)) {  /* check for call to ThreadDebugOutput() request by DSDisplayThreadDebugInfo() API.  Accessing debug info at this point, just after ManageSessions() guarantees accurate info without contention */
+      if (thread_index == debug_thread && (pm_run == 2 || pm_run == 3)) {  /* check for call to ThreadDebugOutput() request by DSDisplayThreadDebugInfo() API.  Accessing debug info at this point, just after ManageSessions() guarantees accurate info without contention */
 
-         ThreadDebugOutput(hSessions_t, numSessions, 0, debug_thread, run == 2 ? DS_DISPLAY_THREAD_DEBUG_INFO_SCREEN_OUTPUT : DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT);
+         ThreadDebugOutput(hSessions_t, numSessions, 0, debug_thread, pm_run == 2 ? DS_DISPLAY_THREAD_DEBUG_INFO_SCREEN_OUTPUT : DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT);
          fDebugPass = true;
       }
 
@@ -1611,7 +1611,7 @@ run_loop:
 
       fPreemptAlarm = false;
       uint64_t elapsed_thread_time = 0;
-      float last_decode_time, last_encode_time;
+      float last_decode_time = 0, last_encode_time = 0;
 
       if (prev_thread_CPU_time) {
 
@@ -3156,10 +3156,10 @@ pull:
 
                            if (termInfo.codec_type == DS_VOICE_CODEC_TYPE_EVS) {  /* handle return data, JHB Oct 2022 */
 
-                              unsigned int bitrate_index = DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_BITRATE_TO_INDEX, *((unsigned int*)&OutArgs), 0, NULL);
+                              unsigned int bitrate_index = DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_BITRATE_TO_INDEX, OutArgs.bitRate, 0, NULL);  /* convert to an index table used by all codecs */
                               unsigned int bitrate_list = DSGetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST);
       // fprintf(stderr, " bitrate_index = %d, bitrate_list = 0x%x \n", bitrate_index, bitrate_list);
-                              DSSetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST, bitrate_list | (1L << bitrate_index));  /* save bitrate used by decoder in list of bitrates */
+                              DSSetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST, bitrate_list | (1L << bitrate_index));  /* save bitrate index used by decoder in list of bitrate indexes */
                            }
 
 //    printf(" after DSCodecDecode, pyld_len = %d, media_data_len = %d \n", pyld_len, media_data_len);
@@ -3465,16 +3465,14 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                         out_media_data_len = DSConvertFsPacket(chnum, (int16_t*)stream_ptr, data_length);  /* Notes -- 1) data length arg and output buffer length are given in bytes, 2) stream_ptr[] is unchanged and out_media_data_len = data_length if incoming and outgoing sampling rates are the same */
 
-                     /* Encode one or more raw audio frames */
+                     /* Encode one or more raw audio frames. Notes:
 
-                        pyld_len = DSCodecEncode(&hCodec_link, 0, stream_ptr, encoded_data_buffer, out_media_data_len, 1, NULL);  /* Notes -- 1) Input media framesize can be either equal to a single framesize (depending on sampling
-                                                                                                                                             rate in use) or an integer multiple.  In the latter case, an RTP payload will be created
-                                                                                                                                             created containing multiple frames
+                        1) Input media framesize can be either equal to a single framesize (depending on sampling rate in use) or an integer multiple.  In the latter case, an RTP payload will be created containing multiple frames
+                        2) Both input media buffer length and output payload length are in bytes
+                        3) Pass-thru case copies data from in to out buffer
+                     */
 
-                                                                                                                                          2) Both input media buffer length and output payload length are in bytes
-
-                                                                                                                                          3) For pass-thru case, copies data from in to out buffer
-                                                                                                                              */
+                        pyld_len = DSCodecEncode(&hCodec_link, 0, stream_ptr, encoded_data_buffer, out_media_data_len, 1, NULL, NULL);
 
                         if ((int)pyld_len < 0) break;  /* error condition */
 
@@ -3767,15 +3765,15 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
          if (fAllSessionsDataAvailable && !fDebugPass) packet_media_thread_info[thread_index].thread_stats_time_moving_avg_index = (stats_index + 1) & (THREAD_STATS_TIME_MOVING_AVG-1);
       }
 
-      if (!run && nNumCleanupLoops < 3) {  /* make sure ManageSessions() deletes any sessions marked pending for deletion, and otherwise cleans up, then allow exit, JHB Dec2019 */
+      if (!pm_run && nNumCleanupLoops < 3) {  /* make sure ManageSessions() deletes any sessions marked pending for deletion, and otherwise cleans up, then allow exit, JHB Dec2019 */
          nNumCleanupLoops++;
          goto run_loop;
       }
 
-   } while (run > 0);  /* pkt/media thread loop */
+   } while (pm_run > 0);  /* pkt/media thread loop */
 
 
-/* thread exit:  run = 0 */
+/* thread exit:  pm_run = 0 */
 
    if (!fMediaThread) {
 
@@ -4958,7 +4956,7 @@ get_num_sessions:
 
          if (delete_status & DS_SESSION_DELETE_PENDING) {
 
-            if (!run || (numDeleted < MAX_SESSION_TRANSACTIONS_PER_PASS)) {
+            if (!pm_run || (numDeleted < MAX_SESSION_TRANSACTIONS_PER_PASS)) {
 
             /* DSPostProcessStreamGroup() handles anything that is not real-time and might cause a gap in stream group output, such as N-channel wav file handling. We call it after session flush but before session delete, JHB Jan2020 */
 
@@ -5339,7 +5337,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
 /* Enter main processing loop, similar to primary thread above */
 
-   while (run > 0) 
+   while (pm_run > 0) 
    {
 
    /* check if ptime has elapsed since last packet read */
@@ -5452,7 +5450,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
          /* encode raw audio frame given by decoder */
 
-            pyld_len = DSCodecEncode(&hCodec_link, 0, media_data_buffer, encoded_data_buffer, out_media_data_len, 1, NULL);
+            pyld_len = DSCodecEncode(&hCodec_link, 0, media_data_buffer, encoded_data_buffer, out_media_data_len, 1, NULL, NULL);
 
          /* format packet */
 
@@ -6000,10 +5998,10 @@ organize_by_ssrc:
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Resyncs (ch:num) underrun%s, overrun%s, timestamp gap%s, purges (ch:num)%s\n", jbundrstr, jboverstr, jbtgapstr, purgstr);
 
       char allocscurstr[50], allocsmaxstr[50];
-      sprintf(allocscurstr, "%llu", (long long unsigned int)DSGetJitterBufferInfo(0, DS_JITTER_BUFFER_INFO_CURRENT_ALLOCS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+      sprintf(allocscurstr, " %llu", (long long unsigned int)DSGetJitterBufferInfo(0, DS_JITTER_BUFFER_INFO_CURRENT_ALLOCS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));  /* slight change to formatting, JHB Mar 2023 */
       sprintf(allocsmaxstr, "%llu", (long long unsigned int)DSGetJitterBufferInfo(0, DS_JITTER_BUFFER_INFO_MAX_ALLOCS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
 
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Holdoffs (ch:num) adj%s, dlvr%s, zero pulls (ch:num)%s, allocs (cur/max) %s/%s\n", jbhldadj, jbhlddel, jbzpstr, allocscurstr, allocsmaxstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Holdoffs (ch:num) adj%s, dlvr%s, zero pulls (ch:num)%s, allocs (cur/max)%s/%s\n", jbhldadj, jbhlddel, jbzpstr, allocscurstr, allocsmaxstr);
 
    /* include event log stats, to make it easier to see if anything happened to worry about, JHB May2020 */
    
@@ -6299,7 +6297,7 @@ char tmpstr[8000] = "";
    if (uFlags & DS_DISPLAY_THREAD_DEBUG_INFO_SCREEN_OUTPUT) printf("%s", tmpstr);  /* use buffered I/O, JHB Jan2020 */
    if (uFlags & DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT) Log_RT(4, tmpstr);
 
-   if (run != 1) run = 1;  /* restore run var */
+   if (pm_run != 1) pm_run = 1;  /* restore run var */
 }
 
 void ThreadAbort(int thread_index, char* errstr) {
@@ -6308,9 +6306,9 @@ void ThreadAbort(int thread_index, char* errstr) {
 
    int i;
 
-   if (run > 0) {
+   if (pm_run > 0) {
    
       for (i=0; i<nPktMediaThreads; i++) ThreadDebugOutput(NULL, -1, 0, i, DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT);  /* display debug output for existing threads, JHB Sep2019 */
-      run = -1;
+      pm_run = -1;
    }
 }
