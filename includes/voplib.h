@@ -215,7 +215,7 @@ extern "C" {
 
                                           -for AMR codecs if pInArgs is non-NULL then CMR will be sent regardless of value, in both octet-aligned and bandwdith efficient formats. If "no mode request" should be sent, then specify 0xf0. When pInArgs is NULL, 0xf0 is sent by voplib
                                           -for EVS codecs using headerfull format, if pInArgs is non-NULL then non-zero CMR values will be sent. Examples include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. Note the CMR value msb should be set in order to comply with section A.2.2.1.1 in the EVS specification (the "H" bit). When pInArgs is NULL, or when compact format is in use, no CMR is sent
-                                          -for EVS codecs using AMR-WB IO mode in compact format CMR will contain the CMR value sent by the remote endpoint. Example include 0 (6.6 kbps), 0xc0 (23.85 kbps), 0xe0 (no mode request), etc.
+                                          -for EVS codecs using AMR-WB IO mode in compact format CMR will contain the CMR value to be sent to the remote endpoint. Example include 0 (6.6 kbps), 0xc0 (23.85 kbps), 0xe0 (no mode request), etc.
                                           -CMR should not be shifted in any way. For octet aligned and headerfull formats, CMR should give the whole byte to insert in outgoing payloads (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR should give the partial 4 or 3 bits, in the exact position within a payload byte as shown in the codec spec, with the rest of CMR zero'ed
                                        */
 
