@@ -200,9 +200,9 @@ extern "C" {
 
    uint8_t CMR;                        /* CMR (Codec Mode Request) received from remote endpoint, if supported by the codec type. Notes:
 
-                                          -for AMR codecs CMR is always the value in the payload header being decoded. Examples include 0xf0 (no mode request), 0x20 (AMR-WB 12.65 bps), 0x70 (AMR-NB 1.20 kbps), etc. If the remote endpoint sent "no mode request", CMR will be 0xf0
+                                          -for AMR codecs CMR will contain the value in the payload header being decoded. Examples include 0xf0 (no mode request), 0x20 (AMR-WB 12.65 bps), 0x70 (AMR-NB 1.20 kbps), etc. If the remote endpoint sent "no mode request", CMR will be 0xf0
                                           -for EVS codecs CMR will be non-zero only if sent by the remote endpoint. Examples include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. CMR will be non-zero if (a) the remote endpoint is sending in headerfull format and includes a CMR byte or (b) the remote endpoint is sending in AMR-WB IO mode compact format
-                                          -received CMR values are not shifted in any way. For octet aligned and headerfull formats, CMR contains the whole byte as received (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR contains the partial 4 or 3 bits, in the exact position they were received, with the rest of CMR zero'ed
+                                          -received CMR values are not shifted in any way. For octet aligned and headerfull formats, CMR contains the whole byte as received (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR contains the partial 4 or 3 bits, in the exact position they were received, with other CMR bits zero
                                        */
 
    int bitRate;                        /* bitrate detected by the decoder (in bps), if supported by the codec type */
@@ -213,9 +213,9 @@ extern "C" {
 
    uint8_t CMR;                        /* CMR (Codec Mode Request) to be sent to remote endpoint, if any. Notes:
 
-                                          -for AMR codecs if pInArgs is non-NULL then CMR will be sent regardless of value, in both octet-aligned and bandwdith efficient formats. If "no mode request" should be sent, then specify 0xf0. When pInArgs is NULL, 0xf0 is sent by voplib
+                                          -for AMR codecs if pInArgs is non-NULL then CMR will be sent to the remote endpoint, in both octet-aligned and bandwdith efficient formats. If "no mode request" should be sent, then specify 0xf0. When pInArgs is NULL, 0xf0 is sent by voplib (i.e. no mode request)
                                           -for EVS codecs using headerfull format, if pInArgs is non-NULL then non-zero CMR values will be sent. Examples include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. Note the CMR value msb should be set in order to comply with section A.2.2.1.1 in the EVS specification (the "H" bit). When pInArgs is NULL, or when compact format is in use, no CMR is sent
-                                          -for EVS codecs using AMR-WB IO mode in compact format CMR will contain the CMR value to be sent to the remote endpoint. Example include 0 (6.6 kbps), 0xc0 (23.85 kbps), 0xe0 (no mode request), etc.
+                                          -for EVS codecs using AMR-WB IO mode in compact format if pInArgs is non-NULL then CMR will be sent to the remote endpoint. Examples include 0 (6.6 kbps), 0xc0 (23.85 kbps), 0xe0 (no mode request), etc.
                                           -CMR should not be shifted in any way. For octet aligned and headerfull formats, CMR should give the whole byte to insert in outgoing payloads (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR should give the partial 4 or 3 bits, in the exact position within a payload byte as shown in the codec spec, with the rest of CMR zero'ed
                                        */
 
