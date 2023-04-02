@@ -1418,13 +1418,19 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 <a name="PacketPushRateControl"></a>
 ### Packet Push Rate Control
 
-mediaMin supports a "-rN" command line options to control packet push rate, where N is given in msec. For example typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for analytics applications, or for offline purposes (testing, analysis, speech recognition training, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line below includes -r0 (same as no entry) to specify a fast-as-possible push rate:
+mediaMin supports a "-rN" command line options to control packet push rate, where N is given in msec. For example, typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for analytics applications, or for offline purposes (testing, analysis, speech recognition testing, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line examples below give -r0 to specify fast-as-possible push rate:
 
     ./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
+	
+    ./mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -L -d0x20000000040801 -r0
 
-In addition to this level of control, mediaMin also implements an average packet push rate algorithm, which can be applied when pktlib is operating in analytics mode. The average push rate algorithm enable is the 0x80000 flag in the mediaMin -dN command line argument, and analytics mode is the 0x40000 flag.
+In addition to push rate control, mediaMin also provides an average packet push rate algorithm, which can be applied when pktlib is operating in analytics mode, or for any case where packet arrival timestamps are zero or otherwise inaccurate. The AUTO_ADJUST_PUSH_RATE flag enables the average push rate algorithm (mediaMin command line 0x80000 -dN option in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), and the ANALYTICS_MODE flag enables analytics mode (0x40000 -dN option in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). Below are some analytics mode + push rate algorithm command line examples:
 
-Note that entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above).
+    ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc0c01 -r20
+
+   ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc0c01 -r20
+
+For more information on -r0 entry, see "Real-Time Interval" under [mediaMin Command Line Options](#user-content-mediamincommandlineoptions).
 
 <a name="DepthControl"></a>
 ### Depth Control
@@ -2240,7 +2246,10 @@ Note that options and flags may be combined together.
 
 ### Real-Time Interval
 
--rN specifies a "real-time interval", which mediaMin uses for a target packet push rate and to control overall timing, and which [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push packets as fast as possible
+-rN specifies a "real-time interval" that mediaMin uses for a target packet push rate and to control overall timing, and which [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push and process packets as fast as possible. Some additional notes:
+	
+> no entry is the same as -r0
+> entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above)
 
 ### Performance Improvements
 
