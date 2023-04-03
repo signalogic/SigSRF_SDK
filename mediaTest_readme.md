@@ -1418,7 +1418,7 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 <a name="PacketPushRateControl"></a>
 ### Packet Push Rate Control
 
-mediaMin supports a "-rN" command line options to control packet push rate, where N is given in msec. For example, typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for analytics applications, or for offline purposes (testing, analysis, speech recognition testing, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line examples below give -r0 to specify fast-as-possible push rate:
+mediaMin supports a "-rN" command line option to control packet push rate, where N is in msec. For example, typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for offline or post-processing purposes (testing, analysis, speech recognition testing, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line examples below give -r0 to specify fast-as-possible push rate:
 
     ./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
 	
