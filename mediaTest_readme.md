@@ -1430,7 +1430,7 @@ In addition to push rate control, mediaMin also provides an average packet push 
 
     ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc0c01 -r20
 
-Note the above command lines use .pcapng files also used in the examples in [Dynamic Session Creation](#user-content-dynamicsessioncreation), illustrating the concept of different approaches to process the same content.
+Note the above command lines use .pcapng files given in [Dynamic Session Creation](#user-content-dynamicsessioncreation) examples, illustrating the concept of different approaches to process the same content.
 
 For more information on -r0 entry, see "Real-Time Interval" under [mediaMin Command Line Options](#user-content-mediamincommandlineoptions).
 
