@@ -134,7 +134,7 @@ For information on HI2 and HI3 intercept decoding with <a href="https://openli.n
 <a name="Multithreaded"></a>
 ## High Capacity Multithreaded Operation
 
-Both SigSRF library modules and EdgeStream applications support multiple, concurrent packet + media processing threads. Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups. Thread stats include profiling, performance, and session allocation. Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet/media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
+Both SigSRF library modules and EdgeStream applications support multiple, concurrent packet + media processing threads. Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups. Thread stats include profiling, performance, and session allocation. Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
 
 High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers. The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop measurement and verification, Linux guidelines, etc.
 
