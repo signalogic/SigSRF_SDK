@@ -55,7 +55,7 @@ EdgeStream and SigSRF software are currently deployed in the following applicati
 
 * Session Border Controller (SBC)
 * Media Gateway
-* Robotics -- implement voice commands (ASR, automatic speech recognition) (<a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hw + sw product page]
+* Robotics -- implement voice commands (ASR, automatic speech recognition) (<a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hw + sw product page</a>
 * Factory, construction, warehouse equipment - implement accident avoidance for remotely controlled and automated equipment
 * Vehicle automation - implement small server add-on / after-market products such as small form-factor Lidar
 * Lawful Intercept and Lawful Intelligence (LI)
