@@ -142,29 +142,7 @@ Below is a Linux htop measurement showing SigSRF software high capacity operatio
 
 ![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png?raw=true "SigSRF software high capacity operation")
 
-The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cores, 8 physical cores per CPU, and 2 (two) CPUs) each with 16 GB of RAM. Some key aspects include:
 
-  - **Workload** Dynamic session creation and management, RTP packet media decoding, all packet processing options, partial media stream processing options (including stream merging), and real-time pcap and wav file generation are enabled. ASR (automatic speech recognition) is not enabled, as it has a substantial impact on capacity (see [ASR Notes](#user-content-asrnotes) below). Streams contain a mix of EVS and AMR-WB codecs
-  
-  - **Thread allocation ratio** Media/packet worker threads and application threads are allocated in a 5:3 ratio. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, session management, and APIs interfacing to packet/media threads <sup>1</sup>
-  
-  - **Thread distribution** htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions <sup>2</sup> (12\*3\*(1+13)) and 168 total stream groups. As noted in **Workload**, streams contain a mix of EVS and AMR-WB codecs
-
-  - **Hyperthreading** Hyperthreading for media + packet threads is effectively disabled through use of core affinity (aka CPU pinning). Application threads continue to utilize hyperthreading
-  
-Using the thread ratio and per stream workload given above, necessary per CPU amount of RAM and number cores can be estimated as:
-
-### &nbsp;&nbsp;&nbsp; $memSize = {N \over 16numCPUs}$  
-
-### &nbsp;&nbsp;&nbsp; $numCores = {N \over 32numCPUs}$  
-
-where N is the required number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
-
-<sup>1</sup> [pktlib](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) provides packet/media APIs, examples include DSCreateSession(), DSPushPacket(), and DSPullPackets(), and DSGetSessionInfo()
-  
-<sup>2</sup> [Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-sessions) create unique stream identifiers (from IP header, UDP port, and SSRC information) allowing management of a stream during its lifespan
-
-<sup>3</sup> Available CPUs can be located in one or more servers
 
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
