@@ -154,9 +154,7 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
 
 Using the thread ratio and per stream workload given above, necessary per CPU amount of RAM and number cores can be estimated as:
 
-### &nbsp;&nbsp;&nbsp; $`memSize = {N \over 16numCPUs}`$
-
-### &nbsp;&nbsp;&nbsp; $`numCores = {N \over 32numCPUs}`$
+![server capacity equations](https://github.com/signalogic/SigSRF_SDK/blob/master/images/server_capacity_math_equations.png?raw=true "server capacity math equations")
 
 where N is the required number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
