@@ -154,9 +154,9 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
 
 Using the thread ratio and per stream workload given above, necessary per CPU amount of RAM and number cores can be estimated as:
 
-### &nbsp;&nbsp;&nbsp; $memSize = {N \over 16numCPUs}$  
+&nbsp;&nbsp;&nbsp; $memSize = {N \over 16numCPUs}$  
 
-### &nbsp;&nbsp;&nbsp; $numCores = {N \over 32numCPUs}$  
+&nbsp;&nbsp;&nbsp; $numCores = {N \over 32numCPUs}$  
 
 </br></a>
 
