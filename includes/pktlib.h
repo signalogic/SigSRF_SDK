@@ -89,6 +89,7 @@
   Modified Jan 2023 JHB, increase MAX_PKTMEDIA_THREADS to 64, implement DS_CONFIG_MEDIASERVICE_EXIT in DSConfigMediaService()
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG which is used by DSGetPacketInfo(), DSFormatPacket(), DSBufferPackets(), and DSGetOrderedPackets(). Add DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG flag for additional error/warning message control. For usage examples see mediaMin.cpp
    Modified Jan 2023 JHB, add DSGetPacketInfo() DS_PKT_INFO_RTP_PADDING_SIZE flag
+   Modified Apr 2023 JHB, add MAX_TCP_PACKET_LEN definition. In PKTINFO_ITEMS struct, add TCP sequence number and acknowledgement sequence number
 */
 
 #ifndef _PKTLIB_H_
@@ -244,6 +245,7 @@ extern "C" {
   /* max RTP packet length, mediaTest has test cases consisting of ptimes up to 240 ms, G711 will require a 1994 byte packet for IPv6.  This definition also used in mediaMin */
 
   #define MAX_RTP_PACKET_LEN         (MAX_RAW_FRAME + MAX_IP_UDP_RTP_HEADER_LEN)
+  #define MAX_TCP_PACKET_LEN         65535
 
   #define UDP_PROTOCOL               17
   #define TCP_PROTOCOL               6
@@ -610,6 +612,8 @@ extern "C" {
      int                 ip_hdr_len;
      unsigned short int  src_port;
      unsigned short int  dst_port;
+     unsigned int        seqnum;          /* TCP sequence number */
+     unsigned int        ack_seqnum;      /* TCP acknowlegement sequence number */
      int                 pyld_ofs;
      int                 pyld_len;
      int                 rtp_hdr_ofs;     /* RTP items filled for UDP packets. If not a valid RTP packet then RTP items may be undefined */

@@ -418,7 +418,7 @@ char          szLastSeq[100];
 
             fDup_sn = true;  /* duplicated seq number found */
 
-            if ((pkts[j].info_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF && !(uFlags & DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE)) fFound_sn = true;  /* if it's a DTX event packet we don't label it duplicated (DTMF events can have several duplicated packets) */
+            if ((pkts[j].info_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF && !(uFlags & DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE)) fFound_sn = true;  /* if it's a DTMF event packet we don't label it duplicated (DTMF events can have several duplicated packets) */
          }
          else if (pkts[j].rtp_seqnum + seq_wrap[i]*65536L != rtp_seqnum) {  /* recorded seq number matches next (expected) seq number ? */
 
@@ -542,7 +542,7 @@ exit:
 static int analysis_and_stats(FILE* fp_log, int num_ssrcs, uint32_t in_ssrcs[], PKT_STATS input_pkts[], int in_first_pkt_idx[], int in_last_pkt_idx[], uint32_t in_first_rtp_seqnum[], uint32_t in_last_rtp_seqnum[], STREAM_STATS InputStreamStats[], uint32_t out_ssrcs[], PKT_STATS output_pkts[], int out_first_pkt_idx[], int out_last_pkt_idx[], uint32_t out_first_rtp_seqnum[], uint32_t out_last_rtp_seqnum[], STREAM_STATS OutputStreamStats[], int in_ssrc_start, int out_ssrc_start, int io_map_ssrcs[], unsigned int uFlags) {
 
 int           i = 0, j, k, i_out, pkt_cnt;
-unsigned int  rtp_seqnum, rtp_seqnum_chk, mismatch_cnt, sid_reuse_offset = 0;
+unsigned int  rtp_seqnum, rtp_seqnum_chk, mismatch_count, sid_reuse_offset = 0;
 int           drop_consec_cnt, drop_cnt, dup_cnt, timestamp_mismatches, last_timestamp_mismatches;
 int           in_seq_wrap[MAX_SSRC_TRANSITIONS] = { 0 };
 int           out_seq_wrap[MAX_SSRC_TRANSITIONS] = { 0 };
@@ -727,14 +727,15 @@ int nGroupIndex, stream_count, nNumGroups = 0;
          else rtp_seqnum = input_pkts[j].rtp_seqnum + max(in_seq_wrap[i]-1, 0)*65536L;
 
          pkt_cnt = 0;
-         mismatch_cnt = 0;
+         mismatch_count = 0;
          sid_reuse_offset = total_sid_reuse_offset[i_out];
          out_seq_wrap[i_out] = 0;  /* inner loop cycles through output packets so we need to reset this */
          sid_reuse_offset = 0;
 
          for (k=out_first_pkt_idx[i_out+out_ssrc_start]; k<=out_last_pkt_idx[i_out+out_ssrc_start]; k++) {
 
-            if (output_pkts[k].info_flags == DS_PKT_PYLD_CONTENT_SID_REUSE) sid_reuse_offset++;  /* note that because repaired packets fill in for missing seq nums, they do not extend the search offset, JHB Feb2020 */
+            if (output_pkts[k].info_flags == DS_PKT_PYLD_CONTENT_SID_REUSE) sid_reuse_offset++; /* note that because repaired packets fill in for missing seq nums, they do not contribute to the search offset so we don't & with item mask to remove a repair flag, JHB Feb2020 */
+
             else {
 
                if (rtp_seqnum == output_pkts[k].rtp_seqnum + out_seq_wrap[i_out]*65536L - sid_reuse_offset) {
@@ -747,18 +748,21 @@ int nGroupIndex, stream_count, nNumGroups = 0;
                      #endif
                      - output_pkts[k].rtp_timestamp) != 0) {
 
-                     #if 0  /* have not been able to get this to work.  Evidently once timestamps no longer match, the amount of mismatch varies constantly. That makes it hard to print a couple of lines of output and then
-                               "get back on track".  Ends up being 100s of lines of meaningless output, JHB Feb2020 */
+                     #if 0  /* have not been able to get this to work.  Evidently once timestamps no longer match, the amount of mismatch varies constantly. That makes it hard to print a couple of lines of output and then "get back on track".  Ends up being 100s of lines of meaningless output, JHB Feb2020 */
 
                      timestamp_adjust = output_pkts[k].rtp_timestamp - input_pkts[j].rtp_timestamp;  /* update adjustment once difference stabilizes */
                      printf("ssrc 0x%x inp seq number %u matches out seq num %u, but inp timestamp %u + adjust > out timestamp %u by = %d, adjust = %d \n", in_ssrcs[i+in_ssrc_start], rtp_seqnum, output_pkts[k].rtp_seqnum, input_pkts[j].rtp_timestamp, output_pkts[k].rtp_timestamp, diff, timestamp_adjust);
+                     #endif
+
+                     #if 0  /* timestamp mismatch debug helper. Note - not a good idea to enable if you have 100s of mismatches */
+                     printf(" ****** ssrc 0x%x inp seq number %u matches out seq num %u, but inp timestamp %u <> out timestamp %u by = %d \n", in_ssrcs[i+in_ssrc_start], rtp_seqnum, output_pkts[k].rtp_seqnum, input_pkts[j].rtp_timestamp, output_pkts[k].rtp_timestamp, diff);
                      #endif
 
                      timestamp_mismatch_history[mismatch_index].output_index = k;
                      timestamp_mismatch_history[mismatch_index].input_rtp_seqnum = rtp_seqnum;
                      mismatch_index = (mismatch_index+1) & (16-1);
 
-                     mismatch_cnt++;
+                     mismatch_count++;
 
 //                     set prior_timestamp to input_pkts[j].rtp_timestamp
 //                     next iteration compare output_pkts[timestamp_mismatch_history[index].output_index].rtp_timestamp with prior_timestamp
@@ -865,7 +869,7 @@ int nGroupIndex, stream_count, nNumGroups = 0;
          }
          else drop_consec_cnt = 0;
 
-         if (mismatch_cnt) {
+         if (mismatch_count) {
 
             timestamp_mismatches++;
 

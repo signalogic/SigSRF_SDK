@@ -13,6 +13,7 @@
   Modified Mar 2021 JHB, for "not numeric" error messages, include bad part of token. Always try to give users some idea of what's wrong
   Modified Mar 2021 JHB, in getToken() handle Win style CRLF line endings
   Modified Jan 2023 JHB, don't allow search for "a=" token to get snagged on "application/xxx" line that shows up on SAP packets
+  Modified Apr 2023 JHB, add fReportError param to readNetType(), readAddrType(), and readString(). See comments below in parseAttribute(Line& line) for a=rtcp
 */
 
 #include <sdp/reader.h>
@@ -114,11 +115,11 @@ namespace sdp {
       }
    }
 
-   std::string Line::readString(char until) {
+   std::string Line::readString(char until, bool fReportError) {
 
       Token t = getToken(until);
       if (t.size() == 0) {
-         throw ParseException("Invalid Token. Token is empty.");
+         if (fReportError) throw ParseException("Invalid Token. Token is empty.");
          return "";
       }
       return t.toString();
@@ -182,11 +183,11 @@ namespace sdp {
    }
 
   /* SDP_IP4 or SDP_IP6 */
-   AddrType Line::readAddrType(char until) {
+   AddrType Line::readAddrType(char until, bool fReportError) {
 
       Token t = getToken(until);
       if (t.size() == 0) {
-         throw ParseException("IP address token is empty");
+         if (fReportError) throw ParseException("IP address token is empty");
          return SDP_ADDRTYPE_NONE;
       }
 
@@ -198,11 +199,11 @@ namespace sdp {
       return result;
    }
 
-   NetType Line::readNetType(char until) {
+   NetType Line::readNetType(char until, bool fReportError) {
 
       Token t = getToken(until);
       if (t.size() == 0) {
-         throw ParseException("Net type token is empty");
+         if (fReportError) throw ParseException("Net type token is empty");
          return SDP_NETTYPE_NONE;
       }
 
@@ -330,10 +331,12 @@ namespace sdp {
       /* m= (media), o= (origin) are parent (top-level) items. a= (attribute) are children, assigned to parent media nodes, JHB Jan 2023 */
 
          if (node->type == SDP_MEDIA) {// || node->type == SDP_ORIGIN) {
+
             result->addNode(node);
             parent = node;
          }
          else {
+
             parent->addNode(node);
          }
       }
@@ -410,7 +413,7 @@ namespace sdp {
 // fprintf(stderr, "+++inside reader adding origin %s \n", line.value.c_str());
 
       Origin* node = new Origin();
-  
+
       try {
          node->username         = line.readString();     /* e.g. "roxlu", "-" */
          node->sess_id          = line.readString();     /* e.g. "621762799816690644" */
@@ -627,9 +630,9 @@ namespace sdp {
             AttributeRTCP* attr = new AttributeRTCP();
             node = (Attribute*) attr;
             attr->port = line.readInt();
-            attr->net_type = line.readNetType();
-            attr->addr_type = line.readAddrType();
-            attr->connection_address = line.readString();
+            attr->net_type = line.readNetType(' ', false);  /* per RFC3605, nettype, addrtype, and connection-address are optional for a=rtcp, so we don't report errors if not found (https://www.ietf.org/rfc/rfc3605.txt), JHB Apr 2023 */
+            attr->addr_type = line.readAddrType(' ', false);
+            attr->connection_address = line.readString(' ', false);
          }
          else if (name == "candidate") {
             AttributeCandidate* attr = new AttributeCandidate();

@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/Directcore/lib/derlib/derlib.cpp
 
- Copyright (C) Signalogic Inc. 2021-2022
+ Copyright (C) Signalogic Inc. 2021-2023
 
  License
 
@@ -33,6 +33,7 @@
   Modified Nov 2022 JHB, additional comments for event INFO log message about interception point ID type and content. This INFO log message has proven useful for evaluating LEA user screen traces and event logs
   Modified Dec 2022 JHB, add DSDecodeDerFields() to generate XML output from DER streams in formats (i) DER tag/set notation (ii) ASN.1 notation (per ETSI LI ASN.1 specs)
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
+  Modified Apr 2023 JHB, add calloc buffer overflow check, improve error handling in DSDecodeDerFields()
 */
 
 /* Linux includes */
@@ -54,7 +55,7 @@
 
 #include "shared_include/config.h"  /* configuration structs and definitions */
 
-const char DERLIB_VERSION[256] = "1.2.1";
+const char DERLIB_VERSION[256] = "1.2.2";
 
 typedef struct {
 
@@ -436,6 +437,7 @@ set_chk:
 */
 
 #define MAX_DER_BUFFER_SIZE  1448
+#define MAX_MEM_CALLOC       MAX_TCP_PACKET_LEN
 
 int DSDecodeDerFields(uint8_t* p, unsigned int uFlags, int plen, FILE* hFile, const char* label) {
 
@@ -456,7 +458,6 @@ bool fProcessASN = true;
    /* get packet dest port, payload length and offset */
 
       if ((int)(dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, p, -1, NULL, NULL)) <= 0) {
-
          Log_RT(2, "ERROR: DSDecodeDerFields() says input packet has invalid destination port, uFlags = 0x%x \n", uFlags);
          return -1;
       }
@@ -481,21 +482,30 @@ bool fProcessASN = true;
          }
       }
 
-      if (i == MAX_DER_DSTPORTS) return -1;
+      if (i == MAX_DER_DSTPORTS) {
+         Log_RT(2, "ERROR: DSDecodeDerFields() says maximum dest ports %u exceeded, uFlags = 0x%x \n", MAX_DER_DSTPORTS, uFlags);
+         return -1;
+      }
 
       port_index = i;
 
       if (plen >= MAX_DER_BUFFER_SIZE || port_info[port_index].chunk_len) {  /* aggregate packet data chunks if needed */
 
-         if (!port_info[port_index].chunk_len) port_info[port_index].pBuffer = (uint8_t*)calloc(4*MAX_RTP_PACKET_LEN, sizeof(uint8_t));  /* allocate packet aggregation buffer */
+         if (!port_info[port_index].chunk_len) port_info[port_index].pBuffer = (uint8_t*)calloc(MAX_MEM_CALLOC, sizeof(uint8_t));  /* allocate packet aggregation buffer */
 
-         memcpy(&port_info[port_index].pBuffer[port_info[port_index].chunk_len], &p[ofs], plen);  /* add to buffer */
+         if (port_info[port_index].chunk_len + plen > MAX_MEM_CALLOC) {  /* check for possible packet aggregation buffer overflow, return error condition if so, JHB Apr 2023 */
+            Log_RT(2, "ERROR: DSDecodeDerFields() says maximum packet aggregation buffer size %u exceeded, chunk len= %u, plen= %u, uFlags = 0x%x \n", MAX_MEM_CALLOC, port_info[port_index].chunk_len, plen, uFlags);
+            free(port_info[port_index].pBuffer);
+            return -1;
+         }
+
+         memcpy(&port_info[port_index].pBuffer[port_info[port_index].chunk_len], &p[ofs], plen);  /* add packet data to packet aggregation buffer */
          port_info[port_index].chunk_len += plen;
 
          if (plen >= MAX_DER_BUFFER_SIZE) fProcessASN = false;  /* wait for packet size less than max to process. To-do: come up with a check for case where packet is not split but has max size */
       }
 
-      if (fProcessASN && !(uFlags & DS_DER_DECODEFIELDS_BUFFER)) {
+      if (fProcessASN) {
          char tmpstr[100];
          sprintf(tmpstr, " *** asn input port = 0x%x, pyld_len = %d, plen = %d \n", dst_port, pyld_len, plen);
          if (hFile && (uFlags & DS_DECODE_DER_PRINT_ASN_DEBUG_INFO)) fwrite(tmpstr, 1, strlen(tmpstr), hFile);
@@ -645,7 +655,9 @@ static bool fOnce = false;
 
    /* decode asn and write to file if requested */
 
+  #if 1
       if (hFile_asn_output) DSDecodeDerFields(pkt_in_buf, DS_DER_DECODEFIELDS_PACKET | DS_DER_DECODEFIELDS_OUTPUT_ASN | (uFlags & DS_DECODE_DER_PRINT_ASN_DEBUG_INFO), pyld_len, hFile_asn_output, "find gen asn");
+  #endif
 
    /* auto-detect */
 

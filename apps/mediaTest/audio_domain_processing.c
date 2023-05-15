@@ -31,6 +31,7 @@
   Modified Oct 2022 JHB, change DSGetCodeSampleRate() to DSGetCodecInfo()
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
   Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode(). See voplib.h comments
+  Modified May 2023 JHB, add AFAP mode support
 */
 
 
@@ -55,6 +56,7 @@ extern PACKETMEDIATHREADINFO packet_media_thread_info[];  /* array of thread han
 extern unsigned long long last_merge_output_time[];       /* set by DSProcessGroupContributors() (in streamlib) */
 extern uint8_t merge_gap_advance[];                       /*    ""   */
 extern int groupTimestampOffset[];                        /*    ""   */
+extern struct timespec afap_ts[];                         /* initialized by DSProcessGroupContributors() (in streamlib), but used here in AFAP mode, JHB May 2023 */
 extern sem_t pcap_write_sem;                              /* semaphore used to ensure no more than 1 thread writes to a particular output file at a time */
 
 /* streamlib items needed by DSDeduplicateStreams() */
@@ -62,7 +64,7 @@ extern sem_t pcap_write_sem;                              /* semaphore used to e
 extern uint32_t align_interval_count[MAX_STREAM_GROUPS][MAX_GROUP_CONTRIBUTORS];
 
 
-/* DSProcessGroupAudio() has a range of functionality, depending on uFlags options defined in streamlib.h:
+/* DSProcessAudio() has a range of functionality, depending on uFlags options defined in streamlib.h:
 
   1) apply sampling rate conversion, ASR, or other signal processing to one or more frames of audio data. This may involve non-audio output, for example .txt or .csv file output for ASR or diarization
   2) packetize according to either (i) stream group owner session's termination (group_term) info or (ii) session's term2 (i or ii depends on idx input param). Default encoding for stream groups is G711 but can be specified in group term parameters during session creation
@@ -114,6 +116,8 @@ extern uint32_t align_interval_count[MAX_STREAM_GROUPS][MAX_GROUP_CONTRIBUTORS];
 
     -fp_out_pcap_merge - reserved
 
+    -fAFAPMode - reserved
+
   Output params
 
     -on error, num_frames is set to the number of frames processed at the time of error
@@ -136,13 +140,13 @@ extern uint32_t align_interval_count[MAX_STREAM_GROUPS][MAX_GROUP_CONTRIBUTORS];
 static int asr_frame_count = 0;
 extern STREAM_GROUP stream_groups[];
 
-int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int16_t* delay_buffer, int sample_rate, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge) {
+int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int16_t* delay_buffer, int sample_rate, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge, bool fAFAPMode) {
 
 TERMINATION_INFO output_term;
 uint8_t group_audio_encoded_frame[MAX_RAW_FRAME] = { 0 };  /* MAX_RAW_FRAME defined in voplib.h */
 uint8_t group_audio_packet[MAX_RAW_FRAME + MAX_IP_UDP_RTP_HEADER_LEN] = { 0 };  /* MAX_IP_UDP_RTP_HEADER_LEN defined in pktlib.h */
 HCODEC hCodec = (intptr_t)NULL;
-int ptime, j, chnum, ret_val = 2;
+int ptime = 0, j, chnum, ret_val = 2;
 
 FORMAT_PKT groupFormatPkt = { 0 };
 int merge_uFlags_format, SSRC, timestamp, pyld_len = 0, packet_length = 0;
@@ -299,7 +303,7 @@ HASRDECODER hASRDecoder;
          pyld_len = DSCodecEncode(&hCodec, 0, pAudioBuffer, group_audio_encoded_frame, frame_size*up_factor/down_factor, 1, NULL, NULL);
 
          if (pyld_len < 0) {  /* if merge codec doesn't exist or has already been deleted */
-            Log_RT(3, "WARNING: DSProcessGroupAudio() says DSCodecEncode() returns %d error code, hSession = %d, idx = %d \n", pyld_len, hSession, idx);
+            Log_RT(3, "WARNING: DSProcessAudio() says DSCodecEncode() returns %d error code, hSession = %d, idx = %d \n", pyld_len, hSession, idx);
             ret_val = -1;
             *num_frames = j;
             break;  /* break out of audio frame loop */
@@ -331,7 +335,7 @@ HASRDECODER hASRDecoder;
          packet_length = DSFormatPacket(chnum, merge_uFlags_format, group_audio_encoded_frame, pyld_len, &groupFormatPkt, group_audio_packet);
 
          if (packet_length <= 0) {
-            Log_RT(3, "WARNING: DSProcessGroupAudio() says DSFormatPacket() returns %d error code, hSession = %d, idx = %d \n", (int)packet_length, hSession, idx);
+            Log_RT(3, "WARNING: DSProcessAudio() says DSFormatPacket() returns %d error code, hSession = %d, idx = %d \n", (int)packet_length, hSession, idx);
             ret_val = -1;
             *num_frames = j;
             break;  /* break out of audio frame loop */
@@ -341,13 +345,26 @@ HASRDECODER hASRDecoder;
 
          if (!packet_media_thread_info[thread_index].fMediaThread) {  /* non-library mode (mediaTest executable) */
 
-            if (fp_out_pcap_merge) {
+            if (fp_out_pcap_merge) {  /* deprecated mediaTest cmd line operation, not expected to be used, JHB May 2023 */
 
                sem_wait(&pcap_write_sem);
 
-               if (DSWritePcapRecord(fp_out_pcap_merge, group_audio_packet, NULL, NULL, &output_term, NULL, packet_length) < 0) {
+               if (fAFAPMode) {  /* in AFAP mode advance packet arrival timestamp at regular ptime intervals. There is no concept of overrun and underrun, missed intervals, etc. Note that mediaMin.cpp does same thing with stream group output pcaps, JHB May 2023 */
+
+                  if (!afap_ts[idx].tv_sec) clock_gettime(CLOCK_REALTIME, &afap_ts[idx]);  /* if sec is uninitialized we use current time */
+                  else {
+
+                     uint64_t t = 1000000ULL*(uint64_t)afap_ts[idx].tv_sec + (uint64_t)afap_ts[idx].tv_nsec/1000 + ptime*1000L;  /* calculate in usec */
+
+                     afap_ts[idx].tv_sec = t/1000000ULL;  /* save stream group's updated arrival timestamp */
+                     afap_ts[idx].tv_nsec = (t - 1000000ULL*afap_ts[idx].tv_sec)*1000;
+                  } 
+               }
+
+               if (DSWritePcapRecord(fp_out_pcap_merge, group_audio_packet, NULL, NULL, &output_term, fAFAPMode ? &afap_ts[idx] : NULL, packet_length) < 0) {
+
                   sem_post(&pcap_write_sem);
-                  Log_RT(2, "ERROR: DSProcessGroupAudio() says DSWritePcapRecord() failed, hSession = %d, idx = %d, chnum = %d, j = %d, num_frames = %d, packet_length = %d \n", hSession, idx, chnum, j, *num_frames, packet_length);
+                  Log_RT(2, "ERROR: DSProcessAudio() says DSWritePcapRecord() failed, hSession = %d, idx = %d, chnum = %d, j = %d, num_frames = %d, packet_length = %d \n", hSession, idx, chnum, j, *num_frames, packet_length);
                   ret_val = -1;
                   *num_frames = j;
                   break;  /* break out of audio frame loop */
@@ -375,7 +392,7 @@ send_group_packet:
             int ret_val_send = DSSendPackets(&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_STREAM_GROUP, group_audio_packet, &packet_length, 1);  /* send merged packet */
 
             if (ret_val_send < 0) {
-               Log_RT(2, "ERROR: DSProcessGroupAudio() says DSSendPackets() failed, hSession = %d, idx = %d, chnum = %d, j = %d, num_frames = %d, packet_length = %d \n", hSession, idx, chnum, j, *num_frames, packet_length);
+               Log_RT(2, "ERROR: DSProcessAudio() says DSSendPackets() failed, hSession = %d, idx = %d, chnum = %d, j = %d, num_frames = %d, packet_length = %d \n", hSession, idx, chnum, j, *num_frames, packet_length);
                *num_frames = j;
                ret_val = ret_val_send;
                break;

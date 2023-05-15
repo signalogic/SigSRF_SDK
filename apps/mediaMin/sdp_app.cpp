@@ -32,6 +32,7 @@
    Modified Jan 2023 JHB, add rudimentary SIP message parsing and status to ProcessSessionControl()
    Modified Jan 2023 JHB, add support for SAP/SDP protocol payloads to ProcessSessionControl()
    Modified Mar 2023 JHB, implement SESSION_CONTROL_NO_PARSE uFlag, add more SIP message types, fix bug in searching for BYE message
+   Modified Apr 2023 JHB, handle SIPREC format in SIP invite packets (partly based on RFC7245). Look for p_siprec
 */
 
 #include <fstream>
@@ -72,9 +73,13 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
 
    if (!sdpstr.length()) return -1;  /* empty string is an error */
 
+// printf(" *** before reader parse \n");
+
 /* parse input SDP info string into an sdp::SDP session */
 
    reader.parse(sdpstr, &sdp_session, 0);
+
+// printf(" *** after reader parse \n");
 
 /* retrieve Media elements ("m=audio, m=video") */
 
@@ -109,8 +114,12 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
 
 /* search for origin fields, if any found then we find out how many, gather info on them (e.g. session ID), and iterate through them */
 
+// printf(" *** before session.find \n");
+
    int num_origins = sdp_session.find(sdp::SDP_ORIGIN, origins, NULL);  /* retrieve Origin nodes if any. Starting node is always zero */
    bool fParseOrigins = !(uFlags & SDP_PARSE_IGNORE_ORIGINS) && (num_origins > 0);  /* don't look for Origins if IGNORE flag is set */
+
+// printf(" *** after session.find \n");
 
    char szSessionIDs[300] = "";
 
@@ -173,8 +182,6 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
          }
       }
 
-//  printf(" \n *** before media loop \n");
-
       if (!fParseOrigins || nOriginsFound) while (sdp_session.find(sdp::SDP_AUDIO, &media, &node)  /* find all audio Media elements. Note that node starts at zero (Node::find(MediaType t, Media** m, int* node) is in types.cpp) */
        #if 0  /* uncomment to parse video Media elements */
        || sdp_session.find(sdp::SDP_VIDEO, &media, &node)
@@ -191,7 +198,7 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
 
          if (int num_rtpmaps = media->find(sdp::SDP_ATTR_RTPMAP, rtpmaps, NULL)) {  /* (int Node::find(AttrType t, std::vector<Attribute*>& result, int* node) in types.cpp) */
 
-  //printf(" adding %d num_rtpmaps \n", num_rtpmaps);
+//  printf(" adding %d num_rtpmaps \n", num_rtpmaps);
 
             nMediaObjectsFound++;  /* technically this should be rtpmaps found, but if we find a media object with no attributes then it's useless anyway */
 
@@ -283,6 +290,10 @@ find_blank_lines:
       }
    }
 #endif
+
+   #if 0  /* handy debug to see szSDP in its final form before parsing, JHB Apr 2023 */
+   printf(" **** inside szSDP cleanup: \n%safter szSDP \n", szSDP);
+   #endif
 }
 
 /* add SDP info from cmd line file. Notes:
@@ -360,14 +371,17 @@ find_comment:
 /* list of SIP messages we look for. SIP_MESSAGES struct is defined in sdp_app.h */
 
 static SIP_MESSAGES SIP_Messages[] = { {"100 Trying", "100 Trying", SESSION_CONTROL_FOUND_SIP_TRYING},
+                                       {"100 trying", "100 Trying", SESSION_CONTROL_FOUND_SIP_TRYING},
                                        {"180 Ringing", "180 Ringing", SESSION_CONTROL_FOUND_SIP_RINGING},
                                        {"183 Session", "183 Session Progress", SESSION_CONTROL_FOUND_SIP_PROGRESS},
                                        {"PRACK sip", "Prov ACK", SESSION_CONTROL_FOUND_SIP_PROV_ACK},
                                        {"ACK sip", "ACK", SESSION_CONTROL_FOUND_SIP_ACK},
                                        {"200 OK", "200 OK", SESSION_CONTROL_FOUND_SIP_OK},
+                                       {"200 Ok", "200 Ok", SESSION_CONTROL_FOUND_SIP_OK},
                                        {"BYE\r", "BYE", SESSION_CONTROL_FOUND_SIP_BYE},  /* BYE followed by either carriage return or line feed, per RFC 2327, JHB Mar 2023 */
                                        {"BYE\n", "BYE", SESSION_CONTROL_FOUND_SIP_BYE},
-                                       {"Invite", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE}
+                                       {"Invite", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE},
+                                       {"INVITE sip", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE}
                                      };
 
 uint8_t* find_keyword(uint8_t* buffer, uint16_t buflen, const char* szKeyword) {
@@ -398,7 +412,12 @@ type_check:
 
    char search_str[50] = "a=rtpmap";
    uint8_t* p;
-   int start, len;
+   #ifndef USE_OLD_CONTENTS_START  /* change start from int to uint8_t*, simplifies code a bit and makes it easier to understand, JHB Apr 2023 */
+   uint8_t* p_start;
+   #else
+   int start;
+   #endif
+   int len;
 
 // if (index > pyld_len) fprintf(stderr, " ==== index %d > pyld_len %d \n", index, pyld_len);
 
@@ -424,15 +443,16 @@ type_check:
 
          //#define FINDINVITEDEBUG
          #ifdef FINDINVITEDEBUG
+         static int count = 0;
          char tmpstr[4096];
          int j;
-         static int count = 0;
          memcpy(tmpstr, &pkt_in_buf[pyld_ofs+index], pyld_len-index);
          for (j=0; j<pyld_len-index; j++) if (tmpstr[j] < 32 && tmpstr[j] != 10 && tmpstr[j] != 13) tmpstr[j] = 176;  /* fill with printable char */
          tmpstr[pyld_len-index] = 0;
          #endif
 
          uint8_t* p_ofs = p;
+         uint8_t* p_siprec = NULL;
 
          if (candidate_session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) {
 
@@ -441,38 +461,55 @@ type_check:
             while (p[i] >= 0x20) i++;
             p[i] = 0;
             len = atoi((const char*)p);
-            if (len <= 1 || len > (int)MAX_RTP_PACKET_LEN) { session_pkt_type_found = -1; goto ret; };  /* invalid Length: value */
 
-            #if 0
-            while (p[i] < 0x20) i++;  /* skip blank lines, if any */
-            start = i;
-            #else
+            if (len <= 1 || len > (int)MAX_TCP_PACKET_LEN) { session_pkt_type_found = -1; goto ret; };  /* invalid Length: value */
 
          /* additional search to handle INVITE formats where non-SDP info lines appear between Content-Length: and actual SDP info, JHB May2021
 
-            -Content-Length: value only applies to actual SDP info, so not sure why some senders do this
+            -Content-Length: value only applies to actual SDP info, but in some cases (e.g. siprec) may include additional, non-useful info
             -this makes us dependent on presence of v=0. RFC4566 does say v= is mandatory, and for many years version is zero
          */
 
             uint8_t* p2;
             strcpy(search_str, "v=0");
             p2 = find_keyword(p, pyld_len - index - (int)(&p[i] - &pkt_in_buf[pyld_ofs+index]), search_str);
+            if (!p2) { p2 = find_keyword(p, pyld_len - index - (int)(&p[i] - &pkt_in_buf[pyld_ofs+index]), "v=1"); if (p2) strcpy(search_str, "v=1"); }  /* also try v=1 in case SIP guys ever bump version from 0.x to 1.x (unlikely but not impossible) */
 
             if (!p2) goto ret;  /* v=0 not found */
-            start = (int)(p2 - p);  /* offset from start of contents (just after length field) */
+
+         /* Session Recording Protocol (SIPREC, RFC 7866) is an open SIP based protocol for call recording, partly based on RFC 7245 (https://datatracker.ietf.org/doc/id/draft-portman-siprec-protocol-01.html) */
+
+            p_siprec = find_keyword(p2, pyld_len - index - (int)(p2 - &pkt_in_buf[pyld_ofs+index]), "--OSS-unique-boundary-42");  /* look for siprec header, JHB Apr 2023 */
+
+            if (p_siprec) {  /* siprec Invite has a different format, with "unique-boundary" marked header and footer, and XML section */
+
+               len = (int)(p_siprec - p2);  /* for siprec, use alternative len calculation -- avoid (i) siprec header intro and padding before v=0 (ii) XML section after end of sdp info (separated by another siprec header, if found), JHB Apr 2023 */
+            }
+
+            #ifndef USE_OLD_CONTENTS_START
+            p_start = p2;  /* start of contents ("v=0") */
+            #else
+            start = (int)(p2 - p);  /* offset to start of contents ("v=0") */
             #endif
-            
          }
          else {  /* SAP/SDP protocol packets are lightweight with no header info (e.g. length:, v=, etc) */
 
             len = pyld_len - (int)(p - &pkt_in_buf[pyld_ofs+index]);
-            start = 0;  /* offset from start of contents (start of "application" keyword) */
+            #ifndef USE_OLD_CONTENTS_START
+            p_start = p;  /* start of contents ("application" keyword) */
+            #else
+            start = 0;  /* offset to start of contents ("application" keyword) */
+            #endif
          }
 
+         #ifndef USE_OLD_CONTENTS_START
+         int rem = pyld_len - index - (int)(p_start - &pkt_in_buf[pyld_ofs+index]);
+         #else
          int rem = pyld_len - index - (int)(&p[start] - &pkt_in_buf[pyld_ofs+index]);
+         #endif
 
          #ifdef FINDINVITEDEBUG
-         printf("\nSIP invite debug %d\n index = %d \n start = %d, len = %d, rem = %d \n %s\n", ++count, index, start, len, rem, tmpstr);
+         printf("\nSIP invite debug %d\n pyld_ofs = %d, pyld_len = %d, index = %d \n len = %d, rem = %d \n", count, pyld_ofs, pyld_len, index, len, rem);
          #endif
 
          if (len > rem) {  /* save partial SIP invite, starting with "Length:" */
@@ -483,8 +520,13 @@ type_check:
          }
          else {  /* SIP invite or SAP/SDP protocol found, display and/or extract Origin and Media objects from SDP info, add to thread_info[].origins[stream] */
 
-            char szSDP[MAX_RTP_PACKET_LEN];
+            char szSDP[MAX_TCP_PACKET_LEN];
+            #ifndef USE_OLD_CONTENTS_START
+            memcpy(szSDP, p_start, len);
+            #else
             memcpy(szSDP, &p[start], len);
+            #endif
+
             uint8_t* p2 = (uint8_t*)memmem(&szSDP[0], len, "sdp", 3);
             if (p2 && *(p2+3) == 0) *(p2+3) = '\n';  /* some SAP packet generators seem to stick a zero after "application/sdp" and before "m=", which I don't see in any spec, but whatever. If so we replace with a new line, JHB Jan 2023 */
 
@@ -496,12 +538,18 @@ type_check:
 
                uint16_t dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL);
 
-               Log_RT(4, "mediaMin INFO: %s found, dst port = %u, pyld len = %d, len = %d, rem = %d, start = %d, index = %d, SDP info contents as follows \n%s", (session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", dest_port, pyld_len, len, rem, start, index, szSDP);
+               Log_RT(4, "mediaMin INFO: %s found, dst port = %u, pyld len = %d, len = %d, rem = %d, index = %d, SDP info contents as follows \n%s", (session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", dest_port, pyld_len, len, rem, index, szSDP);
             }
+
+// printf(" *** before SDPParseInfo \n");
 
             SDPParseInfo(szSDP, (uFlags & SESSION_CONTROL_ADD_ITEM_MASK) ? SDP_PARSE_ADD : 0, nInput, thread_index);  /* SDPParseInfo() will show messages if SDP infos are invalid, repeats of existing session IDs, or added to the input stream's SDP database. Note that return value is number of Invite added, if that should be needed, JHB Jan 2023 */
 
+            #ifndef USE_OLD_CONTENTS_START
+            index = (int)(p_start - &pkt_in_buf[pyld_ofs+index]) + len;
+            #else
             index = &p[start] - &pkt_in_buf[pyld_ofs+index] + len;
+            #endif
 
             goto type_check;  /* look for more SDP info contents in this packet */
          }

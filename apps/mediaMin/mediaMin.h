@@ -22,6 +22,8 @@
    Modified Jan 2023 JHB, add Origin records (a vector of Origins) to SDP info in order to keep track of unique SDP session IDs
    Modified Jan 2023 JHB, add STREAM_TERMINATE_xxx flags
    Modified Jan 2023 JHB, add PORT_INFO_LIST struct definition
+   Modified Apr 2023 JHB, add fReseek, PktInfo, and tcp_redundant_discard. For usage see comments in mediaMin.cpp
+   Modified May 2023 JHB, add isAFAPMode macro and afap_ts[] to support "as fast as possible" mode. isAFAPMode evaluates to true for -r0 cmd line entry
 */
 
 #ifndef _MEDIAMIN_H_
@@ -43,8 +45,9 @@
 
 /* dynamic stream terminations */
 
-#define STREAM_TERMINATE_BYE_MESSAGE  1
-#define STREAM_TERMINATE_PORT_CLOSES  2
+#define STREAM_TERMINATE_BYE_MESSAGE             1
+#define STREAM_TERMINATE_PORT_CLOSES             2
+#define STREAM_TERMINATE_INPUT_ENDS_NO_SESSIONS  0x10
 
 extern GLOBAL_CONFIG pktlib_gbl_cfg;
 
@@ -117,7 +120,8 @@ typedef struct {
   FILE*    fp_pcap_jb[MAX_SESSIONS];
   bool     init_err;
 
-  uint32_t num_packets_in[MAX_INPUT_STREAMS];
+  uint32_t num_tcp_packets_in[MAX_INPUT_STREAMS];
+  uint32_t num_udp_packets_in[MAX_INPUT_STREAMS];
 
   FILE*    fp_pcap_group[MAX_STREAM_GROUPS];  /* note:  this array is accessed by a session counter, and each app thread might handle up to 50 sessions, so this size (172, defined in shared_include/streamlib.h) is overkill.  But leave it for now */
   FILE*    fp_text_group[MAX_STREAM_GROUPS];
@@ -157,12 +161,22 @@ typedef struct {
   uint8_t* sip_save[MAX_INPUT_STREAMS];  /* SIP aggregated packet handling, initially to support SIP invite packets, added JHB Mar2021 */
   int      sip_save_len[MAX_INPUT_STREAMS];
 
-  uint8_t dynamic_terminate_stream[MAX_INPUT_STREAMS];  /* non-zero values will terminate a stream, for example a SIP BYE messsage from sender or recipient with same IP addr as active media stream.  See STREAM_TERMINATE_xxx defines above */
+  uint8_t  dynamic_terminate_stream[MAX_INPUT_STREAMS];  /* non-zero values will terminate a stream, for example a SIP BYE messsage from sender or recipient with same IP addr as active media stream.  See STREAM_TERMINATE_xxx defines above */
+ 
+ /* items used only in PushPackets() */
+
+  bool           fReseek;                /* flag indicating whether current packet processing is a "reseek" (i) a packet arrival timestamp not yet elapsed (ii) a TCP packet being consumed in segments */
+  PKTINFO_ITEMS  PktInfo;                /* saved copy of PktInfo, can be used to compare current and previous packets */ 
+  unsigned int   tcp_redundant_discards[MAX_INPUT_STREAMS];  /* count of discarded TCP redundant retransmissions */
+
+  struct timespec afap_ts[MAX_SESSIONS];  /* added to support AFAP mode, JHB May 2023 */
 
 } THREAD_INFO;
 
 #define isMasterThread        (thread_index == 0)  /* in multithread operation, only thread 0 (the "master thread") does certain init and cleanup things, and other threads sync with the master thread and cannot proceed until those things are done */
 #define MasterThread          0
 #define NUM_PKTMEDIA_THREADS  3  /* default number of packet/media threads started by mediaMin */
+
+#define isAFAPMode            (frameInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
 
 #endif  /* _MEDIAMIN_H_ */

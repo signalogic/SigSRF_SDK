@@ -10,6 +10,7 @@
    Created May 2007, NR
    Modified May-Jun 2010, VR, JHB, adjusted to updated DirectCore (merged with SigC641x)
    Modified Feb 2023 JHB, in getkey(), add simple multithread semaphore lock and fix problem in Docker containers where fgetc() input is ignored
+   Modified Apr 2023 JHB, fix uninitialized variable in getkey(). See comment
 */
 
 #include <stdlib.h>
@@ -148,7 +149,7 @@ char ch;
 
 int getkey() {
 
-int ch;
+int ch = 0;  /* initialized to zero to fix read(fileno, 1) not handling some upper case chars (don't know why this didn't manifest earlier), JHB Apr 2023 */
 struct termios orig_term_attr, new_term_attr;
 
 #if 0

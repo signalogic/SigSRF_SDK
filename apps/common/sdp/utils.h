@@ -4,10 +4,11 @@
  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
- Copyright (c) 2021 Signalogic, Dallas, Texas
+ Copyright (c) 2021-2023 Signalogic, Dallas, Texas
 
  Revision History
-  Modified Jan 2021 JHB, add a=rtpmap attribute support
+  Modified Jan 2021 JHB, add a=rtpmap attribute support, add codec_type conversions
+  Modified Apr 2023 JHB, update comments
 */
 
 #ifndef SDP_UTILS_H
@@ -54,7 +55,7 @@ namespace sdp {
     return ltrim(rtrim (str, t) , t);
   }
 
-  /* tokenize input until given character */
+  /* tokenize input until delim found (typically end-of-line) */
   inline int tokenize(std::string input, char delim, std::vector<std::string>& output) {
 
     std::stringstream ss(input);

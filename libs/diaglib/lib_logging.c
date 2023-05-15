@@ -21,7 +21,7 @@
    Modified Jan 2020 JHB, use libg_dbg_cfg.uPrintfControl to determine screen output of Log_RT(), see comments near USE_NONBUFFERED_OUTPUT
    Modified Feb 2020 JHB, implement wall clock timestamp option
    Modified Mar 2020 JHB, implement DS_LOG_LEVEL_FILE_ONLY flag, handle leading newline (\n) in app supplied strings
-   Modified Mar 2020 JHB, implement uLineCursorPos and isCursorMidLine in screen output handling; isCursorPosMidLine determines leading \n decisions. uLineCursorPos records line cursor position
+   Modified Mar 2020 JHB, implement uLineCursorPos and isCursorMidLine in screen output handling; isCursorPosMidLine determines leading \n decisions. uLineCursorPos records cursor position within a line
    Modified Apr 2020 JHB, implement DSGetLogTimeStamp() API
    Modified Jan 2021 JHB, include string.h with _GNU_SOURCE defined, change loglevel param in Log_RT() from uint16_t to uint32_t, implement DS_LOG_LEVEL_SUBSITUTE_WEC flag (config.h). See comments
    Modified Mar 2021 JHB, minor adjustments to removal of unncessary Makefile defines, add DIAGLIB_STANDALONE #define option to build without isPmThread()

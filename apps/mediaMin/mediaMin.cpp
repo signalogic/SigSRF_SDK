@@ -130,6 +130,10 @@
    Modified Jan 2023 JHB, add support for SAP/SDP protocol
    Modified Jan 2023 JHB, add rudimentary support for SIP message session control. Look for SESSION_CONTROL_FOUND_SIP_xxx flags. The SIP BYE message will terminate a stream (this can be disabled by the DISABLE_TERMINATE_STREAM_ON_BYE flag in -dN cmd line options)
    Modified Mar 2023 JHB, handle SIP messages when source port is 5060 (show but not parse)
+   Modified Apr 2023 JHB, in TestActions() auto-quit handling, check for all streams terminated
+   Modified Apr 2023 JHB, implement filtering of redundant TCP retransmissions. See FILTER_TCP_REDUNDANT_RETRANSMISSIONS definition
+   Modified Apr 2023 JHB, add num TCP and UDP packets to mediaMin stats summary
+   Modified May 2023 JHB, add support for AFAP mode ("as fast as possible"). Look for comments near isAFAPMode (defined in mediaMin.h)
 */
 
 
@@ -149,7 +153,7 @@ using namespace std;
 
 /* mediaTest header file */
 
-#include "mediaTest.h"  /* bring in vars declared in cmd_line_interface.c, including MediaParams[], PlatformParams, frameInterval[], and Mode */
+#include "mediaTest.h"  /* bring in vars declared in cmd_line_interface.c, including MediaParams[], PlatformParams, frameInterval[], and debugMode (defined as Mode in mediaMin.h) */
 
 /* lib header files */
 
@@ -188,6 +192,8 @@ PORT_INFO_LIST NonDynamic_UDP_Port_Allow_List[] = { 1234, 3078, 3079 };  /* add 
 #define SIP_UDP_PORT                5060  /* default UDP port for processing SIP messages */
 #define SIP_UDP_PORT_ENCRYPTED      5061  /* same, encrypted (currently not used) */
 #define SAP_UDP_PORT                9875  /* default UDP port for processing Session Announcement Protocol (SAP) SDP info */
+
+#define FILTER_TCP_REDUNDANT_RETRANSMISSIONS  /* enable discarding redundant TCP retransmissions. See comments */
 
 static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 3.3.2, Copyright (C) Signalogic 2018-2023\n";
 
@@ -370,7 +376,7 @@ char tmpstr[MAX_APP_STR_LEN];
       if (Mode & ENABLE_DER_STREAM_DECODE) printf("  encapsulated DER stream detection and decoding enabled\n");
       if (Mode & ENABLE_STREAM_GROUP_ASR)  printf("  stream group output ASR enabled\n");
 
-      printf(" Test Mode\n");
+      printf(" Test Modes\n");
       bool fTestModePrinted = false;
       if (Mode & CREATE_DELETE_TEST) { printf("  test mode, create, delete, and recreate sessions.  Automatically repeats\n"); fTestModePrinted = true; }
       if (Mode & CREATE_DELETE_TEST_PCAP) { printf("  test mode, dynamically create sessions from pcap with initial static session.  Automatically repeats\n"); fTestModePrinted = true; }
@@ -851,8 +857,22 @@ cleanup:
 
    if (!fExitErrorCond && !fStressTest && !fCapacityTest && (thread_info[thread_index].fDynamicSessions || (Mode & ENABLE_STREAM_GROUPS))) {
 
+   /* note stats are concatenated into one string and one call to app_printf() prior to display and logging; this avoids fragmentation and mixing with other messages when multiple app threads and packet/media threads are running */
+
       sprintf(tmpstr, "===== mediaMin stats");
       if (num_app_threads > 1) sprintf(&tmpstr[strlen(tmpstr)], " (%d)", thread_index);
+
+      strcat(tmpstr, "\n\tnum TCP packets input[] = ");
+      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_tcp_packets_in[i]);
+
+      strcat(tmpstr, "\n\tnum UDP packets input[] = ");
+      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_udp_packets_in[i]);
+
+      #ifdef FILTER_TCP_REDUNDANT_RETRANSMISSIONS
+      strcat(tmpstr, "\n\tnum TCP redundant discards input[] = ");
+      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].tcp_redundant_discards[i]);  /* display/log number of redundant TCP retransmissions discarded, if any */
+      #endif
+
       strcat(tmpstr, "\n");
 
       bool fLogTimeStampPrinted = false;  /* make sure only one event log timestamp is printed in the case of multiple strings */
@@ -871,23 +891,28 @@ cleanup:
          }
       }
 
-      if (strlen(tmpstr)) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), thread_index, tmpstr);
+      if (strlen(tmpstr)) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), thread_index, tmpstr);  /* display stats summary */
+  
+   /* display stream group output stats */
 
-      if (Mode & ENABLE_STREAM_GROUPS) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, "\tMissed stream group intervals = %d", thread_info[thread_index].group_interval_stats_index);
+      if ((Mode & ENABLE_STREAM_GROUPS) && !isAFAPMode) {  /* in "as fast as possible" mode (-r0 cmd line entry) we are currently not showing stream group output stats. That will likely change after we get a better understanding of what streamlib is doing in AFAP case, JHB May 2023 */
+  
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, "\tMissed stream group intervals = %d", thread_info[thread_index].group_interval_stats_index);
 
-      for (i=0; i<thread_info[thread_index].group_interval_stats_index; i++) {
+         for (i=0; i<thread_info[thread_index].group_interval_stats_index; i++) {
 
-         sprintf(tmpstr, "\t[%d] missed stream group interval = %d, hSession = %d", i, thread_info[thread_index].GroupIntervalStats[i].missed_interval, thread_info[thread_index].GroupIntervalStats[i].hSession);
-         if (thread_info[thread_index].GroupIntervalStats[i].repeats) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].GroupIntervalStats[i].repeats+1);
+            sprintf(tmpstr, "\t[%d] missed stream group interval = %d, hSession = %d", i, thread_info[thread_index].GroupIntervalStats[i].missed_interval, thread_info[thread_index].GroupIntervalStats[i].hSession);
+            if (thread_info[thread_index].GroupIntervalStats[i].repeats) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].GroupIntervalStats[i].repeats+1);
 
-         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, tmpstr);
-      }
+            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, tmpstr);
+         }
 
-      if (Mode & ENABLE_STREAM_GROUPS) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, "\tMarginal stream group pulls = %d", thread_info[thread_index].group_pull_stats_index);
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, "\tMarginal stream group pulls = %d", thread_info[thread_index].group_pull_stats_index);
 
-      for (i=0; i<thread_info[thread_index].group_pull_stats_index; i++) {
-         sprintf(tmpstr, "\t[%d] marginal stream group pull at %d, retries = %d, hSession = %d", i, thread_info[thread_index].GroupPullStats[i].retry_interval, thread_info[thread_index].GroupPullStats[i].num_retries, thread_info[thread_index].GroupPullStats[i].hSession);
-         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, tmpstr);
+         for (i=0; i<thread_info[thread_index].group_pull_stats_index; i++) {
+            sprintf(tmpstr, "\t[%d] marginal stream group pull at %d, retries = %d, hSession = %d", i, thread_info[thread_index].GroupPullStats[i].retry_interval, thread_info[thread_index].GroupPullStats[i].num_retries, thread_info[thread_index].GroupPullStats[i].hSession);
+            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, tmpstr);
+         }
       }
    }
 
@@ -1906,9 +1931,9 @@ err_msg:
 
    hSessions[thread_info[thread_index].nSessionsCreated] = hSession;
 
-   thread_info[thread_index].nSessionsCreated++;
+   thread_info[thread_index].nSessionsCreated++;  /* nSessionsCreated and nDynamicSessions increment when sessions open, they may also decrement in some test modes. See also .nSessionsDeleted which increments when dynamic sessions close */
    thread_info[thread_index].nDynamicSessions++;
-   thread_info[thread_index].total_sessions_created++;
+   thread_info[thread_index].total_sessions_created++;  /* total_sessions_created never decrements */
 
 /* update dynamic session stats */
 
@@ -2033,10 +2058,6 @@ PKTINFO_ITEMS PktInfo;  /* struct in pktlib.h */
 static int num_pcap_packets = 0;
 #endif
 
-//  static int count = 0;
-//  static bool fReseek = false;
-
-
    for (j=0; j<thread_info[thread_index].nInPcapFiles; j++) {
 
       if (thread_info[thread_index].pcap_in[j] != NULL) {
@@ -2054,7 +2075,7 @@ read_packet:
 
          //#define STRESS_DEBUG
          #ifdef STRESS_DEBUG
-         if (nRepeatsRemaining[thread_index] >= 0 && thread_info[thread_index].num_packets_in[j] > 1000) pkt_len = 0;
+         if (nRepeatsRemaining[thread_index] >= 0 && thread_info[thread_index].num_udp_packets_in[j] > 1000) pkt_len = 0;
          else
          #endif
 
@@ -2100,12 +2121,36 @@ read_packet:
                   #endif
                   goto read_packet;
                }
-  #if 0
-  uint16_t dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL);
-  if (!fReseek) count++;
-  printf("\n *** packet number %d, dst port %d \n", count, dst_port);
-  fReseek = false;
-  #endif
+
+               if (protocol == TCP_PROTOCOL) {
+
+                  if (!thread_info[thread_index].fReseek) {  /* if not a reseek then new packet, not a continuation */
+ 
+                  /* remove redundant TCP retransmissions. Notes JHB Apr 2023:
+
+                     -evidently some HI2/HI3 streams may contain redundant TCP retransmission of some or all packets (something like temporal redundancy in RFC7198, or maybe for FEC purposes like F5 does)
+                     -we detect and strip these out. Sequence numbers, length, and ports must be an exact copy
+                     -currently this is a rudimentary implementation, not likely to work with multiple/mixed TCP sessions
+                     -to-do: implement TCP session management, separate but similar to existing UDP sessions handled by pktlib
+                  */
+
+                     #ifdef FILTER_TCP_REDUNDANT_RETRANSMISSIONS
+                     if (PktInfo.seqnum == thread_info[thread_index].PktInfo.seqnum && PktInfo.ack_seqnum == thread_info[thread_index].PktInfo.ack_seqnum && PktInfo.pkt_len == thread_info[thread_index].PktInfo.pkt_len && PktInfo.dst_port == thread_info[thread_index].PktInfo.dst_port && PktInfo.src_port == thread_info[thread_index].PktInfo.src_port) {
+
+                        thread_info[thread_index].tcp_redundant_discards[j]++;  /* increment number of redundant TCP transmissions discarded for this stream */
+                        #if 0  /* enable for debug */
+                        printf(" *** discard TCP retransmit, pkt # = %u, seqnum = %u, tcp discard count = %d \n", thread_info[thread_index].num_tcp_packets_in[j]+1, PktInfo.seqnum, thread_info[thread_index].tcp_redundant_discards[j]);
+                        #endif
+                        goto read_packet;  /* discard redundant TCP retransmission packet */
+                     }
+                     #endif
+
+                     thread_info[thread_index].num_tcp_packets_in[j]++;  /* increment per stream TCP packet count */
+                  }
+               }
+
+               thread_info[thread_index].PktInfo = PktInfo;  /* save packet info */
+               thread_info[thread_index].fReseek = false;  /* clear fReseek */
 
 #if 0  /* example showing how to find/filter packet(s); for debug if needed */
    __uint128_t src_ip_addr = 0;
@@ -2175,15 +2220,21 @@ read_packet:
 
                app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "mediaMin INFO: pcap %s wraps", MediaParams[thread_info[thread_index].input_index[j]].Media.inputFilename);
 
-               if (thread_info[thread_index].num_packets_in[j]) fRepeat = true;  /* set repeat flag (note the check whether stream has produced at least one valid packet, we don't wanna end up in infinite pkt_len == 0 loop), JHB Dec2021 */
+               if (thread_info[thread_index].num_udp_packets_in[j]) fRepeat = true;  /* set repeat flag (note the check whether stream has produced at least one valid packet, we don't wanna end up in infinite pkt_len == 0 loop), JHB Dec2021 */
             }
 
             thread_info[thread_index].initial_push_time[j] = 0;  /* reset initial push time */
 
+            #if 0  /* with extended AFAP mode support in place, we now display and log media time or processing time in all cases, JHB May 2023 */
             if (((Mode & USE_PACKET_ARRIVAL_TIMES) || frameInterval[0] > 1) && isMasterThread) {
+            #else
+            if (isMasterThread) {
+            #endif
 
                char tmpstr[200];
-               sprintf(tmpstr, "===== mediaMin INFO: %stotal input pcap[%d] time = %4.2f (sec)", !(Mode & USE_PACKET_ARRIVAL_TIMES) ? "estimated " : "", j, 1.0*thread_info[thread_index].total_push_time[j]/1000000L);
+               char descripstr[50] = "media";
+               if (isAFAPMode) strcpy(descripstr, "processing");
+               sprintf(tmpstr, "===== mediaMin INFO: %stotal input pcap[%d] %s time = %4.2f (sec)", !(Mode & USE_PACKET_ARRIVAL_TIMES) ? "estimated " : "", j, descripstr, 1.0*thread_info[thread_index].total_push_time[j]/1000000L);
                app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, tmpstr);
                Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, tmpstr);
             }
@@ -2201,10 +2252,9 @@ read_packet:
 
             int nSessionIndex;
             for (i=0; i<thread_info[thread_index].nSessions[j]; i++) if ((nSessionIndex = thread_info[thread_index].nSessionIndex[j][i]) >= 0) DSPushPackets(DS_PUSHPACKETS_PAUSE_INPUT, NULL, NULL, &hSessions[nSessionIndex], 1);
+            if (!thread_info[thread_index].total_sessions_created) thread_info[thread_index].dynamic_terminate_stream[j] |= STREAM_TERMINATE_INPUT_ENDS_NO_SESSIONS; /* stream terminates with no sessions created */
             continue;
          }
-
-         thread_info[thread_index].num_packets_in[j]++;  /* increment stream valid packet count (either UDP or TCP/IP) */
 
       /* DER encoded encapsulated stream processing, JHB Mar2021 */
 
@@ -2268,9 +2318,9 @@ read_packet:
                   }
 
                   if (der_decode.asn_index != 0) {
-                  
-                    fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* keep main stream packet until its encapsulated stream is consumed */
-              //fReseek = true;
+
+                    fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* keep TCP stream packet until its encapsulated stream is consumed */
+                    thread_info[thread_index].fReseek = true;
                   }
  
 //  uint64_t pkt_timestamp = (uint64_t)p_pcap_rec_hdr->ts_sec*1000000L + p_pcap_rec_hdr->ts_usec;
@@ -2386,6 +2436,8 @@ read_packet:
             last_push_time = msec_curtime;
             #endif
          }
+
+         thread_info[thread_index].num_udp_packets_in[j]++;  /* increment per stream UDP packet count */
 
          #define FILTER_UDP_PACKETS
          #ifdef FILTER_UDP_PACKETS  /* filter UDP packets. Notes:
@@ -2740,8 +2792,8 @@ uint64_t packet_info[1024];
 uint8_t* pkt_out_ptr;
 char errstr[20];
 int nRetry[MAX_SESSIONS] = { 0 };
-int group_idx;
-bool fRetry;
+int group_idx = -1;
+bool fRetry = false;
 
    if (!thread_info[thread_index].nSessionsCreated) return 0;  /* nothing to do if no sessions created yet */
 
@@ -2762,6 +2814,7 @@ entry:
       i = GetNextGroupSessionIndex(hSessions, i, thread_index);  /* for stream group packets, the session handle given to DSPullPackets() has to be a group session owner. To look for group session owners, we call GetNextGroupSessionIndex().  Note that it returns an index into hSessions[] not a handle */
 
       if (i >= 0) {
+
          group_idx = DSGetStreamGroupInfo(hSessions[i], DS_GETGROUPINFO_CHECK_GROUPTERM, NULL, NULL, NULL);  /* note if hSessions[i] is marked for deletion it will have 0x80000000 flag and DSGetStreamGroupInfo() will return -1. This is not a problem since we check for the deletion flag at pull: */
          fp = thread_info[thread_index].fp_pcap_group[group_idx];
          strcpy(errstr, "stream group");
@@ -2857,7 +2910,7 @@ pull:
                   -the current sleep and max wait times are 1 msec and 8 msec
                   -this handles cases where app or p/m threads are temporarily a bit slow, maybe due to file I/O or other system timing delays
                   -this happens rarely if stream group output has FLC enabled, in which case p/m threads are making every effort to generate on-time output
-                  -when this occurs it can be identified in output stream group pcaps as a slight variation in packet delta, for example 22 msec, followed by one of 18 msec (for example Wireshark stats under Telephony | RTP | Stream Analysis)
+                  -when this occurs it can be identified in output stream group pcaps as a slight variation in packet delta, for example 22 msec, followed by one of 18 msec (analyze using Wireshark stats under Telephony | RTP | Stream Analysis)
                */
 
                   nRetry[i]++;  /* mark session as needing a retry */
@@ -2866,7 +2919,7 @@ pull:
             }
             else {
 
-               thread_info[thread_index].fFirstGroupPull[i] = true;
+               if (!thread_info[thread_index].fFirstGroupPull[i]) thread_info[thread_index].fFirstGroupPull[i] = true;
 
                if (nRetry[i]) {
 
@@ -2878,14 +2931,32 @@ pull:
                   }
                }
 
-               nRetry[i] |= 0x100;  /* mark session as a successful pull */
+               nRetry[i] |= 0x100;  /* mark session with successful pull flag */
             }
          }
       }
 
       for (j=0, pkt_out_ptr=pkt_out_buf; j<num_pkts; j++) {
 
-         if (DSWritePcapRecord(fp, pkt_out_ptr, NULL, NULL, NULL, NULL, packet_out_len[j]) < 0) { fprintf(stderr, "DSWritePcapRecord() failed for %s output\n", errstr); return -1; }
+         struct timespec* p_ts = NULL;  /* default (NULL) tells DSWritePcapRecord() to determine packet timestamps using wall clock */
+
+         if (group_idx >= 0 && isAFAPMode) {  /* for stream group output in AFAP mode we advance packet arrival timestamps at regular ptime intervals. There is no concept of overrun and underrun, missed intervals, etc being handled in raw audio domain with signal processing and re-sampling, JHB May 2023 */
+
+            if (!thread_info[thread_index].afap_ts[i].tv_sec) clock_gettime(CLOCK_REALTIME, &thread_info[thread_index].afap_ts[i]);  /* if sec is uninitialized we start with current time */
+            else {
+
+               int ptime = DSGetSessionInfo(hSessions[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_PTIME, 0, NULL);
+
+               uint64_t t = 1000000ULL*(uint64_t)thread_info[thread_index].afap_ts[i].tv_sec + (uint64_t)thread_info[thread_index].afap_ts[i].tv_nsec/1000 + ptime*1000L;  /* calculate in usec */
+
+               thread_info[thread_index].afap_ts[i].tv_sec = t/1000000ULL;  /* update stream group's packet timestamp */
+               thread_info[thread_index].afap_ts[i].tv_nsec = (t - 1000000ULL*thread_info[thread_index].afap_ts[i].tv_sec)*1000;
+            } 
+
+            p_ts = &thread_info[thread_index].afap_ts[i];  /* override DSWritePcapRecord() default with specified packet timestamp */
+         }
+
+         if (DSWritePcapRecord(fp, pkt_out_ptr, NULL, NULL, NULL, p_ts, packet_out_len[j]) < 0) { fprintf(stderr, "DSWritePcapRecord() failed for %s output\n", errstr); return -1; }
          else pkt_out_ptr += packet_out_len[j];
 
          num_pkts_total++;
@@ -2997,7 +3068,8 @@ unsigned int uFlags;
 
 valid_input_spec:
 
-         thread_info[thread_index].num_packets_in[j] = 0;
+         thread_info[thread_index].num_tcp_packets_in[j] = 0;
+         thread_info[thread_index].num_udp_packets_in[j] = 0;
          thread_info[thread_index].input_index[j] = i;  /* save an index that maps to cmd line input specs */
          thread_info[thread_index].nInPcapFiles = ++j;
       }
@@ -3675,21 +3747,29 @@ int i, ret_val = 1;
 
 /* more actions, including repeat mode and auto-quit */
 
+   bool fAllStreamsTerminated = false;
+
    bool fAllSessionsFlushed = (thread_info[thread_index].nSessionsCreated > 0);
+
+   if (!thread_info[thread_index].total_sessions_created) {  /* if no sessions were created then session flush doesn't apply for auto-quit purposes, so we check stream terminations, for example BYE messages, JHB Apr 2023 */
+
+      fAllStreamsTerminated = true;
+      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) if (!thread_info[thread_index].dynamic_terminate_stream[i]) { fAllStreamsTerminated = false; break; }  /* any stream not terminated makes this false and we go by session flush */
+   }
 
    for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) if (thread_info[thread_index].flush_state[i] != FINAL_FLUSH_STATE) { fAllSessionsFlushed = false; break; }  /* any session not yet flushed makes this false */
 
-   if (fAllSessionsFlushed) {
+   if (fAllStreamsTerminated || fAllSessionsFlushed) {
  
       if ((Mode & CREATE_DELETE_TEST) || nRepeatsRemaining[thread_index]-1 >= 0 || fRepeatIndefinitely) {
    
          if (!isMasterThread) usleep(1000*50);
          ret_val = 0;  /* for session delete/recreate stress test or repeat mode, start test over after all sessions are flushed */
       }
-      else if (fAutoQuit) {  /* set fStop (graceful per-thread stop, same as 's' key) */
+      else if (fAutoQuit) {
 
-         fStop = true;
-         ret_val = 0;
+         fStop = true;  /* set fStop (graceful per-thread stop, same as 's' key). Note this is ok for any thread to set, as all threads wait and synchronize before proceeding with exit processing (look for if (fExit) { ... AppThreadSync() ...), JHB Apr 2023 */
+         ret_val = 0;  /* cause thread to exit continuous push/pull loop */
       }
    }
 

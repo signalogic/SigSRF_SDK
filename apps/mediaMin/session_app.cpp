@@ -23,6 +23,7 @@
    Modified Sep 2022 JHB, add ReadCodecConfig(), split out check_config_file(), used by both ReadSessionConfig() and ReadCodecConfig()
    Modified Dec 2022 JHB, change references to DYNAMIC_CALL to DYNAMIC_SESSIONS
    Modified Jan 2023 JHB, added reference to extern fUntimedMode, in case it should be needed in SetIntervalTiming(). See comments in mediaMin.cpp
+   Modified May 2023 JHB, set group_term.input_buffer_interval in SetIntervalTiming(). This is needed in streamlib for mods related to "fast as possible mode" (when -r0 packet interval is given on the mediaMin cmd line)
 */
 
 #include <stdio.h>
@@ -110,6 +111,13 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
           (session_data->term2.input_buffer_interval && session_data->term2.group_mode)) session_data->group_term.output_buffer_interval = session_data->group_term.ptime;
 
       if (session_data->group_term.output_buffer_interval < 0) session_data->group_term.output_buffer_interval = 0;  /* if not specified, set to zero */
+
+   /* also set group term input_buffer_interval. This is needed in streamlib to handle "fast as possible mode" timing (-r0 on command line), JHB May 2023 */
+
+      if (session_data->term1.input_buffer_interval && session_data->term1.group_mode) session_data->group_term.input_buffer_interval = session_data->term1.input_buffer_interval;
+      else if (session_data->term2.input_buffer_interval && session_data->term2.group_mode) session_data->group_term.input_buffer_interval = session_data->term2.input_buffer_interval;
+
+      if (session_data->group_term.input_buffer_interval < 0) session_data->group_term.input_buffer_interval = 0;  /* if not specified, set to zero */
    }
 
    if ((int)frameInterval[0] == -1) frameInterval[0] = session_data->term1.input_buffer_interval;
