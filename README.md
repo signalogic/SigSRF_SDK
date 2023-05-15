@@ -154,12 +154,11 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
 
 Using the thread ratio and per stream workload given above, necessary per CPU amount of RAM and number cores can be estimated as:
 
-```math
-  memSize = {N \over 16numCPUs}
-  numCores = {N \over 32numCPUs}
-```
+### &nbsp;&nbsp;&nbsp; $`memSize = {N \over 16numCPUs}`$
 
-<br clear=all></a>where N is the required number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
+### &nbsp;&nbsp;&nbsp; $`numCores = {N \over 32numCPUs}`$
+
+where N is the required number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
 <sup>1</sup> [pktlib](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) provides packet/media APIs, examples include DSCreateSession(), DSPushPacket(), and DSPullPackets(), and DSGetSessionInfo()
   
