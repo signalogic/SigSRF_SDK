@@ -403,6 +403,12 @@ If no path is entered the default path is /usr/local. <i>Do not enter a path suc
   /root
 ```
 
+To be compatible with the install path in the [Docker Containers](#user-content-dockercontainers) you can use:
+
+```
+  /home/sigsrf_sdk_demo
+```
+
 After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail). During the install, if g++/gcc build tools are not found on your system, the install script will ask permission to install them, and then build EdgeStream applications as part of the install process. This is important, as the EdgeStream app Makefiles look for OS distro version, tools version, libraries such as libmvec, and packages like ALSA and Kaldi, and set compiler defines based on what is found on the system. For example, if you are installing the ASR option, and Kaldi is not found on your system, then the mediaMin Makefile will set compiler defines to use Kaldi libs included in the Rar package.
 
 If at any time you want to abort the install and start over, press Ctrl-C.
