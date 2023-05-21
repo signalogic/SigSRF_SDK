@@ -55,7 +55,7 @@ EdgeStream and SigSRF software are currently deployed in the following applicati
 
 * Session Border Controller (SBC)
 * Media Gateway
-* Robotics -- implement voice commands (ASR, automatic speech recognition) (<a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hw + sw product page]
+* Robotics -- implement voice commands (ASR, automatic speech recognition) (<a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hw + sw product page</a>
 * Factory, construction, warehouse equipment - implement accident avoidance for remotely controlled and automated equipment
 * Vehicle automation - implement small server add-on / after-market products such as small form-factor Lidar
 * Lawful Intercept and Lawful Intelligence (LI)
@@ -134,7 +134,7 @@ For information on HI2 and HI3 intercept decoding with <a href="https://openli.n
 <a name="Multithreaded"></a>
 ## High Capacity Multithreaded Operation
 
-Both SigSRF library modules and EdgeStream applications support multiple, concurrent packet + media processing threads. Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups. Thread stats include profiling, performance, and session allocation. Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet/media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
+Both SigSRF library modules and EdgeStream applications support multiple, concurrent packet + media processing threads. Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups. Thread stats include profiling, performance, and session allocation. Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
 
 High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers. The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop measurement and verification, Linux guidelines, etc.
 
@@ -151,12 +151,10 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
   - **Thread distribution** htop shows 10 packet/media threads and 12 mediaTest application threads, and the mediaTest command line shows each application thread reusing inputs 13 times. The 2922.0 pcap shown in the command line contains 3 streams, resulting in 504 total sessions <sup>2</sup> (12\*3\*(1+13)) and 168 total stream groups. As noted in **Workload**, streams contain a mix of EVS and AMR-WB codecs
 
   - **Hyperthreading** Hyperthreading for media + packet threads is effectively disabled through use of core affinity (aka CPU pinning). Application threads continue to utilize hyperthreading
-  
+
 Using the thread ratio and per stream workload given above, necessary per CPU amount of RAM and number cores can be estimated as:
 
-### &nbsp;&nbsp;&nbsp; $memSize = {N \over 16numCPUs}$  
-
-### &nbsp;&nbsp;&nbsp; $numCores = {N \over 32numCPUs}$  
+![server capacity equations](https://github.com/signalogic/SigSRF_SDK/blob/master/images/server_capacity_math_equations.png?raw=true "server capacity math equations")
 
 where N is the required number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
@@ -403,6 +401,12 @@ If no path is entered the default path is /usr/local. <i>Do not enter a path suc
   /home
   /home/user_name
   /root
+```
+
+To be compatible with the install path in the [Docker Containers](#user-content-dockercontainers) you can use:
+
+```
+  /home/sigsrf_sdk_demo
 ```
 
 After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail). During the install, if g++/gcc build tools are not found on your system, the install script will ask permission to install them, and then build EdgeStream applications as part of the install process. This is important, as the EdgeStream app Makefiles look for OS distro version, tools version, libraries such as libmvec, and packages like ALSA and Kaldi, and set compiler defines based on what is found on the system. For example, if you are installing the ASR option, and Kaldi is not found on your system, then the mediaMin Makefile will set compiler defines to use Kaldi libs included in the Rar package.
