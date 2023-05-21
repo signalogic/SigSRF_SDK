@@ -2237,8 +2237,11 @@ codec_test_cleanup:
 
       printf("pcap extract start\n");
 
-      if (MediaParams[0].Media.inputFilename != NULL)
-      {
+      #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+      #pragma GCC diagnostic ignored "-Waddress"
+      if (MediaParams[0].Media.inputFilename != NULL) {
+      #pragma GCC diagnostic pop
+
          strcpy(tmpstr, MediaParams[0].Media.inputFilename);
          strupr(tmpstr);
 
@@ -2258,8 +2261,11 @@ codec_test_cleanup:
          goto pcap_extract_cleanup;
       }
 
-      if (MediaParams[0].Media.outputFilename != NULL)
-      {
+      #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+      #pragma GCC diagnostic ignored "-Waddress"
+      if (MediaParams[0].Media.outputFilename != NULL) {
+      #pragma GCC diagnostic pop
+
          strcpy(tmpstr, MediaParams[0].Media.outputFilename);
          strupr(tmpstr);
 

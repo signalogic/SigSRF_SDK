@@ -803,6 +803,8 @@ void* packet_flow_media_proc(void* pExecutionMode) {
 
    CODEC_OUTARGS OutArgs = { 0 };  /* output data returned by voplib decoders, starting with EVS and AMR-WB Plus, JHB Oct 2022 */
 
+   int nStatsDisplayPause = 0;  /* non-zero value pauses stats display; use this to pause run-time stats display for any reason. Note that stats display counts this value down, so stats display is never stuck in off position, JHB May 2023 */
+
 //#define DEBUGINPUTPACKETS
 #ifdef DEBUGINPUTPACKETS
    int pkt_chnum_ctr = 0;
@@ -1083,7 +1085,11 @@ too_many_threads:
    fclose(fp_cfg);
 
 /* open any input pcap files given, advance file pointer to first packet.  Abort program on any input file failure */
+
+   #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+   #pragma GCC diagnostic ignored "-Waddress"
    while (MediaParams[inFilesIndex].Media.inputFilename != NULL && strlen(MediaParams[inFilesIndex].Media.inputFilename)) {
+   #pragma GCC diagnostic pop
 
       if (strstr(strupr(strcpy(tmpstr, MediaParams[inFilesIndex].Media.inputFilename)), ".PCAP"))
       {
@@ -1104,7 +1110,10 @@ too_many_threads:
 
 //      #if defined(REUSE_INPUT_FILES) && !defined(NEW_REUSE_CODE)
       #ifdef REUSE_INPUT_FILES
+      #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+      #pragma GCC diagnostic ignored "-Waddress"
       if (nThreads_gbl > 1 && (MediaParams[inFilesIndex].Media.inputFilename == NULL || !strlen(MediaParams[inFilesIndex].Media.inputFilename)))  /* only active if -tN cmd line entry is present and N > 1 (more than one thread).  This avoids issues with pcaps containing multiple streams used with multi-session config files, in which case sessions > inputs.  Added Sep2018, JHB */
+      #pragma GCC diagnostic pop
       {
          numStreams = inFilesIndex;  /* save number of input streams specified on cmd line */
 
@@ -1132,7 +1141,10 @@ too_many_threads:
 
 /* open output pcap and/or wav files, stop on first failure (but still allow program to run) */
 
+   #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+   #pragma GCC diagnostic ignored "-Waddress"
    while (MediaParams[nOutFiles].Media.outputFilename != NULL && strlen(MediaParams[nOutFiles].Media.outputFilename)) {
+   #pragma GCC diagnostic pop
 
       if (strstr(strupr(strcpy(tmpstr, MediaParams[nOutFiles].Media.outputFilename)), ".PCAP") && packet_media_thread_info[thread_index].packet_mode) {
 
@@ -1434,7 +1446,9 @@ run_loop:
 
       if (fFTRTInUse || (cur_time - prev_display_time > 20000)) {  /* print counters and check keyboard input every 20 msec */
 
-         if ((int)pkt_counters[thread_index].pkt_input_cnt != last_pkt_input_cnt || (int)pkt_counters[thread_index].pkt_read_cnt != last_pkt_read_cnt || (int)pkt_counters[thread_index].pkt_add_to_jb_cnt != last_pkt_add_to_jb_cnt || pkt_xcode_cnt != last_pkt_xcode_cnt || pkt_pulled_cnt != last_pkt_pulled_cnt || pkt_group_cnt != last_pkt_group_cnt
+         if (nStatsDisplayPause > 0) nStatsDisplayPause--;  /* stats display pause count, JHB May 2023 */
+
+         else if ((int)pkt_counters[thread_index].pkt_input_cnt != last_pkt_input_cnt || (int)pkt_counters[thread_index].pkt_read_cnt != last_pkt_read_cnt || (int)pkt_counters[thread_index].pkt_add_to_jb_cnt != last_pkt_add_to_jb_cnt || pkt_xcode_cnt != last_pkt_xcode_cnt || pkt_pulled_cnt != last_pkt_pulled_cnt || pkt_group_cnt != last_pkt_group_cnt
              #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
              || last_multithread_buffered_cnt != num_pkts_buffered_multithread || last_multithread_pkt_write_cnt != pkt_write_cnt_multithread
              #endif
@@ -1560,7 +1574,6 @@ run_loop:
          }
 
          #ifndef __LIBRARYMODE__
-
          if (!fMediaThread) {
 
             key = toupper(getkey());
@@ -2699,7 +2712,7 @@ next_session:
                         #ifdef FTRTDEBUG
                         static bool fOnce[MAX_SESSIONS][MAX_TERMS] = {{ false }};
                         if (!fOnce[hSession][term]) {
-                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %d, ptime = %d, %s timing%s, preemption monitoring %s \n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval[hSession][term], ptime[hSession][term], (uFlags_get & DS_GETORD_PKT_FTRT) ? "analytics" : "telecom", (uFlags_get & DS_GETORD_PKT_FTRT) && DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? " (compatibilty mode)" : "", packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled ? "enabled" : "disabled");
+                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %d, ptime = %d, %s mode, preemption monitoring %s \n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval[hSession][term], ptime[hSession][term], !(uFlags_get & DS_GETORD_PKT_FTRT) ? "telecom" : (uFlags_get & DS_GETORD_PKT_FTRT) && DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? "analytics compatibilty" : "analytics", packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled ? "enabled" : "disabled");
                            sig_printf(tmpstr, PRN_LEVEL_INFO, thread_index);
                            fOnce[hSession][term] = true;
                         }
@@ -3069,7 +3082,11 @@ pull:
 
                            strcpy(tmpstr, "");  /* remove preceding newline handling, let sig_printf() make the decision. This makes DTMF event display format consistent and removes blanks lines, JHB Apr 2023 */
 
-                           if (uDTMFState[hSession][term] == 0) uDTMFState[hSession][term] = 1;
+                           if (uDTMFState[hSession][term] == 0) {
+
+                              uDTMFState[hSession][term] = 1;
+                              nStatsDisplayPause = 50;  /* pause real-time stats display for some arbitrary duration of DTMF event group, JHB May 2023 */
+                           }
 
                            sprintf(&tmpstr[strlen(tmpstr)], "DTMF Event packet %u received @ pkt %d", uDisplayDTMFEventMsg[hSession][term], pkt_pulled_cnt);
 
@@ -3083,7 +3100,8 @@ pull:
                               strcat(tmpstr, ", End of Event");
 
                               DSSetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_UNDERRUN_RESYNC_WARNING, 1);  /* avoid underrun resync warning when media packets resume, JHB Jun2019 */
-                              uDTMFState[hSession][term] = 0;
+                              uDTMFState[hSession][term] = 0;  /* we clear DTMF state on first end-of-event, although there may be several end-of-events, JHB May 2023 */
+                              nStatsDisplayPause = 0;  /* clear stats pause, which could be faster than stats display count down, for example in AFAP mode, JHB May 2023 */
                            }
 
                            strcat(tmpstr, "\n");

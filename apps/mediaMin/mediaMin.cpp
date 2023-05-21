@@ -3028,7 +3028,10 @@ unsigned int uFlags;
 
 /* open input pcap files, advance file pointer to first packet.  Abort program on any input file failure */
 
+   #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+   #pragma GCC diagnostic ignored "-Waddress"
    while (MediaParams[i].Media.inputFilename != NULL && strlen(MediaParams[i].Media.inputFilename)) {
+   #pragma GCC diagnostic pop
 
       if (strstr(strupr(strcpy(tmpstr, MediaParams[i].Media.inputFilename)), ".PCAP")) {  /* looks for both .pcap and .pcapng, JHB Oct2020 */
 
@@ -3103,7 +3106,10 @@ unsigned int uFlags;
 
 /* open output pcap files, stop on first failure (but still allow program to run) */
 
+   #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+   #pragma GCC diagnostic ignored "-Waddress"
    while (MediaParams[i].Media.outputFilename != NULL && strlen(MediaParams[i].Media.outputFilename)) {
+   #pragma GCC diagnostic pop
 
       if (strstr(strupr(strcpy(tmpstr, MediaParams[i].Media.outputFilename)), ".PCAP")) {
 
@@ -3548,7 +3554,10 @@ char* p;
 
       if (!fStressTest && !fCapacityTest) {  /* in standard opearting mode, associate event log filename with first input pcap file found */
 
+         #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+         #pragma GCC diagnostic ignored "-Waddress"
          while (MediaParams[i].Media.inputFilename != NULL && strlen(MediaParams[i].Media.inputFilename)) {
+         #pragma GCC diagnostic pop
 
             if (strstr(strupr(strcpy(tmpstr, MediaParams[i].Media.inputFilename)), ".PCAP")) {
 
@@ -3594,7 +3603,10 @@ char* p;
 
          i = 0;
 
+         #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+         #pragma GCC diagnostic ignored "-Waddress"
          while (MediaParams[i].Media.inputFilename != NULL && strlen(MediaParams[i].Media.inputFilename)) {
+         #pragma GCC diagnostic pop
 
             if (strstr(strupr(strcpy(tmpstr, MediaParams[i].Media.inputFilename)), ".PCAP")) {
 

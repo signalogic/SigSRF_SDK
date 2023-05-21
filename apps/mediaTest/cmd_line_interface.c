@@ -34,6 +34,7 @@
    Modified Dec 2022 JHB, move sig_lib_event_log_filename here from packet_flow_media_proc.c
    Modified Jan 2023 JHB, in ctrl-c event handler call DSConfigLogging() with DS_PKTLOG_ABORT flag and set fCtrl_C_pressed. Don't set run = 0 for mediaMin
    Modified Jan 2023 JHB, add szAppFullCmdLine var and GetCommandLine()
+   Modified May 2023 JHB, suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail
 */
 
 
@@ -435,7 +436,11 @@ int i;
 #endif
    {
       i = 0;
+
+      #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+      #pragma GCC diagnostic ignored "-Waddress"
       if (MediaParams[i].Media.inputFilename != NULL && strlen(MediaParams[i].Media.inputFilename)) {
+      #pragma GCC diagnostic pop
 
          strcpy(tmpstr, MediaParams[i].Media.inputFilename);
          tmpptr1 = strrchr(tmpstr, '/');
@@ -446,7 +451,10 @@ int i;
          strcat(output_filename, tmpptr1);
       }
 
+      #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
+      #pragma GCC diagnostic ignored "-Waddress"
       if (MediaParams[i+1].Media.inputFilename != NULL && strlen(MediaParams[i+1].Media.inputFilename)) {
+      #pragma GCC diagnostic pop
 
          i++;
          strcpy(tmpstr, MediaParams[i].Media.inputFilename);

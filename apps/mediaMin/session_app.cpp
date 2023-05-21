@@ -63,7 +63,7 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
 
 /* set input buffer intervals */
 
-   if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode, we set termN buffer_interval values to zero regardless of what they already are, and regardless of -rN cmd line entry */
+   if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode, we set termN buffer_interval values to zero regardless of what they already are, and regardless of -rN cmd line entry */  /* why do we do this ? Analytics mode has a nominal timing interval based on -rN entry. A better explanation needs to be given here, JHB May 2023 */
 
       session_data->term1.input_buffer_interval = 0;
       session_data->term2.input_buffer_interval = 0;
@@ -118,6 +118,10 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
       else if (session_data->term2.input_buffer_interval && session_data->term2.group_mode) session_data->group_term.input_buffer_interval = session_data->term2.input_buffer_interval;
 
       if (session_data->group_term.input_buffer_interval < 0) session_data->group_term.input_buffer_interval = 0;  /* if not specified, set to zero */
+
+   /* streamlib uses group term input_buffer_interval as processing interval, so we can't let it be zero unless -r0 is given on the cmd line, specifying AFAP mode, JHB May 2023 */
+
+      if (session_data->group_term.input_buffer_interval == 0 && frameInterval[0] > 0) session_data->group_term.input_buffer_interval = frameInterval[0];
    }
 
    if ((int)frameInterval[0] == -1) frameInterval[0] = session_data->term1.input_buffer_interval;
