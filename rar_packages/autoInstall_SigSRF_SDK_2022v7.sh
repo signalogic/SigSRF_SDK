@@ -37,6 +37,7 @@
 #  Modified Sep 2022 JHB, minor mods after testing Ubuntu .rar install on Debian 12.0
 #  Modified Feb 2023 JHB, replace "target" terminology with "platform". Change order of hello_codec and mediaMin builds (mediaMin last)
 #  Modified Feb 2023 JHB, fix coCPU symlink
+#  Modified May 2023 JHB, add "no prompt" command line argument (look for use of noprompts var)
 #================================================================================================
 
 depInstall_wo_dpkg() {
@@ -83,23 +84,30 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
 		return 0
 	fi
 
-   echo  # print blank line, lots of stuff may be displayed just before the path prompt
+   if [ -z "$noprompts" ]; then  # prompt for install path if nopromopts empty
 
-	while true; do
+      echo  # print blank line, lots of stuff may be displayed just before the path prompt
 
-		echo "Enter path for SigSRF and EdgeStream software and dependency package installation:"
-		read installPath
+	   while true; do
 
-		if [ ! $installPath ]; then
-			installPath="/usr/local"  # default if nothing entered
-		fi
+		   echo "Enter path for SigSRF and EdgeStream software and dependency package installation:"
+		   read installPath
 
-		read -p "Please confirm install path $installPath [Y] or [N] " Confirm
+		   if [ ! $installPath ]; then
+		      installPath="/usr/local"  # default if nothing entered
+		   fi
 
-		case $Confirm in
-			[Yy]* ) break;;
-		esac
-	done
+         read -p "Please confirm install path $installPath [Y] or [N] " Confirm
+
+         case $Confirm in
+			   [Yy]* ) break;;
+		   esac
+	   done
+
+   else  # otherwise default to install path used in Docker containers
+
+      installPath="/home/sigsrf_sdk_demo"
+   fi
 
 	return 1
 }
@@ -111,60 +119,72 @@ unrarCheck() {
 
 	if [ "$unrarInstalled" == "" ]; then  # if not then need to install
 
-		while true; do
-			read -p "Unrar not installed, ok to install now ?" yn
+	   while true; do
+
+         if [ -z "$noprompts" ]; then  # prompt for unrar install if noprompts empty
+			   read -p "Unrar not installed, ok to install now ?" yn
+         else
+            yn="Y"  # otherwise default to Yes
+         fi
+
 			case $yn in
+
 				[Yy]* ) line_pkg="unrar"
 
-						depInstall_wo_dpkg;  # try package install
+   				depInstall_wo_dpkg;  # try package install
 
-                  unrarInstalled=`type -p unrar`  # recheck
+               unrarInstalled=`type -p unrar`  # recheck
 
-	               if [ "$unrarInstalled" == "" ]; then  # if still not installed, then try non-package methods
+	            if [ "$unrarInstalled" == "" ]; then  # if still not installed, then try non-package methods
 
-                     if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
-                        echo "Attempting to install rarlab unrar ..."
+                  if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
 
-                			wgetInstalled=`type -p wget`  # wget should already be installed, but check anyway
-			               if [ "$wgetInstalled" == "" ]; then
-                           echo "wget not found, attempting to install ..."
-                           apt-get install wget
-                        fi
+                     echo "Attempting to install rarlab unrar ..."
 
-                        wget --no-check-certificate https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
-                        tar -zxvf rarlinux-x64-6.0.2.tar.gz
-                        mv rar/rar rar/unrar /usr/local/bin/
-
-                     elif [ "$OS" = "Debian GNU/Linux" ]; then
-                        echo "Attempting to install non-free unrar for Debian ..."
-
-                			wgetInstalled=`type -p wget`  # wget should already be installed, but check anyway
-			               if [ "$wgetInstalled" == "" ]; then
-                           echo "wget not found, attempting to install ..."
-                           apt-get install wget && apt-get -y install gnupg
-                        fi
-
-                      # add unrar install for Debian, JHB Sep 2022
-
-                        wget -qO - https://ftp-master.debian.org/keys/archive-key-10.asc | apt-key add - \
-                           && echo deb http://deb.debian.org/debian buster main contrib non-free | tee -a /etc/apt/sources.list \
-                           && apt-get update \
-                           && apt-get install unrar
-
-                     else  # includes Ubuntu, VM platform, or anything else
-                        echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
-                        sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
-                        depInstall_wo_dpkg;
+            	   	wgetInstalled=`type -p wget`  # wget should already be installed, but check anyway
+			            if [ "$wgetInstalled" == "" ]; then
+                        echo "wget not found, attempting to install ..."
+                        apt-get install wget
                      fi
 
-							if [[ $? = 0 ]]; then
-								unrar_status="install"
-							fi;
-						else
-							unrar_status="already installed"
-						fi
-						break;;
+                     wget --no-check-certificate https://www.rarlab.com/rar/rarlinux-x64-6.0.2.tar.gz
+                     tar -zxvf rarlinux-x64-6.0.2.tar.gz
+                     mv rar/rar rar/unrar /usr/local/bin/
+
+                  elif [ "$OS" = "Debian GNU/Linux" ]; then
+
+                     echo "Attempting to install non-free unrar for Debian ..."
+
+            		   wgetInstalled=`type -p wget`  # wget should already be installed, but check anyway
+			            if [ "$wgetInstalled" == "" ]; then
+                        echo "wget not found, attempting to install ..."
+                        apt-get install wget && apt-get -y install gnupg
+                     fi
+
+                     # add unrar install for Debian, JHB Sep 2022
+
+                     wget -qO - https://ftp-master.debian.org/keys/archive-key-10.asc | apt-key add - \
+                        && echo deb http://deb.debian.org/debian buster main contrib non-free | tee -a /etc/apt/sources.list \
+                        && apt-get update \
+                        && apt-get install unrar
+
+                  else  # includes Ubuntu, VM platform, or anything else
+
+                     echo "Attempting to install older version of unrar ..."  # old version of unrar was called "unrar-nonfree" due to licensing restrictions, Linux guys hate that enough they stuck it in the Necromonger underverse (well, close)
+                     sed -i "/^# deb .* multiverse$/ s/^# //" /etc/apt/sources.list; apt-get update
+                     depInstall_wo_dpkg;
+                  fi
+
+					   if [[ $? = 0 ]]; then
+						   unrar_status="install"
+					   fi;
+				   else
+					   unrar_status="already installed"
+				   fi
+				   break;;
+
 				[Nn]* ) unrar_status="don't install";;
+
 				* ) echo "Please enter y or n";;
 			esac
 		done
@@ -299,7 +319,12 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
          echo -e "/usr/bin/g++ not found, gcc/g++ compilers and toolchain are needed\n"
 
-			read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
+         if [ -z "$noprompts" ]; then  # prompt for gcc install if noprompts empty
+   			read -p "Install gcc/g++ tools now [Y]es, [N]o ?" Dn
+         else
+            Dn="Y"  # otherwise default to Yes
+         fi
+
 			if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
 
             if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
@@ -366,7 +391,13 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 		if [ "$package" == "" ]; then
 			if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 				if [ ! $totalInstall ]; then
-					read -p "Do you wish to install $e package? Please enter [Y]es, [N]o, [A]ll: " Dn
+
+               if [ -z "$noprompts" ]; then  # prompt for package install if noprompts empty
+   					read -p "Do you wish to install $e package? Please enter [Y]es, [N]o, [A]ll: " Dn
+               else
+                  Dn="Y"  # otherwise default to Yes
+               fi
+
 					if [[ ($Dn = "a") || ($Dn = "A") ]]; then
 						totalInstall=1
 					fi
@@ -783,49 +814,93 @@ installCheckVerify() {
 
 # *********** script entry point ************
 
+# see if user gave noprompt or noprompts on the cmd line, if so set noprompts var
+
+CmdLineArg1="$(echo $1 | tr '[:upper:]' '[:lower:]')"
+# uncomment for noprompt debug
+# echo "$1 var = $1"
+# echo "cmd line var = $CmdLineArg1"
+if [ "$CmdLineArg1" = "noprompts" -o "$CmdLineArg1" = "noprompt" -o "$CmdLineArg1" = "-noprompts" -o "$CmdLineArg1" = "-noprompt" ]; then
+  noprompts=1
+else
+  unset noprompts  # make noprompts empty
+fi
+
+# initialize global vars, including OS distribution name
+
 startPath=$PWD
 OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')  # OS var is used throughout script
 kernel_version=`uname -r`
 echo "OS distro: $OS, kernel version: $kernel_version"
-echo
-PS3="Please select platform for SigSRF and EdgeStream software install [1-2]: "
-select platform in "Host" "VM" 
-do
-	case $platform in
-		"Host") break;;
-		"VM") break;;
-	esac
-done
+
+if [ -z "$noprompts" ]; then  # prompt for Host platform if noprompts empty
+
+   echo
+   PS3="Please select platform for SigSRF and EdgeStream software install [1-2]: "
+   select platform in "Host" "VM" 
+   do
+	   case $platform in
+		   "Host") break;;
+		   "VM") break;;
+         *) echo invalid option $platform;;
+	   esac
+   done
+else
+   platform="Host"  # otherwise default to Host platform
+fi
 
 echo "*********************************************************************"
-echo
 
 COLUMNS=1  # force single column menu, JHB Jan2021
 PS3="Please select install operation to perform [1-6]: "
-select opt in "Install SigSRF and EdgeStream Software" "Install SigSRF and EdgeStream Software with ASR Option" "Install SigSRF and EdgeStream Software with coCPU Option" "Uninstall SigSRF and EdgeStream Software" "Check / Verify SigSRF and EdgeStream Software Install" "Exit"
-do
-	case $opt in
-		"Install SigSRF and EdgeStream Software") if ! packageSetup; then
-			if ! unrarCheck; then
-				swInstallSetup; dependencyCheck; swInstall;
-			fi
-		fi
-		break;;
-		"Install SigSRF and EdgeStream Software with ASR Option") installOptions="ASR"; if ! packageSetup; then
-			if ! unrarCheck; then
-				swInstallSetup; dependencyCheck; swInstall;
-			fi
-		fi
-		break;;
-		"Install SigSRF and EdgeStream Software with coCPU Option") installOptions="coCPU"; if ! packageSetup; then
-			if ! unrarCheck; then
-				swInstallSetup; dependencyCheck; swInstall;
-			fi
-		fi
-		break;;
-		"Uninstall SigSRF and EdgeStream Software") unInstall; break;;
-		"Check / Verify SigSRF and EdgeStream Software Install") installCheckVerify; break;;
-		"Exit") echo "Exiting..."; break;;
-		*) echo invalid option $opt;;
-	esac
-done
+
+   if [ -z "$noprompts" ]; then  # prompt for type of install if noprompts empty
+
+      echo
+
+      select opt in "Install SigSRF and EdgeStream Software" "Install SigSRF and EdgeStream Software with ASR Option" "Install SigSRF and EdgeStream Software with coCPU Option" "Uninstall SigSRF and EdgeStream Software" "Check / Verify SigSRF and EdgeStream Software Install" "Exit"
+
+      do
+         case $opt in
+            "Install SigSRF and EdgeStream Software") if ! packageSetup; then
+               if ! unrarCheck; then
+		   	      swInstallSetup; dependencyCheck; swInstall;
+		         fi
+   	      fi
+	         break;;
+
+	         "Install SigSRF and EdgeStream Software with ASR Option") installOptions="ASR"; if ! packageSetup; then
+		         if ! unrarCheck; then
+			         swInstallSetup; dependencyCheck; swInstall;
+		         fi
+   	      fi
+	         break;;
+
+	         "Install SigSRF and EdgeStream Software with coCPU Option") installOptions="coCPU"; if ! packageSetup; then
+		         if ! unrarCheck; then
+			         swInstallSetup; dependencyCheck; swInstall;
+   		      fi
+	         fi
+	         break;;
+
+	         "Uninstall SigSRF and EdgeStream Software") unInstall; break;;
+
+      	   "Check / Verify SigSRF and EdgeStream Software Install") installCheckVerify; break;;
+
+   	      "Exit") echo "Exiting..."; break;;
+
+            *) echo invalid option $opt;;
+         esac
+      done
+
+   else  # otherwise default to SigSRF and Edgestream install (note -- can't figure out yet how to modify select-do to force first option, so code below is a repeat for now)
+
+      opt="Install SigSRF and EdgeStream Software"
+      if ! packageSetup; then
+         if ! unrarCheck; then
+		      swInstallSetup; dependencyCheck; swInstall;
+		   fi
+      fi
+ 
+   fi
+
