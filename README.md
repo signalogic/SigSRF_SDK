@@ -350,7 +350,9 @@ wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_CentOS*.rar" --content-disposition 
 ```
 The ASR version is separated into .partN.rar files because the overall .rar file size is substantially larger (approx 270 MB vs 65 MB), and Github has a 100MB per file limit. See [ASR Install Notes](#user-content-asrinstallnotes) below for details about the ASR version SDK.
 
-<i><b>Important Note:</b> all .rar files and the install script should be downloaded to the same folder. The actual install folder can be different, as the install script prompts for an install path (see below).</i>
+<i><b>Important Note 1:</b> all .rar files and the install script should be downloaded to the same folder. The actual install folder can be different, as the install script prompts for an install path (see below).</i>
+
+<i><b>Important Note 2:</b> the install script contains Windows CR/LF line endings. If you download the script manually then you will to convert line ending to Linux, for example: echo "$(tr -d '\r' < autoInstall_SigSRF_SDK_2022v7.sh)" > autoInstall_SigSRF_SDK_2022v7.sh.</i>
 
 Note that the install script checks for the presence of the unrar package, and if not found attempts to install it; if this happens there may be some additional prompts depending on the Linux version.
 
