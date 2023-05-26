@@ -619,7 +619,7 @@ extern short int nOnHoldChan[MAX_SESSIONS][MAX_TERMS];  /* declared in streamlib
 #if 0
 static float input_buffer_interval[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 #else
-unsigned int term_uFlags[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
+static unsigned int term_uFlags[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 #endif
 static int8_t output_buffer_interval[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 static int8_t ptime[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
