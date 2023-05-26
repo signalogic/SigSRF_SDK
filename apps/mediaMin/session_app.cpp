@@ -63,19 +63,33 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
 
 /* set input buffer intervals */
 
-   if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode, we set termN buffer_interval values to zero regardless of what they already are, and regardless of -rN cmd line entry */  /* why do we do this ? Analytics mode has a nominal timing interval based on -rN entry. A better explanation needs to be given here, JHB May 2023 */
+/* pushInterval[] default value for no -rN cmd line entry is -1, which indicates to use session ptime, JHB May 2023 */
+  
+   #if 0
+   if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode, we set termN buffer_interval values to zero regardless of what they already are, and regardless of -rN cmd line entry */
 
       session_data->term1.input_buffer_interval = 0;
       session_data->term2.input_buffer_interval = 0;
    }
-   else if ((int)frameInterval[0] != -1) {  /* frameInterval[0] is value of N in-rN cmd line entry */
+   else if ((int)pushInterval[0] != -1) {  /* pushInterval[0] is value of N in -rN cmd line entry */
+      if ((int)pushInterval[0] < session_data->term1.ptime) session_data->term1.input_buffer_interval = 0;
+      else session_data->term1.input_buffer_interval = pushInterval[0];
 
-      if (frameInterval[0] < session_data->term1.ptime) session_data->term1.input_buffer_interval = 0;
-      else session_data->term1.input_buffer_interval = frameInterval[0];
-
-      if (frameInterval[0] < session_data->term2.ptime) session_data->term2.input_buffer_interval = 0;
-      else session_data->term2.input_buffer_interval = frameInterval[0];
+      if ((int)pushInterval[0] < session_data->term2.ptime) session_data->term2.input_buffer_interval = 0;
+      else session_data->term2.input_buffer_interval = pushInterval[0];
    }
+   #else
+   if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode set TERM_ANALYTICS_MODE_TIMING flag. Note this decouples analytics mode from input_buffer_interval, which is needed for AFAP mode, JHB May 2023 */
+   
+      session_data->term1.uFlags |= TERM_ANALYTICS_MODE_TIMING;
+      session_data->term2.uFlags |= TERM_ANALYTICS_MODE_TIMING;
+   }
+
+   if ((int)pushInterval[0] != -1) {  /* pushInterval[0] is value of N in -rN cmd line entry */
+      session_data->term1.input_buffer_interval = pushInterval[0];
+      session_data->term2.input_buffer_interval = pushInterval[0];
+   }
+   #endif
 
    if (session_data->term1.input_buffer_interval == -1) session_data->term1.input_buffer_interval = session_data->term1.ptime;  /*  if buffer_interval values are not given in either programmatic session setup (dynamic sessions) or session config file, then set to ptime */
    if (session_data->term2.input_buffer_interval == -1) session_data->term2.input_buffer_interval = session_data->term2.ptime;
@@ -94,7 +108,7 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
 
    if (session_data->term1.output_buffer_interval == -1 || (Mode & DYNAMIC_SESSIONS)) {
 
-      if ((Mode & ANALYTICS_MODE) || session_data->term1.input_buffer_interval) session_data->term1.output_buffer_interval = session_data->term2.ptime;  /* output intervals use ptime from opposite terms */
+      if ((Mode & ANALYTICS_MODE) || session_data->term1.input_buffer_interval > 0) session_data->term1.output_buffer_interval = session_data->term2.ptime;  /* output intervals use ptime from opposite terms */
       else session_data->term1.output_buffer_interval = 0;
    }
 
@@ -107,24 +121,26 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
    if (Mode & ENABLE_STREAM_GROUPS) {
 
       if ((Mode & ANALYTICS_MODE) ||
-          (session_data->term1.input_buffer_interval && session_data->term1.group_mode) ||
-          (session_data->term2.input_buffer_interval && session_data->term2.group_mode)) session_data->group_term.output_buffer_interval = session_data->group_term.ptime;
+          (session_data->term1.input_buffer_interval > 0 && session_data->term1.group_mode) ||
+          (session_data->term2.input_buffer_interval > 0 && session_data->term2.group_mode)) session_data->group_term.output_buffer_interval = session_data->group_term.ptime;
 
       if (session_data->group_term.output_buffer_interval < 0) session_data->group_term.output_buffer_interval = 0;  /* if not specified, set to zero */
 
    /* also set group term input_buffer_interval. This is needed in streamlib to handle "fast as possible mode" timing (-r0 on command line), JHB May 2023 */
 
-      if (session_data->term1.input_buffer_interval && session_data->term1.group_mode) session_data->group_term.input_buffer_interval = session_data->term1.input_buffer_interval;
-      else if (session_data->term2.input_buffer_interval && session_data->term2.group_mode) session_data->group_term.input_buffer_interval = session_data->term2.input_buffer_interval;
+      if (session_data->term1.input_buffer_interval > 0 && session_data->term1.group_mode) session_data->group_term.input_buffer_interval = session_data->term1.input_buffer_interval;
+      else if (session_data->term2.input_buffer_interval > 0 && session_data->term2.group_mode) session_data->group_term.input_buffer_interval = session_data->term2.input_buffer_interval;
 
       if (session_data->group_term.input_buffer_interval < 0) session_data->group_term.input_buffer_interval = 0;  /* if not specified, set to zero */
 
+      #if 0
    /* streamlib uses group term input_buffer_interval as processing interval, so we can't let it be zero unless -r0 is given on the cmd line, specifying AFAP mode, JHB May 2023 */
 
-      if (session_data->group_term.input_buffer_interval == 0 && frameInterval[0] > 0) session_data->group_term.input_buffer_interval = frameInterval[0];
+      if (session_data->group_term.input_buffer_interval == 0 && pushInterval[0] > 0) session_data->group_term.input_buffer_interval = pushInterval[0];
+      #endif
    }
 
-   if ((int)frameInterval[0] == -1) frameInterval[0] = session_data->term1.input_buffer_interval;
+   if ((int)pushInterval[0] == -1) pushInterval[0] = session_data->term1.input_buffer_interval;
 }
 
 

@@ -50,15 +50,17 @@
 
 #define SESSION_CONTROL_NO_PARSE                  0x1000  /* allow user apps to show messages found but not parse, JHB Mar 2023 */
 
-#define SESSION_CONTROL_FOUND_SIP_INVITE          1
-#define SESSION_CONTROL_FOUND_SIP_TRYING          2
-#define SESSION_CONTROL_FOUND_SIP_RINGING         3
-#define SESSION_CONTROL_FOUND_SIP_PROGRESS        4
-#define SESSION_CONTROL_FOUND_SIP_ACK             5
-#define SESSION_CONTROL_FOUND_SIP_PROV_ACK        6  /* PRACK (provisional ACK) */
-#define SESSION_CONTROL_FOUND_SIP_OK              7
-#define SESSION_CONTROL_FOUND_SIP_BYE             8
-#define SESSION_CONTROL_FOUND_SAP_SDP             100
+#define SESSION_CONTROL_FOUND_SIP_INVITE                1
+#define SESSION_CONTROL_FOUND_SIP_TRYING                2
+#define SESSION_CONTROL_FOUND_SIP_RINGING               3
+#define SESSION_CONTROL_FOUND_SIP_PROGRESS              4
+#define SESSION_CONTROL_FOUND_SIP_ACK                   5
+#define SESSION_CONTROL_FOUND_SIP_PROV_ACK              6  /* PRACK (provisional ACK) */
+#define SESSION_CONTROL_FOUND_SIP_OK                    7
+#define SESSION_CONTROL_FOUND_SIP_BYE                   8
+#define SESSION_CONTROL_FOUND_SIP_INFO_REQUEST          9
+#define SESSION_CONTROL_FOUND_SIP_PLAYING_ANNOUNCEMENT  10
+#define SESSION_CONTROL_FOUND_SAP_SDP                   100
 
 #ifdef __cplusplus
   extern "C" {
@@ -68,8 +70,8 @@
 
 typedef struct {
 
-  char szTextStr[20];  /* string pattern to search for in packet payload */
-  char szType[40];     /* SIP message description that will be displayed/logged by ProcessSessionControl() */
+  char szTextStr[40];  /* string pattern to search for in packet payload */
+  char szType[30];     /* SIP message description that will be displayed/logged by ProcessSessionControl() */
   int  val;            /* SESSION_CONTROL_FOUND_xxx values (defined above) */
 
 } SIP_MESSAGES;

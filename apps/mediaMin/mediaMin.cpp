@@ -134,6 +134,7 @@
    Modified Apr 2023 JHB, implement filtering of redundant TCP retransmissions. See FILTER_TCP_REDUNDANT_RETRANSMISSIONS definition
    Modified Apr 2023 JHB, add num TCP and UDP packets to mediaMin stats summary
    Modified May 2023 JHB, add support for AFAP mode ("as fast as possible"). Look for comments near isAFAPMode (defined in mediaMin.h)
+   Modified May 2023 JHB, pushInterval[] now handled as float, as part of AFAP mode support
 */
 
 
@@ -153,7 +154,7 @@ using namespace std;
 
 /* mediaTest header file */
 
-#include "mediaTest.h"  /* bring in vars declared in cmd_line_interface.c, including MediaParams[], PlatformParams, frameInterval[], and debugMode (defined as Mode in mediaMin.h) */
+#include "mediaTest.h"  /* bring in vars declared in cmd_line_interface.c, including MediaParams[], PlatformParams, pushInterval[], and debugMode (defined as Mode in mediaMin.h) */
 
 /* lib header files */
 
@@ -339,7 +340,7 @@ char tmpstr[MAX_APP_STR_LEN];
 
    #ifdef _MEDIAMIN_  /* running from cmd line, mediaMin is running as a process */
 
-   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS | CLI_MEDIA_APPS_MEDIAMIN)) exit(EXIT_FAILURE);  /* parse command line and set MediaParams, PlatformParams, frameInterval, and pktStatsLogFile, use_log_file, and others.  See mediaTest.h and cmd_line_interface.c */
+   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS | CLI_MEDIA_APPS_MEDIAMIN)) exit(EXIT_FAILURE);  /* parse command line and set MediaParams, PlatformParams, pushInterval, and pktStatsLogFile, use_log_file, and others.  See mediaTest.h and cmd_line_interface.c */
    thread_index = 0;
    printf("mediaMin start, cmd line execution\n");
 
@@ -432,7 +433,7 @@ char tmpstr[MAX_APP_STR_LEN];
 
       fAutoQuit = !(Mode & DISABLE_AUTOQUIT) && !fStressTest && !fRepeatIndefinitely && fInputsAllFinite;
 
-   /* set up timer for continuous pcap test mode (only needed for stress tests) */
+   /* set up timer for session create/delete/repeat test mode (only needed for stress tests) */
 
       if (Mode & CREATE_DELETE_TEST_PCAP) TimerSetup();
 
@@ -584,7 +585,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    /* if packets are not pushed according to arrival timestamp, then we push packets according to a specified interval. Options include (i) pushing packets as fast as possible (-r0 cmd line entry), (ii) N msec intervals (cmd line entry -rN), and an average push rate based on output queue levels (the latter can be used with pcaps that don't have arrival timestamps) */
 
-      if (cur_time - base_time < interval_count*frameInterval[0]*1000) continue; else interval_count++;  /* if interval has elapsed push and pull packets, increment count. Comparison is in usec */
+      if (cur_time - base_time < interval_count*pushInterval[0]*1000) continue; else interval_count++;  /* if interval has elapsed push and pull packets, increment count. Comparison is in usec */
 
    /* read from packet input flows, push to packet/media threads */
 
@@ -1646,7 +1647,7 @@ err_msg:
    if (Mode & ENABLE_STREAM_GROUPS) session->term1.uFlags |= TERM_OVERRUN_SYNC_ENABLE;
    if ((!(Mode & ANALYTICS_MODE) || fUntimedMode) || target_delay > 7) session->term1.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
    if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term1.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
-   session->term1.uFlags |= TERM_INFO_DYNAMIC_SESSION;  /* set for informational purposes -- see comments above and in shared_include/session.h */
+   session->term1.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes -- see comments above and in shared_include/session.h */
 
    if (Mode & ENABLE_STREAM_GROUPS) {
 
@@ -1846,7 +1847,7 @@ err_msg:
    if (Mode & ENABLE_STREAM_GROUPS) session->term2.uFlags |= TERM_OVERRUN_SYNC_ENABLE;
    if ((!(Mode & ANALYTICS_MODE) || fUntimedMode) || target_delay > 7) session->term2.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
    if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term2.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
-   session->term2.uFlags |= TERM_INFO_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
+   session->term2.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
 
 /* group term setup */
 
@@ -2226,7 +2227,7 @@ read_packet:
             thread_info[thread_index].initial_push_time[j] = 0;  /* reset initial push time */
 
             #if 0  /* with extended AFAP mode support in place, we now display and log media time or processing time in all cases, JHB May 2023 */
-            if (((Mode & USE_PACKET_ARRIVAL_TIMES) || frameInterval[0] > 1) && isMasterThread) {
+            if (((Mode & USE_PACKET_ARRIVAL_TIMES) || pushInterval[0] > 1) && isMasterThread) {
             #else
             if (isMasterThread) {
             #endif
@@ -2378,8 +2379,11 @@ read_packet:
 
          if (Mode & USE_PACKET_ARRIVAL_TIMES) {
 
+      int ptime = NOMINAL_PUSH_INTERVAL;
+      double timeContraction = ptime/pushInterval[0];
+
             uint64_t pkt_timestamp, elapsed_time;  /* passed param cur_time, pkt_timestamp, and elapsed_time are in usec */
-            uint32_t msec_curtime, msec_timestamp;
+            uint32_t msec_elapsedtime, msec_timestamp;
 
             pkt_timestamp = (uint64_t)p_pcap_rec_hdr->ts_sec*1000000L + p_pcap_rec_hdr->ts_usec;
 
@@ -2388,28 +2392,28 @@ read_packet:
             pkt_timestamp -= thread_info[thread_index].pkt_base_timestamp[j];  /* subtract base timestamp */
 
             #ifndef RATE_FORCE
-            msec_timestamp = (pkt_timestamp + 500)/1000;  /* calculate in msec, with rounding.  Note this method compensates for jitter in how long it takes the main loop to repeat and get back to this point to push another packet.  It provides repeatable results, JHB Jan2020 */
+            msec_timestamp = (pkt_timestamp + 500)/1000;  /* calculate in msec, with rounding. This compensates for jitter in how long it takes the main loop to repeat and get back to this point to push another packet and helps provide repeatable results, JHB Jan2020 */
             #else
             msec_timestamp = (num_pcap_packets+1)*RATE_FORCE;  /* debug/stress testing:  push packet either at a specific interval or at random intervals */
             #endif
 
-            elapsed_time = cur_time - thread_info[thread_index].initial_push_time[j];  /* subtract initial time */
+            elapsed_time = timeContraction * (cur_time - thread_info[thread_index].initial_push_time[j]);  /* subtract initial time to get elapsed_time, accelerate time in AFAP mode */
 
-            msec_curtime = (elapsed_time + 500)/1000;  /* calculate in msec, with rounding */
-
-            if (msec_curtime < msec_timestamp) {  /* push packet when elapsed time >= packet timestamp */
+            msec_elapsedtime = (elapsed_time + 500)/1000;  /* calculate in msec, with rounding */
+ 
+            if (msec_elapsedtime < msec_timestamp) {  /* push packet when elapsed time >= packet timestamp */
 
                fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* not time to push yet, restore file position */
 
                if (isMasterThread) {
 
-                  if (((wait_time = msec_timestamp - msec_curtime) > 2000 || last_wait_check_time) && msec_curtime - last_wait_check_time > 1000) {
+                  if (((wait_time = msec_timestamp - msec_elapsedtime) > 2000 || last_wait_check_time) && msec_elapsedtime - last_wait_check_time > 1000) {
 
                      if (!wait_gap) wait_gap = wait_time;
 
                      if (++waiting_inputs >= thread_info[thread_index].nInPcapFiles) {  /* print waiting status only if all inputs are waiting */
                         if (wait_time/1000 > 0) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "\rWaiting %llu of %llu sec gap in packet arrival times ...", (long long unsigned int)wait_time/1000, (long long unsigned int)wait_gap/1000);
-                        last_wait_check_time = msec_curtime;  waiting_inputs = 0;
+                        last_wait_check_time = msec_elapsedtime;  waiting_inputs = 0;
                      }
                   }
                }
@@ -2417,7 +2421,12 @@ read_packet:
                continue;  /* move on to next input */
             }
 
-            if (last_wait_check_time) { last_wait_check_time = 0; wait_gap = 0; waiting_inputs = 0; }  /* any input not waiting will reset wait status */
+   #if 0
+   static int fcount = 0;
+   if (fcount < 10) { fcount++; printf("\n *** timeContraction = %4.2f, elapsed time = %llu, pkt_timestamp = %llu, msec_elapsedtime = %lu, msec_timestamp = %lu \n", timeContraction, (long long unsigned int)elapsed_time, (long long unsigned int)pkt_timestamp, (long unsigned int)msec_elapsedtime, (long unsigned int)msec_timestamp); }
+   #endif
+
+            if (last_wait_check_time) { last_wait_check_time = 0; wait_gap = 0; waiting_inputs = 0; }  /* any input not waiting resets wait status */
 
             #ifdef RATE_FORCE
             num_pcap_packets++;
@@ -2427,13 +2436,13 @@ read_packet:
             static uint64_t last_push_time = 0;
             int max_push_interval = 0;
 
-            if ((int)(msec_curtime - last_push_time) > max_push_interval) {
+            if ((int)(msec_elapsedtime - last_push_time) > max_push_interval) {
 
-               max_push_interval = (int)(msec_curtime - last_push_time);
-               printf("\n ! pushing packet in packet arrival time mode, pkt timestamp = %2.1f, push delta = %d, elapsed time = %llu packet timestamp = %llu\n", pkt_timestamp/1000.0, max_push_interval, (unsigned long long)msec_curtime, (unsigned long long)msec_timestamp);
+               max_push_interval = (int)(msec_elapsedtime - last_push_time);
+               printf("\n ! pushing packet in packet arrival time mode, pkt timestamp = %2.1f, push delta = %d, elapsed time = %llu packet timestamp = %llu\n", pkt_timestamp/1000.0, max_push_interval, (unsigned long long)msec_elapsedtime, (unsigned long long)msec_timestamp);
             }
 
-            last_push_time = msec_curtime;
+            last_push_time = msec_elapsedtime;
             #endif
          }
 
@@ -2535,7 +2544,7 @@ ignore_udp_packet:
             goto read_packet;
          }
 
-         if ((rtp_pyld_type >= 72 && rtp_pyld_type <= 82) && frameInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto read_packet;  /* ignore RTCP packets */
+         if ((rtp_pyld_type >= 72 && rtp_pyld_type <= 82) && pushInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto read_packet;  /* ignore RTCP packets */
          #endif
 
          rtp_pyld_len = PktInfo.rtp_pyld_len;
@@ -2682,7 +2691,7 @@ push:
 
                   if (!ret_val) {  /* push queue is full, try waiting and pushing the packet again */
 
-                     uint32_t uSleepTime = max(1000U, frameInterval[0]*1000);
+                     uint32_t uSleepTime = max(1000, (int)(pushInterval[0]*1000));
                      usleep(uSleepTime);
 
                      if (retry_count++ < 3) goto push;  /* max retries */
@@ -2823,7 +2832,7 @@ entry:
    }
    else return -1;  /* invalid uFlags or mode */
 
-   if ((Mode & ANALYTICS_MODE) || session_data[i].term1.input_buffer_interval) numPkts = 1;  /* pull one packet in timed situations */
+   if ((Mode & ANALYTICS_MODE) || session_data[i].term1.input_buffer_interval > 0) numPkts = 1;  /* pull one packet in timed situations */
    else numPkts = -1;  /* numPkts set to -1 tells DSPullPackets() to pull all available packets. Note this applies in untimed mode with -r0 timing (look for fUntimedMode), JHB Jan 2023 */
 
 pull:
@@ -2999,7 +3008,7 @@ next_session:
       if (fRetry && nOnce < 100) { printf("\n ==== retry = true, nRetry[%d] = %d \n", i, nRetry[i]); nOnce++; }
       #endif
 
-      if (fRetry) {
+      if (!isAFAPMode && fRetry) {
          usleep(1000);  /* sleep 1 msec */
          i = 0;
          goto entry;  /* retry one or more sessions */
@@ -3078,7 +3087,11 @@ valid_input_spec:
       }
       else { fprintf(stderr, "Input file: %s is not a .pcap file\n", MediaParams[i].Media.inputFilename); break; }
 
-      frameInterval[i] = MediaParams[i].Media.frameRate;  /* get cmd line rate entry, if any.  Default value if no entry is -1, which indicates to use session ptime */
+      #if 0
+      pushInterval[i] = MediaParams[i].Media.frameRate;  /* get cmd line rate entry, if any.  Default value if no entry is -1, which indicates to use session ptime */
+      #else
+      if (pushInterval[i] == -1) pushInterval[i] = NOMINAL_PUSH_INTERVAL;
+      #endif
 
       i++;  /* advance to next cmd line input spec */
    }
@@ -3318,7 +3331,7 @@ char flushstr[MAX_APP_STR_LEN] = "Flushing NNN sessions";  /* this text will be 
 int flushstr_initlen = strlen(flushstr);
 uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
 
-   if (Mode & CREATE_DELETE_TEST_PCAP) return;  /* don't flush sessions in test modes where pcap is wrapping and playing continuously */
+   if (Mode & CREATE_DELETE_TEST_PCAP) return;  /* don't flush sessions in session create/delete test mode where pcap is repeating */
 
    for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) {
 
@@ -3389,7 +3402,7 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
          nDelayTime = fAutoQuit ? 60 : 3000;
          #endif
 
-         if (cur_time - queue_check_time[i] > 1000*(nDelayTime + 10*frameInterval[0])*num_app_threads) {  /* arbitrary delay to wait after flushing.  We increase this if multiple mediaMin threads are running as packet/media threads will take longer to flush */
+         if (cur_time - queue_check_time[i] > 1000*(nDelayTime + 10*pushInterval[0])*num_app_threads) {  /* arbitrary delay to wait after flushing.  We increase this if multiple mediaMin threads are running as packet/media threads will take longer to flush */
 
             thread_info[thread_index].flush_state[i] = FINAL_FLUSH_STATE;  /* set session's flush state to final */
 

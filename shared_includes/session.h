@@ -108,7 +108,11 @@
       -add "payload_shift" shift amount and filter flags in TERMINATION_INFO struct. See comments
       
     Jan 2023 JHB
-      -add TERM_INFO_DYNAMIC_SESSION flag definition
+      -add TERM_DYNAMIC_SESSION flag definition (applies to uFlags element in TERMINATION_INFO struct)
+      
+    May 2023 JHB
+      -make input_buffer_interval in TERMINATION_INFO struct float
+      -add TERM_ANALYTICS_MODE_TIMING flag definition (applies to uFlags element in TERMINATION_INFO struct)
 */
 
 #ifndef _SESSION_H_
@@ -643,15 +647,16 @@ typedef struct {
   #define TERM_IGNORE_ARRIVAL_TIMING              0x20   /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
   #define TERM_OOO_HOLDOFF_ENABLE                 0x40   /* see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF comments in pktlib.h */
   #define TERM_DISABLE_DORMANT_SESSION_DETECTION  0x80   /* see comments in mediaTest/cmd_line_debug_flags.h */
-  #define TERM_INFO_DYNAMIC_SESSION               0x100  /* flag set by mediaMin in term1 and term2 structs when creating dynamic sessions. This is an "informational only" flag, useful only for status and information during a session lifespan, JHB Jan 2023 */
+  #define TERM_DYNAMIC_SESSION                    0x100  /* flag set by mediaMin in term1 and term2 structs when creating dynamic sessions. This is an "informational only" flag, useful only for status and information during a session lifespan, JHB Jan 2023 */
+  #define TERM_ANALYTICS_MODE_TIMING              0x200  /* flag set by mediaMin in term1 and term2 structs when creating dynamic sessions, JHB May 2023 */
  
   uint32_t sample_rate;
   uint32_t input_sample_rate;
   uint32_t buffer_depth;
   uint32_t uFlags;
   uint16_t ptime;                      /* in msec */
-  int16_t input_buffer_interval;       /* in msec */
-  int16_t output_buffer_interval;      /* in msec */
+  float    input_buffer_interval;      /* in msec */
+  int16_t  output_buffer_interval;     /* in msec */
   uint32_t delay;                      /* in msec */
   uint16_t max_loss_ptimes;            /* number of consecutive packet loss ptimes before PLM activates (Packet Loss Monitoring).  Default is 3 */
   uint16_t max_pkt_repair_ptimes;      /* max number of consecutive lost packets that pktlib will attempt to repair.  Default is 3 */

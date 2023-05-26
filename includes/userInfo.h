@@ -4,7 +4,7 @@
  *
  * Project: DirectCore, SigSRF
  *
- * Copyright Signalogic Inc. 1994-2022
+ * Copyright Signalogic Inc. 1994-2023
  * 
  * 2     10/10/05 12:32p
  * 8 DSP support.
@@ -27,6 +27,7 @@
    Modified Jan 2021 JHB, add #define for szSDPFile for mediaMin app SDP file cmd line input
    Modified Dec 2021 JHB, make debugMode 64-bit int
    Modified Dec 2022 JHB, add #define for szStreamGroupOutputPath for mediaMin app stream group output path cmd line input
+   Modified May 2023 JHB, change frameRate from int to float in UserInterface struct
 */
 
 #ifndef _USERINFO_H_
@@ -96,7 +97,7 @@ typedef struct {
    int       xres[MAX_CONCURRENT_STREAMS];
    int       yres[MAX_CONCURRENT_STREAMS];
    int       streamingMode[MAX_CONCURRENT_STREAMS];
-   int       frameRate[MAX_CONCURRENT_STREAMS];
+   float     frameRate[MAX_CONCURRENT_STREAMS];
    int       profile[MAX_CONCURRENT_STREAMS];
    int       bitrateConfig[MAX_CONCURRENT_STREAMS];
    int       qpValues[MAX_CONCURRENT_STREAMS];

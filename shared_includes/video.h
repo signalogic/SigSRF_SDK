@@ -9,13 +9,13 @@
   
     Shared header file between host and target
 
-  Copyright (C) Signalogic Inc. 2015
+  Copyright (C) Signalogic Inc. 2015-2023
  
   Revision History:
  
-    Created,  6May15, JHB, carved out from cimlib.h
-    MOdified, 23Jul15, JHB, additional video configuration options to support ffmpeg
-  
+    Created 6May15, JHB, carved out from cimlib.h
+    Modified 23Jul15, JHB, additional video configuration options to support ffmpeg
+    Modified May 2023 JHB, convert frameRate from int to float to support mediaMin AFAP modes
 */
 
 #ifndef CIM_VIDEO_H
@@ -47,7 +47,7 @@ typedef struct {
   unsigned int  profile;
   unsigned int  width;
   unsigned int  height;
-  unsigned int  frameRate;
+  float         frameRate;
   unsigned int  framesToEncode;
   unsigned int  bitrateConfig;     /* bitrate configuration, for example constant vs. variable bitrate */
   unsigned int  qpValues;          /* qp values */

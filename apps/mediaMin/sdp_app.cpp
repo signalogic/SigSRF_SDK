@@ -371,20 +371,35 @@ find_comment:
 /* list of SIP messages we look for. SIP_MESSAGES struct is defined in sdp_app.h */
 
 static SIP_MESSAGES SIP_Messages[] = { {"100 Trying", "100 Trying", SESSION_CONTROL_FOUND_SIP_TRYING},
-                                       {"100 trying", "100 Trying", SESSION_CONTROL_FOUND_SIP_TRYING},
                                        {"180 Ringing", "180 Ringing", SESSION_CONTROL_FOUND_SIP_RINGING},
                                        {"183 Session", "183 Session Progress", SESSION_CONTROL_FOUND_SIP_PROGRESS},
                                        {"PRACK sip", "Prov ACK", SESSION_CONTROL_FOUND_SIP_PROV_ACK},
                                        {"ACK sip", "ACK", SESSION_CONTROL_FOUND_SIP_ACK},
-                                       {"200 OK", "200 OK", SESSION_CONTROL_FOUND_SIP_OK},
-                                       {"200 Ok", "200 Ok", SESSION_CONTROL_FOUND_SIP_OK},
+                                       {"200 OK", "200 Ok", SESSION_CONTROL_FOUND_SIP_OK},
                                        {"BYE\r", "BYE", SESSION_CONTROL_FOUND_SIP_BYE},  /* BYE followed by either carriage return or line feed, per RFC 2327, JHB Mar 2023 */
                                        {"BYE\n", "BYE", SESSION_CONTROL_FOUND_SIP_BYE},
                                        {"Invite", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE},
-                                       {"INVITE sip", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE}
+                                       {"INVITE sip", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE},
+                                       {"200 Playing Announcement", "200 Playing Announcement", SESSION_CONTROL_FOUND_SIP_PLAYING_ANNOUNCEMENT},
+                                       {"INFO", "INFO Request", SESSION_CONTROL_FOUND_SIP_INFO_REQUEST}
                                      };
 
-uint8_t* find_keyword(uint8_t* buffer, uint16_t buflen, const char* szKeyword) {
+uint8_t* find_keyword(uint8_t* buffer, uint16_t buflen, const char* szKeyword, bool fCaseInsensitive) {
+
+   if (fCaseInsensitive) {  /* if fCaseInsensitive specified we use strupr() and assume relatively small buffer and substring sizes */
+
+      char tmpstr1[500];
+      char tmpstr2[100];
+      int str1len = min((int)(sizeof(tmpstr1)-1), buflen-1);
+
+      memcpy(tmpstr1, buffer, str1len);
+      tmpstr1[str1len] = 0;
+      strupr(tmpstr1);
+      strcpy(tmpstr2, szKeyword);
+      strupr(tmpstr2);
+
+      return (uint8_t*)strstr(tmpstr1, tmpstr2);
+   }
 
    return (uint8_t*)memmem(buffer, buflen, (const void*)szKeyword, strlen(szKeyword));
 }
@@ -421,20 +436,20 @@ type_check:
 
 // if (index > pyld_len) fprintf(stderr, " ==== index %d > pyld_len %d \n", index, pyld_len);
 
-   if (!(uFlags & SESSION_CONTROL_NO_PARSE) && pyld_len > index && (p = find_keyword(&pkt_in_buf[pyld_ofs+index], pyld_len-index, search_str))) {  /* first find rtpmap, then back up and look for length field or application keyword. Check for SESSION_CONTROL_NO_PARSE uFlag first, JHB Mar 2023 */
+   if (!(uFlags & SESSION_CONTROL_NO_PARSE) && pyld_len > index && (p = find_keyword(&pkt_in_buf[pyld_ofs+index], pyld_len-index, search_str, false))) {  /* first find rtpmap, then back up and look for length field or application keyword. Check for SESSION_CONTROL_NO_PARSE uFlag first, JHB Mar 2023 */
 
       strcpy(search_str, "Length:");
-      p = find_keyword(&pkt_in_buf[pyld_ofs+index], (uint16_t)(p - &pkt_in_buf[index]), search_str);
+      p = find_keyword(&pkt_in_buf[pyld_ofs+index], (uint16_t)(p - &pkt_in_buf[index]), search_str, false);
 
       if (!p) {
          strcpy(search_str, "l: ");
-         p = find_keyword(&pkt_in_buf[pyld_ofs+index], (uint16_t)(p - &pkt_in_buf[index]), search_str);
+         p = find_keyword(&pkt_in_buf[pyld_ofs+index], (uint16_t)(p - &pkt_in_buf[index]), search_str, false);
       }
 
       if (!p) {  /* SAP/SDP protocol packets do not include a length field */
 
          strcpy(search_str, "application");
-         p = find_keyword(&pkt_in_buf[pyld_ofs+index], (uint16_t)(p - &pkt_in_buf[index]), search_str);
+         p = find_keyword(&pkt_in_buf[pyld_ofs+index], (uint16_t)(p - &pkt_in_buf[index]), search_str, false);
 
          candidate_session_pkt_type_found = SESSION_CONTROL_FOUND_SAP_SDP;
       }
@@ -472,14 +487,14 @@ type_check:
 
             uint8_t* p2;
             strcpy(search_str, "v=0");
-            p2 = find_keyword(p, pyld_len - index - (int)(&p[i] - &pkt_in_buf[pyld_ofs+index]), search_str);
-            if (!p2) { p2 = find_keyword(p, pyld_len - index - (int)(&p[i] - &pkt_in_buf[pyld_ofs+index]), "v=1"); if (p2) strcpy(search_str, "v=1"); }  /* also try v=1 in case SIP guys ever bump version from 0.x to 1.x (unlikely but not impossible) */
+            p2 = find_keyword(p, pyld_len - index - (int)(&p[i] - &pkt_in_buf[pyld_ofs+index]), search_str, false);
+            if (!p2) { p2 = find_keyword(p, pyld_len - index - (int)(&p[i] - &pkt_in_buf[pyld_ofs+index]), "v=1", false); if (p2) strcpy(search_str, "v=1"); }  /* also try v=1 in case SIP guys ever bump version from 0.x to 1.x (unlikely but not impossible) */
 
             if (!p2) goto ret;  /* v=0 not found */
 
          /* Session Recording Protocol (SIPREC, RFC 7866) is an open SIP based protocol for call recording, partly based on RFC 7245 (https://datatracker.ietf.org/doc/id/draft-portman-siprec-protocol-01.html) */
 
-            p_siprec = find_keyword(p2, pyld_len - index - (int)(p2 - &pkt_in_buf[pyld_ofs+index]), "--OSS-unique-boundary-42");  /* look for siprec header, JHB Apr 2023 */
+            p_siprec = find_keyword(p2, pyld_len - index - (int)(p2 - &pkt_in_buf[pyld_ofs+index]), "--OSS-unique-boundary-42", false);  /* look for siprec header, JHB Apr 2023 */
 
             if (p_siprec) {  /* siprec Invite has a different format, with "unique-boundary" marked header and footer, and XML section */
 
@@ -560,7 +575,7 @@ type_check:
       strcpy(search_str, "");
       int i, num_session_types = sizeof(SIP_Messages)/sizeof(SIP_MESSAGES);
 
-      for (i=0; i<num_session_types; i++) if (find_keyword(&pkt_in_buf[pyld_ofs], pyld_len, SIP_Messages[i].szTextStr)) {
+      for (i=0; i<num_session_types; i++) if (find_keyword(&pkt_in_buf[pyld_ofs], pyld_len, SIP_Messages[i].szTextStr, true)) {
 
          strcpy(search_str, SIP_Messages[i].szType);
          session_pkt_type_found = SIP_Messages[i].val;

@@ -36,6 +36,7 @@
    Modified Jan 2023 JHB, add extern reference to fCtrl_C_pressed (see ctrl-C event handler in mediaTest/see cmd_line_interface.c)
    Modified Jan 2023 JHB, add szAppFullCmdLine and GetCommandLine() references
    Modified Mar 2023 JHB, add frac() helper, does modf() but needs only one argument
+   Modified May 2023 JHB, convert pushInterval[] to float to support AFAP modes
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -166,7 +167,7 @@ struct ipv6header {
 
 extern                   MEDIAPARAMS MediaParams[];
 extern                   PLATFORMPARAMS PlatformParams;
-extern unsigned int      frameInterval[];
+extern float             pushInterval[];
 
 extern volatile char     pktStatsLogFile[CMDOPT_MAX_INPUT_LEN];
 extern volatile bool     demo_build;

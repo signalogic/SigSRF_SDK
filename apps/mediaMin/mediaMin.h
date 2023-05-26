@@ -23,7 +23,7 @@
    Modified Jan 2023 JHB, add STREAM_TERMINATE_xxx flags
    Modified Jan 2023 JHB, add PORT_INFO_LIST struct definition
    Modified Apr 2023 JHB, add fReseek, PktInfo, and tcp_redundant_discard. For usage see comments in mediaMin.cpp
-   Modified May 2023 JHB, add isAFAPMode macro and afap_ts[] to support "as fast as possible" mode. isAFAPMode evaluates to true for -r0 cmd line entry
+   Modified May 2023 JHB, add isAFAPMode macro and afap_ts[] to support "as fast as possible" mode. isAFAPMode evaluates to true for -r0 thru -r0.999 cmd line entry
 */
 
 #ifndef _MEDIAMIN_H_
@@ -42,6 +42,8 @@
 #define SESSION_MARKED_AS_DELETED     0x80000000  /* flag used to mark hSessions[] entries as deleted during dynamic session operation */
 
 #define MAX_INPUT_REUSE               16  /* in practice, cmd line entry up to -N9 has been tested (i.e. total reuse of 10x) */
+
+#define NOMINAL_PUSH_INTERVAL         20  /* default if no push interval (-rN) given on mediaMin command line */
 
 /* dynamic stream terminations */
 
@@ -177,6 +179,6 @@ typedef struct {
 #define MasterThread          0
 #define NUM_PKTMEDIA_THREADS  3  /* default number of packet/media threads started by mediaMin */
 
-#define isAFAPMode            (frameInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
+#define isAFAPMode            (pushInterval[0] < 1)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
 
 #endif  /* _MEDIAMIN_H_ */

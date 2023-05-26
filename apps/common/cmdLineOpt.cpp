@@ -3,7 +3,7 @@
  
  Purpose: parse commanmd line options for SigSRF and DirectCore programs
   
- Copyright (C) Signalogic Inc. 2005-2022
+ Copyright (C) Signalogic Inc. 2005-2023
   
  Revision History
 
@@ -18,6 +18,7 @@
    Modified Dec 2019 JHB, fix bug in int value parsing, where suffix char code would strip off last a-f digit of hex values
    Modified Jan 2021 JHB, allow overloaded options, for example '-sN' integer for app type A, and '-sfilename' string for app type B. See comments below and in getUserInterface.cpp
    Modified Dec 2022 JHB, start work on allowing input specs to include IP addr:port type of input, e.g. -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm. Inputs are strings, so we first look for xx.xx... and xx:xx patterns, if found convert those to IP addr:port, if not then assume it's a path/file input. Code for IPADR input type can be re-used
+   Modified May 2023 JHB, support FLOAT option type, add FLOAT case to switch statements, add getFloat()
 */
 
 #include <stdint.h>
@@ -69,6 +70,7 @@ int        optionFound;
 char*      optionChar;
 char       optionString[MAX_OPTIONS*2];
 intptr_t   x;
+float      f;
 long long  llx;
 char*      p, *p2, *p3;
 int        d[10] = {0,0,0,0,0,0,0,0,0,0};
@@ -255,9 +257,16 @@ char       tmpstr[CMDOPT_MAX_INPUT_LEN];
                      fNoOptionsFound = false;
                      break;
 
+                  case FLOAT:  /* add FLOAT type, May 2023 JHB */
+                     f = atof(optarg);
+                     memcpy(&x, &f, sizeof(float));  /* hack to store float in a void* */
+                     this->options[optCounter].value[nInstances][0] = (void*)x;
+                     fNoOptionsFound = false;
+                     break;
+
                   case CHAR:
                      x = (intptr_t)optarg[0];
-                     this->options[optCounter].value[nInstances][0] = (void*)x;
+                     this->options[optCounter].value[nInstances][0] = (void*)x;  /* store first optarg char in void* */
                      fNoOptionsFound = false;
                      break;
 
@@ -268,7 +277,7 @@ char       tmpstr[CMDOPT_MAX_INPUT_LEN];
                      break;
 
                   case BOOLEAN:
-                     this->options[optCounter].value[nInstances][0] = (void*)true;
+                     this->options[optCounter].value[nInstances][0] = (void*)true;  /* if the option exist on command line its true */
                      fNoOptionsFound = false;
                      break;
 
@@ -367,6 +376,22 @@ int value = 0;
    return value;
 }
 
+float CmdLineOpt::getFloat(char option, int nInstance, int nMultiple) {  /* add getFloat() JHB May 2023 */
+
+Record *record = this->getOption(option, FLOAT);
+float value = 0;
+
+   #if 0
+   if (record && record->type == FLOAT) {
+      value = (float*)record->value[nInstance][nMultiple];
+   }
+   #else
+   if (record) memcpy(&value, &record->value[nInstance][nMultiple], sizeof(float));  /* reverse the hack in FLOAT case in scanOptions(), JHB May 2023 */
+   #endif
+
+   return value;
+}
+
 long long CmdLineOpt::getInt64(char option, int nInstance) {
 
 Record *record = this->getOption(option, INT64);
@@ -377,7 +402,7 @@ long long value = 0;
       value = (long long)record->value3[nInstance];
    }
    #else
-   if (record) value = (long long)record->value3[nInstance];
+   if (record) value = (int64_t)record->value3[nInstance];
    #endif
 
    return value;
@@ -508,6 +533,12 @@ int optCounter;
                  << this->options[optCounter].description << endl;
             break;
 
+         case FLOAT:  /* add FLOAT case, JHB May 2023 */
+            cout << "  -" << this->options[optCounter].option << ": <"
+                 << (float)(intptr_t)this->options[optCounter].value[0][0] << ">\t"
+                 << this->options[optCounter].description << endl;
+            break;
+
          case CHAR:
             cout << "  -" << this->options[optCounter].option << ": <"
                  << (char)(intptr_t)this->options[optCounter].value[0][0] << ">\t"
@@ -554,6 +585,10 @@ char type[32];
 
          case INTEGER:
             strcpy( type, "(integer)" );
+            break;
+
+         case FLOAT:  /* add FLOAT case, JHB May 2023 */
+            strcpy( type, "(float)" );
             break;
 
          case CHAR:

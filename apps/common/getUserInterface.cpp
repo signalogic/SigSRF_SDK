@@ -3,7 +3,7 @@
 
  Purpose: Defines help menu and collects command line options
 
- Copyright (C) Signalogic Inc. 1992-2022
+ Copyright (C) Signalogic Inc. 1992-2023
 
  Revision History
 
@@ -32,6 +32,7 @@
    Modified Apr 2022 JHB, further clarify getUserInfo() display, Core List --> coCPU Core List and Clock --> coCPU Clock if applicable
    Modified Aug 2022 JHB, more readability mods to getUserInfo() display, including a lock to keep program start info coherent within multiple threads
    Modified Dec 2022 JHB, add -g option specific to mediaMin to allow stream group wav output path cmd line input
+   Modified May 2023 JHB, support FLOAT option type in getUserInfo(), change 'r' (frame rate) option to float
 */
 
 #include <stdlib.h>
@@ -114,7 +115,7 @@ CmdLineOpt::Record options[] = {
           (char *)"Segmentation for mediaTest audio, streaming mode for streamTest (e.g. -s0 for oneshot, -s1 for continuous)", {{(void*)0}} },
 	{'s', CmdLineOpt::STRING, NOTMANDATORY,
           (char *)"sdp file input for mediaMin" },
-	{'r', CmdLineOpt::INTEGER, NOTMANDATORY,
+	{'r', CmdLineOpt::FLOAT, NOTMANDATORY,
           (char *)"Frame rate in frames per sec (default is 30 fps), or buffer add interval in msec (default is 20 msec)", {{(void*)-1}} },  /* changed to -1.  cimlib will set the default to 30 for streamTest and iaTest, JHB Sep2017 */
    {'D', CmdLineOpt::IPADDR, NOTMANDATORY,
           (char *)"Destination IP addr and port, in format aa.bb.cc.dd[:port][:mm-mm-mm-mm-mm-mm]", {{(void*)0}}, {0}, {0} },
@@ -280,8 +281,8 @@ char clkstr[100];
          if ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) && cmdOpts.getStr('g', 0) != NULL) strncpy(userIfs->szStreamGroupOutputPath, cmdOpts.getStr('g', 0), CMDOPT_MAX_INPUT_LEN);  /* added for mediaMin stream group output path (including ramdisk), JHB Dec 2022 */
 
          if ((instances = cmdOpts.nInstances('r')))
-           for (i=0; i<instances; i++) userIfs->frameRate[i] = cmdOpts.getInt('r', i, 0);
-         for (i=instances; i<MAX_INSTANCES; i++) userIfs->frameRate[i] = cmdOpts.getInt('r', 0, 0);  /* get default values for remaining streams */
+           for (i=0; i<instances; i++) userIfs->frameRate[i] = cmdOpts.getFloat('r', i, 0);
+         for (i=instances; i<MAX_INSTANCES; i++) userIfs->frameRate[i] = cmdOpts.getFloat('r', 0, 0);  /* get default values for remaining streams */
 
          if ((instances = cmdOpts.nInstances('D'))) 
            for (i=0; i<instances; i++) {

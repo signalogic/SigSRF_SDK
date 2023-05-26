@@ -145,6 +145,8 @@ Revision History
  Modified Jan 2023 JHB, in DSLogRunTimeStats() use DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM with DSGetSessionInfo() to include bidirectional session channels
  Modified Jan 2023 JHB, improve operation of packet input alarm, see comments near session_last_push_time[] and in cmd_line_options_flags.h
  Modified Mar 2023 JHB, add pInArgs param in DSCodecEncode(). See comments in voplib.h
+ Modified May 2023 JHB, update DTMF event handling (surface level, main changes are in pktlib), implement nStatsDisplayPause
+ Modified May 2023 JHB, handle pushInterval[] as float
 */
 
 #ifndef _GNU_SOURCE
@@ -238,7 +240,7 @@ unsigned int ptime_config[MAX_SESSIONS] = { 20 };  /* in msec */
 
 /* Frame interval notes:
 
-  1) frameInterval[] values are the rates packets are buffered per input stream (in msec)
+  1) pushInterval[] values are the rates packets are buffered per input stream (in msec)
 
   2) If no command line entry is given for an input stream's buffer rate, the input's session definition ptime value is used.  If command line -rN entry is given then N is the interval
      value in msec, and overrides session definition ptime.  In the case of cmd line entry, values less than the ptime value in the input's session definition will cause the
@@ -248,7 +250,7 @@ unsigned int ptime_config[MAX_SESSIONS] = { 20 };  /* in msec */
 */
 
 #ifndef __LIBRARYMODE__
-extern unsigned int frameInterval[];
+extern float pushInterval[];
 #endif
 
 /* User Managed Sessions notes:
@@ -614,7 +616,11 @@ static uint8_t nDormantChanFlush[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 static uint8_t nOnHoldChanFlush[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 extern short int nOnHoldChan[MAX_SESSIONS][MAX_TERMS];  /* declared in streamlib.so, referenced by DSProcesstreamGroupContributors() */
 
-static int8_t input_buffer_interval[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
+#if 0
+static float input_buffer_interval[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
+#else
+unsigned int term_uFlags[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
+#endif
 static int8_t output_buffer_interval[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 static int8_t ptime[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 
@@ -1101,7 +1107,7 @@ too_many_threads:
          break;
       }
 
-      frameInterval[nInFiles] = MediaParams[inFilesIndex].Media.frameRate;  /* get cmd line rate entry, if any */
+      pushInterval[nInFiles] = MediaParams[inFilesIndex].Media.frameRate;  /* get cmd line rate entry, if any */
 
       in_type[num_pcap_inputs] = PCAP;
       num_pcap_inputs++;
@@ -1131,11 +1137,11 @@ too_many_threads:
       #endif
    }
 
-#if 0
+   #if 0
    #ifdef NEW_REUSE_CODE
    if (nSessions_gbl > nInFiles) fReuseInputs = true;
    #endif
-#endif
+   #endif
 
    for (i=0; i<nInFiles; i++) if (fp_in[i] == NULL) goto cleanup;  /* error condition for at least one input file, message already printed */
 
@@ -1265,17 +1271,17 @@ too_many_threads:
 
 init_sessions:
 
-/* create sessions */
+/* in non-packet/media thread mode, nSessions_gbl is number of sessions to create. In packet/media thread mode sessions nSessions_gbl is already pre-created sessions, so they just need to be initialized */
 
    for (i = threadid; i < (int)nSessions_gbl; i += nThreads_gbl)
    {
-      if(demo_build && nSessionsCreated > 0)
+      if(demo_build && nSessionsCreated > 1)
       {
-         fprintf(stderr, "Demo build is limited to 1 session per thread, ignoring subsequent sessions\n");
+         fprintf(stderr, "Demo build is limited to 2 session per thread, ignoring subsequent sessions\n");
          break;
       }
 
-      if (fMediaThread) goto set_session_flags;  /* in thread execution mode, user app interface is through DSPushPackets() and DSPullPackets(), including session handles.  The user app creates all sessions */
+      if (fMediaThread) goto set_session_flags;  /* in thread execution mode, user app interface is through DSPushPackets() and DSPullPackets(), including session handles. The user app creates all sessions */
 
 #ifndef __LIBRARYMODE__
 
@@ -1372,7 +1378,11 @@ init_sessions:
 
 set_session_flags:
 
-      nSessionsCreated++;
+      nSessionsCreated++;  /* nSessionsCreated:
+
+                              -non-packet/media thread mode:  number of sessions we just created
+                              -packet/media thread mode:      (i) number of sessions pre-created by the user app or (ii) zero, in which case we're in thraed mode and sessions will be created dynamically
+                           */
    }
 
    if (!fMediaThread && nSessionsCreated <= 0) {
@@ -1411,10 +1421,10 @@ set_session_flags:
          #if 0  /* two different ways shown here. Getting a full TERMINATION_INFO is more flexible and contains everything, but slightly slower, JHB Jan 2023 */
          TERMINATION_INFO termInfo;
          DSGetSessionInfo(hSessions_t[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, j+1, &termInfo);
-         if (!(termInfo.uFlags & TERM_INFO_DYNAMIC_SESSION)) num_static_streams++;
+         if (!(termInfo.uFlags & TERM_DYNAMIC_SESSION)) num_static_streams++;
          #else
          unsigned int uFlags = DSGetSessionInfo(hSessions_t[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, j+1, NULL);
-         if (!(uFlags & TERM_INFO_DYNAMIC_SESSION)) num_static_streams++;
+         if (!(uFlags & TERM_DYNAMIC_SESSION)) num_static_streams++;
          #endif
       }
    }
@@ -1726,12 +1736,12 @@ run_loop:
 
       1) Default timing is the natural codec frame duration (i.e. one minimum ptime), for example 20 msec for EVS and AMR codecs.  Jitter buffers use RTP timestamps to determine packet arrival time and buffer delay
 
-      2) If frameInterval[] is zero, then FTRT mode is in effect; i.e. "faster than real-time" (analytics mode). Jitter buffers return the next available packet each time it's called.  This allows "packet burst" or reading from UDP or pcap as fast as possible or other scenarios where packets are given to jitter buffers at arbitrary rates
+      2) If pushInterval[] is zero, then FTRT mode is in effect; i.e. "faster than real-time" (analytics mode). Jitter buffers return the next available packet each time it's called.  This allows "packet burst" or reading from UDP or pcap as fast as possible or other scenarios where packets are given to jitter buffers at arbitrary rates
    */
 
       if (fMediaThread) interval_time = 0;  /* in thread execution the sender is responsible for packet interval timing, either by sending packets remotely over the network, or locally as an app calling DSPushPackets */
       #ifndef __LIBRARYMODE__
-      else if (packet_media_thread_info[thread_index].packet_mode) interval_time = frameInterval[0];
+      else if (packet_media_thread_info[thread_index].packet_mode) interval_time = (int)pushInterval[0];
       #endif
       else interval_time = 0;  /* frame mode:  no waiting if packets are not added/pulled to/from jitter buffer */
 
@@ -2706,13 +2716,18 @@ next_session:
                           equivalent to -N (negative N) packets, where N is calculated using jitter buffer delay settings 
                      */
 
+                        #if 0
                         if (input_buffer_interval[hSession][term] < ptime[hSession][term]) uFlags_get |= DS_GETORD_PKT_FTRT;
+                        #else
+                        if (term_uFlags[hSession][term] & TERM_ANALYTICS_MODE_TIMING) uFlags_get |= DS_GETORD_PKT_FTRT;
+                        #endif
 
                         #define FTRTDEBUG
                         #ifdef FTRTDEBUG
                         static bool fOnce[MAX_SESSIONS][MAX_TERMS] = {{ false }};
                         if (!fOnce[hSession][term]) {
-                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %d, ptime = %d, %s mode, preemption monitoring %s \n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval[hSession][term], ptime[hSession][term], !(uFlags_get & DS_GETORD_PKT_FTRT) ? "telecom" : (uFlags_get & DS_GETORD_PKT_FTRT) && DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? "analytics compatibilty" : "analytics", packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled ? "enabled" : "disabled");
+                           float input_buffer_interval = DSGetSessionInfoInt2Float(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, term, NULL));
+                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %4.2f, ptime = %d, %s mode, preemption monitoring %s \n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval, ptime[hSession][term], !(uFlags_get & DS_GETORD_PKT_FTRT) ? "telecom" : (uFlags_get & DS_GETORD_PKT_FTRT) && DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? "analytics compatibilty" : "analytics", packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled ? "enabled" : "disabled");
                            sig_printf(tmpstr, PRN_LEVEL_INFO, thread_index);
                            fOnce[hSession][term] = true;
                         }
@@ -2729,9 +2744,13 @@ next_session:
                            (DS_DSGETORD_PKT_FLUSH) which forces out all packets regardless
                      */
 
+                        #if 0
                         unsigned int uFlags_term = DSGetSessionInfo(chan_nums[n], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM_FLAGS, 0, NULL);
 
                         if (session_info_thread[hSession].fSSRC_change_active[term] && !(uFlags_term & TERM_DTX_ENABLE)) uFlags_get |= DS_GETORD_PKT_RETURN_ALL_DELIVERABLE;
+                        #else
+                        if (session_info_thread[hSession].fSSRC_change_active[term] && !(term_uFlags[hSession][term] & TERM_DTX_ENABLE)) uFlags_get |= DS_GETORD_PKT_RETURN_ALL_DELIVERABLE;
+                        #endif
 
                      /* Enable DTMF event handling in DSGetOrderedPackets().  See the check below for payload_info[] = DS_PKT_PYLD_CONTENT_DTMF */
 
@@ -2739,7 +2758,7 @@ next_session:
 
                      /* enable ooo holdoff, see comments in pktlib.h. The mediaMin application sets the TERM_OOO_HOLDOFF_ENABLE flag by default when creating sessions */
 
-                        if (uFlags_term & TERM_OOO_HOLDOFF_ENABLE) uFlags_get |= DS_GETORD_PKT_ENABLE_OOO_HOLDOFF;
+                        if (term_uFlags[hSession][term] & TERM_OOO_HOLDOFF_ENABLE) uFlags_get |= DS_GETORD_PKT_ENABLE_OOO_HOLDOFF;
 
                      /* DSGetOrderedPackets() notes:
 
@@ -2821,7 +2840,7 @@ pull:
                               if (
                                   ((uFlags_get & DS_GETORD_PKT_FTRT) && (fLevel = numpkts > nTargetDelay) && nTargetDelay > 7) ||
                                   ((uFlags_get & DS_GETORD_PKT_FTRT) && (fLevel = numpkts > nMaxDelay) && nTargetDelay <= 7) ||  /* level flush added for analytics compatibility mode. Verify with test cases 5280.0.ws, 5281.0.ws, 13041.0, JHB May2020 */
-                                  (!(uFlags_get & DS_GETORD_PKT_FTRT) && ((fFlush = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP) < DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME) && (cur_time - last_pull_time[chan_nums[n]] + 500)/1000 > (uint32_t)ptime[hSession][term] && numpkts > nTargetDelay) ||
+                                  (!(uFlags_get & DS_GETORD_PKT_FTRT) && ((fFlush = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP) < DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME) && (cur_time - last_pull_time[chan_nums[n]] + 500)/1000 > (uint32_t)ptime[hSession][term]/*DSGetSessionInfoInt2Float(DSGetSessionInfo(ch[j], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, 0, NULL))*/ && numpkts > nTargetDelay) ||
                                                                           (fLevel = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_DELAY) > DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MAX_DEPTH_PTIMES))))
                                  ) {
 
@@ -4101,9 +4120,14 @@ char errstr[50];
   5) Channels assigned to session term definitions ("termN" are unique values over all sessions)
 */
 
-   int input_buffer_interval1 = input_buffer_interval[hSession][0];
+#define USE_NEW_INPUT_BUFFER_INTERVAL
 
    int term1_chnum = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, 1, NULL);  /* get channel number for term1  */
+   #ifdef USE_NEW_INPUT_BUFFER_INTERVAL
+   int term1_uFlags = term_uFlags[hSession][0];
+   #else
+   float term1_input_buffer_interval = input_buffer_interval[hSession][0];
+   #endif
 
    if (term1_chnum < 0) {
       sprintf(errstr, "get_channels(), term1_chnum"); 
@@ -4115,7 +4139,11 @@ char errstr[50];
 
 //#define REQUIRE_INPUT
 
-   if (input_buffer_interval1 == 0) {
+   #ifdef USE_NEW_INPUT_BUFFER_INTERVAL
+   if (term1_uFlags & TERM_ANALYTICS_MODE_TIMING) {
+   #else
+   if (term1_input_buffer_interval == 0) {
+   #endif
 
    /* note that chnum_map[] can be -1, in a case where external data supply continues, but one or more streams has no content for some time.  In that case, no value of chan_nums[] is assigned and num_chan is not incremented */
    
@@ -4128,7 +4156,11 @@ char errstr[50];
    }
    else chnum0 = term1_chnum;
    
-   int input_buffer_interval2 = input_buffer_interval[hSession][1];
+   #ifdef USE_NEW_INPUT_BUFFER_INTERVAL
+   int term2_uFlags = term_uFlags[hSession][1];
+   #else
+   float term2_input_buffer_interval = input_buffer_interval[hSession][1];
+   #endif
 
    int term2_chnum = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, 2, NULL);  /* get channel number for term2 */
 
@@ -4137,7 +4169,11 @@ char errstr[50];
       ThreadAbort(thread_index, errstr);
    }
    
-   if (input_buffer_interval2 == 0) {
+   #ifdef USE_NEW_INPUT_BUFFER_INTERVAL
+   if (term2_uFlags & TERM_ANALYTICS_MODE_TIMING) {
+   #else
+   if (term2_input_buffer_interval == 0) {
+   #endif
 
       if (session_info_thread[hSession].fDataAvailable || session_info_thread[hSession].chnum_map[1] != -1) chnum1 = session_info_thread[hSession].chnum_map[1];
 #ifndef REQUIRE_INPUT
@@ -4429,7 +4465,7 @@ bool fChanFound, fAnalyticsMode, fAnalyticsCompatibilityMode;
 
       if (nMaxLossPtimes[hSession][i] < 0) continue;  /* setting max_loss_ptimes in TERMINATION_INFO struct to -1 disables packet loss mitigation (shared_include/session.h) */
 
-      ch[0] = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, i+1, NULL);  num_ch = 1;  /* get the parent channel */
+      ch[0] = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, i+1, NULL);  num_ch = 1;  /* get parent channel */
 
       if (ch[0] < 0) {
          sprintf(errstr, "CheckForPacketLossFlush(), i = %d", i); 
@@ -4438,14 +4474,31 @@ bool fChanFound, fAnalyticsMode, fAnalyticsCompatibilityMode;
 
       for (n=0, fChanFound=false; n<num_chan; n++) if (chan_nums[n] == ch[0]) { fChanFound = true; break; }  /* if parent channel already in the pull list, then nothing to do. When given a chnum, DSGetOrderedPackets() also searches child (dynamic) channels for the chnum */
 
-      if (!fChanFound) {  /* in telecom mode this is never true, channels are always on the pull list. In analytics mode we can skip further processing if the parent channel is already on the pull list */
+      if (!fChanFound) {  /* in telecom mode fChanFound is always true, channels are always on the pull list. In analytics mode we can skip further processing if the parent channel is already on the pull list */
 
-         fAnalyticsMode = input_buffer_interval[hSession][i] < ptime[hSession][i] && output_buffer_interval[hSession][i];  /* determine analytics (clockless / FTRT) mode or telecom mode */
+         #if 0
+         fAnalyticsMode = input_buffer_interval[hSession][i] < ptime[hSession][i] && output_buffer_interval[hSession][i];  /* determine analytics (clockless /
+ FTRT) mode or telecom mode */
+         #else
+         fAnalyticsMode = (term_uFlags[hSession][i] & TERM_ANALYTICS_MODE_TIMING) && output_buffer_interval[hSession][i];  /* determine analytics (clockless / FTRT / AFAP) mode or telecom mode */
+         #endif
+
          fAnalyticsCompatibilityMode = fAnalyticsMode && DSGetJitterBufferInfo(ch[0], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7;
 
       /* for last_pull_time[] we need only check the parent channel, as DSGetOrderedPackets() expects parent as input and automatically searches any children */
 
+   /* to-do: AFAPmode */
+
+         #if 1
          if (fAnalyticsMode && last_pull_time[ch[0]] && cur_time - last_pull_time[ch[0]] > (uint64_t)(nMaxLossPtimes[hSession][i]*ptime[hSession][i]*1000)) {
+         #else
+         
+         if (fAnalyticsMode && last_pull_time[ch[0]] && cur_time - last_pull_time[ch[0]] > nMaxLossPtimes[hSession][i]*DSGetSessionInfoInt2Float(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, i+1, NULL))*1000) {
+
+    static bool fOnce[10] = { false };
+    if (!fOnce[ch[0]]) { fOnce[ch[0]] = true; printf("\n *** ch %d last pull time = %llu, nMaxLossPtimes = %u, ptime = %u, input_buffer_interval = %4.2f \n", ch[0], (long long unsigned)last_pull_time[ch[0]], nMaxLossPtimes[hSession][i], ptime[hSession][i], DSGetSessionInfoInt2Float(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, i+1, NULL))); }
+ 
+         #endif
 
          /* when looking at jitter buffer levels, we need to check both parent and its child (dynamic) channels, if any */
 
@@ -4453,7 +4506,7 @@ bool fChanFound, fAnalyticsMode, fAnalyticsCompatibilityMode;
 
             for (j=0, fFlush=false; j<num_ch; j++) {
  
-               if ((num_packets = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_NUM_PKTS)) == 0) continue;  /* nothing to flush, channel has stopped (or is first receiving packets) */
+               if ((num_packets = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_NUM_PKTS)) == 0) continue;  /* nothing to flush, channel has stopped (or is not yet receiving packets) */
 
                target_packets = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_TARGET_DELAY);
                min_packets = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MIN_DELAY);
@@ -4556,10 +4609,10 @@ char tmpstr[1024];
 
    #ifndef __LIBRARYMODE__
    int index = min(i, num_pcap_inputs-1);
-   if ((int)frameInterval[index] == -1) frameInterval[index] = ptime_config[hSession];  /* if no cmd line entry, use ptime from session definition */
+   if ((int)pushInterval[index] == -1) pushInterval[index] = (float)ptime_config[hSession];  /* if no cmd line entry, use ptime from session definition */
    else {
-      term1.input_buffer_interval = frameInterval[index];  /*  if -rN cmd line entry given, then override termN.buffer_interval settings */
-      term2.input_buffer_interval = frameInterval[index];
+      term1.input_buffer_interval = pushInterval[index];  /*  if -rN cmd line entry given, then override termN.buffer_interval settings */
+      term2.input_buffer_interval = pushInterval[index];
    }
    #endif
 //  printf("term1.input_buffer_interval = %d, term1.ptime = %d\n", term1.input_buffer_interval, term1.ptime);
@@ -4570,7 +4623,7 @@ char tmpstr[1024];
    if (packet_media_thread_info[thread_index].packet_mode) {
 
       sprintf(&tmpstr[strlen(tmpstr)], ", buffer add rate for input stream[%d] = ", i);
-      if (term1.input_buffer_interval > 0) sprintf(&tmpstr[strlen(tmpstr)], "%d tps", 1000/term1.input_buffer_interval);
+      if (term1.input_buffer_interval > 0) sprintf(&tmpstr[strlen(tmpstr)], "%4.2f tps", 1000/term1.input_buffer_interval);
       else sprintf(&tmpstr[strlen(tmpstr)], "as fast as possible");
 
       if (term1.input_buffer_interval < term1.ptime || term2.input_buffer_interval < term2.ptime) {
@@ -4583,26 +4636,31 @@ char tmpstr[1024];
    sig_printf(tmpstr, PRN_LEVEL_INFO, thread_index);
 
    #ifdef SESSIONINFOMEMCPYDEBUG
-   printf("before setsessioninfo, term2.input_buffer_interval = %d\n", term2.input_buffer_interval);
+   printf("before setsessioninfo, term2.input_buffer_interval = %4.2f\n", term2.input_buffer_interval);
    #endif
  
    DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, 1, &term1);
    DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, 2, &term2);
 
+   #if 0
 /* input_buffer_interval[] values are first set in InitSession() (which is called before InitStream), the termN values they reflect could potentially be altered here, for example in non-library mode (mediaTest cmd line), so we keep them updated, JHB May2019 */
 
    input_buffer_interval[hSession][0] = term1.input_buffer_interval;
    input_buffer_interval[hSession][1] = term2.input_buffer_interval;
+   #else
+   term_uFlags[hSession][0] = term1.uFlags;
+   term_uFlags[hSession][1] = term2.uFlags;
+   #endif
 
    #ifdef SESSIONINFOMEMCPYDEBUG
    DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, 2, &term2);
-   printf("after setsessioninfo, term2.input_buffer_interval = %d\n", term2.input_buffer_interval);
+   printf("after setsessioninfo, term2.input_buffer_interval = %4.2f\n", term2.input_buffer_interval);
 
-   int input_buffer_interval_temp = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, 1, NULL);
-   printf("after getsessioninfo buffer, input_buffer_interval for term1 = %d\n", input_buffer_interval_temp);
+   float input_buffer_interval_temp = DSGetSessionInfoInt2Float(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, 1, NULL)); 
+   printf("after getsessioninfo buffer, input_buffer_interval for term1 = %4.2f\n", input_buffer_interval_temp);
 
-   input_buffer_interval_temp = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, 2, NULL);
-   printf("after getsessioninfo buffer, input_buffer_interval for term 2 = %d\n", input_buffer_interval_temp);
+   input_buffer_interval_temp = DSGetSessionInfoInt2Float(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, 2, NULL));
+   printf("after getsessioninfo buffer, input_buffer_interval for term 2 = %4.2f\n", input_buffer_interval_temp);
    #endif
 
    return 1;
@@ -4728,13 +4786,23 @@ int session_state, j;
 
       for (j=0; j<MAX_TERMS; j++) {
 
-         input_buffer_interval[hSession][j] = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL | DS_SESSION_INFO_SUPPRESS_ERROR_MSG, j+1, NULL);
+         #if 0
+         input_buffer_interval[hSession][j] = DSGetSessionInfoInt2Float(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL | DS_SESSION_INFO_SUPPRESS_ERROR_MSG, j+1, NULL));
 
          if (input_buffer_interval[hSession][j] < 0) {
+         #else
+         float input_buffer_interval = DSGetSessionInfoInt2Float(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL | DS_SESSION_INFO_SUPPRESS_ERROR_MSG, j+1, NULL));
 
-            if (packet_media_thread_info[thread_index].fMediaThread) Log_RT(4, "WARNING: InitSession() says input_buffer_interval is not initialized for session %d\n", hSession);
+         if (input_buffer_interval < 0) {
+         #endif
+
+            if (packet_media_thread_info[thread_index].fMediaThread) Log_RT(4, "WARNING: InitSession() says input_buffer_interval is not initialized for session %d, term %d\n", hSession, j);
+            #if 0
             input_buffer_interval[hSession][j] = 0;
+            #endif
          }
+
+         term_uFlags[hSession][j] = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS | DS_SESSION_INFO_SUPPRESS_ERROR_MSG, j+1, NULL);
 
          ptime[hSession][j] = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_PTIME, j+1, NULL);
          if (ptime[hSession][j] < 0) { Log_RT(4, "WARNING: InitSession() says ptime is not initialized for session %d\n", hSession); ptime[hSession][j] = 20; }
@@ -5348,7 +5416,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 //      hSession = get_session_handle(hSessions_t, i, 0);
       hSession = hSessions_t[i];
 
-      if ((int)frameInterval[i] == -1) frameInterval[i] = ptime_config[hSession];  /* if no cmd line entry, use ptime from session definition */
+      if ((int)pushInterval[i] == -1) pushInterval[i] = (float)ptime_config[hSession];  /* if no cmd line entry, use ptime from session definition */
    }
 
 /* Enter main processing loop, similar to primary thread above */
@@ -5366,7 +5434,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
       for (i = threadid; i < nInFiles; i += nThreads_gbl) {
 
-         if (cur_time - last_time[i] >= frameInterval[i]*1000) {  /* has interval elapsed ?  (comparison is in usec) */
+         if (cur_time - last_time[i] >= (int)pushInterval[i]*1000) {  /* has interval elapsed ?  (comparison is in usec) */
 
             if (!(packet_length = DSReadPcapRecord(fp_in[i], pkt_buffer, 0, NULL, link_layer_length[i], NULL))) continue;
             else __sync_add_and_fetch(&num_pkts_read_multithread, 1);

@@ -3,7 +3,7 @@
 
  Purpose:  command line options parsing and handling
   
- (C) Signalogic Inc. 2005-2021
+ (C) Signalogic Inc. 2005-2023
 
  Revision History:
 
@@ -16,6 +16,7 @@
    Modified Jul 2018 JHB, changed mandatory support to handle x86 and coCPU separately.  Changed isMandatory element in Record struct from bool to unsigned char
    Modified Sep 2019 JHB, add CLI_MEDIA_APPS flag
    Modified Jan 2021 JHB, add CLI_MEDIA_APPS_MEDIAMIN flag, add type param to getOption()
+   Modified May 2023 JHB, add FLOAT option type, FLOAT switch statement cases, getFloat()
 */
 
 #ifndef _CMDLINEOPT_H_
@@ -52,7 +53,8 @@ public:
       CHAR,
       STRING,
       BOOLEAN,
-      IPADDR
+      IPADDR,
+      FLOAT
    };
 
 /* Structure for working with command line options */
@@ -79,6 +81,7 @@ public:
    bool scanOptions(int argc, char *argv[], unsigned int uFlags);
    int nInstances(char option);
    int getInt(char option, int nInstance, int nMultiple);
+   float getFloat(char option, int nInstance, int nMultiple);
    long long getInt64(char option, int nInstance);
    unsigned int getIpAddr(char option, int nInstance);
    unsigned int getUdpPort(char option, int nInstance);

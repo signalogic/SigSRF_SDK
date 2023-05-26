@@ -1273,6 +1273,24 @@ extern "C" {
   #define isPmThread isPmThreadInline  /* changed from IsPmThread to isPmThread, JHB Jan 2023 */
 #endif
 
+/* DSGetSessionInfoInt2Float() and DSGetSessionInfoInt2Double() used when DSGetSessionInfo() returns a float or double contained inside int64_t */
+
+static inline float DSGetSessionInfoInt2Float(int64_t ival) {
+
+float ret_val;
+
+   memcpy(&ret_val, &ival, sizeof(float));
+   return ret_val;
+}
+   
+static inline double DSGetSessionInfoInt2Double(int64_t ival) {
+
+double ret_val;
+
+   memcpy(&ret_val, &ival, sizeof(double));
+   return ret_val;
+}
+
 #ifdef USE_PKTLIB_INLINES
 
 #include <semaphore.h>
@@ -1303,8 +1321,6 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-/* inline version of DSGetSessionInfo(), compiled if USE_PKTLIB_INLINES is defined */
 
 /* pktlib.so externs */
 
@@ -1338,6 +1354,8 @@ bool fTest, fIsPmThread = false;
 
    return fIsPmThread;
 }
+
+/* inline version of DSGetSessionInfo(), compiled if USE_PKTLIB_INLINES is defined */
 
 static inline int64_t DSGetSessionInfoInline(HSESSION sessionHandle, unsigned int uFlags, int64_t term_id, void* pInfo) {
 
@@ -1814,17 +1832,17 @@ char handle_str[20];
       case DS_SESSION_INFO_INPUT_BUFFER_INTERVAL:
 
          if (uFlags & DS_SESSION_INFO_HANDLE) {
-            if (term_id == 0) ret_val = sessions[sessionHandle].session_data.group_term.input_buffer_interval;
-            else if (term_id == 1) ret_val = sessions[sessionHandle].session_data.term1.input_buffer_interval;
-            else if (term_id == 2) ret_val = sessions[sessionHandle].session_data.term2.input_buffer_interval;
+            if (term_id == 0) { ret_val = 0; memcpy(&ret_val, &sessions[sessionHandle].session_data.group_term.input_buffer_interval, sizeof(float)); }
+            else if (term_id == 1) { ret_val = 0; memcpy(&ret_val, &sessions[sessionHandle].session_data.term1.input_buffer_interval, sizeof(float)); }
+            else if (term_id == 2) { ret_val = 0; memcpy(&ret_val, &sessions[sessionHandle].session_data.term2.input_buffer_interval, sizeof(float)); }
          }
          else if (uFlags & DS_SESSION_INFO_CHNUM) {
 
             if (n == -1) goto check_n;
 
             if (no_term_id_arg) term_id = 1;
-            if (term_id == 1 && ChanInfo_Core[n].term && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].term->input_buffer_interval;
-            else if (term_id == 2 && ChanInfo_Core[n].link && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].link->term->input_buffer_interval;
+            if (term_id == 1 && ChanInfo_Core[n].term && ChanInfo_Core[n].chan_exists) { ret_val = 0; memcpy(&ret_val, &ChanInfo_Core[n].term->input_buffer_interval, sizeof(float)); }
+            else if (term_id == 2 && ChanInfo_Core[n].link && ChanInfo_Core[n].chan_exists) { ret_val = 0; memcpy(&ret_val, &ChanInfo_Core[n].link->term->input_buffer_interval, sizeof(float)); }
          }
 
          break;
