@@ -2,7 +2,7 @@
 #================================================================================================
 # Bash script to install/uninstall SigSRF SDK and EdgeStream apps
 # Copyright (C) Signalogic Inc 2017-2023
-# Rev 1.7.5
+# Rev 1.8.0
 
 # Requirements
    # Internet connection
@@ -832,11 +832,11 @@ startPath=$PWD
 OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')  # OS var is used throughout script
 kernel_version=`uname -r`
 echo "OS distro: $OS, kernel version: $kernel_version"
+echo
+PS3="Please select platform for SigSRF and EdgeStream software install [1-2]: "
 
-if [ -z "$noprompts" ]; then  # prompt for Host platform if noprompts empty
+if [ -z "$noprompts" ]; then  # prompt for platform type if noprompts empty
 
-   echo
-   PS3="Please select platform for SigSRF and EdgeStream software install [1-2]: "
    select platform in "Host" "VM" 
    do
 	   case $platform in
@@ -854,7 +854,7 @@ echo "*********************************************************************"
 COLUMNS=1  # force single column menu, JHB Jan2021
 PS3="Please select install operation to perform [1-6]: "
 
-   if [ -z "$noprompts" ]; then  # prompt for type of install if noprompts empty
+   if [ -z "$noprompts" ]; then  # prompt for install type if noprompts empty
 
       echo
 
@@ -901,6 +901,4 @@ PS3="Please select install operation to perform [1-6]: "
 		      swInstallSetup; dependencyCheck; swInstall;
 		   fi
       fi
- 
-   fi
-
+    fi
