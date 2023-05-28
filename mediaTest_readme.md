@@ -11,6 +11,19 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+1Q-2Q 2023 - Improvements over a wide range of areas, including:
+
+ - mixed SIP and RTP stream handling
+ - HI2 and HI3 decode
+ - DTMF handling
+ - "accelerated time" for bulk pcap handling
+ - return audio content type from codecs (only for codecs that support this)
+
+Bug fixes including:
+
+ - keyboard handling inside containers
+ - codec type auto-detection
+
 3Q-4Q 2022 - new releases of pktlib, voplib, mediaMin, and mediaTest, including:
 
  - support for handsets and voice assistants found in the wild using non-compliant EVS "AMR-WB IO mode" format
@@ -187,7 +200,7 @@ To provide a simple, ready-to-use interface, mediaMin provides additional functi
 
 In addition to providing a ready-to-use application, <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a> demonstrates use of pktlib APIs <sup>[2]</sup> for session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating). <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source</a> code used by pktlib is also available to show use of voplib and streamlib APIs <sup>[2]</sup>.  
 
-mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreation), recognizing packet streams with unique combinations of IP/port/payload "on the fly", auto-detecting the codec type, and creating a session to process subsequent packet flow in the stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.
+mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreation), recognizing "on the fly" packet streams with unique combinations of IP/port/payload, auto-detecting the codec type, and creating a session to process subsequent packet flow in the stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.
 
 <sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. Stress testing includes concurrent session counts up to 50 per x86 core, with sustained test durations over 1400 hrs.</br>
 </br>
