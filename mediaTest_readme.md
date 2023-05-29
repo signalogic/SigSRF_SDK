@@ -1586,7 +1586,7 @@ Below is a run-time stats example from a mediaMin screen capture.
 
 <pre>
 00:02:24.582.168 Stream Info + Stats, stream group "mediaplayout_music_1malespeaker_5xAMRWB_notimestamps", grp 0, p/m thread 0, num packets 7359
-  Sessions (hSession:ch:codec/bitrate[,ch...]) 0(grp owner):0:AMR-WB/12650,4:AMR-WB/12650,5:AMR-WB/12650,6:AMR-WB/12650 1:2:AMR-WB/12650
+  Sessions (hSession:ch:codec-bitrate[,ch...]) 0(grp owner):0:AMR-WB-12650,4:AMR-WB-12650,5:AMR-WB-12650,6:AMR-WB-12650 1:2:AMR-WB-12650
   SSRCs (ch:ssrc) 0:0x63337c03 4:0xd9913891 5:0xa97bef88 6:0xa034a9d2 2:0x545d19db
   Overrun (ch:frames dropped) 0:0 2:0, (ch:max %) 0:16.41 2:12.41
   Underrun (grp:missed intervals/FLCs/holdoffs) 0:0/0/0
@@ -1608,6 +1608,35 @@ Below is a run-time stats example from a mediaMin screen capture.
     Ooo (ch:pkts) 0:0 4:0 5:0 6:0 2:0, max 0:0 4:0 5:0 6:0 2:0, drops 0:0 4:0 5:0 6:0 2:0, duplicates 0:0 4:0 5:0 6:0 2:0
     Resyncs (ch:num) underrun 0:0 4:0 5:1 6:10 2:3, overrun 0:0 4:0 5:0 6:0 2:0, timestamp gap 0:0 4:0 5:0 6:0 2:1, purges (ch:num) 0:0 4:0 5:0 6:0 2:0
     Holdoffs (ch:num) adj 0:0 4:0 5:0 6:0 2:1, dlvr 0:0 4:0 5:0 6:0 2:1, zero pulls (ch:num) 0:4770 4:3306 5:1075 6:91 2:59, allocs (cur/max) 0/22
+  Event log warnings, errors, critical 0, 0, 0
+</pre>
+
+Below is another run-time stats example from a mediaMin screen capture. Note in this case the high number of RFC8108 streams and wide range of bitrates.
+	
+<pre>
+00:00:41.319.243 Stream Info + Stats, stream group "86_anon", grp 0, p/m thread 0, num packets 4485
+  Sessions (hSession:ch:codec-bitrate[,ch...]) 0(grp owner):0:EVS-13200(1750,2400,6600,8850,12650,24400) 1:2:EVS-24400(2400,13200),8:EVS-24400(1750,6600,8850,12650) 2:4:EVS-13200(1750,2400,6600,8850,12650,24400) 3:6:EVS-24400(2400,13200),9:EVS-24400(1750,6600,8850,12650)
+  SSRCs (ch:ssrc) 0:0xec969576 2:0xbbf51b9c 8:0x1fd9fd3e 4:0xec969576 6:0xbbf51b9c 9:0x1fd9fd3e
+  Overrun (ch:frames dropped) 0:0 2:0 4:0 6:0, (ch:max %) 0:6.90 2:6.42 4:6.90 6:6.47
+  Underrun (grp:missed intervals/FLCs/holdoffs) 0:0/0/0
+  Pkt flush (ch:num) loss 0:0 2:0 8:28 4:0 6:0 9:20, pastdue 0:0 2:0 8:0 4:0 6:0 9:0, level 0:7 2:30 8:4 4:5 6:32 9:2
+  Packet Stats
+    Input (ch:pkts) 0:1103 2:285 8:854 4:1105 6:283 9:855, SIDs 0:112 2:21 8:110 4:112 6:21 9:110, RFC7198 duplicates 0:0 2:0 8:0 4:0 6:0 9:0, bursts 0:0 2:0 8:0 4:0 6:0 9:0
+    Loss (ch:%) 0:0.181 2:1.404 8:0.351 4:0.000 6:2.120 9:0.234, missing seq (ch:num) 0:2 2:4 8:3 4:0 6:6 9:2, max consec missing seq 0:2 2:4 8:3 4:0 6:6 9:2
+    Ooo (ch:pkts) 0:0 2:0 8:0 4:0 6:0 9:0, max 0:0 2:0 8:0 4:0 6:0 9:0
+    Avg stats calcs (ch:num) 0:0.23 2:1.80 8:0.45 4:0.00 6:2.71 9:0.30
+    Delta avg (ch:msec) media 0:23.87 2:20.00 8:20.16 4:23.67 6:20.00 9:19.71, SID 0:133.39 2:59.94 8:125.34 4:135.30 6:57.14 9:126.05
+    Delta max (ch:msec/pkt) media 0:539.11/2365 2:299.76/898 8:380.00/2738 4:539.11/2366 6:319.75/902, SID 0:440.02/3513 2:120.00/353 8:979.99/1817 4:420.01/3515 6:120.00/355, overall 0:539.11/2365 2:299.76/898 8:979.99/1817 4:539.11/2366 6:319.75/902
+    Cumulative input times         (sec) (ch:inp/rtp) 0:37.22/40.04 2:6.46/8.84 8:30.78/31.23 4:37.20/40.04 6:6.44/8.84
+    Cumulative jitter buffer times (sec) (ch:out/rtp) 0:37.01/40.18 2:6.54/8.98 8:30.61/31.53 4:37.01/40.18 6:6.54/8.98
+  Packet Repair
+    SID repair (ch:num) instance 0:74 2:1 8:7 4:74 6:1 9:7, total 0:265 2:8 8:48 4:265 6:8 9:48
+    Timestamp repair (ch:num) SID 0:5 2:0 8:4 4:5 6:0 9:4, media 0:2 2:13 8:1 4:0 6:15 9:0
+  Jitter Buffer
+    Output (ch:pkts) 0:2010 2:430 8:1576 4:2010 6:430 9:1576, max 0:11 2:11 8:11 4:11 6:11 9:11, residual 0:0 2:0 8:0 4:0 6:0 9:0, bursts 0:0 2:0 8:0 4:0 6:0 9:0
+    Ooo (ch:pkts) 0:0 2:0 8:0 4:0 6:0 9:0, max 0:0 2:0 8:0 4:0 6:0 9:0, drops 0:0 2:0 8:0 4:0 6:0 9:0, duplicates 0:0 2:0 8:0 4:0 6:0 9:0
+    Resyncs (ch:num) underrun 0:0 2:0 8:2 4:0 6:0 9:1, overrun 0:0 2:0 8:0 4:0 6:0 9:0, timestamp gap 0:0 2:0 8:0 4:0 6:0 9:0, purges (ch:num) 0:0 2:0 8:0 4:0 6:0 9:0
+    Holdoffs (ch:num) adj 0:0 2:0 8:1 4:0 6:0 9:2, dlvr 0:0 2:0 8:0 4:0 6:0 9:1, zero pulls (ch:num) 0:17 2:915 8:42 4:15 6:908 9:32, allocs (cur/max) 0/49
   Event log warnings, errors, critical 0, 0, 0
 </pre>
 
