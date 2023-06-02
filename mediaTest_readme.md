@@ -2285,9 +2285,10 @@ Note that options and flags may be combined together.
 
 [Packet history logging](#user-content-packetlog) is controlled by the -L command line option:
 
-> -L only enables packet history logging with a default log filename of name_pkt_log.txt, where "name" is the filename (without extension) of the first command line input<br/>
+> -L enables packet history logging with a default log filename of name_pkt_log.txt, where "name" is the filename (without extension) of the first command line input<br/>
 > -LlogFile enables packet history logging with a filename of logFile_pkt_log.txt<br/>
-> -L-nopktlog or -L-nopacketlog disables packet history logging (same as no -L entry), but in a more visible way
+> no -L entry disables packet history logging<br/>
+> -L-nopktlog or -L-nopacketlog disables packet history logging (same as no -L entry), but in a more visible way<br/>
 
 #### Real-Time Interval
 
