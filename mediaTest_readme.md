@@ -2304,7 +2304,18 @@ Note that options and flags may be combined together.
 -lN (lower case L) specifies RTP packet de-duplication lookback depth. No entry sets N to 1, the default for compliance with RFC7198 temporal duplication. Additional notes:
 
 > -l0 disables packet de-duplication<br/>
-> -lN entry of N > 1 instructs [pktlib](#user-content-pktlib) to look further back in packet flow for duplicate RTP packets. N can be specified up to 8<br/>
+> -lN entry of N > 1 instructs [pktlib](#user-content-pktlib) to look further back in packet flow for "non-consecutive" duplicate RTP packets. N can be specified up to 8<br/>
+
+If you see mediaMin warnings in pairs like this:
+	
+    WARNING: get_chan_packets() says ch 0 ssrc 0x56882470 output timestamp 3752987229 will equal or exceed min timestamp 3752987229 still in jitter buffer
+    WARNING (pkt): get_chan_packets() says ch 0 ssrc 0x56882470 jitter buffer output duplicated sequence number 34032, last jb output seq num = 34032, SID repair = 0
+
+it's a good indication of non-consecutive packet duplication. Below is a packet history log excerpt showing an example of non-consecutive packet duplication:
+
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/packet_log_non_consecutive_duplication.png" width="1024" alt="Packet history log showing non-consecutive packet duplication" title="Packet history log showing non-consecutive packet duplication"/></br>
+
+-l2 cmd line entry would correct this, removing the mediaMin warnings and reducing the amount of ooo (out-of-order) in the packet history log.
 
 #### Port Allow List
 
