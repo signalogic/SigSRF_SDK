@@ -2313,7 +2313,7 @@ If you see mediaMin warnings in pairs like this:
 
 it's a good indication of non-consecutive packet duplication. Below is a packet history log excerpt showing an example of non-consecutive packet duplication:
 
-<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/packet_log_non_consecutive_duplication.png" width="1024" alt="Packet history log showing non-consecutive packet duplication" title="Packet history log showing non-consecutive packet duplication"/></br>
+<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/packet_log_non_consecutive_duplication.png" alt="Packet history log showing non-consecutive packet duplication" title="Packet history log showing non-consecutive packet duplication"/></br>
 
 -l2 cmd line entry would correct this, removing the mediaMin warnings and reducing the amount of ooo (out-of-order) in the packet history log.
 
