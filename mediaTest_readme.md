@@ -2301,14 +2301,14 @@ Note that options and flags may be combined together.
 
 #### RFC7198 Lookback Depth
 
--lN specifies RTP packet de-duplication lookback depth. No entry sets N to 1, the default for compliance with RFC7198 temporal duplication. Additional notes:
+-lN (lower case L) specifies RTP packet de-duplication lookback depth. No entry sets N to 1, the default for compliance with RFC7198 temporal duplication. Additional notes:
 
 > -l0 disables packet de-duplication<br/>
 > for lN entry where N > 1, [pktlib](#user-content-pktlib) will look further back in packet flow for duplicate RTP packets. N can be specified up to 8<br/>
 
 #### Port Allow List
 
--pN entry specifies a UDP port to add to the "allow list", a list of non-dynamic UDP ports (from 1 to 4095) that are normally ignored by mediaMin when processing media streams. For example if you need to allow ports 3258, 1019, and 2233, you can enter:
+-pN entry specifies a UDP port to add to the "allow list", a list of non-dynamic UDP ports (from 1 to 4095) that are normally treated as non-RTP ports by mediaMin when processing media streams. For example if you need to allow ports 3258, 1019, and 2233, you can enter:
 
     -p3258 -p1019 -p2233
 
