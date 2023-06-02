@@ -2292,11 +2292,11 @@ Note that options and flags may be combined together.
 
 #### Real-Time Interval
 
--rN specifies a "real-time interval" that mediaMin uses for a target packet push rate and to control overall timing, and which [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. Aadditional notes:
+-rN specifies a "real-time interval" that mediaMin uses for a target packet push rate and to control overall timing, and which [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. Additional notes:
 
 > -r0 specifies no intervals, or "as fast as possible" (AFAP) mode, where mediaMin will push and process packets as fast as possible without regard to media domain processing that require a nominal timing reference, such as stream alignment<br/>
 > no entry is the same as -r0<br/>
-> -r0.5 specifies a "faster than real-time" (FTRT) mode, see [Bulk Pcap Handling](#user-content-bulkpcaphandling) for information and examples<br/>
+> -rN entry where 0 < N < 1 specifies "faster than real-time" (FTRT) mode, or 1/N faster than a nominal 10-20 msec push interval. Accurate timing for media domain processing, including stream alignment, is maintained depending on stream content, codec types, bitrates, and system / server CPU clockrate and number of cores. See [Bulk Pcap Handling](#user-content-bulkpcaphandling) for information and examples<br/>
 > entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above)<br/>
 
 #### RFC7198 Lookback Depth
