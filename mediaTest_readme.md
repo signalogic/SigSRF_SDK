@@ -2268,7 +2268,7 @@ The mediaMin command line does need to contain an output option.
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
 
-The -dN command line argument specifies options and flags. Here are some of the key ones, including command line value, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> flag name given in ():
+The -dN command line argument specifies options and flags. Here are some of the key flags, including command line value, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> flag name given in ():
 
 > 0x01 enable dynamic sessions (DYNAMIC_SESSIONS)<br/>
 > 0x08 apply ASR to stream group output (ENABLE_STREAM_GROUP_ASR)<br/>
@@ -2281,19 +2281,32 @@ The -dN command line argument specifies options and flags. Here are some of the 
 
 Note that options and flags may be combined together.
 
-### Packet Log
+#### Packet Log
 
 [Packet history logging](#user-content-packetlog) is controlled by the -L command line option:
 
 > -L only enables packet history logging with a default log filename of name_pkt_log.txt, where "name" is the filename (without extension) of the first command line input<br/>
 > -LlogFile enables packet history logging with a filename of logFile_pkt_log.txt<br/>
+> -L-nopktlog or -L-nopacketlog disables packet history logging (same as no -L entry), but in a more visible way
 
-### Real-Time Interval
+#### Real-Time Interval
 
--rN specifies a "real-time interval" that mediaMin uses for a target packet push rate and to control overall timing, and which [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0 specifies no intervals; i.e. mediaMin will push and process packets as fast as possible. Some additional notes:
+-rN specifies a "real-time interval" that mediaMin uses for a target packet push rate and to control overall timing, and which [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec framesize. -r0.5 specifies a "faster than real-time" (FTRT) mode, see [Bulk Pcap Handling](#user-content-bulkpcaphandling) for information and examples. -r0 specifies no intervals, or "as fast as possible" (AFAP) mode, where mediaMin will push and process packets as fast as possible without regard to audio domain functions that require a nominal timing reference, such as stream alignment. Some additional notes:
 	
 > no entry is the same as -r0
 > entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above)
+
+#### RFC7198 Lookback Depth
+
+-lN specifies RTP packet de-duplication lookback depth. No entry sets N to 1, the default to be compliant with RFC7198 temporal duplication. For N > 1, pktlib will look further back in packet flow for duplicate RTP packets. N can be specified up to 8.
+
+#### Port Allow List
+
+-pN entry specifies a UDP port to add to the "allow list", a list of non-dynamic UDP ports (from 1 to 4095) that are normally ignored by mediaMin when processing media streams. For example if you need to allow ports 3258, 1019, and 2233, you can enter:
+
+    -p3258 -p1019 -p2233
+
+on the mediaMin command line.
 
 ### Performance Improvements
 
@@ -2325,9 +2338,9 @@ Below are some examples of -g entry, including ramdisk and dedicated media folde
 
     -g/mnt/ramdisk
 
-or
-
     -g/tmp/ramdisk
+
+    -g/tmp/shared
 
 or as appropriate depending on the system's configuration (look in /etc/fstab to see if a ramdisk is active and if so its path). For a folder dedicated to wav file output, such as a separate SSD drive, then the mediaMin command line might contain something like:
 
