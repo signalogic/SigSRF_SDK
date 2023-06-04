@@ -22,8 +22,8 @@
    Created Apr 2021 JHB, split off from mediaMin.cpp
    Modified Sep 2022 JHB, add ReadCodecConfig(), split out check_config_file(), used by both ReadSessionConfig() and ReadCodecConfig()
    Modified Dec 2022 JHB, change references to DYNAMIC_CALL to DYNAMIC_SESSIONS
-   Modified Jan 2023 JHB, added reference to extern fUntimedMode, in case it should be needed in SetIntervalTiming(). See comments in mediaMin.cpp
-   Modified May 2023 JHB, set group_term.input_buffer_interval in SetIntervalTiming(). This is needed in streamlib for mods related to "fast as possible mode" (when -r0 packet interval is given on the mediaMin cmd line)
+   Modified Jan 2023 JHB, added reference to extern fUntimedMode, in case it should be needed in SetSessionTiming(). See comments in mediaMin.cpp
+   Modified May 2023 JHB, set group_term.input_buffer_interval in SetSessionTiming(). This is needed in streamlib for "fast as possible" and "faster than real-time" modes (when 0 <= N < 1 is given for -rN entry on the mediaMin cmd line)
 */
 
 #include <stdio.h>
@@ -53,13 +53,14 @@ void StreamGroupOutputSetup(HSESSION hSessions[], int nInput, int thread_index);
 // #define STREAM_GROUP_BUFFER_TIME  1000  /* default stream group buffer time is 260 msec (2080 samples at 8 kHz sampling rate, 4160 samples at 16 kHz, etc). Uncommenting this define will set the buffer time, in this example to 1 sec */
 
 
-/* SetIntervalTiming() notes:
+/* SetSessionTiming() notes:
 
    -set input and output buffer interval timing. Currently we are using term1.xx values for overall timing
-   -called by StaticSessionCreate() below and create_dynamic_session() in mediaMin.cpp
+   -called by CreateDynamicSession() in mediaMin.cpp
+   -also called by CreateStaticSessions() below
 */
 
-void SetIntervalTiming(SESSION_DATA* session_data) {
+void SetSessionTiming(SESSION_DATA* session_data) {
 
 /* set input buffer intervals */
 
@@ -79,10 +80,10 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
       else session_data->term2.input_buffer_interval = pushInterval[0];
    }
    #else
-   if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode set TERM_ANALYTICS_MODE_TIMING flag. Note this decouples analytics mode from input_buffer_interval, which is needed for AFAP mode, JHB May 2023 */
+   if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode set TERM_ANALYTICS_MODE_TIMING flag. Note this decouples analytics mode from input_buffer_interval, which is needed for FTRT and AFAP modes, JHB May 2023 */
    
-      session_data->term1.uFlags |= TERM_ANALYTICS_MODE_TIMING;
-      session_data->term2.uFlags |= TERM_ANALYTICS_MODE_TIMING;
+      session_data->term1.uFlags |= TERM_ANALYTICS_MODE_PACKET_TIMING;
+      session_data->term2.uFlags |= TERM_ANALYTICS_MODE_PACKET_TIMING;
    }
 
    if ((int)pushInterval[0] != -1) {  /* pushInterval[0] is value of N in -rN cmd line entry */
@@ -96,8 +97,13 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
 
    if (Mode & AUTO_ADJUST_PUSH_RATE) {  /* set in situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
 
-      session_data->term1.uFlags |= TERM_IGNORE_ARRIVAL_TIMING;
-      session_data->term2.uFlags |= TERM_IGNORE_ARRIVAL_TIMING;
+      session_data->term1.uFlags |= TERM_IGNORE_ARRIVAL_PACKET_TIMING;
+      session_data->term2.uFlags |= TERM_IGNORE_ARRIVAL_PACKET_TIMING;
+   }
+   else if (!(Mode & USE_PACKET_ARRIVAL_TIMES)) {
+
+      session_data->term1.uFlags |= TERM_NO_PACKET_TIMING;
+      session_data->term2.uFlags |= TERM_NO_PACKET_TIMING;
    }
 
 /* set output buffer intervals:
@@ -132,12 +138,6 @@ void SetIntervalTiming(SESSION_DATA* session_data) {
       else if (session_data->term2.input_buffer_interval > 0 && session_data->term2.group_mode) session_data->group_term.input_buffer_interval = session_data->term2.input_buffer_interval;
 
       if (session_data->group_term.input_buffer_interval < 0) session_data->group_term.input_buffer_interval = 0;  /* if not specified, set to zero */
-
-      #if 0
-   /* streamlib uses group term input_buffer_interval as processing interval, so we can't let it be zero unless -r0 is given on the cmd line, specifying AFAP mode, JHB May 2023 */
-
-      if (session_data->group_term.input_buffer_interval == 0 && pushInterval[0] > 0) session_data->group_term.input_buffer_interval = pushInterval[0];
-      #endif
    }
 
    if ((int)pushInterval[0] == -1) pushInterval[0] = session_data->term1.input_buffer_interval;
@@ -289,7 +289,7 @@ int nSessionsConfigured = 0;
 
 /* create static sessions */
 
-int StaticSessionCreate(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, int thread_index) {
+int CreateStaticSessions(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, int thread_index) {
 
 int i, nSessionsCreated = 0;
 HSESSION hSession;
@@ -374,7 +374,7 @@ HSESSION hSession;
          if (!session_data[i].group_term.ptime) session_data[i].group_term.ptime = 20;
       }
 
-      SetIntervalTiming(&session_data[i]);  /* set termN.input_buffer_interval and termN.output_buffer_interval -- for user apps note it's important this be done */
+      SetSessionTiming(&session_data[i]);  /* set termN.input_buffer_interval and termN.output_buffer_interval -- for user apps note it's important this be done */
 
    /* call DSCreateSession() API (in pktlib .so) */
 

@@ -32,7 +32,7 @@
    Modified Apr 2022 JHB, further clarify getUserInfo() display, Core List --> coCPU Core List and Clock --> coCPU Clock if applicable
    Modified Aug 2022 JHB, more readability mods to getUserInfo() display, including a lock to keep program start info coherent within multiple threads
    Modified Dec 2022 JHB, add -g option specific to mediaMin to allow stream group wav output path cmd line input
-   Modified May 2023 JHB, support FLOAT option type in getUserInfo(), change 'r' (frame rate) option to float
+   Modified May 2023 JHB, support FLOAT option type in getUserInfo(), change 'r' (frame rate) option to float, add 'p' option to allow portList[] entry, for media applications allow -l entry to specify nLookbackDepth by overlaying library flags (libFlags)
 */
 
 #include <stdlib.h>
@@ -71,7 +71,7 @@ CmdLineOpt::Record options[] = {
    {'T', CmdLineOpt::BOOLEAN, NOTMANDATORY,
           (char *)"Run with talker enabled" },
    {'l', CmdLineOpt::INTEGER, NOTMANDATORY,
-          (char *)"Library flags, used to control which libraries are configured in target CPU code" },
+          (char *)"Lookback depth for de-duplication, or library flags, used to control which libraries are configured in target CPU code" },
    {'t', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Task assignment core lists (e.g. -tN:N:N to define core lists for input, output, and logging for CPU0)" },
    {'A', CmdLineOpt::INTEGER, NOTMANDATORY,
@@ -131,6 +131,8 @@ CmdLineOpt::Record options[] = {
           (char *)"Repeat number of times", {{(void*)-1}} },
 	{'g', CmdLineOpt::STRING, NOTMANDATORY,
           (char *)"stream group output path" },  /* added JHB Dec 2022 */
+	{'p', CmdLineOpt::INTEGER, NOTMANDATORY,
+          (char *)"UDP or TCP port" },  /* added JHB May 2023 */
 
    /* gpx processing flags */
 
@@ -231,6 +233,7 @@ char clkstr[100];
          userIfs->algorithmIdNum = cmdOpts.getInt('a', 0, 0);  /* always call in order to get default value */
 
          if (cmdOpts.nInstances('l')) userIfs->libFlags = cmdOpts.getInt('l', 0, 0);  /* get library flags, default value is zero */
+         else if (CLI_MEDIA_APPS) userIfs->libFlags = 1;  /* for media apps, nLookbackDepth overlays libFlags, and we want a default of 1 for RFC7198 de-duplication, JHB May 2023 */
 
          if (cmdOpts.nInstances('t')) {
 
@@ -320,6 +323,9 @@ char clkstr[100];
 
          userIfs->nJitterBufferOptions = cmdOpts.getInt('j', 0, 0);
 
+         if (uFlags & CLI_MEDIA_APPS) if ((instances = cmdOpts.nInstances('p'))) 
+           for (i=0; i<instances; i++) userIfs->dstUdpPort[i] = (uint16_t)cmdOpts.getInt('p', i, 0);
+
       /* Scrypt test program flags */ 
 
          if (cmdOpts.nInstances('P'))
@@ -342,7 +348,8 @@ char clkstr[100];
 
          if (cmdOpts.nInstances('r')) userIfs->scryptParamr = cmdOpts.getInt('r', 0, 0);
 
-         if (cmdOpts.nInstances('p')) userIfs->scryptParamp = cmdOpts.getInt('p', 0, 0);
+         if (!(uFlags & CLI_MEDIA_APPS))  /* don't overwrite portList */
+           if (cmdOpts.nInstances('p')) userIfs->scryptParamp = cmdOpts.getInt('p', 0, 0);
 
          userIfs->debugMode = cmdOpts.getInt64('d', 0);  /* always call to get default value (-1) if no entry */
 

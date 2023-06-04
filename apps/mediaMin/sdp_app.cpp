@@ -33,6 +33,7 @@
    Modified Jan 2023 JHB, add support for SAP/SDP protocol payloads to ProcessSessionControl()
    Modified Mar 2023 JHB, implement SESSION_CONTROL_NO_PARSE uFlag, add more SIP message types, fix bug in searching for BYE message
    Modified Apr 2023 JHB, handle SIPREC format in SIP invite packets (partly based on RFC7245). Look for p_siprec
+   Modified May 2023 JHB, implement a case-insensitive search option in find_keyword(). This handles observed SIP message headers with variations in case
 */
 
 #include <fstream>
@@ -386,22 +387,18 @@ static SIP_MESSAGES SIP_Messages[] = { {"100 Trying", "100 Trying", SESSION_CONT
 
 uint8_t* find_keyword(uint8_t* buffer, uint16_t buflen, const char* szKeyword, bool fCaseInsensitive) {
 
-   if (fCaseInsensitive) {  /* if fCaseInsensitive specified we use strupr() and assume relatively small buffer and substring sizes */
+   if (fCaseInsensitive) {  /* if fCaseInsensitive specified we copy buffer to a temporary string, being careful not to overflow and removing any NULL chars, and do case insensitive search, JHB May 2023 */
 
       char tmpstr1[500];
-      char tmpstr2[100];
-      int str1len = min((int)(sizeof(tmpstr1)-1), buflen-1);
+      int i,j;
 
-      memcpy(tmpstr1, buffer, str1len);
-      tmpstr1[str1len] = 0;
-      strupr(tmpstr1);
-      strcpy(tmpstr2, szKeyword);
-      strupr(tmpstr2);
+      for (j=0,i=0; i<min((int)(sizeof(tmpstr1)-1), (int)buflen); i++) if (buffer[i] != 0) tmpstr1[j++] = buffer[i];  /* copy buffer to temporary string, removing any NULL chars */
+      tmpstr1[j] = 0;  /* add terminating NULL */
 
-      return (uint8_t*)strstr(tmpstr1, tmpstr2);
+      return (uint8_t*)strcasestr(tmpstr1, szKeyword);  /* case-insensitive comparison */
    }
 
-   return (uint8_t*)memmem(buffer, buflen, (const void*)szKeyword, strlen(szKeyword));
+   return (uint8_t*)memmem(buffer, buflen, (const void*)szKeyword, strlen(szKeyword));  /* case-exact search, ignoring any NULL chars */
 }
 
 int ProcessSessionControl(uint8_t* pkt_in_buf, unsigned int uFlags, int nInput, int thread_index, char* szKeyword) {

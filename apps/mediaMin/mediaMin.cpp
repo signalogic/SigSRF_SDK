@@ -54,7 +54,7 @@
    Modified Sep 2018 JHB, organize cmd line entry used for operational modes, stress tests, and options/flags.  Include RTP payload type in key used for dynamic session detection.  Additional checks for codec type estimation in dynamic session detection
    Modified Sep 2018 JHB, add multiple mediaMin thread support.  A typical command line is ./mediaTest -M0 -cx86 -itest_files/file.pcap -L -dN -r0 -Et -t6, where -Et invokes mediaMin, -tN specifies number of concurrent threads, and -dN specifies operating mode and media flags depending on input type, sessions mode, etc (see flag definitions)
    Modified Oct 2019 JHB, add stop key, for clean exit in multithread tests
-   Modified Oct 2018 JHB, add ANALYTICS_MODE flag, which enables pktlib FTRT mode and modifies operation of PushPackets() and PullPackets() to push/pull packets at ptime intervals (e.g. 20 msec for EVS and AMR NB/WB).  The objective is output packets, including signal processing outputs such as merged audio, at regular 20 msec intervals that can be verified with Wireshark wall clock stats
+   Modified Oct 2018 JHB, add ANALYTICS_MODE flag, which enables pktlib analytics mode and modifies operation of PushPackets() and PullPackets() to push/pull packets at ptime intervals (e.g. 20 msec for EVS and AMR NB/WB).  The objective is output packets, including signal processing outputs such as merged audio, at regular 20 msec intervals that can be verified with Wireshark wall clock stats
    Modified Oct 2018 JHB, make use of numPkts parameter added to DSPullPackets()
    Modified Oct 2018 JHB, fix bug in PullPackets() where packet output to jitter buffer and transcoded output pcap files was mixed together
    Modified Oct 2018 JHB, disable retry-wait in PushPackets() if push queue is full, replace with stderr notice if log level >= 8
@@ -86,16 +86,16 @@
    Modified Mar 2020 JHB, rename file to mediaMin.c (from mediaTest_thread_app.c)
    Modified Mar 2020 JHB, update SetTimingInterval() to set termN.input_buffer_interval and termN.output_buffer_interval for both dynamic and static sessions
    Modified Mar 2020 JHB, modify PullPackets() to pull correct number of packets for telecom mode
-   Modified Mar 2020 JHB, fix problem where SetIntervalTiming() was being called after session creation, instead of before. SetIntervalTiming() modifies session_data[] used during session creation
+   Modified Mar 2020 JHB, fix problem where SetSessionTiming() was being called after session creation, instead of before. SetSessionTiming() modifies session_data[] used during session creation
    Modified Apr 2020 JHB, rename ENABLE_FTRT_MODE flag to ANALYTICS_MODE, store stream group, event log, and packet log with _"am" suffix to make it easier in analyzing/comparing analytics vs. telecom mode output
    Modified Apr 2020 JHB, telecom mode updates:
                           -fix a few places where timing was incorrect; modified to look for combination of ((Mode & ANALYTICS_MODE) || term1.input_buffer_interval) to indicate "timed situations"
                           -set default jitter buffer max and target delay to 14 and 10
    Modified Apr 2020 JHB, clean up handling of DS_SESSION_INFO_DELETE_STATUS when exit or repeat
    Modified Apr 2020 JHB, app_printf() enhancements (in user_io.cpp)
-   Modified May 2020 JHB, add handling for TERM_IGNORE_ARRIVAL_TIMING and TERM_OOO_HOLDOFF_ENABLE flags
+   Modified May 2020 JHB, add handling for TERM_IGNORE_ARRIVAL_PACKET_TIMING and TERM_OOO_HOLDOFF_ENABLE flags
    Modified Jun 2020 JHB, fix bug where string size wasn't large enough to handle multiple session stats summary print out (just prior to program exit)
-   Modified Jun 2020 JHB, move static session creation into StaticSessionCreate()
+   Modified Jun 2020 JHB, move static session creation into CreateStaticSessions()
    Modified Jun 2020 JHB, add ENABLE_ALIGNMENT_MARKERS -dN cmd line option, to support visual inspection when deduplication algorithm is active (ENABLE_STREAM_GROUP_DEDUPLICATION flag)
    Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0, fix various security and "indentation" warnings
    Modified Oct 2020 JHB, tested with .pcapng input files after support added to pktlib for reading pcapng file format
@@ -109,7 +109,7 @@
    Modified Mar 2021 JHB, modify SDP info to add from TCP/IP SIP invite packets, in addition to cmd line .sdp file. Multiple SDP info can be added at any time, in any sequence. See comments for SDPParseInfo() in sdp_app.cpp
    Modified Apr 2021 JHB, move related functions to separate files:
                           -SDPSetup(), SDPParseInfo(), and ProcessSessionControl() to sdp_app.cpp
-                          -ReadSessionConfig(), StaticSessionCreate(), SetTimingInterval(), and GetSessionFlags() to session_app.cpp
+                          -ReadSessionConfig(), CreateStaticSessions(), SetTimingInterval(), and GetSessionFlags() to session_app.cpp
                           -UpdateCounters(), ProcessKeys(), and app_printf() to user_io.cpp
    Modified May 2021 JHB, simplify DER encapsulated stream handling (around DSFindDerStream() and DSDecodeDerStream() ). Added comments
    Modified Dec 2021 JHB, add experimental handling of .ber files on command line. Note the file input type definition PCAP_TYPE_BER added in pktlib.h
@@ -133,8 +133,10 @@
    Modified Apr 2023 JHB, in TestActions() auto-quit handling, check for all streams terminated
    Modified Apr 2023 JHB, implement filtering of redundant TCP retransmissions. See FILTER_TCP_REDUNDANT_RETRANSMISSIONS definition
    Modified Apr 2023 JHB, add num TCP and UDP packets to mediaMin stats summary
-   Modified May 2023 JHB, add support for AFAP mode ("as fast as possible"). Look for comments near isAFAPMode (defined in mediaMin.h)
-   Modified May 2023 JHB, pushInterval[] now handled as float, as part of AFAP mode support
+   Modified May 2023 JHB, add support for AFAP and FTRT modes ("as fast as possible" and "faster than real-time"). Look for comments near isAFAPMode and isFTRTMode (defined in mediaMin.h)
+   Modified May 2023 JHB, pushInterval[] now handled as float, as part of AFAP and FTRT mode support. extern reference to timeScale for accelerated time in FTRT mode
+   Modified May 2023 JHB, support port list on cmd line (-pN entry); look for uLoopbackDepth in CreateDynamicSession()
+   Modified May 2023 JHB, support RFC7198 lookback depth on cmd line (-lN entry); look for uPortList[] in isNonDynamicPortAllowed(). Default of no entry is 1 packet lookback, zero disables (-l0 entry)
 */
 
 
@@ -188,7 +190,7 @@ using namespace std;
 
 #define NON_DYNAMIC_UDP_PORT_RANGE  4096  /* non-dynamic UDP port range. Change this if less or more UDP ports should be ignored. See FILTER_UDP_PACKETS below, JHB Jan 2023 */
 
-PORT_INFO_LIST NonDynamic_UDP_Port_Allow_List[] = { 1234, 3078, 3079 };  /* add exceptions here for non-dynamic UDP ports that should be allowed. Currently the list has arbitrary port values found in some legacy test pcaps used for mediaMin regression test */
+PORT_INFO_LIST NonDynamic_UDP_Port_Allow_List[] = { 1234, 3078, 3079 };  /* add exceptions here for non-dynamic UDP ports that should be allowed. Currently the list has arbitrary port values found in some legacy test pcaps used for mediaMin regression test. Ports can also be added at run-time using -p cmd line entry */
 
 #define SIP_UDP_PORT                5060  /* default UDP port for processing SIP messages */
 #define SIP_UDP_PORT_ENCRYPTED      5061  /* same, encrypted (currently not used) */
@@ -553,7 +555,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    if (!thread_info[thread_index].fDynamicSessions) {  /* if cmd line not in dynamic sessions mode, create static sessions */
 
-      if (StaticSessionCreate(hSessions, session_data, nStaticSessionsConfigured, thread_index) < 0) goto cleanup;   /* error out if static sessions were configured but none created. Note - StaticSessionCreate() is in session_app.cpp */
+      if (CreateStaticSessions(hSessions, session_data, nStaticSessionsConfigured, thread_index) < 0) goto cleanup;   /* error out if static sessions were configured but none created. Note - StaticSessionCreate() is in session_app.cpp */
    }
 
 /* all packet I/O and static session creation (if any) complete, sync app threads before continuing */
@@ -774,8 +776,10 @@ cleanup:
       nRemainingToDelete = 0;
 
       for (i=0; i<MAX_STREAM_GROUPS; i++) {
+
          thread_info[thread_index].fFirstGroupPull[i] = false;
          for (j=0; j<MAX_INPUT_REUSE; j++) thread_info[thread_index].fGroupTermCreated[i][j] = false;
+         memset(&thread_info[thread_index].accel_time_ts[i], 0, sizeof(struct timespec));
       }
 
       base_time = 0;
@@ -799,6 +803,7 @@ cleanup:
       strcpy(thread_info[thread_index].szGroupName[i], "");
       thread_info[thread_index].fFirstGroupPull[i] = false;
       for (j=0; j<MAX_INPUT_REUSE; j++) thread_info[thread_index].fGroupTermCreated[i][j] = false;
+      memset(&thread_info[thread_index].accel_time_ts[i], 0, sizeof(struct timespec));
    }
 
 /* check for repeat */
@@ -896,7 +901,7 @@ cleanup:
   
    /* display stream group output stats */
 
-      if ((Mode & ENABLE_STREAM_GROUPS) && !isAFAPMode) {  /* in "as fast as possible" mode (-r0 cmd line entry) we are currently not showing stream group output stats. That will likely change after we get a better understanding of what streamlib is doing in AFAP case, JHB May 2023 */
+      if ((Mode & ENABLE_STREAM_GROUPS) && !isAFAPMode && !isFTRTMode) {  /* in "as fast as possible" and "faster than real-time" modes (-r0 cmd line entry) we are currently not showing stream group output stats. This may change after extensive AFAP and FTRT mode testing, JHB May 2023 */
   
          app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, "\tMissed stream group intervals = %d", thread_info[thread_index].group_interval_stats_index);
 
@@ -1647,7 +1652,8 @@ err_msg:
    if (Mode & ENABLE_STREAM_GROUPS) session->term1.uFlags |= TERM_OVERRUN_SYNC_ENABLE;
    if ((!(Mode & ANALYTICS_MODE) || fUntimedMode) || target_delay > 7) session->term1.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
    if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term1.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
-   session->term1.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes -- see comments above and in shared_include/session.h */
+   session->term1.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
+   session->term1.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets(), default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
 
    if (Mode & ENABLE_STREAM_GROUPS) {
 
@@ -1848,6 +1854,7 @@ err_msg:
    if ((!(Mode & ANALYTICS_MODE) || fUntimedMode) || target_delay > 7) session->term2.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
    if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term2.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
    session->term2.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
+   session->term2.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets(), default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
 
 /* group term setup */
 
@@ -1918,7 +1925,7 @@ err_msg:
 
 /* set timing values, including termN.input_buffer_interval and termN.output_buffer_interval -- for user apps note it's very important this be done before creating the session */
 
-   SetIntervalTiming(session);  /* note - in session_app.cpp */
+   SetSessionTiming(session);  /* note - in session_app.cpp */
 
 /* create the session */
 
@@ -2153,18 +2160,38 @@ read_packet:
                thread_info[thread_index].PktInfo = PktInfo;  /* save packet info */
                thread_info[thread_index].fReseek = false;  /* clear fReseek */
 
-#if 0  /* example showing how to find/filter packet(s); for debug if needed */
-   __uint128_t src_ip_addr = 0;
+#if 0  /* example showing how to find/filter packet(s) if needed for debug / stream manipulation. This example isn't doing anything to separate out SIP or other non-RTP packets, so when it calls DSGetPacketInfo() for RTP items, some "DEBUG" or warning messages might show up */
+    __uint128_t src_ip_addr = 0;
    DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_SRC_ADDR, pkt_in_buf, -1, &src_ip_addr, NULL);
    uint32_t rtp_ssrc = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SSRC, pkt_in_buf, -1, NULL, NULL);
    uint32_t rtp_pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDLEN, pkt_in_buf, -1, NULL, NULL);
-   if (/*src_ip_addr == 0xc0a88615 || src_ip_addr == 0x0a0e0742 || */ rtp_ssrc == 0xBBF51B9C && (/*rtp_pyld_len == 63 || rtp_pyld_len == 35 || */ rtp_pyld_len == 8)) {  /* 192.168.134.21 */
+   if (/*src_ip_addr == 0xc0a88615 || src_ip_addr == 0x0a0e0742 || */ rtp_ssrc == 0xBBF51B9C && (/*rtp_pyld_len == 63 || rtp_pyld_len == 35 || */ rtp_pyld_len == 8)) {  /* 0xc0a88615 -> 192.168.134.21 */
 
-  printf(" filtering packet with src ip addr 0x%llx != 192.168.134.21 or rtp ssrc 0x%x \n", (long long unsigned int)src_ip_addr, rtp_ssrc);
-
+      printf(" filtering packet with src ip addr 0x%llx != 192.168.134.21 or rtp ssrc 0x%x \n", (long long unsigned int)src_ip_addr, rtp_ssrc);
       goto read_packet;
    }
 #endif
+
+#if 0  /* another filter example, using SSRC(s) only */
+   uint32_t rtp_ssrc = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SSRC, pkt_in_buf, -1, NULL, NULL);
+//   uint32_t filt_rtp_ssrc[] = { 0x1bbedd };
+   uint32_t filt_rtp_ssrc[] = { 0x4d6fac69, 0x71d074d2 };  /* ssrcs to allow */
+
+   bool fFilter = true;
+
+   for (unsigned int i=0; i<sizeof(filt_rtp_ssrc)/sizeof(uint32_t); i++) if (rtp_ssrc == filt_rtp_ssrc[i]) { fFilter = false; }  /* search list of ssrcs to be filtered */
+
+   if (fFilter) {  /* if found act on filtered ssrc */
+
+      char tmpstr[200] = "\n *** filtering out packets with rtp ssrc ";
+      static bool fPrintOnce = false;
+
+      if (!fPrintOnce) { sprintf(&tmpstr[strlen(tmpstr)], "0x%x != ", rtp_ssrc); for (unsigned int i=0; i<sizeof(filt_rtp_ssrc)/sizeof(uint32_t); i++) sprintf(&tmpstr[strlen(tmpstr)], "%s0x%x", !i ? "" : ", ", filt_rtp_ssrc[i]); printf("%s\n", tmpstr); fPrintOnce = true; }
+
+      goto read_packet;  /* filter this ssrc -- don't process its packet */
+   }
+#endif
+
             /* valid packet from pcap or port input found, set any persistent params needed and proceed ... */
 
                dest_port = PktInfo.dst_port;
@@ -2226,7 +2253,7 @@ read_packet:
 
             thread_info[thread_index].initial_push_time[j] = 0;  /* reset initial push time */
 
-            #if 0  /* with extended AFAP mode support in place, we now display and log media time or processing time in all cases, JHB May 2023 */
+            #if 0  /* with extended AFAP and FTRT mode support in place, we now display and log media time or processing time in all cases, JHB May 2023 */
             if (((Mode & USE_PACKET_ARRIVAL_TIMES) || pushInterval[0] > 1) && isMasterThread) {
             #else
             if (isMasterThread) {
@@ -2234,7 +2261,7 @@ read_packet:
 
                char tmpstr[200];
                char descripstr[50] = "media";
-               if (isAFAPMode) strcpy(descripstr, "processing");
+               if (isAFAPMode || isFTRTMode) strcpy(descripstr, "processing");
                sprintf(tmpstr, "===== mediaMin INFO: %stotal input pcap[%d] %s time = %4.2f (sec)", !(Mode & USE_PACKET_ARRIVAL_TIMES) ? "estimated " : "", j, descripstr, 1.0*thread_info[thread_index].total_push_time[j]/1000000L);
                app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, tmpstr);
                Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, tmpstr);
@@ -2379,9 +2406,6 @@ read_packet:
 
          if (Mode & USE_PACKET_ARRIVAL_TIMES) {
 
-      int ptime = NOMINAL_PUSH_INTERVAL;
-      double timeContraction = ptime/pushInterval[0];
-
             uint64_t pkt_timestamp, elapsed_time;  /* passed param cur_time, pkt_timestamp, and elapsed_time are in usec */
             uint32_t msec_elapsedtime, msec_timestamp;
 
@@ -2397,7 +2421,7 @@ read_packet:
             msec_timestamp = (num_pcap_packets+1)*RATE_FORCE;  /* debug/stress testing:  push packet either at a specific interval or at random intervals */
             #endif
 
-            elapsed_time = timeContraction * (cur_time - thread_info[thread_index].initial_push_time[j]);  /* subtract initial time to get elapsed_time, accelerate time in AFAP mode */
+            elapsed_time = timeScale * (cur_time - thread_info[thread_index].initial_push_time[j]);  /* subtract initial time to get elapsed_time, accelerate time in FTRT mode */
 
             msec_elapsedtime = (elapsed_time + 500)/1000;  /* calculate in msec, with rounding */
  
@@ -2423,7 +2447,7 @@ read_packet:
 
    #if 0
    static int fcount = 0;
-   if (fcount < 10) { fcount++; printf("\n *** timeContraction = %4.2f, elapsed time = %llu, pkt_timestamp = %llu, msec_elapsedtime = %lu, msec_timestamp = %lu \n", timeContraction, (long long unsigned int)elapsed_time, (long long unsigned int)pkt_timestamp, (long unsigned int)msec_elapsedtime, (long unsigned int)msec_timestamp); }
+   if (fcount < 10) { fcount++; printf("\n *** timeScale = %4.2f, elapsed time = %llu, pkt_timestamp = %llu, msec_elapsedtime = %lu, msec_timestamp = %lu \n", timeScale, (long long unsigned int)elapsed_time, (long long unsigned int)pkt_timestamp, (long unsigned int)msec_elapsedtime, (long unsigned int)msec_timestamp); }
    #endif
 
             if (last_wait_check_time) { last_wait_check_time = 0; wait_gap = 0; waiting_inputs = 0; }  /* any input not waiting resets wait status */
@@ -2825,6 +2849,8 @@ entry:
       if (i >= 0) {
 
          group_idx = DSGetStreamGroupInfo(hSessions[i], DS_GETGROUPINFO_CHECK_GROUPTERM, NULL, NULL, NULL);  /* note if hSessions[i] is marked for deletion it will have 0x80000000 flag and DSGetStreamGroupInfo() will return -1. This is not a problem since we check for the deletion flag at pull: */
+         if (group_idx < 0) return 0;
+
          fp = thread_info[thread_index].fp_pcap_group[group_idx];
          strcpy(errstr, "stream group");
       }
@@ -2898,7 +2924,7 @@ pull:
 
             if (!num_pkts) {
 
-               if (thread_info[thread_index].fFirstGroupPull[i] && !thread_info[thread_index].flush_state[i]) {
+               if (thread_info[thread_index].fFirstGroupPull[group_idx] && !thread_info[thread_index].flush_state[i]) {
 
                   if (!nRetry[i] && thread_info[thread_index].group_interval_stats_index < MAX_GROUP_STATS) {  /* record the retry in stream group stats */
 
@@ -2928,7 +2954,7 @@ pull:
             }
             else {
 
-               if (!thread_info[thread_index].fFirstGroupPull[i]) thread_info[thread_index].fFirstGroupPull[i] = true;
+               if (!thread_info[thread_index].fFirstGroupPull[group_idx]) thread_info[thread_index].fFirstGroupPull[group_idx] = true;
 
                if (nRetry[i]) {
 
@@ -2949,20 +2975,41 @@ pull:
 
          struct timespec* p_ts = NULL;  /* default (NULL) tells DSWritePcapRecord() to determine packet timestamps using wall clock */
 
-         if (group_idx >= 0 && isAFAPMode) {  /* for stream group output in AFAP mode we advance packet arrival timestamps at regular ptime intervals. There is no concept of overrun and underrun, missed intervals, etc being handled in raw audio domain with signal processing and re-sampling, JHB May 2023 */
+         if (group_idx >= 0) {  /* group_idx valid only when set in (uFlags == DS_PULLPACKETS_STREAM_GROUP) above */
 
-            if (!thread_info[thread_index].afap_ts[i].tv_sec) clock_gettime(CLOCK_REALTIME, &thread_info[thread_index].afap_ts[i]);  /* if sec is uninitialized we start with current time */
-            else {
+            if (isAFAPMode) {  /* for stream group output in AFAP mode we advance packet timestamps at regular ptime intervals, JHB May 2023 */
 
-               int ptime = DSGetSessionInfo(hSessions[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_PTIME, 0, NULL);
+               if (!thread_info[thread_index].accel_time_ts[group_idx].tv_sec) clock_gettime(CLOCK_REALTIME, &thread_info[thread_index].accel_time_ts[group_idx]);  /* if sec is uninitialized we start with current time */
+               else {
 
-               uint64_t t = 1000000ULL*(uint64_t)thread_info[thread_index].afap_ts[i].tv_sec + (uint64_t)thread_info[thread_index].afap_ts[i].tv_nsec/1000 + ptime*1000L;  /* calculate in usec */
+                  int ptime = DSGetSessionInfo(hSessions[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_PTIME, 0, NULL);
 
-               thread_info[thread_index].afap_ts[i].tv_sec = t/1000000ULL;  /* update stream group's packet timestamp */
-               thread_info[thread_index].afap_ts[i].tv_nsec = (t - 1000000ULL*thread_info[thread_index].afap_ts[i].tv_sec)*1000;
-            } 
+                  uint64_t t = 1000000ULL*(uint64_t)thread_info[thread_index].accel_time_ts[group_idx].tv_sec + (uint64_t)thread_info[thread_index].accel_time_ts[group_idx].tv_nsec/1000 + ptime*1000L;  /* calculate in usec */
 
-            p_ts = &thread_info[thread_index].afap_ts[i];  /* override DSWritePcapRecord() default with specified packet timestamp */
+                  thread_info[thread_index].accel_time_ts[group_idx].tv_sec = t/1000000ULL;  /* update stream group's packet timestamp */
+                  thread_info[thread_index].accel_time_ts[group_idx].tv_nsec = (t - 1000000ULL*thread_info[thread_index].accel_time_ts[group_idx].tv_sec)*1000;
+               } 
+
+               p_ts = &thread_info[thread_index].accel_time_ts[group_idx];  /* override DSWritePcapRecord() default with specified packet timestamp */
+            }
+            else if (isFTRTMode) {  /* for stream group output in FTRT mode we advance packet timestamps at accelerated time (based on timeScale value), JHB May 2023 */
+
+               struct timespec ts;
+               clock_gettime(CLOCK_REALTIME, &ts);
+
+               uint64_t cur_time = ts.tv_sec * 1000000ULL + ts.tv_nsec/1000;  /* calculate in usec */
+
+               if (!thread_info[thread_index].accel_time_ts[group_idx].tv_sec) { thread_info[thread_index].accel_time_ts[group_idx].tv_sec = cur_time/1000000ULL; thread_info[thread_index].accel_time_ts[group_idx].tv_nsec = (cur_time - 1000000ULL*thread_info[thread_index].accel_time_ts[group_idx].tv_sec)*1000; }  /* save one-time calculation of base time */
+
+               uint64_t base_time = thread_info[thread_index].accel_time_ts[group_idx].tv_sec * 1000000ULL + thread_info[thread_index].accel_time_ts[group_idx].tv_nsec/1000; 
+
+               uint64_t t = base_time + (cur_time - base_time) * timeScale;
+
+               ts.tv_sec = t/1000000ULL;  /* update stream group's packet timestamp */
+               ts.tv_nsec = (t - 1000000ULL*ts.tv_sec)*1000;
+
+               p_ts = &ts;  /* override DSWritePcapRecord() default with specified packet timestamp */
+            }
          }
 
          if (DSWritePcapRecord(fp, pkt_out_ptr, NULL, NULL, NULL, p_ts, packet_out_len[j]) < 0) { fprintf(stderr, "DSWritePcapRecord() failed for %s output\n", errstr); return -1; }
@@ -3008,7 +3055,7 @@ next_session:
       if (fRetry && nOnce < 100) { printf("\n ==== retry = true, nRetry[%d] = %d \n", i, nRetry[i]); nOnce++; }
       #endif
 
-      if (!isAFAPMode && fRetry) {
+      if (!isAFAPMode && !isFTRTMode && fRetry) {
          usleep(1000);  /* sleep 1 msec */
          i = 0;
          goto entry;  /* retry one or more sessions */
@@ -3092,9 +3139,11 @@ valid_input_spec:
       #else
       if (pushInterval[i] == -1) pushInterval[i] = NOMINAL_PUSH_INTERVAL;
       #endif
-
+      
       i++;  /* advance to next cmd line input spec */
    }
+
+   if (isFTRTMode) timeScale = NOMINAL_PUSH_INTERVAL/pushInterval[0];
 
    if (i == 0) thread_info[thread_index].init_err = true;  /* error if no inputs */
 
@@ -3612,7 +3661,7 @@ char* p;
 
    /* determine packet log filename */
 
-      if (!strlen((const char*)pktStatsLogFile)) {  /* if a log filename not already given on cmd line with -L entry, we use an input file to construct a log filename */
+      if (!strlen((const char*)pktStatsLogFile)) {  /* if a log filename not already given on cmd line with -L entry (and [nopktlog] option not given), we use an input file to construct a log filename */
 
          i = 0;
 
@@ -3862,15 +3911,22 @@ uint8_t pcap_type;
    return 1;
 }
 
-/* look through list of allowed ports, JHB Jan 2023 */
+/* look through list of allowed non-dynamic UDP ports, JHB Jan 2023 */
 
 int isNonDynamicPortAllowed(uint16_t port, int thread_index) {
 
 char portstr[50] = "";
+unsigned int i = 0;
 
-   for (unsigned int i=0; i<sizeof(NonDynamic_UDP_Port_Allow_List)/sizeof(PORT_INFO_LIST); i++) if (port == NonDynamic_UDP_Port_Allow_List[i].port) return 2;
+/* first check cmd line -pN entries, if any, JHB May 2023 */
 
-/* misc protocols we can report */
+   while (uPortList[i] && i < MAX_CONCURRENT_STREAMS) if (port == uPortList[i++]) return 2;
+
+/* second check allowed list of ports */
+
+   for (i=0; i<sizeof(NonDynamic_UDP_Port_Allow_List)/sizeof(PORT_INFO_LIST); i++) if (port == NonDynamic_UDP_Port_Allow_List[i].port) return 2;
+
+/* misc protocols we can report instead of displaying "ignoring UDP port ..." message */
 
    switch (port) {
       case 547:

@@ -90,6 +90,8 @@
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG which is used by DSGetPacketInfo(), DSFormatPacket(), DSBufferPackets(), and DSGetOrderedPackets(). Add DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG flag for additional error/warning message control. For usage examples see mediaMin.cpp
    Modified Jan 2023 JHB, add DSGetPacketInfo() DS_PKT_INFO_RTP_PADDING_SIZE flag
    Modified Apr 2023 JHB, add MAX_TCP_PACKET_LEN definition. In PKTINFO_ITEMS struct, add TCP sequence number and acknowledgement sequence number
+   Modified May 2023 JHB, add cur_time param to DSBufferPackets() and DSRecvPackets(), in support of FTRT and AFAP modes
+   Modified May 2023 JHB, add DS_SESSION_INFO_RFC7198_LOOKBACK flag to allow retrieval of RFC7198 lookback depth
 */
 
 #ifndef _PKTLIB_H_
@@ -502,7 +504,7 @@ extern "C" {
        internal Pktlib values
 */
 
-  int DSRecvPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int pkt_buf_len, int* pkt_len, int numPkts);
+  int DSRecvPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int pkt_buf_len, int* pkt_len, int numPkts, uint64_t cur_time);
 
   int DSSendPackets(HSESSION* sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int* pkt_len, int numPkts);
 
@@ -549,9 +551,7 @@ extern "C" {
        must specify a currently valid channel number (including dynamic channels).  Otherwise sessionHandle is ignored and all packets (for all currently active
        sessions) that are deliverable in the current time window are returned
 
-      -use the DS_GETORD_PKT_FTRT flag if packets were added to the buffer "faster than real-time" (i.e. burst mode, such as adding all packets in a pcap as
-       fast as possible).  Applying this flag "updates the time window" every time DSGetOrderedPackets() is called.  Without the flag, the ptime value specified
-      in session configuration determines the window update interval
+      -use the DS_GETORD_PKT_ANALYTICS flag if packets are being added to the buffer without accurate arrival timestamps. Applying this flag updates jitter buffer time windows every time DSGetOrderedPackets() is called.  Without the flag, the ptime value specified in session configuration determines the window update interval
 
       -use the DS_GET_ORDERED_PKT_ENABLE_DTX flag when DTX handling should be enabled.  Note that in this case there may be more packets output from the buffer
        than input; typically these additional packets contain SID Reuse or SID NoData payloads due to expansion of DTX periods.  When DTX handling is not enabled,
@@ -566,7 +566,7 @@ extern "C" {
       -uTimestamp should be provided in usec (it's divided internally by 1000 to get msec). If uTimestamp is zero the API will generate its own timestamp, but this may cause timing variations between successive calls depending on intervening processing and its duration
 */
 
-  int DSBufferPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int pkt_buf_len[], unsigned int payload_info[], int chnum[]);
+  int DSBufferPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int pkt_buf_len[], unsigned int payload_info[], int chnum[], uint64_t cur_time);
 
   int DSGetOrderedPackets(HSESSION sessionHandle, unsigned int uFlags, uint64_t uTimestamp, uint8_t* pkt_buf, int pkt_buf_len[], unsigned int payload_info[], unsigned int* uInfo);
 
@@ -920,7 +920,7 @@ extern "C" {
 #define DS_GETORD_PKT_SESSION                 0x100
 #define DS_GETORD_PKT_CHNUM                   0x200
 #define DS_GETORD_PKT_CHNUM_PARENT_ONLY       0x400
-#define DS_GETORD_PKT_FTRT                    0x10000        /* faster than real time, advance RTP retrieval timestamp every time DSGetOrderedPackets is called */
+#define DS_GETORD_PKT_ANALYTICS               0x10000        /* analytics mode, advance RTP retrieval timestamp every time DSGetOrderedPackets is called */
 #define DS_GETORD_PKT_FLUSH                   0x20000
 #define DS_GETORD_PKT_RETURN_ALL_DELIVERABLE  0x40000        /* tell DSGetOrderedPackets() to return any deliverable packets regardless of time window or sequence number */
 #define DS_GETORD_PKT_ENABLE_DTX              0x80000        /* enable DTX handling -- note this flag is deprecated, DTX handling should be controlled by the TERM_DTX_ENABLE flag in TERMINATION_INFO struct uFlags element (shared_include/session.h). DS_GETORD_PKT_ENABLE_DTX can still be applied to force DTX handling on a case-by-case basis, but that is not recommended */
@@ -1083,6 +1083,7 @@ extern "C" {
 #define DS_SESSION_INFO_DYNAMIC_CHANNELS      0x1f           /* retrieve list of dynamic channels (child channels) for a parent, which can be specified either as a parent channel, or a parent hSession + termN_id */
 #define DS_SESSION_INFO_NAME                  0x20           /* retrieve optional session name string, if any has been set */
 #define DS_SESSION_INFO_CUR_ACTIVE_CHANNEL    0x21           /* returns currently active channel */
+#define DS_SESSION_INFO_RFC7198_LOOKBACK      0x22
 
 #define DS_SESSION_INFO_USE_PKTLIB_SEM        0x20000000L    /* use the pktlib semaphore */
 #define DS_SESSION_INFO_SUPPRESS_ERROR_MSG    0x40000000L    /* suppress any error messages generated by the API */
@@ -1881,6 +1882,25 @@ char handle_str[20];
             if (no_term_id_arg) term_id = 1;
             if (term_id == 1 && ChanInfo_Core[n].term && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].term->uFlags;
             else if (term_id == 2 && ChanInfo_Core[n].link && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].link->term->uFlags;
+         }
+
+         break;
+
+      case DS_SESSION_INFO_RFC7198_LOOKBACK:
+
+         if (uFlags & DS_SESSION_INFO_HANDLE) {
+
+            if (term_id == 0) ret_val = sessions[sessionHandle].session_data.group_term.RFC7198_lookback;
+            else if (term_id == 1) ret_val = sessions[sessionHandle].session_data.term1.RFC7198_lookback;
+            else if (term_id == 2) ret_val = sessions[sessionHandle].session_data.term2.RFC7198_lookback;
+         }
+         else if (uFlags & DS_SESSION_INFO_CHNUM) {
+
+            if (n == -1) goto check_n;
+
+            if (no_term_id_arg) term_id = 1;
+            if (term_id == 1 && ChanInfo_Core[n].term && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].term->RFC7198_lookback;
+            else if (term_id == 2 && ChanInfo_Core[n].link && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].link->term->RFC7198_lookback;
          }
 
          break;

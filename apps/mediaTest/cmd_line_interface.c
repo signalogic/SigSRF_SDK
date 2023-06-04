@@ -35,7 +35,7 @@
    Modified Jan 2023 JHB, in ctrl-c event handler call DSConfigLogging() with DS_PKTLOG_ABORT flag and set fCtrl_C_pressed. Don't set run = 0 for mediaMin
    Modified Jan 2023 JHB, add szAppFullCmdLine var and GetCommandLine()
    Modified May 2023 JHB, suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail
-   Modified May 2023 JHB, convert pushInterval[] to float to support AFAP modes
+   Modified May 2023 JHB, add timeScale and convert pushInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
 */
 
 
@@ -90,6 +90,9 @@ volatile bool    frame_mode = false, use_bkgnd_process = false, use_log_file = f
 char             sig_lib_event_log_filename[] = { "sig_lib_event_log.txt" };  /* moved here from packet_flow_media_proc.c, JHB Dec 2022 */
 bool             fCtrl_C_pressed = false;
 char             full_cmd_line[MAX_CMDLINE_STR_LEN] = "";  /* app full command line, filled in by cmdLineInterface(), which calls GetCommandLine(). Note that mediaTest.h publishes this as this as const char* szAppFullCmdLine, JHB Jan 2023 */
+double           timeScale = 1.0;  /* support FTRT and AFAP modes, see comments in packet_flow_media_proc.c */
+uint16_t         uPortList[MAX_CONCURRENT_STREAMS] = { 0 };
+uint8_t          uLookbackDepth = 1;
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 
@@ -135,8 +138,8 @@ UserInterface userIfs = {0, 0, 0, 0, "", "", false};
 
 bool fAudioInputFile, fAudioOutputFile, fPcapInputFile, fCodedInputFile, fCodedOutputFile, fPcapOutputFile, fGpxInputFile;
 bool __attribute__ ((unused)) fTextOutputFile, fCSVOutputFile;  /* added Nov 2019 JHB */
-
 unsigned int cim_uFlags;
+int i;
 
    GetCommandLine((char*)szAppFullCmdLine, MAX_CMDLINE_STR_LEN);  /* save full command in szAppFullCmdLine global var, for use by apps as needed, JHB Jan 2023 */
 
@@ -233,7 +236,7 @@ unsigned int cim_uFlags;
 
    use_bkgnd_process = userIfs.programSubMode == 2;  /* programSubMode is 2 if 'b' suffix was entered after -M value; see apps/common/getUserInterface.cpp */
 
-   if (strlen(userIfs.logFile[0])) {
+   if (strlen(userIfs.logFile[0]) && !strstr(userIfs.logFile[0], "-nopktlog") && !strstr(userIfs.logFile[0], "-nopacketlog")) {
 
       use_log_file = true;
       if (!strstr(userIfs.logFile[0], "[default]")) strcpy((char*)pktStatsLogFile, userIfs.logFile[0]);  /* if default entry (only -L entered with no path+filename) then just set the var, don't copy the string, JHB Sep2017 */
@@ -255,6 +258,10 @@ unsigned int cim_uFlags;
    if (strlen(userIfs.szSDPFile)) strcpy(szSDPFile, userIfs.szSDPFile);
    nSamplingFrequency = userIfs.nSamplingFrequency;  /* sampling frequency for gpx processing */
    if (strlen(userIfs.szStreamGroupOutputPath)) strcpy(szStreamGroupOutputPath, userIfs.szStreamGroupOutputPath);
+
+   for (i=0; i<MAX_CONCURRENT_STREAMS; i++) uPortList[i] = userIfs.dstUdpPort[i];  /* fill in port list, JHB May 2023 */
+
+   uLookbackDepth = userIfs.nLookbackDepth;
 
 /* register signal handler to catch Ctrl-C signal and cleanly exit mediaTest, mediaMin, and other test programs */
 

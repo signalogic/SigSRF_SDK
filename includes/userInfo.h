@@ -27,7 +27,8 @@
    Modified Jan 2021 JHB, add #define for szSDPFile for mediaMin app SDP file cmd line input
    Modified Dec 2021 JHB, make debugMode 64-bit int
    Modified Dec 2022 JHB, add #define for szStreamGroupOutputPath for mediaMin app stream group output path cmd line input
-   Modified May 2023 JHB, change frameRate from int to float in UserInterface struct
+   Modified May 2023 JHB, change frameRate from int to float in UserInterface struct, change dstUdpPort[] from unsigned int to uint16_t
+   Modified May 2023 JHB, enable mediamin app usage of -l for RFC7198 lookback depth. Note default value of 1 if no entry, handled in getUserInfo() in get_user_interface.cpp
 */
 
 #ifndef _USERINFO_H_
@@ -107,10 +108,10 @@ typedef struct {
 
    int       bitRate[MAX_CONCURRENT_STREAMS];
    int       dstIpAddr[MAX_CONCURRENT_STREAMS];
-   int       dstUdpPort[MAX_CONCURRENT_STREAMS];
+   uint16_t  dstUdpPort[MAX_CONCURRENT_STREAMS];
    unsigned long long dstMacAddr[MAX_CONCURRENT_STREAMS];  /* 6 bytes */
    int       srcIpAddr[MAX_CONCURRENT_STREAMS];
-   int       srcUdpPort[MAX_CONCURRENT_STREAMS];
+   uint16_t  srcUdpPort[MAX_CONCURRENT_STREAMS];
    unsigned long long srcMacAddr[MAX_CONCURRENT_STREAMS];  /* 6 bytes */
    
 /* Scrypt algorithm parameters */
@@ -144,6 +145,7 @@ typedef struct {
    #define   szSDPFile szScryptFile                /* mediaMin app usasge of -s cmd line entry for SDP file input. Note that mediaTest uses -s for audio file segmentation, JHB Jan2021 */
    #define   szStreamGroupOutputPath scryptpasswd  /* mediaMin app usasge of -g cmd line entry for stream group output path, JHB Dec2022 */
    #define   nSamplingFrequency scryptParamp       /* mediaTest app Fs for gpx processing, JHB Mar2022 */
+   #define   nLookbackDepth libFlags               /* mediamin app usage of -l for RFC7198 lookback depth. Note default value of 1 if no entry, handled in getUserInfo() in get_user_interface.cpp, JHB May 2023 */
 
 } UserInterface;
 

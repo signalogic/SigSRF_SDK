@@ -18,7 +18,7 @@
    Modified Dec 2019 JHB, fix bug in int value parsing, where suffix char code would strip off last a-f digit of hex values
    Modified Jan 2021 JHB, allow overloaded options, for example '-sN' integer for app type A, and '-sfilename' string for app type B. See comments below and in getUserInterface.cpp
    Modified Dec 2022 JHB, start work on allowing input specs to include IP addr:port type of input, e.g. -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm. Inputs are strings, so we first look for xx.xx... and xx:xx patterns, if found convert those to IP addr:port, if not then assume it's a path/file input. Code for IPADR input type can be re-used
-   Modified May 2023 JHB, support FLOAT option type, add FLOAT case to switch statements, add getFloat()
+   Modified May 2023 JHB, support FLOAT option type, add FLOAT case to switch statements, add getFloat(), change getUdpPort() from unsigned int to uint16_t
 */
 
 #include <stdint.h>
@@ -424,10 +424,10 @@ unsigned int value = 0;
    return value;
 }
 
-unsigned int CmdLineOpt::getUdpPort(char option, int nInstance) {
+uint16_t CmdLineOpt::getUdpPort(char option, int nInstance) {
 
 Record *record = this->getOption(option, IPADDR);
-unsigned int value = 0;
+uint16_t value = 0;
 
    #if 0
    if (record && record->type == IPADDR) {

@@ -36,7 +36,7 @@
    Modified Jan 2023 JHB, add extern reference to fCtrl_C_pressed (see ctrl-C event handler in mediaTest/see cmd_line_interface.c)
    Modified Jan 2023 JHB, add szAppFullCmdLine and GetCommandLine() references
    Modified Mar 2023 JHB, add frac() helper, does modf() but needs only one argument
-   Modified May 2023 JHB, convert pushInterval[] to float to support AFAP modes
+   Modified May 2023 JHB, add timeScale and convert pushInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -201,6 +201,8 @@ extern int               nRepeat;
 extern char              szSDPFile[CMDOPT_MAX_INPUT_LEN];
 extern int               nSamplingFrequency;
 extern char              szStreamGroupOutputPath[CMDOPT_MAX_INPUT_LEN];
+extern uint16_t          uPortList[MAX_CONCURRENT_STREAMS];
+extern uint8_t           uLookbackDepth;
 
 extern QWORD             nCoreList;                         /* bitwise core list given in command line */
 extern HCARD             hCard;
@@ -220,6 +222,7 @@ extern unsigned long long base_time, first_push_time, first_buffer_time, first_p
 extern char              sig_lib_event_log_filename[];  /* moved here from packet_flow_media_proc.c, JHB Dec 2022 */
 extern bool              fCtrl_C_pressed;
 extern char              full_cmd_line[];  /* app command line, filled in by cmdLineInterface(), which calls GetCommandLine(), JHB Jan 2023 */
+extern double            timeScale;  /* support FTRT and AFAP modes, see comments in packet_flow_media_proc.c */
 
 #define szAppFullCmdLine (((const char*)full_cmd_line))  /* szAppFullCmdLine is what apps should use. full_cmd_line should not be modified so this is a half-attempt to remind user apps that it should be treated as const char* */
 

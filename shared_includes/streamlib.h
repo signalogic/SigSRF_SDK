@@ -49,7 +49,7 @@
   Modified Jan 2021 JHB, add MAX_GROUP_BUFFER_TIME_8KHZ definition, to make stream group buffer processing independent of output sampling rate. Units in msec
   Modified Mar 2021 JHB, change DSMergeStreamGroupContributors() API to DSProcessStreamGroupContributors()
   Modified Jan 2023 JHB, add STREAM_GROUP_FLC_HOLDOFFS_ENABLE flag
-  Modified May 2023 JHB, add fAFAPMode param to DSProcessAudio(). Search for "AFAP" and see comments in audio_domain_processing.c and mediaMin.cpp
+  Modified May 2023 JHB, add input_buffer_interval param to DSProcessAudio(). Search for "FTRT" and "AFAP" and see comments in audio_domain_processing.c and mediaMin.cpp
 */
 
 #ifndef _STREAMLIB_H_
@@ -496,7 +496,7 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
    -see additional comments in audio_domain_processing.c
 */
 
-  int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int16_t* delay_buffer, int sample_rate, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge, bool fAFAPMode);
+  int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int16_t* delay_buffer, int sample_rate, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge, float input_buffer_interval);
 
 /* uFlags for DSProcessAudio() */
 

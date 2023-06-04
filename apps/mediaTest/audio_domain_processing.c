@@ -31,7 +31,7 @@
   Modified Oct 2022 JHB, change DSGetCodeSampleRate() to DSGetCodecInfo()
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
   Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode(). See voplib.h comments
-  Modified May 2023 JHB, add AFAP mode support
+  Modified May 2023 JHB, add FTRT and AFAP mode support
 */
 
 
@@ -56,7 +56,7 @@ extern PACKETMEDIATHREADINFO packet_media_thread_info[];  /* array of thread han
 extern unsigned long long last_merge_output_time[];       /* set by DSProcessGroupContributors() (in streamlib) */
 extern uint8_t merge_gap_advance[];                       /*    ""   */
 extern int groupTimestampOffset[];                        /*    ""   */
-extern struct timespec afap_ts[];                         /* initialized by DSProcessGroupContributors() (in streamlib), but used here in AFAP mode, JHB May 2023 */
+extern struct timespec accel_time_ts[];                   /* initialized by DSProcessGroupContributors() (in streamlib), but used here in FTRT and AFAP modes, JHB May 2023 */
 extern sem_t pcap_write_sem;                              /* semaphore used to ensure no more than 1 thread writes to a particular output file at a time */
 
 /* streamlib items needed by DSDeduplicateStreams() */
@@ -116,7 +116,7 @@ extern uint32_t align_interval_count[MAX_STREAM_GROUPS][MAX_GROUP_CONTRIBUTORS];
 
     -fp_out_pcap_merge - reserved
 
-    -fAFAPMode - reserved
+    -input_buffer_interval - reserved
 
   Output params
 
@@ -140,7 +140,7 @@ extern uint32_t align_interval_count[MAX_STREAM_GROUPS][MAX_GROUP_CONTRIBUTORS];
 static int asr_frame_count = 0;
 extern STREAM_GROUP stream_groups[];
 
-int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int16_t* delay_buffer, int sample_rate, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge, bool fAFAPMode) {
+int DSProcessAudio(HSESSION hSession, uint8_t* group_audio_buffer, int* num_frames, int frame_size, unsigned int uFlags, int idx, int nMarkerBit, unsigned long long merge_cur_time, int16_t* delay_buffer, int sample_rate, int* pkt_group_cnt, int thread_index, FILE* fp_out_pcap_merge, float input_buffer_interval) {
 
 TERMINATION_INFO output_term;
 uint8_t group_audio_encoded_frame[MAX_RAW_FRAME] = { 0 };  /* MAX_RAW_FRAME defined in voplib.h */
@@ -349,19 +349,42 @@ HASRDECODER hASRDecoder;
 
                sem_wait(&pcap_write_sem);
 
-               if (fAFAPMode) {  /* in AFAP mode advance packet arrival timestamp at regular ptime intervals. There is no concept of overrun and underrun, missed intervals, etc. Note that mediaMin.cpp does same thing with stream group output pcaps, JHB May 2023 */
+               bool fAcceleratedTime = false;
+               struct timespec ts;
 
-                  if (!afap_ts[idx].tv_sec) clock_gettime(CLOCK_REALTIME, &afap_ts[idx]);  /* if sec is uninitialized we use current time */
+               if (input_buffer_interval == 0) {  /* in AFAP mode advance packet arrival timestamp at regular ptime intervals. There is no concept of overrun and underrun, missed intervals, etc. Note that mediaMin.cpp does same thing with stream group output pcaps, JHB May 2023 */
+
+                  if (!accel_time_ts[idx].tv_sec) clock_gettime(CLOCK_REALTIME, &accel_time_ts[idx]);  /* if sec is uninitialized we use current time */
                   else {
 
-                     uint64_t t = 1000000ULL*(uint64_t)afap_ts[idx].tv_sec + (uint64_t)afap_ts[idx].tv_nsec/1000 + ptime*1000L;  /* calculate in usec */
+                     uint64_t t = 1000000ULL*(uint64_t)accel_time_ts[idx].tv_sec + (uint64_t)accel_time_ts[idx].tv_nsec/1000 + ptime*1000L;  /* calculate in usec */
 
-                     afap_ts[idx].tv_sec = t/1000000ULL;  /* save stream group's updated arrival timestamp */
-                     afap_ts[idx].tv_nsec = (t - 1000000ULL*afap_ts[idx].tv_sec)*1000;
+                     accel_time_ts[idx].tv_sec = t/1000000ULL;  /* save stream group's updated arrival timestamp */
+                     accel_time_ts[idx].tv_nsec = (t - 1000000ULL*accel_time_ts[idx].tv_sec)*1000;
                   } 
+
+                  ts = accel_time_ts[idx];
+                  fAcceleratedTime = true;
+               }
+               else if (input_buffer_interval < 1) {  /* in FTRT mode advance packet arrival timestamp at ptime intervals but with accelerated time, JHB May 2023 */
+
+                  clock_gettime(CLOCK_REALTIME, &ts);
+
+                  uint64_t cur_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;  /* calculate in usec */
+
+                  if (!accel_time_ts[idx].tv_sec) { accel_time_ts[idx].tv_sec = cur_time/1000000L; accel_time_ts[idx].tv_nsec = (cur_time - 1000000L*accel_time_ts[idx].tv_sec)*1000; }  /* save one-time calculation of base time */
+
+                  uint64_t base_time = accel_time_ts[idx].tv_sec * 1000000L + accel_time_ts[idx].tv_nsec/1000; 
+
+                  uint64_t t = base_time + (cur_time - base_time) * 1.0/input_buffer_interval;
+
+                  ts.tv_sec = t/1000000ULL;  /* update stream group's packet timestamp */
+                  ts.tv_nsec = (t - 1000000ULL*ts.tv_sec)*1000;
+
+                  fAcceleratedTime = true;
                }
 
-               if (DSWritePcapRecord(fp_out_pcap_merge, group_audio_packet, NULL, NULL, &output_term, fAFAPMode ? &afap_ts[idx] : NULL, packet_length) < 0) {
+               if (DSWritePcapRecord(fp_out_pcap_merge, group_audio_packet, NULL, NULL, &output_term, fAcceleratedTime ? &ts : NULL, packet_length) < 0) {
 
                   sem_post(&pcap_write_sem);
                   Log_RT(2, "ERROR: DSProcessAudio() says DSWritePcapRecord() failed, hSession = %d, idx = %d, chnum = %d, j = %d, num_frames = %d, packet_length = %d \n", hSession, idx, chnum, j, *num_frames, packet_length);

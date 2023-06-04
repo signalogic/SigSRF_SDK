@@ -98,7 +98,7 @@
       -add max_depth_ptimes to JITTER_BUFFER_CONFIG struct
 
     May 2020 JHB
-      -define TERM_IGNORE_ARRIVAL_TIMING flag for situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc
+      -define TERM_IGNORE_ARRIVAL_PACKET_TIMING flag for situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc
 
     Jan 2021 JHB
       -re-define merge_audio_chunk_size to stream_group_buffer_time in SESSION_THREAD_INFO struct. See comments
@@ -112,7 +112,9 @@
       
     May 2023 JHB
       -make input_buffer_interval in TERMINATION_INFO struct float
-      -add TERM_ANALYTICS_MODE_TIMING flag definition (applies to uFlags element in TERMINATION_INFO struct)
+      -add TERM_ANALYTICS_MODE_PACKET_TIMING flag definition (applies to uFlags element in TERMINATION_INFO struct)
+      -add TERM_NO_PACKET_TIMING flag definition (applies to uFlags element in TERMINATION_INFO struct)
+      -add RFC7198_lookback uint8_t in TERMINATION_INFO struct
 */
 
 #ifndef _SESSION_H_
@@ -644,12 +646,12 @@ typedef struct {
   #define TERM_PKT_REPAIR_ENABLE                  4      /* enable packet repair for termN:  correct media packet loss when possible */
   #define TERM_OVERRUN_SYNC_ENABLE                8      /* enable overrun synchronization in streamlib */
   #define TERM_EXPECT_BIDIRECTIONAL_TRAFFIC       0x10   /* applications should set this flag for telecom mode applications. If not set, packet/media thread receive queue handling performance is increased for unidirectional traffic (analytics mode) */
-  #define TERM_IGNORE_ARRIVAL_TIMING              0x20   /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
+  #define TERM_IGNORE_ARRIVAL_PACKET_TIMING       0x20   /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
   #define TERM_OOO_HOLDOFF_ENABLE                 0x40   /* see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF comments in pktlib.h */
   #define TERM_DISABLE_DORMANT_SESSION_DETECTION  0x80   /* see comments in mediaTest/cmd_line_debug_flags.h */
   #define TERM_DYNAMIC_SESSION                    0x100  /* flag set by mediaMin in term1 and term2 structs when creating dynamic sessions. This is an "informational only" flag, useful only for status and information during a session lifespan, JHB Jan 2023 */
-  #define TERM_ANALYTICS_MODE_TIMING              0x200  /* flag set by mediaMin in term1 and term2 structs when creating dynamic sessions, JHB May 2023 */
- 
+  #define TERM_ANALYTICS_MODE_PACKET_TIMING       0x200  /* flag set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
+  #define TERM_NO_PACKET_TIMING                   0x400  /* flag set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
   uint32_t sample_rate;
   uint32_t input_sample_rate;
   uint32_t buffer_depth;
@@ -660,6 +662,7 @@ typedef struct {
   uint32_t delay;                      /* in msec */
   uint16_t max_loss_ptimes;            /* number of consecutive packet loss ptimes before PLM activates (Packet Loss Monitoring).  Default is 3 */
   uint16_t max_pkt_repair_ptimes;      /* max number of consecutive lost packets that pktlib will attempt to repair.  Default is 3 */
+  uint8_t  RFC7198_lookback;           /* amount of packets to look back for RFC7198 de-duplication in DSRecvPackets(). Zero disables, JHB May 2023 */
 
   #define MAX_GROUPID_LEN 128
   char group_id[MAX_GROUPID_LEN];
@@ -676,7 +679,7 @@ typedef struct {
   
   uint32_t dormant_SSRC_wait_time;     /* time period before to wait before a session channel's SSRC can be considered dormant (in msec). See CheckForDormantSSRC() in packet_flow_media_proc.c for comments */
   int32_t payload_shift;               /* non-zero indicates amount of RTP payload shift after encoding or before decoding. Shift conditions can be controlled by filter flags (in bits 15-8). Shift amount ranges from -8 to +7 (in bits 7-0) */
-  uint32_t Reserved3;
+  uint8_t Reserved3;                   /* note - changed Reserved3 to 8-bit from 32-bit to compensate for changing input_buffer_interval to float from uint16_t and adding RFC7198_lookback, May 2023 */
   uint32_t Reserved4;
   uint32_t Reserved5;
 

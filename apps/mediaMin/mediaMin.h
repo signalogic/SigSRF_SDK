@@ -23,7 +23,7 @@
    Modified Jan 2023 JHB, add STREAM_TERMINATE_xxx flags
    Modified Jan 2023 JHB, add PORT_INFO_LIST struct definition
    Modified Apr 2023 JHB, add fReseek, PktInfo, and tcp_redundant_discard. For usage see comments in mediaMin.cpp
-   Modified May 2023 JHB, add isAFAPMode macro and afap_ts[] to support "as fast as possible" mode. isAFAPMode evaluates to true for -r0 thru -r0.999 cmd line entry
+   Modified May 2023 JHB, add isFTRTMode and isAFAPMode macros, accel_time_ts[] to support "faster than real-time" and "as fast as possible" modes
 */
 
 #ifndef _MEDIAMIN_H_
@@ -171,7 +171,9 @@ typedef struct {
   PKTINFO_ITEMS  PktInfo;                /* saved copy of PktInfo, can be used to compare current and previous packets */ 
   unsigned int   tcp_redundant_discards[MAX_INPUT_STREAMS];  /* count of discarded TCP redundant retransmissions */
 
-  struct timespec afap_ts[MAX_SESSIONS];  /* added to support AFAP mode, JHB May 2023 */
+/* AFAP and FTRT mode support */
+
+  struct timespec  accel_time_ts[MAX_STREAM_GROUPS];  /* added to support FTRT and AFAP modes, JHB May 2023 */
 
 } THREAD_INFO;
 
@@ -179,6 +181,7 @@ typedef struct {
 #define MasterThread          0
 #define NUM_PKTMEDIA_THREADS  3  /* default number of packet/media threads started by mediaMin */
 
-#define isAFAPMode            (pushInterval[0] < 1)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
+#define isAFAPMode            (pushInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
+#define isFTRTMode            (pushInterval[0] > 0 && pushInterval[0] < 1)  /* macro for "faster than real-time" processing mode, evaluates as true for -rN cmd line entry where 0 < N < 1, JHB May 2023 */
 
 #endif  /* _MEDIAMIN_H_ */

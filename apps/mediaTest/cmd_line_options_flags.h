@@ -5,6 +5,10 @@
   
   Copyright (C) Signalogic, 2018-2023
 
+  License
+
+   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+
   Revision History
 
    Created Jan 2022 JHB, option and flag definitions moved here from mediaMin.h to allow Mode flags to apply to both mediaMin and mediaTest. Note use below of m| and mm| to specify whether a flag applies to mediaMin only or both
@@ -13,7 +17,7 @@
    Modified Dec 2022 JHB, add ENABLE_ASN_OUTPUT flag to enable ASN.1 output to XML file for HI2/HI3 input
    Modified Dec 2022 JHB, change filename from cmd_line_debug_flags.h to cmd_line_options_flags.h
    Modified Dec 2022 JHB, add DISABLE_JITTER_BUFFER_OUTPUT_PCAPS and ENABLE_WAV_OUT_SEEK_TIME_ALARM flags, re-order some debug and alarm flags
-   Modified Jan 2023 JHB, add SIP handling options, ALLOW_OUTOFSPEC_RTP_PADDING flag
+   Modified Jan 2023 JHB, add SIP handling options including ENABLE_STREAM_SDP_INFO, add ALLOW_OUTOFSPEC_RTP_PADDING flag
 */
 
 #ifndef _CMDLINEOPTIONSFLAGS_H_
