@@ -143,11 +143,12 @@ Revision History
  Modified Jan 2023 JHB, make logging and lib initialization flexible so DSInitLogging(), DSConfigVoplib(), and DSConfigPktlilb() are called if initialization has not yet been performed by the calling app
  Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
  Modified Jan 2023 JHB, in DSLogRunTimeStats() use DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM with DSGetSessionInfo() to include bidirectional session channels
- Modified Jan 2023 JHB, improve operation of packet input alarm, see comments near session_last_push_time[] and in cmd_line_options_flags.h
+ Modified Jan 2023 JHB, improve operation of packet input alarm, see comments near last_push_time[] and in cmd_line_options_flags.h
  Modified Mar 2023 JHB, add pInArgs param in DSCodecEncode(). See comments in voplib.h
  Modified May 2023 JHB, update DTMF event handling (surface level, main changes are in pktlib), implement nStatsDisplayPause
  Modified May 2023 JHB, handle pushInterval[] as float, add cur_time param to InitSession() and ManageSessions()
- Modified May 2023 JHB, pass cur_time param to DSBufferPackets() and DSRecvPackets(), in support of FTRT and AFAP modes
+ Modified May 2023 JHB, modify calculation of cur_time to support time scaling and pass cur_time param to DSBufferPackets() and DSRecvPackets(), in support of unified timebase and FTRT and AFAP modes
+ Modified Jun 2023 JHB, modify alarms and especially packet push alarm to be compliant with unified timebase changes. See set_session_last_push_time() and set_session_alarm_flags()
 */
 
 #ifndef _GNU_SOURCE
@@ -239,13 +240,21 @@ Revision History
 unsigned int ptime_config[MAX_SESSIONS] = { 20 };  /* in msec */
 #endif
 
-/* Packet buffering interval notes:
+/* Packet buffering interval and timebase notes:
 
   1) pushInterval[] values are the rates packets are buffered per input stream (in msec)
 
-  2) If no command line entry is given for an input stream's buffer rate, the input's session definition ptime value is used.  If command line -rN entry is given then N is the interval value in msec, and overrides session definition ptime.  In the case of cmd line entry, values less than the ptime value in the input's session definition will cause timeScale to be > 1 (accelerated time, or FTRT mode, "faster-than-real-time: operation).  A value of zero is the fastest possible buffering rate (AFAP mode)
+  2a) if no command line entry is given for an input stream's buffer rate, the input's session definition ptime value is used.  If command line -rN entry is given then N is the interval value in msec, and overrides session definition ptime.  In the case of cmd line entry, values less than the ptime value in the input's session definition will cause timeScale to be > 1 (this is accelerated time, or FTRT mode, "faster-than-real-time: operation).  A value of zero is the fastest possible buffering rate (AFAP mode)
 
-  3) Print out for buffer rate is shown as "tps", or transactions per sec, to avoid confusion with bps (bits per sec)
+  2b) timeScale is an extern double in mediaTest.h
+
+  3a) to maintain a unified timebase, all pktlib functionality references cur_time. The only exceptions are profiling intervals, which start and stop using get_time()
+
+  3b) cur_time is calculated as (get_time() - base_time)*timeScale (look near time_init: and run_loop: below)
+
+  4) absolute time intervals are multiplied by timeScale when compared with cur_time or delta cur_time. Relative time intervals are not adjusted by timeScale (e.g. cur_time - last packet push time) as we assume external apps are also using timeScale
+
+  5) buffer rate print-out is shown as "tps", or transactions per sec; i.e. we don't use "bps" to avoid confusion with codec bitrates (typically given in bps or kbps)
 */
 
 #ifndef __LIBRARYMODE__
@@ -410,6 +419,11 @@ static unsigned int   link_layer_length[MAX_INPUT_STREAMS];
 
 static uint32_t       nSessions_gbl = 0, nThreads_gbl = 0, num_pktmedia_threads = 0;
 
+/* support for DS_ENABLE_PUSHPACKETS_ELAPSED_TIME_ALARM flag. See set_session_last_push_time() which is called from DSPushPackets() in pktlib.c, JHB Jun 2023 */
+  
+static uint64_t last_cur_time[MAX_PKTMEDIA_THREADS] = { 0 };
+static uint64_t last_push_time[MAX_SESSIONS] = { 0 };
+static uint8_t session_alarm_flags[MAX_SESSIONS] = { 0 };
 
 #ifdef OVERWRITE_INPUT_DATA
 static bool fReuseInputs = false;
@@ -487,15 +501,12 @@ static int ReuseInputs(uint8_t*, unsigned int, uint32_t, SESSION_DATA*);
 extern PACKETMEDIATHREADINFO packet_media_thread_info[MAX_PKTMEDIA_THREADS];  /* array of thread handles in pktlib.so, zero indicates no thread.  MAX_PKTMEDIA_THREADS is defined in pktlib.h */
 extern int nPktMediaThreads;  /* current number of allocated packet/media threads */
 
-extern uint64_t session_last_push_time[];  /* only used in debug mode with DS_ENABLE_PUSHPACKETS_ELAPSED_TIME_ALARM flag set */
-extern uint8_t session_input_flags[];
-
 extern SESSION_INFO_THREAD session_info_thread[MAX_SESSIONS];  /* in pktlib, referenced also by streamlib. SESSION_INFO_THREAD struct is defined in shared_include/session.h */
 
-uint8_t pm_sync[MAX_PKTMEDIA_THREADS] = { 0 };
+uint8_t pm_sync[MAX_PKTMEDIA_THREADS] = { 0 };  /* referenced in mediaMin.cpp */
 
 #ifdef FIRST_TIME_TIMING  /* reserved for timing debug purposes */
-unsigned long long base_time = 0, first_push_time = 0, first_buffer_time = 0, first_pull_time = 0, first_contribute_time = 0;
+unsigned long long first_base_time = 0, first_push_time = 0, first_buffer_time = 0, first_pull_time = 0, first_contribute_time = 0;
 #endif
 
 #ifdef DEBUG_CONSISTENCY_MARKERS
@@ -564,7 +575,11 @@ void sig_printf(char*, int, int);
 }
 #endif
 
+extern uint32_t get_session_thread_index(HSESSION hSession);  /* inline in pktlib.c, used by set_session_last_push_time() to support unified timebase. Currently set_session_last_push() is called by DSPushPackets() in pktlib, JHB Jun 2023 */
+
 void manage_pkt_stats_mem(PKT_STATS_HISTORY[], int, int);
+void set_session_last_push_time(HSESSION);  /* called by DSPushPackets() in pktlib.c, JHB Jun 2023 */
+void set_session_alarm_flags(HSESSION hSession, uint8_t uFlags);
 
 void ThreadAbort(int, char*);
 
@@ -1638,7 +1653,7 @@ run_loop:
 
    /* set cur_time, used for packet input interval timing */
 
-      cur_time = timeScale*(get_time(USE_CLOCK_GETTIME) - base_time);  /* timeScale is > 1 for AFAP modes (bulk pcap handling), JHB May 2023 */
+      cur_time = last_cur_time[thread_index] = timeScale*(get_time(USE_CLOCK_GETTIME) - base_time);  /* timeScale is > 1 for AFAP modes (bulk pcap handling), JHB May 2023 */
 
    /* measure and record thread CPU usage */
 
@@ -1883,9 +1898,9 @@ get_pkt_info:
 
          if (lib_dbg_cfg.uDebugMode & DS_ENABLE_PUSHPACKETS_ELAPSED_TIME_ALARM) {
 
-            int64_t last_push_time = __sync_fetch_and_add(&session_last_push_time[hSession], 0);  /* note -- we use an atomic int64_t read as DSPushPackets() is an asynchronous (user) thread and might concurrently write session_last_push_time[], JHB Jan2020 */
+            int64_t session_last_push_time = __sync_fetch_and_add(&last_push_time[hSession], 0);  /* note -- we use an atomic int64_t read as DSPushPackets() is an asynchronous (user) thread and might concurrently write last_push_time[], JHB Jan2020 */
 
-            if (!(session_input_flags[hSession] & 1) && !(session_input_flags[hSession] & 2) && last_push_time && ((int64_t)cur_time - last_push_time)/1000 >= lib_dbg_cfg.uPushPacketsElapsedTimeAlarm*timeScale) {
+            if (!(session_alarm_flags[hSession] & 1) && !(session_alarm_flags[hSession] & 2) && session_last_push_time && ((int64_t)cur_time - session_last_push_time)/1000 >= lib_dbg_cfg.uPushPacketsElapsedTimeAlarm) {  /* note we don't use timeScale here; we assume the app is also pushing packets at accelerated time, JHB Jun 2023 */
 
                char fstr[50];
                sprintf(fstr, "%4.2f", 1.0*lib_dbg_cfg.uPushPacketsElapsedTimeAlarm/1000);
@@ -1895,7 +1910,7 @@ get_pkt_info:
 
                Log_RT(3, "WARNING: p/m thread %d says DSPushPackets() has pushed no packets for session %d for %s sec. The stream associated with this session may have stopped for a normal reason or there may be a problem \n", thread_index, hSession, fstr);
 
-               __sync_or_and_fetch(&session_input_flags[hSession], 2);  /* update the alarm flag so we don't continue to log more messages for this session unless it "returns to life" and has more input packets, JHB Jan 2023 */
+               __sync_or_and_fetch(&session_alarm_flags[hSession], 2);  /* update the alarm flag so we don't continue to log more messages for this session unless it "returns to life" and has more input packets, JHB Jan 2023 */
             }
          }
 
@@ -4334,17 +4349,17 @@ bool fChanFound = false;
                   -default wait time is 1 sec, set in DSCreateSession() if not set by user code. See mediaMin.cpp for source code example setting this option at session create time
                 */
   
-                  if ((int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000 > term1.dormant_SSRC_wait_time*timeScale) {
+                  if ((int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000 > term1.dormant_SSRC_wait_time) {  /* note we don't use timeScale here; we assume the app is also operating at accelerated time, JHB Jun 2023 */
                   #endif
 
                      if (!nDormantChanFlush[hSession][i]) {
 
                         #if 0  /* debug, JHB Sep 2022 */
                         unsigned int uFlags = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, i+1, NULL);
-                        printf("  dormant_SSRC_wait_time= %d, uFlags = 0x%x, int64 calc = %ld \n", term1.dormant_SSRC_wait_time, uFlags, (int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000/timeScale);
+                        printf("  dormant_SSRC_wait_time= %d, uFlags = 0x%x, int64 calc = %ld \n", term1.dormant_SSRC_wait_time, uFlags, (int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000);
                         #endif
 
-                        Log_RT(4, "======== INFO: detected session %d channel %d now using dormant session %d channel %d SSRC value 0x%x, flushing dormant channel %d last active %lld msec\n", hSession2, chnum2, hSession, chnum, stream_ssrc, chnum, (long long int)((cur_time - last_buffer_time[chnum])/1000/timeScale));
+                        Log_RT(4, "======== INFO: detected session %d channel %d now using dormant session %d channel %d SSRC value 0x%x, flushing dormant channel %d last active %lld msec\n", hSession2, chnum2, hSession, chnum, stream_ssrc, chnum, (long long int)((cur_time - last_buffer_time[chnum])/1000));
 
                         nDormantChanFlush[hSession][i] = DSGetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_TARGET_DELAY);  /* if there was a way to force all remaining packets out at once, that would avoid the count-down */
                      }
@@ -4697,7 +4712,11 @@ int session_state, j;
 
    /* initialize various thread level per-session items */
 
+      #if 0
       session_info_thread[hSession].init_time = get_time(USE_CLOCK_GETTIME);
+      #else  /* unified timebase requires use cur_time instead of wall clock, JHB Jun 2023 */
+      session_info_thread[hSession].init_time = cur_time;
+      #endif
       session_info_thread[hSession].look_ahead_time = 0;
 
       session_info_thread[hSession].fDataAvailable = true;
@@ -4714,6 +4733,11 @@ int session_state, j;
       memset(&session_info_thread[hSession].ssrc_state, 0, sizeof(session_info_thread[0].ssrc_state));
 
       fDisplayActiveChannels[hSession] = false;
+
+      packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled = true;  /* this is wrong, affecting all sessions assigned to a packet/media thread. Currently it only flips false for AFAP mode and we're not expecting multiple sessions in that mode so we leave it this way for the time being, JHB Jun 2023 */
+
+      last_push_time[hSession] = 0;
+      session_alarm_flags[hSession] = 0;
 
    /* init stream group items, if this session is a stream group owner */
 
@@ -4741,7 +4765,6 @@ int session_state, j;
       #endif
 
       session_info_thread[hSession].fAllContributorsPresent = false;
-      packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled = true;
 
       for (j=0; j<MAX_GROUP_CONTRIBUTORS; j++) {  /* this should be in DSInitMergeGroup() in streamlib, but session_info_thread[] is not passed to DSInitMergeGroup() */
 
@@ -6136,6 +6159,21 @@ void manage_pkt_stats_mem(PKT_STATS_HISTORY pkt_stats[], int chnum, int num_pkts
    if ((pkt_stats[chnum].mem_usage % PKT_STATS_CHUNK_SIZE) == 0) pkt_stats[chnum].pkt_stats = realloc(pkt_stats[chnum].pkt_stats, pkt_stats[chnum].mem_usage + PKT_STATS_CHUNK_SIZE);
 }
 #endif
+
+/* called by DSPushPackets() in pktlib.c. Can be called as needed to get index of packet/media thread to which a session is assigned, JHB Jun 2023 */
+
+void set_session_last_push_time(HSESSION hSession) {
+
+   __sync_lock_test_and_set(&last_push_time[hSession], last_cur_time[get_session_thread_index(hSession)]);  /* get_session_thread_index() is inline in pktlib.c, JHB Jun 2023 */
+   __sync_and_and_fetch(&session_alarm_flags[hSession], ~2);  /* clear alarm flag, JHB Jan 2023 */
+}
+
+void set_session_alarm_flags(HSESSION hSession, uint8_t uFlags) {  /* note we use bit 7 to determine set or clear, so only 7 flags available, JHB Jun 2023 */
+  
+   if (!(uFlags & 0x80)) session_alarm_flags[hSession] |= uFlags;
+   else session_alarm_flags[hSession] &= uFlags;
+}
+
 
 /* Debug Manager.  Notes:
 
