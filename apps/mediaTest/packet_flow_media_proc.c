@@ -146,7 +146,7 @@ Revision History
  Modified Jan 2023 JHB, improve operation of packet input alarm, see comments near last_push_time[] and in cmd_line_options_flags.h
  Modified Mar 2023 JHB, add pInArgs param in DSCodecEncode(). See comments in voplib.h
  Modified May 2023 JHB, update DTMF event handling (surface level, main changes are in pktlib), implement nStatsDisplayPause
- Modified May 2023 JHB, handle pushInterval[] as float, add cur_time param to InitSession() and ManageSessions()
+ Modified May 2023 JHB, handle RealTimeInterval[] as float, add cur_time param to InitSession() and ManageSessions()
  Modified May 2023 JHB, modify calculation of cur_time to support time scaling and pass cur_time param to DSBufferPackets() and DSRecvPackets(), in support of unified timebase and FTRT and AFAP modes
  Modified Jun 2023 JHB, modify alarms and especially packet push alarm to be compliant with unified timebase changes. See set_session_last_push_time() and set_session_alarm_flags()
 */
@@ -242,7 +242,7 @@ unsigned int ptime_config[MAX_SESSIONS] = { 20 };  /* in msec */
 
 /* Packet buffering interval and timebase notes:
 
-  1) pushInterval[] values are the rates packets are buffered per input stream (in msec)
+  1) RealTimeInterval[] values are inverse of rates packets are buffered per input stream (in msec)
 
   2a) if no command line entry is given for an input stream's buffer rate, the input's session definition ptime value is used.  If command line -rN entry is given then N is the interval value in msec, and overrides session definition ptime.  In the case of cmd line entry, values less than the ptime value in the input's session definition will cause timeScale to be > 1 (this is accelerated time, or FTRT mode, "faster-than-real-time: operation).  A value of zero is the fastest possible buffering rate (AFAP mode)
 
@@ -258,7 +258,7 @@ unsigned int ptime_config[MAX_SESSIONS] = { 20 };  /* in msec */
 */
 
 #ifndef __LIBRARYMODE__
-extern float pushInterval[];
+extern float RealTimeInterval[];
 #endif
 
 /* User Managed Sessions notes:
@@ -1128,7 +1128,7 @@ too_many_threads:
          break;
       }
 
-      pushInterval[nInFiles] = MediaParams[inFilesIndex].Media.frameRate;  /* get cmd line rate entry, if any */
+      RealTimeInterval[nInFiles] = MediaParams[inFilesIndex].Media.frameRate;  /* get cmd line rate entry, if any */
 
       in_type[num_pcap_inputs] = PCAP;
       num_pcap_inputs++;
@@ -1464,7 +1464,7 @@ set_session_flags:
 
 time_init:
 
-  if (pushInterval[0] > 0) timeScale = 20/pushInterval[0];  /* timeScale > 1 for accelerated time in FTRT mode (e.g. bulk pcap handling); otherwise timeScale = 1. pushInterval[0] is zero in AFAP mode so don't divide by zero, JHB May 2023 */
+  if (RealTimeInterval[0] > 0) timeScale = 20/RealTimeInterval[0];  /* timeScale > 1 for accelerated time in FTRT mode (e.g. bulk pcap handling); otherwise timeScale = 1. RealTimeInterval[0] is zero in AFAP mode so don't divide by zero, JHB May 2023 */
   if (!base_time) base_time = get_time(USE_CLOCK_GETTIME);  /* for each thread, one-time initialization of initial wall clock time, JHB May 2023 */
 
 run_loop:
@@ -1761,12 +1761,14 @@ run_loop:
 
       1) Default timing is the natural codec frame duration (i.e. one minimum ptime), for example 20 msec for EVS and AMR codecs.  Jitter buffers use RTP timestamps to determine packet arrival time and buffer delay
 
-      2) If pushInterval[] is zero, then FTRT mode is in effect; i.e. "faster than real-time" (analytics mode). Jitter buffers return the next available packet each time it's called.  This allows "packet burst" or reading from UDP or pcap as fast as possible or other scenarios where packets are given to jitter buffers at arbitrary rates
+      2) If RealTimeInterval[] is zero, then FTRT mode is in effect; i.e. "faster than real-time" (analytics mode). Jitter buffers return the next available packet each time it's called.  This allows "packet burst" or reading from UDP or pcap as fast as possible or other scenarios where packets are given to jitter buffers at arbitrary rates
+
+      3) Also see "timebase notes" above
    */
 
       if (fMediaThread) interval_time = 0;  /* in thread execution the sender is responsible for packet interval timing, either by sending packets remotely over the network, or locally as an app calling DSPushPackets */
       #ifndef __LIBRARYMODE__
-      else if (packet_media_thread_info[thread_index].packet_mode) interval_time = (int)pushInterval[0];
+      else if (packet_media_thread_info[thread_index].packet_mode) interval_time = (int)RealTimeInterval[0];
       #endif
       else interval_time = 0;  /* frame mode:  no waiting if packets are not added/pulled to/from jitter buffer */
 
@@ -4590,10 +4592,10 @@ char tmpstr[1024];
 
    #ifndef __LIBRARYMODE__
    int index = min(i, num_pcap_inputs-1);
-   if ((int)pushInterval[index] == -1) pushInterval[index] = (float)ptime_config[hSession];  /* if no cmd line entry, use ptime from session definition */
+   if ((int)RealTimeInterval[index] == -1) RealTimeInterval[index] = (float)ptime_config[hSession];  /* if no cmd line entry, use ptime from session definition */
    else {
-      term1.input_buffer_interval = pushInterval[index];  /*  if -rN cmd line entry given, then override termN.buffer_interval settings */
-      term2.input_buffer_interval = pushInterval[index];
+      term1.input_buffer_interval = RealTimeInterval[index];  /*  if -rN cmd line entry given, then override termN.buffer_interval settings */
+      term2.input_buffer_interval = RealTimeInterval[index];
    }
    #endif
 //  printf("term1.input_buffer_interval = %d, term1.ptime = %d\n", term1.input_buffer_interval, term1.ptime);
@@ -5396,7 +5398,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 //      hSession = get_session_handle(hSessions_t, i, 0);
       hSession = hSessions_t[i];
 
-      if ((int)pushInterval[i] == -1) pushInterval[i] = (float)ptime_config[hSession];  /* if no cmd line entry, use ptime from session definition */
+      if ((int)RealTimeInterval[i] == -1) RealTimeInterval[i] = (float)ptime_config[hSession];  /* if no cmd line entry, use ptime from session definition */
    }
 
 /* Enter main processing loop, similar to primary thread above */
@@ -5414,7 +5416,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
       for (i = threadid; i < nInFiles; i += nThreads_gbl) {
 
-         if (cur_time - last_time[i] >= (int)pushInterval[i]*1000) {  /* has interval elapsed ?  (comparison is in usec) */
+         if (cur_time - last_time[i] >= (int)RealTimeInterval[i]*1000) {  /* has interval elapsed ?  (comparison is in usec) */
 
             if (!(packet_length = DSReadPcapRecord(fp_in[i], pkt_buffer, 0, NULL, link_layer_length[i], NULL))) continue;
             else __sync_add_and_fetch(&num_pkts_read_multithread, 1);

@@ -64,7 +64,7 @@ void SetSessionTiming(SESSION_DATA* session_data) {
 
 /* set input buffer intervals */
 
-/* pushInterval[] default value for no -rN cmd line entry is -1, which indicates to use session ptime, JHB May 2023 */
+/* RealTimeInterval[] default value for no -rN cmd line entry is -1, which indicates to use session ptime, JHB May 2023 */
   
    #if 0
    if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode, we set termN buffer_interval values to zero regardless of what they already are, and regardless of -rN cmd line entry */
@@ -72,12 +72,12 @@ void SetSessionTiming(SESSION_DATA* session_data) {
       session_data->term1.input_buffer_interval = 0;
       session_data->term2.input_buffer_interval = 0;
    }
-   else if ((int)pushInterval[0] != -1) {  /* pushInterval[0] is value of N in -rN cmd line entry */
-      if ((int)pushInterval[0] < session_data->term1.ptime) session_data->term1.input_buffer_interval = 0;
-      else session_data->term1.input_buffer_interval = pushInterval[0];
+   else if ((int)RealTimeInterval[0] != -1) {  /* RealTimeInterval[0] is value of N in -rN cmd line entry */
+      if ((int)RealTimeInterval[0] < session_data->term1.ptime) session_data->term1.input_buffer_interval = 0;
+      else session_data->term1.input_buffer_interval = RealTimeInterval[0];
 
-      if ((int)pushInterval[0] < session_data->term2.ptime) session_data->term2.input_buffer_interval = 0;
-      else session_data->term2.input_buffer_interval = pushInterval[0];
+      if ((int)RealTimeInterval[0] < session_data->term2.ptime) session_data->term2.input_buffer_interval = 0;
+      else session_data->term2.input_buffer_interval = RealTimeInterval[0];
    }
    #else
    if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode set TERM_ANALYTICS_MODE_TIMING flag. Note this decouples analytics mode from input_buffer_interval, which is needed for FTRT and AFAP modes, JHB May 2023 */
@@ -86,9 +86,9 @@ void SetSessionTiming(SESSION_DATA* session_data) {
       session_data->term2.uFlags |= TERM_ANALYTICS_MODE_PACKET_TIMING;
    }
 
-   if ((int)pushInterval[0] != -1) {  /* pushInterval[0] is value of N in -rN cmd line entry */
-      session_data->term1.input_buffer_interval = pushInterval[0];
-      session_data->term2.input_buffer_interval = pushInterval[0];
+   if ((int)RealTimeInterval[0] != -1) {  /* RealTimeInterval[0] is value of N in -rN cmd line entry */
+      session_data->term1.input_buffer_interval = RealTimeInterval[0];
+      session_data->term2.input_buffer_interval = RealTimeInterval[0];
    }
    #endif
 
@@ -140,7 +140,7 @@ void SetSessionTiming(SESSION_DATA* session_data) {
       if (session_data->group_term.input_buffer_interval < 0) session_data->group_term.input_buffer_interval = 0;  /* if not specified, set to zero */
    }
 
-   if ((int)pushInterval[0] == -1) pushInterval[0] = session_data->term1.input_buffer_interval;
+   if ((int)RealTimeInterval[0] == -1) RealTimeInterval[0] = session_data->term1.input_buffer_interval;
 }
 
 

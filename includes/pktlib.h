@@ -253,6 +253,9 @@ extern "C" {
   #define TCP_PROTOCOL               6
   #define ICMP_PROTOCOL              1
 
+  #define RTCP_PYLD_TYPE_MIN         72
+  #define RTCP_PYLD_TYPE_MAX         82
+
   /* thread level items */
 
   #define THREAD_STATS_TIME_MOVING_AVG  16

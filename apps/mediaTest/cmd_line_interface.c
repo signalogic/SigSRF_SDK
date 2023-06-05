@@ -35,7 +35,7 @@
    Modified Jan 2023 JHB, in ctrl-c event handler call DSConfigLogging() with DS_PKTLOG_ABORT flag and set fCtrl_C_pressed. Don't set run = 0 for mediaMin
    Modified Jan 2023 JHB, add szAppFullCmdLine var and GetCommandLine()
    Modified May 2023 JHB, suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail
-   Modified May 2023 JHB, add timeScale and convert pushInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
+   Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
 */
 
 
@@ -64,7 +64,7 @@
 
 PLATFORMPARAMS PlatformParams = {{ 0 }};
 MEDIAPARAMS MediaParams[MAXSTREAMS];
-float pushInterval[MAX_INPUT_STREAMS] = { 0 };
+float RealTimeInterval[MAX_INPUT_STREAMS] = { 0 };
 
 /* global vars referenced in mediaMin.c, x86_mediaTest.c, and packet_flow_media_proc.c */
 
@@ -242,7 +242,7 @@ int i;
       if (!strstr(userIfs.logFile[0], "[default]")) strcpy((char*)pktStatsLogFile, userIfs.logFile[0]);  /* if default entry (only -L entered with no path+filename) then just set the var, don't copy the string, JHB Sep2017 */
    }
 
-   for (int i=0; i<min(MAXSTREAMS, MAX_INPUT_STREAMS); i++) pushInterval[i] = MediaParams[i].Media.frameRate;  /* store -rN frame rate cmd line entries in pushInterval[], JHB May 2023 */
+   for (int i=0; i<min(MAXSTREAMS, MAX_INPUT_STREAMS); i++) RealTimeInterval[i] = MediaParams[i].Media.frameRate;  /* store -rN frame rate cmd line entries in RealTimeInterval[], JHB May 2023 */
 
    executionMode[0] = userIfs.executeMode;  /* execution mode used by mediaTest to specify app, thread, and cmd line execution modes */
 

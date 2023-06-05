@@ -29,7 +29,7 @@
 #ifndef _MEDIAMIN_H_
 #define _MEDIAMIN_H_
 
-#include "cmd_line_options_flags.h"  /* cmd line options and flags definitions, JHB Jan 2022 */
+#include "cmd_line_options_flags.h"  /* cmd line options and flags definitions. cmd_line_options_flags.h is on mediaTest subfolder, JHB Jan 2022 */
 
 #ifndef HAVE_SDP
   #include <sdp/sdp.h>  /* include sdp.h if needed */
@@ -39,11 +39,11 @@
 
 #define MAX_APP_STR_LEN               2000
 
-#define SESSION_MARKED_AS_DELETED     0x80000000  /* flag used to mark hSessions[] entries as deleted during dynamic session operation */
+#define SESSION_MARKED_AS_DELETED     0x80000000  /* private mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
 
 #define MAX_INPUT_REUSE               16  /* in practice, cmd line entry up to -N9 has been tested (i.e. total reuse of 10x) */
 
-#define NOMINAL_PUSH_INTERVAL         20  /* default if no push interval (-rN) given on mediaMin command line */
+#define NOMINAL_REALTIME_INTERVAL     20  /* default if no real-time interval (-rN) given on mediaMin command line */
 
 /* dynamic stream terminations */
 
@@ -181,7 +181,7 @@ typedef struct {
 #define MasterThread          0
 #define NUM_PKTMEDIA_THREADS  3  /* default number of packet/media threads started by mediaMin */
 
-#define isAFAPMode            (pushInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
-#define isFTRTMode            (pushInterval[0] > 0 && pushInterval[0] < 1)  /* macro for "faster than real-time" processing mode, evaluates as true for -rN cmd line entry where 0 < N < 1, JHB May 2023 */
+#define isAFAPMode            (RealTimeInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
+#define isFTRTMode            (RealTimeInterval[0] > 0 && RealTimeInterval[0] < 1)  /* macro for "faster than real-time" processing mode, evaluates as true for -rN cmd line entry where 0 < N < 1, JHB May 2023 */
 
 #endif  /* _MEDIAMIN_H_ */

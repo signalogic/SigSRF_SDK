@@ -134,7 +134,7 @@
    Modified Apr 2023 JHB, implement filtering of redundant TCP retransmissions. See FILTER_TCP_REDUNDANT_RETRANSMISSIONS definition
    Modified Apr 2023 JHB, add num TCP and UDP packets to mediaMin stats summary
    Modified May 2023 JHB, add support for AFAP and FTRT modes ("as fast as possible" and "faster than real-time"). Look for comments near isAFAPMode and isFTRTMode (defined in mediaMin.h)
-   Modified May 2023 JHB, pushInterval[] now handled as float, as part of AFAP and FTRT mode support. extern reference to timeScale for accelerated time in FTRT mode
+   Modified May 2023 JHB, RealTimeInterval[] now handled as float, as part of AFAP and FTRT mode support. extern reference to timeScale for accelerated time in FTRT mode
    Modified May 2023 JHB, support port list on cmd line (-pN entry); look for uLoopbackDepth in CreateDynamicSession()
    Modified May 2023 JHB, support RFC7198 lookback depth on cmd line (-lN entry); look for uPortList[] in isNonDynamicPortAllowed(). Default of no entry is 1 packet lookback, zero disables (-l0 entry)
 */
@@ -156,7 +156,7 @@ using namespace std;
 
 /* mediaTest header file */
 
-#include "mediaTest.h"  /* bring in vars declared in cmd_line_interface.c, including MediaParams[], PlatformParams, pushInterval[], and debugMode (defined as Mode in mediaMin.h) */
+#include "mediaTest.h"  /* bring in vars declared in cmd_line_interface.c, including MediaParams[], PlatformParams, RealTimeInterval[], and debugMode (defined as Mode in mediaMin.h) */
 
 /* lib header files */
 
@@ -342,7 +342,7 @@ char tmpstr[MAX_APP_STR_LEN];
 
    #ifdef _MEDIAMIN_  /* running from cmd line, mediaMin is running as a process */
 
-   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS | CLI_MEDIA_APPS_MEDIAMIN)) exit(EXIT_FAILURE);  /* parse command line and set MediaParams, PlatformParams, pushInterval, and pktStatsLogFile, use_log_file, and others.  See mediaTest.h and cmd_line_interface.c */
+   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS | CLI_MEDIA_APPS_MEDIAMIN)) exit(EXIT_FAILURE);  /* parse command line and set MediaParams, PlatformParams, RealTimeInterval, and pktStatsLogFile, use_log_file, and others.  See mediaTest.h and cmd_line_interface.c */
    thread_index = 0;
    printf("mediaMin start, cmd line execution\n");
 
@@ -587,7 +587,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    /* if packets are not pushed according to arrival timestamp, then we push packets according to a specified interval. Options include (i) pushing packets as fast as possible (-r0 cmd line entry), (ii) N msec intervals (cmd line entry -rN), and an average push rate based on output queue levels (the latter can be used with pcaps that don't have arrival timestamps) */
 
-      if (cur_time - base_time < interval_count*pushInterval[0]*1000) continue; else interval_count++;  /* if interval has elapsed push and pull packets, increment count. Comparison is in usec */
+      if (cur_time - base_time < interval_count*RealTimeInterval[0]*1000) continue; else interval_count++;  /* if real-time interval has elapsed push and pull packets, increment count. Comparison is in usec. Note that real-time interval may be greater than ptime in FTRT modes ("faster than real-time") */
 
    /* read from packet input flows, push to packet/media threads */
 
@@ -1406,7 +1406,7 @@ uint32_t clock_rate = 0;
 
 /* ignore RTCP packets */
   
-   if (rtp_pyld_type >= 72 && rtp_pyld_type <= 82) return 0;
+   if (rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && rtp_pyld_type <= RTCP_PYLD_TYPE_MAX) return 0;
 
 
 /* SDP info check: num_rtpmaps will be > 0 if valid cmd line SDP file was given */
@@ -2254,7 +2254,7 @@ read_packet:
             thread_info[thread_index].initial_push_time[j] = 0;  /* reset initial push time */
 
             #if 0  /* with extended AFAP and FTRT mode support in place, we now display and log media time or processing time in all cases, JHB May 2023 */
-            if (((Mode & USE_PACKET_ARRIVAL_TIMES) || pushInterval[0] > 1) && isMasterThread) {
+            if (((Mode & USE_PACKET_ARRIVAL_TIMES) || RealTimeInterval[0] > 1) && isMasterThread) {
             #else
             if (isMasterThread) {
             #endif
@@ -2427,20 +2427,26 @@ read_packet:
  
             if (msec_elapsedtime < msec_timestamp) {  /* push packet when elapsed time >= packet timestamp */
 
-               fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* not time to push yet, restore file position */
+               bool fReseek = true;
 
                if (isMasterThread) {
 
                   if (((wait_time = msec_timestamp - msec_elapsedtime) > 2000 || last_wait_check_time) && msec_elapsedtime - last_wait_check_time > 1000) {
 
-                     if (!wait_gap) wait_gap = wait_time;
+                     if (protocol == UDP_PROTOCOL && (PktInfo.rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && PktInfo.rtp_pyld_type <= RTCP_PYLD_TYPE_MAX)) fReseek = false;  /* don't allow RTCP packets to restart a gap, verify with 6537.0 test-case. To-do: there are other gaps in payload type range also, we can add later, JHB Jun 2023 */
+                     else {
 
-                     if (++waiting_inputs >= thread_info[thread_index].nInPcapFiles) {  /* print waiting status only if all inputs are waiting */
-                        if (wait_time/1000 > 0) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "\rWaiting %llu of %llu sec gap in packet arrival times ...", (long long unsigned int)wait_time/1000, (long long unsigned int)wait_gap/1000);
-                        last_wait_check_time = msec_elapsedtime;  waiting_inputs = 0;
+                        if (!wait_gap) wait_gap = wait_time;
+
+                        if (++waiting_inputs >= thread_info[thread_index].nInPcapFiles) {  /* print waiting status only if all inputs are waiting */
+                           if (wait_time/1000 > 0) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "\rWaiting %llu of %llu sec gap in packet arrival times ...", (long long unsigned int)wait_time/1000, (long long unsigned int)wait_gap/1000);
+                           last_wait_check_time = msec_elapsedtime;  waiting_inputs = 0;
+                        }
                      }
                   }
                }
+
+               if (fReseek) fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* not time to push yet, restore file position */
 
                continue;  /* move on to next input */
             }
@@ -2568,7 +2574,7 @@ ignore_udp_packet:
             goto read_packet;
          }
 
-         if ((rtp_pyld_type >= 72 && rtp_pyld_type <= 82) && pushInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto read_packet;  /* ignore RTCP packets */
+         if ((rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && rtp_pyld_type <= RTCP_PYLD_TYPE_MAX) && RealTimeInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto read_packet;  /* ignore RTCP packets */
          #endif
 
          rtp_pyld_len = PktInfo.rtp_pyld_len;
@@ -2715,7 +2721,7 @@ push:
 
                   if (!ret_val) {  /* push queue is full, try waiting and pushing the packet again */
 
-                     uint32_t uSleepTime = max(1000, (int)(pushInterval[0]*1000));
+                     uint32_t uSleepTime = max(1000, (int)(RealTimeInterval[0]*1000));
                      usleep(uSleepTime);
 
                      if (retry_count++ < 3) goto push;  /* max retries */
@@ -3135,15 +3141,15 @@ valid_input_spec:
       else { fprintf(stderr, "Input file: %s is not a .pcap file\n", MediaParams[i].Media.inputFilename); break; }
 
       #if 0
-      pushInterval[i] = MediaParams[i].Media.frameRate;  /* get cmd line rate entry, if any.  Default value if no entry is -1, which indicates to use session ptime */
+      RealTimeInterval[i] = MediaParams[i].Media.frameRate;  /* get cmd line rate entry, if any.  Default value if no entry is -1, which indicates to use session ptime */
       #else
-      if (pushInterval[i] == -1) pushInterval[i] = NOMINAL_PUSH_INTERVAL;
+      if (RealTimeInterval[i] == -1) RealTimeInterval[i] = NOMINAL_REALTIME_INTERVAL;
       #endif
       
       i++;  /* advance to next cmd line input spec */
    }
 
-   if (isFTRTMode) timeScale = NOMINAL_PUSH_INTERVAL/pushInterval[0];
+   if (isFTRTMode) timeScale = NOMINAL_REALTIME_INTERVAL/RealTimeInterval[0];
 
    if (i == 0) thread_info[thread_index].init_err = true;  /* error if no inputs */
 
@@ -3451,7 +3457,7 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
          nDelayTime = fAutoQuit ? 60 : 3000;
          #endif
 
-         if (cur_time - queue_check_time[i] > 1000*(nDelayTime + 10*pushInterval[0])*num_app_threads) {  /* arbitrary delay to wait after flushing.  We increase this if multiple mediaMin threads are running as packet/media threads will take longer to flush */
+         if (cur_time - queue_check_time[i] > 1000*(nDelayTime + 10*RealTimeInterval[0])*num_app_threads) {  /* arbitrary delay to wait after flushing.  We increase this if multiple mediaMin threads are running as packet/media threads will take longer to flush */
 
             thread_info[thread_index].flush_state[i] = FINAL_FLUSH_STATE;  /* set session's flush state to final */
 
