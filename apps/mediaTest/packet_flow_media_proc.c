@@ -2741,10 +2741,11 @@ next_session:
                         static bool fOnce[MAX_SESSIONS][MAX_TERMS] = {{ false }};
                         if (!fOnce[hSession][term]) {
                            float input_buffer_interval = DSGetSessionInfoInt2Float(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, term+1, NULL));
+                           unsigned int output_buffer_interval = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_OUTPUT_BUFFER_INTERVAL, term+1, NULL);
                            unsigned int uTerm_Flags = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM_FLAGS, term+1, NULL);
                            unsigned int lookback = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_RFC7198_LOOKBACK, term+1, NULL);
                            char lookbackstr[10] = ""; if (lookback > 1) sprintf(lookbackstr, "%d", lookback);
-                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %4.2f, ptime = %d, %s mode,%s%s preemption monitoring %s \n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval, ptime[hSession][term], uTerm_Flags & TERM_NO_PACKET_TIMING ? "untimed" : !(uFlags_get & DS_GETORD_PKT_ANALYTICS) ? "telecom" : DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? "analytics compatibilty" : "analytics", !lookback ? " RFC7198 lookback disabled" : lookback > 1 ? " RFC7198 lookback " : "", lookbackstr, packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled ? "enabled" : "disabled");
+                           sprintf(tmpstr, "chan_nums[%d] = %d, num_chan = %d, hSession = %d, term = %d, input_buffer_interval = %4.2f, output_buffer_interval = %u, ptime = %d, %s mode,%s%s preemption monitoring %s \n", n, chan_nums[n], num_chan, hSession, term, input_buffer_interval, output_buffer_interval, ptime[hSession][term], uTerm_Flags & TERM_NO_PACKET_TIMING ? "untimed" : !(uFlags_get & DS_GETORD_PKT_ANALYTICS) ? "telecom" : DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_TARGET_DELAY) <= 7 ? "analytics compatibilty" : "analytics", !lookback ? " RFC7198 lookback disabled" : lookback > 1 ? " RFC7198 lookback " : "", lookbackstr, packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled ? "enabled" : "disabled");
                            sig_printf(tmpstr, PRN_LEVEL_INFO, thread_index);
                            fOnce[hSession][term] = true;
                         }
