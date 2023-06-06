@@ -135,8 +135,8 @@
    Modified Apr 2023 JHB, add num TCP and UDP packets to mediaMin stats summary
    Modified May 2023 JHB, add support for AFAP and FTRT modes ("as fast as possible" and "faster than real-time"). Look for comments near isAFAPMode and isFTRTMode (defined in mediaMin.h)
    Modified May 2023 JHB, RealTimeInterval[] now handled as float, as part of AFAP and FTRT mode support. extern reference to timeScale for accelerated time in FTRT mode
-   Modified May 2023 JHB, support port list on cmd line (-pN entry); look for uLoopbackDepth in CreateDynamicSession()
-   Modified May 2023 JHB, support RFC7198 lookback depth on cmd line (-lN entry); look for uPortList[] in isNonDynamicPortAllowed(). Default of no entry is 1 packet lookback, zero disables (-l0 entry)
+   Modified May 2023 JHB, support port list on cmd line (-pN entry), look for uPortList[] in isNonDynamicPortAllowed()
+   Modified May 2023 JHB, support RFC7198 lookback depth on cmd line (-lN entry), act on uLookbackDepth in CreateDynamicSession(). Default of no entry is 1 packet lookback, zero disables (-l0 entry), max is 8 packet lookback
 */
 
 
