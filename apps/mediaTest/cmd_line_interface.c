@@ -36,6 +36,7 @@
    Modified Jan 2023 JHB, add szAppFullCmdLine var and GetCommandLine()
    Modified May 2023 JHB, suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail
    Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
+   Modified Jun 2023 JHB, initialize timeScale to zero to allow packet_float_media_proc() to tell if an app has already set timeScale or it needs to do it
 */
 
 
@@ -90,7 +91,7 @@ volatile bool    frame_mode = false, use_bkgnd_process = false, use_log_file = f
 char             sig_lib_event_log_filename[] = { "sig_lib_event_log.txt" };  /* moved here from packet_flow_media_proc.c, JHB Dec 2022 */
 bool             fCtrl_C_pressed = false;
 char             full_cmd_line[MAX_CMDLINE_STR_LEN] = "";  /* app full command line, filled in by cmdLineInterface(), which calls GetCommandLine(). Note that mediaTest.h publishes this as this as const char* szAppFullCmdLine, JHB Jan 2023 */
-double           timeScale = 1.0;  /* support FTRT and AFAP modes, see comments in packet_flow_media_proc.c */
+double           timeScale = 0;  /* support FTRT and AFAP modes, see comments in packet_flow_media_proc.c */
 uint16_t         uPortList[MAX_CONCURRENT_STREAMS] = { 0 };
 uint8_t          uLookbackDepth = 1;
 

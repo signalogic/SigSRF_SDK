@@ -37,6 +37,7 @@
    Modified Jan 2023 JHB, add szAppFullCmdLine and GetCommandLine() references
    Modified Mar 2023 JHB, add frac() helper, does modf() but needs only one argument
    Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
+   Modified Jun 2023 JHB, move NOMINAL_REALTIME_INTERVAL definition here from mediaMin.h
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -60,27 +61,29 @@
 
 /* program modes */
 
-#define NETWORK_PACKET_TEST   0
-#define COCPU_SIM_TEST        1
-#define COCPU_NETWORK_TEST    2
-#define CODEC_TEST            3
+#define NETWORK_PACKET_TEST        0
+#define COCPU_SIM_TEST             1
+#define COCPU_NETWORK_TEST         2
+#define CODEC_TEST                 3
 
-#define X86_PACKET_TEST       0
-#define X86_CODEC_TEST        3
-#define X86_FRAME_TEST        4
+#define X86_PACKET_TEST            0
+#define X86_CODEC_TEST             3
+#define X86_FRAME_TEST             4
 
-#define LOG_FILE_DIAGNOSTICS  10
+#define LOG_FILE_DIAGNOSTICS       10
+
+#define NOMINAL_REALTIME_INTERVAL  20  /* default used if no real-time interval (-rN) given on mediaMin command line */
 
 /* defined max values in app */
 
-#define MAX_CODEC_INSTANCES   MAX_SESSIONS_PER_CORE*2
+#define MAX_CODEC_INSTANCES        MAX_SESSIONS_PER_CORE*2
 
 /* number of possible input streams, including streams that are re-used for multithread and high capacity testing */
-#define MAX_INPUT_STREAMS MAX_SESSIONS
+#define MAX_INPUT_STREAMS          MAX_SESSIONS
 
-#define MAX_APP_THREADS       64
+#define MAX_APP_THREADS            64
 
-#define MAX_CMDLINE_STR_LEN   1024
+#define MAX_CMDLINE_STR_LEN        1024
 
 /* params for codec test modes */
 typedef struct

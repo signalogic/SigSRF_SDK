@@ -149,6 +149,7 @@ Revision History
  Modified May 2023 JHB, handle RealTimeInterval[] as float, add cur_time param to InitSession() and ManageSessions()
  Modified May 2023 JHB, modify calculation of cur_time to support time scaling and pass cur_time param to DSBufferPackets() and DSRecvPackets(), in support of unified timebase and FTRT and AFAP modes
  Modified Jun 2023 JHB, modify alarms and especially packet push alarm to be compliant with unified timebase changes. See set_session_last_push_time() and set_session_alarm_flags()
+ Modified Jun 2023 JHB, initialize timeScale if needed (if it still has zero load-time init value). Normally we expect apps to set timeScale
 */
 
 #ifndef _GNU_SOURCE
@@ -1464,8 +1465,13 @@ set_session_flags:
 
 time_init:
 
-  if (RealTimeInterval[0] > 0) timeScale = 20/RealTimeInterval[0];  /* timeScale > 1 for accelerated time in FTRT mode (e.g. bulk pcap handling); otherwise timeScale = 1. RealTimeInterval[0] is zero in AFAP mode so don't divide by zero, JHB May 2023 */
-  if (!base_time) base_time = get_time(USE_CLOCK_GETTIME);  /* for each thread, one-time initialization of initial wall clock time, JHB May 2023 */
+  if (timeScale == 0) {  /* if app hasn't set timeScale then first thread to run does it here, JHB Jun 2023 */
+
+      if (RealTimeInterval[0] > 0 && RealTimeInterval[0] < 1) timeScale = NOMINAL_REALTIME_INTERVAL/RealTimeInterval[0];  /* timeScale > 1 for accelerated time in FTRT mode (e.g. bulk pcap handling); otherwise timeScale = 1. RealTimeInterval[0] is zero in AFAP mode so don't divide by zero, JHB May 2023 */
+      else timeScale = 1;
+   }
+
+   if (!base_time) base_time = get_time(USE_CLOCK_GETTIME);  /* for each thread, one-time initialization of initial wall clock time, JHB May 2023 */
 
 run_loop:
 

@@ -3154,7 +3154,8 @@ valid_input_spec:
       i++;  /* advance to next cmd line input spec */
    }
 
-   if (isFTRTMode) timeScale = NOMINAL_REALTIME_INTERVAL/RealTimeInterval[0];
+   if (isFTRTMode) timeScale = NOMINAL_REALTIME_INTERVAL/RealTimeInterval[0];  /* if "faster than real-time" mode set timeScale to accelerate time, Jun 2023 */
+   else timeScale = 1;  /* otherwise normal time. Note in AFAP mode (-r0 cmd entry) RealTimeInterval[0] is zero and timeScale stays 1 */
 
    if (i == 0) thread_info[thread_index].init_err = true;  /* error if no inputs */
 

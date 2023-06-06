@@ -43,8 +43,6 @@
 
 #define MAX_INPUT_REUSE               16  /* in practice, cmd line entry up to -N9 has been tested (i.e. total reuse of 10x) */
 
-#define NOMINAL_REALTIME_INTERVAL     20  /* default if no real-time interval (-rN) given on mediaMin command line */
-
 /* dynamic stream terminations */
 
 #define STREAM_TERMINATE_BYE_MESSAGE             1
