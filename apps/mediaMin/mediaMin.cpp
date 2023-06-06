@@ -2421,7 +2421,7 @@ read_packet:
             msec_timestamp = (num_pcap_packets+1)*RATE_FORCE;  /* debug/stress testing:  push packet either at a specific interval or at random intervals */
             #endif
 
-            elapsed_time = timeScale * (cur_time - thread_info[thread_index].initial_push_time[j]);  /* subtract initial time to get elapsed_time, accelerate time in FTRT mode */
+            elapsed_time = timeScale * (cur_time - thread_info[thread_index].initial_push_time[j]);  /* subtract initial time to get elapsed_time, timeScale > 1 accelerates time in FTRT mode */
 
             msec_elapsedtime = (elapsed_time + 500)/1000;  /* calculate in msec, with rounding */
  
@@ -2479,13 +2479,7 @@ read_packet:
          thread_info[thread_index].num_udp_packets_in[j]++;  /* increment per stream UDP packet count */
 
          #define FILTER_UDP_PACKETS
-         #ifdef FILTER_UDP_PACKETS  /* filter UDP packets. Notes:
-         
-                                       -RTCP packets are already filtered by packet/media threads but if the push rate is 2 msec or faster then we filter here to avoid FlushCheck() prematurely seeing empty queues and flushing the session
-                                       -session flush for USE_PACKET_ARRIVAL_TIMES mode is not dependent on empty queues, so it's execluded
-                                       -a burst of RTCP packets in a multisession pcap may mean an on-hold or call-waiting period; i.e. one or more (or even all) call legs are not sending RTP
-                                       -packet_flow_media_proc.c uses the DS_RECV_PKT_FILTER_RTCP flag in DSRecvPackets()
-                                    */
+         #ifdef FILTER_UDP_PACKETS  /* filter UDP packets */
 
          char szKeyword[50] = "UDP";
          int nMsgTypeFound = 0;
@@ -2573,8 +2567,19 @@ ignore_udp_packet:
             Log_RT(4, "mediaMin INFO: PushPackets() says unknown UDP packet (DSGetPacketInfo can't find valid RTP payload type), dest port = %u, pkt len = %d \n", dest_port, pkt_len);
             goto read_packet;
          }
+         #endif  /* FILTER_UDP_PACKETS */
 
-         if ((rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && rtp_pyld_type <= RTCP_PYLD_TYPE_MAX) && RealTimeInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto read_packet;  /* ignore RTCP packets */
+         #define FILTER_RTCP_PACKETS_IF_rN_TIMING
+         #ifdef FILTER_RTCP_PACKETS_IF_rN_TIMING
+
+      /* ignore RTCP packets in some cases. Notes, Feb 2019 JHB:
+
+         -RTCP packets are already filtered by packet/media threads ** but if the push rate is 2 msec or faster then we filter here to avoid FlushCheck() prematurely seeing empty queues and flushing the session (is this still needed ? JHB Jun 2023)
+         -session flush for USE_PACKET_ARRIVAL_TIMES mode is not dependent on empty queues, so it's excluded
+         -** packet_flow_media_proc() applies the DS_RECV_PKT_FILTER_RTCP flag in DSRecvPackets()
+         -as a side note, repetitive RTCP packets have been observed in multisession flows with long on-hold or call-waiting periods (one or more streams are not sending RTP)
+      */
+         if ((rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && rtp_pyld_type <= RTCP_PYLD_TYPE_MAX) && RealTimeInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto read_packet;
          #endif
 
          rtp_pyld_len = PktInfo.rtp_pyld_len;
