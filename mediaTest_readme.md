@@ -581,7 +581,7 @@ Below are some command line examples, both in real-time and accelerated time:
     ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
     ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r0.7
 
-In the first example, processing is 40 times faster, and in the second about 28 times faster. Acceleration is less in the latter example due to total number of streams, codec type and bitrates, and media content. Amount of acceleration is also dependent on host system CPU clock rate, number of cores, and storage configuration.  Additional performance information - and how to determine the maximum acceleration without degradation of media quality - is given in [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) below.
+In the first example, processing is 40 times faster, and in the second about 28 times faster. Acceleration is less in the latter example due to total number of streams, codec complexity and bitrates, and media content. Amount of acceleration is also dependent on host system CPU clock rate, number of cores, and storage configuration.  Additional performance information - and how to determine the maximum acceleration without degradation of media quality - is given in [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) below.
 
 In addition to FTRT mode, mediaMin also supports "as fast as possible" mode, or AFAP mode, which is enabled with -r0 [Real-Time Interval](#user-content-realtimeinterval) command line entry. AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams.
 
