@@ -569,7 +569,11 @@ mediaMin also generates [stream group](#user-content-streamgroupusage) output .w
 <a name="BulkPcapHandling"></a>
 ## Bulk Pcap Handling
 
-Using the mediaMin command line [Real-Time Interval argument](#user-content-realtimeinterval), an internal mode called "faster than real-time", or FTRT mode, can be enabled inside mediaMin, [pktlib](#user=content-pktlib), and  [streamlib](#user-content-streamlib). FTRT mode allows pcaps to be processed faster than real-time, while still maintaining correct time alignment (sync) between multiple streams in each pcap (and across pcaps, if given as multiple inputs on the mediaMin command line). Stream alignment happens in the media domain - *after* packets are re-ordered, repaired, and decoded - and requires a reference clock, which makes accelerated time a difficult math and signal processing problem. Below are some command line examples, both in real-time and accelerated time:
+Using the mediaMin command line [Real-Time Interval argument](#user-content-realtimeinterval), an internal mode called "faster than real-time", or FTRT mode, can be enabled inside mediaMin, [pktlib](#user=content-pktlib), and  [streamlib](#user-content-streamlib). FTRT mode allows pcaps to be processed faster than real-time, while still maintaining correct time alignment (sync) between multiple streams in each pcap (and across pcaps, if given as multiple inputs on the mediaMin command line). Stream alignment happens in the media domain - *after* packets are re-ordered, repaired, and decoded - and requires a reference clock, which makes accelerated time a difficult math and signal processing problem.
+
+FTRT mode is useful when a large number of pcaps, or continuous aggregration of pcaps, must be processed and stream group wav and/or pcap output is required but not live real-time streaming pcap or UDP port output.
+
+Below are some command line examples, both in real-time and accelerated time:
 
     ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r20
     ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r0.5
