@@ -108,10 +108,13 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
 
+&nbsp;&nbsp;&nbsp;[**Bulk Pcap Handling**](#user-content-bulkpcaphandling)<br/>
+
 &nbsp;&nbsp;&nbsp;[**Performance**](#user-content-performance)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Remote Console](#user-content-remoteconsole)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity](#user-content-highcapacity)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Performance](#user-content-realtimeperformance)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality](#user-content-audioquality)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Building High Performance Applications](#user-content-buildinghighperformanceapplications)<br/>
 	
@@ -563,6 +566,19 @@ In the above displays, note the "Max Delta" stat. This is an indicator of both a
 
 mediaMin also generates [stream group](#user-content-streamgroupusage) output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
 
+<a name="BulkPcapHandling"></a>
+## Bulk Pcap Handling
+
+By setting the mediaMin command line [Real-Time Interval argument](#user-content-realtimeinterval) to less than one, an internal mode called "faster than real-time" is enabled inside mediaMin, [pktlib](#user=content-pktlib), and  [streamlib](#user-content-streamlib). This mode allows pcaps to be processed faster than real-time, while still maintaining correct time alignment (sync) between multiple streams in each pcap (and across pcaps, if given as multiple inputs on the mediaMin command line). Stream alignment happens in the media domain - *after* packets are re-ordered, repaired, and decoded - and requires a reference clock, which makes accelerated time a difficult math and signal processing problem.  Below are some command line examples, both in real-time and accelerted time:
+
+    ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r20
+    ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r0.5
+
+    ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
+    ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r0.7
+
+In the first example, processing is 40 times faster, and in the second 28.5 times faster. The difference is because the latter requires more processing time, due codec type and bitrates and media content. Processing time is also dependent on host system CPU clock rate, number of cores, and storage configuration.  Additional performance information - and how to determine the max bulk mode rate without sacrificing media quality - is given in [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) below.
+
 <a name="Peformance"></a>
 ## Performance
 
@@ -638,6 +654,9 @@ Here is a summary of important points in achieving and sustaining real-time perf
     See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) below for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
     
 <sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
+
+<a name="Bulk Pcap Performance Considerations"><a/>
+### Bulk Pcap Performance Considerations
 
 <a name="AudioQuality"><a/>
 ### Audio Quality
@@ -2290,6 +2309,7 @@ Note that options and flags may be combined together.
 > no -L entry disables packet history logging<br/>
 > -L-nopktlog or -L-nopacketlog disables packet history logging (same as no -L entry), but in a more visible way<br/>
 
+<a name="RealTimeInterval"></a>
 #### Real-Time Interval
 
 -rN specifies a "real-time interval" that mediaMin uses for a target packet push rate and [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec RTP ptime (packet interval). Additional notes:
