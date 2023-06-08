@@ -2124,7 +2124,7 @@ do {
       (ii) N msec intervals (cmd line entry -rN),
       (iii) an average push rate based on output queue levels (the latter can be used with pcaps that don't have arrival timestamps) */
 
-      if (cur_time - base_time < interval_count*RealTimeInterval[0]*1000) continue; else interval_count++;  /* if the [real-time interval](#user-content-realtimeinterval) has elapsed, push and pull packets and increment the interval. Comparison is in usec */
+      if (cur_time - base_time < interval_count*RealTimeInterval[0]*1000) continue; else interval_count++;  /* if the real-time interval has elapsed, push and pull packets and increment the interval. Comparison is in usec */
 
    /* read packets from input flows, push to packet/media threads */
 
