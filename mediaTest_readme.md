@@ -469,7 +469,42 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 
 #### SDP Info Packets
 
-mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If the [command line -dN options](#user-content-mediamincommandlineoptions) contain the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info found messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite and SDP info found messages.
+mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If [command line -dN options](#user-content-mediamincommandlineoptions) include the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite and SDP infomessages.
+
+Below is an example of mediaMin display showing a SIP Invite found message, along with other SIP messages. Note in this case the SDP description contains a unique Origin session ID.
+
+```
+00:00:00.051.074 mediaMin INFO: SIP Invite found, dst port = 5060, pyld len = 3377, len = 597, rem = 2043, index = 0, SDP info contents as follows
+v=0
+o=- 7234886132532561590 7234886132532561590 IN IP4 172.16.19.69
+s=rtpengine-11-4-0-0-0-mr11-4-0-0-git-master-31da860
+t=0 0
+m=audio 27074 RTP/AVP 116 111
+c=IN IP4 192.168.19.69
+a=label:1
+a=rtpmap:116 AMR-WB/16000
+a=fmtp:116 mode-change-capability=2;max-red=220
+a=rtpmap:111 telephone-event/16000
+a=fmtp:111 0-15
+a=sendonly
+a=rtcp:27075
+a=ptime:20
+m=audio 44452 RTP/AVP 116 111
+c=IN IP4 192.168.19.69
+a=label:0
+a=rtpmap:116 AMR-WB/16000
+a=fmtp:116 mode-change-capability=2;max-red=220
+a=rtpmap:111 telephone-event/16000
+a=fmtp:111 0-15
+a=sendonly
+a=rtcp:44453
+a=ptime:20
+00:00:00.051.268 mediaMin INFO: SDP info with unique Origin session ID 7234886132532561590 and 2 Media descriptions and RTP attributes found but not added to database for thread 0 stream 0. To add, apply the ENABLE_STREAM_SDP_INFO flag in cmd line -dN options
+00:00:00.051.313 mediaMin INFO: SIP Invite message found, dst port = 5060, pyld len = 3377, index = 1931
+00:00:00.051.344 mediaMin INFO: SIP 100 Trying message found, dst port = 49761, pyld len = 486, index = 0
+00:00:00.051.675 mediaMin INFO: SIP 200 Ok message found, dst port = 49761, pyld len = 1128, index = 0
+00:00:00.052.596 mediaMin INFO: SIP ACK message found, dst port = 5060, pyld len = 418, index = 0
+```
 
 #### SDP Notes
 
