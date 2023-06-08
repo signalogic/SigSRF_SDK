@@ -410,10 +410,11 @@ Although terminations can be defined in any order, in general term1 remote shoul
 <a name="SDPSupport"></a>
 ### SDP Support
 
-mediaMin supports SDP (<a href="https://en.wikipedia.org/wiki/Session_Description_Protocol" target="_blank">Session Description Portocol</a>) input to moderate dynamic session creation, allowing applications to
+mediaMin supports SDP (<a href="https://en.wikipedia.org/wiki/Session_Description_Protocol" target="_blank">Session Description Portocol</a>) to moderate dynamic session creation, allowing applications to
 
 > 1) override codec auto-detection
-> 2) ignore one or more payload types, in effect ignoring the stream
+> 2) process SDP info from its containing / associated RTP stream
+> 3) ignore one or more payload types, in effect ignoring the stream
 
 SDP input is processed by mediaMin in two (2) ways
 
@@ -424,7 +425,7 @@ SDP input is processed by mediaMin in two (2) ways
     ```
     .sdp files should be basic text files, with either CR line endings (typical for Linux) or CRLF (typical for Windows).
 
-2) As contents of SIP Invite or other SDP info packets within input packet flow. This also works for [encapsulated streams](#user-content-encapsulatedstreams).
+2) As contents of SIP Invite or other SDP info packets contained in packet flow. This also works for [encapsulated streams](#user-content-encapsulatedstreams).
 
 #### Command Line SDP File
 
@@ -468,7 +469,11 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 
 #### SDP Info Packets
 
-mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If the [command line -dN options](#user-content-mediamincommandlineoptions) contain the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite found messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite found messages.
+mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If the [command line -dN options](#user-content-mediamincommandlineoptions) contain the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info found messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite and SDP info found messages.
+
+#### SDP Notes
+
+Both command line SDP info and packet flow SDP descriptions are added to mediaMin's internal SDP database. SDP descriptions are added only if they contain a non-zero, unique Origin field.
 
 The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path.
 
