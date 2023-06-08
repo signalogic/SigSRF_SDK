@@ -424,7 +424,9 @@ SDP input is processed by mediaMin in two (2) ways
     ```
     .sdp files should be basic text files, with either CR line endings (typical for Linux) or CRLF (typical for Windows).
 
-2) As contents of SIP invite packets within input packet flow. This also works for [encapsulated streams](#user-content-encapsulatedstreams).
+2) As contents of SIP Invite or other SDP info packets within input packet flow. This also works for [encapsulated streams](#user-content-encapsulatedstreams).
+
+#### Command Line SDP File
 
 Command line SDP input applies to all pcaps or UDP inputs, so the .sdp file should cover all expected payload types and configurations. Packet SDP input applies only to the input packet flow in which SIP invite packets are received, and should appear before input stream(s) start in order to take effect.
 
@@ -463,6 +465,10 @@ a=rtpmap:100 telephone-event/16000
 ```
 
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
+
+#### SDP Info Packets
+
+mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If the [command line -dN options](#user-content-mediamincommandlineoptions) contain the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite found messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite found messages.
 
 The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path.
 
