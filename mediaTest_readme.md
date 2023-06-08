@@ -2266,15 +2266,15 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
 Below are general command line notes, arguments, and options that apply to both mediaMin and mediaTest:
 
-> All command line options are case sensitive<br/>
+> * All command line options are case sensitive<br/>
 > <br/>
-> Enter ./prog -h or ./prog -? to see a list of command line options (where "prog" = mediaMin or mediaTest). Mandatory command line options are shown with "!"<br/>
+> * Enter ./prog -h or ./prog -? to see a list of command line options (where "prog" = mediaMin or mediaTest). Mandatory command line options are shown with "!"<br/>
 > <br/>
-> Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
+> * Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
 > <br/>
-> mediaMin and mediaTest always generate an [event log](#user-content-eventlog); there is currently no command line argument or option that affects event logs. The default event log filename is name_event_log.txt, where "name" is the filename (without extension) of the first command line input. Event log filenames and all other event log options can be changed programmatically (as one example, look for LOG_EVENT_SETUP in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>).<br/>
+> * mediaMin and mediaTest always generate an [event log](#user-content-eventlog); there is currently no command line argument or option that affects event logs. The default event log filename is name_event_log.txt, where "name" is the filename (without extension) of the first command line input. Event log filenames and all other event log options can be changed programmatically (as one example, look for LOG_EVENT_SETUP in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>).<br/>
 > <br/>
-> Application modes and functionality are controlled by -dN command line options, where N is a hex value containing up to 64 flags. These flags are referenced throughout the sections below.
+> * Application modes and functionality are controlled by -dN command line options, where N is a hex value containing up to 64 flags. These flags are referenced throughout the sections below.
 
 Below are command line arguments and options that apply to both mediaMin and mediaTest, followed by (i) a [section specific to mediaMin](#user-content-mediamincommandlinequick-reference) and (ii) a [section specific to mediaTest](#user-content-mediatestcommandlinequick-reference).
 
@@ -2327,10 +2327,10 @@ the -oxxx_xcN.pcap files are transcoded outputs of the first three (3) streams f
 
 In addition to the event log, mediaMin generates a number of outputs automatically:
 
-> per stream jitter buffer output pcap<br/>
-> per stream wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
-> stream group output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups<br/>
-> stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
+> * per stream jitter buffer output pcap<br/>
+> * per stream wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
+> * stream group output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups<br/>
+> * stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
 
 Auto-generated per stream jitter buffer output streams are de-jittered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>.
 
