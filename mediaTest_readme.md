@@ -2356,27 +2356,27 @@ Note that options and flags may be combined together.
 
 [Packet history logging](#user-content-packetlog) is controlled by the -L command line option:
 
-> -L enables packet history logging with a default log filename of name_pkt_log.txt, where "name" is the filename (without extension) of the first command line input<br/>
-> -LlogFile enables packet history logging with a filename of logFile_pkt_log.txt<br/>
-> no -L entry disables packet history logging<br/>
-> -L-nopktlog or -L-nopacketlog disables packet history logging (same as no -L entry), but in a more visible way<br/>
+> * -L enables packet history logging with a default log filename of name_pkt_log.txt, where "name" is the filename (without extension) of the first command line input<br/>
+> * -LlogFile enables packet history logging with a filename of logFile_pkt_log.txt<br/>
+> * no -L entry disables packet history logging<br/>
+> * -L-nopktlog or -L-nopacketlog disables packet history logging (same as no -L entry), but in a more visible way<br/>
 
 <a name="RealTimeInterval"></a>
 #### Real-Time Interval
 
 -rN specifies a "real-time interval" that mediaMin uses for a target packet push rate and [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec RTP ptime (packet interval). Additional notes:
 
-> -r0 specifies no intervals, or "as fast as possible" (AFAP) mode, where mediaMin will push and process packets as fast as possible without regard to media domain processing that require a nominal timing reference, such as stream alignment<br/>
-> no entry is the same as -r0<br/>
-> -rN entry of 0 < N < 1 specifies "faster than real-time" (FTRT) mode, or 1/N faster than a nominal 10-20 msec ptime interval. Accurate timing for media domain processing, including stream alignment, is maintained depending on stream content, codec types, bitrates, and system / server CPU clockrate and number of cores. See [Bulk Pcap Handling](#user-content-bulkpcaphandling) for information and examples<br/>
-> entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above)<br/>
+> * -r0 specifies no intervals, or "as fast as possible" (AFAP) mode, where mediaMin will push and process packets as fast as possible without regard to media domain processing that require a nominal timing reference, such as stream alignment<br/>
+> * no entry is the same as -r0<br/>
+> * -rN entry of 0 < N < 1 specifies "faster than real-time" (FTRT) mode, or 1/N faster than a nominal 10-20 msec ptime interval. Accurate timing for media domain processing, including stream alignment, is maintained depending on stream content, codec types, bitrates, and system / server CPU clockrate and number of cores. See [Bulk Pcap Handling](#user-content-bulkpcaphandling) for information and examples<br/>
+> * entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above)<br/>
 
 #### RFC7198 Lookback Depth
 
 -lN (lower case L) specifies RTP packet de-duplication lookback depth. No entry sets N to 1, the default for compliance with RFC7198 temporal duplication. Additional notes:
 
-> -l0 disables packet de-duplication<br/>
-> -lN entry of N > 1 instructs [pktlib](#user-content-pktlib) to look further back in packet flow for "non-consecutive" duplicate RTP packets. N can be specified up to 8<br/>
+> * -l0 disables packet de-duplication<br/>
+> * -lN entry of N > 1 instructs [pktlib](#user-content-pktlib) to look further back in packet flow for "non-consecutive" duplicate RTP packets. N can be specified up to 8<br/>
 
 mediaMin warning sequences like this:
 	
