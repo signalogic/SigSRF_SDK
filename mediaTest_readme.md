@@ -469,7 +469,7 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 
 #### SDP Info Packets
 
-mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If [command line -dN options](#user-content-mediamincommandlineoptions) include the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite and SDP infomessages.
+mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If [command line -dN options](#user-content-mediamincommandlineoptions) include the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite and SDP info messages.
 
 Below is an example of mediaMin display showing a SIP Invite found message, along with other SIP messages. Note in this case the SDP description contains a unique Origin session ID.
 
@@ -2124,7 +2124,7 @@ do {
       (ii) N msec intervals (cmd line entry -rN),
       (iii) an average push rate based on output queue levels (the latter can be used with pcaps that don't have arrival timestamps) */
 
-      if (cur_time - base_time < interval_count*frameInterval[0]*1000) continue; else interval_count++;  /* if the time interval has elapsed, push and pull packets and increment the interval. Comparison is in usec */
+      if (cur_time - base_time < interval_count*RealTimeInterval[0]*1000) continue; else interval_count++;  /* if the [real-time interval](#user-content-realtimeinterval) has elapsed, push and pull packets and increment the interval. Comparison is in usec */
 
    /* read packets from input flows, push to packet/media threads */
 
