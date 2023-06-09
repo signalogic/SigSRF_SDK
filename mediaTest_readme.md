@@ -277,7 +277,9 @@ As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpst
 
     ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -C../session_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
 
-The first command line above uses dynamic session creation, telecom mode, and an -r20 argument (see [Real-Time Interval](#user-content-realtimeinterval) below). Because telecom mode is specified, the packet push rate is controlled by pcap packet arrival timestamps. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
+The first command line above uses dynamic session creation, telecom mode, and an -r20 argument (see [Real-Time Interval](#user-content-realtimeinterval) below). Because telecom mode is specified, the packet push rate is controlled by packet arrival timestamps. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
+
+The default RFC7198 packet duplication "lookback" depth is one (1) packet. By specifying -lN cmd line entry, lookback depth can be increased to 8 packets, or disabled (-l0 entry). For more information, see [RFC7198 Lookback Depth](#user-content-rfc7198lookbackdepth) below.
 
 <a name="JitterBufferControl"></a>
 ### Jitter Buffer Control
@@ -1577,21 +1579,37 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 <a name="PacketPushRateControl"></a>
 ### Packet Push Rate Control
 
-mediaMin supports a "-rN" command line option ([Real-Time Interval](#user-content-realtimeinterval)) to control packet push rate, where N is in msec. For example, typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for offline or post-processing purposes (testing, analysis, speech recognition testing, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line examples below give -r0 to specify as-fast-as-possible push rate:
+In telecom mode, mediaMin uses packet arrival timestamps to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib) DSPushPackets() API. Telecom mode assumes reliable and relatively accurate arrival timestamps. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line option (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs).
+	
+In analytics mode, mediaMin can treat packet arrival timestamps as somewhat accurate or assume they are completely invalid. In these cases, mediaMin uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval.
+
+For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by Real-Time Interval cmd line entry. The following command line examples show FTRT examples and their real-time counterparts:
+
+    real-time:           ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
+
+    FTRT (28x faster):   ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r0.7
+
+    real-time:           ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r20
+
+    FTRT (40x faster):   ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r0.5
+
+The following command line examples show AFAP examples:
 
     ./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
-	
+
     ./mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -L -d0x20000000040801 -r0
 
-In addition to push rate control, mediaMin also provides an average packet push rate algorithm, which can be applied when pktlib is operating in analytics mode, or for any case where packet arrival timestamps are zero or otherwise inaccurate. The AUTO_ADJUST_PUSH_RATE flag enables the average push rate algorithm (mediaMin command line 0x80000 -dN option in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), and the ANALYTICS_MODE flag enables analytics mode (0x40000 -dN option in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). Below are some analytics mode + push rate algorithm command line examples:
+For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
+
+#### Auto-Adjust Push Rate
+
+The auto-adjust packet push rate algorithm can be applied in the cmd line -dN argument in cases where packet arrival timestamps are zero or otherwise inaccurate. To operate correctly it must be combined with the ANALYTICS_MODE flag (the AUTO_ADJUST_PUSH_RATE and ANALYTICS_MODE flags are values 0x80000 and 0x40000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). Below are some auto-adjust push rate algorithm command line examples:
 
     ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc0c01 -r20
 
     ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc0c01 -r20
 
-Note the above command lines use .pcapng files given in [Dynamic Session Creation](#user-content-dynamicsessioncreation) examples, illustrating the concept of different approaches to process the same content.
-
-For more information on -r0 entry, see "Real-Time Interval" under [mediaMin Command Line Options](#user-content-mediamincommandlineoptions).
+In the various command lines above, you might notice the same media content being processed in different ways. Telecom mode should provide the highest media quality and most accurate timing in media output, but again, that assumes accurate arrival timestamps.
 
 <a name="DepthControl"></a>
 ### Depth Control
@@ -2446,6 +2464,7 @@ Note that options and flags may be combined together.
 > * -rN entry of 0 < N < 1 specifies "faster than real-time" (FTRT) mode, or 1/N faster than a nominal 10-20 msec ptime interval. Accurate timing for media domain processing, including stream alignment, is maintained depending on stream content, codec types, bitrates, and system / server CPU clockrate and number of cores. See [Bulk Pcap Handling](#user-content-bulkpcaphandling) for information and examples<br/>
 > * entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above)<br/>
 
+<a name="RFC7198LookbackDepth"></a>
 #### RFC7198 Lookback Depth
 
 -lN (lower case L) specifies RTP packet de-duplication lookback depth. No entry sets N to 1, the default for compliance with RFC7198 temporal duplication. Additional notes:
