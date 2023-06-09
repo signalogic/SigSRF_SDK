@@ -600,7 +600,7 @@ In telecom mode, mediaMin uses packet arrival timestamps to control packet push 
 	
 In analytics mode, mediaMin can treat packet arrival timestamps as somewhat accurate or assume they are completely invalid. In these cases, mediaMin uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval.
 
-For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by Real-Time Interval cmd line entry. The following command line examples show FTRT examples and their real-time counterparts:
+For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by Real-Time Interval cmd line entry. The following command lines show FTRT examples and their real-time counterparts:
 
     real-time:           ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
 
@@ -616,7 +616,7 @@ The following command line examples show AFAP examples:
 
     ./mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -L -d0x20000000040801 -r0
 
-For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
+ AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
 
 #### Auto-Adjust Push Rate
 
