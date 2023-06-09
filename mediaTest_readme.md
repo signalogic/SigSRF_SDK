@@ -618,7 +618,15 @@ The following command line examples show AFAP mode usage:
 
     ./mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -L -d0x20000000040801 -r0
 
+    ./mediaMin -cx86 -i../pcaps/DTMF_RTP_Event.pcap -L -d0x040c01 -r0
+
 Note in the above AFAP mode examples the ANALYTICS_MODE flag has been set in [-dN command line options](#user-content-mediamincommandlineoptions). AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For the same reason, AFAP mode does not work in telecom mode as a non-zero Real-Time Interval is needed to calculate packet arrival timestamps. For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
+
+In the following AFAP mode example, the input contains multiple streams so stream group processing and wav file output have been disabled:
+
+     ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0x040001 -r0
+
+For inputs containing only one stream, i.e. no need for time alignment between streams, stream group processing could be enabled, but any DTX, packet loss gaps, or other timing variations within the stream are likely to be incorrectly represented in wav file output.
 
 #### Auto-Adjust Push Rate
 
