@@ -626,7 +626,7 @@ In the following AFAP mode example, the input contains multiple streams so strea
 
      ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0x040001 -r0
 
-For inputs containing only one stream, i.e. no need for time alignment between streams, stream group processing could be enabled, but any DTX, packet loss gaps, or other timing variations within the stream are likely to be incorrectly represented in wav file output.
+For inputs containing only one stream, i.e. no need for time alignment between streams, stream group processing could be enabled, but DTX, packet loss gaps, or other timing variations within the stream may not be reflected with full accuracy in wav file and pcap output.
 
 #### Auto-Adjust Push Rate
 
@@ -753,9 +753,9 @@ Below are some command line examples, both in real-time and accelerated time:
     ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
     ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r0.7
 
-In the first example, processing is 40 times faster, and in the second about 28 times faster. Acceleration is less in the latter example due to total number of streams, codec complexity and bitrates, and media content. Amount of acceleration is also dependent on host system CPU clock rate, number of cores, and storage configuration.  Additional performance information - and how to determine the maximum acceleration without degradation of media quality - is given in [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) below.
+In the first example, processing is 40 times faster, and in the second about 28 times faster. Acceleration is less in the latter example due to total number of streams, codec complexity and bitrates, and media content. Amount of acceleration is also dependent on host system CPU clock rate, number of cores, and storage configuration.  Additional performance information - and how to determine the maximum acceleration without media quality degradation - is given in [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) below.
 
-In addition to FTRT mode, mediaMin also supports "as fast as possible" mode, or AFAP mode, which is enabled with -r0 [Real-Time Interval](#user-content-realtimeinterval) command line entry. AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams.
+In addition to FTRT mode, mediaMin also supports "as fast as possible" mode, or AFAP mode, which is enabled with -r0 [Real-Time Interval](#user-content-realtimeinterval) command line entry. AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For more information see [Packet Push Rate Control](#user-content-packetpushratecontrol) above.
 
 <a name="Peformance"></a>
 ## Performance
