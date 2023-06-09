@@ -1556,9 +1556,9 @@ Note however that 240 msec is a very large ptime more suited to unidirectional m
 
 DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the Pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  Complete DTMF handling examples are shown in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>.
 
-mediaMin command line examples that process pcaps containing DTMF RTP event packets are given in [DTMF / RTP Event Handling](#user-content-mediamindtmfhandling) above.
+mediaMin command line examples that process pcaps containing DTMF RTP event packets are given in [DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin) above.
 
-Packet log file examples showing incoming DTMF event packets and how they are translated to buffer output packets are included both in [DTMF / RTP Event Handling](#user-content-mediamindtmfhandling) above and [Packet Log](#user-content-packetlog) below.
+Packet log file examples showing incoming DTMF event packets and how they are translated to buffer output packets are included both in [DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin) above and [Packet Log](#user-content-packetlog) below.
 
 If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
 
