@@ -102,6 +102,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
+&nbsp;&nbsp;&nbsp;[**Packet Push Rate Control**](#user-content-packetpushratecontrol)<br/>
+
 &nbsp;&nbsp;&nbsp;[**Minimum API Interface**](#user-content-minimumapiinterface)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Group Usage**](#user-content-streamgroupusage)<br/>
@@ -154,7 +156,6 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandlingpktlib)<br/>
 &nbsp;&nbsp;&nbsp;[**Jitter Buffer**](#user-content-jitterbuffer)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Push Rate Control](#user-content-packetpushratecontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Depth Control](#user-content-depthcontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Repair](#user-content-packetrepair)<br/>
 &nbsp;&nbsp;&nbsp;[**Multiple RTP Streams (RFC8108)**](#user-content-multiplertpstreams)<br/>
@@ -591,6 +592,41 @@ a=ptime:20
 Both command line SDP info and packet flow SDP descriptions are added to mediaMin's internal SDP database. SDP descriptions are added only if they contain a non-zero, unique Origin field.
 
 The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path.
+
+<a name="PacketPushRateControl"></a>
+## Packet Push Rate Control
+
+In telecom mode, mediaMin uses packet arrival timestamps to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib) DSPushPackets() API. Telecom mode assumes reliable and relatively accurate arrival timestamps. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line option (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs).
+	
+In analytics mode, mediaMin can treat packet arrival timestamps as somewhat accurate or assume they are completely invalid. In these cases, mediaMin uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval.
+
+For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by Real-Time Interval cmd line entry. The following command line examples show FTRT examples and their real-time counterparts:
+
+    real-time:           ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
+
+    FTRT (28x faster):   ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r0.7
+
+    real-time:           ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r20
+
+    FTRT (40x faster):   ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r0.5
+
+The following command line examples show AFAP examples:
+
+    ./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
+
+    ./mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -L -d0x20000000040801 -r0
+
+For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
+
+#### Auto-Adjust Push Rate
+
+The auto-adjust packet push rate algorithm can be applied in the cmd line -dN argument in cases where packet arrival timestamps are zero or otherwise inaccurate. To operate correctly it must be combined with the ANALYTICS_MODE flag (the AUTO_ADJUST_PUSH_RATE and ANALYTICS_MODE flags are values 0x80000 and 0x40000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). Below are some auto-adjust push rate algorithm command line examples:
+
+    ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc0c01 -r20
+
+    ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc0c01 -r20
+
+In the various command lines above, you might notice the same media content being processed in different ways. Telecom mode should provide the highest media quality and most accurate timing in media output, but again, that assumes accurate arrival timestamps.
 
 <a name="MinimumAPIInterface"></a>
 ## Minimum API Interface
@@ -1575,41 +1611,6 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 * Dynamic channel creation to support multiple RTP streams per session (see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) above)
 * Dynamic delay and depth adjustment control through APIs and command line options
 * Statistics APIs, logging, and several options such as overrun control, probation control, flush, and bypass modes
-
-<a name="PacketPushRateControl"></a>
-### Packet Push Rate Control
-
-In telecom mode, mediaMin uses packet arrival timestamps to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib) DSPushPackets() API. Telecom mode assumes reliable and relatively accurate arrival timestamps. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line option (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs).
-	
-In analytics mode, mediaMin can treat packet arrival timestamps as somewhat accurate or assume they are completely invalid. In these cases, mediaMin uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval.
-
-For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by Real-Time Interval cmd line entry. The following command line examples show FTRT examples and their real-time counterparts:
-
-    real-time:           ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
-
-    FTRT (28x faster):   ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r0.7
-
-    real-time:           ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r20
-
-    FTRT (40x faster):   ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r0.5
-
-The following command line examples show AFAP examples:
-
-    ./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
-
-    ./mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -L -d0x20000000040801 -r0
-
-For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
-
-#### Auto-Adjust Push Rate
-
-The auto-adjust packet push rate algorithm can be applied in the cmd line -dN argument in cases where packet arrival timestamps are zero or otherwise inaccurate. To operate correctly it must be combined with the ANALYTICS_MODE flag (the AUTO_ADJUST_PUSH_RATE and ANALYTICS_MODE flags are values 0x80000 and 0x40000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). Below are some auto-adjust push rate algorithm command line examples:
-
-    ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc0c01 -r20
-
-    ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc0c01 -r20
-
-In the various command lines above, you might notice the same media content being processed in different ways. Telecom mode should provide the highest media quality and most accurate timing in media output, but again, that assumes accurate arrival timestamps.
 
 <a name="DepthControl"></a>
 ### Depth Control
