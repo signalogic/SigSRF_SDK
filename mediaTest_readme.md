@@ -550,7 +550,7 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 
 #### SDP Info Packets
 
-mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If [command line -dN options](#user-content-mediamincommandlineoptions) include the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite and SDP info messages.
+mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If [-dN command line options](#user-content-mediamincommandlineoptions) include the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite and SDP info messages.
 
 Below is an example of mediaMin display showing a SIP Invite found message, along with other SIP messages. Note in this case the SDP description contains a unique Origin session ID.
 
@@ -596,9 +596,9 @@ The mediaMin Makefile brings in SDP source code from the <a href="https://github
 <a name="PacketPushRateControl"></a>
 ## Packet Push Rate Control
 
-In telecom mode, mediaMin assumes packet arrival timestamps are reliable and mostly accurate, and uses them to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib) DSPushPackets() API. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line option (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs).
+In telecom mode, mediaMin assumes packet arrival timestamps are reliable and mostly accurate, and uses them to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib) DSPushPackets() API. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line option (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs). Telecom mode is enabled if the USE_PACKET_ARRIVAL_TIMES flag is given in [-dN command line options](#user-content-mediamincommandlineoptions) (the USE_PACKET_ARRIVAL_TIMES flag is value 0x10 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 	
-In analytics mode, mediaMin assumes packet arrival timestamps are only somewhat accurate or completely invalid, and uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval. As with telecom mode, analytics mode also uses the Real-Time Interval to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib).
+In analytics mode, mediaMin assumes packet arrival timestamps are only somewhat accurate or completely invalid, and uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval. As with telecom mode, analytics mode also uses the Real-Time Interval to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). Analytics mode is enabled if the ANALYTICS_MODE flag is given in [-dN command line options](#user-content-mediamincommandlineoptions) (the ANALYTICS_MODE flag is value 0x40000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
 For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by [Real-Time Interval](#user-content-realtimeinterval) command line entry. The following example command lines show FTRT mode vs real-time using SDK demo pcaps:
 
@@ -612,11 +612,13 @@ For offline or "bulk pcap processing" purposes, mediaMin supports "faster than r
 
 The following command line examples show AFAP mode usage:
 
+    ./mediaMin -cx86 -i../pcaps/dtmf_rtp_event_multiple_groups.pcapng -L -d0x40c01 -j0x2018 -r0
+
     ./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
 
     ./mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -L -d0x20000000040801 -r0
 
- AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
+Note in the above AFAP mode examples the ANALYTICS_MODE flag has been set in [-dN command line options](#user-content-mediamincommandlineoptions). AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For the same reason, AFAP mode does not work in telecom mode as a non-zero Real-Time Interval is needed to calculate packet arrival timestamps. For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
 
 #### Auto-Adjust Push Rate
 
