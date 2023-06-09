@@ -298,9 +298,9 @@ mediaMin is aware of RTP Event packet groups and instructs [pktlib](#user-conten
 
     ./mediaMin -cx86 -i../pcaps/dtmf_rtp_event_multiple_groups.pcapng -L -d0x00c11 -j0x2018 -r0.5
 
-    ./mediaMin -cx86 -i../pcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
+    ./mediaMin -cx86 -i../pcaps/DTMF_RTP_Event.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
 
-In the first two examples, the -jN cmd line argument is applied because dtmf_rtp_event_multiple_groups.pcapng has a high amount of packet out-of-order (ooo). The second command line runs the same test 40 times faster (see [Real-Time Interval](#user-content-realtimeinterval) below). The third command line is a static session configuration of a simple G711 pcap with no DTX and only a few RTP event packets.
+In the first two examples, the -jN cmd line argument is applied because dtmf_rtp_event_multiple_groups.pcapng has a high amount of packet out-of-order (ooo). The second command line runs the same test 40 times faster (see [Packet Push Rate Control](#user-content=packetpushratecontrol), [Bulk Pcap Handling](#user-content-bulkpcaphandling), and [Real-Time Interval](#user-content-realtimeinterval) below). The third command line is a static session configuration of a simple G711 pcap with no DTX and only a few RTP event packets, and runs with assumed -r0 entry ("as fast as possible" mode; see [Real-Time Interval](#user-content-realtimeinterval) below).
 
 For the first two command lines, below are excerpts from mediaMin display and the [packet log](#user-content-packetlog) generated at the conclusion of the mediaMin run.
 
