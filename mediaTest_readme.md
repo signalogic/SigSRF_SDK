@@ -833,8 +833,24 @@ Here is a summary of important points in achieving and sustaining real-time perf
     
 <sup>[1]</sup> Optimizing Linux apps for increased real-time performance is a gray area, pulled in different directions by large company politics and proprietary interests. At some point Linux developers will need to provide a "decentralized OS" architecture, supporting core subclasses with their own dedicated, minimal OS copy, able to run mostly normal code and handle buffered I/O, but with extremely limited central OS interaction. Such an architecture will be similar in a way to DPDK, but far more advanced, easier to use, and considered mainstream and future-proof. This will be essential to support computation intensive cores currently under development for HPC, AI and machine learning applications.
 
-<a name="Bulk Pcap Performance Considerations"><a/>
+<a name="BulkPcapPerformanceConsiderations"><a/>
 ### Bulk Pcap Performance Considerations
+
+mediaMin supports bulk pcap processing using "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, as explained in detail in [Packet Push Rate Control](#user-content-packetpushratecontrol) and [Bulk Pcap Handling](#user-content-bulkpcaphandling) sections above.
+
+If only packet processing is required, and stream group processing (including wav and pcap file media output) is not required, then AFAP mode can be used instead of FTRT mode. In that case, packets will be correctly re-ordered, repaired, and decoded as fast as the host system can possibly allow, and command line settings will affect speed of processing but not packet output.
+	
+If stream group processing is required, including correct wav and pcap file media output, then FTRT mode should be used. In that case, FTRT mode should be used, and the amount of acceleration achieved vs real-time is limited by:
+	
+> * RTP stream content, includng codec type, codec bitrate, media content (e.g. speech, music, silence, background noise, other sounds)
+> * Host system parameters, including CPU type and clock rate, number of cores, and storage configuration
+> * event log and packet log settings
+	
+Basically, aggressive FTRT mode settings will push system performance to the limit, so any small factor can make a difference.
+	
+To determine whether you are at the limit of FTRT mode acceleration, the following guidelines can be applied:
+	
+
 
 <a name="AudioQuality"><a/>
 ### Audio Quality
