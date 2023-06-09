@@ -598,7 +598,7 @@ The mediaMin Makefile brings in SDP source code from the <a href="https://github
 
 In telecom mode, mediaMin assumes packet arrival timestamps are reliable and mostly accurate, and uses them to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib) DSPushPackets() API. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line option (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs).
 	
-In analytics mode, mediaMin assumes packet arrival timestamps are only somewhat accurate or completely invalid, and uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval.
+In analytics mode, mediaMin assumes packet arrival timestamps are only somewhat accurate or completely invalid, and uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval. As with telecom mode, analytics mode also uses the Real-Time Interval to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib).
 
 For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by [Real-Time Interval](#user-content-realtimeinterval) command line entry. The following example command lines show FTRT mode vs real-time using SDK demo pcaps:
 
@@ -641,7 +641,7 @@ The above example:
 > 2. calls PushPackets() and PullPackets(), which call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
 > 3. reads input packet flow from pcaps and/or UDP ports inside PushPackets()
 > 4. creates sessions dynamically inside PushPackets(), which calls [pktlib](#user-content-pktlib) API DSCreateSession()
-> 5. saves (i) de-jittered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio streams to pcaps or UDP ports inside PullPackets()
+> 5. saves (i) re-ordered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio streams to pcaps or UDP ports inside PullPackets()
 
 <a name="StreamGroupUsage"></a>
 ## Stream Group Usage
@@ -2426,7 +2426,7 @@ In addition to the event log, mediaMin generates a number of outputs automatical
 > * stream group output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups<br/>
 > * stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
 
-Auto-generated per stream jitter buffer output streams are de-jittered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>.
+Auto-generated per stream jitter buffer output streams are re-ordered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>.
 
 The mediaMin command line does need to contain an output option.
 
