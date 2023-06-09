@@ -156,7 +156,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandlingpktlib)<br/>
 &nbsp;&nbsp;&nbsp;[**Jitter Buffer**](#user-content-jitterbuffer)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Depth Control](#user-content-depthcontrol)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Repair](#user-content-packetrepair)<br/>
 &nbsp;&nbsp;&nbsp;[**Multiple RTP Streams (RFC8108)**](#user-content-multiplertpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[**Duplicated RTP Streams (RFC7198)**](#user-content-duplicatedrtpstreams)<br/>
@@ -300,7 +300,7 @@ mediaMin is aware of RTP Event packet groups and instructs [pktlib](#user-conten
 
     ./mediaMin -cx86 -i../pcaps/DTMF_RTP_Event.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
 
-In the first two examples, the -jN cmd line argument is applied because dtmf_rtp_event_multiple_groups.pcapng has a high amount of packet out-of-order (ooo). The second command line runs the same test 40 times faster (see [Packet Push Rate Control](#user-content=packetpushratecontrol), [Bulk Pcap Handling](#user-content-bulkpcaphandling), and [Real-Time Interval](#user-content-realtimeinterval) below). The third command line is a static session configuration of a simple G711 pcap with no DTX and only a few RTP event packets, and runs with assumed -r0 entry ("as fast as possible" mode; see [Real-Time Interval](#user-content-realtimeinterval) below).
+In the first two examples, the -jN cmd line argument (see [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) below) is applied because dtmf_rtp_event_multiple_groups.pcapng has a high amount of packet out-of-order (ooo). The second command line runs the same test 40 times faster (see [Packet Push Rate Control](#user-content=packetpushratecontrol), [Bulk Pcap Handling](#user-content-bulkpcaphandling), and [Real-Time Interval](#user-content-realtimeinterval) below). The third command line is a static session configuration of a simple G711 pcap with no DTX and only a few RTP event packets, and runs with assumed -r0 entry ("as fast as possible" mode; see [Real-Time Interval](#user-content-realtimeinterval) below).
 
 For the first two command lines, below are excerpts from mediaMin display and the [packet log](#user-content-packetlog) generated at the conclusion of the mediaMin run.
 
@@ -1612,8 +1612,8 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 * Dynamic delay and depth adjustment control through APIs and command line options
 * Statistics APIs, logging, and several options such as overrun control, probation control, flush, and bypass modes
 
-<a name="DepthControl"></a>
-### Depth Control
+<a name="JitterBufferDepthControl"></a>
+### Jitter Buffer Depth Control
 
 The [pktlib](#user-content-pktlib) jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. mediaMin supports a "-jN" command line option, where N specifies depth as number of packets. For example, using the OpenLI example command line shown above, the jitter buffer depth could be specified as having max depth of 12 and target depth of 7:
 
