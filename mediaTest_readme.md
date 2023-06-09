@@ -93,6 +93,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
@@ -151,7 +152,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**_pktlib_**](#user-content-pktlib)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
-&nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandling)<br/>
+&nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandlingpktlib)<br/>
 &nbsp;&nbsp;&nbsp;[**Jitter Buffer**](#user-content-jitterbuffer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Push Rate Control](#user-content-packetpushratecontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Depth Control](#user-content-depthcontrol)<br/>
@@ -259,7 +260,7 @@ As explained in [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstream
  
     ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
 
-The first command line above uses dynamic session creation, analytics mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
+The first command line above uses dynamic session creation, analytics mode, and an -r20 argument (see [Real-Time Interval](#user-content-realtimeinterval) below) to specify a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
 
 Below is a screen capture showing output for the second command line above, with RTP stream transitions highlighted:
 
@@ -276,16 +277,93 @@ As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpst
 
     ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -C../session_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
 
-The first command line above uses dynamic session creation, telecom mode, and a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
+The first command line above uses dynamic session creation, telecom mode, and an -r20 argument (see [Real-Time Interval](#user-content-realtimeinterval) below). Because telecom mode is specified, the packet push rate is controlled by pcap packet arrival timestamps. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
 
 <a name="JitterBufferControl"></a>
 ### Jitter Buffer Control
 
+See [Jitter Buffer](#user-content-jitterbuffer) below for information on underlying jitter buffer operation and functionality.
+
 Below are mediaMin command line examples showing how to control jitter buffer depth:
 
+<a name="DTMFHandlingmediaMin"></a>
+### DTMF / RTP Event Handling
 
+mediaMin is aware of RTP Event packet groups and instructs [pktlib](#user-content-pktlib) to apply standard packet re-ordering and repair as needed. Below are command lines that demonstrate DTMF RTP event handling using pcaps included in the Rar Packages and Docker containers:
 
-See [Jitter Buffer](#user-content-jitterbuffer) below for information on underlying jitter buffer operation and functionality.
+    ./mediaMin -cx86 -i../pcaps/dtmf_rtp_event_multiple_groups.pcapng -L -d0x00c11 -j0x2018 -r20
+
+    ./mediaMin -cx86 -i../pcaps/dtmf_rtp_event_multiple_groups.pcapng -L -d0x00c11 -j0x2018 -r0.5
+
+    ./mediaMin -cx86 -i../pcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
+
+The -jN cmd line argument is applied because dtmf_rtp_event_multiple_groups.pcapng has a high amount of packet out-of-order. The second command line runs the same test 40 times faster (see [Real-Time Interval](#user-content-realtimeinterval)). The third example is a static session configuration of a simple G711 pcap with no DTX and only a few RTP event packets.
+
+For the first two command lines, below are excerpts from mediaMin display and the packet history log generated at the conclusion of the mediaMin run.
+
+```
+     :
+     :
+Pushed pkts 912, pulled pkts 1122j 1122x 534s   Pkts recv 1039 buf 1039 jb 1400 xc 1400 sg 700 sent 1400 mnp 161 160 -1 pd 41.88 47.50 -1.00-1.00
+DTMF Event packet 1 received @ pkt 1438, Event = 1, Duration = 160, Volume = 10
+DTMF Event packet 2 received @ pkt 1440, Event = 1, Duration = 320, Volume = 10
+DTMF Event packet 3 received @ pkt 1442, Event = 1, Duration = 480, Volume = 10
+DTMF Event packet 4 received @ pkt 1444, Event = 1, Duration = 640, Volume = 10
+DTMF Event packet 5 received @ pkt 1446, Event = 1, Duration = 800, Volume = 10
+DTMF Event packet 6 received @ pkt 1448, Event = 1, Duration = 960, Volume = 10
+DTMF Event packet 7 received @ pkt 1450, Event = 1, Duration = 1120, Volume = 10
+DTMF Event packet 8 received @ pkt 1452, Event = 1, Duration = 1280, Volume = 10
+DTMF Event packet 9 received @ pkt 1454, Event = 1, Duration = 1440, Volume = 10
+DTMF Event packet 10 received @ pkt 1456, Event = 1, Duration = 1600, Volume = 10
+DTMF Event packet 11 received @ pkt 1458, Event = 1, Duration = 1760, Volume = 10
+DTMF Event packet 12 received @ pkt 1460, Event = 1, Duration = 1920, Volume = 10
+DTMF Event packet 13 received @ pkt 1462, Event = 1, Duration = 2080, Volume = 10
+DTMF Event packet 14 received @ pkt 1464, Event = 1, Duration = 2240, Volume = 10
+DTMF Event packet 15 received @ pkt 1466, Event = 1, Duration = 2400, Volume = 10
+DTMF Event packet 16 received @ pkt 1468, Event = 1, Duration = 2560, Volume = 10
+DTMF Event packet 17 received @ pkt 1470, Event = 1, Duration = 2720, Volume = 10
+DTMF Event packet 18 received @ pkt 1472, Event = 1, Duration = 2720, Volume = 10, End of Event
+DTMF Event packet 19 received @ pkt 1474, Event = 1, Duration = 2720, Volume = 10, End of Event
+DTMF Event packet 20 received @ pkt 1476, Event = 1, Duration = 2720, Volume = 10, End of Event
+     :
+     :
+```
+
+```
+     :
+     :
+Seq num 684              timestamp = 196000, rtp pyld len = 7 SID
+Seq num 685              timestamp = 197280, rtp pyld len = 7 SID
+Seq num 686              timestamp = 198560, rtp pyld len = 32 media
+Seq num 687              timestamp = 198720, rtp pyld len = 32 media
+Seq num 688              timestamp = 198880, rtp pyld len = 32 media
+Seq num 699 ooo 689      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 700 ooo 690      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 701 ooo 691      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 698 ooo 692      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 697 ooo 693      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 696 ooo 694      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 695              timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 702 ooo 696      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 703 ooo 697      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 694 ooo 698      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 693 ooo 699      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 692 ooo 700      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 691 ooo 701      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 704 ooo 702      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 705 ooo 703      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 690 ooo 704      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 689 ooo 705      timestamp = 199040, rtp pyld len = 4 DTMF Event
+Seq num 706              timestamp = 199040, rtp pyld len = 4 DTMF Event End DTMF Event
+Seq num 707              timestamp = 199040, rtp pyld len = 4 DTMF Event End DTMF Event
+Seq num 708              timestamp = 199040, rtp pyld len = 4 DTMF Event End DTMF Event
+Seq num 709              timestamp = 201920, rtp pyld len = 32 media
+Seq num 710              timestamp = 202080, rtp pyld len = 32 media
+     :
+     :
+```
+
+Note the "ooo" packets in the ingress section of the packet log, which are corrected in jitter buffer output sections. Another packet log file example showing incoming DTMF event packets and how they are translated to buffer output packets is shown in [Packet Log](#user-content-packetlog) below.
 
 <a name="Sessions"></a>
 ## Sessions
@@ -1473,17 +1551,14 @@ Here is a mediaMin command line that converts an incoming pcap with 240 msec pti
 
 Note however that 240 msec is a very large ptime more suited to unidirectional media streams. For a bidirectional real-time media stream, for example a 2-way voice conversation, large ptimes would cause excessive delay and intelligibility problems between endpoints.
 
-<a name ="DTMFHandling"></a>
+<a name ="DTMFHandlingPktlib"></a>
 ## DTMF Handling
 
 DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the Pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  Complete DTMF handling examples are shown in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>.
 
-Here is a mediaMin command line that processes a pcap containing DTMF event packets:
+mediaMin command line examples that process pcaps containing DTMF RTP event packets are given in [DTMF / RTP Event Handling](#user-content-mediamindtmfhandling) above.
 
-```C
-./mediaMin -cx86 -i../pcaps/DtmfRtpEvent.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
-```
-A log file example showing incoming DTMF event packets and how they are translated to buffer output packets is included in [Packet Log](#user-content-packetlog) below.
+Packet log file examples showing incoming DTMF event packets and how they are translated to buffer output packets are included both in [DTMF / RTP Event Handling](#user-content-mediamindtmfhandling) above and [Packet Log](#user-content-packetlog) below.
 
 If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
 
@@ -1502,7 +1577,7 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 <a name="PacketPushRateControl"></a>
 ### Packet Push Rate Control
 
-mediaMin supports a "-rN" command line option to control packet push rate, where N is in msec. For example, typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for offline or post-processing purposes (testing, analysis, speech recognition testing, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line examples below give -r0 to specify fast-as-possible push rate:
+mediaMin supports a "-rN" command line option ([Real-Time Interval](#user-content-realtimeinterval)) to control packet push rate, where N is in msec. For example, typical telecom mode applications might specify -r20 for a 20 msec push rate, which corresponds to a 20 msec ptime (typical for a wide variety of media codecs). But for offline or post-processing purposes (testing, analysis, speech recognition testing, measurement, etc), it might be necessary to operate "faster than real-time", or as fast as possible. The command line examples below give -r0 to specify as-fast-as-possible push rate:
 
     ./mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -C../session_config/pcap_file_test_config -L -d0x40c00 -r0
 	
