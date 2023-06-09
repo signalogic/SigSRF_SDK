@@ -840,7 +840,7 @@ mediaMin supports bulk pcap processing using "faster than real-time" (FTRT) and 
 
 If only packet processing is required, and stream group processing (including wav and pcap file media output) is not required, then AFAP mode can be used instead of FTRT mode. In that case, packets will be correctly re-ordered, repaired, and decoded as fast as the host system can possibly allow, and command line settings will affect speed of processing but not packet output.
 	
-If stream group processing is required, including correct wav and pcap file media output, then FTRT mode should be used. In that case, FTRT mode should be used, and the amount of acceleration achieved vs real-time is limited by:
+If stream group processing is required, including correct wav and pcap file media output, then FTRT mode should be used. In FTRT mode the amount of acceleration achieved vs real-time is limited by:
 	
 > * RTP stream content, includng codec type, codec bitrate, media content (e.g. speech, music, silence, background noise, other sounds)
 > * Host system parameters, including CPU type and clock rate, number of cores, and storage configuration
