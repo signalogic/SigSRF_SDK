@@ -840,18 +840,19 @@ mediaMin supports bulk pcap processing with "faster than real-time" (FTRT) and "
 
 If only packet processing is required, and stream group processing (including wav and pcap file media output) is not required, then AFAP mode may be a better option than FTRT mode. In AFAP mode packets will be re-ordered, repaired, and decoded as fast as the host system allows, and command line settings will affect processing speed but not packet output correctness.
 	
-If stream group processing is required, including correct wav and pcap file media output, then FTRT mode should be used. In FTRT mode the amount of acceleration achievable vs real-time is limited by:
-	
-> * RTP stream content, includng codec type, codec bitrate, media content (e.g. speech, music, silence, background noise, other sounds)
-> * Host system parameters, including CPU type and clock rate, number of cores, and storage configuration
-> * event log and packet log settings
+If stream group processing is required, including correct wav and pcap file media output, then FTRT mode should be used. In FTRT mode the maximum amount of acceleration is limited by:
+
+> * RTP stream amount of packet out-of-order (ooo), amount of DTX
+> * RTP stream media content, including codec type, codec bitrate, media content (e.g. speech, music, silence, background noise, other sounds)
+> * host system parameters, including CPU type and clock rate, number of cores, and storage configuration
+> * event log and packet log settings, other command line settings
 	
 You can apply the following guidelines to determine whether you are at the limit of FTRT mode acceleration:
 	
 > * there should be no warning messages about thread pre-emption, wav file write time exceeded, or other timing-related conditions. Warning message examples are given in [Stream Group Output Wav Path](#user-content-streamgroupoutputwavpath) below
-> * the number of FLCs (Frame Loss Compensation) in stream group output should be the same or nearly the same as running the pcap(s) in real-time
+> * the number of FLCs (Frame Loss Compensation) in stream group output should be the same or nearly the same as running the same pcap(s) in real-time. Look for "Underrun" in [mediaMin Run-Time Stats](#user-content-runtimestats)
 	
-An increase in the number of FLCs in FTRT mode indicates the system does not have enough processing capacity to keep up with the amount of acceleration specified in [Real-Time Interval](#user-content-realtimeinterval) -rN command line entry. Basically, the system is not able to keep up with continuous stream group wav and pcap output without having to repair artificially missed frames. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output wav files, limiting audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc might help.
+The last indicator is the most reliable. An increase in FTRT mode FLCs indicates the system does not have enough processing capacity to keep up with acceleration specified in [Real-Time Interval](#user-content-realtimeinterval) -rN command line entry. Basically, the system is not able to maintain continuous stream group wav and pcap output without having to repair missed frames caused by lack of compute resources. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output wav files, limiting stream group audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc. might help.
 
 <a name="AudioQuality"><a/>
 ### Audio Quality
