@@ -836,21 +836,22 @@ Here is a summary of important points in achieving and sustaining real-time perf
 <a name="BulkPcapPerformanceConsiderations"><a/>
 ### Bulk Pcap Performance Considerations
 
-mediaMin supports bulk pcap processing using "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, as explained in detail in [Packet Push Rate Control](#user-content-packetpushratecontrol) and [Bulk Pcap Handling](#user-content-bulkpcaphandling) sections above.
+mediaMin supports bulk pcap processing with "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, as explained in detail in [Packet Push Rate Control](#user-content-packetpushratecontrol) and [Bulk Pcap Handling](#user-content-bulkpcaphandling) sections above.
 
-If only packet processing is required, and stream group processing (including wav and pcap file media output) is not required, then AFAP mode can be used instead of FTRT mode. In that case, packets will be correctly re-ordered, repaired, and decoded as fast as the host system can possibly allow, and command line settings will affect speed of processing but not packet output.
+If only packet processing is required, and stream group processing (including wav and pcap file media output) is not required, then AFAP mode may be a better option than FTRT mode. In AFAP mode packets will be re-ordered, repaired, and decoded as fast as the host system allows, and command line settings will affect processing speed but not packet output correctness.
 	
-If stream group processing is required, including correct wav and pcap file media output, then FTRT mode should be used. In FTRT mode the amount of acceleration achieved vs real-time is limited by:
+If stream group processing is required, including correct wav and pcap file media output, then FTRT mode should be used. In FTRT mode the amount of acceleration achievable vs real-time is limited by:
 	
 > * RTP stream content, includng codec type, codec bitrate, media content (e.g. speech, music, silence, background noise, other sounds)
 > * Host system parameters, including CPU type and clock rate, number of cores, and storage configuration
 > * event log and packet log settings
 	
-Basically, aggressive FTRT mode settings will push system performance to the limit, so any small factor can make a difference.
+You can apply the following guidelines to determine whether you are at the limit of FTRT mode acceleration:
 	
-To determine whether you are at the limit of FTRT mode acceleration, the following guidelines can be applied:
+> * there should be no warning messages about thread pre-emption, wav file write time exceeded, or other timing-related conditions. Warning message examples are given in [Stream Group Output Wav Path](#user-content-streamgroupoutputwavpath) below
+> * the number of FLCs (Frame Loss Compensation) in stream group output should be the same or nearly the same as running the pcap(s) in real-time
 	
-
+An increase in the number of FLCs in FTRT mode indicates the system does not have enough processing capacity to keep up with the amount of acceleration specified in [Real-Time Interval](#user-content-realtimeinterval) -rN command line entry. Basically, the system is not able to keep up with continuous stream group wav and pcap output without having to repair artificially missed frames. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output wav files, limiting audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc might help.
 
 <a name="AudioQuality"><a/>
 ### Audio Quality
@@ -2522,6 +2523,7 @@ on the mediaMin command line.
 
 General guidelines and recommendations for high capacity and real-time performance are given in [Performance](#user-content-performance) above. Below are command line options that may improve mediaMin and user application performance, in particular real-time performance and audio quality.
 
+<a name="StreamGroupOutputWavPath"></a>
 #### Stream Group Output Wav Path
 
 The -gWavOutputPath command line option specifies a path for intermediate stream group wav output, including individual streams and merged streams. Because packet/media threads write wav files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating media) drives. In general, for HDD based wav output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over long time periods may fragment files during writes (i.e. files with some sectors seperated by a long physical distance on the disk platter), thus resulting in longer seek times.
