@@ -630,7 +630,7 @@ For inputs containing only one stream, i.e. no need for time alignment between s
 
 #### Auto-Adjust Push Rate
 
-The auto-adjust packet push rate algorithm can be applied in the cmd line -dN argument in cases where packet arrival timestamps are zero or otherwise inaccurate. To operate correctly it must be combined with the ANALYTICS_MODE flag (the AUTO_ADJUST_PUSH_RATE and ANALYTICS_MODE flags are values 0x80000 and 0x40000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). Below are some auto-adjust push rate algorithm command line examples:
+The auto-adjust packet push rate algorithm can be applied in [-dN command line options](#user-content-mediamincommandlineoptions) in cases where packet arrival timestamps are zero or otherwise inaccurate. To operate correctly it must be combined with the ANALYTICS_MODE flag (the AUTO_ADJUST_PUSH_RATE and ANALYTICS_MODE flags are values 0x80000 and 0x40000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). Below are some auto-adjust push rate algorithm command line examples:
 
     ./mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc0c01 -r20
 
