@@ -626,7 +626,7 @@ In the following AFAP mode example, the input contains multiple streams so strea
 
      ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0x040001 -r0
 
-For inputs containing only one stream, i.e. no need for time alignment between streams, stream group processing could be enabled, but DTX, packet loss gaps, or other timing variations within the stream may not be reflected with full accuracy in wav file and pcap output.
+For inputs containing only one stream, i.e. no need for time alignment between streams, stream group processing could be enabled, but DTX, packet loss gaps, or other timing variations within the stream may not be reflected accurately in wav file and pcap output.
 
 #### Auto-Adjust Push Rate
 
