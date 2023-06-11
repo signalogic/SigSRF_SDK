@@ -617,8 +617,8 @@ extern "C" {
      unsigned short int  dst_port;
      unsigned int        seqnum;          /* TCP sequence number */
      unsigned int        ack_seqnum;      /* TCP acknowlegement sequence number */
-     int                 pyld_ofs;
-     int                 pyld_len;
+     int                 pyld_ofs;        /* TCP or UDP payload offset */
+     int                 pyld_len;        /* TCP or UDP payload length */
      int                 rtp_hdr_ofs;     /* RTP items filled for UDP packets. If not a valid RTP packet then RTP items may be undefined */
      int                 rtp_hdr_len;
      int                 rtp_pyld_ofs;

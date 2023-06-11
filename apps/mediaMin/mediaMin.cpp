@@ -135,8 +135,9 @@
    Modified Apr 2023 JHB, add num TCP and UDP packets to mediaMin stats summary
    Modified May 2023 JHB, add support for AFAP and FTRT modes ("as fast as possible" and "faster than real-time"). Look for comments near isAFAPMode and isFTRTMode (defined in mediaMin.h)
    Modified May 2023 JHB, RealTimeInterval[] now handled as float, as part of AFAP and FTRT mode support. extern reference to timeScale for accelerated time in FTRT mode
-   Modified May 2023 JHB, support port list on cmd line (-pN entry), look for uPortList[] in isNonDynamicPortAllowed()
-   Modified May 2023 JHB, support RFC7198 lookback depth on cmd line (-lN entry), act on uLookbackDepth in CreateDynamicSession(). Default of no entry is 1 packet lookback, zero disables (-l0 entry), max is 8 packet lookback
+   Modified May 2023 JHB, support port list on cmd line (-pN entry), search through uPortList[] in isNonDynamicPortAllowed()
+   Modified May 2023 JHB, modify CreateDynamicSession() to support RFC7198 lookback depth on cmd line (-lN entry, uLookbackDepth value set by cmdLineInterface() in cmd_line_interface.c). Default of no entry is 1 packet lookback, zero disables (-l0 entry), max is 8 packet lookback
+   Modified Jun 2023 JHB, codec auto-detection updates: add AMR-WB 14.25 kbps, in cat 4 detection fix AMR-NB SIDs wrongly detected as EVS
 */
 
 
@@ -300,7 +301,7 @@ int isNonDynamicPortAllowed(uint16_t port, int thread_index);
 
 /* mediaMin application entry point. Program and multithreading notes:
 
-   -one mediaMin application thread is active if mediaMin is run from the cmd line. This includes standard operating mode for reference apps (SBC, lawful interception, ASR, malware detection, etc)
+   -one mediaMin application thread is active if mediaMin is run from the cmd line. This includes standard operating mode for reference apps (SBC, lawful interception, call recording, ASR, RTP malware detection, etc)
 
    -multiple mediaMin application threads may be active if invoked from the mediaTest cmd line, using the -Et and -tN arguments. This is the case for high capacity operation and stress tests
 
@@ -408,7 +409,7 @@ char tmpstr[MAX_APP_STR_LEN];
       if (Mode & ENABLE_FLC_HOLDOFFS) printf("  FLC Holdoffs for stream group output enabled\n");
 //         if (Mode & DISABLE_OUTPUT_BUF_INTERVAL) printf("  output buffer interval field in termN definitions is disabled\n");
       if (Mode & ENABLE_ONHOLD_FLUSH_DETECT) printf("  on-hold flush detection for audio merge contributors enabled (this is deprecated)\n");
-      if (Mode & ENABLE_TIMING_MARKERS) printf("  debug: 1 sec timing markers will be injected in stream group output\n");
+      if (Mode & ENABLE_TIMING_MARKERS) printf("  inject 1 sec timing markers into stream group audio output\n");
       if (Mode & ENABLE_PACKET_INPUT_ALARM) printf("  input packet alarm enabled, if DSPushPackets() is not called for the alarm time limit a warning will show in the event log\n");
       if (Mode & ENABLE_WAV_OUT_SEEK_TIME_ALARM) printf("  wav output file seek time alarm enabled, streamlib will show warnings if wav output file writes exceed time threshold\n");
 
@@ -420,7 +421,7 @@ char tmpstr[MAX_APP_STR_LEN];
 
       if (Mode & ENABLE_DEBUG_STATS) printf("  debug info and stats enabled\n");
       if (Mode & ENABLE_DER_DECODING_STATS) printf("  DER decoding stats enabled\n");
-      if (Mode & ENABLE_INTERMEDIATE_PCAP) printf("  intermediate HIx / BER pcap output enabled\n");
+      if (Mode & ENABLE_INTERMEDIATE_PCAP) printf("  intermediate HI2 / HI3 / BER pcap output enabled\n");
       if (Mode & ENABLE_ASN_OUTPUT) printf("  intermediate ASN output enabled\n");
    }
 
@@ -1231,12 +1232,35 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, uint8
 
    *cat |= 4;
 
-/* mostly likely EVS, but could still be some AMR NB/WB bitrates depending on payload length. Added checks for codec_type already set, to support SDP file input, JHB Jan2021 */
+/* mostly likely EVS, but could still be some AMR NB/WB bitrates depending on payload length. Added checks for codec_type already set, to support SDP file input, JHB Jan 2021 */
+
+   unsigned int fSID_EVS = false, fSID_AMR_NB = false, fSID_AMR_WB = false;
 
    switch (rtp_pyld_len) {
 
-      case 6:  /* EVS SID frames, compact format, header full, or header full with CMR byte */
+      case 6:  /* EVS or AMR SID frames, compact format (or bandwidth efficient), header full (or octet aligned), or header full with CMR byte */
       case 7:
+
+      /* check for valid EVS and AMR SIDs by calling DSGetPayloadInfo() API in voplib, which does an exact and thorough check, including EVS AMR-WB IO mode. If not found, then we fall through to non-SID detection case statements, JHB Jun 2023 */
+
+         DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, rtp_pkt, rtp_pyld_len, NULL, &fSID_EVS);
+         if (fSID_EVS || codec_type == EVS) {
+            *bitrate = 13200;  /* we don't know actual bitrate yet, so we guess 13.2 kbps which is typical. Not a problem as EVS decoder will figure it out */
+            return EVS;
+         }
+
+         DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_AMR_NB, rtp_pkt, rtp_pyld_len, NULL, &fSID_AMR_NB);
+         if (fSID_AMR_NB || codec_type == AMR) {
+            *bitrate = 12200;  /* we don't know actual bitrate yet, so we guess 12.2 kbps which is typical. Not a problem as AMR decoder will figure it out */
+            return AMR;
+         }
+
+         DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_AMR_WB, rtp_pkt, rtp_pyld_len, NULL, &fSID_AMR_WB);
+         if (fSID_AMR_WB || codec_type == AMR_WB) {
+            *bitrate = 23850;  /* we don't know actual bitrate yet, so we guess 23.85 kbps which is typical. Not a problem as AMR-WB decoder will figure it out */
+            return AMR_WB;
+         }
+
       case 8:
       case 17:
       case 18:  /* EVS primary 7.2 kbps, added JHB Dec2020 */
@@ -1248,6 +1272,11 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, uint8
       case 34:
       case 35:
          if (!codec_type || codec_type == EVS) return EVS;  /* add non-auto-detect: EVS codec type already set (e.g. SDP file input), JHB Jan2021 */
+      case 37:
+         if ((!codec_type || codec_type == AMR_WB) && rtp_pyld_len == 37) {  /* added JHB Jun 2023 */
+            *bitrate = 14250;
+            return AMR_WB;
+         }
       case 41:  /* EVS 16400 bps, 41 for compact header format, 42 for full header format */
       case 42:
          if (!codec_type || codec_type == EVS) {
@@ -2035,8 +2064,8 @@ void DeleteSession(HSESSION hSessions[], int nSessionIndex, int thread_index) {
      -we ask DSPushPackets() to strip duplicate packets and let us know so we can immediately push another packet
 
    -in all cases:
-    -filter RTCP packets
     -filter non-dynamic UDP ports, act on some UDP control plane messages (SAP/SDP protocol, some SIP messages)
+    -filter RTCP packets
 */
 
 int PushPackets(uint8_t* pkt_in_buf, HSESSION hSessions[], SESSION_DATA session_data[], int nSessions, uint64_t cur_time, int thread_index) {
@@ -2191,7 +2220,6 @@ read_packet:
       goto read_packet;  /* filter this ssrc -- don't process its packet */
    }
 #endif
-
             /* valid packet from pcap or port input found, set any persistent params needed and proceed ... */
 
                dest_port = PktInfo.dst_port;
