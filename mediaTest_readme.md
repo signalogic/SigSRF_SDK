@@ -753,9 +753,15 @@ Below are some command line examples, both in real-time and accelerated time:
     ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
     ./mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r0.7
 
-In the first example, processing is 40 times faster, and in the second about 28 times faster. Acceleration is less in the latter example due to total number of streams, codec complexity and bitrates, and media content. Amount of acceleration is also dependent on host system CPU clock rate, number of cores, and storage configuration.  Additional performance information - and how to determine the maximum acceleration without media quality degradation - is given in [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) below.
+In the first example, processing is 40 times faster, and in the second about 28 times faster. Acceleration is less in the latter example due to total number of streams, codec complexity and bitrates, and media content. Amount of acceleration is also dependent on host system CPU clock rate, number of cores, and storage configuration.  Additional performance information - and how to determine maximum acceleration without media quality degradation - is given in [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) below.
 
 In addition to FTRT mode, mediaMin also supports "as fast as possible" mode, or AFAP mode, which is enabled with -r0 [Real-Time Interval](#user-content-realtimeinterval) command line entry. AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For more information see [Packet Push Rate Control](#user-content-packetpushratecontrol) above.
+
+### FTRT and AFAP Mode Notes
+
+Code running in [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) doesn't know that time has been accelerated. For example, if you see a packet push alarm saying "stream X has pushed no packets for 15 seconds" in FTRT mode, you would see the same warning in real-time.
+
+Concurrently specifiying AFAP mode with Real-Time Interval -r0 command line entry and applying the USE_PACKET_ARRIVAL_TIMES flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in [-dN command line options](#user-content-mediamincommandlineoptions) will produce undefined behavior.
 
 <a name="Peformance"></a>
 ## Performance
@@ -1643,11 +1649,23 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 <a name="JitterBufferDepthControl"></a>
 ### Jitter Buffer Depth Control
 
-The [pktlib](#user-content-pktlib) jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. mediaMin supports a "-jN" command line option, where N specifies depth as number of packets. For example, using the OpenLI example command line shown above, the jitter buffer depth could be specified as having max depth of 12 and target depth of 7:
+The [pktlib](#user-content-pktlib) jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. Default values of target and max depth are 10 and 14 packets, respectively. However, these can be changed if necessary. mediaMin supports a -jN command line option, where N specifies depth as number of packets. For example, using the [OpenLI](#user-content-hi2_hi3_stream_and_openli_support) example command line shown above, jitter buffer depth could be specified as less than default values, having max depth of 12 and target depth of 7:
 
     ./mediaMin -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20 -j0x0c07
-  
+
+or more than default values:
+
+    ./mediaMin -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20 -j0x1810
+
 Note that N is a 16-bit value accepting two (2) 8-bit values, one for max depth and one for target depth (for this reason N is normally given as a hex value, but it's not necessary).
+	
+If you see mediaMin warning messages such as:
+
+```
+00:01:56.159.041 WARNING (pkt): get_chan_packets() says ch 2 ssrc 0xfd3ca075 non-monotonic jitter buffer output sequence numbers 1121 1119, gap = -2, num_fill_timestamps = -17, numpkts = 4, num pkts add = 5, fPrevSID_reuse = 0, SID repair = 0
+```
+
+then increasing jitter buffer target and max depths should be helpful. In the above warning example, somewhere in the input RTP stream re-ordering failed by 2 packets; increasing target and max depths by 8 is a reasonable approach.
 
 <a name="PacketRepair"></a>
 ### Packet Repair
