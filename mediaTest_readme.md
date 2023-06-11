@@ -9,6 +9,8 @@ After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-
 
 Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav). Example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the [SigSRF SDK](https://github.com/signalogic/SigSRF_SDK). SDK capacity is limited to four (4) concurrent transcoding streams, and four (4) concurrent instances (one instance = console window), for a total of eight (8) streams. The commercial software has no limitations for concurrency or multiuser, bare metal, VM, container, or other supported platforms.
 
+**_[Jump to Table of Contents](#user-content-toc)_**
+
 # News and Updates
 
 1Q-2Q 2023 - Improvements over a wide range of areas, including:
@@ -84,6 +86,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 [paTest Demo (Predictive Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md)
 
+<a name="TOC"></a>
 # Table of Contents
 
 [**_mediaMin_**](#user-content-mediamin)<br/>
@@ -741,7 +744,7 @@ mediaMin also generates [stream group](#user-content-streamgroupusage) output .w
 <a name="BulkPcapHandling"></a>
 ## Bulk Pcap Handling
 
-Using the mediaMin command line [Real-Time Interval argument](#user-content-realtimeinterval), an internal mode called "faster than real-time", or FTRT mode, can be enabled inside mediaMin, [pktlib](#user=content-pktlib), and  [streamlib](#user-content-streamlib). FTRT mode allows pcaps to be processed faster than real-time, while still maintaining correct time alignment (sync) between multiple streams in each pcap (and across pcaps, if given as multiple inputs on the mediaMin command line). Stream alignment happens in the media domain - *after* packets are re-ordered, repaired, and decoded - and requires a reference clock, which makes accelerated time a difficult math and signal processing problem.
+The mediaMin command line [Real-Time Interval argument](#user-content-realtimeinterval) allows a "faster than real-time", or FTRT mode. FTRT mode allows pcaps to be processed faster than real-time, while still maintaining correct time alignment (sync) between multiple streams in each pcap (and across pcaps, if given as multiple inputs on the mediaMin command line). Stream alignment happens in the media domain - *after* packets are re-ordered, repaired, and decoded - and requires a reference clock, which makes accelerated time a difficult math and signal processing problem.
 
 FTRT mode is useful when a large number of pcaps, or continuous aggregration of pcaps, must be processed and stream group wav and/or pcap output is required but not live real-time streaming pcap or UDP port output.
 
