@@ -916,7 +916,7 @@ If after building an application you encounter a failed link or unresolved run-t
 To force a specific codec lib version to link, when building the mediaMin or mediaTest reference application (or user-defined application, assuming it incorporates reference Makefile code), you can enter:
 	
 ```
-Make all codec_libs_version=N.n
+make all codec_libs_version=N.n
 ```
 	
 where N.n can be 4.6, 9.4, or 11.3, or as needed for future codec lib versions.
