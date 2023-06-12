@@ -34,6 +34,7 @@
    Modified Mar 2023 JHB, implement SESSION_CONTROL_NO_PARSE uFlag, add more SIP message types, fix bug in searching for BYE message
    Modified Apr 2023 JHB, handle SIPREC format in SIP invite packets (partly based on RFC7245). Look for p_siprec
    Modified May 2023 JHB, implement a case-insensitive search option in find_keyword(). This handles observed SIP message headers with variations in case
+   Modified Jun 2023 JHB, additional SIP Invite debug if needed, look for FINDINVITEDEBUG
 */
 
 #include <fstream>
@@ -406,11 +407,21 @@ int ProcessSessionControl(uint8_t* pkt_in_buf, unsigned int uFlags, int nInput, 
    int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL);
    int pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL);
 
+   //#define FINDINVITEDEBUG
+
+   #ifdef FINDINVITEDEBUG
+   static int count = 0;
+   int state = 0, save_amount = 0;
+   #endif
+
    if (thread_info[thread_index].sip_save_len[nInput]) {
 
       memmove(&pkt_in_buf[pyld_ofs + thread_info[thread_index].sip_save_len[nInput]], &pkt_in_buf[pyld_ofs], pyld_len);
       memcpy(&pkt_in_buf[pyld_ofs], thread_info[thread_index].sip_save[nInput], thread_info[thread_index].sip_save_len[nInput]);
       pyld_len += thread_info[thread_index].sip_save_len[nInput];
+      #ifdef FINDINVITEDEBUG
+      save_amount = thread_info[thread_index].sip_save_len[nInput];
+      #endif
       thread_info[thread_index].sip_save_len[nInput] = 0;
       free(thread_info[thread_index].sip_save[nInput]);
    }
@@ -453,14 +464,13 @@ type_check:
 
       if (p) {
 
-         //#define FINDINVITEDEBUG
          #ifdef FINDINVITEDEBUG
-         static int count = 0;
          char tmpstr[4096];
          int j;
          memcpy(tmpstr, &pkt_in_buf[pyld_ofs+index], pyld_len-index);
          for (j=0; j<pyld_len-index; j++) if (tmpstr[j] < 32 && tmpstr[j] != 10 && tmpstr[j] != 13) tmpstr[j] = 176;  /* fill with printable char */
          tmpstr[pyld_len-index] = 0;
+         state = 1;
          #endif
 
          uint8_t* p_ofs = p;
@@ -482,6 +492,10 @@ type_check:
             -this makes us dependent on presence of v=0. RFC4566 does say v= is mandatory, and for many years version is zero
          */
 
+            #ifdef FINDINVITEDEBUG
+            state = 2;
+            #endif
+
             uint8_t* p2;
             strcpy(search_str, "v=0");
             p2 = find_keyword(p, pyld_len - index - (int)(&p[i] - &pkt_in_buf[pyld_ofs+index]), search_str, false);
@@ -489,11 +503,19 @@ type_check:
 
             if (!p2) goto ret;  /* v=0 not found */
 
+            #ifdef FINDINVITEDEBUG
+            state = 3;
+            #endif
+
          /* Session Recording Protocol (SIPREC, RFC 7866) is an open SIP based protocol for call recording, partly based on RFC 7245 (https://datatracker.ietf.org/doc/id/draft-portman-siprec-protocol-01.html) */
 
             p_siprec = find_keyword(p2, pyld_len - index - (int)(p2 - &pkt_in_buf[pyld_ofs+index]), "--OSS-unique-boundary-42", false);  /* look for siprec header, JHB Apr 2023 */
 
             if (p_siprec) {  /* siprec Invite has a different format, with "unique-boundary" marked header and footer, and XML section */
+
+               #ifdef FINDINVITEDEBUG
+               state = 4;
+               #endif
 
                len = (int)(p_siprec - p2);  /* for siprec, use alternative len calculation -- avoid (i) siprec header intro and padding before v=0 (ii) XML section after end of sdp info (separated by another siprec header, if found), JHB Apr 2023 */
             }
@@ -505,6 +527,10 @@ type_check:
             #endif
          }
          else {  /* SAP/SDP protocol packets are lightweight with no header info (e.g. length:, v=, etc) */
+
+            #ifdef FINDINVITEDEBUG
+            state = 5;
+            #endif
 
             len = pyld_len - (int)(p - &pkt_in_buf[pyld_ofs+index]);
             #ifndef USE_OLD_CONTENTS_START
@@ -521,7 +547,8 @@ type_check:
          #endif
 
          #ifdef FINDINVITEDEBUG
-         printf("\nSIP invite debug %d\n pyld_ofs = %d, pyld_len = %d, index = %d \n len = %d, rem = %d \n", count, pyld_ofs, pyld_len, index, len, rem);
+         printf("\nSIP invite state = %d, len>rem %s, count = %d \n pyld_ofs = %d, pyld_len = %d, index = %d \n len = %d, rem = %d, p_start-&pktbuf[ofs] = %d, save_amount = %d \n", state, len > rem ? "yes, saving partial" : "no, goto more search", count++, pyld_ofs, pyld_len, index, len, rem, (int)(p_start - &pkt_in_buf[pyld_ofs+index]), save_amount);
+         if (count == 3) printf(tmpstr);
          #endif
 
          if (len > rem) {  /* save partial SIP invite, starting with "Length:" */
@@ -552,8 +579,6 @@ type_check:
 
                Log_RT(4, "mediaMin INFO: %s found, dst port = %u, pyld len = %d, len = %d, rem = %d, index = %d, SDP info contents as follows \n%s", (session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", dest_port, pyld_len, len, rem, index, szSDP);
             }
-
-// printf(" *** before SDPParseInfo \n");
 
             SDPParseInfo(szSDP, (uFlags & SESSION_CONTROL_ADD_ITEM_MASK) ? SDP_PARSE_ADD : 0, nInput, thread_index);  /* SDPParseInfo() will show messages if SDP infos are invalid, repeats of existing session IDs, or added to the input stream's SDP database. Note that return value is number of Invite added, if that should be needed, JHB Jan 2023 */
 

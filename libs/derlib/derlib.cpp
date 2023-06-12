@@ -34,6 +34,7 @@
   Modified Dec 2022 JHB, add DSDecodeDerFields() to generate XML output from DER streams in formats (i) DER tag/set notation (ii) ASN.1 notation (per ETSI LI ASN.1 specs)
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
   Modified Apr 2023 JHB, add calloc buffer overflow check, improve error handling in DSDecodeDerFields()
+  Modified Jun 2023 JHB, add local buffer in DSDecodeDerStream() to make it non-destructive on input pkt_in_buf. Also add buffer size checks and warning messages, and error check on UDP length calculation in IPv6 candidate checksum
 */
 
 /* Linux includes */
@@ -458,6 +459,7 @@ bool fProcessASN = true;
    /* get packet dest port, payload length and offset */
 
       if ((int)(dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, p, -1, NULL, NULL)) <= 0) {
+
          Log_RT(2, "ERROR: DSDecodeDerFields() says input packet has invalid destination port, uFlags = 0x%x \n", uFlags);
          return -1;
       }
@@ -483,6 +485,7 @@ bool fProcessASN = true;
       }
 
       if (i == MAX_DER_DSTPORTS) {
+
          Log_RT(2, "ERROR: DSDecodeDerFields() says maximum dest ports %u exceeded, uFlags = 0x%x \n", MAX_DER_DSTPORTS, uFlags);
          return -1;
       }
@@ -493,13 +496,13 @@ bool fProcessASN = true;
 
          if (!port_info[port_index].chunk_len) port_info[port_index].pBuffer = (uint8_t*)calloc(MAX_MEM_CALLOC, sizeof(uint8_t));  /* allocate packet aggregation buffer */
 
-         if (port_info[port_index].chunk_len + plen > MAX_MEM_CALLOC) {  /* check for possible packet aggregation buffer overflow, return error condition if so, JHB Apr 2023 */
+         if (port_info[port_index].chunk_len + plen > MAX_MEM_CALLOC) {
             Log_RT(2, "ERROR: DSDecodeDerFields() says maximum packet aggregation buffer size %u exceeded, chunk len= %u, plen= %u, uFlags = 0x%x \n", MAX_MEM_CALLOC, port_info[port_index].chunk_len, plen, uFlags);
             free(port_info[port_index].pBuffer);
             return -1;
          }
 
-         memcpy(&port_info[port_index].pBuffer[port_info[port_index].chunk_len], &p[ofs], plen);  /* add packet data to packet aggregation buffer */
+         memcpy(&port_info[port_index].pBuffer[port_info[port_index].chunk_len], &p[ofs], plen);  /* add to buffer */
          port_info[port_index].chunk_len += plen;
 
          if (plen >= MAX_DER_BUFFER_SIZE) fProcessASN = false;  /* wait for packet size less than max to process. To-do: come up with a check for case where packet is not split but has max size */
@@ -863,6 +866,7 @@ char szInterceptPointId[MAX_DER_STRLEN] = "";
 
 bool fPrint = false, fPointId;
 int i, ret_val = 0, asn_index = 0, pyld_len = -1;
+uint8_t* pkt_in_buf_local = NULL;
 
    if (--hDerStream < 0) return -1;
 
@@ -919,21 +923,26 @@ int i, ret_val = 0, asn_index = 0, pyld_len = -1;
 
       int save_len = der_streams[hDerStream].save_len;
 
+      pkt_in_buf_local = (uint8_t*)malloc(pyld_len + save_len);  /* allocate local buffer, don't modify caller's pkt_in_buf. DSDecoderDerStream() should be non-destructive, I have no idea why it was not coded that way, JHB Jun 2023 */
+
       if (save_len) {
-         memmove(&pkt_in_buf[pyld_ofs + save_len], &pkt_in_buf[pyld_ofs], pyld_len);
-         memcpy(&pkt_in_buf[pyld_ofs], der_streams[hDerStream].packet_save, save_len);
+         memmove(&pkt_in_buf_local[save_len], &pkt_in_buf[pyld_ofs], pyld_len);
+         memcpy(pkt_in_buf_local, der_streams[hDerStream].packet_save, save_len);
          pyld_len += save_len;
       }
+      else memcpy(pkt_in_buf_local, &pkt_in_buf[pyld_ofs], pyld_len);
+
+      if (pyld_len >= MAX_TCP_PACKET_LEN) Log_RT(3, "WARNING: DSDecodeDerStream() says payload size %d exceeds max buffer size %d \n", pyld_len, MAX_TCP_PACKET_LEN);
 
    /* scan for interception point Id (may also be an interception identifier, see DSFindDerStream() above) */
 
-      uint8_t* p = (uint8_t*)memmem(&pkt_in_buf[pyld_ofs + asn_index], pyld_len, szInterceptPointId, strlen(szInterceptPointId));
+      uint8_t* p = (uint8_t*)memmem(&pkt_in_buf_local[asn_index], pyld_len, szInterceptPointId, strlen(szInterceptPointId));
 
-      if (p && p - &pkt_in_buf[pyld_ofs] >= 2 && ((fPointId = p[-2] == DER_TAG_INTERCEPTPOINTID) || p[-2] == 0x81)) {
+      if (p && p - pkt_in_buf_local >= 2 && ((fPointId = p[-2] == DER_TAG_INTERCEPTPOINTID) || p[-2] == 0x81)) {
 
-         asn_index = (int)(p - &pkt_in_buf[pyld_ofs] - 2);  /* start index at interception point tag */
+         asn_index = (int)(p - pkt_in_buf_local - 2);  /* start index at interception point tag */
 
-         p = &pkt_in_buf[pyld_ofs];   /* asn_index is offset from start of payload */
+         p = pkt_in_buf_local;   /* asn_index is offset from start of payload */
 
          uint8_t tag = p[asn_index];  /* interception point tag, len */
          uint8_t len = p[asn_index+1];
@@ -1158,6 +1167,8 @@ int i, ret_val = 0, asn_index = 0, pyld_len = -1;
                   checksum = ((uint16_t)p[asn_index + 47] << 8) | p[asn_index + 46];  /* 46 = byte offset of UDP checksum in IPv6/UDP header without extensions. To-do: handle extensions */
                   uint16_t udp_len = ((uint16_t)p[asn_index + 44] << 8) | p[asn_index + 45];
 
+                  if (udp_len > pyld_len - asn_index) goto next_byte;  /* sanity check, JHB Jun 2023 */
+
                /* calculate IPv6 UDP checksum, start with pseudo-header, per RFC2460 sec 8.1 */
 
                   checksum_candidate = calc_checksum(&p[asn_index + 8], 0, 32, -1, 16);                           /* IPv6 pseudo-header: source/dest addrs */
@@ -1242,7 +1253,9 @@ next_byte:
                fPrint = true;
             }
 
-            memcpy(der_streams[hDerStream].packet_save, &p[asn_index], der_streams[hDerStream].save_len);
+            if (der_streams[hDerStream].save_len > (int)MAX_RTP_PACKET_LEN) Log_RT(3, "WARNING: DSDecodeDerStream() says Der stream buffer size %d exceeds maximum size %d \n", der_streams[hDerStream].save_len, MAX_RTP_PACKET_LEN);
+
+            memcpy(der_streams[hDerStream].packet_save, &p[asn_index], min(der_streams[hDerStream].save_len, (int)MAX_RTP_PACKET_LEN));
             der_streams[hDerStream].asn_index = 0;
          }
          else if (asn_index == pyld_len) {
@@ -1275,6 +1288,8 @@ ret:
       if (!der_decode->uList) der_streams[hDerStream].asn_index = 0;  /* if nothing found, reset the asn index */
       der_decode->asn_index = der_streams[hDerStream].asn_index;  /* save asn index */
    }
+
+   if (pkt_in_buf_local) free(pkt_in_buf_local);  /* free local buffer, JHB Jun 2023 */
 
    if (uFlags & DS_DECODE_DER_PRINT_DEBUG_INFO) {
       if (fPrint) printf(" \n");
