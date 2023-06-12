@@ -11,14 +11,14 @@
 
   DER decoding library and APIs, supporting:
 
-  -fully abstracted, generic decoding of DER encoded packets, with no requirement for "a-priori" ASN.1 format knowledge or double-pass, non-real-time, or other batch processing. Only need is to provide TCP/IP packets as they are received
-  -aggregated packets (i.e. content split across multiple TCP/IP packets)
+  -fully abstracted, generic decoding of DER encoded packets, with no requirement for "a-priori" ASN.1 format knowledge or double-pass, non-real-time, or other batch processing. Only need is to provide packets (either TCP/IP or UDP) as they are received
+  -aggregated packets (i.e. content split across multiple packets)
   -multiple concurrent streams with no spinlocks outside of DSCreateDerStream() and DSDeleteDerStream()
-  -missing or wrong packet arrival timestamps. In that case use mediaMin's "analytics mode"
+  -missing or wrong packet arrival timestamps. In that case use mediaMin's "analytics mode" and auto-adjust push rate
 
  Purpose
  
-  Decode ETSI LI HI2 and HI3 DER encoded streams in real-time without need for ASN.1 compiler. Experience shows that ASN.1 formats tend to vary widely and in many cases are incorrectly documented and/or not well supported / maintained by either CSPs / operators or LEAs
+  Decode ETSI LI HI2 and HI3 DER encoded streams in real-time without need for ASN.1 compiler. Experience shows that ASN.1 formats tend to vary widely and in many cases are incorrectly documented and/or not well supported / maintained by CSPs / operators or LEAs
  
  Revision History
 
@@ -925,25 +925,26 @@ uint8_t* pkt_in_buf_local = NULL;
 
   /* allocate local buffer. Notes, JHB Jun 2023:
   
-     -DSDecoderDerStream() needs to operate destructively on the input packet buffer, so we need a local copy 
-     -we discard the packet header (pyld_ofs first part of buffer). This assumes no further DSGetPacketInfo() or other pktlib API calls will be made on pkt_in_buf
-     -amount of memory malloc'd limited to aggregated packet buffer size, no extra
+     -DSDecoderDerStream() needs to operate destructively on the input packet buffer, so we malloc a local copy 
+     -for the local buffer we discard the packet header (pyld_ofs bytes) and copy input payload contents only; local buffer has length buf_len
+     -DSGetPacketInfo() or other pktlib API calls can still be made on pkt_in_buf but not pkt_in_buf_local, unless it's after decoding/extracting an encapsulated packet
+     -amount of memory malloc'd limited to aggregated buffer size, no extra. Any buffer overflow or out-of-range is gonna get a seg-fault
   */
 
-      pkt_in_buf_local = (uint8_t*)malloc(pyld_len + save_len);
+      int buf_len = pyld_len + save_len;
+      pkt_in_buf_local = (uint8_t*)malloc(buf_len);
 
       if (save_len) {
-         memmove(&pkt_in_buf_local[save_len], &pkt_in_buf[pyld_ofs], pyld_len);
+         memmove(&pkt_in_buf_local[save_len], &pkt_in_buf[pyld_ofs], buf_len - save_len);
          memcpy(pkt_in_buf_local, der_streams[hDerStream].packet_save, save_len);
-         pyld_len += save_len;
       }
-      else memcpy(pkt_in_buf_local, &pkt_in_buf[pyld_ofs], pyld_len);
+      else memcpy(pkt_in_buf_local, &pkt_in_buf[pyld_ofs], buf_len);
 
-      if (pyld_len >= MAX_TCP_PACKET_LEN) Log_RT(3, "WARNING: DSDecodeDerStream() says payload size %d exceeds max buffer size %d \n", pyld_len, MAX_TCP_PACKET_LEN);
+      if (buf_len >= MAX_TCP_PACKET_LEN) Log_RT(3, "WARNING: DSDecodeDerStream() says buffer size %d exceeds max size %d \n", buf_len, MAX_TCP_PACKET_LEN);
 
    /* scan for interception point Id (may also be an interception identifier, see DSFindDerStream() above) */
 
-      uint8_t* p = (uint8_t*)memmem(&pkt_in_buf_local[asn_index], pyld_len, szInterceptPointId, strlen(szInterceptPointId));
+      uint8_t* p = (uint8_t*)memmem(&pkt_in_buf_local[asn_index], buf_len, szInterceptPointId, strlen(szInterceptPointId));
 
       if (p && p - pkt_in_buf_local >= 2 && ((fPointId = p[-2] == DER_TAG_INTERCEPTPOINTID) || p[-2] == 0x81)) {
 
@@ -964,7 +965,7 @@ uint8_t* pkt_in_buf_local = NULL;
          }
 
          if (uFlags & DS_DECODE_DER_PRINT_DEBUG_INFO) {
-            printf("found HI3 DER stream interception point %s, tag = 0x%x, len = %u, pyld len = %d, pyld ofs = %d", szInterceptPointId, tag, len, pyld_len, pyld_ofs);
+            printf("found HI3 DER stream interception point %s, tag = 0x%x, len = %u, buf len = %d, pyld ofs = %d", szInterceptPointId, tag, len, buf_len, pyld_ofs);
             fPrint = true;
          }
 
@@ -1136,7 +1137,7 @@ uint8_t* pkt_in_buf_local = NULL;
             -always make sure to not exceed available encapsulated TCP packet payload length
          */
 
-            while (asn_index < pyld_len) {
+            while (asn_index < buf_len) {
 
                uint16_t checksum_candidate, checksum;
                uint8_t ip_ver = p[asn_index] >> 4;
@@ -1174,7 +1175,7 @@ uint8_t* pkt_in_buf_local = NULL;
                   checksum = ((uint16_t)p[asn_index + 47] << 8) | p[asn_index + 46];  /* 46 = byte offset of UDP checksum in IPv6/UDP header without extensions. To-do: handle extensions */
                   uint16_t udp_len = ((uint16_t)p[asn_index + 44] << 8) | p[asn_index + 45];
 
-                  if (udp_len > pyld_len - asn_index) goto next_byte;  /* sanity check, JHB Jun 2023 */
+                  if (udp_len > buf_len - asn_index) goto next_byte;  /* sanity check, JHB Jun 2023 */
 
                /* calculate IPv6 UDP checksum, start with pseudo-header, per RFC2460 sec 8.1 */
 
@@ -1248,12 +1249,12 @@ next_byte:
       /* handle aggregated packets, notes:
 
          -assume this is an aggregated packet after some arbitrarily large amount of data (i.e. a lot larger than even large codec packet with multiple ptimes)
-         -if we don't land exactly on end of payload, we need to save data and insert at start of next packet
+         -if we don't land exactly on end of payload, we need to save data and insert at start of next buffer
       */
 
-         if (asn_index > pyld_len - 500 && asn_index < pyld_len) {
+         if (asn_index > buf_len - 500 && asn_index < buf_len) {
 
-            der_streams[hDerStream].save_len = pyld_len - asn_index;
+            der_streams[hDerStream].save_len = buf_len - asn_index;
 
             if (uFlags & DS_DECODE_DER_PRINT_DEBUG_INFO) {
                printf(", aggregated end, save len = %d", der_streams[hDerStream].save_len);
@@ -1265,7 +1266,7 @@ next_byte:
             memcpy(der_streams[hDerStream].packet_save, &p[asn_index], min(der_streams[hDerStream].save_len, (int)MAX_RTP_PACKET_LEN));
             der_streams[hDerStream].asn_index = 0;
          }
-         else if (asn_index == pyld_len) {
+         else if (asn_index == buf_len) {
 
             if (uFlags & DS_DECODE_DER_PRINT_DEBUG_INFO) {
                printf(", exact end");
@@ -1275,10 +1276,10 @@ next_byte:
             der_streams[hDerStream].save_len = 0;
             der_streams[hDerStream].asn_index = 0;
          }
-         else if (asn_index > pyld_len) {
+         else if (asn_index > buf_len) {
 
             if (uFlags & DS_DECODE_DER_PRINT_DEBUG_INFO) {
-               printf(" exceeds pyld_len %d", pyld_len);
+               printf(" exceeds buf_len %d", buf_len);
                fPrint = true;
             }
 
