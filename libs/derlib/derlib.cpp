@@ -928,17 +928,14 @@ uint8_t* pkt_in_buf_local = NULL;
      -DSDecoderDerStream() needs to operate destructively on the input packet buffer, so we malloc a local copy 
      -for the local buffer we discard the packet header (pyld_ofs bytes) and copy input payload contents only; local buffer has length buf_len
      -DSGetPacketInfo() or other pktlib API calls can still be made on pkt_in_buf but not pkt_in_buf_local, unless it's after decoding/extracting an encapsulated packet
-     -amount of memory malloc'd limited to aggregated buffer size, no extra. Any buffer overflow or out-of-range is gonna get a seg-fault
+     -amount of memory malloc'd limited to aggregated buffer size, no extra. Any buffer overflow or out-of-range is gonna seg-fault
   */
 
       int buf_len = pyld_len + save_len;
       pkt_in_buf_local = (uint8_t*)malloc(buf_len);
 
-      if (save_len) {
-         memmove(&pkt_in_buf_local[save_len], &pkt_in_buf[pyld_ofs], buf_len - save_len);
-         memcpy(pkt_in_buf_local, der_streams[hDerStream].packet_save, save_len);
-      }
-      else memcpy(pkt_in_buf_local, &pkt_in_buf[pyld_ofs], buf_len);
+      if (save_len) memcpy(pkt_in_buf_local, der_streams[hDerStream].packet_save, save_len);
+      memcpy(&pkt_in_buf_local[save_len], &pkt_in_buf[pyld_ofs], buf_len - save_len);
 
       if (buf_len >= MAX_TCP_PACKET_LEN) Log_RT(3, "WARNING: DSDecodeDerStream() says buffer size %d exceeds max size %d \n", buf_len, MAX_TCP_PACKET_LEN);
 
