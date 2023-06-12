@@ -918,12 +918,19 @@ uint8_t* pkt_in_buf_local = NULL;
 
    {  // extra scope level in case we need it
 
-      int pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL);
+      int pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL);  /* input packet buffer can be TCP or UDP */
       if (pyld_len == -1) pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL);
 
       int save_len = der_streams[hDerStream].save_len;
 
-      pkt_in_buf_local = (uint8_t*)malloc(pyld_len + save_len);  /* allocate local buffer, don't modify caller's pkt_in_buf. DSDecoderDerStream() should be non-destructive, I have no idea why it was not coded that way, JHB Jun 2023 */
+  /* allocate local buffer. Notes, JHB Jun 2023:
+  
+     -DSDecoderDerStream() needs to operate destructively on the input packet buffer, so we need a local copy 
+     -we discard the packet header (pyld_ofs first part of buffer). This assumes no further DSGetPacketInfo() or other pktlib API calls will be made on pkt_in_buf
+     -amount of memory malloc'd limited to aggregated packet buffer size, no extra
+  */
+
+      pkt_in_buf_local = (uint8_t*)malloc(pyld_len + save_len);
 
       if (save_len) {
          memmove(&pkt_in_buf_local[save_len], &pkt_in_buf[pyld_ofs], pyld_len);
