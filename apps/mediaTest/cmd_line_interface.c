@@ -36,7 +36,7 @@
    Modified Jan 2023 JHB, add szAppFullCmdLine var and GetCommandLine()
    Modified May 2023 JHB, suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail
    Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
-   Modified Jun 2023 JHB, initialize timeScale to zero to allow packet_float_media_proc() to tell if an app has already set timeScale or it needs to do it
+   Modified Jun 2023 JHB, initialize timeScale to zero to allow packet_float_media_proc() to know if an app has already set timeScale
 */
 
 

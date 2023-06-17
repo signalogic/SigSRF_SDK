@@ -1639,14 +1639,14 @@ err_msg:
    session->term1.max_loss_ptimes = 3;
    session->term1.max_pkt_repair_ptimes = 4;
 
-   #if 0
+   #if 1
    /* dormant_SSRC_wait_time controls detection and flush time when a stream "takes over" another stream's SSRC, JHB Sep 2022. Notes:
    
-       -set to non-zero (in msec) to override pktlib default of 1 sec
+       -set to non-zero (in msec) to override pktlib default of 100 msec
        -set to 1 if immediate flush is needed (which helps avoid packets being dropped from the jitter buffer because they arrived too late)
-       -longer wait times can be needed if streams are legitimately alternating use of the same SSRC
+       -longer wait times can be needed if streams are legitimately alternating use of the same SSRC. In that case it's also possible to completely disable dormant session detection and flush using the cmd line -dn options DISABLE_DORMANT_SESSION_DETECTION flag
    */
-   session->term1.dormant_SSRC_wait_time = 1;
+   if (Mode & SLOW_DORMANT_SESSION_DETECTION) session->term1.dormant_SSRC_wait_time = 1000;  /* slow dormant session detection time is 1 sec, JHB Jun 2023 */
    #endif
    if (codec_config_params.payload_shift) session->term1.payload_shift = codec_config_params.payload_shift;
 

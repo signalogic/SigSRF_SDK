@@ -1478,7 +1478,7 @@ run_loop:
    if (!fMediaThread) printf("Starting processing loop, press 'q' to exit\n");
 
    if (!start_time) start_time = timeScale*(get_time(USE_CLOCK_GETTIME) - base_time);
-   
+
 /* continuous packet/media thread loop */
 
    do {
@@ -1487,7 +1487,7 @@ run_loop:
 
       if (fAnalyticsMode || (cur_time - prev_display_time > 20000*timeScale)) {  /* print counters and check keyboard input every 20 msec */
 
-         if (nStatsDisplayPause > 0) nStatsDisplayPause--;  /* stats display pause count, JHB May 2023 */
+         if (nStatsDisplayPause > 0) nStatsDisplayPause--;  /* if stats display "pause count" non-zero then decrement and temporarily don't display stats, JHB May 2023 */
 
          else if ((int)pkt_counters[thread_index].pkt_input_cnt != last_pkt_input_cnt || (int)pkt_counters[thread_index].pkt_read_cnt != last_pkt_read_cnt || (int)pkt_counters[thread_index].pkt_add_to_jb_cnt != last_pkt_add_to_jb_cnt || pkt_xcode_cnt != last_pkt_xcode_cnt || pkt_pulled_cnt != last_pkt_pulled_cnt || pkt_group_cnt != last_pkt_group_cnt
              #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
@@ -1515,7 +1515,7 @@ run_loop:
                char bufstr[10];
                if (fMediaThread) strcpy(bufstr, "buf");
                else strcpy(bufstr, "buffered");
-               if (fMediaThread && pkt_counters[thread_index].pkt_add_to_jb_cnt >= 1000000L) sprintf(&tmpstr[strlen(tmpstr)], " %d%s", pkt_counters[thread_index].pkt_add_to_jb_cnt, bufstr);
+               if (fMediaThread && pkt_counters[thread_index].pkt_add_to_jb_cnt >= 1000000L) sprintf(&tmpstr[strlen(tmpstr)], " %d%s", pkt_counters[thread_index].pkt_add_to_jb_cnt, bufstr);  /* print "short form" after some arbitary packet count, to compensate for count strings with more digits and taking more screen space */
                else sprintf(&tmpstr[strlen(tmpstr)], " %s %d", bufstr, pkt_counters[thread_index].pkt_add_to_jb_cnt);
 
                if (pkt_counters[thread_index].pkt_add_to_jb_cnt) fNotZero = true;
@@ -2746,7 +2746,7 @@ next_session:
 
                         #define ANALYTICSDEBUG
                         #ifdef ANALYTICSDEBUG
-                        static bool fOnce[MAX_SESSIONS][MAX_TERMS] = {{ false }};
+                        static bool fOnce[MAX_SESSIONS][MAX_TERMS] = {{ false }};  /* note fOnce is not reset after sessions are used; after session handles start to recycle this info will no longer be printed. To-do: rename fOnce[] and initialize to false in InitSession(), JHB Jun 2023 */
                         if (!fOnce[hSession][term]) {
                            float input_buffer_interval = DSGetSessionInfoInt2Float(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_INPUT_BUFFER_INTERVAL, term+1, NULL));
                            unsigned int output_buffer_interval = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_OUTPUT_BUFFER_INTERVAL, term+1, NULL);
@@ -4354,8 +4354,8 @@ bool fChanFound = false;
 
                /* check if we exceed time period before a channel SSRC can be considered dormant. Notes, JHB Sep 2022:
                
-                  -before we didn't have any wait-time period, but now we've seen duplicated streams (or near duplicated) with same SSRCs active at same time, they may even alternate rapidly (within a few hundred msec)
-                  -default wait time is 1 sec, set in DSCreateSession() if not set by user code. See mediaMin.cpp for source code example setting this option at session create time
+                  -before we didn't have any wait-time period, but now we've seen duplicated streams (or near duplicated) with same SSRCs active at same time, they may even alternate (thrash) rapidly (within a few hundred msec)
+                  -current default in DSCreateSession (pktilb.c) is 100 msec if not set by user code. CreateDynamicSession() in mediaMin.cpp uses the SLOW_DORMANT_SESSION_DETECTION flag to extend this to 1 sec. See CreateDynamicSession() source for example setting this option at session create time, Jun 2023
                 */
   
                   if ((int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000 > term1.dormant_SSRC_wait_time) {  /* note we don't use timeScale here; we assume the app is also operating at accelerated time, JHB Jun 2023 */
@@ -6049,7 +6049,6 @@ organize_by_ssrc:
       if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {
          add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Loss (ch:%%)%s, missing seq (ch:num)%s, max consec missing seq%s\n", pktlstr, missstr, consstr);
          add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Ooo (ch:pkts)%s, max%s\n", iooostr, mxooostr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Avg stats calcs (ch:num)%s\n", calcstr);
       }
 
       if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS) {
@@ -6074,6 +6073,10 @@ organize_by_ssrc:
       sprintf(allocsmaxstr, "%llu", (long long unsigned int)DSGetJitterBufferInfo(0, DS_JITTER_BUFFER_INFO_MAX_ALLOCS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Holdoffs (ch:num) adj%s, dlvr%s, zero pulls (ch:num)%s, allocs (cur/max)%s/%s\n", jbhldadj, jbhlddel, jbzpstr, allocscurstr, allocsmaxstr);
+
+      if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Avg stats calcs (ch:num)%s\n", calcstr);
+      }
 
    /* include event log stats, to make it easier to see if anything happened to worry about, JHB May2020 */
    
