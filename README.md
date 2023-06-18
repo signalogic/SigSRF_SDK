@@ -51,17 +51,20 @@ The primary objectives of EdgeStream and SigSRF software are:
 <a name="Applications"></a>
 ## Applications and Use Cases
 
-EdgeStream and SigSRF software are currently deployed in the following application areas:
+EdgeStream and SigSRF software are currently deployed in the following cloud and edge application areas:
 
-* Session Border Controller (SBC)
-* Media Gateway
+### Cloud Use Cases
+* Lawful Intercept and Lawful Intelligence (LI)
+* Call Recording and Transcription
+* Session Border Controller (SBC) and Media Gateway
+* RTP Decoder (<a href="https://www.signalogic.com/evs_codec.html" target=_blank>EVS</a>, AMR, G729, MELPe, etc)
+* RTP Malware Detection
+* Network Analyzers
+
+### Edge Use Cases
 * Robotics -- implement voice commands (ASR, automatic speech recognition) (<a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hw + sw product page</a>
 * Factory, construction, warehouse equipment - implement accident avoidance for remotely controlled and automated equipment
 * Vehicle automation - implement small server add-on / after-market products such as small form-factor Lidar
-* Lawful Intercept and Lawful Intelligence (LI)
-* RTP Malware Detection
-* RTP Decoder (<a href="https://www.signalogic.com/evs_codec.html" target=_blank>EVS</a>, AMR, G729, MELPe, etc)
-* Network Analyzers
 * Satcom and HF Radio Speech Compression
 * R&D Labs and Workstations
 
