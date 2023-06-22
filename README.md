@@ -149,7 +149,7 @@ Below is a Linux htop measurement showing SigSRF software high capacity operatio
 
 The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cores, 8 physical cores per CPU, and 2 (two) CPUs) each with 16 GB of RAM. Some key aspects include:
 
-  - **Workload** Dynamic session creation and management, RTP packet media decoding, all packet processing options, partial media stream processing options (including stream merging), and real-time pcap and wav file generation are enabled. ASR (automatic speech recognition) is not enabled, as it has a substantial impact on capacity (see [ASR Notes](#user-content-asrnotes) below). Streams contain a mix of EVS and AMR-WB codecs
+  - **Workload** Dynamic session creation and management, RTP packet media decoding, all packet processing options, partial media stream processing options (including RTP stream merging), and real-time pcap and wav file generation are enabled. ASR (automatic speech recognition) is not enabled, as it has a substantial impact on capacity (see [ASR Notes](#user-content-asrnotes) below). Streams contain a mix of EVS and AMR-WB codecs
   
   - **Thread allocation ratio** Media/packet worker threads and application threads are allocated in a 5:3 ratio. Application threads are responsible for UDP port monitoring and I/O, pcap and wav file I/O, session management, and APIs interfacing to packet/media threads <sup>1</sup>
   
