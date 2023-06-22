@@ -3,7 +3,7 @@
 After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-content-installnotes), this page gives example command lines and basic documentation for the mediaMin and mediaTest reference applications, including:
 
  - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs
- - high capacity transcoding, stream merging, and audio enhancement processing
+ - high capacity transcoding, RTP stream merging, and audio enhancement processing
  - test and measurement, including codec audio quality and performance, media RFC verification, and transcoding
  - application examples, including source code, showing how to use [pktlib](#user-content-pktlib) and voplib APIs (see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram">architecture diagram</a> on the SigSRF page)
 
@@ -47,7 +47,7 @@ Complete info is in the <a href="https://github.com/signalogic/SigSRF_SDK/blob/m
 
 1Q-2Q 2021 - encapsulated stream support, tested with OpenLI pcaps containing DER encoded HI3 intercept streams, per ETSI LI and ASN.1 standards
 
-1Q 2021 - real-time ASR option added to mediaMin command line. Kaldi ASR works on stream group outputs, after RTP decoding, stream merging and other signal processing. All codecs supported (narrowband codecs are up-sampled prior to ASR)
+1Q 2021 - real-time ASR option added to mediaMin command line. Kaldi ASR works on stream group outputs, after RTP decoding, RTP stream merging and other signal processing. All codecs supported (narrowband codecs are up-sampled prior to ASR)
 
 1Q 2021 - SDP info added to mediaMin. Input can be either command line .sdp file or incoming TCP/IP packet flow. SDP info can be used to override mediaMin auto-detection, ignore specific payload types, or otherwise as needed in application-specific cases
 
@@ -204,7 +204,7 @@ The mediaMin reference application runs optimized, high-capacity media packet st
 
 For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet worker threads), voplib (voice-over-packet interface), [streamlib](#user-content-streamlib) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
 
-To provide a simple, ready-to-use interface, mediaMin provides additional functionality. mediaMin command line options instruct pktlib to operate in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to [stream groups](#user-content-streamgroupusage), which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packet output.
+To provide a simple, ready-to-use interface, mediaMin provides additional functionality. mediaMin command line options instruct pktlib to operate in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to [stream groups](#user-content-streamgroupusage), which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes RTP stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packet output.
 
 In addition to providing a ready-to-use application, <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a> demonstrates use of pktlib APIs <sup>[2]</sup> for session creation, packet handling and parsing, packet formatting, jitter buffer, ptime handling (transrating). <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Packet/media thread source</a> code used by pktlib is also available to show use of voplib and streamlib APIs <sup>[2]</sup>.  
 
@@ -644,7 +644,7 @@ In the various command lines above, you might notice the same media content bein
 <a name="MinimumAPIInterface"></a>
 ## Minimum API Interface
 
-mediaMin uses a minimum number of high-level APIs to process media. In the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> source example below, PushPackets() and PullPackets() call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets() to queue and dequeue packets to/from packet/media threads that handle all packet processing (jitter buffer, DTX, etc). In turn, packet/media threads call [voplib](#user-content-voplib) APIs for media decoding and encoding, and [streamlib](#user-content-streamlib) APIs for audio processing, stream merging, speech recognition, etc.
+mediaMin uses a minimum number of high-level APIs to process media. In the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> source example below, PushPackets() and PullPackets() call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets() to queue and dequeue packets to/from packet/media threads that handle all packet processing (jitter buffer, DTX, etc). In turn, packet/media threads call [voplib](#user-content-voplib) APIs for media decoding and encoding, and [streamlib](#user-content-streamlib) APIs for audio processing, RTP stream merging, speech recognition, etc.
 
 ![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface")
 
@@ -1699,7 +1699,7 @@ Streamlib is a SigSRF library module responsible for constructing, enhancing, an
  - alignment of individual streams in time (i.e. interstream alignment)
  - sampling rate conversion for individual stream contributors (if needed)
  - insertion of timing and event markers, if specified in streamlib debug / measurement options
- - stream merging or conferencing, if specified
+ - audio stream merging or conferencing, if specified
  
 Stream group output enhancement includes:
 
