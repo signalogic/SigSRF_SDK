@@ -29,14 +29,17 @@ The above listed binary shared object libraries are limited in capacity or other
 
 ### 1.2 License
 
-Subject to the terms and conditions of this Agreement, Signalogic hereby grants to Licensee a non-exclusive, royalty-free, worldwide, non-transferable, 
-non-sublicenseable license during the term of this Agreement to: (a) use Github SigSRF Software for demo, evaluation, R&D, test and measurement,
+Subject to the terms and conditions of this Agreement, Signalogic hereby grants a non-exclusive, royalty-free, worldwide, non-transferable, 
+non-sublicenseable License during the term of this Agreement for humans (not machines, see Excluded Purposes below) to: (a) use Github SigSRF Software for demo, evaluation, R&D, test and measurement,
 and limited commercial purposes; (b) prepare modifications and derivative works of Github SigSRF Software; (c) distribute Github SigSRF Software (including 
 without limitation in source code or object code form); and (d) reproduce copies of Github SigSRF Software (the “License”). Licensee is not granted the right to, 
-and Licensee shall not, exercise the License for an Excluded Purpose.
+and Licensee shall not, exercise the License for an Excluded Purposes.
 
-For purposes of this Agreement, "Excluded Purpose" means making available any (i) server based platform, including but not limited to bare-metal, container, and VM, 
-or (ii) online service, including but not limited to software-as-a-service, platform-as-a-service, and infrastructure-as-a-service, that compete(s) with Signalogic products or services incorporating SigSRF Software functionality.
+For purposes of this Agreement, "Excluded Purposes" means
+
+* making available any (i) server based platform, including but not limited to bare-metal, container, and VM, or (ii) online service, including but not limited to software-as-a-service, platform-as-a-service, and infrastructure-as-a-service, that compete(s) with Signalogic products or services incorporating SigSRF Software functionality.
+
+* using Github SigSRF software for any Artificial Intelligence (AI) or machine training purpose, including language models, programming models, or any other automated or manual training of deep / multi-layer neural networks. To be crystal clear, the intent of this License is for human collaboration and teamwork. and not for any AI training use
 
 ### 1.3 Conditions
 
