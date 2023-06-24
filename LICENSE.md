@@ -33,7 +33,7 @@ Subject to the terms and conditions of this Agreement, Signalogic hereby grants 
 
 * <i><b>competing</b></i> with Signalogic products or services by making available any (i) server based platform, including but not limited to bare-metal, container, and VM, or (ii) online service, including but not limited to software-as-a-service, platform-as-a-service, and infrastructure-as-a-service, that incorporates Github SigSRF Software functionality
 
-* training an Artificial Intelligence (AI) model, including language models, programming models, or any other automated or manual training of deep / multi-layer neural networks using Github SigSRF software, especially source code. To be crystal clear, the intent of this License is for human collaboration and teamwork, and not for any AI or machine training use
+* <i><b>training</b></i> an Artificial Intelligence (AI) model, including language models, programming models, or any other automated or manual training of deep / multi-layer neural networks using Github SigSRF software, especially source code. To be crystal clear, the intent of this License is for human collaboration and teamwork, and not for any AI or machine training use
 
 ### 1.3 Conditions
 
