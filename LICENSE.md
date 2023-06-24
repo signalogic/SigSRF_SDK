@@ -1,4 +1,4 @@
-# Github SigSRF License, Version 1.0
+# Github SigSRF License, Version 1.1
 
 This Github SigSRF License Agreement Version 1.0 (the “Agreement”) is a modified form of the the [Confluent Community License Agreement](https://www.confluent.io/confluent-community-license/), and sets forth the terms on which Signalogic, Inc. ("Signalogic") makes available Github "SigSRF_SDK" repository software (the "Github SigSRF Software"). BY INSTALLING, DOWNLOADING, ACCESSING, USING OR DISTRIBUTING ANY OF THE GITHUB SIGSRF SOFTWARE, YOU AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE TO SUCH TERMS AND CONDITIONS, YOU MUST NOT USE GITHUB SIGSRF SOFTWARE. IF YOU ARE RECEIVING GITHUB SIGSRF SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY. "Licensee" means you, an individual, or the entity on whose behalf you are receiving Github SigSRF Software.
 
