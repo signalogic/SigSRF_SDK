@@ -3,9 +3,11 @@
 
  Copyright Signalogic Inc. 2017-2023
 
+ Github SigSRF License, Version 1.1 (https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md). Absolutely prohibited for AI language or programming model training use
+
  License
 
-  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
  
  Description
 
@@ -53,6 +55,7 @@
   Modified May 2020 JHB, implement STREAM_STATS struct changes to rename numRepair to numSIDRepair and add numMediaRepair
   Modified Mar 2021 JHB, add DIAGLIB_STANDALONE #define option to build without DirectCore header file
   Modified Jan 2023 JHB, add DSConfigLogging() to allow apps to abort DSPktStatsWriteLogFile() and other potentially time-consuming APIs if needed
+  Modified Jun 2023 JHB, minor changes to packet description format (i) "pkt len =" to "rtp pyld len =" (ii) print "media" instead of nothing for media packets
 */
 
 /* Linux includes */
@@ -84,7 +87,7 @@ extern LOGINFO LogInfo[];
 #define DS_PKT_PYLD_CONTENT_DTMF_END  1         /* DTMF Event End, determined in DSPktStatsAddEntries and then passed thru to other functions, JHB Jun 2019 */
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.6.2";
+const char DIAGLIB_VERSION[256] = "1.6.3";
 
 int DSPktStatsAddEntries(PKT_STATS* pkt_stats, int num_pkts, uint8_t* pkt_buffer, unsigned int packet_length[], unsigned int packet_info[], unsigned int uFlags) {
 
@@ -474,7 +477,7 @@ char          szLastSeq[100];
 
          if (fFound_sn || fDup_sn || fOoo_sn) {
 
-            sprintf(&tmpstr[strlen(tmpstr)], " timestamp = %u, pkt len = %u", pkts[j].rtp_timestamp, pkts[j].rtp_pyldlen);
+            sprintf(&tmpstr[strlen(tmpstr)], " timestamp = %u, rtp pyld len = %u", pkts[j].rtp_timestamp, pkts[j].rtp_pyldlen);  /* changed from "pkt len =", JHB Jun 2023 */
 
             if ((pkts[j].info_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID) {
                StreamStats[i].numSID++;
@@ -497,6 +500,7 @@ char          szLastSeq[100];
                numDTX++;
                sprintf(&tmpstr[strlen(tmpstr)], " DTX");
             }
+            else sprintf(&tmpstr[strlen(tmpstr)], " media");  /* added JHB Jun 2023 */
 
             if (pkts[j].info_flags & DS_PKT_PYLD_CONTENT_REPAIR) {
 
