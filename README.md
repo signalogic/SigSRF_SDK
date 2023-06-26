@@ -56,7 +56,7 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 ### Cloud Use Cases
 * Audio Quality Optimizer
 * Lawful Intercept and Lawful Intelligence (LI)
-* Call Recording and Transcription
+* Call Recording and Call Transcription
 * Session Border Controller (SBC) and Media Gateway
 * Bulk Pcap Processing
 * RTP Decoder (<a href="https://www.signalogic.com/evs_codec.html" target=_blank>EVS</a>, AMR, G729, MELPe, etc)
