@@ -5,7 +5,7 @@
 
  License
 
-  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
  Description
 
@@ -199,7 +199,7 @@ PORT_INFO_LIST NonDynamic_UDP_Port_Allow_List[] = { 1234, 3078, 3079 };  /* add 
 
 #define FILTER_TCP_REDUNDANT_RETRANSMISSIONS  /* enable discarding redundant TCP retransmissions. See comments */
 
-static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 3.3.2, Copyright (C) Signalogic 2018-2023\n";
+static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 3.4.0, Copyright (C) Signalogic 2018-2023\n";
 
 //#define VALGRIND_DEBUG  /* enable when using Valgrind for debug */
 #ifdef VALGRIND_DEBUG
@@ -2567,7 +2567,7 @@ ignore_udp_packet:
 
                char tmpstr[200], tmpstr2[20];
                sprintf(tmpstr2, " [%d]", udp_ignore_count+1);
-               sprintf(tmpstr, "ignoring %s%s packet%s, dst port = %d%s\r", szKeyword, fSIP ? " SIP" : "", udp_ignore_count ? tmpstr2 : "", dest_port, !fSIP && (frac(log10(udp_ignore_count+1)) == 0.0) ? ". To allow port add to NonDynamic_UDP_Port_Allow_List[]" : "");  /* note we use \r to avoid new lines and using up screen to report ignored UDP ports, also this makes sure the message and port number is visible, JHB Feb 2023 */
+               sprintf(tmpstr, "ignoring %s%s packet%s, dst port = %d%s\r", szKeyword, fSIP ? " SIP" : "", udp_ignore_count ? tmpstr2 : "", dest_port, !fSIP && (frac(log10(udp_ignore_count+1)) == 0.0) ? ". To allow port use -pN option or add to NonDynamic_UDP_Port_Allow_List[]" : "");  /* note we use \r to avoid new lines and using up screen to report ignored UDP ports, also this makes sure the message and port number is visible, JHB Feb 2023 */
                app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%s", tmpstr);
                udp_ignore_count++;
             }
