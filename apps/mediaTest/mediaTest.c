@@ -2,17 +2,19 @@
  $Header: /root/Signalogic/apps/mediaTest/mediaTest.c
 
  Copyright (C) Signalogic Inc. 2015-2023
- 
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
  Description:
- 
+
    SigSRF test and measurement program for media transcoding, codecs, and packet streaming / processing
 
  Purposes:
- 
+
    1) Test and measurement for SigMRF media transcoding, codec, and packet streaming / processing software for x86 and coCPU platforms
-   
+
    2) Run demo/eval tests and verify performance, audio quality, and multiple concurrent instances for certain codecs
-   
+
    3) User application source code examples, including Pktlib and Voplib API usage
 
    4) Supports optional coCPU card(s) for very high server capacity
@@ -31,7 +33,7 @@
      ./mediaTest -cx86 -i reference_files/stv16c_13200_16kHz_mime_$SUFFIX.COD -o test_script_files/stv16c_13200_16kHz_sig_decoded.OUT -C session_config/codec_test_16kHz_13200bps_config 
 
    Packet mode testing, pcap input, decode, wav output:
-   
+
      ./mediaTest -cx86 -M0 -Csession_config/evs_850211b0_config -itest_files/evs_850211b0.pcap -og711_850211b0.wav
 
    Packet mode testing, pcap input, transcoding, pcap output:

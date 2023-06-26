@@ -2,6 +2,10 @@
  $Header: /root/Signalogic/apps/mediaTest/cmd_line_interface.c
 
  Copyright (C) Signalogic Inc. 2018-2023
+
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
  
  Description
  
@@ -36,7 +40,7 @@
    Modified Jan 2023 JHB, add szAppFullCmdLine var and GetCommandLine()
    Modified May 2023 JHB, suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail
    Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
-   Modified Jun 2023 JHB, initialize timeScale to zero to allow packet_float_media_proc() to know if an app has already set timeScale
+   Modified Jun 2023 JHB, initialize timeScale to zero to allow packet_float_media_proc() to know if it's already been set by an app
 */
 
 
