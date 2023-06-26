@@ -5,7 +5,7 @@
 
  License
 
-  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
  Description
 
@@ -56,7 +56,7 @@
 
 #include "shared_include/config.h"  /* configuration structs and definitions */
 
-const char DERLIB_VERSION[256] = "1.2.2";
+const char DERLIB_VERSION[256] = "1.3.0";
 
 typedef struct {
 
@@ -921,23 +921,23 @@ uint8_t* pkt_in_buf_local = NULL;
       int pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL);  /* input packet buffer can be TCP or UDP */
       if (pyld_len == -1) pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL);
 
-      int save_len = der_streams[hDerStream].save_len;
+      int save_len = der_streams[hDerStream].save_len;  /* packet aggregation: get amount of data saved from previous packet, if any */
 
-  /* allocate local buffer. Notes, JHB Jun 2023:
-  
-     -DSDecoderDerStream() needs to operate destructively on the input packet buffer, so we malloc a local copy 
-     -for the local buffer we discard the packet header (pyld_ofs bytes) and copy input payload contents only; local buffer has length buf_len
-     -DSGetPacketInfo() or other pktlib API calls can still be made on pkt_in_buf but not pkt_in_buf_local, unless it's after decoding/extracting an encapsulated packet
-     -amount of memory malloc'd limited to aggregated buffer size, no extra. Any buffer overflow or out-of-range is gonna seg-fault
-  */
+   /* allocate local buffer. Notes, JHB Jun 2023:
+
+      -DSDecoderDerStream() needs to operate destructively on the input packet buffer, so we malloc a local copy 
+      -for the local buffer we discard the packet header (pyld_ofs bytes) and copy input payload contents only; local buffer has length buf_len
+      -DSGetPacketInfo() or other pktlib API calls can still be made on pkt_in_buf but not pkt_in_buf_local, unless it's after decoding/extracting an encapsulated packet
+      -amount of memory malloc'd limited to aggregated buffer size, no extra. Any buffer overflow or out-of-range will seg-fault, so we are very careful with packet decoding, for example error-checking decoded payload lengths (see udp_len below as one instance)
+   */
 
       int buf_len = pyld_len + save_len;
       pkt_in_buf_local = (uint8_t*)malloc(buf_len);
 
       if (save_len) memcpy(pkt_in_buf_local, der_streams[hDerStream].packet_save, save_len);
-      memcpy(&pkt_in_buf_local[save_len], &pkt_in_buf[pyld_ofs], buf_len - save_len);
+      memcpy(&pkt_in_buf_local[save_len], &pkt_in_buf[pyld_ofs], buf_len - save_len);  /* if save_len is zero then pyld_len bytes copied */
 
-      if (buf_len >= MAX_TCP_PACKET_LEN) Log_RT(3, "WARNING: DSDecodeDerStream() says buffer size %d exceeds max size %d \n", buf_len, MAX_TCP_PACKET_LEN);
+      if (buf_len >= MAX_TCP_PACKET_LEN) Log_RT(3, "WARNING: DSDecodeDerStream() says packet aggregation buffer size %d exceeds max size %d, pyld_len = %d, save_len = %d \n", buf_len, MAX_TCP_PACKET_LEN, pyld_len, save_len);
 
    /* scan for interception point Id (may also be an interception identifier, see DSFindDerStream() above) */
 
@@ -1172,7 +1172,7 @@ uint8_t* pkt_in_buf_local = NULL;
                   checksum = ((uint16_t)p[asn_index + 47] << 8) | p[asn_index + 46];  /* 46 = byte offset of UDP checksum in IPv6/UDP header without extensions. To-do: handle extensions */
                   uint16_t udp_len = ((uint16_t)p[asn_index + 44] << 8) | p[asn_index + 45];
 
-                  if (udp_len > buf_len - asn_index) goto next_byte;  /* sanity check, JHB Jun 2023 */
+                  if (udp_len > buf_len - asn_index || udp_len < 8) goto next_byte;  /* sanity checks before using udp_len as a length in calc_checksum(), JHB Jun 2023 */
 
                /* calculate IPv6 UDP checksum, start with pseudo-header, per RFC2460 sec 8.1 */
 
@@ -1258,7 +1258,7 @@ next_byte:
                fPrint = true;
             }
 
-            if (der_streams[hDerStream].save_len > (int)MAX_RTP_PACKET_LEN) Log_RT(3, "WARNING: DSDecodeDerStream() says Der stream buffer size %d exceeds maximum size %d \n", der_streams[hDerStream].save_len, MAX_RTP_PACKET_LEN);
+            if (der_streams[hDerStream].save_len > (int)MAX_RTP_PACKET_LEN) Log_RT(3, "WARNING: DSDecodeDerStream() says DER stream aggregation buffer size %d exceeds maximum size %d, buf_len = %d, asn_index = %d \n", der_streams[hDerStream].save_len, MAX_RTP_PACKET_LEN, buf_len, asn_index);
 
             memcpy(der_streams[hDerStream].packet_save, &p[asn_index], min(der_streams[hDerStream].save_len, (int)MAX_RTP_PACKET_LEN));
             der_streams[hDerStream].asn_index = 0;
@@ -1309,15 +1309,14 @@ uint16_t checksum16 = checksum_init;
 uint8_t checksum8 = checksum_init;
 uint32_t long_checksum;
 
-uint16_t* p16 = (uint16_t*)p;
-uint8_t* p8 = (uint8_t*)p;
-int i;
-
    if (checksum_width == 16) {
+
+      uint16_t* p16 = (uint16_t*)p;
+      int i;
 
       for (i=0; i<num_bytes/2; i++) {
 
-         if (i == omit_index) continue;  /* skip a value if needed -- can be used to omit a mid-data comparison checksum. Give -1 if not used */
+         if (i == omit_index) continue;  /* caller can skip a value if needed -- can be used to omit a mid-data comparison checksum. Give -1 if not used */
 
          long_checksum = checksum16;
          long_checksum += p16[i];
@@ -1334,8 +1333,10 @@ int i;
       }
    }
    else if (checksum_width == 8) {
+
+      uint8_t* p8 = (uint8_t*)p;
   
-      for (i=0; i<num_bytes; i++) {
+      for (int i=0; i<num_bytes; i++) {
 
          if (i == omit_index) continue;
 
