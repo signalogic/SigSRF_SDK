@@ -1,16 +1,18 @@
 /* $Header: /root/Signalogic/DirectCore/include/userInfo.h
- *	
- *	User Interface header file
- *
- * Project: DirectCore, SigSRF
- *
- * Copyright Signalogic Inc. 1994-2023
- * 
- * 2     10/10/05 12:32p
- * 8 DSP support.
- * 
- * 1     8/24/05 7:13p
- * Clean up code and rebuild.
+ 
+ User Interface header file
+
+ Project: DirectCore, SigSRF
+
+ Copyright Signalogic Inc. 1994-2023
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
+ 2     10/10/05 12:32p
+ 8 DSP support.
+
+ 1     8/24/05 7:13p
+ Clean up code and rebuild.
  
    Modified Nov 2009 JHB, added enable TDM option
    Modified Apr 2009 JHB, added enable H.110 option
