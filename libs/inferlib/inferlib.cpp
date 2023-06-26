@@ -5,7 +5,7 @@
 
  License
 
-  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
   If there is an appropriate license statement for source code that interfaces to Kaldi libs, it should go here. For example Nvidia uses pre-built Kaldi in their containers but their web pages have nothing to say on the subject. Kaldi source code is licensed under under the Apache License, Version 2.0
 
@@ -45,6 +45,8 @@
 #include "shared_include/streamlib.h"
 #include "diaglib.h"  /* provides Log_RT() */
 #include "dsstring.h"
+
+const char INFERLIB_VERSION[256] = "1.2.0";
 
 using namespace std;
 using namespace kaldi;
