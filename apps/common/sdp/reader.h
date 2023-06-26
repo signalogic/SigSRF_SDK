@@ -6,6 +6,8 @@
 
  Copyright (c) 2021-2023 Signalogic, Dallas, Texas
 
+ Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
  Revision History
   Modified Jan 2021 JHB, add Line::readCodecType() for a=rtpmap attribute support
   Modified Mar 2021 JHB, add error reporting option to Line.readInt()

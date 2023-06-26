@@ -6,6 +6,8 @@
 
  Copyright (c) 2021-2023 Signalogic, Dallas, Texas
 
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
  Revision History
   Modified Jan 2021 JHB, add a=rtpmap attribute support
   Modified Feb 2021 JHB, add support for # comment delineator in SDP file lines. See parseLine() below and example.sdp for examples and more notes
