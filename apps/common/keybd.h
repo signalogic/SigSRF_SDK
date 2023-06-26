@@ -1,11 +1,14 @@
 /* keybd.h
-   kbhit, getkey functions
 
-   Copyright (C) Signalogic 2006-2021
+  kbhit, getkey functions
 
-   Revision History
-     Created Nov 2006
-     Modified Sep 2020 JHB, change getkey() return to char to fix warning in gcc 9.3.0
+  Copyright (C) Signalogic 2006-2021
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
+  Revision History
+   Created Nov 2006
+   Modified Sep 2020 JHB, change getkey() return to char to fix warning in gcc 9.3.0
 */
 
 #ifndef KEYBD_H

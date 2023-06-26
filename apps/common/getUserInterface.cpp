@@ -5,6 +5,8 @@
 
  Copyright (C) Signalogic Inc. 1992-2023
 
+ Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
  Revision History
 
    Created, 10/11/05 2:40p Nithin Rajagopal

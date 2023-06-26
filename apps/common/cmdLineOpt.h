@@ -3,9 +3,11 @@
 
  Purpose:  command line options parsing and handling
   
- (C) Signalogic Inc. 2005-2023
+ Copyright (C) Signalogic Inc. 2005-2023
 
- Revision History:
+ Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
+ Revision History
 
    Created 10/06/05 3:31p Nithin
 
