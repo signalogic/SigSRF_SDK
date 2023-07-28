@@ -41,6 +41,7 @@
    Modified May 2023 JHB, suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail
    Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
    Modified Jun 2023 JHB, initialize timeScale to zero to allow packet_float_media_proc() to know if it's already been set by an app
+   Modified Jul 2023 JHB, add const char* ver_str param to cmdLineInterface()
 */
 
 
@@ -137,7 +138,7 @@ unsigned int   CPU_mode = 0, programMode = 0;
 int get_file_type(const char*, unsigned int);
 
 
-int cmdLineInterface(int argc, char **argv, unsigned int uFlags) {
+int cmdLineInterface(int argc, char **argv, unsigned int uFlags, const char* ver_str) {
 
 UserInterface userIfs = {0, 0, 0, 0, "", "", false};
 
@@ -154,7 +155,7 @@ int i;
    if (uFlags & CLI_MEDIA_APPS) cim_uFlags |= CIM_GCL_MED;
    if (uFlags & CLI_MEDIA_APPS_MEDIAMIN) cim_uFlags |= CIM_GCL_MEDIAMIN;
    
-   cimGetCmdLine(argc, argv, &userIfs, cim_uFlags, &PlatformParams, &MediaParams);  /* run first with mandatories disabled, print-outs disabled */
+   cimGetCmdLine(argc, argv, &userIfs, cim_uFlags, &PlatformParams, &MediaParams, ver_str);  /* run first with mandatories disabled, print-outs disabled */
 
    if (userIfs.programMode != LOG_FILE_DIAGNOSTICS) {  /* most cmd line arguments are ignored for log file diagnostics */
 
@@ -162,7 +163,7 @@ int i;
       if (uFlags & CLI_MEDIA_APPS) cim_uFlags |= CIM_GCL_MED;
       if (uFlags & CLI_MEDIA_APPS_MEDIAMIN) cim_uFlags |= CIM_GCL_MEDIAMIN;
 
-      if (!cimGetCmdLine(argc, argv, &userIfs, cim_uFlags, &PlatformParams, &MediaParams)) return 0;  /* run again with everything enabled, report cmd line errors */
+      if (!cimGetCmdLine(argc, argv, &userIfs, cim_uFlags, &PlatformParams, &MediaParams, ver_str)) return 0;  /* run again with everything enabled, report cmd line errors */
    }
 
    programMode = userIfs.programMode;

@@ -40,6 +40,7 @@
    Modified Mar 2023 JHB, add frac() helper, does modf() but needs only one argument
    Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
    Modified Jun 2023 JHB, move NOMINAL_REALTIME_INTERVAL definition here from mediaMin.h
+   Modified Jul 2023 JHB, add const char* ver_str param to cmdLineInterface()
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -268,7 +269,7 @@ void send_packet(uint8_t *packet, uint32_t length);
 extern void x86_mediaTest(void);
 //extern void* packet_flow_media_proc(void*);
 extern void* mediaMin_thread(void*);
-extern int cmdLineInterface(int argc, char **argv, unsigned int uFlags);
+extern int cmdLineInterface(int argc, char **argv, unsigned int uFlags, const char* ver_str);
 extern int GetOutputFilename(char* out_filename, int output_type_file, const char* output_type_content);
 int GetCommandLine(char* cmdlinestr, int str_size);
 

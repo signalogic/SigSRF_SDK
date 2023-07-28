@@ -50,6 +50,7 @@
   Modified Mar 2021 JHB, change DSMergeStreamGroupContributors() API to DSProcessStreamGroupContributors()
   Modified Jan 2023 JHB, add STREAM_GROUP_FLC_HOLDOFFS_ENABLE flag
   Modified May 2023 JHB, add input_buffer_interval param to DSProcessAudio(). Search for "FTRT" and "AFAP" and see comments in audio_domain_processing.c and mediaMin.cpp
+  Modified Jul 2023 JHB, add STREAM_GROUP_WAV_OUT_INCLUDE_GAPS_AS_SILENCE flag
 */
 
 #ifndef _STREAMLIB_H_
@@ -371,6 +372,7 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
   #define STREAM_GROUP_WAV_OUT_MERGED                              0x10000000L  /* generate mono wav file output for stream group's merged output */
   #define STREAM_GROUP_WAV_OUT_STREAM_MONO                          0x2000000L  /* generate mono wav file for each stream group contributor */
   #define STREAM_GROUP_WAV_OUT_STREAM_MULTICHANNEL                  0x4000000L  /* generate multichannel wav file where each channel is a stream group contributor */
+  #define STREAM_GROUP_WAV_OUT_INCLUDE_GAPS_AS_SILENCE              0x8000000L  /* include gaps in wav output (e.g. call on hold). Gaps are written as zero values */
 
   /* flags to disable default operation */
 

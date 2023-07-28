@@ -1,22 +1,23 @@
 /*
-  debug.h
+ debug.h
 
-  Header file that contains debug structs and function prototypes
+ Header file that contains debug structs and function prototypes
 
-  Copyright © Signalogic, 2015-2017
+ Copyright © Signalogic, 2015-2023
 
-  Revision History:
+ Revision History:
 
-    Created Aug 2014, CKJ
-    Modified Apr 2016, JHB modify Dsp_Log function so it can appear as a null macro and be completely compiled out of code if needed
-    Modified Dec 2016, CKJ, heartbeat priority option
-    Modified Jan 2017, CKJ, moved logging APIs and definitions to debug_rt.h (to support consistent interface between x86, c66x, or combined platforms)
+  Created Aug 2014, CKJ
+  Modified Apr 2016, JHB modify Dsp_Log function so it can appear as a null macro and be completely compiled out of code if needed
+  Modified Dec 2016, CKJ, heartbeat priority option
+  Modified Jan 2017, CKJ, moved logging APIs and definitions to debug_rt.h (to support consistent interface between x86, c66x, or combined platforms)
+  Modified Jul 2023 JHB, change _C66XX_ reference to _C66XX (see comments in std_rtaf.h)
 */
 
 #ifndef _DEBUG_H_
 #define _DEBUG_H_
 
-#ifdef _C66XX_
+#ifdef _C66XX
   #include <xdc/runtime/System.h>
 #endif
 

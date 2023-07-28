@@ -152,7 +152,7 @@ typedef struct {
 } UserInterface;
 
 
-extern int getUserInfo(int argc, char* argv[], UserInterface *userIfs, unsigned int uFlags);
+extern int getUserInfo(int argc, char* argv[], UserInterface *userIfs, unsigned int uFlags, const char* ver_str);
 
 #ifdef __cplusplus
 }

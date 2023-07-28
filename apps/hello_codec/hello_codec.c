@@ -5,7 +5,7 @@
  
  License
 
-  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.0, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
  Description
  
@@ -32,6 +32,7 @@
   Modified Dec 2022 JHB, misc items in the way of understanding how to use codecs moved to hello_codec.h
   Modified Feb 2023 JHB, change run to pm_run
   Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode()
+  Modified Jul 2023 JHB, give version info to cmdLineInterface()
 */
 
 /* Linux header files */
@@ -54,13 +55,18 @@
 
 #include "hello_codec.h"
 
+static char prog_str[] = "hello_codec: simple codec test and reference program, uses voplib and codec libs";
+static char ver_str[] = "v1.0.6";
+static char copyright_str[] = "Copyright (C) Signalogic 2022-2023";
+
 int main(int argc, char** argv) {
 
 /* handle command line params. Params and format are same as mediaTest, but currently hello_codec is only paying attention to codec config file (-C entry) and debug mode (-dN entry) */
 
    if (cmdline(argc, argv) < 0) exit(EXIT_FAILURE);
 
-   printf("hello codec start, debug flags = 0x%llx \n", (unsigned long long)debugMode);
+   printf("%s, %s, %s \n", prog_str, ver_str, copyright_str);
+   printf("debug flags = 0x%llx \n", (unsigned long long)debugMode);
 
    hPlatform = DSAssignPlatform(NULL, PlatformParams.szCardDesignator, 0, 0, 0);  /* platform handles are used for concurrency, VM management, and demo management. DSAssignPlatform() is in hwlib (aka DirectCore). A platform handle is not required for licensed codec-only applications */
 
@@ -558,7 +564,7 @@ char libstr[500];
    sprintf(&libstr[strlen(libstr)], ", voplib v%s, diaglib v%s, cimlib v%s", VOPLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
    printf("%s\n", libstr);
 
-   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS)) return -1;
+   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS, ver_str)) return -1;
 
    #if 0  /* we don't check for I/O specs in hello_codec. mediaTest has a full I/O implementation */
 

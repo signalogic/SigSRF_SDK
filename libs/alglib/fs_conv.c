@@ -3,7 +3,7 @@
 
  Description: sampling rate conversion for common telecom / audio sampling sampling rates, using up/down conversion by integer ratios, for example 2, 3, 4, 6, 2/3, 4/3, etc
   
- Copyright (C) Signalogic, 2001-2022
+ Copyright (C) Signalogic, 2001-2023
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -17,7 +17,7 @@
    Modified Aug 2016 JHB, SC, to ensure no action if both up_factor and down_factor == 1
    Modified Apr 2017 CKJ, add x86 compatibility
    Modified Aug 2017 JHB, modified DSConvertFs() to return amount of valid output data after Fs conversion
-   Modified Mar 2018 JHB, replaced _X86_ with _X86.  Change was made to maintain consistency with shared_include / coCPU usage.  _X86, _ARM, _TI66X, etc are "chip family" defines, specific chips are _X5_E930_, _C66XX_, etc)
+   Modified Mar 2018 JHB, replaced _X86_ with _X86.  Change was made to maintain consistency with shared_include / coCPU usage.  _X86, _ARM, _TI66X, etc are "chip family" defines, specific chips are _X5_E930_, _C66XX, etc)
    Modified Mar 2018 JHB, increased size of temp_store[].  See comments
    Modified Jun 2018 JHB, removed reference to voplib.h (this affected how temp_store[] is declared)
    Modified Mar 2019 JHB, fix problem with _X86 build (#else section of #ifdef _USE_DSPLIB_) where if both up_factor and down_factor = 1, it still did convolution
@@ -27,6 +27,7 @@
    Modified Feb 2022 JHB, for large up/down factors (e.g. 44.1 <--> 48) (i) fix problem with int16 data_len overflow (change all input params to int) and (ii) increase size of temp_store (see notes)
    Modified Feb 2022 JHB, split coefficients out to filt_coeffs.h, add user-defined filter params (pFilt_user and filt_len_user), lay groundwork for floating-point filters
    Modified Mar 2022 JHB, show a warning message when no filter is defined for a specified (and mathematically valid) sampling rate conversion ratio. Apps can avoid the warning by (i) giving the DS_FSCONV_NO_FILTER flag or (ii) supplying user-defined filter coefficients (pFilt)
+   Modified Jul 2023 JHB, change _C66XX_ reference to _C66XX (see comments in std_rtaf.h)
 */
 
 #include <stdint.h>
@@ -38,11 +39,8 @@
 #include "voplib.h"
 #include "diaglib.h"
 
-#ifndef _X86
-#include "debug.h"
-#endif
-
-#ifdef _C66XX_
+#ifdef _C66XX
+  #include "debug.h"
 
   #define _USE_DSPLIB_
 
@@ -51,7 +49,6 @@
   //#include <ti/dsplib/src/DSP_fir_r8_hM16_rM8A8X8/c66/DSP_fir_r8_hM16_rM8A8X8.h>
 
   extern short int fs_temp_buffer[];
-
 #endif
 
 #ifndef _MINCONFIG_

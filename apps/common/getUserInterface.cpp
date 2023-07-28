@@ -35,6 +35,7 @@
    Modified Aug 2022 JHB, more readability mods to getUserInfo() display, including a lock to keep program start info coherent within multiple threads
    Modified Dec 2022 JHB, add -g option specific to mediaMin to allow stream group wav output path cmd line input
    Modified May 2023 JHB, support FLOAT option type in getUserInfo(), change 'r' (frame rate) option to float, add 'p' option to allow portList[] entry, for media applications allow -l entry to specify nLookbackDepth by overlaying library flags (libFlags)
+   Modified Jul 2023 JHB, handle --version input; search for '-' and see comments
 */
 
 #include <stdlib.h>
@@ -54,6 +55,8 @@ using namespace std;
 
 CmdLineOpt::Record options[] = {
 
+   {'-', CmdLineOpt::STRING, NOTMANDATORY,
+          (char *)"--version" },  /* added. Note this will not show in CmdLineOpt::printOptions(), JHB Jul 2023 */
    {'c', CmdLineOpt::STRING, MANDATORY,
           (char *)"Platform / card designator (e.g. -cx86 or -cSIGC66XX)" },
    {'f', CmdLineOpt::INTEGER, MANDATORY_COCPU,
@@ -169,7 +172,7 @@ CmdLineOpt::Record options[] = {
 
 CmdLineOpt cmdOpts( options, sizeof(options)/sizeof(options[0]) );
 
-int getUserInfo(int argc, char* argv[], UserInterface* userIfs, unsigned int uFlags) {
+int getUserInfo(int argc, char* argv[], UserInterface* userIfs, unsigned int uFlags, const char* ver_str) {
 
 int instances, i;
 char labelstr[CMDOPT_MAX_INPUT_LEN];
@@ -194,6 +197,14 @@ char clkstr[100];
          userIfs->numCoresPerCPU = 0;  /* not currently assigned command-line syntax yet */
 
       /* common test program flags */
+
+         if (cmdOpts.nInstances('-') && cmdOpts.getPosition('-', CmdLineOpt::STRING) == 0) {  /* handle --version input, JHB Jul 2023 */
+
+            if (ver_str) cout << ver_str << endl;
+            else cout << "no program version info available" << endl;
+
+            exit(1);    
+         }
 
          if (uFlags & CLI_MEDIA_APPS) {
             if (cmdOpts.nInstances('A')) userIfs->nAmplitude = cmdOpts.getInt('A', 0, 0);

@@ -9,7 +9,7 @@
         -x86 and CIM code generation support
         -support VoIP libraries (voplib, callmgr)
 
-  Copyright (C) Signalogic Inc. 2008-2021
+  Copyright (C) Signalogic Inc. 2008-2023
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -22,6 +22,7 @@
    Modified Jul 2010 JHB, create separate cimlib
    Modified Apr 2015 JHB, Rev 2 CIM code generation support, added cimRunHardware() API.  Modified Makefile to create two libs, cimlib and cimlib_emu. The EMU version can be called by API programs (cimlib is built with _CIM flag)
    Modified Jan 2021 JHB, add CIM_GCL_MEDIAMIN flag. See usage in getUserInfo() in getUserInterface.cpp
+   Modified Jul 2023 JHB, add const char* ver_str param to cimGetCmdLine()
 */
 
 #ifndef _CIMLIB_H_
@@ -243,7 +244,7 @@ UINT cimRunHardware(HCARD, UINT, PCARDPARAMS, void*);
 UINT cimCloseHardware(HCARD, UINT, QWORD, void*);
 #define cimClosePlatform cimCloseHardware
 
-UINT cimGetCmdLine(int argc, char* argv[], UserInterface*, UINT, PCARDPARAMS, void*);
+UINT cimGetCmdLine(int argc, char* argv[], UserInterface*, UINT, PCARDPARAMS, void*, const char* ver_str);
 
 UINT cimWriteSymbol(HCARD, UINT, const char*, void*, UINT, UINT, QWORD);
 

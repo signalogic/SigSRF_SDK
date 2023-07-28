@@ -128,7 +128,7 @@ time_t          timerInterval[MAXSTREAMS] = { 1000 };  /* default timer setting:
 
 /* process command line for basic target CPU items:  card type, clock rate, executable file */
 
-   if (!cimGetCmdLine(argc, argv, NULL, CIM_GCL_DEBUGPRINT, &PlatformParams, NULL)) exit(EXIT_FAILURE);
+   if (!cimGetCmdLine(argc, argv, NULL, CIM_GCL_DEBUGPRINT, &PlatformParams, NULL, NULL)) exit(EXIT_FAILURE);
 
 /* Check card designator and enable CPU mode */
 
@@ -154,7 +154,7 @@ time_t          timerInterval[MAXSTREAMS] = { 1000 };  /* default timer setting:
    
 /* process command line again, get video and image analytics items */
   
-   if (!cimGetCmdLine(argc, argv, NULL, CIM_GCL_IA | CIM_GCL_DEBUGPRINT, &PlatformParams, &IAParams)) goto cleanup;
+   if (!cimGetCmdLine(argc, argv, NULL, CIM_GCL_IA | CIM_GCL_DEBUGPRINT, &PlatformParams, &IAParams, NULL)) goto cleanup;
 
    numStreams = IaNumStreams(IAParams);
  

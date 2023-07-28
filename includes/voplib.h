@@ -36,6 +36,7 @@
   Modified Oct 2022 JHB, add pBitrateIndex param to DSGetCompressedFramesize()
   Modified Oct 2022 JHB, consolidate DSGetCodecName() and several others into DSGetCodecInfo() API, following pktlib model
   Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode(), add CODEC_INARGS struct definition, add bitRate and CMR params to CODEC_OUTARGS struct. These were previously in license-only versions now they are public. See comments
+  Modified Jul 2023 JHB, add CODEC_NAME_MAXLEN definition (used when manipulating codec name strings)
 */
  
 #ifndef _VOPLIB_H_
@@ -226,10 +227,12 @@ extern "C" {
 
 /* CODEC_PARAMS struct used in DSCodecCreate() and DSGetCodecInfo() */
 
+  #define CODEC_NAME_MAXLEN  50
+
   typedef struct {
 
      int codec_type;               /* specifies codec type -- see "voice_codec_type" enums in shared_include/session.h */
-     char codec_name[50];          /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecInfo() with DS_CODEC_INFO_NAME flag */
+     char codec_name[CODEC_NAME_MAXLEN];  /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecInfo() with DS_CODEC_INFO_NAME flag */
      uint16_t raw_frame_size;      /* filled in by DSCodecCreate() and DSGetCodecInfo() */
      uint16_t coded_frame_size;    /*   "    "    " */
      int payload_shift;            /* special case item, when non-zero indicates shift payload after encoding or before decoding, depending on which codec and the case. Initially needed to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/-, JHB Sep 2022 */
@@ -351,7 +354,7 @@ extern "C" {
 
 /* DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo is expected to point to a CODEC_PARAMS struct. Some item flags must be combined with the DS_CODEC_INFO_HANDLE flag (see per-flag comments) */
 
-#define DS_CODEC_INFO_NAME                   0x01   /* returns codec name in text string pointed to by pInfo. Typically string length is 5-10 char, always less than 50 char */
+#define DS_CODEC_INFO_NAME                   0x01   /* returns codec name in text string pointed to by pInfo. Typically string length is 5-10 char, always less than CODEC_NAME_MAXLEN char */
 #define DS_CODEC_INFO_RAW_FRAMESIZE          0x02   /* returns codec media frame size (i.e. prior to encode, after decode), in bytes. If DS_CODEC_INFO_HANDLE is not given, returns default media frame size for one ptime. For EVS, nInput1 should specify one of the four (4) EVS sampling rates (in Hz) */
 #define DS_CODEC_INFO_CODED_FRAMESIZE        0x03   /* returns codec compressed frame size (i.e. after encode, prior to decode), in bytes. If uFlags specifies DS_CODEC_INFO_TYPE then nInput1 should give a bitrate and nInput2 should give header format (0 or 1) */
 #define DS_CODEC_INFO_BITRATE                0x04   /* returns codec bitrate in bps. Requires DS_CODEC_INFO_HANDLE flag */

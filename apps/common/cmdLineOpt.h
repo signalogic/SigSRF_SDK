@@ -19,6 +19,7 @@
    Modified Sep 2019 JHB, add CLI_MEDIA_APPS flag
    Modified Jan 2021 JHB, add CLI_MEDIA_APPS_MEDIAMIN flag, add type param to getOption()
    Modified May 2023 JHB, add FLOAT option type, FLOAT switch statement cases, getFloat(), change getUdpPort() from unsigned int to uint16_t
+   Modified Jul 2023 JHB, add getPosition() public function to CmdLineOpt class
 */
 
 #ifndef _CMDLINEOPT_H_
@@ -91,6 +92,7 @@ public:
    char getChar(char option, int nInstance);
    char *getStr(char option, int nInstance);
    bool getBool(char option, int nInstance);
+   int getPosition(char option, Type type);
 
    void display(void);
    void printOptions(void);

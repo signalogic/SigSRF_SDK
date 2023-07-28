@@ -10,7 +10,7 @@
 
  Project: DirectCore
 
- Copyright Signalogic Inc. 1994-2022
+ Copyright Signalogic Inc. 1994-2023
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -24,9 +24,11 @@
 
  Revision History
 
-   Modified Aug 2017 JHB, added strcpyrws() function
+   Modified Aug 2017 JHB, add strcpyrws() function
+   Modified Aug 2019 JHB, add generic reverse strstr()
    Modified Mar 2022 JHB, move str_remove_whitespace() here from transcoder_control.c, move strrstr() here from x86_mediaTest.c
    Modified Apr 2022 JHB, add error checking to strrstr(), str_remove_whitespace(), and str_remove_linebreaks()
+   Modified Jul 2023 JHB, add strncpy_s(), safe version of strncpy(), in case gcc version in use doesn't support it
 */
 
 #ifndef _DSSTRING_H_
@@ -48,6 +50,7 @@
 #endif
 
 #include "alias.h"
+#include "minmax.h"
 
 #ifndef TCHAR
    #define TCHAR char
@@ -131,7 +134,7 @@ char* p = str;
    *p = 0;  /* terminating zero */
 }
 
-/* generic reverse strstr, JHB Aug2019 */
+/* generic reverse strstr, JHB Aug 2019 */
 
 static inline const char* strrstr(const char* haystack, const char* needle) {
 
@@ -151,4 +154,24 @@ char* p = (char*)haystack + strlen(haystack) - needle_len - 1;  /* don't compare
    return NULL;
 }
 
-#endif 
+#ifndef __STDC_LIB_EXT1__  /* per https://stackoverflow.com/questions/40045973/strcpy-s-not-working-with-gcc, __STDC_LIB_EXT1__ must be defined otherwise strxxx_s() functions are not available with gcc version in use, JHB Jul 2023 */
+
+/* safe version of strncpy(), in case gcc version doesn't support strncpy_s(). Always null-terminates, JHB Jul 2023 */
+
+static inline char* strncpy_s(char* dst, size_t max_dst_len, const char* src, size_t count) {  /* note: typically count >= max_dst_len, although count can be less for whatever reason */
+
+   if (!dst || !src || (int)max_dst_len <= 0 || (int)count <= 0) return NULL;
+
+   unsigned int len = min(strlen(src), max_dst_len-1);
+
+   if (count >= len) {
+      memcpy(dst, src, len);  /* copy the string */
+      dst[len] = 0;  /* add terminating NULL */
+   }
+   else memcpy(dst, src, count);  /* if count is the min, then no null termination, per gcc strncpy_s operation */
+
+   return dst;
+}
+#endif
+
+#endif  /* _DSSTRING_H_ */

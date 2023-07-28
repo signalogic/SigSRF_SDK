@@ -138,6 +138,8 @@
    Modified May 2023 JHB, support port list on cmd line (-pN entry), search through uPortList[] in isNonDynamicPortAllowed()
    Modified May 2023 JHB, modify CreateDynamicSession() to support RFC7198 lookback depth on cmd line (-lN entry, uLookbackDepth value set by cmdLineInterface() in cmd_line_interface.c). Default of no entry is 1 packet lookback, zero disables (-l0 entry), max is 8 packet lookback
    Modified Jun 2023 JHB, codec auto-detection updates: add AMR-WB 14.25 kbps, in cat 4 detection fix AMR-NB SIDs wrongly detected as EVS
+   Modified Jul 2023 JHB, handle cmd line option for gaps in wav output (INCLUDE_GAPS_IN_WAV_OUTPUT flag)
+   Modified Jul 2023 JHB, give program version info to cmdLineInterface()
 */
 
 
@@ -199,7 +201,9 @@ PORT_INFO_LIST NonDynamic_UDP_Port_Allow_List[] = { 1234, 3078, 3079 };  /* add 
 
 #define FILTER_TCP_REDUNDANT_RETRANSMISSIONS  /* enable discarding redundant TCP retransmissions. See comments */
 
-static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms, Rev 3.4.0, Copyright (C) Signalogic 2018-2023\n";
+static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms";
+static char ver_str[] = "v3.4.1";
+static char copyright_str[] = "Copyright (C) Signalogic 2018-2023";
 
 //#define VALGRIND_DEBUG  /* enable when using Valgrind for debug */
 #ifdef VALGRIND_DEBUG
@@ -326,7 +330,7 @@ SESSION_DATA   session_data[MAX_SESSIONS] = {{ 0 }};
 
 unsigned char  pkt_in_buf[32*MAX_RTP_PACKET_LEN] = { 0 }, pkt_out_buf[32*MAX_RTP_PACKET_LEN] = { 0 };
 
-DEBUG_CONFIG dbg_cfg = { 0 };  /* struct used for lib debug configuration; see shared_include/debug.h */
+DEBUG_CONFIG dbg_cfg = { 0 };  /* structs used for lib debug configuration; see shared_include/config.h */
 GLOBAL_CONFIG gbl_cfg = { 0 };
 
 int i, j, nStaticSessionsConfigured = 0, nRemainingToDelete = 0, thread_index = 0;  /* mediaMin application thread index (normally zero, except for high capacity and stress test situations, see definitions and comments in cmd_line_options_flags.h) */
@@ -337,22 +341,22 @@ bool fExitErrorCond, fRepeatFromStart = false;  /* fRepeatFromStart is set true 
 char tmpstr[MAX_APP_STR_LEN];
 
   	if (isMasterThread) {  /* print banner including program and lib version info, copyright */
-      printf("%s", prog_str);
+      printf("%s, %s, %s \n", prog_str, ver_str, copyright_str);
       printf("  SigSRF libraries in use: DirectCore v%s, pktlib v%s, streamlib v%s, voplib v%s, derlib v%s, alglib v%s, diaglib v%s, cimlib v%s\n", HWLIB_VERSION, PKTLIB_VERSION, STREAMLIB_VERSION, VOPLIB_VERSION, DERLIB_VERSION, ALGLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
    }
 
-   #ifdef _MEDIAMIN_  /* running from cmd line, mediaMin is running as a process */
+   #ifdef _MEDIAMIN_  /* main() is running as a process from the command line */
 
-   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS | CLI_MEDIA_APPS_MEDIAMIN)) exit(EXIT_FAILURE);  /* parse command line and set MediaParams, PlatformParams, RealTimeInterval, and pktStatsLogFile, use_log_file, and others.  See mediaTest.h and cmd_line_interface.c */
+   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS | CLI_MEDIA_APPS_MEDIAMIN, ver_str)) exit(EXIT_FAILURE);  /* parse command line and set MediaParams, PlatformParams, RealTimeInterval, and pktStatsLogFile, use_log_file, and others. See mediaTest.h and cmd_line_interface.c */
    thread_index = 0;
    printf("mediaMin start, cmd line execution\n");
 
-   #else  /* running as either (i) a function call or (ii) one or more threads created by mediaTest.  In either case, command line has already been processed by mediaTest */
+   #else  /* mediaMin_thread() is running as either (i) a function call or (ii) one or more threads created by mediaTest. In either case, command line was processed by mediaTest */
 
    thread_index = *((int*)thread_arg) & 0xff;
    num_app_threads = (*((int*)thread_arg) & 0xff00) >> 8;
 
-   if (num_app_threads) {  /* mediaMin is running as one or more application level threads */
+   if (num_app_threads) {  /* mediaMin is running as one or more application threads */
 
       printf("mediaMin start, thread execution, num threads = %d, thread_index = %d\n", num_app_threads, thread_index);
       free(thread_arg);
@@ -373,17 +377,17 @@ char tmpstr[MAX_APP_STR_LEN];
    if (isMasterThread) {  /* isMasterThread defined in mediaMin.h */
 
       printf(" Standard Operating Mode\n");
-      if (Mode & DYNAMIC_SESSIONS)         printf("  dynamic sessions created as they appear\n");
+      if (Mode & DYNAMIC_SESSIONS)         printf("  dynamic sessions created as they appear in stream input\n");
       else                                 printf("  static sessions created from session config file (specified with -C on cmd line)\n");
-      if (Mode & COMBINE_INPUT_SPECS)      printf("  combine input specs into one stream (and stream group if enabled)\n");
-      else                                 printf("  each input is a multistream group\n");
+      if (Mode & COMBINE_INPUT_SPECS)      printf("  combine all input specs into one stream (and stream group if enabled)\n");
+      else                                 printf("  each input may contain one or more streams (each input is a \"stream group\")\n");
       if (Mode & ENABLE_DER_STREAM_DECODE) printf("  encapsulated DER stream detection and decoding enabled\n");
       if (Mode & ENABLE_STREAM_GROUP_ASR)  printf("  stream group output ASR enabled\n");
 
       printf(" Test Modes\n");
       bool fTestModePrinted = false;
-      if (Mode & CREATE_DELETE_TEST) { printf("  test mode, create, delete, and recreate sessions.  Automatically repeats\n"); fTestModePrinted = true; }
-      if (Mode & CREATE_DELETE_TEST_PCAP) { printf("  test mode, dynamically create sessions from pcap with initial static session.  Automatically repeats\n"); fTestModePrinted = true; }
+      if (Mode & CREATE_DELETE_TEST) { printf("  test mode, create, delete, and recreate sessions. Automatically repeats\n"); fTestModePrinted = true; }
+      if (Mode & CREATE_DELETE_TEST_PCAP) { printf("  test mode, dynamically create sessions from pcap with initial static session. Automatically repeats\n"); fTestModePrinted = true; }
       char repeatstr[20];
       sprintf(repeatstr, "%d times", nRepeat);
       if (nRepeat >= 0) { printf("  repeat %s\n", nRepeat == 0 ? "indefinitely" : repeatstr); fTestModePrinted = true; }
@@ -423,6 +427,7 @@ char tmpstr[MAX_APP_STR_LEN];
       if (Mode & ENABLE_DER_DECODING_STATS) printf("  DER decoding stats enabled\n");
       if (Mode & ENABLE_INTERMEDIATE_PCAP) printf("  intermediate HI2 / HI3 / BER pcap output enabled\n");
       if (Mode & ENABLE_ASN_OUTPUT) printf("  intermediate ASN output enabled\n");
+      if (Mode & INCLUDE_GAPS_IN_WAV_OUTPUT) printf("  stream input gaps are reflected in wav output as \"silence zeros\"; e.g. call-on-hold\n");
    }
 
    if (Mode & DYNAMIC_SESSIONS) thread_info[thread_index].fDynamicSessions = true;  /* currently set for all app threads. To-Do: allow mix of static and dynamic sessions between threads, JHB Jan 2023 */
@@ -454,7 +459,7 @@ char tmpstr[MAX_APP_STR_LEN];
 
    /* make a few initial event log entries */
 
-      Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, prog_str);  /* include (i) program version in event log (we already printed it above onscreen) and (ii) full command line */
+      Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, "%s, %s, %s \n", prog_str, ver_str, copyright_str);  /* include (i) program info in event log (we already printed it above onscreen) and (ii) full command line */
       {
          char tmpstr[MAX_CMDLINE_STR_LEN];
          if (strlen(szAppFullCmdLine)) strcpy(tmpstr, szAppFullCmdLine);  /* full command line, saved by cmdLineInterface() (which calls GetCommandLine()) */
@@ -1927,6 +1932,8 @@ err_msg:
             session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_STREAM_MULTICHANNEL;
             fNChannelWavOutput = true;
          }
+
+         if (Mode & INCLUDE_GAPS_IN_WAV_OUTPUT) session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_INCLUDE_GAPS_AS_SILENCE;  /* handle cmd line option for gaps in wav output, JHB Jul 2023 */
       }
 
       if (Mode & DISABLE_FLC) session->group_term.group_mode |= STREAM_GROUP_FLC_DISABLE;
@@ -3176,7 +3183,7 @@ valid_input_spec:
       #if 0
       RealTimeInterval[i] = MediaParams[i].Media.frameRate;  /* get cmd line rate entry, if any.  Default value if no entry is -1, which indicates to use session ptime */
       #else
-      if (RealTimeInterval[i] == -1) RealTimeInterval[i] = NOMINAL_REALTIME_INTERVAL;
+      if (RealTimeInterval[i] == -1) RealTimeInterval[i] = NOMINAL_REALTIME_INTERVAL;  /* defined in mediaTest.h. voplib.h has a definition NOM_PTIME which could be used also */
       #endif
       
       i++;  /* advance to next cmd line input spec */
@@ -3951,7 +3958,7 @@ uint8_t pcap_type;
    return 1;
 }
 
-/* look through list of allowed non-dynamic UDP ports, JHB Jan 2023 */
+/* look through lists of allowed non-dynamic UDP ports, JHB Jan 2023 */
 
 int isNonDynamicPortAllowed(uint16_t port, int thread_index) {
 

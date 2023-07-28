@@ -113,6 +113,7 @@
    Modified Mar 2022 JHB, add GPX file input file handling
    Modified Aug 2022 JHB, add _NO_PKTLIB_ in a few places to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
    Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo()
+   Modified Jul 2023 JHB, add const char* ver_str param to cmdLineInterface()
 */
 
 /* system header files */
@@ -1158,6 +1159,10 @@ exit:
 
 /* application entry point */
 
+static char prog_str[] = "mediaTest: SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms";
+static char ver_str[] = "v2.9.6";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
+static char copyright_str[] = "Copyright (C) Signalogic 2015-2023";
+
 int main(int argc, char **argv) {
   
 /* API app items */
@@ -1178,7 +1183,7 @@ char              libstr[256];
 
 /* code starts, display banner messages */
 
-  	printf("SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms, Rev 2.9.6, Copyright (C) Signalogic 2015-2023\n");
+  	printf("%s, %s, %s \n", prog_str, ver_str, copyright_str);
 
    sprintf(libstr, "  Libraries in use: DirectCore v%s", HWLIB_VERSION);
    #ifndef _NO_PKTLIB_  /* JHB Aug 2022 */
@@ -1198,7 +1203,7 @@ char              libstr[256];
    if (demo_build) printf("Using demo-only library versions\n");
    #endif
 
-   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS)) exit(EXIT_FAILURE);
+   if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS, ver_str)) exit(EXIT_FAILURE);
 
    if (programMode == LOG_FILE_DIAGNOSTICS) {
    

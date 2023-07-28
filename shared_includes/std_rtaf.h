@@ -1,20 +1,21 @@
 /*
-  std_rtaf.h
+ std_rtaf.h
 
-  standard definitions for RTAF-based applications, supports C5xxx/C6xxx and x86.  Supports voice, video, CIM
-      
-  Copyright (C) Signalogic, 2002-2018
+ standard definitions for RTAF-based applications, supports C5xxx/C6xxx and x86.  Supports voice, video, CIM
 
-  Revision History
+ Copyright (C) Signalogic, 2002-2023
 
-    Created 2002 JHB, provide definitions for TI devices compatible with standard C and Linux
-    Modified Jan 2011 VR, added _FAR prefixes to several variable declarations, was required for CIM build with CGTv7.0.3
-    Modified Sep 2012 JHB, added C66x support
-    Modified Oct 2012 CJ, more C66x support
-    Modified Jun 2013 JHB, added comments about chip families
-    Modified Mar 2017 CJ, added support for linux on x86
-    Modified Mar 2018 JHB, replaced _X86_ with _X86.  Change was made to maintain consistency with shared_include / coCPU usage.  _X86, _ARM, _TI66X, etc are "chip family" defines, specific chips are _X5_E930_, _C66XX_, etc)
-    Modified Oct 2018 JHB, moved DNUM definition here from diaglib_priv.h
+ Revision History
+
+  Created 2002 JHB, provide definitions for TI devices compatible with standard C and Linux
+  Modified Jan 2011 VR, added _FAR prefixes to several variable declarations, was required for CIM build with CGTv7.0.3
+  Modified Sep 2012 JHB, added C66x support
+  Modified Oct 2012 CJ, more C66x support
+  Modified Jun 2013 JHB, added comments about chip families
+  Modified Mar 2017 CJ, added support for linux on x86
+  Modified Mar 2018 JHB, replaced _X86_ with _X86.  Change was made to maintain consistency with shared_include / coCPU usage.  _X86, _ARM, _TI66X, etc are "chip family" defines, specific chips are _X5_E930_, _C66XX, etc)
+  Modified Oct 2018 JHB, moved DNUM definition here from diaglib_priv.h
+  Modified Jul 2023 JHB, add _C66XX definition
 */
 
 #ifndef RTC_DSP_INC
@@ -40,29 +41,31 @@
   
 */
 
-#ifdef _TMS320C6600  /* added CJ, Oct 12*/
-   #ifndef _C66XX_
-      #define _C66XX_
-      #define _C66xx
-   #endif
+#ifdef _TMS320C6600  /* added CJ, Oct 2012 */
+  #ifndef _C66XX_
+    #define _C66XX_
+    #define _C66xx
+    #define _C66XX  /* this matches format of _X86, JHB Jul 2023 */
+  #endif
 #endif
 
 #ifdef _TMS320C6X
-   #ifndef _C6XXX_
-     #define _C6XXX_
-     #define _C6xxx
-   #endif
+  #ifndef _C6XXX_
+    #define _C6XXX_
+    #define _C6xxx
+    #define _C66XX  /* this matches format of _X86, JHB Jul 2023 */
+  #endif
 #endif
 
 #ifdef _TMS320C5XX
-   #ifndef _C54XX_
-      #define _C54XX_
-      #define _C54xx
-   #endif
-   #ifndef _C5XXX_
-      #define _C5XXX_
-      #define _C5xxx
-   #endif
+  #ifndef _C54XX_
+    #define _C54XX_
+    #define _C54xx
+  #endif
+  #ifndef _C5XXX_
+    #define _C5XXX_
+    #define _C5xxx
+  #endif
 #endif
 
 
@@ -70,7 +73,7 @@
 
   #define CHIP_C64XX
   #define CHIP_C64xx
-  #define CHIP_C641X    /* used in new main.c to distinguish between C6472 and C641X for CIM builds.  VR, Jan2011 */
+  #define CHIP_C641X    /* used in new main.c to distinguish between C6472 and C641X for CIM builds. VR, Jan2011 */
   #define _CHIP_C64xx
   #define _TMS320C6400  /* enable correct TI intrinsics (JHB, Apr09) */
 
@@ -275,7 +278,7 @@
   #define INTR_MASK_REG         0x0000L
   #define INTR_FLAG_REG         0x0001L
 
-  #ifdef _C66XX_   /* added CJ, Oct 12 */
+  #ifdef _C66XX   /* added CJ, Oct 2012 */
 
 /* Define Timer Registers */
 

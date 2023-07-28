@@ -150,6 +150,7 @@ Revision History
  Modified May 2023 JHB, modify calculation of cur_time to support time scaling and pass cur_time param to DSBufferPackets() and DSRecvPackets(), in support of unified timebase and FTRT and AFAP modes
  Modified Jun 2023 JHB, modify alarms and especially packet push alarm to be compliant with unified timebase changes. See set_session_last_push_time() and set_session_alarm_flags()
  Modified Jun 2023 JHB, initialize timeScale if needed (if it still has zero load-time init value). Normally we expect apps to set timeScale
+ Modified Jul 2023 JHB, add DTMF input packet count to session summary stats
 */
 
 #ifndef _GNU_SOURCE
@@ -5797,7 +5798,7 @@ HSESSION hSessionGroupOwner = -1, hSession_prev = -1;
 char iptstr[MAX_STATS_STRLEN] = "", jbptstr[MAX_STATS_STRLEN] = "", jbrpstr[MAX_STATS_STRLEN] = "", jbzpstr[MAX_STATS_STRLEN] = "", mxooostr[MAX_STATS_STRLEN] = "", sidrstr[MAX_STATS_STRLEN] = "", tsastr[MAX_STATS_STRLEN] = "", plflstr[MAX_STATS_STRLEN] = "",
      pdflstr[MAX_STATS_STRLEN] = "", ssrcstr[MAX_STATS_STRLEN2] = "", missstr[MAX_STATS_STRLEN] = "", consstr[MAX_STATS_STRLEN] = "", pktlstr[MAX_STATS_STRLEN] = "", calcstr[MAX_STATS_STRLEN] = "", sessstr[MAX_STATS_STRLEN2] = "", npktstr[MAX_STATS_STRLEN] = "", spktstr[MAX_STATS_STRLEN] = "",
      undrstr[MAX_STATS_STRLEN] = "", ovrnstr[MAX_STATS_STRLEN] = "", medstr[MAX_STATS_STRLEN] = "", sidstr[MAX_STATS_STRLEN] = "", medxstr[MAX_STATS_STRLEN] = "", sidxstr[MAX_STATS_STRLEN] = "", maxdstr[MAX_STATS_STRLEN] = "", brststr[MAX_STATS_STRLEN] = "",
-     sidistr[MAX_STATS_STRLEN] = "", tsamstr[MAX_STATS_STRLEN] = "", purgstr[MAX_STATS_STRLEN] = "", dupstr[MAX_STATS_STRLEN] = "", jbundrstr[MAX_STATS_STRLEN] = "", jboverstr[MAX_STATS_STRLEN] = "", iooostr[MAX_STATS_STRLEN] = "", jboooostr[MAX_STATS_STRLEN] = "",
+     sidistr[MAX_STATS_STRLEN] = "", tsamstr[MAX_STATS_STRLEN] = "", purgstr[MAX_STATS_STRLEN] = "", dupstr[MAX_STATS_STRLEN] = "", jbundrstr[MAX_STATS_STRLEN] = "", jboverstr[MAX_STATS_STRLEN] = "", iooostr[MAX_STATS_STRLEN] = "", jboooostr[MAX_STATS_STRLEN] = "", dtmfstr[MAX_STATS_STRLEN] = "",
      jbmxooostr[MAX_STATS_STRLEN] = "", jbdropstr[MAX_STATS_STRLEN] = "", jbdupstr[MAX_STATS_STRLEN] = "", jbtgapstr[MAX_STATS_STRLEN] = "", mxovrnstr[MAX_STATS_STRLEN] = "", mxnpktstr[MAX_STATS_STRLEN] = "", noutpkts[MAX_STATS_STRLEN] = "",
      jbhldadj[MAX_STATS_STRLEN] = "", jbhlddel[MAX_STATS_STRLEN] = "", pobrststr[MAX_STATS_STRLEN] = "", lvflstr[MAX_STATS_STRLEN] = "";
 
@@ -5962,17 +5963,27 @@ organize_by_ssrc:
 
          /* use post delete flag here, as app may have already marked sessions for deletion */
   
+         /* SSRCs */
+
             add_stats_str(ssrcstr, MAX_STATS_STRLEN2, " %d:0x%x", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_SSRC | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+
+         /* input packet type counts */
+
             add_stats_str(npktstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
             add_stats_str(spktstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_SID_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+            add_stats_str(dtmfstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_DTMF_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+
+            add_stats_str(dupstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_7198_DUPLICATE_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
+
             add_stats_str(brststr, MAX_STATS_STRLEN, " %d:%d", c, packet_in_bursts[c]);
+
+         /* Loss */
+
             add_stats_str(pktlstr, MAX_STATS_STRLEN, " %d:%2.3f", c, 100.0*DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING)/max(DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_INPUT_PKT_COUNT | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING), 1));
 
             add_stats_str(plflstr, MAX_STATS_STRLEN, " %d:%d", c, pkt_loss_flush[c]);
             add_stats_str(pdflstr, MAX_STATS_STRLEN, " %d:%d", c, pkt_pastdue_flush[c]);
             add_stats_str(lvflstr, MAX_STATS_STRLEN, " %d:%d", c, pkt_level_flush[c]);
-
-            add_stats_str(dupstr, MAX_STATS_STRLEN, " %d:%d", c, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_NUM_7198_DUPLICATE_PKTS | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
 
             if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {  /* run-time packet loss stats can be disabled in pktlib in case they cause any issue, JHB Mar2020 */
 
@@ -6044,7 +6055,7 @@ organize_by_ssrc:
       }
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Packet Stats\n");
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Input (ch:pkts)%s, SIDs%s, RFC7198 duplicates%s, bursts%s\n", npktstr, spktstr, dupstr, brststr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Input (ch:pkts)%s, SID%s, DTMF%s, RFC7198 duplicate%s, burst%s\n", npktstr, spktstr, dtmfstr, dupstr, brststr);
 
       if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {
          add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Loss (ch:%%)%s, missing seq (ch:num)%s, max consec missing seq%s\n", pktlstr, missstr, consstr);

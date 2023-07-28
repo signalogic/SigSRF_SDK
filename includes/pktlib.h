@@ -88,10 +88,11 @@
   Modified Dec 2022 JHB, add DS_JITTER_BUFFER_INFO_CURRENT_ALLOCS and DS_JITTER_BUFFER_INFO_MAX_ALLOCS, for tracking jitter buffer mem usage
   Modified Jan 2023 JHB, increase MAX_PKTMEDIA_THREADS to 64, implement DS_CONFIG_MEDIASERVICE_EXIT in DSConfigMediaService()
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG which is used by DSGetPacketInfo(), DSFormatPacket(), DSBufferPackets(), and DSGetOrderedPackets(). Add DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG flag for additional error/warning message control. For usage examples see mediaMin.cpp
-   Modified Jan 2023 JHB, add DSGetPacketInfo() DS_PKT_INFO_RTP_PADDING_SIZE flag
-   Modified Apr 2023 JHB, add MAX_TCP_PACKET_LEN definition. In PKTINFO_ITEMS struct, add TCP sequence number and acknowledgement sequence number
-   Modified May 2023 JHB, add cur_time param to DSBufferPackets() and DSRecvPackets(), in support of FTRT and AFAP modes
-   Modified May 2023 JHB, add DS_SESSION_INFO_RFC7198_LOOKBACK flag to allow retrieval of RFC7198 lookback depth
+  Modified Jan 2023 JHB, add DSGetPacketInfo() DS_PKT_INFO_RTP_PADDING_SIZE flag
+  Modified Apr 2023 JHB, add MAX_TCP_PACKET_LEN definition. In PKTINFO_ITEMS struct, add TCP sequence number and acknowledgement sequence number
+  Modified May 2023 JHB, add cur_time param to DSBufferPackets() and DSRecvPackets(), in support of FTRT and AFAP modes
+  Modified May 2023 JHB, add DS_SESSION_INFO_RFC7198_LOOKBACK flag to allow retrieval of RFC7198 lookback depth
+  Modified Jul 2023 JHB, add DS_JITTER_BUFFER_INFO_NUM_DTMF_PKTS
 */
 
 #ifndef _PKTLIB_H_
@@ -991,6 +992,7 @@ extern "C" {
 #define DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST            0x30
 #define DS_JITTER_BUFFER_INFO_CURRENT_ALLOCS              0x31  /* JHB Dec 2022 */
 #define DS_JITTER_BUFFER_INFO_MAX_ALLOCS                  0x32
+#define DS_JITTER_BUFFER_INFO_NUM_DTMF_PKTS               0x33  /* DTMF RTP event packet count, JHB Jul 2023 */
 
 #define DS_JITTER_BUFFER_INFO_ITEM_MASK                   0xff
 
@@ -2296,6 +2298,10 @@ bool fChanActive = chnum >= 0 && chnum < NCORECHAN && ChanInfo_Core[chnum].chan_
       case DS_JITTER_BUFFER_INFO_MAX_ALLOCS:
 
          return (int64_t)max_allocs;
+
+      case DS_JITTER_BUFFER_INFO_NUM_DTMF_PKTS:
+
+         return JitterBuffer->total_input_dtmf_count;
    }
 
    return -1;

@@ -21,6 +21,7 @@
    Modified Jan 2021 JHB, allow overloaded options, for example '-sN' integer for app type A, and '-sfilename' string for app type B. See comments below and in getUserInterface.cpp
    Modified Dec 2022 JHB, start work on allowing input specs to include IP addr:port type of input, e.g. -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm. Inputs are strings, so we first look for xx.xx... and xx:xx patterns, if found convert those to IP addr:port, if not then assume it's a path/file input. Code for IPADR input type can be re-used
    Modified May 2023 JHB, support FLOAT option type, add FLOAT case to switch statements, add getFloat(), change getUdpPort() from unsigned int to uint16_t
+   Modified Jul 2023 JHB, start using getopt_long(), support --version option. Several improvements in error handling and options printout when wrong things are entered
 */
 
 #include <stdint.h>
@@ -29,6 +30,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstring>
+#include <getopt.h>
 
 #include "cmdLineOpt.h"
 #include "alias.h"
@@ -81,264 +83,284 @@ uint64_t   m[10] = {0,0,0,0,0,0,0,0,0,0};
 uint64_t   ulx;
 int        nInstances, nMultiple, valueSuffix;
 char       suffix;
-bool       x86, fNoOptionsFound;
+bool       x86, fValidOption;
 char       tmpstr[CMDOPT_MAX_INPUT_LEN];
+
+struct option long_options[] = { {"version", no_argument, NULL,  0 }, {NULL, 0, NULL, 0 } };  /* add for getopt_long() support, JHB Jul 2023 */
+int long_index = -1;
 
 
    if (MAX_OPTIONS <= this->numOptions) {
 
       cout << "CmdLineOpt::scanOptions: Cannot have more than " << MAX_OPTIONS - 1 << "options." << endl;
-
-      rc = false;
+      return false;
    }
 
-   if (rc) {
-   
-      optionChar = optionString;
+   optionChar = optionString;
+
+   for (optCounter=0; optCounter<this->numOptions; optCounter++) {
+
+      *optionChar++ = this->options[optCounter].option;
+
+      if (BOOLEAN != this->options[optCounter].type) *optionChar++ = ':';
+
+      if (this->options[optCounter].option == 'L') *optionChar++ = ':';  /* for -L we use GNU extension char (:) that allows an optional argument, so either just -L can be entered, or -Lsomething, JHB Sep2017 */
+   }
+
+   *optionChar = '\0';
+
+/* Parse the command line string looking for the commands. Use while loop to call getopt() GNU lib API. Note we are now using getopt_long(), which allows input form --option (where '--' indicates a "long" option), JHB Jul 2023 */
+
+   bool fFirstOption = true;
+
+   while ((optionFound = getopt_long(argc, argv, optionString, long_options, &long_index)) != -1 && optionFound != ':') {
+
+      #ifdef GETOPT_DEBUG
+      printf(" *** long index = %d, option found = %d, optarg = %s \n", long_index, optionFound, optarg);
+      #endif
+
+      if (fFirstOption) {
+
+         if (optarg) {
+
+            string cpp_optarg(optarg);
+
+            if (cpp_optarg == "?") {  /* handle single "?" on cmd line, a legacy way of asking for cmd line help, JHB Jul 2023 */
+
+               this->printOptions();
+               return false;
+            }
+         }
+
+         fFirstOption = false;
+      }
+
+      if (long_index == 0) optionFound = (int)'-';  /* force option to be '-' if --version is first cmd line arg. This is a hack but it's a start for using getopt_long() and not making too many changes yet in getUserInfo(), JHB Jul 2023 */
+
+      fValidOption = false;
 
       for (optCounter=0; optCounter<this->numOptions; optCounter++) {
 
-         *optionChar++ = this->options[optCounter].option;
+         if (this->options[optCounter].option == optionFound) {
 
-         if (BOOLEAN != this->options[optCounter].type) *optionChar++ = ':';
+            nInstances = this->options[optCounter].nInstances;
 
-         if (this->options[optCounter].option == 'L') *optionChar++ = ':';  /* for -L we use the GNU extension that allows an optional argument, so either just -L can be entered, or -Lsomething, JHB Sep2017 */
-      }
+            switch (this->options[optCounter].type) {
 
-      *optionChar = '\0';
+               case INTEGER:  /* usually accept entry in format -option NN, but also -option 0xNN and -option NN:NN:NN (up to 3 values) */
 
-   // Parse the command line string looking for the commands.
+                  nMultiple = 0;
+                  strcpy(tmpstr, optarg);  /* temporary working buffer */
+                  p = tmpstr;
+                  valueSuffix = -1;
 
-      optionFound = getopt(argc, argv, optionString);  /* GNU lib API. Note that we need to start using getopt_long(), which allows input form --option  (where '--' indicates a "long" option), JHB Dec 2022 */
+                  do {
 
-      while (-1 != optionFound && ':' != optionFound) {
+                     p2 = p;
 
-         fNoOptionsFound = true;
+                     p = strstr(p2, ":");
+                     if (p != NULL) *p++ = 0;
 
-         for (optCounter=0; optCounter<this->numOptions; optCounter++) {
+                     bool fHexVal = p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X');
 
-            if (this->options[optCounter].option == optionFound) {
+                     if (strlen(p2) > 1) {  /* look for option suffix char */
 
-               nInstances = this->options[optCounter].nInstances;
+                        suffix = p2[strlen(p2)-1];
 
-               switch (this->options[optCounter].type) {
+                        if ((!fHexVal && suffix >= 'a' && suffix <= 'w') || (suffix >= 'y' && suffix <= 'z') || (suffix == 'x' && strlen(p2) > 3)) {  /* add hex value check, otherwise this suffix char code was stripping off the last a-f hex digit :-( JHB Dec 2019 */
 
-                  case INTEGER:  /* usually accept entry in format -option NN, but also -option 0xNN and -option NN:NN:NN (up to 3 values) */
-
-                     nMultiple = 0;
-                     strcpy(tmpstr, optarg);  /* temporary working buffer */
-                     p = tmpstr;
-                     valueSuffix = -1;
-
-                     do {
-
-                        p2 = p;
-
-                        p = strstr(p2, ":");
-                        if (p != NULL) *p++ = 0;
-
-                        bool fHexVal = p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X');
-
-                        if (strlen(p2) > 1) {  /* look for option suffix char */
-
-                            suffix = p2[strlen(p2)-1];
-
-                            if ((!fHexVal && suffix >= 'a' && suffix <= 'w') || (suffix >= 'y' && suffix <= 'z') || (suffix == 'x' && strlen(p2) > 3)) {  /* add hex value check, otherwise this suffix char code was stripping off the last a-f hex digit :-( JHB Dec 2019 */
-
-                              valueSuffix = (int)(p2[strlen(p2)-1] - 'a' + 1);
-                              p2[strlen(p2)-1] = 0;  /* remove suffix from option string before converting to int */
-                           }
+                           valueSuffix = (int)(p2[strlen(p2)-1] - 'a' + 1);
+                           p2[strlen(p2)-1] = 0;  /* remove suffix from option string before converting to int */
                         }
-
-                        if (fHexVal) sscanf(&p2[2], "%x", (unsigned int*)&x);
-                        else x = atoi(p2);
-
-                        if (valueSuffix >= 0) {
-
-                           x |= valueSuffix << 24;  /* option suffix value stored in bits 31-24.  Probably that could be 63-56 on 64-bit systems, but for now the typical option where a suffix is used doesn't have much range in values */
-                        }
-
-                        this->options[optCounter].value[nInstances][nMultiple] = (void*)x;
-
-                     } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
-
-                     fNoOptionsFound = false;
-                     break;
-
-                  case INT64:  /* 64-bit support, JHB Aug 2015 */
-
-                     nMultiple = 0;
-                     strcpy(tmpstr, optarg);  /* temporary working buffer */
-                     p = tmpstr;
-
-                     do {
-
-                        p2 = p;
-
-                        p = strstr(p2, ":");
-                        if (p != NULL) *p++ = 0;
-
-                        if (p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X'))
-                          sscanf(&p2[2], "%llx", (unsigned long long*)&llx);
-                        else
-                          llx = atol(p2);
-
-                        this->options[optCounter].value3[nInstances] = llx;
-
-                     } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
-
-                     fNoOptionsFound = false;
-                     break;
-
-                  case IPADDR:  /* accept entry in format -Daa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm, where a, b, c, d, and port are decimal numbers, and mm are hex digits. Also allow -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm for input UDP ports, JHB Dec 2022 */
-
-                     strcpy(tmpstr, optarg);
-                     p = strstr(tmpstr, ":");
-
-                     if (p != NULL) {  /* get integer after ':' char */
-   
-                        *p++ = 0;
-
-                        if (p != NULL) {
-
-                           p2 = strstr(p, ":");  /* entry after 2nd : is MAC addr */
-
-                           if (p2 != NULL) {
-
-                              *p2++ = 0;
-
-                              p3 = strstr(p2, "-");
-                              i = 0;
-
-                              while ((p3 != NULL) || (p2 != NULL)) {
-
-                                 if (p3 != NULL) *p3++ = 0;
-
-                                 if (p2 != NULL) {
-
-                                    sscanf(p2, "%x", (unsigned int*)&x);
-                                    m[i++] = (uint64_t)x;
-                                 }
-                                 p2 = p3;
-                                 if (p2 != NULL) p3 = strstr(p2, "-");
-                                 else p3 = NULL;
-                              }
-
-                              ulx = (m[0] << 40) + (m[1] << 32) + (m[2] << 24) + (m[3] << 16) + (m[4] << 8) + m[5];
-
-                              this->options[optCounter].value3[nInstances] = ulx;
-                           }
-                        }
-
-                        x = atoi(p);
-                        this->options[optCounter].value2[nInstances] = x;
                      }
 
-                     p = strstr(tmpstr, ".");  /* IP addr format */
+                     if (fHexVal) sscanf(&p2[2], "%x", (unsigned int*)&x);
+                     else x = atoi(p2);
+
+                     if (valueSuffix >= 0) {
+
+                        x |= valueSuffix << 24;  /* option suffix value stored in bits 31-24.  Probably that could be 63-56 on 64-bit systems, but for now the typical option where a suffix is used doesn't have much range in values */
+                     }
+
+                     this->options[optCounter].value[nInstances][nMultiple] = (void*)x;
+
+                  } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
+
+                  fValidOption = true;
+                  break;
+
+               case INT64:  /* 64-bit support, JHB Aug 2015 */
+
+                  nMultiple = 0;
+                  strcpy(tmpstr, optarg);  /* temporary working buffer */
+                  p = tmpstr;
+
+                  do {
+
+                     p2 = p;
+
+                     p = strstr(p2, ":");
+                     if (p != NULL) *p++ = 0;
+
+                     if (p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X'))
+                       sscanf(&p2[2], "%llx", (unsigned long long*)&llx);
+                     else
+                       llx = atol(p2);
+
+                     this->options[optCounter].value3[nInstances] = llx;
+
+                  } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
+
+                  fValidOption = true;
+                  break;
+
+               case IPADDR:  /* accept entry in format -Daa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm, where a, b, c, d, and port are decimal numbers, and mm are hex digits. Also allow -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm for input UDP ports, JHB Dec 2022 */
+
+                  strcpy(tmpstr, optarg);
+                  p = strstr(tmpstr, ":");
+
+                  if (p != NULL) {  /* get integer after ':' char */
+   
+                     *p++ = 0;
 
                      if (p != NULL) {
 
-                        p2 = tmpstr;
-                        i = 0;
+                        p2 = strstr(p, ":");  /* entry after 2nd : is MAC addr */
 
-                        while (p != NULL) {
+                        if (p2 != NULL) {
 
-                           *p++ = 0;
-                           d[i++] = atoi(p2);
-                           p2 = p;
-                           p = strstr(p2, ".");
+                           *p2++ = 0;
+
+                           p3 = strstr(p2, "-");
+                           i = 0;
+
+                           while ((p3 != NULL) || (p2 != NULL)) {
+
+                              if (p3 != NULL) *p3++ = 0;
+
+                              if (p2 != NULL) {
+
+                                 sscanf(p2, "%x", (unsigned int*)&x);
+                                 m[i++] = (uint64_t)x;
+                              }
+                              p2 = p3;
+                              if (p2 != NULL) p3 = strstr(p2, "-");
+                              else p3 = NULL;
+                           }
+
+                           ulx = (m[0] << 40) + (m[1] << 32) + (m[2] << 24) + (m[3] << 16) + (m[4] << 8) + m[5];
+
+                           this->options[optCounter].value3[nInstances] = ulx;
                         }
-
-                        if (p2 != NULL) d[i++] = atoi(p2);
-
-                        x = (d[0] << 24) + (d[1] << 16) + (d[2] << 8) + d[3];
-
-                        this->options[optCounter].value[nInstances][0] = (void*)x;
                      }
 
-                     fNoOptionsFound = false;
-                     break;
+                     x = atoi(p);
+                     this->options[optCounter].value2[nInstances] = x;
+                  }
 
-                  case FLOAT:  /* add FLOAT type, May 2023 JHB */
-                     f = atof(optarg);
-                     memcpy(&x, &f, sizeof(float));  /* hack to store float in a void* */
+                  p = strstr(tmpstr, ".");  /* IP addr format */
+
+                  if (p != NULL) {
+
+                     p2 = tmpstr;
+                     i = 0;
+
+                     while (p != NULL) {
+
+                        *p++ = 0;
+                        d[i++] = atoi(p2);
+                        p2 = p;
+                        p = strstr(p2, ".");
+                     }
+
+                     if (p2 != NULL) d[i++] = atoi(p2);
+
+                     x = (d[0] << 24) + (d[1] << 16) + (d[2] << 8) + d[3];
+
                      this->options[optCounter].value[nInstances][0] = (void*)x;
-                     fNoOptionsFound = false;
-                     break;
+                  }
 
-                  case CHAR:
-                     x = (intptr_t)optarg[0];
-                     this->options[optCounter].value[nInstances][0] = (void*)x;  /* store first optarg char in void* */
-                     fNoOptionsFound = false;
-                     break;
+                  fValidOption = true;
+                  break;
 
-                  case STRING:
-                     if ((char)optionFound == 'L' && optarg == NULL) {}  /* if only -L is entered (with no string value), don't overwrite the default value in getUserInterface.cpp, JHB Sep2017 */
-                     else this->options[optCounter].value[nInstances][0] = (void*)optarg;
-                     fNoOptionsFound = false;
-                     break;
+               case FLOAT:  /* add FLOAT type, May 2023 JHB */
+                  f = atof(optarg);
+                  memcpy(&x, &f, sizeof(float));  /* hack to store float in a void* */
+                  this->options[optCounter].value[nInstances][0] = (void*)x;
+                  fValidOption = true;
+                  break;
 
-                  case BOOLEAN:
-                     this->options[optCounter].value[nInstances][0] = (void*)true;  /* if the option exist on command line its true */
-                     fNoOptionsFound = false;
-                     break;
+               case CHAR:
+                  x = (intptr_t)optarg[0];
+                  this->options[optCounter].value[nInstances][0] = (void*)x;  /* store first optarg char in void* */
+                  fValidOption = true;
+                  break;
 
-                  default:
-                     cout << "Error in option -" << this->options[optCounter].description << ":" << endl;
-                     cout << "  Unknown option type" << endl;
-                     //this->printOptions( );
-                     rc = false;
-                     break;
-               }
+               case STRING:
+                  if ((char)optionFound == 'L' && optarg == NULL) {}  /* if only -L is entered (with no string value), don't overwrite the default value in getUserInterface.cpp, JHB Sep2017 */
+                  else this->options[optCounter].value[nInstances][0] = (void*)optarg;
+                  fValidOption = true;
+                  break;
 
-               if (rc) {
-                  this->options[optCounter].nInstances++;
+               case BOOLEAN:
+                  this->options[optCounter].value[nInstances][0] = (void*)true;  /* if the option exist on command line its true */
+                  fValidOption = true;
+                  break;
+
+               default:
+                  cout << "Error in option -" << this->options[optCounter].description << ":" << endl;
+                  cout << "  Unknown option type" << endl;
+                  rc = false;
+                  break;
+            }
+
+            if (rc) {
+               this->options[optCounter].nInstances++;
 // debug   printf("option = %s, optCounter = %d, count = %d\n", optarg, optCounter, this->options[optCounter].nInstances);
-               }
-
-               #if 0  /* remove this break so all defined options will be checked vs. cmd line option found. This allows options to be overloaded (e.g. two 's' definitions, one integer for app type A, one string for app type B), JHB Jan 2021 */ 
-               break;
-               #endif
             }
+
+            #if 0  /* remove this break so all defined options will be checked vs. cmd line option found. This allows options to be overloaded (e.g. two 's' definitions, one integer for app type A, one string for app type B), JHB Jan 2021 */ 
+            break;
+            #endif
          }
-
-         #if 0
-         if (optCounter == this->numOptions && fNoOptionsFound) rc = false;  /* no matching options and types found, return false */
-         #else
-         if (optCounter == this->numOptions && fNoOptionsFound) cout << "Unrecognized option" << optionFound << endl;  /* no matching option and type found, but continue, JHB Jan2021 */
-         #endif
-
-         if (!rc && '?' == optionFound) {
-
-            this->printOptions( );
-            return false;
-         }
-
-         optionFound = getopt(argc, argv, optionString);  /* get next option */
       }
 
-      /* Disable mandatories for x86 - CJ Jan2017 */
-      if (this->nInstances('c') && (!strcmp(this->getStr('c', 0), "x86") || !strcmp(this->getStr('c', 0), "X86"))) {
-
-//         uFlags |= CLI_DISABLE_MANDATORIES;  /* no longer needed, JHB Aug 2018 */
-         x86 = true;
+      #if 0
+      if (optCounter == this->numOptions && !fValidOption) rc = false;  /* no matching options and types found, return false */
+      #else
+      if (optCounter == this->numOptions && !fValidOption) {
+         cout << "Unrecognized option " << argv[max(0, optind-1)] << endl;  /* no matching option and type found, but continue processing all cmd line args, JHB Jan2021. Add informative display of incorrect arguments (note that optionFound is useless in error case, getopt() will return it as "?"), JHB Jul 2023*/
+         rc = false;
       }
-      else x86 = false;
+      #endif
+   }
 
-      if ((uFlags & CLI_DISABLE_MANDATORIES) == 0) {  /* CLI_DISABLE_MANDATORIES added 11May15 JHB.  Using this should no longer be needed due to new isMandatory options (see cmdLineOpt.h), JHB Aug 2018 */
+   if (!rc) {
+      this->printOptions();
+      return false;
+   }
 
-      // Find out if any mandatory options were omitted
-         for (optCounter=0; optCounter<this->numOptions; optCounter++) {
+/* Disable mandatories for x86 - CJ Jan2017 */
+   if (this->nInstances('c') && (!strcmp(this->getStr('c', 0), "x86") || !strcmp(this->getStr('c', 0), "X86"))) {
 
-            if (((this->options[optCounter].isMandatory == 1) || (this->options[optCounter].isMandatory == 2 && !x86)) && this->options[optCounter].nInstances == 0) {
+//     uFlags |= CLI_DISABLE_MANDATORIES;  /* no longer needed, JHB Aug 2018 */
+      x86 = true;
+   }
+   else x86 = false;
 
-               cout << "Error in options:" << endl;
-               cout << "  Option -" << this->options[optCounter].option << " is mandatory" << endl;
+   if ((uFlags & CLI_DISABLE_MANDATORIES) == 0) {  /* CLI_DISABLE_MANDATORIES added 11May15 JHB.  Using this should no longer be needed due to new isMandatory options (see cmdLineOpt.h), JHB Aug 2018 */
+
+   // Find out if any mandatory options were omitted
+      for (optCounter=0; optCounter<this->numOptions; optCounter++) {
+
+         if ((((this->options[optCounter].isMandatory == 1) || (this->options[optCounter].isMandatory == 2 && !x86)) && this->options[optCounter].nInstances == 0) && !this->getPosition('-', STRING) == 0) {
+
+            cout << "Error in options:" << endl;
+            cout << "  Option -" << this->options[optCounter].option << " is mandatory" << endl;
     
-               this->printOptions( );
-               rc = false;
-               break;
-            }
+            this->printOptions( );
+            rc = false;
+            break;
          }
       }
    }
@@ -570,7 +592,7 @@ int optCounter;
 }
 
 //
-// printOptions - Print a list of all the valid options and their description.
+// printOptions - Print a list of all the valid options and their description
 //
 void CmdLineOpt::printOptions(void) {
 
@@ -582,6 +604,8 @@ char type[32];
    cout << "+ is mandatory for coCPU" << endl;
 
    for (optCounter=0; optCounter<this->numOptions; optCounter++) {
+
+      if (this->options[optCounter].option == '-') continue;
 
       switch (this->options[optCounter].type) {
 
@@ -625,7 +649,7 @@ char type[32];
 }
 
 //
-// getOption - Retrieves options specified on the command line
+// getOption (private) - Retrieves an option if specified on the command line, including type match
 //
 CmdLineOpt::Record* CmdLineOpt::getOption(char option, int type) {
 
@@ -645,4 +669,26 @@ int optCounter;
    }
 
    return record;
+}
+
+//
+// getPosition (public) - Retrieves position of option if specified on the command line (similar to getOption above), JHB Jul 2023
+//
+int CmdLineOpt::getPosition(char option, Type type) {
+
+int optCounter, pos = -1;
+
+   for (optCounter=0; optCounter<this->numOptions; optCounter++) {
+
+      if (option == this->options[optCounter].option) {
+
+         if (type == -1 || type == (this->options + optCounter)->type) {
+
+            pos = optCounter;
+            break;
+         }
+      }
+   }
+
+   return pos;
 }
