@@ -17,6 +17,10 @@
 
     Add APIs to (i) encapsulate c66x PCIe and SRIO interfaces, and (ii) support x86-only or combined x86 and c66x server usage.  APIs are consistent between all use cases
 
+  License
+  
+    Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
   Revision History
 
     Nov 2008, Created, JHB, session (voice/video) support for SigC66xx PCIe cards and SigC641x PMC/PTMC modules

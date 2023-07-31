@@ -14,6 +14,10 @@
 
     Add APIs to support x86-only or combined x86 and coCPU platforms.  APIs are now consistent between all use cases (for example, no difference betweeen coCPU platforms that use PCIe or SRIO interfaces)
 
+  License
+
+    Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
   Revision History
 
     Created Sep 2013, JHB, configuration support for SigC66xx PCIe cards and SigC641x PMC/PTMC modules

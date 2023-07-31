@@ -5,6 +5,10 @@
 
  Copyright (C) Signalogic, 2002-2023
 
+ License
+
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+
  Revision History
 
   Created 2002 JHB, provide definitions for TI devices compatible with standard C and Linux

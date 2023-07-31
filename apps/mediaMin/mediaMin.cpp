@@ -11,7 +11,7 @@
 
   Application source code for packet + media processing, including:
 
-   -telecom and analytics applications, e.g. SBC, lawful interception, ASR
+   -telecom and analytics applications, e.g. SBC, lawful interception, ASR and transcription, call recording
 
    -standard operating mode
 

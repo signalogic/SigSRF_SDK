@@ -21,7 +21,8 @@
    Modified Jan 2021 JHB, allow overloaded options, for example '-sN' integer for app type A, and '-sfilename' string for app type B. See comments below and in getUserInterface.cpp
    Modified Dec 2022 JHB, start work on allowing input specs to include IP addr:port type of input, e.g. -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm. Inputs are strings, so we first look for xx.xx... and xx:xx patterns, if found convert those to IP addr:port, if not then assume it's a path/file input. Code for IPADR input type can be re-used
    Modified May 2023 JHB, support FLOAT option type, add FLOAT case to switch statements, add getFloat(), change getUdpPort() from unsigned int to uint16_t
-   Modified Jul 2023 JHB, start using getopt_long(), support --version option. Several improvements in error handling and options printout when wrong things are entered
+   Modified Jul 2023 JHB, start using getopt_long(); initially we support --version cmd line option
+   Modified Jul 2023 JHB, several improvements in error handling and options printout when wrong things are entered
 */
 
 #include <stdint.h>
@@ -86,8 +87,10 @@ char       suffix;
 bool       x86, fValidOption;
 char       tmpstr[CMDOPT_MAX_INPUT_LEN];
 
-struct option long_options[] = { {"version", no_argument, NULL,  0 }, {NULL, 0, NULL, 0 } };  /* add for getopt_long() support, JHB Jul 2023 */
-int long_index = -1;
+/* used when calling getopt_long(), JHB Jul 2023 */
+
+struct option long_options[] = { {"version", no_argument, NULL,  0 }, /* {{}}, insert additional options here */ {NULL, 0, NULL, 0 } };  /* --version */
+int long_option_index = -1;  /* index of long option, if found */
 
 
    if (MAX_OPTIONS <= this->numOptions) {
@@ -113,10 +116,10 @@ int long_index = -1;
 
    bool fFirstOption = true;
 
-   while ((optionFound = getopt_long(argc, argv, optionString, long_options, &long_index)) != -1 && optionFound != ':') {
+   while ((optionFound = getopt_long(argc, argv, optionString, long_options, &long_option_index)) != -1 && optionFound != ':') {
 
       #ifdef GETOPT_DEBUG
-      printf(" *** long index = %d, option found = %d, optarg = %s \n", long_index, optionFound, optarg);
+      printf(" *** long option index = %d, option found = %d, optarg = %s \n", long_option_index, optionFound, optarg);
       #endif
 
       if (fFirstOption) {
@@ -135,7 +138,7 @@ int long_index = -1;
          fFirstOption = false;
       }
 
-      if (long_index == 0) optionFound = (int)'-';  /* force option to be '-' if --version is first cmd line arg. This is a hack but it's a start for using getopt_long() and not making too many changes yet in getUserInfo(), JHB Jul 2023 */
+      if (long_option_index == 0) optionFound = (int)'-';  /* force option to be '-' if --version is first cmd line arg. This is a hack but it's a start for using getopt_long() and not making too many changes yet in getUserInfo(), JHB Jul 2023 */
 
       fValidOption = false;
 
@@ -161,7 +164,7 @@ int long_index = -1;
                      p = strstr(p2, ":");
                      if (p != NULL) *p++ = 0;
 
-                     bool fHexVal = p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X');
+                     bool fHexVal = p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X');  /* hex values must have 0x prefix */
 
                      if (strlen(p2) > 1) {  /* look for option suffix char */
 
@@ -323,7 +326,8 @@ int long_index = -1;
             break;
             #endif
          }
-      }
+
+      }  /* end of for loop comparing optionFound vs allowed options */
 
       #if 0
       if (optCounter == this->numOptions && !fValidOption) rc = false;  /* no matching options and types found, return false */
@@ -333,7 +337,8 @@ int long_index = -1;
          rc = false;
       }
       #endif
-   }
+
+   }  /* end of while (optionFound = getopt_long() ...) loop */
 
    if (!rc) {
       this->printOptions();
