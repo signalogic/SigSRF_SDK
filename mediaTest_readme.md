@@ -2545,13 +2545,13 @@ on the mediaMin command line.
 
 The -dN cmd line options INCLUDE_GAPS_IN_WAV_OUTPUT flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) includes input gaps as silence in stream group and individual (mono) wav outputs. This applies when input of one or more streams in the group pauses, for example call-on-hold, packet push pause, etc. Gaps are always accurately reflected in stream group RTP streaming output, but for wav files it's an option as gaps can become very large and increase wav file storage requirements. Notes:
 
-> * a "pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps are handled by pktlib (packet repair, jitter buffer resync, etc) prior to streamlib. Larger lost packet gaps that can't be repaired are handled in streamlib by FLC
-
-> * the INCLUDE_GAPS_IN_WAV_OUTPUT flag has no affect on real-time output RTP streaming. Live output RTP streaming pauses for the duration of large gaps
+> * an "input pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps are handled by pktlib (packet repair, jitter buffer resync, etc) prior to streamlib. Lost packet gaps that can't be repaired at packet level are handled in [streamlib](#user-content-streamlib) by FLC, but only up to a limit (nominally around 180 msec)
 
 > * silence gaps are not actually written to wav output until input resumes. In other words, silence is not added to an input that has stopped permanently
 
-> * streamlib applies FLC (if enabled) when a merged output gap occurs, but only up to a limit (nominally around 180 msec). This does not affect gap size/duration, which always accurately reflects input stream(s)
+> * the INCLUDE_GAPS_IN_WAV_OUTPUT flag has no affect on real-time output RTP streaming. Live output RTP streaming pauses for the duration of large gaps
+
+> * for large packet gaps exceeding FLC limits, [streamlib](#user-content-streamlib) keeps track of gap size/duration, resuming merged outputs, live streaming output, and invdividual mono wav outputs (if enabled), always accurately reflecting input stream timing
 
 ### Performance Improvements
 
