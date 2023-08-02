@@ -2547,7 +2547,7 @@ The INCLUDE_GAPS_IN_WAV_OUTPUT flag includes input gaps as silence in stream gro
 
 > * a "pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps are handled by pktlib (packet repair, jitter buffer resync, etc) prior to streamlib. Larger lost packet gaps that can't be repaired are handled in streamlib by FLC
 
-> * the NCLUDE_GAPS_IN_WAV_OUTPUT flag has no affect on real-time output RTP streaming. Live output RTP streaming pauses for the duration of large gaps
+> * the INCLUDE_GAPS_IN_WAV_OUTPUT flag has no affect on real-time output RTP streaming. Live output RTP streaming pauses for the duration of large gaps
 
 > * silence gaps are not actually written to wav output until input resumes. In other words, silence is not added to an input that has stopped permanently
 
