@@ -346,12 +346,11 @@ wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_CentOS*.rar" --content-disposition -R "
 ```
 The above wildcard format wget commands may download some non-rar files and then remove them and/or download the same rar file twice due to Github internal naming conventions (e.g. use of SHAs for subfolder naming), but the end result is correct.
 
-<p style="margin:0">
 #### $\textcolor{red}{\textsf{Note: if the above wildcard commands fail}}$  
 #### $\textcolor{red}{\textsf{(which can happen from time-to-time due to}}$  
 #### $\textcolor{red}{\textsf{Github server maintenance), then use the}}$  
 #### $\textcolor{red}{\textsf{following file-specific commands:}}$
-</p>
+
 ```
 Ubuntu and Debian:
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-20.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-20.04_15May23.rar
