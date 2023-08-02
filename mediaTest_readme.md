@@ -2545,7 +2545,7 @@ on the mediaMin command line.
 
 The -dN cmd line options INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) includes input pauses as silence in stream group and individual (mono) wav outputs. This applies when input of one or more streams in the group pauses, for example call-on-hold, packet push pause, etc. Input pauses are always accurately reflected in stream group RTP streaming output, but for wav output it's an option as pauses can become very large and increase file storage requirements. Notes:
 
-> * an "input pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps are handled by [pktlib](#user-content-pktlib) (packet repair, jitter buffer resync, etc) prior to [streamlib](#user-content-streamlib) processing. Lost packet gaps that can't be repaired by pktlib are handled in streamlib by FLC (Frame Loss Compensation), but only up to a limit (nominally around 180 msec)
+> * an "input pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps (i.e. missing sequence numbers) are handled by [pktlib](#user-content-pktlib) (packet repair, jitter buffer resync, etc) prior to [streamlib](#user-content-streamlib) processing. Lost packet gaps that can't be repaired by pktlib are handled in streamlib by FLC (Frame Loss Compensation), but only up to a limit (nominally around 180 msec)
 
 > * silence zeros are written to wav output only when input resumes. In other words, silence is not added to an input that has stopped permanently
 
