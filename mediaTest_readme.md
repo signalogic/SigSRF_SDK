@@ -2543,7 +2543,7 @@ on the mediaMin command line.
 
 #### Include Gaps in Wav Output
 
-The INCLUDE_GAPS_IN_WAV_OUTPUT flag includes input gaps as silence in stream group and individual (mono) wav outputs. This applies when input of one or more streams in the group pauses, for example call-on-hold, packet push pause, etc. Gaps are always accurately reflected in stream group RTP streaming output, but for wav files it's an option as gaps can become very large and increase wav file storage requirements. Notes:
+The -dN cmd line options INCLUDE_GAPS_IN_WAV_OUTPUT flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) includes input gaps as silence in stream group and individual (mono) wav outputs. This applies when input of one or more streams in the group pauses, for example call-on-hold, packet push pause, etc. Gaps are always accurately reflected in stream group RTP streaming output, but for wav files it's an option as gaps can become very large and increase wav file storage requirements. Notes:
 
 > * a "pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps are handled by pktlib (packet repair, jitter buffer resync, etc) prior to streamlib. Larger lost packet gaps that can't be repaired are handled in streamlib by FLC
 
@@ -2596,7 +2596,7 @@ If -g is not entered, then wav files are generated on the mediaMin app subfolder
 
 #### FLC Holdoff Enable
 
-The ENABLE_FLC_HOLDOFFS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) will enable FLC Holdoffs, which make the FLC (Frame Loss Compensation] algorithm in [streamlib](#user-content-streamlib) less conservative and may slightly improve audio quality in some cases.  Normally the FLC algorithm acts immediately on any indication of late or missing audio output, with objectives (i) maintain continuous live streaming output and (ii) spread out any media impairments over a wide range of frames.
+The -dN cmd line options ENABLE_FLC_HOLDOFFS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) will enable FLC Holdoffs, which make the FLC (Frame Loss Compensation] algorithm in [streamlib](#user-content-streamlib) less conservative and may slightly improve audio quality in some cases.  Normally the FLC algorithm acts immediately on any indication of late or missing audio output, with objectives (i) maintain continuous live streaming output and (ii) spread out any media impairments over a wide range of frames.
 
 When FLC Holdoffs are enabled streamlib will defer (hold off) action when it detects a marginally late frame in live real-time streaming output. This may or may not be effective, as there is no way to tell if at some point "down the line" frame gaps will get worse and the prior holdoff will cause either (i) a slight discontinuity between two (2) output frames or (ii) two (2) consecutive frames to need repair.
 
@@ -2604,7 +2604,7 @@ In the best case the number of FLCs will be reduced or even eliminated, yielding
 
 #### Intermediate pcap Output Disable
 
-The DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set in the mediaMin -dN command line option, for example:
+The -dN cmd line options DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set in the mediaMin -dN command line option, for example:
 
     -d0x20008000c11
   
@@ -2636,7 +2636,7 @@ Below are are pcap format related command line options.
 
 #### Out-of-Spec RTP Padding
 
-The ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
+The -dN cmd line options ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
 
 <a name="RunTimeKeyCommands"></a>
 ### mediaMin Run-Time Key Commands
