@@ -346,7 +346,6 @@ wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_CentOS*.rar" --content-disposition -R "
 ```
 The above wildcard format wget commands may download some non-rar files and then remove them and/or download the same rar file twice due to Github internal naming conventions (e.g. use of SHAs for subfolder naming), but the end result is correct.
 
-$\textcolor{magenta}{\textsf{Should be magenta}}$ 
 $\textcolor{red}{\textsf{Note: if the above wildcard commands fail}}$
 $\textcolor{red}{\textsf{(which can happen from time-to-time due to}}$
 $\textcolor{red}{\textsf{Github server maintenance), then use the}}$
