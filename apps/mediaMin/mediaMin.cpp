@@ -138,7 +138,7 @@
    Modified May 2023 JHB, support port list on cmd line (-pN entry), search through uPortList[] in isNonDynamicPortAllowed()
    Modified May 2023 JHB, modify CreateDynamicSession() to support RFC7198 lookback depth on cmd line (-lN entry, uLookbackDepth value set by cmdLineInterface() in cmd_line_interface.c). Default of no entry is 1 packet lookback, zero disables (-l0 entry), max is 8 packet lookback
    Modified Jun 2023 JHB, codec auto-detection updates: add AMR-WB 14.25 kbps, in cat 4 detection fix AMR-NB SIDs wrongly detected as EVS
-   Modified Jul 2023 JHB, handle cmd line option for gaps in wav output (INCLUDE_GAPS_IN_WAV_OUTPUT flag)
+   Modified Jul 2023 JHB, handle cmd line option for gaps in wav output (INCLUDE_PAUSES_IN_WAV_OUTPUT flag)
    Modified Jul 2023 JHB, give program version info to cmdLineInterface()
 */
 
@@ -427,7 +427,7 @@ char tmpstr[MAX_APP_STR_LEN];
       if (Mode & ENABLE_DER_DECODING_STATS) printf("  DER decoding stats enabled\n");
       if (Mode & ENABLE_INTERMEDIATE_PCAP) printf("  intermediate HI2 / HI3 / BER pcap output enabled\n");
       if (Mode & ENABLE_ASN_OUTPUT) printf("  intermediate ASN output enabled\n");
-      if (Mode & INCLUDE_GAPS_IN_WAV_OUTPUT) printf("  stream input gaps are reflected in wav output as \"silence zeros\"; e.g. call-on-hold\n");
+      if (Mode & INCLUDE_PAUSES_IN_WAV_OUTPUT) printf("  stream input pauses are reflected in wav output as \"silence zeros\"; e.g. call-on-hold\n");
    }
 
    if (Mode & DYNAMIC_SESSIONS) thread_info[thread_index].fDynamicSessions = true;  /* currently set for all app threads. To-Do: allow mix of static and dynamic sessions between threads, JHB Jan 2023 */
@@ -1933,7 +1933,7 @@ err_msg:
             fNChannelWavOutput = true;
          }
 
-         if (Mode & INCLUDE_GAPS_IN_WAV_OUTPUT) session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_INCLUDE_GAPS_AS_SILENCE;  /* handle cmd line option for gaps in wav output, JHB Jul 2023 */
+         if (Mode & INCLUDE_PAUSES_IN_WAV_OUTPUT) session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_INCLUDE_PAUSES_AS_SILENCE;  /* handle cmd line option for gaps in wav output, JHB Jul 2023 */
       }
 
       if (Mode & DISABLE_FLC) session->group_term.group_mode |= STREAM_GROUP_FLC_DISABLE;

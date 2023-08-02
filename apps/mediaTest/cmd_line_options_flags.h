@@ -19,7 +19,7 @@
    Modified Dec 2022 JHB, add DISABLE_JITTER_BUFFER_OUTPUT_PCAPS and ENABLE_WAV_OUT_SEEK_TIME_ALARM flags, re-order some debug and alarm flags
    Modified Jan 2023 JHB, add SIP handling options including ENABLE_STREAM_SDP_INFO, add ALLOW_OUTOFSPEC_RTP_PADDING flag
    Modified Jun 2023 JHB, add SLOW_DORMANT_SESSION_DETECTION flag
-   Modified Jul 2023 JHB, add INCLUDE_GAPS_IN_WAV_OUTPUT flag
+   Modified Jul 2023 JHB, add INCLUDE_PAUSES_IN_WAV_OUTPUT flag
 */
 
 #ifndef _CMDLINEOPTIONSFLAGS_H_
@@ -99,6 +99,6 @@
 #define DISABLE_AUTOQUIT                     0x10000000000000LL  /* m| disable automatic quit for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests. Automatic quit is enabled by default */
 #define ALLOW_OUTOFSPEC_RTP_PADDING          0x20000000000000LL  /* mm| allow out-of-spec RTP padding. Suppresses error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in mediaMin.cpp */
 #define SLOW_DORMANT_SESSION_DETECTION       0x40000000000000LL  /* mm| extend dormant session detection time. See usage in CreateDynamicSession() in mediaMin.cpp */ 
-#define INCLUDE_GAPS_IN_WAV_OUTPUT           0x80000000000000LL  /* m| include input gaps in stream group wav output, for example call-on-hold, pause in packet push, etc. This applies when all streams in a stream group simultaneously stop input for whatever reason. Gaps are always accurately reflected in stream group pcap output, but for wav files it's an option as gaps can become very large and increase wav file storage requirements */
+#define INCLUDE_PAUSES_IN_WAV_OUTPUT         0x80000000000000LL  /* m| include input pauses as silence in stream group and individual (mono) wav outputs. This applies when one or more streams in the group pause input, for example call-on-hold, pause in packet push, etc. Note that pauses are always accurately reflected in stream group RTP streaming output, but for wav outputs it's an option as pauses can become very large and increase file storage requirements */
 
 #endif  /* _CMDLINEOPTIONSFLAGS_ */
