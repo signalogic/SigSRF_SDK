@@ -2541,6 +2541,18 @@ indicate non-consecutive packet duplication, which can be confirmed by examining
 
 on the mediaMin command line.
 
+#### Include Gaps in Wav Output
+
+The INCLUDE_GAPS_IN_WAV_OUTPUT flag includes input gaps as silence in stream group and individual (mono) wav outputs. This applies when input of one or more streams in the group pauses, for example call-on-hold, packet push pause, etc. Gaps are always accurately reflected in stream group RTP streaming output, but for wav files it's an option as gaps can become very large and increase wav file storage requirements. Notes:
+
+> * a "pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps are handled by pktlib (packet repair, jitter buffer resync, etc) prior to streamlib. Larger lost packet gaps that can't be repaired are handled in streamlib by FLC
+
+> * the NCLUDE_GAPS_IN_WAV_OUTPUT flag has no affect on real-time output RTP streaming. Live output RTP streaming pauses for the duration of large gaps
+
+> * silence gaps are not actually written to wav output until input resumes. In other words, silence is not added to an input that has stopped permanently
+
+> * streamlib applies FLC (if enabled) when a merged output gap occurs, but only up to a limit (nominally around 180 msec). This does not affect gap size/duration, which always accurately reflects input stream(s)
+
 ### Performance Improvements
 
 General guidelines and recommendations for high capacity and real-time performance are given in [Performance](#user-content-performance) above. Below are command line options that may improve mediaMin and user application performance, in particular real-time performance and audio quality.
