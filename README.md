@@ -336,17 +336,20 @@ Install script
 ```
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2022v7.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2022v7.sh
 ```
-Ubuntu and Debian:
+Ubuntu and Debian
 ```
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar
 ```
-CentOS:
+CentOS
 ```
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_CentOS6-8_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_CentOS6-8_15May23.rar
 ```
 For the ASR version of the SDK, the following commands can be used:
 ```
-wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_ASR_Ubuntu12.04-20.04_2Apr22.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_ASR_Ubuntu12.04-20.04_2Apr22.part01.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_ASR_Ubuntu12.04-20.04_2Apr22.part02.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_ASR_Ubuntu12.04-20.04_2Apr22.part03.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_ASR_Ubuntu12.04-20.04_2Apr22.part04.rar
 ```
 The ASR version is separated into .partN.rar files because the overall .rar file size is substantially larger (approx 270 MB vs 65 MB), and Github has a 100MB per file limit. See [ASR Install Notes](#user-content-asrinstallnotes) below for details about the ASR version SDK.
 
