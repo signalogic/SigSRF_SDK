@@ -336,11 +336,11 @@ Install script
 ```
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2022v7.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2022v7.sh
 ```
-Ubuntu and Debian
+Ubuntu and Debian .rar
 ```
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar
 ```
-CentOS
+CentOS .rar
 ```
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_CentOS6-8_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_CentOS6-8_15May23.rar
 ```
