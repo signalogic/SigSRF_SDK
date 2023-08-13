@@ -420,6 +420,18 @@ If at any time you want to abort the install and start over, press Ctrl-C.
 
 <sup>[1]</sup> Selecting a VM platform enables additional resource management needed when host and guest share DirectCore and/or hardware resources.
 
+<a name="NoPrompts"></a>
+### No Prompts Argument
+
+If needed, the install script can be run with a "no prompts" argument:
+
+    source autoInstall_SigSRF_SDK_2022v7.sh -noprompts
+
+in which case the script will assume default values and issue no user prompts. This can be helpful for automated setup and maintenance.
+
+<a name="CheckVerify"></a>
+#### Check / Verify
+
 If needed, the Check / Verify option can be selected to generate a log for troubleshooting and tech support purposes. The Check / Verify option also generates screen output, here is an example:
 
 ```
