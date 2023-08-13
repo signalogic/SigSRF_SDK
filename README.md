@@ -331,40 +331,22 @@ As an alternative to Docker containers, Ubuntu and CentOS RAR packages are avail
 ### Install Notes
 
 To download the install script and one or more rar files directly from Github (i.e. without checking out a clone repository), use the following commands:
+
+Install script
 ```
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/autoInstall_SigSRF_SDK_2022v7.sh -O- | tr -d '\r' > autoInstall_SigSRF_SDK_2022v7.sh
 ```
-```
-wget https://github.com/signalogic/SigSRF_SDK/raw/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_distroNN_date.rar
-```
-where "distroNN" is the Linux distro and version and "date" is the package date. To avoid entering the distro release version and .rar date, you can use one of the following wildcard format wget commands:
-```
-wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_Ubuntu*.rar" --content-disposition -R "*return_to*" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
-```
-```
-wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_CentOS*.rar" --content-disposition -R "*return_to*" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
-```
-The above wildcard format wget commands may download some non-rar files and then remove them and/or download the same rar file twice due to Github internal naming conventions (e.g. use of SHAs for subfolder naming), but the end result is correct.
-
-$\textcolor{red}{\textsf{Note: if the above wildcard commands fail}}$
-$\textcolor{red}{\textsf{(which can happen from time-to-time due to}}$
-$\textcolor{red}{\textsf{Github server maintenance), then use the}}$
-$\textcolor{red}{\textsf{following file-specific commands:}}$
-
-```
 Ubuntu and Debian:
+```
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar
-
+```
 CentOS:
+```
 wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_CentOS6-8_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_CentOS6-8_15May23.rar
 ```
-
 For the ASR version of the SDK, the following commands can be used:
 ```
-wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_Ubuntu*.rar" --content-disposition -R "*return_to*" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
-```
-```
-wget -r -l7 --cut-dirs 6 -nH -N -A "*SDK_ASR_CentOS*.rar" --content-disposition -R "*return_to*" -erobots=off https://github.com/signalogic/SigSRF_SDK/tree/master/rar_packages/
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_15May23.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_ASR_Ubuntu12.04-20.04_2Apr22.rar
 ```
 The ASR version is separated into .partN.rar files because the overall .rar file size is substantially larger (approx 270 MB vs 65 MB), and Github has a 100MB per file limit. See [ASR Install Notes](#user-content-asrinstallnotes) below for details about the ASR version SDK.
 
