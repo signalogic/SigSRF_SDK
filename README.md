@@ -421,7 +421,7 @@ If at any time you want to abort the install and start over, press Ctrl-C.
 <sup>[1]</sup> Selecting a VM platform enables additional resource management needed when host and guest share DirectCore and/or hardware resources.
 
 <a name="NoPrompts"></a>
-### No Prompts Argument
+#### No Prompts Argument
 
 If needed, the install script can be run with a "no prompts" argument:
 
