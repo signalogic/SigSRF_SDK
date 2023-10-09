@@ -56,7 +56,7 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 ### Cloud Use Cases
 * Audio Quality Optimizer
 * Lawful Intercept and Lawful Intelligence (LI)
-* Call Recording and Call Transcription
+* Call Recording, Call Transcription, Multiparty Call Reconstruction
 * Session Border Controller (SBC) and Media Gateway
 * Bulk Pcap Processing
 * RTP Decoder (<a href="https://www.signalogic.com/evs_codec.html" target=_blank>EVS</a>, AMR, G729, MELPe, etc)
@@ -122,7 +122,7 @@ Some notes about the above example:
 <a name="StreamGroups"></a>
 ## Stream Groups
 
-SigSRF supports the concept of "stream groups", allowing multiple streams to be grouped together for additional processing.  Examples including merging conversations for Lawful Intercept applications, conferencing, and identifying and tagging different individuals in a conversation (sometimes referred to as "diarization").
+SigSRF supports the concept of "stream groups", allowing multiple streams to be grouped together for additional processing.  Examples including merging conversations for Lawful Intercept applications, conferencing, multiparty call reconstruction, and identifying and tagging different individuals in a conversation (sometimes referred to as "diarization").
 
 <a name="EncapsulatedStreams"></a>
 ## Encapsulated Streams
