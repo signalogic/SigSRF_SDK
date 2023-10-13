@@ -42,7 +42,7 @@ using namespace std;
 #include "user_io.h"
 
 extern unsigned int num_app_threads;   /* see comments in mediaMin.h */
-extern THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h */
+extern APP_THREAD_INFO thread_info[];  /* APP_THREAD_INFO struct defined in mediaMin.h */
 
 extern bool fQuit;         /* set if 'q' (quit) key is pressed */
 extern bool fPause;        /* "" 'p' (pause).  Pauses operation, another 'p' resumes.  Can be combined with 'd' (display) key to read out internal p/m thread debug, capacity, stats, and other info */ 

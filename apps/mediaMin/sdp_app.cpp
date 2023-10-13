@@ -50,7 +50,7 @@ using namespace std;
 #include "mediaMin.h"   /* bring in THREAD_INFO typedef for thread_info[].xx[] access, indexed by thread and input stream */
 #include "sdp_app.h"
 
-extern THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h. Indexed by thread_index */
+extern APP_THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h. Indexed by thread_index */
 
 /* SDPParseInfo() notes:
 

@@ -126,7 +126,7 @@
    Modified Jan 2023 JHB, improve codec auto-detection for ocet-aligned AMR-NB and AMR-WB
    Modified Jan 2023 JHB, filter non-dynamic UDP ports and allow list. See NON_DYNAMIC_UDP_PORT_RANGE, NonDynamic_UDP_Port_Allow_List[], and FILTER_UDP_PACKETS
    Modified Jan 2023 JHB, fix issue where 'q' key during post-processing (e.g. packet log collate and analysis) caused a hang. See call to DSConfigLogging()
-   Modified Jan 2023 JHB, in PushPackets() use DS_PKT_INFO_ITEMS_STRUCT flag in DSGetPacketInfo() to help minimize packet handling overhead
+   Modified Jan 2023 JHB, in PushPackets() use DS_PKT_INFO_PKTINFO_STRUCT flag in DSGetPacketInfo() to help minimize packet handling overhead
    Modified Jan 2023 JHB, add support for SAP/SDP protocol
    Modified Jan 2023 JHB, add rudimentary support for SIP message session control. Look for SESSION_CONTROL_FOUND_SIP_xxx flags. The SIP BYE message will terminate a stream (this can be disabled by the DISABLE_TERMINATE_STREAM_ON_BYE flag in -dN cmd line options)
    Modified Mar 2023 JHB, handle SIP messages when source port is 5060 (show but not parse)
@@ -137,9 +137,11 @@
    Modified May 2023 JHB, RealTimeInterval[] now handled as float, as part of AFAP and FTRT mode support. extern reference to timeScale for accelerated time in FTRT mode
    Modified May 2023 JHB, support port list on cmd line (-pN entry), search through uPortList[] in isNonDynamicPortAllowed()
    Modified May 2023 JHB, modify CreateDynamicSession() to support RFC7198 lookback depth on cmd line (-lN entry, uLookbackDepth value set by cmdLineInterface() in cmd_line_interface.c). Default of no entry is 1 packet lookback, zero disables (-l0 entry), max is 8 packet lookback
-   Modified Jun 2023 JHB, codec auto-detection updates: add AMR-WB 14.25 kbps, in cat 4 detection fix AMR-NB SIDs wrongly detected as EVS
-   Modified Jul 2023 JHB, handle cmd line option for gaps in wav output (INCLUDE_PAUSES_IN_WAV_OUTPUT flag)
+   Modified Jun 2023 JHB, codec auto-detection updates: add AMR-WB 14250, 18250, and 19850 bps, in cat 4 detection fix AMR-NB SIDs wrongly detected as EVS
+   Modified Jul 2023 JHB, handle cmd line option to reflect input pauses in wav outputs (INCLUDE_PAUSES_IN_WAV_OUTPUT flag)
    Modified Jul 2023 JHB, give program version info to cmdLineInterface()
+   Modified Aug 2023 JHB, implement timestamp-matched wav output (specified on cmd line with ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag). Look for TIMESTAMP_MATCH_MODE_XXX flag usage (defined in shared_include/streamlib.h)
+   Modified Aug 2023 JHB, implement SHOW_PACKET_ARRIVAL_STATS flag. This includes packet arrival info in mediaMin stats display
 */
 
 
@@ -195,14 +197,10 @@ using namespace std;
 
 PORT_INFO_LIST NonDynamic_UDP_Port_Allow_List[] = { 1234, 3078, 3079 };  /* add exceptions here for non-dynamic UDP ports that should be allowed. Currently the list has arbitrary port values found in some legacy test pcaps used for mediaMin regression test. Ports can also be added at run-time using -p cmd line entry */
 
-#define SIP_UDP_PORT                5060  /* default UDP port for processing SIP messages */
-#define SIP_UDP_PORT_ENCRYPTED      5061  /* same, encrypted (currently not used) */
-#define SAP_UDP_PORT                9875  /* default UDP port for processing Session Announcement Protocol (SAP) SDP info */
-
 #define FILTER_TCP_REDUNDANT_RETRANSMISSIONS  /* enable discarding redundant TCP retransmissions. See comments */
 
 static char prog_str[] = "mediaMin: packet media streaming for analytics and telecom applications on x86 and coCPU platforms";
-static char ver_str[] = "v3.4.1";
+static char ver_str[] = "v3.4.4";
 static char copyright_str[] = "Copyright (C) Signalogic 2018-2023";
 
 //#define VALGRIND_DEBUG  /* enable when using Valgrind for debug */
@@ -223,7 +221,6 @@ unsigned int  num_app_threads = 1;      /* set to more than one if multiple medi
 int           num_pktmed_threads = 0;   /* number of packet/media threads running */
 static int    log_level = 0;            /* set in LoggingSetup() */
 bool          fStressTest;              /* determined from cmd line options, number of app threads, and session re-use */
-bool          fCapacityTest;            /*    ""    ""   */
 static char   szSessionName[MAX_INPUT_STREAMS][384] = {{ "" }};  /* set in LoggingSetup() which should always be called */
 static bool   fInputsAllFinite = true;  /* set to false if inputs include UDP port or USB audio.  Default is true if all inputs are pcap or other file */
 static bool   fAutoQuit = false;        /* fAutoQuit determines whether program stops automatically. This is the default for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests */
@@ -233,9 +230,16 @@ bool          fUntimedMode = false;     /* true if neither ANALYTICS_MODE nor US
 
 codec_test_params_t codec_config_params = { 0 };  /* added to support non-standard codec configurations. Notes: use -C cmd line option to specify a codec config file name, (ii) works for both dynamic and static sessions, (iii) not sure yet if this should be made per-thread or per-session; currently it's a test/debug option that applies to all mediaMin threads, JHB Sep 2022 */
 
+/* arrival timing stats. To-do: add these to THREAD_INFO struct definition in mediaMin.h */
+
+static float arrival_avg_delta[10] = { 0 }, arrival_avg_jitter[10] = { 0 }, arrival_max_delta[10] = { 0 }, arrival_max_jitter[10] = { 0 }, last_msec_timestamp[10] = { 0 };
+static uint32_t num_arrival_stats_pkts[10] = { 0 };
+static int last_rtp_pyld_len[10] = { 0 };
+
+
 /* per application thread info */
 
-THREAD_INFO thread_info[MAX_APP_THREADS] = {{ 0 }};  /* THREAD_INFO struct defined in mediaMin.h, MAX_APP_THREADS defined in mediaTest.h */
+APP_THREAD_INFO thread_info[MAX_APP_THREADS] = {{ 0 }};  /* THREAD_INFO struct defined in mediaMin.h, MAX_APP_THREADS defined in mediaTest.h */
 static int average_push_rate[MAX_APP_THREADS] = { 0 };
 int nRepeatsRemaining[MAX_APP_THREADS] = { 0 };
 
@@ -269,6 +273,7 @@ void InputSetup(int thread_index);
 void JitterBufferOutputSetup(int thread_index);
 void TranscodedOutputSetup(int thread_index);
 void StreamGroupOutputSetup(HSESSION hSessions[], int nInput, int thread_index);
+void MiscOutputSetup(int thread_index);
 
 /* application thread helper functions */
 
@@ -427,7 +432,19 @@ char tmpstr[MAX_APP_STR_LEN];
       if (Mode & ENABLE_DER_DECODING_STATS) printf("  DER decoding stats enabled\n");
       if (Mode & ENABLE_INTERMEDIATE_PCAP) printf("  intermediate HI2 / HI3 / BER pcap output enabled\n");
       if (Mode & ENABLE_ASN_OUTPUT) printf("  intermediate ASN output enabled\n");
-      if (Mode & INCLUDE_PAUSES_IN_WAV_OUTPUT) printf("  stream input pauses are reflected in wav output as \"silence zeros\"; e.g. call-on-hold\n");
+      if (Mode & INCLUDE_PAUSES_IN_WAV_OUTPUT) printf("  stream input pauses are reflected in wav output as \"silence zeros\" (e.g. call-on-hold)\n");
+
+      if (Mode & ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH) {
+
+         uTimestampMatchMode = TIMESTAMP_MATCH_MODE_ENABLE;  /* set timestamp matching mode flags */
+
+         if (!(Mode & ENABLE_STREAM_GROUPS)) uTimestampMatchMode |= TIMESTAMP_MATCH_DISABLE_FLUSH | TIMESTAMP_MATCH_DISABLE_RESYNCS;
+         if (Mode & INCLUDE_PAUSES_IN_WAV_OUTPUT) uTimestampMatchMode |= TIMESTAMP_MATCH_INCLUDE_INPUT_PAUSES;
+         if (Mode & ENABLE_TIMESTAMP_MATCH_LIVE_MERGE) uTimestampMatchMode |= TIMESTAMP_MATCH_LIVE_MERGE_OUTPUT;
+         printf("  generate timestamp-matched wav output\n");
+      }
+
+      if (Mode & SHOW_PACKET_ARRIVAL_STATS) printf("  show packet arrival stats\n");
    }
 
    if (Mode & DYNAMIC_SESSIONS) thread_info[thread_index].fDynamicSessions = true;  /* currently set for all app threads. To-Do: allow mix of static and dynamic sessions between threads, JHB Jan 2023 */
@@ -510,7 +527,8 @@ char tmpstr[MAX_APP_STR_LEN];
       if (Mode & START_THREADS_FIRST) if (StartPacketMediaThreads(num_app_threads > 1 ? NUM_PKTMEDIA_THREADS : 1, thread_index) < 0) goto cleanup;
 
       fThreadSync1 = true;  /* release any app threads waiting in AppThreadSync() */
-   }
+
+   }  /* end of master thread section */
 
 /* first stage initialization complete */
 
@@ -540,6 +558,8 @@ start:  /* note - label used only if test mode repeats are enabled */
    InputSetup(thread_index);
 
    TranscodedOutputSetup(thread_index);
+
+   MiscOutputSetup(thread_index);
 
 /* set up SDP info from command line .sdp entry, if any */
 
@@ -682,7 +702,7 @@ cleanup:
 
       if (isMasterThread) {  /* only master thread does exit cleanup */
 
-         pm_run = 0;  /* instruct packet/media thread(s) to exit.  Note that in case of error condition, none may have been started or still be running */
+         pm_run = 0;  /* instruct packet/media thread(s) to exit. Note that in case of error condition, none may have been started or still be running */
 
          if (!fExitErrorCond) {
 
@@ -690,7 +710,15 @@ cleanup:
             unsigned long long check_time = 0;
             uint8_t uQuitMessage = 0, fQKey = false;
 
-            while (!fPMMasterThreadExit) {  /* wait for packet/media threads to exit, and also for master p/m thread to collate, analyze, and write out packet log if packet history stats are enabled. Packet history logging + analysis can take a while if 100k+ packets were pushed/pulled.  Max packets for packet logging is somewhere around 300k (can be changed in packet_flow_media_proc.c, look for MAX_PKT_STATS) */
+         /* wait for packet/media worker threads to exit, notes:
+
+            -this includes stream group post-processing (e.g. N-channel wav files) if stream groups are enabled, and collating, analyzing, and writing out packet log if packet history stats are enabled
+            -for stream group processing, applies to any worker thread handling sessions with stream groups enabled
+            -for packet history stats and analysis, applies to only the master p/m worker thread
+            -packet history logging + analysis can take a while if 100k+ packets were pushed/pulled. Max packets for packet logging is somewhere around 300k (can be changed in packet_flow_media_proc.c, look for MAX_PKT_STATS)
+         */
+
+            while (!fPMMasterThreadExit) {
 
                if (fPMThreadsClosing && !uQuitMessage) {
 
@@ -730,7 +758,7 @@ cleanup:
                   check_time = cur_time;
                }
 
-               usleep(250000L);  /* check keybd every 1/4 sec */
+               usleep(250000L);  /* check keyboard input every 1/4 sec */
 
                if ((char)tolower(getkey()) == 'q') {  /* check for quit key */
 
@@ -767,7 +795,20 @@ cleanup:
 
 /* close jitter buffer output file descriptors */
 
-   for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) if (thread_info[thread_index].fp_pcap_jb[i]) { DSClosePcap(thread_info[thread_index].fp_pcap_jb[i]); thread_info[thread_index].fp_pcap_jb[i] = NULL; }
+   for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) {
+
+      if (thread_info[thread_index].fp_pcap_jb[i]) { DSClosePcap(thread_info[thread_index].fp_pcap_jb[i]); thread_info[thread_index].fp_pcap_jb[i] = NULL; }
+
+   /* reset arrival timing stats */
+
+      #if 0  /* for -Rn entry (repeat cmd line) currently stats continue to be calculated without reset between runs. This is true of all mediaMin overall stats, JHB Sep 2023 */
+      arrival_avg_delta[i] = 0; arrival_avg_jitter[i] = 0; arrival_max_delta[i] = 0; arrival_max_jitter[i] = 0; last_msec_timestamp[i] = 0; num_arrival_stats_pkts[i] = 0; last_rtp_pyld_len[i] = 0;
+      #endif
+   }
+
+/* close timestamp-matched wav outputs, if active. This includes post-processing merge, if live merge is not specified (see flags for uTimestampMatchMode in shared_include/streamlib.h), JHB Aug 2023 */
+
+   if (uTimestampMatchMode & TIMESTAMP_MATCH_MODE_ENABLE) DSCloseStreamGroupsTSM(&hSessions[0], thread_info[thread_index].nSessionsCreated, uTimestampMatchMode);  /* pass first session handle, number of sessions, and timestamp matching mode. Note that in repeat mode (-Rn entry) session handles are always unique and do not repeat */
 
    if (!fExit && (Mode & CREATE_DELETE_TEST)) {
 
@@ -873,33 +914,78 @@ cleanup:
 
       sprintf(tmpstr, "===== mediaMin stats");
       if (num_app_threads > 1) sprintf(&tmpstr[strlen(tmpstr)], " (%d)", thread_index);
+      char tstr[] = "    ";
 
-      strcat(tmpstr, "\n\tnum TCP packets input[] = ");
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%spackets [input]", tstr);
+
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sTCP = ", tstr, tstr);
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_tcp_packets_in[i]);
 
-      strcat(tmpstr, "\n\tnum UDP packets input[] = ");
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sUDP = ", tstr, tstr);
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_udp_packets_in[i]);
 
       #ifdef FILTER_TCP_REDUNDANT_RETRANSMISSIONS
-      strcat(tmpstr, "\n\tnum TCP redundant discards input[] = ");
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sTCP redundant discards = ", tstr, tstr);
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].tcp_redundant_discards[i]);  /* display/log number of redundant TCP retransmissions discarded, if any */
       #endif
 
       strcat(tmpstr, "\n");
 
+   /* if specified, display timestamp-match mode stats, JHB Sep 2023 */
+
+      if (Mode & ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH) {
+
+         char szMergeFilename[2*CMDOPT_MAX_INPUT_LEN] = "md5sum ";  /* extra space for string manipulation */
+
+         if (DSGetMergeWavFilenameTSM(&szMergeFilename[strlen(szMergeFilename)])) {  /* get merge wav filename from timestamp matching API in streamlib */
+
+            char md5str[100], szFilename[2*CMDOPT_MAX_INPUT_LEN];
+            int ret_val = -1;
+
+            FILE *fp = popen(szMergeFilename, "r");  /* use popen() to execute md5sum cmd line and fscanf() to retrieve cmd line output */
+            if (fp) { ret_val = fscanf(fp, "%s %s", md5str, szFilename); pclose(fp); }
+
+            if (ret_val == 2) {  /* if it runs correctly, md5sum will output 2 values: (i) md5 hash result (ii) filename */
+               sprintf(&tmpstr[strlen(tmpstr)], "%stimestamp-match mode", tstr);
+               sprintf(&tmpstr[strlen(tmpstr)], "\n%s%smd5sum = %s %s", tstr, tstr, md5str, szFilename);
+               strcat(tmpstr, "\n");
+            }
+         }
+      }
+
+   /* if specified, display packet arrival stats, JHB Aug 2023 */
+
+      if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & SHOW_PACKET_ARRIVAL_STATS)) {
+
+         sprintf(&tmpstr[strlen(tmpstr)], "%sarrival timing [session]", tstr);
+
+         sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sdelta avg/max (msec) = ", tstr, tstr);
+         for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%4.2f/%4.2f", i != 0 ? " " : "", i, arrival_avg_delta[i], arrival_max_delta[i]);
+
+         sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sjitter avg/max (msec) = ", tstr, tstr);
+         for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%4.2f/%4.2f", i != 0 ? " " : "", i, arrival_avg_jitter[i], arrival_max_jitter[i]);
+
+         strcat(tmpstr, "\n");
+      }
+
       bool fLogTimeStampPrinted = false;  /* make sure only one event log timestamp is printed in the case of multiple strings */
 
-      if (thread_info[thread_index].fDynamicSessions) for (i=0; i<thread_info[thread_index].dynamic_session_stats_index; i++) {
-  
-         char szSessInfo[200];
-         sprintf(szSessInfo, "\t[%d] hSession %d, codec = %s, bitrate = %d, payload type = %d, ssrc = 0x%x \n", i, thread_info[thread_index].DynamicSessionStats[i].hSession, thread_info[thread_index].DynamicSessionStats[i].codecstr, thread_info[thread_index].DynamicSessionStats[i].bitrate, thread_info[thread_index].DynamicSessionStats[i].payload_type, thread_info[thread_index].DynamicSessionStats[i].ssrc);
+      if (thread_info[thread_index].fDynamicSessions) {
 
-         if (strlen(tmpstr) + strlen(szSessInfo) < sizeof(tmpstr)) sprintf(&tmpstr[strlen(tmpstr)], "%s", szSessInfo);  /* if enough sessions and/or repeats we need to split up printouts, JHB Jun2020 */
-         else {
-            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_SAME_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), thread_index, tmpstr);
-            app_printf(APP_PRINTF_EVENT_LOG | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, szSessInfo);  /* added a second app_printf() and fLogTimeStampPrinted to fix a bug in reporting multi-hundred count session summary stats that appeared during 2+ hr stress tests. Combining all summary stats per thread into one string would be optimal for multi-thread app operation, but they could potentially be really huge strings needing std::string (or malloc + realloc, whichever is faster). Also would need to deal with Log_RT() (called inside app_printf) which truncates around 4k. Not something to worry about for the time being, JHB Jan 2023 */
-            fLogTimeStampPrinted = true;
-            tmpstr[0] = (char)0;  /* start the string over */
+         sprintf(&tmpstr[strlen(tmpstr)], "%srun-time [session]\n", tstr);
+
+         for (i=0; i<thread_info[thread_index].dynamic_session_stats_index; i++) {
+
+            char szSessInfo[200];
+            sprintf(szSessInfo, "%s%s[%d] hSession %d, codec = %s, bitrate = %d, payload type = %d, ssrc = 0x%x \n", tstr, tstr, i, thread_info[thread_index].DynamicSessionStats[i].hSession, thread_info[thread_index].DynamicSessionStats[i].codecstr, thread_info[thread_index].DynamicSessionStats[i].bitrate, thread_info[thread_index].DynamicSessionStats[i].payload_type, thread_info[thread_index].DynamicSessionStats[i].ssrc);
+
+            if (strlen(tmpstr) + strlen(szSessInfo) < sizeof(tmpstr)) sprintf(&tmpstr[strlen(tmpstr)], "%s", szSessInfo);  /* if enough sessions and/or repeats we need to split up printouts, JHB Jun2020 */
+            else {
+               app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_SAME_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), thread_index, tmpstr);
+               app_printf(APP_PRINTF_EVENT_LOG | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, szSessInfo);  /* added a second app_printf() and fLogTimeStampPrinted to fix a bug in reporting multi-hundred count session summary stats that appeared during 2+ hr stress tests. Combining all summary stats per thread into one string would be optimal for multi-thread app operation, but they could potentially be really huge strings needing std::string (or malloc + realloc, whichever is faster). Also would need to deal with Log_RT() (called inside app_printf) which truncates around 4k. Not something to worry about for the time being, JHB Jan 2023 */
+               fLogTimeStampPrinted = true;
+               tmpstr[0] = (char)0;  /* start the string over */
+            }
          }
       }
 
@@ -1344,7 +1430,7 @@ int CreateDynamicSession(uint8_t* pkt, int pkt_len, HSESSION hSessions[], SESSIO
 int i, ip_version, codec_type = 0, ip_hdr_len;
 HSESSION hSession;
 SESSION_DATA* session;
-char codecstr[10];
+char codecstr[20];
 uint32_t bitrate = 0, ptime = 20;
 int rtp_version, rtp_pyld_type, pkt_len_lib, rtp_hdr_len, rtp_pyld_ofs, rtp_pyld_len, rtp_padding_size;
 uint32_t rtp_ssrc;
@@ -1362,9 +1448,9 @@ uint32_t clock_rate = 0;
 
 /* perform thorough packet validation before creating a session. Notes:
 
-   -we could use DSGetPacketInfo() with the DS_PKT_INFO_ITEMS_STRUCT flag, which would retrieve all of the items below in a PktInfo struct (see pktlib.h)
+   -we could use DSGetPacketInfo() with the DS_PKT_INFO_PKTINFO_STRUCT flag, which would retrieve all of the items below in a PktInfo struct (see pktlib.h)
    -but we want fine-grained error messages so we use individual DS_PKT_INFO_xxx flags
-   -PushPackets() uses the DS_PKT_INFO_ITEMS_STRUCT flag for higher performance (minimize packet handling overhead)
+   -PushPackets() uses the DS_PKT_INFO_PKTINFO_STRUCT flag for higher performance (minimize packet handling overhead)
 */
 
    bool fShowWarnings = (Mode & ENABLE_DEBUG_STATS) != 0;
@@ -1669,7 +1755,7 @@ err_msg:
       target_delay = nJitterBufferParams & 0xff;
       max_delay = (nJitterBufferParams & 0xff00) >> 8;
    }
-   else if (Mode & ENABLE_STREAM_GROUPS) {
+   else if ((Mode & ENABLE_STREAM_GROUPS) || (Mode & ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH)) {
       target_delay = 10;
       max_delay = 14;
    }
@@ -1738,36 +1824,7 @@ err_msg:
 
       if (!fStressTest && !fCapacityTest) {
 
-      /* if entered, apply -gStreamGroupOutputPath cmd line option to stream group output wav files. Notes:
-
-         -wav files are written by packet/media threads, if these are being written to an HDD (rotating media) any reduction in seek times can significantly improve overall thread performance. With Linux ext4 filesystems, long seek times can result from an HDD operating at near full capacity over time, in which case it may be slightly fragmenting during write operations (i.e. files with a few sectors seperated by a long physical distance on the disk platter)
-
-         -if mediaMin display and/or event log outputs shows pre-emption messages such as:
-
-            WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3,
-            creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00,
-            last encode time = 0.02, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00,
-            last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
-
-          this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time"
-
-         -for example, if a ramdisk exists, then the mediaMin command line might contain:
-
-            -g/mnt/ramdisk
-
-          or
-
-            -g/tmp/ramdisk
-
-          or as appropriate depending on the system. Look in /etc/fstab to see if a ramdisk is active and if so its path
-
-         -default is no entry, in which case wav files are generated on the mediaMin app subfolder
-         -does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished)
-      */
-
-         if (strlen(szStreamGroupOutputPath) > 0 && szStreamGroupOutputPath[strlen(szStreamGroupOutputPath)-1] != '/') strcat(szStreamGroupOutputPath, "/");  /* add / suffix, if not already entered */
-
-         sprintf(session->szSessionName, "%s%s", szStreamGroupOutputPath, thread_info[thread_index].szGroupName[nInput]);  /* set session->szSessionName for wav outputs */
+         sprintf(session->szSessionName, "%s%s", szStreamGroupOutputPath, thread_info[thread_index].szGroupName[nInput]);  /* set session->szSessionName for wav outputs. Note we currently don't allow wav outputs during capacity test */
       }
 
       if (nReuse) sprintf(&group_id[strlen(group_id)], "_n%d", nReuse);  /* add the re-use count, if applicable.  nReuse is typically non-zero only for capacity or stress tests */
@@ -1866,10 +1923,17 @@ err_msg:
    session->term2.remote_port = udphdr->source + thread_info[thread_index].nSessionsCreated;
    session->term2.local_port = udphdr->dest + thread_info[thread_index].nSessionsCreated;
 
-   session->term2.codec_type = DS_VOICE_CODEC_TYPE_G711_ULAW;
-   session->term2.bitrate = 64000;
-   session->term2.sample_rate = 8000;
+   if (uTimestampMatchMode & TIMESTAMP_MATCH_MODE_ENABLE) {  /* for term2 transcoded audio we use codec type NONE if we are generating timestamp-matched wav output. packet/media threads treat codec type NONE as raw audio (16-bit). Note this is not a CLEARMODE codec, JHB Aug 2023 */
+      session->term2.codec_type = DS_VOICE_CODEC_TYPE_NONE;
+      session->term2.bitrate = 128000;
+   }
+   else {  /* otherwise default is G711 uLaw */
+      session->term2.codec_type = DS_VOICE_CODEC_TYPE_G711_ULAW;
+      session->term2.bitrate = 64000;
+   }
+
    session->term2.attr.voice_attr.rtp_payload_type = 0; /* 0 for G711 ulaw */
+   session->term2.sample_rate = 8000;
    session->term2.attr.voice_attr.ptime = 20; /* assume 20ms ptime */
    session->term2.ptime = 20;
 
@@ -1933,7 +1997,7 @@ err_msg:
             fNChannelWavOutput = true;
          }
 
-         if (Mode & INCLUDE_PAUSES_IN_WAV_OUTPUT) session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_INCLUDE_PAUSES_AS_SILENCE;  /* handle cmd line option for gaps in wav output, JHB Jul 2023 */
+         if (Mode & INCLUDE_PAUSES_IN_WAV_OUTPUT) session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_INCLUDE_PAUSES_AS_SILENCE;  /* handle cmd line option to reflect input pauses in wav outputs, JHB Jul 2023 */
       }
 
       if (Mode & DISABLE_FLC) session->group_term.group_mode |= STREAM_GROUP_FLC_DISABLE;
@@ -1952,8 +2016,8 @@ err_msg:
            thread_info[thread_index].nSessionsCreated+1, nInput+1, fSDPPyldTypeFound ? "SDP specified" : "auto-detected", codecstr, session->term1.bitrate,
            strlen(group_id) ? ", stream group " : "", strlen(group_id) ? group_id : "");
    sprintf(tmpstr2,
-           "Creation packet info: IP ver %d, ssrc = 0x%x, seq num = %d, payload type %d, pkt len %d, RTP payload size %d, cat %d, rtp_pkt[0] 0x%x",
-           ip_version, rtp_ssrc, rtp_seqnum, rtp_pyld_type, pkt_len_lib, rtp_pyld_len, cat, pkt[rtp_pyld_ofs]);
+           "Creation packet info: IP ver %d, ssrc = 0x%x, seq num = %d, payload type %d, pkt len %d, RTP payload size %d, cat %d, rtp_pkt[0] 0x%x, src port = %u, dst_port = %u",
+           ip_version, rtp_ssrc, rtp_seqnum, rtp_pyld_type, pkt_len_lib, rtp_pyld_len, cat, pkt[rtp_pyld_ofs], DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_SRC_PORT, pkt, -1, NULL, NULL), DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt, -1, NULL, NULL));
 
    app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, "^^^^^^^ %s\n\t%s", tmpstr, tmpstr2);
    if (num_app_threads > 1) sprintf(&tmpstr2[strlen(tmpstr2)], " (%d)", thread_index);
@@ -2086,14 +2150,15 @@ uint64_t fp_sav_pos, wait_time;
 int auto_adj_push_count = 0;
 uint16_t pkt_type, dest_port = 0, src_port = 0, pyld_len = 0;
 uint8_t protocol = 0;
+float msec_timestamp_fp = 0;
 
-static uint64_t last_cur_time = 0, last_wait_check_time = 0, wait_gap = 0;  /* only used by master app thread */
+static uint64_t last_cur_time = 0, last_wait_check_time = 0, wait_pause = 0;  /* only used by master app thread */
 static int waiting_inputs = 0;
 
 pcaprec_hdr_t pcap_rec_hdr;
 pcaprec_hdr_t* p_pcap_rec_hdr = NULL;
 
-PKTINFO_ITEMS PktInfo;  /* struct in pktlib.h */
+PKTINFO PktInfo;  /* struct in pktlib.h */
 
 #if 0
   #define RATE_FORCE 1  /* force packet push rate to fixed interval (in msec).  This is reserved for stress test and debug purposes */
@@ -2125,18 +2190,19 @@ read_packet:
 
          uint16_t input_type = (thread_info[thread_index].link_layer_len[j] & PCAP_LINK_LAYER_FILE_TYPE_MASK) >> 16;
 
-         if (input_type == PCAP_TYPE_LIBPCAP || input_type == PCAP_TYPE_PCAPNG) {
+         if (input_type == PCAP_TYPE_LIBPCAP || input_type == PCAP_TYPE_PCAPNG) {  /* handle pcaps here, BER and other files below */
 
             pkt_len = DSReadPcapRecord(thread_info[thread_index].pcap_in[j], pkt_in_buf, 0, p_pcap_rec_hdr, thread_info[thread_index].link_layer_len[j], &pkt_type);
 
             if (pkt_len > 0) {  /* add non IP packet handing, JHB Dec2021 */
 
-               if (pkt_type == ETH_P_ARP) {  /* ignore ARP packets (ETH_P_ARP defined in if_ether.h Linu header file, typically value of 0x0806) */
+               if (pkt_type == ETH_P_ARP) {  /* ignore ARP packets (ETH_P_ARP defined in if_ether.h Linux header file, typically value of 0x0806) */
                   #ifdef PKT_DISCARD_DEBUG
                   printf(" ************* ignoring ARP pkt \n");
                   #endif
                   goto read_packet;
                }
+
                if (pkt_type >= 82 && pkt_type <= 1536) { /* ignore 802.2 LLC frames (https://networkengineering.stackexchange.com/questions/50586/eth-ii-vs-802-2-llc-snap). Note - added the lower range check of 82 after some .pcapng test files with Ethernet prototype value of zero were misinterpreted as 802.2, JHB Sep 2022 */
                   #ifdef PKT_DISCARD_DEBUG
                   printf(" ************* ignoring LLC frame, pkt_type = %d \n", pkt_type);
@@ -2146,7 +2212,7 @@ read_packet:
 
             /* fill in PktInfo struct with IP, UDP, and RTP header items */
  
-               ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_ITEMS_STRUCT | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG, pkt_in_buf, -1, &PktInfo, NULL);  /* note - if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 and a warning message will be printed by DSGetPacketInfo(). We use the DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG flag to suppress RTP related warning messages as the packet type is unknown at this point */
+               ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO_STRUCT | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG, pkt_in_buf, -1, &PktInfo, NULL);  /* note - if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 and a warning message will be printed by DSGetPacketInfo(). We use the DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG flag to suppress RTP related warning messages as the packet type is unknown at this point */
 
                if (ret_val < 0) {
 
@@ -2195,6 +2261,18 @@ read_packet:
 
                thread_info[thread_index].PktInfo = PktInfo;  /* save packet info */
                thread_info[thread_index].fReseek = false;  /* clear fReseek */
+
+#if 0
+   static int nCount = 0;
+   if (nCount < 2) {
+      uint16_t dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL);
+      uint16_t src_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_SRC_PORT, pkt_in_buf, -1, NULL, NULL);
+      if (src_port != 5060 && dst_port != 5060) {
+         uint8_t rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_in_buf, -1, NULL, NULL);
+         if (rtp_pyld_type == 105) { nCount++; if (nCount == 2) printf("\n\n two 105 packets omitted \n"); goto read_packet; }  /* don't push first two 105 packets */
+      }
+   }
+#endif
 
 #if 0  /* example showing how to find/filter packet(s) if needed for debug / stream manipulation. This example isn't doing anything to separate out SIP or other non-RTP packets, so when it calls DSGetPacketInfo() for RTP items, some "DEBUG" or warning messages might show up */
     __uint128_t src_ip_addr = 0;
@@ -2248,7 +2326,7 @@ read_packet:
             if (pkt_len > 0 && (Mode & ENABLE_INTERMEDIATE_PCAP)) {  /* format BER data into TCP/IP packet and generate pcap output if specified in cmd line flags, JHB Dec 2021*/
 
                packet_actions(ber_data, pkt_in_buf, (protocol = TCP_PROTOCOL), &pkt_len, PCAP_TYPE_BER);
-               ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_ITEMS_STRUCT, pkt_in_buf, -1, &PktInfo, NULL);  /* update PktInfo */
+               ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO_STRUCT, pkt_in_buf, -1, &PktInfo, NULL);  /* update PktInfo */
             }
          }
 
@@ -2394,8 +2472,10 @@ read_packet:
 
                if (fFoundEncapsulatedCCPkt) {  /* CC UDP packet found, set protocol to UDP/RTP, update PktInfo */
 
-                  protocol = UDP_PROTOCOL;
-                  ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_ITEMS_STRUCT, pkt_in_buf, -1, &PktInfo, NULL);  /* note we allow error messages here because we expect UDP/RTP and would like to know if that's not the case ... might need to change this, JHB Jan 2023*/
+                  ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO_STRUCT, pkt_in_buf, -1, &PktInfo, NULL);  /* note we allow error messages here because we expect UDP/RTP and would like to know if that's not the case ... might need to change this, JHB Jan 2023*/
+
+                  if (PktInfo.protocol != UDP_PROTOCOL) Log_RT(3, "mediaMin WARNING: DER decoded packet not UDP format \n");
+                  else protocol = PktInfo.protocol;
                }
 
                if ((Mode & ENABLE_INTERMEDIATE_PCAP) && fFoundEncapsulatedCCPkt) packet_actions(NULL, pkt_in_buf, protocol, &pkt_len, PCAP_TYPE_HI3);  /* write out decoded DER stream to intermediate pcap; note this currently only includes decoded UDP packets, JHB Dec2021 */
@@ -2442,7 +2522,7 @@ read_packet:
          if (Mode & USE_PACKET_ARRIVAL_TIMES) {
 
             uint64_t pkt_timestamp, elapsed_time;  /* passed param cur_time, pkt_timestamp, and elapsed_time are in usec */
-            uint32_t msec_elapsedtime, msec_timestamp;
+            uint32_t msec_timestamp, msec_elapsedtime;
 
             pkt_timestamp = (uint64_t)p_pcap_rec_hdr->ts_sec*1000000L + p_pcap_rec_hdr->ts_usec;
 
@@ -2452,6 +2532,7 @@ read_packet:
 
             #ifndef RATE_FORCE
             msec_timestamp = (pkt_timestamp + 500)/1000;  /* calculate in msec, with rounding. This compensates for jitter in how long it takes the main loop to repeat and get back to this point to push another packet and helps provide repeatable results, JHB Jan2020 */
+            msec_timestamp_fp = 1.0*pkt_timestamp/1000;
             #else
             msec_timestamp = (num_pcap_packets+1)*RATE_FORCE;  /* debug/stress testing:  push packet either at a specific interval or at random intervals */
             #endif
@@ -2459,7 +2540,7 @@ read_packet:
             elapsed_time = timeScale * (cur_time - thread_info[thread_index].initial_push_time[j]);  /* subtract initial time to get elapsed_time, timeScale > 1 accelerates time in FTRT mode */
 
             msec_elapsedtime = (elapsed_time + 500)/1000;  /* calculate in msec, with rounding */
- 
+
             if (msec_elapsedtime < msec_timestamp) {  /* push packet when elapsed time >= packet timestamp */
 
                bool fReseek = true;
@@ -2468,13 +2549,13 @@ read_packet:
 
                   if (((wait_time = msec_timestamp - msec_elapsedtime) > 2000 || last_wait_check_time) && msec_elapsedtime - last_wait_check_time > 1000) {
 
-                     if (protocol == UDP_PROTOCOL && (PktInfo.rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && PktInfo.rtp_pyld_type <= RTCP_PYLD_TYPE_MAX)) fReseek = false;  /* don't allow RTCP packets to restart a gap, verify with 6537.0 test-case. To-do: there are other gaps in payload type range also, we can add later, JHB Jun 2023 */
+                     if (protocol == UDP_PROTOCOL && (PktInfo.rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && PktInfo.rtp_pyld_type <= RTCP_PYLD_TYPE_MAX)) fReseek = false;  /* don't allow RTCP packets to restart a pause, verify with 6537.0 test-case. To-do: there are pauses in other payload type ranges also, we can add later, JHB Jun 2023 */
                      else {
 
-                        if (!wait_gap) wait_gap = wait_time;
+                        if (!wait_pause) wait_pause = wait_time;
 
                         if (++waiting_inputs >= thread_info[thread_index].nInPcapFiles) {  /* print waiting status only if all inputs are waiting */
-                           if (wait_time/1000 > 0) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "\rWaiting %llu of %llu sec gap in packet arrival times ...", (long long unsigned int)wait_time/1000, (long long unsigned int)wait_gap/1000);
+                           if (wait_time/1000 > 0) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "\rWaiting %llu of %llu sec pause in packet arrival times ...", (long long unsigned int)wait_time/1000, (long long unsigned int)wait_pause/1000);
                            last_wait_check_time = msec_elapsedtime;  waiting_inputs = 0;
                         }
                      }
@@ -2486,12 +2567,14 @@ read_packet:
                continue;  /* move on to next input */
             }
 
-   #if 0
-   static int fcount = 0;
-   if (fcount < 10) { fcount++; printf("\n *** timeScale = %4.2f, elapsed time = %llu, pkt_timestamp = %llu, msec_elapsedtime = %lu, msec_timestamp = %lu \n", timeScale, (long long unsigned int)elapsed_time, (long long unsigned int)pkt_timestamp, (long unsigned int)msec_elapsedtime, (long unsigned int)msec_timestamp); }
-   #endif
+         /* proceed with packet push */
 
-            if (last_wait_check_time) { last_wait_check_time = 0; wait_gap = 0; waiting_inputs = 0; }  /* any input not waiting resets wait status */
+            #ifdef SHOW_PUSH_STATS
+            static int fcount = 0;
+            if (fcount < 10) { fcount++; printf("\n *** timeScale = %4.2f, elapsed time = %llu, pkt_timestamp = %llu, msec_elapsedtime = %lu, msec_timestamp = %lu \n", timeScale, (long long unsigned int)elapsed_time, (long long unsigned int)pkt_timestamp, (long unsigned int)msec_elapsedtime, (long unsigned int)msec_timestamp); }
+            #endif
+
+            if (last_wait_check_time) { last_wait_check_time = 0; wait_pause = 0; waiting_inputs = 0; }  /* any input not waiting resets wait status */
 
             #ifdef RATE_FORCE
             num_pcap_packets++;
@@ -2791,6 +2874,40 @@ push:
 
                      if (queue_full_warning[hSessions[i]]) queue_full_warning[hSessions[i]] = 0;  /* reset queue full warning if needed */
 
+                  /* if specified, calculate packet arrival timing stats, JHB Aug 2023:
+                   
+                     -only calculate for successive media packets and SID packets that immediately follow a media packet, and omit consecutive SID, DTMF packets
+                     -the objective is to measure delta and jitter with respect to ptime, and get a handle on whether packet rate is consistently fast or slow. Wireshark averages in SID packets which obscures accurate reading on things like media playout servers
+                     -currently we have a 1/2 sec limit on gaps due to packet loss or input pauses, anything larger than that is not counted
+                     -to-do: add to APP_THREAD_INFO struct, capacity tests
+                  */
+
+                     if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & SHOW_PACKET_ARRIVAL_STATS)) {
+
+                        float delta_timestamp = 0;
+                        int ptime = DSGetSessionInfo(hSessions[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_PTIME, 1, NULL);  /* get session ptime in msec */
+                        #define MAX_STATS_GAP 25*ptime
+
+                        if (last_rtp_pyld_len[i] > 8 && (delta_timestamp = msec_timestamp_fp - last_msec_timestamp[i]) < MAX_STATS_GAP) {  /* omit DTMFs and SIDs, gaps larger than 500 msec (for 20 sec nominal ptime) */
+
+                           arrival_avg_delta[i] = (arrival_avg_delta[i]*num_arrival_stats_pkts[i] + delta_timestamp)/(num_arrival_stats_pkts[i]+1);
+                           arrival_avg_jitter[i] = (arrival_avg_jitter[i]*num_arrival_stats_pkts[i] + abs(delta_timestamp - ptime))/(num_arrival_stats_pkts[i]+1);
+
+                           num_arrival_stats_pkts[i]++;
+
+                           #if 0
+                           static int count[10] = { 0 };
+                           if (count[i]++ < 50) printf("\n[%d]%d msec_timestamp_fp = %4.2f, delta_timestamp = %4.2f, jitter = %4.2f\n", i, num_arrival_stats_pkts[i], msec_timestamp_fp, delta_timestamp, abs(delta_timestamp - arrival_avg_delta[i]));
+                           #endif
+
+                           arrival_max_delta[i] = max(arrival_max_delta[i], delta_timestamp);
+                           arrival_max_jitter[i] = max(arrival_max_jitter[i], abs(delta_timestamp - ptime));
+                        }
+                     }
+
+                     last_rtp_pyld_len[i] = rtp_pyld_len;
+                     last_msec_timestamp[i] = msec_timestamp_fp;
+
                      break;  /* break out of nSessions loop, the packet should match no other sessions */
                   }
                }
@@ -2917,6 +3034,8 @@ pull:
          app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "Error in DSPullPackets() for %s output, return code = %d", errstr, num_pkts);
          goto exit;
       }
+
+      num_pkts_total += num_pkts;  /* change how we calculate return value, no longer depending on file output cmd line specs, JHB Aug 2023 */
    }
    else goto next_session;
 
@@ -2930,7 +3049,7 @@ pull:
 
    //#define SHOW_XCODED_STATS
    #ifdef SHOW_XCODED_STATS
-   static int prev_num_xcoded[MAX_APP_THREADS][MAX_SESSIONS] = {{0}}, total_zero_xcoded[MAX_APP_THREADS][MAX_SESSIONS] = {{0}};
+   static int prev_num_xcoded[MAX_APP_THREADS][MAX_SESSIONS] = {{0}}, total_zero_xcoded[MAX_APP_THREADS][MAX_SESSIONS] = {{ 0 }};
 
    if (uFlags == DS_PULLPACKETS_TRANSCODED) {
 
@@ -2959,7 +3078,12 @@ pull:
       thread_info[thread_index].pkt_pull_jb_ctr += num_pkts;
 //    if (hSessions[i] == 0) printf(" == push - pull count %d\n", thread_info[thread_index].pkt_push_ctr - thread_info[thread_index].pkt_pull_jb_ctr);
    }
-   else if (uFlags == DS_PULLPACKETS_TRANSCODED) thread_info[thread_index].pkt_pull_xcode_ctr += num_pkts;
+   else if (uFlags == DS_PULLPACKETS_TRANSCODED) {
+   
+      thread_info[thread_index].pkt_pull_xcode_ctr += num_pkts;
+
+//      if (Mode & ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH) DSProcessStreamGroupContributorsTSM(hSessions[i], pkt_out_buf, packet_out_len, num_pkts, MediaParams[0].Media.inputFilename, (Mode & INCLUDE_PAUSES_IN_WAV_OUTPUT) != 0);
+   }
    else if (uFlags == DS_PULLPACKETS_STREAM_GROUP) thread_info[thread_index].pkt_pull_streamgroup_ctr += num_pkts;
 
    if (fp) {
@@ -3060,8 +3184,6 @@ pull:
 
          if (DSWritePcapRecord(fp, pkt_out_ptr, NULL, NULL, NULL, p_ts, packet_out_len[j]) < 0) { fprintf(stderr, "DSWritePcapRecord() failed for %s output\n", errstr); return -1; }
          else pkt_out_ptr += packet_out_len[j];
-
-         num_pkts_total++;
       }
    }
 
@@ -3248,6 +3370,39 @@ unsigned int uFlags;
       i++;
    }
 }
+
+void MiscOutputSetup(int thread_index) {
+
+/* if entered, apply -gStreamGroupOutputPath cmd line option to stream group and/or timestamp-matching mode output wav files. Notes:
+
+   -wav files are written by packet/media threads, if these are being written to an HDD (rotating media) any reduction in seek times can significantly improve overall thread performance. With Linux ext4 filesystems, long seek times can result from an HDD operating at near full capacity over time, in which case it may be slightly fragmenting during write operations (i.e. files with a few sectors seperated by a long physical distance on the disk platter)
+
+   -if mediaMin display and/or event log outputs shows pre-emption messages such as:
+
+      WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3,
+      creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00,
+      last encode time = 0.02, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00,
+      last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
+
+    this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time"
+
+   -for example, if a ramdisk exists, then the mediaMin command line might contain:
+
+      -g/mnt/ramdisk
+
+    or
+
+      -g/tmp/ramdisk
+
+    or as appropriate depending on the system. Look in /etc/fstab to see if a ramdisk is active and if so its path
+
+   -default is no entry, in which case wav files are generated on the mediaMin app subfolder
+   -does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished)
+*/
+
+   if (strlen(szStreamGroupOutputPath) > 0 && szStreamGroupOutputPath[strlen(szStreamGroupOutputPath)-1] != '/') strcat(szStreamGroupOutputPath, "/");  /* add / suffix, if not already there */
+}
+
 
 /* Set up audio stream group output pcap files:
 
@@ -3437,7 +3592,7 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
 
          if (thread_info[thread_index].pkt_push_ctr == 0) queue_empty = false;  /* at least one packet has to be pushed first */
 
-         if (queue_empty && (Mode & (USE_PACKET_ARRIVAL_TIMES | ANALYTICS_MODE))) {  /* in these modes, we don't look at queue status until input flow ends, for example there may be valid call waiting or on-hold gaps */
+         if (queue_empty && (Mode & (USE_PACKET_ARRIVAL_TIMES | ANALYTICS_MODE))) {  /* in these modes, we don't look at queue status until input flow ends, for example there may be valid call waiting or on-hold pauses */
 
             if (Mode & DYNAMIC_SESSIONS) {
 
@@ -3451,7 +3606,7 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
 
          if (queue_empty) {  /* continue with queue status check */
 
-            if (DSPushPackets(DS_PUSHPACKETS_GET_QUEUE_STATUS, NULL, NULL, &hSessions[i], 1) == 0) queue_empty = false;  /* not empty yet */
+            if (DSPushPackets(DS_PUSHPACKETS_GET_QUEUE_STATUS, NULL, NULL, &hSessions[i], 1) == 0) queue_empty = false;  /* input queue not empty yet */
             else {
 
                if ((Mode & (USE_PACKET_ARRIVAL_TIMES | ANALYTICS_MODE)) && !thread_info[thread_index].flush_state[i]) {  /* for real-time packet flow when input has ended (e.g. pcap input with packet arrival times), flush on end of input and push queue empty, JHB Mar2020 */
@@ -3475,7 +3630,7 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
 
          unsigned int flush_wait = 50000;  /* arbitrary delay to wait before checking whether all queues are empty, or for packet arrival time / analytics modes, finalizing flush state */
 
-         if (!queue_empty || queue_check_time[i] == 0) queue_check_time[i] = cur_time;
+         if (!queue_empty || queue_check_time[i] == 0) queue_check_time[i] = cur_time;  /* don't flush yet if queue not empty, reset queue check time */
          else if (cur_time - queue_check_time[i] > flush_wait) {
 
             if (!thread_info[thread_index].flush_state[i]) {

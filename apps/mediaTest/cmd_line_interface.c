@@ -42,6 +42,8 @@
    Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
    Modified Jun 2023 JHB, initialize timeScale to zero to allow packet_float_media_proc() to know if it's already been set by an app
    Modified Jul 2023 JHB, add const char* ver_str param to cmdLineInterface()
+   Modified Aug 2023 JHB, add uTimestampMatchMode. Flags are defined in shared_include/streamlib.h
+   Modified Sep 2023 JHB, and fCapacityTest. Moved here from mediaMin.cpp, referenced both there and in packet_flow_media_proc.c
 */
 
 
@@ -99,6 +101,8 @@ char             full_cmd_line[MAX_CMDLINE_STR_LEN] = "";  /* app full command l
 double           timeScale = 0;  /* support FTRT and AFAP modes, see comments in packet_flow_media_proc.c */
 uint16_t         uPortList[MAX_CONCURRENT_STREAMS] = { 0 };
 uint8_t          uLookbackDepth = 1;
+unsigned int     uTimestampMatchMode = 0;  /* timestamp-match wav output mode. Flags are defined in shared_include/streamlib.h, JHB Aug 2023 */
+bool             fCapacityTest;  /* set by apps if they are doing capacity test (moved here from mediaMin.cpp), JHB Sep 2023 */
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 

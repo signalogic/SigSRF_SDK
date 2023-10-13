@@ -119,6 +119,9 @@
       -add TERM_ANALYTICS_MODE_PACKET_TIMING flag definition (applies to uFlags element in TERMINATION_INFO struct)
       -add TERM_NO_PACKET_TIMING flag definition (applies to uFlags element in TERMINATION_INFO struct)
       -add RFC7198_lookback uint8_t in TERMINATION_INFO struct
+
+    Aug 2023 JHB
+      -define TERMINFO "nickname" for TERMINATION_INFO
 */
 
 #ifndef _SESSION_H_
@@ -688,6 +691,8 @@ typedef struct {
   uint32_t Reserved5;
 
 } TERMINATION_INFO;
+
+#define TERMINFO TERMINATION_INFO  /* nickname :-) */
 
 typedef struct {
 

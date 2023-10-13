@@ -151,6 +151,12 @@ Revision History
  Modified Jun 2023 JHB, modify alarms and especially packet push alarm to be compliant with unified timebase changes. See set_session_last_push_time() and set_session_alarm_flags()
  Modified Jun 2023 JHB, initialize timeScale if needed (if it still has zero load-time init value). Normally we expect apps to set timeScale
  Modified Jul 2023 JHB, add DTMF input packet count to session summary stats
+ Modified Aug 2023 JHB, change format of run-time stats display for non-stream group sessions. See comments
+ Modified Aug 2023 JHB, implement handling of timestamp-matched wav output. Look for uTimestampMatchMode
+ Modified Sep 2023 JHB, in telecom mode, under narrow/limited conditions, set DS_GETORD_PKT_TIMESTAMP_GAP_RESYNC flag in DSGetOrderedPackets() uFlags. See comments
+ Modified Sep 2023 JHB, fix problem in CheckForDormantSSRC() where it was exiting prematurely if sessions were not part of a stream group. This actually had to do with capacity testing, so now the condition references fCapacityTest
+ Modified Sep 2023 JHB, modify conditions for telecom mode timestamp advance and level flush (look for nNumOoo and max_depth_ptimes)
+ Modified Oct 2023 JHB, update comments around uTimestampMatchMode flush disable to provide a more clear, concise explanation
 */
 
 #ifndef _GNU_SOURCE
@@ -326,8 +332,8 @@ extern float RealTimeInterval[];
 
 /* SigSRF packet/media thread notes:
 
-   *** packet/media threads that run separately from applications are fully supported ***
-   
+   >>> packet/media threads that run separately from applications are fully supported <<<
+ 
    1) packet/media threads call all voplib, pktlib, and streamlib APIs required to process packets and apply media domain signal processing
  
    2) apps are responsible for starting and controlling packet/media threads using DSConfigMediaService()
@@ -336,7 +342,7 @@ extern float RealTimeInterval[];
 
    4) mediaMin is the reference app, including all source code
 
-   *** a background process mode, where a continuous process handles all packet I/O and runs separately from applications, is not currently supported. The following notes are left here for reference ***
+   >>> a background process mode, where a continuous process handles all packet I/O and runs separately from applications, is not currently supported. The following notes are left here for reference <<<
 
    1) [NOT CURRENTLY SUPPORTED] mediaTest uses the ALLOW_BACKGROUND_PROCESS define (below) and use_bkgnd_process var to control the background process.  Defaults are (i) allow use of the process, and (ii) cmd line entry enables/disables the process
 
@@ -367,8 +373,8 @@ extern float RealTimeInterval[];
 
 #ifndef _LIBRARYMODE__
 extern PLATFORMPARAMS PlatformParams;  /* command line params */
-extern MEDIAPARAMS MediaParams[MAXSTREAMS];
 extern unsigned int inFileType, outFileType, outFileType2, USBAudioInput, USBAudioOutput;
+extern MEDIAPARAMS MediaParams[MAXSTREAMS];
 #endif
 
 volatile bool    fNetIOAllowed = false;  /* set true if UDP socket input should be handled.  Will be set false if program / process permissions do not allow network sockets and/or USB ports to be opened. Default is disabled */
@@ -747,8 +753,10 @@ void* packet_flow_media_proc(void* pExecutionMode) {
    HSESSION hSessions_t[MAX_SESSIONS] = { -1 };
    SESSION_DATA session_data_t[MAX_SESSIONS] = {{ 0 }};
 
-   int pyld_len, data_length, packet_length, packet_len[256];
-   unsigned payload_info[256];
+   #define MAX_PACKETS_PER_PULL 256
+   int pyld_len, data_length, packet_length, packet_len[MAX_PACKETS_PER_PULL];
+   unsigned payload_info[MAX_PACKETS_PER_PULL];
+   uint32_t rtp_timestamp[MAX_PACKETS_PER_PULL], rtp_ssrc[MAX_PACKETS_PER_PULL], rtp_pyld_type[MAX_PACKETS_PER_PULL];
    uint8_t *pkt_ptr, *rtp_pyld_ptr;
 
    int recv_len = 0, send_len = 0;
@@ -757,7 +765,7 @@ void* packet_flow_media_proc(void* pExecutionMode) {
    
    TERMINATION_INFO termInfo, termInfo_link;
    HCODEC hCodec;
-   int chnum_parent, chnums[MAX_TERMS*4], chnum;
+   int chnum_parent, chnums[MAX_TERMS*16], chnum;
    int recv_sock_fd = -1;
 
    int pkt_pulled_cnt = 0, pkt_xcode_cnt = 0, pkt_passthru_cnt = 0, pkt_group_cnt = 0;
@@ -1633,7 +1641,7 @@ run_loop:
 
    /* dynamically locate currently active sessions, and store a copy of handles in hSessions_t.  Notes:
 
-      -first call ManageSessions(), which (i) returns number of active sessions, (ii) initializes thread-level per-session items if a session is new (recently created), and (iii) deletes thread-owned sessions marked with delete-pending
+      -first call ManageSessions(), which (i) returns number of active sessions and fills in hSessions_t[] with currently active session handles, (ii) initializes thread-level per-session items if a session is new (recently created), and (iii) deletes thread-owned sessions marked with delete-pending
 
       -in thread execution, sessions created externally during the input/buffer and packet/media loops (below) will not be processed until those loops finish and control returns here
    */
@@ -1658,9 +1666,9 @@ run_loop:
       if (packet_media_thread_info[thread_index].fProfilingEnabled) end_profile_time = get_time(USE_CLOCK_GETTIME);  /* record profile time for ManageSessions() */
       else end_profile_time = 0;  /* avoid compiler warning */
 
-   /* set cur_time, used for packet input interval timing */
+   /* set cur_time, single wall clock read which is then used by pktlib and streamlib */
 
-      cur_time = last_cur_time[thread_index] = timeScale*(get_time(USE_CLOCK_GETTIME) - base_time);  /* timeScale is > 1 for AFAP modes (bulk pcap handling), JHB May 2023 */
+      cur_time = last_cur_time[thread_index] = timeScale*(get_time(USE_CLOCK_GETTIME) - base_time);  /* timeScale is > 1 for FTRT mode (bulk pcap handling), JHB May 2023 */
 
    /* measure and record thread CPU usage */
 
@@ -1720,7 +1728,7 @@ run_loop:
          #if 0
          sprintf(tmpstr, "WARNING: p/m thread %d has not run for %4.2f msec, may have been preempted, num sessions = %d, fAllSessionsDataAvailable = %d, fPrevAllSessionsDataAvailable = %d", thread_index, 1.0*elapsed_thread_time/1000, numSessions, fAllSessionsDataAvailable, fPrevAllSessionsDataAvailable);
          #else
-         sprintf(tmpstr, "WARNING: p/m thread %d has not run for %4.2f msec, may have been preempted, num sessions = %d, fAllSessionsDataAvailable = %d", thread_index, 1.0*elapsed_thread_time/1000, numSessions, fAllSessionsDataAvailable);
+         sprintf(tmpstr, "WARNING: p/m thread %d has not run for %4.2f msec, may have been preempted, num sessions = %d, fAllSessionsDataAvailable = %d", thread_index, 1.0*elapsed_thread_time/1000/timeScale, numSessions, fAllSessionsDataAvailable);
          #endif
 
          sprintf(&tmpstr[strlen(tmpstr)], ", creation history =");
@@ -2009,17 +2017,17 @@ get_pkt_info:
 
             1) Currently the number of channels per session is 1 or 2, depending on termN definitions (TERMINATION_INFO) defined for each session.  Note that MAX_TERMS is currently defined as 2, but may increase in the future
 
-            2) Input always flows through per-session receive queues.  The following input sources push packets to the receive queue:
+            2) Input always flows through per-session receive queues. The following input sources push packets to the receive queue:
 
               -pcap files and UDP ports in cmd line execution
-              -external applications in thread execution (arbitrary, application defined input sources)
+              -external applications in thread execution (arbitrary, application defined input sources. mediaMin is an example)
 
-            3) Each pkt/media thread has its own receive queue.  For coCPU hardware, a thread typically equals a CPU core
+            3) Each pkt/media thread has its own receive queue. For coCPU hardware, a thread typically equals a CPU core
 
             4) For an example of an application using the per session receive queues, see the mediaMin app, which reads pcap files and pushes packets to the queues, which are then processed here by one or more packet_flow_media_proc() threads
          */
 
-            int chnums_lookahead[MAX_TERMS*4];
+            int chnums_lookahead[MAX_TERMS*16];
             memset(chnums_lookahead, 0xff, sizeof(chnums_lookahead));  /* set all chnum to -1 */
 
             hSession_flags = (uFlags_session(hSession) & DS_SESSION_USER_MANAGED) ? hSession : -1;
@@ -2072,7 +2080,7 @@ get_pkt_info:
 
          /* if numPkts reflects only look-ahead (copy) packets at this point, then receive numStreams packets from queue specified by hSession, if available:
 
-            -if fNoLookAhead is true then numPkts represents packets actually pulled at this point, and we don't call DSRecvPackets() again
+            -if fNoLookAhead is true then numPkts represents packets actually dequeued at this point, and we don't call DSRecvPackets() again
             -even if numStreams is zero, we still try to pull one even if there is no match, in case the queue contains wrong packets for this session (i.e. user error), we never want the queue to overflow
          */
 
@@ -2275,7 +2283,27 @@ debug:
                         if (!fOnce) { printf("\n === time from first push to first buffer %llu \n", (unsigned long long)((first_buffer_time = get_time(USE_CLOCK_GETTIME)) - first_push_time)); fOnce = true; }
                         #endif
 
+#if 0
+static FILE* fp_log_pkt_in = NULL;
+static int log_pkt_in_index = 0;
+  if (!fp_log_pkt_in) fp_log_pkt_in = fopen("pkt_log_in.txt", "w");
+  char tstr[100];
+  sprintf(tstr, "pkt\t%d\t\t\t\t%d\n", log_pkt_in_index, hSession);
+  fwrite(tstr, strlen(tstr), 1, fp_log_pkt_in);
+  log_pkt_in_index++;
+#endif
+
                         ret_val = DSBufferPackets(hSession_flags, uFlags_add, pkt_ptr, packet_len, &payload_info[j], &chnum, cur_time);  /* buffer one or more packets for this session, applying flags as required. chnum[] is returned as the packet match, either parent or child, as applicable, JHB Jan2020. Note that DS_PKTLIB_SUPPRESS_ERROR_MSG and DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG are not set, so display and/or event log is going to show any packet issues */
+
+   //#define DEBUG_TELECOM_MODE_TIMESTAMP_GAP
+
+                        #ifdef DEBUG_TELECOM_MODE_TIMESTAMP_GAP
+                        static int nCount = 0;
+                        if (nCount < 100 && chnum == 4 && ret_val > 0) {
+                           Log_RT(4, " *** buffering ch 4 [%d] ret_val = %d \n", nCount, ret_val);
+                           nCount++;
+                        }
+                        #endif
 
                         if (ret_val > 0) {
 
@@ -2658,7 +2686,18 @@ next_session:
 
             num_chan = CheckForOnHoldFlush(hSession, num_chan, chan_nums);
 
-            num_chan = CheckForPacketLossFlush(hSession, num_chan, chan_nums, cur_time, thread_index);  /* used in both analytics and telecom modes */
+            #if 1
+            bool fFlushDisable = (uTimestampMatchMode & TIMESTAMP_MATCH_MODE_ENABLE) && (uTimestampMatchMode & TIMESTAMP_MATCH_DISABLE_FLUSH);  /* to maintain stream merging bit-exactness in timestamp-match mode we disable packet loss flush. This is mainly to support FTRT timing across a wide range (100x or more), otherwise each stream may detect flush conditions at slightly different places depending on number of packets in its jitter buffer, which in turn depends timing of app threads queueing packets and packet/media threads de-queueing and processing packets, JHB Aug 2023 */
+            #else
+            bool fFlushDisable = false;
+            #endif
+
+            if (!fFlushDisable) num_chan = CheckForPacketLossFlush(hSession, num_chan, chan_nums, cur_time, thread_index);  /* CheckForPacketLossFlush() used in both analytics and telecom modes */
+
+            #ifdef DEBUG_TELECOM_MODE_TIMESTAMP_GAP
+            int njb;
+            if (!num_chan && (njb = DSGetJitterBufferInfo(4, DS_JITTER_BUFFER_INFO_NUM_PKTS)) > 1) Log_RT(3, "\n\n *** not attempting ch 4 pull, num_chan zero with %d pkts in jb \n", njb);
+            #endif
 
             if (!num_chan) continue;  /* no jitter buffer output, decode/transcode, media processing if (i) this session currently has no input streams that map to channels, or (ii) active channel has no packets available in jitter buffer */
 
@@ -2787,6 +2826,33 @@ next_session:
 
                         if (term_uFlags[hSession][term] & TERM_OOO_HOLDOFF_ENABLE) uFlags_get |= DS_GETORD_PKT_ENABLE_OOO_HOLDOFF;
 
+                     /* enable timestamp gap resync in telecom mode for large gaps under specific conditions. Notes JHB Sep 2023:
+
+                        -applying DS_GETORD_PKT_TIMESTAMP_GAP_RESYNC in telecom mode due to a test pcap needing jitter buffer resync after a large (7 sec) timestamp gap. The test example exhibited a 4 sec "dead spot" (i.e. no packets pulled) immediately after the gap as the pull logic here and in get_chan_packets() (pktlib.c), which assumes the jitter buffer has primed, failed to advance the stream's pull timestamp for 4 sec, at which point flush was triggered here (due to buffer levels) and 55 packets were pulled
+                        -the primary test case is 2514.siprec.pcap, with 4x AMR-WB streams, 2 before a 7 sec gap, 2 after the gap. The 3rd stream starts with 2 packets before the 7 sec gap and continues after the gap (note the latter two streams are actually the same audio content; sequence numbers and RTP timestamps continue without skipping, but RTP payload changes). Another test case is 2922.0.pcap, where ch 0 has 2 packets before a 4 sec gap, continuing after the gap. For this pcap the mod eliminates a 1 sec dead spot after the gap (see comments in regression test notes about changes in output stats)
+                        -although the "total packets pulled is less than min delay" condition is very narrow and we would not expect many test pcaps to be affected, testing in telecom mode of other pcaps with large gaps is ongoing. So far testing includes 5853.siprec.pcap, 4949.ws.pcap, 4894.ws_xc1.pcap, 6537.0.pcap, 5952.0.pcap, and 5280.0.ws.pcap
+                        -there is no issue in analytics mode which always looks for timestamp gaps (DS_GETORD_PKT_TIMESTAMP_GAP_RESYNC is ignored)
+                     */
+
+                        #ifdef __LIBRARYMODE__
+                        if (!(uFlags_get & DS_GETORD_PKT_ANALYTICS)) {
+
+                           int timestamp_gap, num_output_pkts;
+
+                           #define MAX_TELECOM_MODE_TIMESTAMP_GAP 500  /* msec */
+
+                           if ((num_output_pkts = DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_OUTPUT_PKT_COUNT)) < DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_MIN_DELAY) && (timestamp_gap = DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_MAX_TIMESTAMP_GAP))/(BASE_FS_KHZ * ChanInfo_Core[chan_nums[n]].sample_rate_mult) > MAX_TELECOM_MODE_TIMESTAMP_GAP) {
+
+                              #ifdef TELECOM_MODE_TIMESTAMP_GAP_STATS
+                              static int nCount[10] = { 0 };
+                              if (nCount[chan_nums[n]] < 500) Log_RT(4, " *** [%d] ch %d telecom mode timestamp gap = %d, num output pkts = %d, num_pkts = %d cum timestamp = %d, cum pulltime = %d, cur_time = %llu, last pull time = %llu \n", nCount[chan_nums[n]]++, chan_nums[n], timestamp_gap, DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_NUM_PKTS), num_output_pkts, DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP), DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME), (long long unsigned)cur_time, (long long unsigned)last_pull_time[chan_nums[n]]);
+                              #endif
+
+                              uFlags_get |= DS_GETORD_PKT_TIMESTAMP_GAP_RESYNC;
+                           }
+                        }
+                        #endif
+
                      /* DSGetOrderedPackets() notes:
 
                         1) If the DS_GETORD_PKT_SESSION flag is not given, a handle argument of -1 tells DSGetOrderedPackets() to retrieve all packets deliverable in the current time window for all currently active sessions
@@ -2810,17 +2876,38 @@ next_session:
 
                         uint32_t ptr_ofs = 0;
                         int ch[64] = { 0 };
-                        int pull_pkts, offset = 0, num_ch = 1, nRePull = 0;
-                        unsigned int uInfo = 0;
+                        int pull_pkts, offset = 0, nRePull = 0;
                         num_pkts = 0;
                         bool fRePull;
 
                         #define USE_CHAN_NUMS
                         #define USE_CHNUM
 pull:
+                        num_pkts = num_pkts;
+                        unsigned int uInfo = 0;
+
                         #ifdef USE_CHAN_NUMS
 
                         num_pkts += (pull_pkts = DSGetOrderedPackets(chan_nums[n], uFlags_get | DS_GETORD_PKT_CHNUM, cur_time, pkt_ptr + ptr_ofs, &packet_len[num_pkts], &payload_info[num_pkts], &uInfo));  /* other options for the handle param include (i) -1 value to retrieve all packets for all sessions and (ii) a specific hSession combined with DS_GETORD_PKT_SESSION */
+
+                        #ifdef DEBUG_TELECOM_MODE_TIMESTAMP_GAP
+                        num_pkts = num_pkts;
+                        static int nCount = 0;
+                        int njb;
+                        static uint64_t t_first_pull_time = 0;
+                        static uint64_t t_last_pull_time = 0;
+                        uint64_t delta = 0;
+                        int num_ch = 1;
+                        if (nCount < 500 && chan_nums[n] == 4 && (njb = DSGetJitterBufferInfo(chan_nums[n], DS_JITTER_BUFFER_INFO_NUM_PKTS)) > 2) {
+   
+                           if (!t_first_pull_time) t_first_pull_time = cur_time;
+                           if (t_last_pull_time) delta = cur_time - t_last_pull_time;
+
+                           t_last_pull_time = cur_time;
+
+                           printf(" *** attempting ch 4 pull [%d], num_pkts = %d, num jb pkts = %d, nRePull = %d, delta pull time = %4.2f, gap pull time = %4.2f \n", nCount++, num_pkts, njb, nRePull, 1.0*delta/1000, 1.0*(cur_time-t_first_pull_time)/1000);
+                        }
+                        #endif
 
                         #else
 
@@ -2846,14 +2933,22 @@ pull:
                         if (!fOnce2 && pull_pkts == 1) { printf("\n === time from first buffer to first pull %llu \n", (unsigned long long)((first_pull_time = get_time(USE_CLOCK_GETTIME)) - first_buffer_time)); fOnce2 = true; }
                         #endif
 
-#if 1
-                        if (!fFlushChan && (uInfo & DS_GETORD_PKT_INFO_PULLATTEMPT)) do {
+                        #if 1
+                        bool fFlushDisable = ((uTimestampMatchMode & TIMESTAMP_MATCH_MODE_ENABLE) && (uTimestampMatchMode & TIMESTAMP_MATCH_DISABLE_FLUSH));  /* to maintain stream merging bit-exactness in timestamp-match mode we disable packet level and timestamp flush. This is mainly to support FTRT timing across a wide range (100x or more), otherwise each stream may detect flush conditions at slightly different places depending on number of packets in its jitter buffer, which in turn depends on timing of app threads queueing packets and packet/media threads de-queueing and processing packets, JHB Aug 2023. Without disabling, at any one packet interval rate (e.g. 20, 0.2, 0.02 msec) bit-exact output will be stable but there will be at least one narrow rate window where output oscillates and on either side output is different but stable. More comments including specific test cases are in pktlib.c, JHB Oct 2023 */
+                        #else
+                        bool fFlushDisable = false;
+                        #endif
+
+                        if (!fFlushDisable && !fFlushChan && (uInfo & DS_GETORD_PKT_INFO_PULLATTEMPT)) do {
 
                            fRePull = false;
                            bool fFlush = false, fLevel = false;
-                           int numpkts, chan;
+                           int numpkts = 0, chan = 0;
+                           int max_depth_ptimes, nNumOoo = 0;
 
                            ch[0] = chan_nums[n];
+                           int num_ch = 1;
+
                            num_ch += DSGetSessionInfo(chan_nums[n], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_DYNAMIC_CHANNELS, 0, (void*)&ch[num_ch]);  /* retrieve child channels, if any. All channels are in ch[], starting with parent. (Note - need typecast here, otherwise compiler messes up.  Not sure why) JHB Feb2019 */
 
                            for (j=0; j<num_ch; j++) {  /* search channel and child channels, if any */
@@ -2863,17 +2958,21 @@ pull:
                               numpkts = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_NUM_PKTS);
                               int nTargetDelay = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_TARGET_DELAY);
                               int nMaxDelay = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MAX_DELAY);
+                              nNumOoo = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_NUM_INPUT_OOO);
+
+                              #if 0  /* change made due to tests with 34392.pcap; after a call-on-hold pause, the DS_GETORD_PKT_TIMESTAMP_GAP_RESYNC mod above is helpful but not enough. Otherwise it takes too long for ch 4 (in this example) cumulative and pull timestamps to catch up and re-align with other streams not affected by the pause, JHB Sep 2023 */
+                              max_depth_ptimes = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MAX_DEPTH_PTIMES);
+                              #else
+                              max_depth_ptimes = nNumOoo < 3 ? nTargetDelay : DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MAX_DEPTH_PTIMES);  /* we allow increase in jitter buffer delay if the stream is exhibiting significant ooo; not sure yet if this solid over the whole test set. It works with several key test files, including 32565.0.ws.pcap, 2922.0.pcap, 4392.pcap, 2514.siprec.pcap, JHB Sep 2023 */ 
+                              #endif
 
                               if (
                                   ((uFlags_get & DS_GETORD_PKT_ANALYTICS) && (fLevel = numpkts > nTargetDelay) && nTargetDelay > 7) ||
                                   ((uFlags_get & DS_GETORD_PKT_ANALYTICS) && (fLevel = numpkts > nMaxDelay) && nTargetDelay <= 7) ||  /* level flush added for analytics compatibility mode. Verify with test cases 5280.0.ws, 5281.0.ws, 13041.0, JHB May2020 */
-                                  (!(uFlags_get & DS_GETORD_PKT_ANALYTICS) && ((fFlush = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP) < DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME) && (cur_time - last_pull_time[chan_nums[n]] + 500)/1000 > (uint32_t)ptime[hSession][term] && numpkts > nTargetDelay) ||
-                                                                          (fLevel = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_DELAY) > DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MAX_DEPTH_PTIMES))))
+                                  (!(uFlags_get & DS_GETORD_PKT_ANALYTICS) && ((fFlush = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP) < DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME) && (cur_time - last_pull_time[chan_nums[n]] + 500)/1000 > (uint32_t)ptime[hSession][term] && numpkts > nTargetDelay) || (fLevel = (DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_DELAY) > max_depth_ptimes) || numpkts > nTargetDelay)))
                                  ) {
 
-//  printf("\n === ch %d delay = %d, num pkts = %d, max timestamp gap = %d \n", ch[j], DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_DELAY), DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_NUM_PKTS), DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MAX_TIMESTAMP_GAP));
-
-                                 if ((nRePull == 0 && fFlush) || (nRePull < 50 && !fFlush)) {  /* impose some limit on number of repulls to avoid excessive time spent */
+                                 if ((nRePull == 0 && fFlush) || (nRePull < 50 && !fFlush)) {  /* impose some limit on number of repulls to avoid excessive increase in subloops (based on num_pkts); after several main loops timestamps will catch up */
 
                                     chan = ch[j];
                                     fRePull = true;
@@ -2889,6 +2988,9 @@ pull:
                               #endif
                            }
 
+   #ifdef SHOW_FLUSH_AND_TIMESTAMP_CONDITIONS
+    if (fRePull && !fFlush && chan == 2) Log_RT(4, " *** ch %d repull to advance timestamp, num_ch = %d, fFlush = %d, fLevel = %d, nRePull = %d, (cum timestamp %d < cum pull time %d && cur_time %d - last pull time %d > 20 && numpkts %d > nTargetDelay %d) || (delay %d > max depth ptimes %d), output pkts = %d, num ooo = %d \n", chan, num_ch, fFlush, fLevel, nRePull, (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP), (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME), (int)cur_time/1000, (int)last_pull_time[chan_nums[n]]/1000, numpkts, (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_TARGET_DELAY), (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_DELAY), max_depth_ptimes, (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_OUTPUT_PKT_COUNT), nNumOoo);
+   #endif
                            if (fRePull) {
 
                               if (fFlush) {
@@ -2898,14 +3000,15 @@ pull:
                                  if (!basetime) basetime = cur_time;
                                  printf("\n === ch %d flush time = %d (usec) %d (msec), cur time - last pull time = %d \n", chan, cur_time - basetime, (cur_time - basetime)/1000, (cur_time - last_pull_time[chan_nums[n]])/1000);
                                  #endif
-  
+
                                  uFlags_get |= DS_GETORD_PKT_FLUSH;
-                                 uFlags_get &= ~DS_GETORD_PKT_ADVANCE_TIMESTAMP;  /* advance jitter buffer pull timestamp */
+                                 uFlags_get &= ~DS_GETORD_PKT_ADVANCE_TIMESTAMP;  /* advance only jitter buffer pull timestamp */
                               }
                               else {
 
-                                 #if 0
-                                 printf("\n === level repull ch %d, num pkts = %d, delay ptimes = %d, fFlush = %d, nRePull = %d \n", chan_nums[n], numpkts, DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_DELAY), fFlush, nRePull);
+                                 #ifdef DEBUG_TELECOM_MODE_TIMESTAMP_GAP
+                                 static int nCount = 0;
+                                 if (!(uFlags_get & DS_GETORD_PKT_ANALYTICS) && chan_nums[n] == 4 && nCount < 200) { nCount++; Log_RT(4, "\n *** attempting level repull ch %d, num pkts = %d, delay ptimes = %d, fFlush = %d, nRePull = %d \n", chan_nums[n], numpkts, DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_DELAY), fFlush, nRePull); }
                                  #endif
 
                                  uFlags_get |= DS_GETORD_PKT_ADVANCE_TIMESTAMP;  /* advance both clock timestamp and jitter buffer pull timestamp. See comments in pktlib.h */
@@ -2923,13 +3026,21 @@ pull:
                            }
 
                         } while (fRePull);
-#endif
 
                         if (num_pkts < 0) {
                            sprintf(tmpstr, "Error retrieving packet(s) from jitter buffer for session %d\n", i);
                            sig_printf(tmpstr, PRN_LEVEL_ERROR, thread_index);
                            continue;
                         }
+
+  #if 0
+  static int nCount = 0;
+  int nk = 0;
+  if (nCount < 1000 && num_pkts == 0 && (nk = DSGetJitterBufferInfo(4, DS_JITTER_BUFFER_INFO_NUM_PKTS)) > 0) {
+     Log_RT(4, "ch 4 num_pkts == 0 but num jb pkts = %d \n", nk);
+     nCount++;
+  }
+  #endif
 
                      /* record last pull time for this channel */
 
@@ -3080,6 +3191,10 @@ pull:
 //  if (chnum == 6) printf(" === chnum 6 before send jb pkt, num_pkts = %d, pktlen = %d, \n", num_pkts, packet_len[0]);
 
                               DSSendPackets((HSESSION*)&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_JITTER_BUFFER | DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG, pkt_ptr, &packet_len[j], 1);  /* send jitter buffer output packet */
+
+                              rtp_timestamp[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_TIMESTAMP, pkt_ptr, packet_len[j], NULL, NULL);  /* save packet timestamp and ssrc */
+                              rtp_ssrc[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_SSRC, pkt_ptr, packet_len[j], NULL, NULL);
+                              rtp_pyld_type[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_PYLDTYPE, pkt_ptr, packet_len[j], NULL, NULL);
                            }
                         }
 
@@ -3103,7 +3218,7 @@ pull:
 
                   /* Check if packet is DTMF event */
 
-                     if (payload_info[j] == DS_PKT_PYLD_CONTENT_DTMF || payload_info[j] == DS_PKT_PYLD_CONTENT_DTMF_SESSION) {  /* check for DTMF packets, both generic and matching session-defined DTMF payload types, JHB May2019 */ 
+                     if (payload_info[j] == DS_PKT_PYLD_CONTENT_DTMF || payload_info[j] == DS_PKT_PYLD_CONTENT_DTMF_SESSION) {  /* check for DTMF packets, both generic and matching session-defined DTMF payload types, JHB May 2019 */ 
 
                         int dtmf_display_msg_limit;
 
@@ -3114,7 +3229,11 @@ pull:
                         }
                         else {
 
-                           packet_type = NO_PACKET;  /* no bidirectional endpoint involved, print DTMF event info */
+                           #if 0
+                           packet_type = NO_PACKET;  /* no bidirectional endpoint involved and print DTMF info. We don't transcode the packet, or place in any queues */
+                           #else
+                           packet_type = DTMF_PACKET;  /* we now forward DTMF packets to output jitter buffer queue (no transcoding) and print DTMF event info, JHB Sep 2023 */
+                           #endif
                            dtmf_display_msg_limit = 0;  /* to limit amount of DTMF event display, set a max number of messages here. 0 indicates always display, JHB Apr 2023 */
                         }
 
@@ -3214,17 +3333,31 @@ pull:
       nOnce++;
    }
    #endif
+
                            media_data_len = DSCodecDecode(&hCodec, 0, rtp_pyld_ptr, media_data_buffer, pyld_len, 1, &OutArgs);  /* call voplib decoder */
+
+   #if 0  /* log packets pulled from jitter buffer */
+   static int log_pkt_index = 0;
+   static FILE* fp_log_pkt = NULL;
+   if (!fp_log_pkt) fp_log_pkt = fopen("pkt_log_pull.txt", "w");
+   char tstr[100];
+   if (chnum == 4) {  /* note: set channel number(s) here to control debug range */
+      int i, sum = 0, sum2 = 0;
+      for (i=0; i<pyld_len; i++) sum += rtp_pyld_ptr[i];
+      for (i=0; i<media_data_len; i++) sum2 += media_data_buffer[i];
+
+      sprintf(tstr, "pkt\t%d\t\t\t\t%d\t\t\t\t%d\t\t\t\t%d\t\t\t\t%d\t\t\t\t%d\n", log_pkt_index, pyld_len, media_data_len, sum, sum2, hCodec);
+      fwrite(tstr, strlen(tstr), 1, fp_log_pkt);
+      log_pkt_index++;
+   }
+   #endif
 
                            if (termInfo.codec_type == DS_VOICE_CODEC_TYPE_EVS) {  /* handle return data, JHB Oct 2022 */
 
                               unsigned int bitrate_index = DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_BITRATE_TO_INDEX, OutArgs.bitRate, 0, NULL);  /* convert to an index table used by all codecs */
                               unsigned int bitrate_list = DSGetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST);
-      // fprintf(stderr, " bitrate_index = %d, bitrate_list = 0x%x \n", bitrate_index, bitrate_list);
                               DSSetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_PKT_BITRATE_LIST, bitrate_list | (1L << bitrate_index));  /* save bitrate index used by decoder in list of bitrate indexes */
                            }
-
-//    printf(" after DSCodecDecode, pyld_len = %d, media_data_len = %d \n", pyld_len, media_data_len);
 
                            if (media_data_len < 0) {
 
@@ -3305,6 +3438,11 @@ pull:
    for (l=0; l<len; l++) y[l] = amp*sin(2*M_PI*l/len);
    #endif
 
+                        #ifdef DEBUG_TELECOM_MODE_TIMESTAMP_GAP
+                        static int nCount = 0;
+                        if (nCount < 200 && chnum == 4) Log_RT(4, " *** [%d] DSStoreStreamData() ch %d, j = %d, num_pkts = %d, pyld_len = %d, media_data_len = %d \n", nCount++, chnum, j, num_pkts, pyld_len, media_data_len);
+                        #endif
+
                         DSStoreStreamData(chnum, (uintptr_t)NULL, media_data_buffer, media_data_len);  /* store decoded media data */
                      }
                      else if (packet_type == DTMF_PACKET) DSStoreStreamData(chnum, (uintptr_t)NULL, rtp_pyld_ptr, pyld_len);  /* store DTMF event */
@@ -3338,7 +3476,7 @@ pull:
                   }
 
                   int num_data, packet_type;
-                  unsigned int data_len[256], data_chan[256], data_info[256];
+                  unsigned int data_len[MAX_PACKETS_PER_PULL], data_chan[MAX_PACKETS_PER_PULL], data_info[MAX_PACKETS_PER_PULL];
                   #ifndef DEMOBUILD  /* see comments in pktlib.c about demo build internal buffering to allow slower CPUs such as Atom, JHB Apr2022 */
                   uint8_t stream_data[5*10240];
                   #else
@@ -3352,6 +3490,7 @@ pull:
 
                   prev_chnum = -1;
                   chnum_parent = -1;
+                  int pyld_len_encode = 0;
 
                /* pull audio data from stream buffers.  DSGetStreamData() accounts for variable ptime, multichannel data, etc */
 
@@ -3499,6 +3638,11 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
                            if (!fOnce) { Log_RT(4, "\n === time from first pull to first group contribute %llu \n", (unsigned long long)((first_contribute_time = get_time(USE_CLOCK_GETTIME)) - first_pull_time)); fOnce = true; }
                            #endif
 
+                           #ifdef DEBUG_TELECOM_MODE_TIMESTAMP_GAP
+                           static int nCount = 0;
+                           if (nCount < 200 && chnum_parent == 4) printf(" *** [%d] DSStoreStreamGroupContributorData() ch %d, j = %d, num_data = %d, pyld_len = %d, data length = %d \n", nCount++, chnum_parent, j, num_data, pyld_len, data_length);
+                           #endif
+
                            if ((ret_val = DSStoreStreamGroupContributorData(chnum_parent, stream_ptr, data_length, 0)) < 0) {
 
                               int thread_index_owner = hSessionOwner >= 0 ? DSGetSessionInfo(hSessionOwner, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_THREAD, 0, NULL) : -1;
@@ -3520,10 +3664,12 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
                            }
 
                            if (ret_val > 0) fFirstGroupContribution[hSessionOwner] = true;
-                        }
-                        #endif
 
-                     /* Perform sampling rate conversion (if needed for encoding to output endpoint).  Data is not touched if input and output sampling rates are the same for this channel (as defined in its session config info) */
+                        }  /* if (fStreamGroupMember) { */
+
+                        #endif  /* #ifdef ENABLE_STREAM_GROUPS */
+
+                     /* Perform sampling rate conversion (if needed for encoding to output endpoint). Data is not touched if input and output sampling rates are the same for this channel (as defined in its session config info) */
 
                         out_media_data_len = DSConvertFsPacket(chnum, (int16_t*)stream_ptr, data_length);  /* Notes -- 1) data length arg and output buffer length are given in bytes, 2) stream_ptr[] is unchanged and out_media_data_len = data_length if incoming and outgoing sampling rates are the same */
 
@@ -3532,11 +3678,17 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
                         1) Input media framesize can be either equal to a single framesize (depending on sampling rate in use) or an integer multiple.  In the latter case, an RTP payload will be created containing multiple frames
                         2) Both input media buffer length and output payload length are in bytes
                         3) Pass-thru case copies data from in to out buffer
+
+                        Additional notes JHB 23Aug23:
+
+                        -currently we're always transcoding to G711 and sending packets to app threads with DSSendPackets(... DS_PULLPACKETS_TRANSCODED ...)
+                        -mediaMin uses transcoded data to (i) calculate push rates for clockless modes and (ii) store to output pcap files if -o specs are given on its command line
+                        -we could implement a flag that apps can set when transcoded data is not needed and be more efficient. mediaMin would set the flag when push rate calculation and output files are not in use
                      */
 
-                        pyld_len = DSCodecEncode(&hCodec_link, 0, stream_ptr, encoded_data_buffer, out_media_data_len, 1, NULL, NULL);
+                        pyld_len_encode = DSCodecEncode(&hCodec_link, 0, stream_ptr, encoded_data_buffer, out_media_data_len, 1, NULL, NULL);
 
-                        if ((int)pyld_len < 0) break;  /* error condition */
+                        if ((int)pyld_len_encode < 0) break;  /* error condition */
 
                         if (termInfo_link.codec_type != DS_VOICE_CODEC_TYPE_NONE) {  /* check for term2 (encoder) pass-thru (codec type constants are in session.h) */
 
@@ -3553,7 +3705,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                         out_media_sample_rate = 0;
                         out_media_data_len = 0;
-                        pyld_len = 0;
+                        pyld_len_encode = 0;
                      }
 
                      uFlags_format = (uintptr_t)NULL;
@@ -3579,11 +3731,27 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                      if (out_media_data_len && !session_info_thread[hSession].fUseJitterBuffer) {
 
-                        formatPkt.rtpHeader.Sequence++;  
+                        formatPkt.rtpHeader.Sequence++;
                         formatPkt.rtpHeader.Timestamp += out_media_data_len/2;  /* advance timestamp by number of samples in the payload */
+
                         uFlags_format |= DS_FMT_PKT_USER_SEQNUM;
                         uFlags_format |= DS_FMT_PKT_USER_TIMESTAMP;
                      }
+
+                     #define USE_JITTER_BUFFER_OUTPUT_RTPTIMESTAMP  /* match timestamps of transcoded output to jitter buffer output, JHB Aug 2023 */
+                     #ifdef USE_JITTER_BUFFER_OUTPUT_RTPTIMESTAMP
+                     else {
+
+                        static bool fTranscodingRTPTimesamp_warning = false;
+                        if (!fTranscodingRTPTimesamp_warning && packet_type == MEDIA_PACKET && num_pkts != num_data) { fTranscodingRTPTimesamp_warning = true; Log_RT(3, "WARNING: packet/media thread %d says inside RTP timestamp matching for transcoded media, num pkts %d <> num_data %d, data_length = %d \n", thread_index, num_pkts, num_data, data_length); }
+
+                        formatPkt.rtpHeader.Timestamp = rtp_timestamp[j];  /* rtp_timestamp[] saved from packet loop above. This breaks stream decoupling used to handle multiple ptimes, which is why the warning message. We need to do something about this, but I hate to mess with DSStoreStreamData() and DSGetStreamData(), so putting this off. JHB Aug 2023 */
+                        formatPkt.rtpHeader.SSRC = rtp_ssrc[j];
+                        formatPkt.rtpHeader.PyldType = rtp_pyld_type[j];
+
+                        uFlags_format |= DS_FMT_PKT_USER_TIMESTAMP | DS_FMT_PKT_USER_SSRC | DS_FMT_PKT_USER_PYLDTYPE;
+                     }
+                     #endif
 
                   /* Format media and/or DTMF packets for output.  Notes:
 
@@ -3592,9 +3760,25 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
                      2) DTMF event packets are handled differently
                   */
 
+#if 0  /* intermediate packet sequence log debug */
+static FILE* fp_log_pkt = NULL;
+static int log_pkt_index = 0;
+  if (!fp_log_pkt) fp_log_pkt = fopen("pkt_log.txt", "w");
+  char tstr[100];
+  if (chnum == 2) {
+  //sprintf(tstr, "pkt\t%d\t\t\t\t%d\n", log_pkt_index, hSession);
+  int i, sum = 0;
+  for (i=0; i<pyld_len_encode; i++) sum += encoded_data_buffer[i];
+
+  sprintf(tstr, "pkt\t%d\t\t\t\t%d\t\t\t\t%d\t\t\t\t%d\t\t\t\t%d\n", log_pkt_index, data_length, out_media_data_len, pyld_len, sum);
+  fwrite(tstr, strlen(tstr), 1, fp_log_pkt);
+  log_pkt_index++;
+  }
+#endif
+
                      if (packet_type == MEDIA_PACKET) {
 
-                        packet_length = DSFormatPacket(chnum, uFlags_format, encoded_data_buffer, pyld_len, uFlags_format ? &formatPkt : NULL, pkt_out_buf);
+                        packet_length = DSFormatPacket(chnum, uFlags_format, encoded_data_buffer, pyld_len_encode, uFlags_format ? &formatPkt : NULL, pkt_out_buf);
                      }
                      else if (packet_type == DTMF_PACKET) {
 
@@ -3625,7 +3809,10 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
                         if (fDebugTelecomSIDHandling) printf("\n === sending packet TimeStamp = %u \n", (unsigned int)(get_time(USE_CLOCK_GETTIME)/1000));
                         #endif
 
-                        DSSendPackets((HSESSION*)&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_TRANSCODED | DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG, pkt_out_buf, &packet_length, 1);  /* send transcoded packet */
+                        DSSendPackets((HSESSION*)&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_TRANSCODED | DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG, pkt_out_buf, &packet_length, 1);  /* add transcoded packet to outgoing send queue. Note we are not checking for queue full here; external applications may or may not be de-queuing packets */
+
+                        if ((uTimestampMatchMode & TIMESTAMP_MATCH_MODE_ENABLE) && packet_type == MEDIA_PACKET) DSProcessStreamGroupContributorsTSM(hSession, pkt_out_buf, &packet_length, 1, MediaParams[0].Media.inputFilename, szStreamGroupOutputPath, uTimestampMatchMode);
+
                         pkt_counters[thread_index].pkt_write_cnt++;
                         fThreadOutputActive = true;  /* any output packet for any session sets output active flag */
                      }
@@ -4291,8 +4478,10 @@ char szSSRCStatus[200];
             sprintf(&szSSRCStatus[strlen(szSSRCStatus)], " for hSession %d ch %d SSRC 0x%x, %s RTP stream ch %d SSRC 0x%x @ pkt %d", hSession, chnum[j], session_info_thread[hSession].last_rtp_SSRC[term][ssrc_change_index], reportstr, new_ch, rtp_SSRC, pkt_add_to_jb_cnt ? pkt_add_to_jb_cnt : pkt_read_cnt + pkt_input_cnt);
             Log_RT(4, "INFO: %s \n", szSSRCStatus);
 
-// static bool fOnce[8] = { false };
-// if (!fOnce[session_info_thread[hSession].num_SSRC_changes[term]]) { printf("########## ssrc change inside term = %d, str = %s\n", term, szSSRCStatus); fOnce[session_info_thread[hSession].num_SSRC_changes[term]] = true; }
+            #if 0
+            static bool fOnce[8] = { false };
+            if (!fOnce[session_info_thread[hSession].num_SSRC_changes[term]]) { printf("########## ssrc change inside term = %d, str = %s\n", term, szSSRCStatus); fOnce[session_info_thread[hSession].num_SSRC_changes[term]] = true; }
+            #endif
          }
 
          if (session_info_thread[hSession].num_SSRC_changes[term] == MAX_SSRC_TRANSITIONS-1) session_info_thread[hSession].num_SSRC_changes[term] = 0;  /* start over if we are array limit. MAX_SSRC_TRANSITIONS is defined in shared_include/session.h */
@@ -4323,7 +4512,9 @@ bool fChanFound = false;
 
   /* skip stream if it's not yet active or if dormant session detection is disabled by termination endpoint contributor flags */
   
-      if (!stream_ssrc || (unsigned int)DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_MODE, i+1, NULL) & STREAM_CONTRIBUTOR_DORMANT_SSRC_DETECTION_DISABLE) continue;  /* ssrc is zero until stream buffers first packet */
+      unsigned int uGroupMode = (unsigned int)DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_MODE, i+1, NULL);  /* get group mode flags. uGroupMode may be -1 if session is not part of a stream group, JHB Sep 2023 */
+
+      if (!stream_ssrc || ((int)uGroupMode != -1 && (uGroupMode & STREAM_CONTRIBUTOR_DORMANT_SSRC_DETECTION_DISABLE))) continue;  /* ssrc is zero until stream buffers first packet. Also check for stream group dormant detection disable flag */
 
       for (j=threadid; j<(packet_media_thread_info[thread_index].fMediaThread ? numSessions : (int)nSessions_gbl); j += nThreads_gbl) {
 
@@ -4336,61 +4527,67 @@ bool fChanFound = false;
 
             if (stream_ssrc2 == stream_ssrc && session_info_thread[hSession].ssrc_state[i] == SSRC_LIVE && session_info_thread[hSession2].ssrc_state[i2] == SSRC_LIVE) {  /* two streams with same SSRC, and both are live ? */
 
-               HSESSION hOwnerSession = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_OWNER, 0, NULL);
-               HSESSION hOwnerSession2 = DSGetSessionInfo(hSession2, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_OWNER, 0, NULL);
+               if (fCapacityTest) {  /* during capacity test, both sessions must be members of the same stream group, otherwise we can't pass tests where each thread is using same pcap info (mediaMin calls this "input reuse"), JHB 2019. Added fCapacityTest app global var check; we may need to add other input reuse conditions that require this condition, JHB Sep 2023 */
 
-               if (hOwnerSession >= 0 && hOwnerSession == hOwnerSession2) {  /* both sessions must be part of same stream group, otherwise we can't pass stress tests where each thread is using same pcap info */
-
-                  int chnum = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, i+1, NULL);
-                  int chnum2 = DSGetSessionInfo(hSession2, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, i2+1, NULL);
-
-               /* is hSession's channel dormant ?  current rule is a dormant channel is the oldest. Hopefully they don't start bouncing back and forth ... */
+                  HSESSION hOwnerSession = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_OWNER, 0, NULL);
+                  HSESSION hOwnerSession2 = DSGetSessionInfo(hSession2, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_OWNER, 0, NULL);
 
                   #if 0
-                  if ((cur_time - last_buffer_time[chnum]) > (cur_time - last_buffer_time[chnum2])) {
+                  if (hOwnerSession >= 0 && hOwnerSession == hOwnerSession2) {
                   #else
-                  
-                  TERMINATION_INFO term1;
-                  DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, i+1, &term1);
-
-               /* check if we exceed time period before a channel SSRC can be considered dormant. Notes, JHB Sep 2022:
-               
-                  -before we didn't have any wait-time period, but now we've seen duplicated streams (or near duplicated) with same SSRCs active at same time, they may even alternate (thrash) rapidly (within a few hundred msec)
-                  -current default in DSCreateSession (pktilb.c) is 100 msec if not set by user code. CreateDynamicSession() in mediaMin.cpp uses the SLOW_DORMANT_SESSION_DETECTION flag to extend this to 1 sec. See CreateDynamicSession() source for example setting this option at session create time, Jun 2023
-                */
-  
-                  if ((int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000 > term1.dormant_SSRC_wait_time) {  /* note we don't use timeScale here; we assume the app is also operating at accelerated time, JHB Jun 2023 */
+                  if (hOwnerSession < 0 || hOwnerSession != hOwnerSession2) continue;  /* sessions are not members of same stream group, continue out of the loop */
                   #endif
+               }
 
-                     if (!nDormantChanFlush[hSession][i]) {
+               int chnum = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, i+1, NULL);
+               int chnum2 = DSGetSessionInfo(hSession2, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, i2+1, NULL);
 
-                        #if 0  /* debug, JHB Sep 2022 */
-                        unsigned int uFlags = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, i+1, NULL);
-                        printf("  dormant_SSRC_wait_time= %d, uFlags = 0x%x, int64 calc = %ld \n", term1.dormant_SSRC_wait_time, uFlags, (int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000);
-                        #endif
+            /* is hSession's channel dormant ?  current rule is a dormant channel is the oldest. Hopefully they don't start bouncing back and forth ... */
 
-                        Log_RT(4, "======== INFO: detected session %d channel %d now using dormant session %d channel %d SSRC value 0x%x, flushing dormant channel %d last active %lld msec\n", hSession2, chnum2, hSession, chnum, stream_ssrc, chnum, (long long int)((cur_time - last_buffer_time[chnum])/1000));
+               #if 0
+               if ((cur_time - last_buffer_time[chnum]) > (cur_time - last_buffer_time[chnum2])) {
+               #else
+                  
+               TERMINATION_INFO term1;
+               DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM, i+1, &term1);
 
-                        nDormantChanFlush[hSession][i] = DSGetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_TARGET_DELAY);  /* if there was a way to force all remaining packets out at once, that would avoid the count-down */
-                     }
-                     else nDormantChanFlush[hSession][i]--;
+            /* check if we exceed time period before a channel SSRC can be considered dormant. Notes, JHB Sep 2022:
+               
+               -before we didn't have any wait-time period, but now we've seen duplicated streams (or near duplicated) with same SSRCs active at same time, they may even alternate (thrash) rapidly (within a few hundred msec)
+               -current default in DSCreateSession (pktilb.c) is 100 msec if not set by user code. CreateDynamicSession() in mediaMin.cpp uses the SLOW_DORMANT_SESSION_DETECTION flag to extend this to 1 sec. See CreateDynamicSession() source for example setting this option at session create time, Jun 2023
+             */
+  
+               if ((int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000 > term1.dormant_SSRC_wait_time) {  /* note we don't use timeScale here; we assume the app is also operating at accelerated time, JHB Jun 2023 */
+               #endif
 
-                  /* modify num_chan for hSession and force a call to DSGetOrderedPackets() to retrieve any of the dormant channel's packets still in its jitter buffer and set a state var indicating the channel is now considered dormant (which will be reset if the channel starts receiving again) */
+                  if (!nDormantChanFlush[hSession][i]) {
 
-                     if (nDormantChanFlush[hSession][i]) {
+                     #if 0  /* debug, JHB Sep 2022 */
+                     unsigned int uFlags = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, i+1, NULL);
+                     printf("  dormant_SSRC_wait_time= %d, uFlags = 0x%x, int64 calc = %ld \n", term1.dormant_SSRC_wait_time, uFlags, (int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000);
+                     #endif
 
-                        for (k=0; k<num_chan; k++) if (chan_nums[k] == chnum) { fChanFound = true; break; }
+                     Log_RT(4, "======== INFO: detected session %d channel %d now using dormant session %d channel %d SSRC value 0x%x, flushing dormant channel %d last active %lld msec\n", hSession2, chnum2, hSession, chnum, stream_ssrc, chnum, (long long int)((cur_time - last_buffer_time[chnum])/1000));
 
-                        if (!fChanFound) {
-
-                           int n = num_chan;  /* add to end of channel list */
-                           if (n > 0 && chan_nums[n-1] == DS_GROUP_CHANNEL) { chan_nums[n] = DS_GROUP_CHANNEL; n--; }  /* if group channel is at end of list, move it up one */
-                           chan_nums[n] = chnum;  /* insert parent channel and increment channel count */
-                           num_chan++;
-                        }
-                     }
-                     else session_info_thread[hSession].ssrc_state[i] = SSRC_DORMANT;  /* flushing completed, set this channel's SSRC state to "dormant" */
+                     nDormantChanFlush[hSession][i] = DSGetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_TARGET_DELAY);  /* if there was a way to force all remaining packets out at once, that would avoid the count-down */
                   }
+                  else nDormantChanFlush[hSession][i]--;
+
+               /* modify num_chan for hSession and force a call to DSGetOrderedPackets() to retrieve any of the dormant channel's packets still in its jitter buffer and set a state var indicating the channel is now considered dormant (which will be reset if the channel starts receiving again) */
+
+                  if (nDormantChanFlush[hSession][i]) {
+
+                     for (k=0; k<num_chan; k++) if (chan_nums[k] == chnum) { fChanFound = true; break; }
+
+                     if (!fChanFound) {
+
+                        int n = num_chan;  /* add to end of channel list */
+                        if (n > 0 && chan_nums[n-1] == DS_GROUP_CHANNEL) { chan_nums[n] = DS_GROUP_CHANNEL; n--; }  /* if group channel is at end of list, move it up one */
+                        chan_nums[n] = chnum;  /* insert parent channel and increment channel count */
+                        num_chan++;
+                     }
+                  }
+                  else session_info_thread[hSession].ssrc_state[i] = SSRC_DORMANT;  /* flushing completed, set this channel's SSRC state to "dormant" */
                }
             }
          }
@@ -5031,7 +5228,7 @@ get_num_sessions:
 
             if (!pm_run || (numDeleted < MAX_SESSION_TRANSACTIONS_PER_PASS)) {
 
-            /* DSPostProcessStreamGroup() handles anything that is not real-time and might cause a gap in stream group output, such as N-channel wav file handling. We call it after session flush but before session delete, JHB Jan2020 */
+            /* DSPostProcessStreamGroup() handles anything that is not real-time and might cause delays in stream group live output, such as N-channel wav file handling. We call it after session flush but before session delete, JHB Jan2020 */
 
                DSPostProcessStreamGroup(hSession, thread_index);
 
@@ -5789,9 +5986,11 @@ int DSLogRunTimeStats(HSESSION hSession, unsigned int uFlags) {
 int thread_index;
 int ch[MAX_CHAN_TRACKED], num_ch, num_dyn_ch, i, j;
 char szGroupId[MAX_GROUPID_LEN];
-int  idx = -1, nc, nContributors, ch_list[MAX_GROUP_CONTRIBUTORS], num_sessions = 0, num_ch_stats = 0;
+int  idx = -1, nc, nContributors, ch_list[MAX_GROUP_CONTRIBUTORS], num_sessions = 0, num_ch_stats = 0, nCombinedCount = 0;
 bool fNext, fOrganizeByStreamGroup = false, fShowOwnerOnce;
 HSESSION hSessionGroupOwner = -1, hSession_prev = -1;
+
+#define MAX_SESSIONS_PER_STATS_DISPLAY 8
 
 #define MAX_STATS_STRLEN 80
 #define MAX_STATS_STRLEN2 400 /* added for intermediate strings that can get longer (e.g. sessstr, ssrcstr), JHB Oct 2022 */
@@ -5814,7 +6013,7 @@ char iptstr[MAX_STATS_STRLEN] = "", jbptstr[MAX_STATS_STRLEN] = "", jbrpstr[MAX_
       if (hSessionGroupOwner == -1) {
 
          if (!(uFlags & DS_LOG_RUNTIME_STATS_SUPPRESS_ERROR_MSG)) Log_RT(3, "WARNING: DSLogRunTimeStats() says hSession %d not a stream group member \n", hSession);
-         goto organize_by_ssrc;  /* hSession is not a group member */
+         goto organize_by_session;  /* hSession is not a group member */
       }
 
       idx = DSGetStreamGroupInfo(hSessionGroupOwner, DS_GETGROUPINFO_CHECK_ALLTERMS, &nContributors, ch_list, szGroupId);
@@ -5837,7 +6036,7 @@ char iptstr[MAX_STATS_STRLEN] = "", jbptstr[MAX_STATS_STRLEN] = "", jbrpstr[MAX_
    }
    else {
 
-organize_by_ssrc:
+organize_by_session:
    
       thread_index = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_THREAD, 0, NULL);
    }
@@ -5866,7 +6065,9 @@ organize_by_ssrc:
             return ret_val;
          }
 
-         ch[num_ch] = ret_val;
+         int chnum = ret_val;
+
+         ch[num_ch] = chnum;
          if (num_ch < MAX_CHAN_TRACKED/2) num_ch++;
       }
 
@@ -5885,8 +6086,8 @@ organize_by_ssrc:
          }
 
       /* Parse the channel list and build stats display strings. Notes:
-      
-         -we show stats for any stream with at least one packet. Note this will exclude streams that didn't start yet, for example mediaMin was terminated early
+
+         -we show stats for any stream with at least one packet. Note this will exclude streams that never had a matching packet (e.g. 2nd half of one-directional packet flow), or didn't start yet, for example mediaMin was terminated early
 
          -for each session, 2 channels (2 terminations) are created when the session is created, so they always exist, which is why DSGetSessionInfo() calls with a session handle and specifying either channel or term succeed as long as the session handle is valid. But they may not be active (no media), which is why we use the "at least one packet" filter
       */
@@ -6025,11 +6226,24 @@ organize_by_ssrc:
          hSession_prev = hSession;
       }
 
-      if (fOrganizeByStreamGroup) fNext = (++nc < nContributors);
-      else fNext = false;
+      fNext = false;
+
+      if (fOrganizeByStreamGroup && ++nc < nContributors) fNext = true;
+      else if (nCombinedCount < MAX_SESSIONS_PER_STATS_DISPLAY) {  /* modify stats display behavior to combine sessions in format similar to stream groups, instead of displaying each session separately. We limit the number sessions per stats display due to string lengths, JHB Aug 2023 */
+
+         if (hSession+1 < MAX_SESSIONS) {  /* look for next active session */ 
+
+            hSession = DSGetSessionInfo(hSession+1, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_SESSION | DS_SESSION_INFO_SUPPRESS_ERROR_MSG, 0, NULL);
+
+            if (hSession >= 0 && isSessionAssignedToThread(hSession, thread_index)) {
+
+               fNext = true;
+               nCombinedCount++;
+            }
+         }
+      }
 
    } while (fNext);
-
 
    if (num_ch_stats) {
 
@@ -6051,15 +6265,16 @@ organize_by_ssrc:
       if (fOrganizeByStreamGroup) {
          add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Overrun (ch:frames dropped)%s, (ch:max %%)%s\n", ovrnstr, mxovrnstr);
          add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Underrun (grp:missed intervals/FLCs/holdoffs)%s\n", undrstr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Pkt flush (ch:num) loss%s, pastdue%s, level%s\n", plflstr, pdflstr, lvflstr);
       }
+
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Pkt flush (ch:num) loss%s, pastdue%s, level%s\n", plflstr, pdflstr, lvflstr);
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Packet Stats\n");
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Input (ch:pkts)%s, SID%s, DTMF%s, RFC7198 duplicate%s, burst%s\n", npktstr, spktstr, dtmfstr, dupstr, brststr);
 
       if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {
          add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Loss (ch:%%)%s, missing seq (ch:num)%s, max consec missing seq%s\n", pktlstr, missstr, consstr);
-         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Ooo (ch:pkts)%s, max%s\n", iooostr, mxooostr);
+         add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Input Ooo (ch:pkts)%s, max%s\n", iooostr, mxooostr);
       }
 
       if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS) {
@@ -6076,7 +6291,7 @@ organize_by_ssrc:
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Jitter Buffer\n");
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Output (ch:pkts)%s, max%s, residual%s, bursts%s\n", noutpkts, mxnpktstr, jbrpstr, pobrststr);
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Ooo (ch:pkts)%s, max%s, drops%s, duplicates%s\n", jboooostr, jbmxooostr, jbdropstr, jbdupstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Output Ooo (ch:pkts)%s, max%s, drops%s, duplicates%s\n", jboooostr, jbmxooostr, jbdropstr, jbdupstr);
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Resyncs (ch:num) underrun%s, overrun%s, timestamp gap%s, purges (ch:num)%s\n", jbundrstr, jboverstr, jbtgapstr, purgstr);
 
       char allocscurstr[50], allocsmaxstr[50];

@@ -5,7 +5,7 @@
  
   Projects: SigSRF, DirectCore
  
-  Copyright Signalogic Inc. 2018-2022
+  Copyright Signalogic Inc. 2018-2023
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -18,6 +18,7 @@
    Modified Jul 2019 JHB, add isArrayLess() to support mediaTest segmentation and silence stripping options
    Modified Oct 2019 JHB, add hybrid clip + high end compression algorithm in DSMergeStreamAudioEx() to avoid consecutive blocks of clipped output samples when scaling is not in effect.  Add DS_AUDIO_MERGE_ADD_COMPRESSION flag for experimental compression algorithm (see comments)
    Modified Feb 2022 JHB, update version string. Major changes made in fs_conv.c, see its comments
+   Modified Aug 2023 JHB, add memadd()
 */
 
 #include <stdlib.h>
@@ -32,7 +33,7 @@
 
 /* alglib version string */
 
-const char ALGLIB_VERSION[256] = "1.2.5";
+const char ALGLIB_VERSION[256] = "1.2.6";
 
 /* DSMergeStreamAudio()
 
@@ -62,6 +63,25 @@ int DSMergeStreamAudio(unsigned int chnum, int16_t *x1, float x1_scale, int16_t 
    
    return i;
 }
+
+void* memadd(void* dst, const void* src, size_t len) {
+
+int16_t* y = (int16_t*)dst;
+int16_t* x = (int16_t*)src;
+int i;
+
+   for (i =0; i<(int)len/2; i++) {
+
+      int32_t sum = (int32_t)x[i] + (int32_t)y[i];
+
+      if (sum > SHRT_MAX) y[i] = SHRT_MAX;
+      else if (sum < SHRT_MIN) y[i] = SHRT_MIN;
+      else y[i] = sum;
+   }
+
+   return dst;
+}
+
 
 /* short int clipping, used internally */
 

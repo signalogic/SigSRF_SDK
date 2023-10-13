@@ -20,6 +20,7 @@
    Modified Jan 2023 JHB, add SIP handling options including ENABLE_STREAM_SDP_INFO, add ALLOW_OUTOFSPEC_RTP_PADDING flag
    Modified Jun 2023 JHB, add SLOW_DORMANT_SESSION_DETECTION flag
    Modified Jul 2023 JHB, add INCLUDE_PAUSES_IN_WAV_OUTPUT flag
+   Modified Aug 2023 JHB, ad ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag
 */
 
 #ifndef _CMDLINEOPTIONSFLAGS_H_
@@ -74,7 +75,7 @@
 
 /* debug info: extra stats, mem stats, audio output alignment markers, intermediate pcap output */
 
-#define ENABLE_DEBUG_STATS                   0x10000000  /* mm| enable debug info and stats for (i) additional mediaMin warnings, (ii) internal packet/media thread, (iii) audio merging, and (iv) DER stream decoding */
+#define ENABLE_DEBUG_STATS                   0x10000000  /* mm| enable debug info and stats for (i) additional mediaMin warnings, (ii) internal packet/media thread, (iii) media stream merging, and (iv) DER stream decoding */
 #define ENABLE_DEBUG_STATS_L2                0x20000000  /* reserved */
 #define ENABLE_ALIGNMENT_MARKERS             0x40000000  /* m| when combined with the ENABLE_STREAM_GROUP_DEDUPLICATION flag, enables alignment markers to show the point at which streams were aligned (the deduplication algorithm uses cross correlation to align one or more streams) */
 #define ENABLE_TIMING_MARKERS                0x80000000  /* m| inject 1 sec wall clock timing markers in stream group output.  This can be helpful in debugging timing issues, for example the app (in this case mediaMin) is not pulling packets fast enough, or not maintaining a consistent pull interval. Additional audio marker options can be specified with uDebugMode (see examples below in DebugSetup() and LoggingSetup(), see also DEBUG_CONFIG struct definitions in shared_include/config.h) */
@@ -100,5 +101,10 @@
 #define ALLOW_OUTOFSPEC_RTP_PADDING          0x20000000000000LL  /* mm| allow out-of-spec RTP padding. Suppresses error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in mediaMin.cpp */
 #define SLOW_DORMANT_SESSION_DETECTION       0x40000000000000LL  /* mm| extend dormant session detection time. See usage in CreateDynamicSession() in mediaMin.cpp */ 
 #define INCLUDE_PAUSES_IN_WAV_OUTPUT         0x80000000000000LL  /* m| include input pauses as silence in stream group and individual (mono) wav outputs. This applies when one or more streams in the group pause input, for example call-on-hold, pause in packet push, etc. Note that pauses are always accurately reflected in stream group RTP streaming output, but for wav outputs it's an option as pauses can become very large and increase file storage requirements */
+
+#define ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH    0x100000000000000LL /* m| generate timestamp-matched wav output, which depends only on input stream arrival and RTP timestamps, with no reference to a wall clock. This is useful for repeatability reasons, especially in accelerated processing modes. However, any timestamp inaccuracies -- such as clock drift, post-gap restart, wrong packet rates -- will cause incorrect wav timing and lack of synchronization between streams */ 
+#define ENABLE_TIMESTAMP_MATCH_LIVE_MERGE    0x200000000000000LL /* m| generate live timestamp-matched wav output. This is experimental and should not be used yet */ 
+
+#define SHOW_PACKET_ARRIVAL_STATS            0x400000000000000LL /* m| show packet arrival stats in mediaMin summary stats display, including average interval between packets and average packet jitter vs stream ptime. These stats differ somewhat from Wireshark, as they apply only to media packets and exclude SID and DTMF packets */ 
 
 #endif  /* _CMDLINEOPTIONSFLAGS_ */

@@ -41,6 +41,8 @@
    Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
    Modified Jun 2023 JHB, move NOMINAL_REALTIME_INTERVAL definition here from mediaMin.h
    Modified Jul 2023 JHB, add const char* ver_str param to cmdLineInterface()
+   Modified Aug 2023 JHB, add uTimestampMatchMode. Flags are defined in shared_include/streamlib.h
+   Modified Sep 2023 JHB, and fCapacityTest. Moved here from mediaMin.cpp, referenced both there and in packet_flow_media_proc.c
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -87,6 +89,10 @@
 #define MAX_APP_THREADS            64
 
 #define MAX_CMDLINE_STR_LEN        1024
+
+#ifdef __cplusplus
+  extern "C" {
+#endif
 
 /* params for codec test modes */
 typedef struct
@@ -229,6 +235,8 @@ extern char              sig_lib_event_log_filename[];  /* moved here from packe
 extern bool              fCtrl_C_pressed;
 extern char              full_cmd_line[];  /* app command line, filled in by cmdLineInterface(), which calls GetCommandLine(), JHB Jan 2023 */
 extern double            timeScale;  /* support FTRT and AFAP modes, see comments in packet_flow_media_proc.c */
+extern unsigned int      uTimestampMatchMode;  /* timestamp-match wav output mode, flags are defined in shared_include/streamlib.h, JHB Aug 2023 */
+extern bool              fCapacityTest;  /* set by apps if they are doing capacity test (moved here from mediaMin.cpp), JHB Sep 2023 */
 
 #define szAppFullCmdLine (((const char*)full_cmd_line))  /* szAppFullCmdLine is what apps should use. full_cmd_line should not be modified so this is a half-attempt to remind user apps that it should be treated as const char* */
 
@@ -289,9 +297,9 @@ static size_t __attribute__((optimize("O1"))) __attribute__((unused)) _fread(voi
    return fread(ptr, size, count, stream);
 }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
   /* I/O file type enum */
   enum

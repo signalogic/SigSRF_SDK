@@ -37,12 +37,12 @@ using namespace std;
 #include "mediaMin.h"   /* bring in THREAD_INFO struct typedef */
 #include "user_io.h"    /* bring in app_printf() */
 
-extern HPLATFORM hPlatform;        /* initialized by DSAssignPlatform() API in DirectCore lib */
-extern THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h */
-extern bool fStressTest;           /* determined from cmd line options, number of app threads, and session re-use */
-extern bool fCapacityTest;         /*    ""    ""   */
+extern HPLATFORM hPlatform;            /* initialized by DSAssignPlatform() API in DirectCore lib */
+extern APP_THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h */
+extern bool fStressTest;               /* determined from cmd line options, number of app threads, and session re-use */
+extern bool fCapacityTest;             /*    ""    ""   */
 extern bool fNChannelWavOutput;
-extern bool fUntimedMode;  /* set if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is true of some old test scripts with -r0 push-pull rate (as fast as possible), which is why we call it "untimed" */
+extern bool fUntimedMode;              /* set if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is true of some old test scripts with -r0 push-pull rate (as fast as possible), which is why we call it "untimed" */
 extern int nRepeatsRemaining[];
 
 void JitterBufferOutputSetup(int thread_index);  /* set up jitter buffer output for sessions created */

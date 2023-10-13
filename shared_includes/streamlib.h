@@ -25,7 +25,7 @@
   Modified Nov 2018 JHB, change "merge" references to "group" or "stream" where it doesn't involve actual merging.  In preparation for other stream group operations, including speech recognition.  See also comments in session.h
   Modified Dec 2018 JHB, move MAX_GROUPID_LEN define here (was internal).  Add WHOLE_GROUP_THREAD_ALLOCATE flag (see comments below)
   Modified Jan 2019 JHB, increase MAX_STREAM_GROUPS from 128 to 256.  This allows higher group capacity with sessions that are 2-3 calls each
-  Modified May 2019 JHB, changed stream_id parameters to int for DSAttachStreamToGroup and DSDeleteStreamFromGroup(), changed chnum to int for DSStoreGroupData() and DSGetGroupData()
+  Modified May 2019 JHB, changed stream_id parameters to int for DSAttachStreamToGroup and DSDeleteStreamFromGroup(), changed chnum to int for DSStoreStreamGroupContributorData() and DSGetStreamGroupContributorData()
   Modified May 2019 JHB, add GROUP_MODE_WAV_OUT_STREAM_MONO and GROUP_MODE_WAV_OUT_STREAM_MULTICHANNEL flags, to allow N-channel wav file format for group contributors in addition to per-stream mono wav file for each contributor
   Modified Sep 2019 JHB, add contrib_ch param to DSStreamGroupContributors(), used for error condition reporting
   Modified Oct 2019 JHB, add GROUP_MODE_OVERRUN_xx flags
@@ -51,6 +51,7 @@
   Modified Jan 2023 JHB, add STREAM_GROUP_FLC_HOLDOFFS_ENABLE flag
   Modified May 2023 JHB, add input_buffer_interval param to DSProcessAudio(). Search for "FTRT" and "AFAP" and see comments in audio_domain_processing.c and mediaMin.cpp
   Modified Jul 2023 JHB, add STREAM_GROUP_WAV_OUT_INCLUDE_PAUSES_AS_SILENCE flag
+  Modified Aug 2023 JHB, add DSProcessStreamGroupContributorsTSM() and DSCloseStreamGroupsTSM() prototypes, TIMESTAMP_MATCH_XXX flags
 */
 
 #ifndef _STREAMLIB_H_
@@ -440,7 +441,7 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
   int DSGetStreamGroupContributorData(int chnum, uint8_t* buf, int length, unsigned int uFlags);
   int DSStoreStreamGroupContributorData(int chnum, uint8_t* buf, int length, unsigned int uFlags);
 
-/* flags for DSGetGroupData() and DSStoreGroupData() */
+/* flags for DSGetStreamGroupContributorData() and DSStoreStreamGroupContributorData() */
 
   #define DS_GROUPDATA_PEEK                                1             /* peek: can be used with DSGetGroupData() to see if a channel has a specific amount of data available. No actual data is returned (buf can be NULL) and internal buffer pointers are not modified */
   #define DS_GROUPDATA_TOTAL_AVAILABLE                     2             /* DSGetGroupData() will return a channel's total amount of available data. length param is ignored, and no actual data is returned (buf can be NULL) and internal buffer pointers are not modified. This can be used to monitor a channel's overrun condition */
@@ -490,6 +491,18 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
 
   int DSProcessStreamGroupContributors(HSESSION hSession, FILE* fp_out_pcap_merge, FILE* fp_out_wav_merge,  MEDIAINFO* MediaInfo_merge, char* szMissingContributors, int* pkt_group_cnt, int* num_thread_merge_contributions, unsigned long long cur_time, void* p_pkt_counters, int thread_index, int* contrib_ch);
 
+/* DSProcessStreamGroupContributorsTSM() handles timestamp-matched wav output, for all contributor and merged wav files */
+
+  int DSProcessStreamGroupContributorsTSM(HSESSION hSession, uint8_t* pktbuf, int pktlen[], int numpkts, const char* szInputStream, const char* szOutputPath, unsigned int uTimestampMatchMode);
+
+/* flags for DSProcessStreamGroupContributorsTSM(). In packet_flow_media_proc.c and mediaMin.cpp, look for uTimestampMatchMode to see flag usage, JHB Aug 2023 */
+
+  #define TIMESTAMP_MATCH_MODE_ENABLE           1     /* enable timestamp-matched wav output mode */
+  #define TIMESTAMP_MATCH_DISABLE_FLUSH         2     /* disable all jitter buffer packet flush (loss, level, etc) */
+  #define TIMESTAMP_MATCH_DISABLE_RESYNCS       4     /* disable jitter buffer resync */
+  #define TIMESTAMP_MATCH_INCLUDE_INPUT_PAUSES  8     /* include input stream pauses in timestamp-matched wav output */
+  #define TIMESTAMP_MATCH_LIVE_MERGE_OUTPUT     0x10  /* enable live timestamp-matched wav merge output */
+
 /* DSProcessAudio() performs audio domain processing, with options for sampling rate conversion, ASR, user-defined signal processing, and packet output
 
    -input can be either (i) stream group 16-bit linear audio output or (ii) arbitrary session term2 audio output
@@ -513,6 +526,14 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
   int DSDeduplicateStreams(int idx, int nContributors, int contrib_ch[], unsigned int uFlags);
 
   int DSPostProcessStreamGroup(HSESSION hSession, int thread_index);
+
+/* close timestamp-matched wav output files */
+
+  int DSCloseStreamGroupsTSM(HSESSION hSessions[], int num_sessions, unsigned int uTimestampMatchMode);  /* pointer to array of session handles, number of session handles, timestamp matching mode. Return value < 0 indicates error condition */
+
+/* retrieve merge output wav filename */
+
+  int DSGetMergeWavFilenameTSM(char* szFilename);  /* return value < 0 indicates error condition */
 
 #endif  /* ifndef _COCPU */
 

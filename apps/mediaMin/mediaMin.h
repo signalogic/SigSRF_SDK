@@ -26,6 +26,7 @@
    Modified Jan 2023 JHB, add PORT_INFO_LIST struct definition
    Modified Apr 2023 JHB, add fReseek, PktInfo, and tcp_redundant_discard. For usage see comments in mediaMin.cpp
    Modified May 2023 JHB, add isFTRTMode and isAFAPMode macros, accel_time_ts[] to support "faster than real-time" and "as fast as possible" modes
+   Modified Sep 2023 JHB, change PKTINFO_ITEMS reference to PKTINFO (due to change in pktlib.h)
 */
 
 #ifndef _MEDIAMIN_H_
@@ -98,7 +99,7 @@ typedef struct {
 
 } PORT_INFO_LIST;
 
-/* thread_info contains per-thread local vars.  If mediaMin is run from the cmd line then there is just one application thread, if mediaMin is run from mediaTest with -Et command line entry, then -tN entry determines how many application threads */
+/* APP_THREAD_INFO defines per-thread application vars and structs. If mediaMin is run from the cmd line then there is just one application thread, if mediaMin is run from mediaTest with -Et command line entry, then -tN entry determines how many application threads */
 
 typedef struct {
 
@@ -168,18 +169,20 @@ typedef struct {
  /* items used only in PushPackets() */
 
   bool           fReseek;                /* flag indicating whether current packet processing is a "reseek" (i) a packet arrival timestamp not yet elapsed (ii) a TCP packet being consumed in segments */
-  PKTINFO_ITEMS  PktInfo;                /* saved copy of PktInfo, can be used to compare current and previous packets */ 
+  PKTINFO        PktInfo;                /* saved copy of PktInfo, can be used to compare current and previous packets */ 
   unsigned int   tcp_redundant_discards[MAX_INPUT_STREAMS];  /* count of discarded TCP redundant retransmissions */
 
 /* AFAP and FTRT mode support */
 
   struct timespec  accel_time_ts[MAX_STREAM_GROUPS];  /* added to support FTRT and AFAP modes, JHB May 2023 */
 
-} THREAD_INFO;
+} APP_THREAD_INFO;
+
+/* helper definitions */
 
 #define isMasterThread        (thread_index == 0)  /* in multithread operation, only thread 0 (the "master thread") does certain init and cleanup things, and other threads sync with the master thread and cannot proceed until those things are done */
 #define MasterThread          0
-#define NUM_PKTMEDIA_THREADS  3  /* default number of packet/media threads started by mediaMin */
+#define NUM_PKTMEDIA_THREADS  3  /* typically mediaMin starts one packet/media thread. Given enough cmd line input specs it may start up to NUM_PKTMEDIA_THREADS packet/media threads */
 
 #define isAFAPMode            (RealTimeInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
 #define isFTRTMode            (RealTimeInterval[0] > 0 && RealTimeInterval[0] < 1)  /* macro for "faster than real-time" processing mode, evaluates as true for -rN cmd line entry where 0 < N < 1, JHB May 2023 */

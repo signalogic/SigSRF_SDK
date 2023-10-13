@@ -5,7 +5,7 @@
 
   Projects: SigSRF, DirectCore
  
-  Copyright (C) Signalogic Inc. 2001-2022
+  Copyright (C) Signalogic Inc. 2001-2023
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -25,6 +25,7 @@
    Modified Jul 2019 JHB, add defines for mediaTest segmentation and silence/sounds strip command line entry (-sN)
    Modified Oct 2019 JHB, add autoscaling in DSMergeStreamAudioEX() to avoid clipping, and DS_AUDIO_MERGE_NORESCALE flag to disable if needed
    Modified Feb 2022 JHB, add user-defined filter params (pFilt and filt_len), add uFlags param and DS_FSCONV_xxx flags, change DSConvertFs() pData and pDelay params to void* to lay groundwork for floating-point filters
+   Modified Aug 2023 JHB, add memadd() prototype
 */
 
 #ifndef _ALGLIB_H_
@@ -109,6 +110,8 @@ int DSMergeStreamAudioEx(unsigned int chnum, unsigned int num_vec, int16_t *x, f
 #define DS_AUDIO_MERGE_ADD_COMPRESSION  0x800
 
 #define DS_AUDIO_MERGE_LOUDEST_TALKER   0x1000    /* add only loudest talkers (applies to 3 or more input streams).  This flag may be combined with DS_AUDIO_MERGE_ADD and DS_AUDIO_MERGE_ADD_WITH_AGC flags */
+
+void* memadd(void* dst, const void* src, size_t len);
 
 int isArrayZero(uint8_t*, int);
 int isArrayLess(short int* array, int len, int thresh);

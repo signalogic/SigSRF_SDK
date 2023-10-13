@@ -89,10 +89,11 @@
   Modified Jan 2023 JHB, increase MAX_PKTMEDIA_THREADS to 64, implement DS_CONFIG_MEDIASERVICE_EXIT in DSConfigMediaService()
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG which is used by DSGetPacketInfo(), DSFormatPacket(), DSBufferPackets(), and DSGetOrderedPackets(). Add DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG flag for additional error/warning message control. For usage examples see mediaMin.cpp
   Modified Jan 2023 JHB, add DSGetPacketInfo() DS_PKT_INFO_RTP_PADDING_SIZE flag
-  Modified Apr 2023 JHB, add MAX_TCP_PACKET_LEN definition. In PKTINFO_ITEMS struct, add TCP sequence number and acknowledgement sequence number
+  Modified Apr 2023 JHB, add MAX_TCP_PACKET_LEN definition. In PKTINFO struct, add TCP sequence number and acknowledgement sequence number
   Modified May 2023 JHB, add cur_time param to DSBufferPackets() and DSRecvPackets(), in support of FTRT and AFAP modes
   Modified May 2023 JHB, add DS_SESSION_INFO_RFC7198_LOOKBACK flag to allow retrieval of RFC7198 lookback depth
   Modified Jul 2023 JHB, add DS_JITTER_BUFFER_INFO_NUM_DTMF_PKTS
+  Modified Sep 2023 JHB, add DSFilterPacket() and DSFindPcapPacket() APIs, DS_FILTER_PKT_XXX flags, and DS_FIND_PCAP_PACKET_XXX flags
 */
 
 #ifndef _PKTLIB_H_
@@ -253,6 +254,10 @@ extern "C" {
   #define UDP_PROTOCOL               17
   #define TCP_PROTOCOL               6
   #define ICMP_PROTOCOL              1
+
+  #define SIP_UDP_PORT               5060  /* default UDP port for processing SIP messages */
+  #define SIP_UDP_PORT_ENCRYPTED     5061  /* same, encrypted */
+  #define SAP_UDP_PORT               9875  /* default UDP port for processing Session Announcement Protocol (SAP) SDP info */
 
   #define RTCP_PYLD_TYPE_MIN         72
   #define RTCP_PYLD_TYPE_MAX         82
@@ -606,7 +611,7 @@ extern "C" {
 
   int DSGetPacketInfo(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int*);
 
-/* PKTINFO_ITEMS struct filled by DSGetPacketInfo() when uFlags subfield is set to DS_PKT_INFO_ITEMS_STRUCT */
+/* PKTINFO struct filled by DSGetPacketInfo() when uFlags subfield is set to DS_PKT_INFO_PKTINFO_STRUCT. PKTINFO is also used by DSFindPcapPacket() */
 
   typedef struct {
 
@@ -616,7 +621,7 @@ extern "C" {
      int                 ip_hdr_len;
      unsigned short int  src_port;
      unsigned short int  dst_port;
-     unsigned int        seqnum;          /* TCP sequence number */
+     unsigned int        seqnum;          /* TCP sequence number or UDP/RTP sequence number */
      unsigned int        ack_seqnum;      /* TCP acknowlegement sequence number */
      int                 pyld_ofs;        /* TCP or UDP payload offset */
      int                 pyld_len;        /* TCP or UDP payload length */
@@ -626,8 +631,10 @@ extern "C" {
      int                 rtp_pyld_len;
      uint8_t             rtp_pyld_type;
      int                 rtp_padding_len;
+     uint32_t            rtp_timestamp;
+     uint32_t            rtp_ssrc;
 
-  } PKTINFO_ITEMS;
+  } PKTINFO;
 
   int64_t DSGetSessionInfo(HSESSION sessionHandle, unsigned int uFlags, int64_t term_id, void* pInfo);
 
@@ -770,6 +777,7 @@ extern "C" {
   #define PCAP_TYPE_PCAPNG                1
   #define PCAP_TYPE_BER                   2
   #define PCAP_TYPE_HI3                   3
+
   #define PCAP_LINK_LAYER_LEN_MASK        0xffff  /* return value of DSOpenPcap() contains link type in bits 27-20, file type in bits 19-16, and link layer length in lower 16 bits */
   #define PCAP_LINK_LAYER_FILE_TYPE_MASK  0x0f0000
   #define PCAP_LINK_LAYER_LINK_TYPE_MASK  0x0ff00000
@@ -778,6 +786,37 @@ extern "C" {
   int DSReadPcapRecord(FILE* fp_in, uint8_t* pkt_buf, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_length, uint16_t* pkt_type);
   int DSWritePcapRecord(FILE* fp_out, uint8_t* pkt_buf, pcaprec_hdr_t* pcap_pkt_hdr, struct ether_header* eth_hdr, TERMINATION_INFO* termInfo,  struct timespec* ts, int pkt_buf_len);
   int DSClosePcap(FILE* fp_pcap);
+
+/* DSFilterPacket() returns the next packet from a pcap meeting filtering specs */
+
+  #define DS_FILTER_PKT_ARP               0x10000
+  #define DS_FILTER_PKT_802               0x20000
+  #define DS_FILTER_PKT_TCP               0x40000
+  #define DS_FILTER_PKT_UDP               0x80000
+  #define DS_FILTER_PKT_RTCP              0x100000
+  #define DS_FILTER_PKT_UDP_SIP           0x200000
+
+  int DSFilterPacket(FILE* fp_pcap, int link_layer_len, pcaprec_hdr_t* p_pcap_rec_hdr, uint8_t* pktbuf, int pktlen, PKTINFO* PktInfo, unsigned int uFlags);  /* if fp_pcap is NULL then pktbuf must contain a valid packet and pktlen must be correct. Otherwise fp_pcap must point to a valid, already-opened FILE* handle */
+
+/* DSFindPcapPacket() finds specific packets in a pcap given packet matching specs */
+
+/* match RTP values */
+
+#define DS_FIND_PCAP_PACKET_RTP_SSRC          1
+#define DS_FIND_PCAP_PACKET_RTP_PYLDTYPE      2
+#define DS_FIND_PCAP_PACKET_RTP_TIMESTAMP     4
+
+/* match general packet values */
+ 
+#define DS_FIND_PCAP_PACKET_SRC_PORT          0x100
+#define DS_FIND_PCAP_PACKET_DST_PORT          0x200
+#define DS_FIND_PCAP_PACKET_SEQNUM            0x400  /* TCP sequence number or UDP/RTP sequence number */
+
+#define DS_FIND_PCAP_PACKET_FIRST_MATCHING    0x1000
+#define DS_FIND_PCAP_PACKET_LAST_MATCHING     0x2000
+
+
+uint64_t DSFindPcapPacket(const char* szInputPcap, PKTINFO* PktInfo, unsigned int uFlags, int* error_cond);
 
   #if 0  /* the marker bit is now defined as a bit field in the RTPHeader struct and can be set/cleared directly, JHB Jan2021 */
   void DSSetMarkerBit(FORMAT_PKT* formatPkt, unsigned int uFlags);
@@ -1036,7 +1075,7 @@ extern "C" {
 #define DS_PKT_INFO_SRC_ADDR                  0x9000         /* requires pInfo to point to array of sufficient size, returns IP version */
 #define DS_PKT_INFO_DST_ADDR                  0xa000
 
-#define DS_PKT_INFO_ITEMS_STRUCT              0xf000         /* returns PKTINFO_ITEMS struct group of items in void* pInfo, intended for minimal packet processing overhead if several packet items are needed. See PKTINFO_ITEMS struct */
+#define DS_PKT_INFO_PKTINFO_STRUCT            0xf000         /* returns PKTINFO struct in void* pInfo (if specified). This API is intended for minimal packet processing overhead if several packet items are needed. See PKTINFO struct, containing both TCP and RTP items */
 
 #define DS_PKT_INFO_ITEM_MASK                 0xff00
 
@@ -1382,6 +1421,9 @@ char handle_str[20];
 
    if (sessionHandle < 0 || ((uFlags & DS_SESSION_INFO_HANDLE) && sessionHandle >= MAX_SESSIONS) || sessionHandle >= NCORECHAN) {
 
+#if 0
+error:
+#endif
       Log_RT(2, "ERROR: DSGetSessionInfo() says invalid session handle or chnum = %d, term_id = %d, uFlags = 0x%x. %s:%d \n", sessionHandle, term_id, uFlags, __FILE__, __LINE__);
       return -2;  /* -2 return code indicates a problem with session handle, chnum, or other param. -1 return code indicates something not found or not available, but otherwise params are ok */
    }
@@ -1428,8 +1470,13 @@ char handle_str[20];
    }
    else if (!((uFlags & DS_SESSION_INFO_ITEM_MASK) == DS_SESSION_INFO_NUM_SESSIONS)) {  /* only case where a session handle or chnum is not required */
 
+      #if 0  /* instead of error condition, now we make session handle the default if neither handle nor channel number is specified, JHB Aug 2023 */
+      uFlags |= DS_SESSION_INFO_HANDLE;
+      if (sessionHandle >= MAX_SESSIONS) goto error;  /* repeat error check we didn't do initially without DS_SESSION_INFO_HANDLE flag */
+      #else
       Log_RT(2, "ERROR: DSGetSessionInfo() says DS_SESSION_INFO_HANDLE or DS_SESSION_INFO_CHNUM must be given, session handle or chnum = %d, term_id = %d, uFlags = 0x%x, %s:%d \n", sessionHandle, term_id, uFlags, __FILE__, __LINE__);
       return -2;
+      #endif
    } 
 
    switch (uFlags & DS_SESSION_INFO_ITEM_MASK) {
