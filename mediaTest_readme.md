@@ -1487,7 +1487,7 @@ The following mediaMin command lines convert example EVS pcaps (included in the 
 
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r20
 ```
-The above command lines will work on any EVS pcap, including full / compact header, EVS primary or AMR-WB IO compatibility modes, bitrate, etc. This is possible because mediaMin performs auto-detection on the pcap and dynamic session creation. wav and G711 pcap output files are produced on the mediaMin folder (cmd line options to control output file paths are given in mediaMin Command Line Quick-Reference below).
+The above command lines will work on any EVS pcap, including full / compact header, EVS primary or AMR-WB IO compatibility modes, bitrate, etc. This is possible because mediaMin performs auto-detection on the pcap and dynamic session creation. Output wav and G711 pcap files are produced on the mediaMin folder (cmd line options to control output file paths are given in mediaMin Command Line Quick-Reference below).
 
 To process the pcap faster than real-time, use a slight variation:
 ```C
@@ -1512,11 +1512,11 @@ As an example of mediaTest flexibility, the following command line will play an 
 ```
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
 
-Combined with .cod file <super>1</super> input described in [Codec Test and Measurement](#user-content-x86codectestmeasurement), .rtp file input (or .rtpdump), this makes mediaTest a flexible "EVS player".
+Combined with .cod file <sup>1</sup> input described in [Codec Test and Measurement](#user-content-x86codectestmeasurement), .rtp file input (or .rtpdump), this makes mediaTest a flexible "EVS player".
 
 Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see [Static Session Configuration](#user-content-staticsessionconfig) above).
 
-<super>1</super> .cod file are in MIME "full header" format, per 3GPP specs
+<sup>1</sup> .cod file are in MIME "full header" format, per 3GPP specs
 
 <a name="AMRPlayer"></a>
 ### AMR Player
