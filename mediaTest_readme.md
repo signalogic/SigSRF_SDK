@@ -13,6 +13,22 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+3Q-4Q 2023 - Use case driven improvements:
+
+ - call recording "time stamp matching" mode for reproducible, bit-exact media output files
+ - .rtp and .rtpdump format support
+ - codec configuration options for binary-only codecs with exit() and abort() calls, codecs with protected sections of source not permissible to modify
+ - improvements in low bit rate handling (e.g. EVS codec VBR mode)
+ - silence trim, re-sampling, and other wav file post-processing options
+ - further improvements in RTP media type auto-detection
+ - add DSFilterPacket() and DSFindPcapPacket() APIs in pktlib
+
+Bug fixes:
+
+  - debug mode added to codecs to help find subtle NaN and other floating-point issues in deployments on wide range of Linux and GLIBC versions
+  - fix EVS Player and AMR Player example/demo command lines (below). These were broken after not being retested after other improvements
+  - fix problem with high numbers of dynamic channels in a stream (high capacity RFC8108)
+
 1Q-2Q 2023 - Improvements over a wide range of areas, including:
 
  - mixed SIP and RTP stream handling
@@ -21,10 +37,10 @@ Input and output options include network I/O, pcap file, and audio file format f
  - "accelerated time" for bulk pcap handling
  - return audio content type from codecs (only for codecs that support this)
 
-Bug fixes including:
+Bug fixes:
 
  - keyboard handling inside containers
- - codec type auto-detection
+ - codec type auto-detection (some cases wrongly detected)
 
 3Q-4Q 2022 - new releases of pktlib, voplib, mediaMin, and mediaTest, including:
 
@@ -1458,30 +1474,41 @@ Below is a frame mode command line that reads a pcap file and outputs to wav fil
 <a name="ConvertingPcaps2Wav"></a>
 ### Converting Pcaps to Wav and Playing Pcaps
 
-Simple mediaTest command lines can be used to convert pcaps containing one RTP stream to wav file, playout over USB audio, or both. This functionality is intended for testing codec functionality, audio quality, etc.  Pcaps are expected to not contain jitter or packet loss.
+Simple mediaTest command lines can be used to convert pcaps containing one RTP stream to wav file, playout over USB audio, or both. This functionality is intended for testing codec functionality, audio quality, etc.
 
 To convert pcaps containing multiple RTP streams with different codecs to wav files, see the mediaMin section above [Dynamic Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). mediaMin generates wav files for each stream and also a "merged" stream wav file that combines all input streams. mediaMin uses pktlib packet processing APIs that handle jitter, packet loss/repair, child channels (RFC8108), etc, including very high amounts of packet ooo (out of order). Also mediaMin allows .sdp file input to override codec auto-detection and/or give specific streams to decode while ignoring others.
 
 <a name="EVSPlayer"></a>
 ### EVS Player
 
-The following mediaTest command lines convert EVS pcaps to wav files:
+The following mediaMin command lines convert example EVS pcaps (included in the .rar package or Docker container) to wav files:
+```C
+./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -L -d0xc11 -r20
+
+./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r20
+```
+The above command lines will work on any EVS pcap, including full / compact header, EVS primary or AMR-WB IO compatibility modes, bitrate, etc. This is possible because mediaMin performs auto-detection on the pcap. To process the pcap as fast as possible, use a slight variation of command line:
+```C
+./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -L -d0xc11 -r0.5
+
+./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r0.5
+```
+The "-r0.5" entry specifies a a processing interval of 1/2 msec instead of 20 msec (for most LTE codecs, 20 msec is the nominal packet delta).
+
+mediaTest also can be used as an EVS Player. mediaTest has additional test and measurement features, but requires a sesion configuration file in its command line. Below are mediaTest command lines using the same example EVS pcaps:
 
 ```C
-./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/evs_player_example_config -L
 
-./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/pcap_file_test_config -L
-```
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/evs_player_example_config2 -L
+```C
 
-The following command line will play an EVS pcap over USB audio:
+As an example of mediaTest flexibility, the following command line will play an EVS pcap over USB audio:
 
 ```C
-./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/pcap_file_test_config -L
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/evs_player_example_config -L
 ```
-
-The above command lines will work on any EVS pcap, including full header, compact header, and multiframe formats.  Combined with the .cod file input described above, this makes mediaTest an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
-
-In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
+In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server. Combined with the .cod file input described in the [Codec Test and Measurement](#user-content-x86codectestmeasurement) section above, this makes mediaTest an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
 
 Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see [Static Session Configuration](#user-content-staticsessionconfig) above).
 
