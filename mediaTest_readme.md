@@ -1487,15 +1487,17 @@ The following mediaMin command lines convert example EVS pcaps (included in the 
 
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r20
 ```
-The above command lines will work on any EVS pcap, including full / compact header, EVS primary or AMR-WB IO compatibility modes, bitrate, etc. This is possible because mediaMin performs auto-detection on the pcap. To process the pcap as fast as possible, use a slight variation of command line:
+The above command lines will work on any EVS pcap, including full / compact header, EVS primary or AMR-WB IO compatibility modes, bitrate, etc. This is possible because mediaMin performs auto-detection on the pcap and dynamic session creation. wav and G711 pcap output files are produced on the mediaMin folder (cmd line options to control output file paths are given in mediaMin Command Line Quick-Reference below).
+
+To process the pcap faster than real-time, use a slight variation:
 ```C
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -L -d0xc11 -r0.5
 
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r0.5
 ```
-The "-r0.5" entry specifies a a processing interval of 1/2 msec instead of 20 msec (for most LTE codecs, 20 msec is the nominal packet delta).
+The "-r0.5" command line option specifies a a processing interval of 1/2 msec instead of 20 msec, which is the nominal packet delta for many RTP media formats.
 
-mediaTest also can be used as an EVS Player. mediaTest has additional test and measurement features, but requires a sesion configuration file in its command line. Below are mediaTest command lines using the same example EVS pcaps:
+mediaTest also can be used as an EVS Player. mediaTest has additional test and measurement features, but unlike mediaMin requires a sesion configuration file in its command line. Below are mediaTest command lines using the same example EVS pcaps as above:
 
 ```C
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/evs_player_example_config -L
@@ -1508,9 +1510,13 @@ As an example of mediaTest flexibility, the following command line will play an 
 ```C
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/evs_player_example_config -L
 ```
-In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server. Combined with the .cod file input described in the [Codec Test and Measurement](#user-content-x86codectestmeasurement) section above, this makes mediaTest an "EVS player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
+In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
+
+Combined with .cod file <super>1</super> input described in [Codec Test and Measurement](#user-content-x86codectestmeasurement), .rtp file input (or .rtpdump), this makes mediaTest a flexible "EVS player".
 
 Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see [Static Session Configuration](#user-content-staticsessionconfig) above).
+
+<super>1</super> .cod file are in MIME "full header" format, per 3GPP specs
 
 <a name="AMRPlayer"></a>
 ### AMR Player
