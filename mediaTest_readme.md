@@ -1495,7 +1495,7 @@ To process the pcap faster than real-time, use a slight variation:
 
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r0.5
 ```
-The "-r0.5" command line option specifies a a processing interval of 1/2 msec instead of 20 msec, which is the nominal packet delta for many RTP media formats.
+The "-r0.5" command line option specifies a processing interval of 1/2 msec instead of 20 msec <sup>1</sup>.
 
 mediaTest also can be used as an EVS Player. Below are mediaTest command lines using the same example EVS pcaps as above:
 ```C
@@ -1510,7 +1510,7 @@ mediaTest test and measurement features that go beyond mediaMin. The following c
 ```
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument). Other USB ports can be specified, depending on what is physically connected to the server.
 
-Combined with .cod file <sup>1</sup> input described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above, .rtp file input (or .rtpdump), this makes mediaTest a flexible "EVS player".
+Combined with .cod file <sup>2</sup> input described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above, .rtp file input (or .rtpdump), this makes mediaTest a flexible "EVS player".
 
 Unlike mediaMin, mediaTest requires a session configuration file in its command line, using the -C cmd line option. Session config files require remote and local IP address and port info that matches pcap contents. This may be inconvenient depending on the application, but gives control over low-level session information. Here is an example of the evs_player_example_config file shown above:
 
@@ -1550,7 +1550,8 @@ term2.sample_rate = 8000  # in Hz
 ```
 Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered. See [Static Session Configuration](#user-content-staticsessionconfig) above for more information.
 
-<sup>1</sup> .cod file are in MIME "full header" format, per 3GPP specs
+<sup>1</sup> 20 msec nominal real-time packet delta for many RTP media formats
+<sup>2</sup> .cod file are in MIME "full header" format, per 3GPP specs
 
 <a name="AMRPlayer"></a>
 ### AMR Player
