@@ -1503,10 +1503,10 @@ mediaTest also can be used as an EVS Player. mediaTest has additional test and m
 
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/evs_player_example_config2 -L
 ```
-Specifying a session config file, or static session creation, is less convenient as remote and local IP address and port info must match for each input pcap, but does have advantages if low-level session information must be given. Here is an example of the evs_player_example_config file shown above:
+Session config files require remote and local IP address and port info that matches pcap contents. This may be inconvenient depending on the application, but also gives control over low-level session information. Here is an example of the evs_player_example_config file shown above:
 
 ```C
-# Session config file used for EVS player mediaTest demos, defining endpoints for EVS to G711 transcoding
+<small># Session config file used for EVS player mediaTest demos, defining endpoints for EVS to G711 transcoding
 
 [start_of_session_data]
 term1.remote_ip = 192.168.0.3  # src
@@ -1537,7 +1537,7 @@ term2.dtmf_type = NONE
 term2.dtmf_payload_type = NONE
 term2.sample_rate = 8000  # in Hz
 ## term2.dtx_handling = -1  # -1 disables DTX handling
-[end_of_session_data]
+[end_of_session_data]</small>
 ```
 As an example of mediaTest flexibility, the following command line will play an EVS pcap over USB audio:
 ```C
