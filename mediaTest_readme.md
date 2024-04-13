@@ -1497,13 +1497,22 @@ To process the pcap faster than real-time, use a slight variation:
 ```
 The "-r0.5" command line option specifies a a processing interval of 1/2 msec instead of 20 msec, which is the nominal packet delta for many RTP media formats.
 
-mediaTest also can be used as an EVS Player. mediaTest has additional test and measurement features, but unlike mediaMin requires a sesion configuration file in its command line. Below are mediaTest command lines using the same example EVS pcaps as above:
+mediaTest also can be used as an EVS Player. Below are mediaTest command lines using the same example EVS pcaps as above:
 ```C
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/evs_player_example_config -L
 
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/evs_player_example_config2 -L
 ```
-Session config files require remote and local IP address and port info that matches pcap contents. This may be inconvenient depending on the application, but also gives control over low-level session information. Here is an example of the evs_player_example_config file shown above:
+
+mediaTest test and measurement features that go beyond mediaMin. The following command line will play an EVS pcap over USB audio:
+```C
+./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/evs_player_example_config -L
+```
+In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument). Other USB ports can be specified, depending on what is physically connected to the server.
+
+Combined with .cod file <sup>1</sup> input described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above, .rtp file input (or .rtpdump), this makes mediaTest a flexible "EVS player".
+
+Unlike mediaMin, mediaTest requires a session configuration file in its command line, using the -C cmd line option. Session config files require remote and local IP address and port info that matches pcap contents. This may be inconvenient depending on the application, but gives control over low-level session information. Here is an example of the evs_player_example_config file shown above:
 
 ```C
 # Session config file used for EVS player mediaTest demos, defining endpoints for EVS to G711 transcoding
@@ -1539,16 +1548,7 @@ term2.sample_rate = 8000  # in Hz
 ## term2.dtx_handling = -1  # -1 disables DTX handling
 [end_of_session_data]
 ```
-
-As an example of mediaTest flexibility, the following command line will play an EVS pcap over USB audio:
-```C
-./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/evs_player_example_config -L
-```
-In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
-
-Combined with .cod file <sup>1</sup> input described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above, .rtp file input (or .rtpdump), this makes mediaTest a flexible "EVS player".
-
-Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered (session config files are given by the -C cmd line option, see [Static Session Configuration](#user-content-staticsessionconfig) above).
+Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered. See [Static Session Configuration](#user-content-staticsessionconfig) above for more information.
 
 <sup>1</sup> .cod file are in MIME "full header" format, per 3GPP specs
 
