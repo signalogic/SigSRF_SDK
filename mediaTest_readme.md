@@ -1468,7 +1468,7 @@ Frame mode performs encode, decode, or transcoding based on specifications in a 
 
 Below is a frame mode command line that reads a pcap file and outputs to wav file.  No jitter buffering is done, so any out-of-order packets, DTX packets, or SSRC changes are not handled.  The wav file sampling rate is determined from the session config file.
 
-```console
+```shell
 ./mediaTest -M4 -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/pcap_file_test_config -L
 ```
 <a name="ConvertingPcaps2Wav"></a>
@@ -1482,7 +1482,7 @@ To convert pcaps containing multiple RTP streams with different codecs to wav fi
 ### EVS Player
 
 The following mediaMin command lines convert example EVS pcaps (included in the .rar package or Docker container) to wav files:
-```console
+```shell
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -L -d0xc11 -r20
 
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r20
@@ -1490,7 +1490,7 @@ The following mediaMin command lines convert example EVS pcaps (included in the 
 The above command lines will work on any EVS pcap, including full / compact header, EVS primary or AMR-WB IO compatibility modes, bitrate, etc. This is possible because mediaMin performs auto-detection on the pcap and dynamic session creation. Output wav and G711 pcap files are produced on the mediaMin folder (cmd line options to control output file paths are given in mediaMin Command Line Quick-Reference below).
 
 To process the pcap faster than real-time, use a slight variation:
-```console
+```shell
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -L -d0xc11 -r0.5
 
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r0.5
@@ -1498,7 +1498,7 @@ To process the pcap faster than real-time, use a slight variation:
 The "-r0.5" command line option specifies a processing interval of 1/2 msec instead of 20 msec <sup>1</sup>.
 
 mediaTest also can be used as an EVS Player. Below are mediaTest command lines using the same example EVS pcaps as above:
-```console
+```shell
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/evs_player_example_config -L
 
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/evs_player_example_config2 -L
@@ -1506,7 +1506,7 @@ mediaTest also can be used as an EVS Player. Below are mediaTest command lines u
 mediaTest also accepts "-rN" command line entry. If none is specified, the default is N=20 (20 msec) <sup>1</sup>.
 
 mediaTest test and measurement features that go beyond mediaMin. The following command line will play an EVS pcap over USB audio:
-```console
+```shell
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/evs_player_example_config -L
 ```
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument). Other USB ports can be specified, depending on what is physically connected to the server.
