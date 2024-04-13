@@ -1512,7 +1512,7 @@ In the above USB audio example, output is specified as USB port 0 (the -ousb0 ar
 
 Combined with .cod file <sup>2</sup> input described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above, .rtp file input (or .rtpdump), this makes mediaTest a flexible "EVS player".
 
-Unlike mediaMin, mediaTest requires a session configuration file in its command line, using the -C cmd line option. Session config files require remote and local IP address and port info that matches pcap contents. This may be inconvenient depending on the application, but gives control over low-level session information. Here is an example of the evs_player_example_config file shown above:
+Unlike mediaMin, mediaTest requires a session configuration file in its command line, using the -C cmd line option. Session config files require remote and local IP address and port info that matches pcap contents. This may be inconvenient depending on the application, but gives control over low-level session information. Here is an the evs_player_example_config file from the example mediaTest commands above:
 
 ```C
 # Session config file used for EVS player mediaTest demos, defining endpoints for EVS to G711 transcoding
