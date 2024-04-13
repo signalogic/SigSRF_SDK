@@ -1511,7 +1511,7 @@ mediaTest offers test and measurement features that go beyond mediaMin, includin
 ```
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument). Other USB ports can be specified, depending on what is physically connected to the server.
 
-Combined with .cod file <sup>2</sup> input described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above, .rtp file input (or .rtpdump), this makes mediaTest a flexible "EVS player".
+Combined with .cod file <sup>2</sup> input (described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above), .pcap input, and .rtp input (or .rtpdump), this makes mediaTest a flexible "EVS player".
 
 Unlike mediaMin, mediaTest always expects a session configuration file in its command line, using the -C cmd line option. Session config files require remote and local IP address and port info that matches pcap contents. Depending on the application, this may be inconvenient but gives control over low-level session information. Here is the evs_player_example_config file from the example mediaTest commands above:
 
@@ -1551,7 +1551,7 @@ term2.sample_rate = 8000  # in Hz
 ```
 Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered. See [Static Session Configuration](#user-content-staticsessionconfig) above for more information.
 
-<sup>1</sup> 20 msec nominal real-time packet delta for many RTP media formats<br clear=all>
+<sup>1</sup> 20 msec is the nominal real-time packet delta for many RTP media formats<br clear=all>
 <sup>2</sup> .cod file are in MIME "full header" format, per 3GPP specs
 
 <a name="AMRPlayer"></a>
