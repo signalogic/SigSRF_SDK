@@ -1505,7 +1505,7 @@ mediaTest also can be used as an EVS Player. Below are mediaTest command lines u
 ```
 mediaTest also accepts "-rN" command line entry. If none is specified, the default is N=20 (20 msec) <sup>1</sup>.
 
-mediaTest test and measurement features that go beyond mediaMin. The following command line will play an EVS pcap over USB audio:
+mediaTest offers test and measurement features that go beyond mediaMin, including a wide variety of I/O formats. For example, the following command line will play an EVS pcap over USB audio:
 ```shell
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/evs_player_example_config -L
 ```
