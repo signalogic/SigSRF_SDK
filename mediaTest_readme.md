@@ -1552,7 +1552,7 @@ term2.sample_rate = 8000  # in Hz
 [end_of_session_data]</samp></pre>
 </details>
 
-to see contents of the evs_player_example_config file from the example mediaTest commands above.
+to see contents of the evs_player_example_config file from the example mediaTest commands above. Note fields allowing control over header format, ptime interval, RF (channel aware) settings, and DTX enable/disable and interval.
 
 Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered. See [Static Session Configuration](#user-content-staticsessionconfig) above for more information.
 
