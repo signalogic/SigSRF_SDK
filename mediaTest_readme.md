@@ -1515,8 +1515,7 @@ Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measu
 
 Unlike mediaMin, mediaTest always expects a session configuration file in its command line, using the -C cmd line option. Session config files require remote and local IP address and port info that matches pcap contents. Depending on the application, this may be inconvenient but gives control over low-level session information. Click here
 
-<details>
-<summary>Example Session Config File</summary>
+<details><summary>Example Session Config File</summary>
 <pre><samp># Session config file used for EVS player mediaTest demos, defining endpoints for EVS to G711 transcoding
 
 [start_of_session_data]
@@ -1548,8 +1547,7 @@ term2.dtmf_type = NONE
 term2.dtmf_payload_type = NONE
 term2.sample_rate = 8000  # in Hz
     # term2.dtx_handling = -1  # -1 disables DTX handling
-[end_of_session_data]</samp></pre>
-</details>
+[end_of_session_data]</samp></pre></details>
 
 to see contents of the evs_player_example_config file from the example mediaTest commands above.
 
