@@ -1553,8 +1553,8 @@ term2.sample_rate = 8000  # in Hz
 
 Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered. See [Static Session Configuration](#user-content-staticsessionconfig) above for more information.
 
-[^1] 20 msec is the nominal real-time packet delta for many RTP media formats<br clear=all>
-[^2] .cod file are in MIME "full header" format, per 3GPP specs
+[^1]: 20 msec is the nominal real-time packet delta for many RTP media formats
+[^2]: .cod file are in MIME "full header" format, per 3GPP specs
 
 <a name="AMRPlayer"></a>
 ### AMR Player
