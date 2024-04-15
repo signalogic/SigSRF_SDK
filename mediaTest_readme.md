@@ -1519,9 +1519,9 @@ Unlike mediaMin, mediaTest always expects a session configuration file in its co
 
     # Session config file used for EVS player mediaTest demos, defining endpoints for EVS to G711 transcoding
 
-[start_of_session_data]
-term1.remote_ip = 192.168.0.3  # src
-term1.remote_port = 10242
+[start_of_session_data]<br>
+term1.remote_ip = 192.168.0.3  # src<br>
+term1.remote_port = 10242<br>
 term1.local_ip = 192.168.0.1   # dest
 term1.local_port = 6154
 term1.media_type = voice
