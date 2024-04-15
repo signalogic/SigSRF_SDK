@@ -1513,13 +1513,11 @@ In the above USB audio example, output is specified as USB port 0 (the -ousb0 ar
 
 Combined with .cod file <sup>2</sup> input (described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above), .pcap input, and .rtp input (or .rtpdump), this makes mediaTest a flexible "EVS player".
 
-Unlike mediaMin, mediaTest always expects a session configuration file in its command line, using the -C cmd line option. Session config files require remote and local IP address and port info that matches pcap contents. Depending on the application, this may be inconvenient but gives control over low-level session information. Here is the evs_player_example_config file from the example mediaTest commands above:
+Unlike mediaMin, mediaTest always expects a session configuration file in its command line, using the -C cmd line option. Session config files require remote and local IP address and port info that matches pcap contents. Depending on the application, this may be inconvenient but gives control over low-level session information. Click on Example Session Config File below to see the evs_player_example_config file from the example mediaTest commands above.
 
 <details>
-  <summary>Details</summary>
-
-<pre><samp>
-# Session config file used for EVS player mediaTest demos, defining endpoints for EVS to G711 transcoding
+<summary>Example Session Config File</summary>
+<pre><samp># Session config file used for EVS player mediaTest demos, defining endpoints for EVS to G711 transcoding
 
 [start_of_session_data]
 term1.remote_ip = 192.168.0.3  # src
@@ -1550,8 +1548,7 @@ term2.dtmf_type = NONE
 term2.dtmf_payload_type = NONE
 term2.sample_rate = 8000  # in Hz
 # term2.dtx_handling = -1  # -1 disables DTX handling
-[end_of_session_data]
-</samp></pre>
+[end_of_session_data]</samp></pre>
 </details>
 
 Depending on the number of sessions defined in the session config file, multiple inputs and outputs can be entered. See [Static Session Configuration](#user-content-staticsessionconfig) above for more information.
