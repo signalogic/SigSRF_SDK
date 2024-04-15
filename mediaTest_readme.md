@@ -1533,7 +1533,7 @@ term1.dtmf_type = NONE
 term1.dtmf_payload_type = NONE
 term1.sample_rate = 16000  # in Hz
 term1.header_format = 1  # for EVS, 0 = CH format, 1 = FH format
-# term1.dtx_handling = -1  # -1 disables DTX handling
+    # term1.dtx_handling = -1  # -1 disables DTX handling
 
 term2.remote_ip = 192.168.0.2
 term2.remote_port = 6170
@@ -1547,7 +1547,7 @@ term2.rtp_payload_type = 0
 term2.dtmf_type = NONE
 term2.dtmf_payload_type = NONE
 term2.sample_rate = 8000  # in Hz
-# term2.dtx_handling = -1  # -1 disables DTX handling
+    # term2.dtx_handling = -1  # -1 disables DTX handling
 [end_of_session_data]</samp></pre>
 </details>
 
