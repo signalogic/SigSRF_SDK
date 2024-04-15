@@ -1481,7 +1481,7 @@ To convert pcaps containing multiple RTP streams with different codecs to wav fi
 <a name="EVSPlayer"></a>
 ### EVS Player
 
-Although this is the mediaTest section of the Readme, some example mediaMin command lines are shown first, as they are the simplest, fastest way to convert example EVS pcaps (included in the .rar package or Docker container) to wav files:
+Although this is the mediaTest section of the Readme, some example mediaMin command lines are shown first, as they are the simplest, fastest way to convert EVS pcaps to wav files. The following two examples are included in the .rar packages and Docker containers:
 
 ```shell
 ./mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -L -d0xc11 -r20
