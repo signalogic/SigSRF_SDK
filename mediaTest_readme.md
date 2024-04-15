@@ -1506,7 +1506,7 @@ Going beyond mediaMin, mediaTest also can be used as a "deep dive" EVS Player. B
 ```
 mediaTest also accepts "-rN" command line entry. If none is specified, the default is N=20 (20 msec) <sup>[1]</sup>.
 
-mediaTest offers test and measurement features not available in mediaMin, including a wider variety of I/O formats and low-level EVS control, such as RF format, DTX enable/disable, ptime interval, and more. For example, the following command line will play an EVS pcap over USB audio:
+mediaTest offers test and measurement features not available in mediaMin, including a wider variety of I/O formats and low-level EVS control, such as RF (channel aware) settings, DTX enable/disable, ptime interval, and more. For example, the following command line will play an EVS pcap over USB audio:
 ```shell
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/evs_player_example_config -L
 ```
