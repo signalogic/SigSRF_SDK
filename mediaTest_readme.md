@@ -1506,13 +1506,15 @@ Going beyond mediaMin, mediaTest also can be used as a "deep dive" EVS Player. B
 ```
 mediaTest also accepts "-rN" command line entry. If none is specified, the default is N=20 (20 msec) <sup>[1]</sup>.
 
-mediaTest offers test and measurement features not available in mediaMin, including a wider variety of I/O formats and low-level EVS control, such as RF (channel aware) settings, DTX enable/disable, ptime interval, and more. For example, the following command line will play an EVS pcap over USB audio:
+mediaTest offers test and measurement features not available in mediaMin, including a wider variety of I/O formats and low-level EVS encoding control, such as RF (channel aware) settings, DTX enable/disable, ptime interval, and more. For example, the following command line will play an EVS pcap over USB audio:
 ```shell
 ./mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/evs_player_example_config -L
 ```
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument). Other USB ports can be specified, depending on what is physically connected to the server.
 
 Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above), .pcap input, and .rtp input (or .rtpdump), this makes mediaTest a flexible "EVS player".
+
+### Session Configuration File
 
 Unlike mediaMin, mediaTest always expects a session configuration file in its command line, using the -C cmd line option. Session config files require remote and local IP address and port info that matches pcap contents. Depending on the application, this may be inconvenient but gives control over low-level session information. Click here
 
