@@ -1,1 +1,1 @@
-SigSRF demo + SDK rar packages for different Linux distros, including additional pcap and wav file packages for advanced testing
+SigSRF demo + SDK rar packages for different Linux distros, including pcap and wav files for advanced testing
