@@ -1003,7 +1003,7 @@ Note that both print identical MD5 sums in mediaMin summary stats:
     run-time [session]
         [0] hSession 0, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0xb101a863
         [1] hSession 1, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0x6057c1d6
-```console
+```
 
 Note also that both enable analytics mode to avoid wall clock references.
 
