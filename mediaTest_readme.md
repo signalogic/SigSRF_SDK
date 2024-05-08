@@ -1005,7 +1005,7 @@ Note that both print identical MD5 sums in mediaMin summary stats:
         [1] hSession 1, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0x6057c1d6
 </console></pre>
 
-Note also that both commands enable analytics mode in their -dN entry to avoid wall clock references by applying the ANALYTICS_MODE flag.
+Note also that both commands apply the ANALYTICS_MODE flag to enable analytics mode in their -dN entry to avoid wall clock references.
 
 <a name="BulkProcessingModeConsidersations"><a/>
 ### Bulk Processing Mode Considerations
