@@ -989,7 +989,7 @@ Here are command line examples with the ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag a
 
 Note that both print identical MD5 sums in mediaMin summary stats:
 
-```console
+<pre><console>
 === mediaMin stats
     packets [input]
         TCP = [0]0
@@ -1003,9 +1003,9 @@ Note that both print identical MD5 sums in mediaMin summary stats:
     run-time [session]
         [0] hSession 0, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0xb101a863
         [1] hSession 1, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0x6057c1d6
-```
+</console></pre>
 
-Note also that both enable analytics mode to avoid wall clock references.
+Note also that both commands enable analytics mode in their -dN entry to avoid wall clock references (ANALYTICS_MODE flag).
 
 <a name="BulkProcessingModeConsidersations"><a/>
 ### Bulk Processing Mode Considerations
@@ -1013,7 +1013,12 @@ Note also that both enable analytics mode to avoid wall clock references.
 Timestamp matching mode goes hand-in-hand with bulk pcap processing. The idea is that if pcaps are being processed "after the fact" then two things are important: (i) as-fast-as-possible processing rates, and (ii) bit-exact reproducibility. However, when processing in bulk mode, there are key considerations to keep in mind:
 
   * staying within per-core CPU performance limits. mediaMin uses separate application threads to push packets to a packet queue, and "worker" threads to pull packets from this queue and perform packet and media processing (e.g. packet repair, audio decode, noise and other artifact reduction, etc). If a real-time interval (-rN) entry is given on the command line that is too small (for example 0.01) then application threads will push packets at a rate that exceeds what worker threads can handle. Of course this is affected by your platform CPU type and clock rate [1]
-  * minimizing host system impact. These include using a RAM disc for wav and pcap output, minimizing or pausing other application threads, and minimizing Linux housekeeping and background threads. See section Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) above about avoiding worker thread pre-emption
+  * minimizing host system impact. These include:
+    - using a RAM disc for wav and pcap output, and de-activating intermediate or unnecessary output files (e.g. jitter buffer output pcap files)
+    - minimizing or pausing other application threads
+    - minimizing Linux housekeeping and background threads
+
+See section [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) above about avoiding worker thread pre-emption
 
 <a name="MD5Sums"><a/>
 ### MD5 Sums
@@ -1022,7 +1027,7 @@ The mediaMin and mediaTest command lines accept and MD5 sum entry:
 
     --md5sum
 
-which will show output file MD5 sum in the console display summary stats.
+which will show output file MD5 sum in the console display summary stats.  The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
 
 [1] All performance specs on this page are given for an x86 Xeon E5-2660 CPU running at 2.2 GHz
 
