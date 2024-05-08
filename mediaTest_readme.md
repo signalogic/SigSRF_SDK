@@ -980,7 +980,7 @@ Below is a list of system compatibility exceptions in the Makefiles.
 <a name="Reproducibility"><a/>
 ## Reproducibility
 
-To maintain bit-exact output reproducibility, for example call recording records for legal purposes, mediaMin supports a "timestamp matching mode". In this mode only arrival timestamps are used to determine stream alignment in generated wav and pcap outputs, with no wall clock references. This is in contrast to the default "media domain mode", in which the amount of generated media serves as a baseline, or guardrail, for stream alignment. Media domain alignment, although resilient against timestamp errors, too-fast or too-slow packet transmission rates (e.g. announcement and media servers), incorrect codec info, and other errors, always contains a very small amount of jitter due to external wall clock references.
+To maintain bit-exact output reproducibility, for example call recording records for legal purposes, mediaMin supports a "timestamp matching mode". In this mode only arrival timestamps are used to determine stream alignment in generated wav and pcap outputs, with no wall clock references. This is in contrast to the default "media domain mode", in which the amount of generated media serves as a baseline, or guardrail, for stream alignment. Media domain alignment, although resilient against timestamp errors, too-fast or too-slow packet transmission rates (e.g. announcement and media servers), incorrect codec info, and other errors -- and suitable for real-time, live streaming output -- always contains a very small amount of jitter due to external wall clock references.
 
 Here are command line examples with the ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag applied, one at real-time rate, one at 40x faster-than-real-time (FTRT) rate:
 
@@ -1010,15 +1010,16 @@ Note also that both commands enable analytics mode in their -dN entry to avoid w
 <a name="BulkProcessingModeConsidersations"><a/>
 ### Bulk Processing Mode Considerations
 
-Timestamp matching mode goes hand-in-hand with bulk pcap processing. The idea is that if pcaps are being processed "after the fact" then two things are important: (i) as-fast-as-possible processing rates, and (ii) bit-exact reproducibility. However, when processing in bulk mode, there are key considerations to keep in mind:
+Timestamp matching mode goes hand-in-hand with bulk pcap processing. The idea is that if pcaps are being processed "after the fact" then two things are crucially important: (i) faster-than-real-time (FTRT) processing rates, and (ii) bit-exact reproducibility. However, when processing in bulk mode, these two benefits are not free, and there are key considerations to keep in mind:
 
-  * staying within per-core CPU performance limits. mediaMin uses separate application threads to push packets to a packet queue, and "worker" threads to pull packets from this queue and perform packet and media processing (e.g. packet repair, audio decode, noise and other artifact reduction, etc). If a real-time interval (-rN) entry is given on the command line that is too small (for example 0.01) then application threads will push packets at a rate that exceeds what worker threads can handle. Of course this is affected by your platform CPU type and clock rate [1]
-  * minimizing host system impact. These include:
+  * processing needs must stay within per-core CPU performance limits. mediaMin uses separate application threads to push packets to a packet queue, and "worker" threads to pull packets from this queue and perform packet and media processing (e.g. packet repair, audio decode, noise and other artifact reduction, etc). If a real-time interval (-rN) entry is given on the command line that is too small (for example 0.01) then application threads will push packets at a rate that exceeds what worker threads can handle. Of course this is affected by your platform CPU type and clock rate [1]
+
+  * host system impacts must be minimized, including:
     - using a RAM disc for wav and pcap output, and de-activating intermediate or unnecessary output files (e.g. jitter buffer output pcap files)
-    - minimizing or pausing other application threads
-    - minimizing Linux housekeeping and background threads
+    - disabling packet logging and post-analysis, which takes extra processing time. If needed these can be turned on temporarily without FTRT enabled
+    - minimizing or pausing threads for other applications, non-related networking, and Linux housekeeping / background
 
-See section [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) above about avoiding worker thread pre-emption
+See section [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) above for more information about avoiding worker thread pre-emption and warning messages that appear when it happens.
 
 <a name="MD5Sums"><a/>
 ### MD5 Sums
