@@ -987,7 +987,25 @@ Here are command line examples with the ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag a
     mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r20 --md5sum
     mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r0.5 --md5sum
 
-Note that both print identical MD5 sums in mediaMin summary stats. Note also that both enable analytics mode to avoid wall clock references.
+Note that both print identical MD5 sums in mediaMin summary stats:
+
+```console
+=== mediaMin stats
+    packets [input]
+        TCP = [0]0
+        UDP = [0]2696
+        TCP redundant discards = [0]0
+    md5sum
+        <i>timestamp-match mode b16ccd08e2bd5b06c00f624c2d0012d2</i> /tmp/shared/announcementplayout_metronometones1sec_2xAMR_merge_tsm.wav
+    arrival timing [session]
+        delta avg/max (msec) = [0]17.79/155.79 [1]18.64/28.75
+        jitter avg/max (msec) = [0]16.42/135.79 [1]1.89/19.32
+    run-time [session]
+        [0] hSession 0, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0xb101a863
+        [1] hSession 1, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0x6057c1d6
+```console
+
+Note also that both enable analytics mode to avoid wall clock references.
 
 <a name="BulkProcessingModeConsidersations"><a/>
 ### Bulk Processing Mode Considerations
