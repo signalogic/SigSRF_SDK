@@ -980,24 +980,33 @@ Below is a list of system compatibility exceptions in the Makefiles.
 <a name="Reproducibility"><a/>
 ## Reproducibility
 
-To maintain bit-exact reproducibility, for example call recording records for legal purposes, mediaMin supports a "timestamp matching mode". In this mode only arrival timestamps are used to determine stream alignment in generated wav and pcap outputs, with no wall clock references. This is in contrast to the default "media domain mode", in which the amount of generated media serves as a baseline, or guardrail, for stream alignment. Media domain alignment, although resilient against timestamp errors, too-fast or too-slow packet generation rates (e.g. announcement and media servers), incorrect SDP info and/or codec info, and other errors, contains a very small amount of jitter due to wall clock references.
+To maintain bit-exact output reproducibility, for example call recording records for legal purposes, mediaMin supports a "timestamp matching mode". In this mode only arrival timestamps are used to determine stream alignment in generated wav and pcap outputs, with no wall clock references. This is in contrast to the default "media domain mode", in which the amount of generated media serves as a baseline, or guardrail, for stream alignment. Media domain alignment, although resilient against timestamp errors, too-fast or too-slow packet transmission rates (e.g. announcement and media servers), incorrect codec info, and other errors, always contains a very small amount of jitter due to external wall clock references.
 
-Here are command line examples with the ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag applied, one at real-time rate, one at 40x real-time (FTRT) rate:
+Here are command line examples with the ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag applied, one at real-time rate, one at 40x faster-than-real-time (FTRT) rate:
 
-    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r20 -g /tmp/shared --md5sum
-    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r0.5 -g /tmp/shared --md5sum
+    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r20 --md5sum
+    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r0.5 --md5sum
 
 Note that both print identical MD5 sums in mediaMin summary stats. Note also that both enable analytics mode to avoid wall clock references.
 
 <a name="BulkProcessingModeConsidersations"><a/>
 ### Bulk Processing Mode Considerations
 
-xxx
+Timestamp matching mode goes hand-in-hand with bulk pcap processing. The idea is that if pcaps are being processed "after the fact" then two things are important: (i) as-fast-as-possible processing rates, and (ii) bit-exact reproducibility. However, when processing in bulk mode, there are key considerations to keep in mind:
+
+  * staying within per-core CPU performance limits. mediaMin uses separate application threads to push packets to a packet queue, and "worker" threads to pull packets from this queue and perform packet and media processing (e.g. packet repair, audio decode, noise and other artifact reduction, etc). If a real-time interval (-rN) entry is given on the command line that is too small (for example 0.01) then application threads will push packets at a rate that exceeds what worker threads can handle. Of course this is affected by your platform CPU type and clock rate [1]
+  * minimizing host system impact. These include using a RAM disc for wav and pcap output, minimizing or pausing other application threads, and minimizing Linux housekeeping and background threads. See section Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) above about avoiding worker thread pre-emption
 
 <a name="MD5Sums"><a/>
 ### MD5 Sums
 
-xxx
+The mediaMin and mediaTest command lines accept and MD5 sum entry:
+
+    --md5sum
+
+which will show output file MD5 sum in the console display summary stats.
+
+[1] All performance specs on this page are given for an x86 Xeon E5-2660 CPU running at 2.2 GHz
 
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
