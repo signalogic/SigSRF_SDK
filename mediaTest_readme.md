@@ -1005,14 +1005,14 @@ Note that both print identical MD5 sums in mediaMin summary stats:
         [1] hSession 1, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0x6057c1d6
 </console></pre>
 
-Note also that both commands apply the ANALYTICS_MODE flag to enable analytics mode in their -dN entry to avoid wall clock references.
+Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and avoid wall clock references.
 
 <a name="BulkProcessingModeConsidersations"><a/>
 ### Bulk Processing Mode Considerations
 
 Timestamp matching mode goes hand-in-hand with bulk pcap processing. The idea is that if pcaps are being processed "after the fact" then two things are crucially important: (i) faster-than-real-time (FTRT) processing rates, and (ii) bit-exact reproducibility. However, when processing in bulk mode, these two benefits are not free, and there are key considerations to keep in mind:
 
-  * processing needs must stay within per-core CPU performance limits. mediaMin uses separate application threads to push packets to a packet queue, and "worker" threads to pull packets from this queue and perform packet and media processing (e.g. packet repair, audio decode, noise and other artifact reduction, etc). If a real-time interval (-rN) entry is given on the command line that is too small then application threads will push packets at a rate that exceeds what worker threads can handle. Of course the minimum real-time interval at which this happens is largely determined by your platform CPU type and clock rate [1]
+  * processing needs must stay within per-core CPU performance limits. mediaMin uses separate application threads to push packets to a packet queue, and "worker" threads to pull packets from this queue and perform packet and media processing (e.g. packet repair, audio decode, noise and other artifact reduction, etc). If a real-time interval (-rN) entry is given on the command line that is too small then application threads will push packets at a rate that exceeds what worker threads can handle. Of course the minimum real-time interval at which this happens is largely determined by the CPU type, clock rate [1], and workload on your host or VM platform
 
   * host system impacts must be minimized, including:
     - using a RAM disc for wav and pcap output, and de-activating intermediate or unnecessary output files (e.g. jitter buffer output pcap files)
@@ -1024,7 +1024,7 @@ See section [Bulk Pcap Performance Considerations](#user-content-bulkpcapperform
 <a name="MD5Sums"><a/>
 ### MD5 Sums
 
-The mediaMin and mediaTest command lines accept and MD5 sum entry:
+The mediaMin and mediaTest command lines accept an MD5 sum entry:
 
     --md5sum
 
