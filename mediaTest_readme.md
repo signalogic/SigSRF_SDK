@@ -139,7 +139,11 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality](#user-content-audioquality)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Building High Performance Applications](#user-content-buildinghighperformanceapplications)<br/>
-	
+
+&nbsp;&nbsp;&nbsp;[**Reproducibility**](#user-content-reproducibility)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Bulk Processing Mode Considersations](#user-content-bulkprocessingmodeconsiderations)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MD5 Sums](#user-content-md5sums)<br/>
+
 &nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
 
 &nbsp;&nbsp;&nbsp;[**RTP Malware Detection**](#user-content-rtpmalwaredetection)<br/>
@@ -971,7 +975,30 @@ Note this is functional testing. Stress testing occurs on a subset of the above 
 Below is a list of system compatibility exceptions in the Makefiles.
 
 1) For ldd versions 2.22 and 2.23, LTO (Link Time Optimization) is not applied during compilation. Further notes on this can be found in the Makefiles and the [SLiM project at Cornell Univ](https://github.com/MesserLab/SLiM/issues/33) issue list (look for the Signalogic comment).
-	
+
+
+<a name="Reproducibility"><a/>
+## Reproducibility
+
+To maintain bit-exact reproducibility, for example call recording records for legal purposes, mediaMin supports a "timestamp matching mode". In this mode only arrival timestamps are used to determine stream alignment in generated wav and pcap outputs, with no wall clock references. This is in contrast to the default "media domain mode", in which the amount of generated media serves as a baseline, or guardrail, for stream alignment. Media domain alignment, although resilient against timestamp errors, too-fast or too-slow packet generation rates (e.g. announcement and media servers), incorrect SDP info and/or codec info, and other errors, contains a very small amount of jitter due to wall clock references.
+
+Here are command line examples with the ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag applied, one at real-time rate, one at 40x real-time (FTRT) rate:
+
+    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r20 -g /tmp/shared --md5sum
+    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r0.5 -g /tmp/shared --md5sum
+
+Note that both print identical MD5 sums in mediaMin summary stats. Note also that both enable analytics mode to avoid wall clock references.
+
+<a name="BulkProcessingModeConsidersations"><a/>
+### Bulk Processing Mode Considerations
+
+xxx
+
+<a name="MD5Sums"><a/>
+### MD5 Sums
+
+xxx
+
 <a name="ASR"><a/>
 ## ASR (Automatic Speech Recognition)
 
