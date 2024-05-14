@@ -43,6 +43,7 @@
   Modified Apr 2024 JHB, deprecate DS_LOG_LEVEL_UPTIME_TIMESTAMP flag and DS_EVENT_LOG_UPTIME_TIMESTAMPS (shared_include/config.h) flags, the default (no flag) is now uptime timestamps
   Modified Apr 2024 JHB, DSGetLogTimestamp() now returns length of timestamp string
   Modified Apr 2024 JHB, add numMediaReuse to STREAM_STATS struct
+  Modified May 2024 JHB, add DSGetBacktrace() API
 */
 
 #ifndef _DIAGLIB_H_
@@ -67,21 +68,26 @@ FILE* DSGetLogFileHandle(unsigned int uFlags);
 int Log_RT(uint32_t loglevel, const char *fmt, ...);  /* loglevel can be combined with DS_LOG_LEVEL_xxx flags, and also DS_EVENT_LOG__XXX_TIMESTAMPS flags, defined in shared_include/config.h */
 
 #if 0 /* flag deprecated, the default (no flag) is now uptime timestamps. DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp, JHB Apr 2024 */
-#define DS_LOG_LEVEL_UPTIME_TIMESTAMP     DS_EVENT_LOG_UPTIME_TIMESTAMPS
+#define DS_LOG_LEVEL_UPTIME_TIMESTAMP        DS_EVENT_LOG_UPTIME_TIMESTAMPS
 #else
-#define DS_LOG_LEVEL_UPTIME_TIMESTAMP     0  /* still available for readability purposes, but doesn't do anything */
+#define DS_LOG_LEVEL_UPTIME_TIMESTAMP        0  /* still available for readability purposes, but doesn't do anything */
 #endif
-#define DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP  DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS
-#define DS_LOG_LEVEL_USER_TIMEVAL         DS_EVENT_LOG_USER_TIMEVAL
-#define DS_LOG_LEVEL_TIMEVAL_PRECISE      DS_EVENT_LOG_TIMEVAL_PRECISE
+#define DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP     DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS
+#define DS_LOG_LEVEL_USER_TIMEVAL            DS_EVENT_LOG_USER_TIMEVAL
+#define DS_LOG_LEVEL_TIMEVAL_PRECISE         DS_EVENT_LOG_TIMEVAL_PRECISE
 
 int DSGetLogTimeStamp(char* timestamp, int max_str_len, uint64_t user_timeval, unsigned int uFlags);
 
 int DSGetAPIStatus(unsigned int uFlags);  /* get per-thread API status */
 
-int DSGetMD5Sum(const char* szFilename, char* md5str, int max_str_len);  /* return md5 sum of szFilename in md5str. max_str_len should specify maximum string length of md5str. Return value of 1 indicates success, negative values an error condition */
+int DSGetMD5Sum(const char* szFilename, char* md5str, int max_str_len);  /* return md5 sum of szFilename in md5str. max_str_len should specify maximum string length of md5str. Return value of 1 indicates success, negative values on error condition */
 
-/* diaglib version string */
+int DSGetBacktrace(int nLevels, char* szBacktrace, unsigned int uFlags);  /* calls glibc backtrace() to get nLevels of call stack, cleans that up, removes repeats if any, and formats into szBacktrace. Returns negative values on error condition */
+
+#define DS_GETBACKTRACE_INSERT_MARKER        1                            /* insert "backtrace: " marker at start of return string */
+#define DS_GETBACKTRACE_INCLUDE_GLIBC_FUNCS  2                            /* include glibc functions (e.g. lib.so.N, libpthread.so, etc). Default is these are omitted */
+
+/* diaglib version string (declared in diaglib.c) */
 
 extern const char DIAGLIB_VERSION[256];
 

@@ -93,6 +93,7 @@
   Modified Feb 2024 JHB, implement codec multi-thread testing using -Ec and -tN command line options. This test mode creates multiple concurrent encode and/or decode threads. Also threads can be pinned to same physical CPU core by defining PIN_TO_SAME_CORE. Cmd line example: ./mediaTest -cx86 -itest_files/T_mode.wav -otest_files/T_mode_48kHz_5900.wav -Csession_config/evs_48kHz_input_16kHz_5900bps_full_band_config -Ec -t2
   Modified Feb 2024 JHB, add DS_DATAFILE_USE_SEMAPHORE flag to all DSLoadDataFile() and DSSaveDataFile() DirectCore API calls to support multi-thread testing. As a note, an alternative method -- but intended for very high capacity, high performance apps and not used here -- is to call DSCreateFilelibThread() (in filelib.h) for each thread after creation
  Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG flag, which is now deprecated
+ Modified May 2024 JHB, call DSGetBacktrace() before starting threads, show result as " ... start sequence = ..." in console output
 */
 
 /* Linux header files */
@@ -451,14 +452,21 @@ void* x86_mediaTest(void* thread_arg) {
 int thread_index = *((int*)thread_arg) & 0xff;
 int num_app_threads = (*((int*)thread_arg) & 0xff00) >> 8;
 bool fProcessEntry = executeMode[0] == (char)-1;
+char tmpstr[1024] = "";
 
    char threadstr[20]; if (num_app_threads) sprintf(threadstr, "thread = %d", thread_index);
-   printf("x86 mediaTest() entry point %s \n", num_app_threads ? threadstr : "process");
+   printf("x86 mediaTest() entry point (%s) \n", num_app_threads ? threadstr : "process");
 
    if (codec_test && (fProcessEntry || num_app_threads > 0)) {
 
-      char tstr[200];
-      sprintf(tstr, "codec test start, debug flags = 0x%llx", (unsigned long long)debugMode);
+      char* szBacktrace = &((char*)thread_arg)[4];
+      if (strlen(szBacktrace) < 1000 && strstr(szBacktrace, "backtrace:")) sprintf(&tmpstr[strlen(tmpstr)], "%s", &szBacktrace[11]);
+
+      char tstr[300];
+      DSGetBacktrace(2, tstr, 0);  /* currently only 2 levels needed; might change, JHB May 2024 */
+      if (strlen(tstr)) sprintf(&tmpstr[strlen(tmpstr)], ", %s", tstr);
+
+      sprintf(tstr, "codec test start, debug flags = 0x%llx, start sequence = %s", (unsigned long long)debugMode, tmpstr);
       if (num_app_threads > 0) sprintf(&tstr[strlen(tstr)], ", thread = %d", thread_index);
       printf("%s \n", tstr);
 
@@ -476,7 +484,7 @@ bool fProcessEntry = executeMode[0] == (char)-1;
       HFILE hFile_in = (intptr_t)NULL;  /* filelib file handle, JHB Feb 2022 */
       int frame_count = 0;
       bool fRepeatIndefinitely = (nRepeat == 0); /* nRepeat is initialized in cmd_line_interface.c from -RN cmd line entry (if no entry nRepeat = -1). See also mediaMin usage of nRepeat, JHB Feb2022 */
-      char tmpstr[1024] = "", tmpstr2[1024] = "", szConfigInfo[256];
+      char tmpstr2[1024] = "", szConfigInfo[256];
       codec_test_params_t  codec_test_params;
       char default_config_file[] = "session_config/codec_test_config";
       char *config_file;
@@ -2169,13 +2177,11 @@ codec_test_cleanup:
       if (num_app_threads > 0) sprintf(&tmpstr[strlen(tmpstr)], " thread = %d", thread_index);
       printf("%s \n", tmpstr);
    }
-   #if 0
+   #if 0  /* JHB Feb 2024 */
    else if (x86_pkt_test || frame_mode) {
    #else
    else if (!fProcessEntry) {
    #endif
-
-      printf("x86 multi-thread test start\n");
 
       int num_threads = PlatformParams.cimInfo[0].taskAssignmentCoreLists[0] | (PlatformParams.cimInfo[0].taskAssignmentCoreLists[1] << 8) | (PlatformParams.cimInfo[0].taskAssignmentCoreLists[2] << 16) | (PlatformParams.cimInfo[0].taskAssignmentCoreLists[3] << 24);  /* this is the -tN cmd line value, if entered.  -1 means there was no entry, JHB Sep 2018 */
 
@@ -2187,18 +2193,36 @@ codec_test_cleanup:
          PlatformParams.cimInfo[0].taskAssignmentCoreLists[3] = 0;
       }
 
+      #define THREAD_ARG_SIZE 512
+
       switch (executeMode[0]) {
 
-         case 'a':  /* app execution */
+         case 'a':  /* app execution mode - default setting in cmdLineInterface() (cmd_line_interface.c) */
 
-            uint32_t arg;
-            *((char*)&arg) = (char)executeMode[0];
+            {
+               printf("x86 app test start \n");
 
-            packet_flow_media_proc((void*)&arg);  /* packet data flow and media processing.  packet_flow_media_proc.c */
+               uint32_t* arg = (uint32_t*)malloc(THREAD_ARG_SIZE);
+
+               if (arg == NULL) 
+               {
+                  fprintf(stderr, "%s:%d: Could not allocate memory for mediaMin thread arg \n", __FILE__, __LINE__);
+                  exit(-1);
+               }
+
+               ((char*)arg)[0] = (char)executeMode[0];
+
+               packet_flow_media_proc((void*)&arg);  /* packet data flow and media processing.  packet_flow_media_proc.c */
+
+               free(arg);
+            }
 
             break;
 
          case 'p':  /* process execution, not used yet */
+
+            printf("x86 process test start \n");
+
             break;
 
          case 't':  /* thread execution, DSPush/PullPackets APIs used to interface with mediaMin and packet_flow_media_proc() running as threads */
@@ -2207,11 +2231,13 @@ codec_test_cleanup:
             printf("Attempting to call mediaMin_thread() but build had mediaMin disabled (i.e. make cmd line with no_mediamin=1) \n");
 #else
 
+            printf("x86 mediaMin multithread test start, num threads = %d \n", num_threads);
+
             if (num_threads <= 0) {
 
                int thread_index = 0;
 
-               mediaMin_thread((void*)&thread_index);  /* mediaMin_thread() (in mediaMin.cpp) is an application that starts one or more packet/media threads and uses packet push/pull queues. We call it here as a function */
+               mediaMin_thread((void*)&thread_index);  /* mediaMin_thread() (in mediaMin.cpp) starts one or more packet/media threads and uses packet push/pull queues. We call it here as a function */
             }
             else {  /* in this case we start mediaMin_thread() as one or more application level threads */
 
@@ -2221,16 +2247,18 @@ codec_test_cleanup:
                pthread_t mediaMinThreads[MAX_APP_THREADS];  /* MAX_APP_THREADS defined in mediaTest.h */
 
                for (i=0; i<num_threads; i++) {
-      
-                  arg = (uint32_t*)malloc(sizeof(uint32_t));
+
+                  arg = (uint32_t*)malloc(THREAD_ARG_SIZE);
 
                   if (arg == NULL) 
                   {
-                     fprintf(stderr, "%s:%d: Could not allocate memory for mediaMin thread arg\n", __FILE__, __LINE__);
+                     fprintf(stderr, "%s:%d: Could not allocate memory for mediaMin thread arg \n", __FILE__, __LINE__);
                      exit(-1);
                   }
 
                   *arg = (num_threads << 8) | i;  /* tell mediaMin app thread which one it is and how many total threads */
+
+                  DSGetBacktrace(2, &((char*)arg)[4], DS_GETBACKTRACE_INSERT_MARKER);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
 
                   if ((tc_ret = pthread_create(&mediaMinThreads[i], ptr_attr, mediaMin_thread, arg))) fprintf(stderr, "%s:%d: pthread_create() failed for mediaMin thread, thread number = %d, ret val = %d\n", __FILE__, __LINE__, i, tc_ret);
                   else {
@@ -2255,13 +2283,17 @@ codec_test_cleanup:
 
                   for (i=0; i<num_threads_started; i++) pthread_join(mediaMinThreads[i], NULL);
                }
+
+               free(arg);
             }
 
 #endif  /* ifndef _NO_MEDIAMIN_ */
 
             break;
 
-         case 'c':  /* add command line options for codec multi-thread testing, example: ./mediaTest -cx86 -itest_files/T_mode.wav -otest_files/T_mode_48kHz_5900.wav -Csession_config/evs_48kHz_input_16kHz_5900bps_full_band_config -Ec -t2 */
+         case 'c':  /* command line execution. Default is codec multi-thread testing, example: ./mediaTest -cx86 -itest_files/T_mode.wav -otest_files/T_mode_48kHz_5900.wav -Csession_config/evs_48kHz_input_16kHz_5900bps_full_band_config -Ec -t2. At some later points we might add -Ecx, where x is some other type of command-line mode */
+
+            printf("x86 multithread test start, num threads = %d \n", num_threads);
 
             if (num_threads > 0) {  /* run x86_mediaTest() as one or more application level threads */
 
@@ -2273,7 +2305,7 @@ codec_test_cleanup:
 
                for (i=0; i<num_threads; i++) {
       
-                  arg = (uint32_t*)malloc(sizeof(uint32_t));
+                  arg = (uint32_t*)malloc(THREAD_ARG_SIZE);
 
                   if (arg == NULL) 
                   {
@@ -2282,6 +2314,8 @@ codec_test_cleanup:
                   }
 
                   *arg = (num_threads << 8) | i;  /* tell mediaTest app thread which one it is and how many total threads */
+
+                  DSGetBacktrace(2, &((char*)arg)[4], DS_GETBACKTRACE_INSERT_MARKER);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
 
                   if ((tc_ret = pthread_create(&mediaTestThreads[i], ptr_attr, x86_mediaTest, arg))) fprintf(stderr, "%s:%d: pthread_create() failed for mediaTest thread, thread number = %d, ret val = %d\n", __FILE__, __LINE__, i, tc_ret);
                   else {
@@ -2311,6 +2345,8 @@ codec_test_cleanup:
 
                   for (i=0; i<num_threads_started; i++) pthread_join(mediaTestThreads[i], NULL);
                }
+
+               free(arg);
             }
 
             break;
@@ -2318,7 +2354,7 @@ codec_test_cleanup:
    }
    else if (x86_frame_test)
    {
-      printf("x86 frame test start\n");
+      printf("x86 frame test start \n");
 
       HCODEC hCodec[MAX_CODEC_INSTANCES];
       FRAME_TEST_INFO ft_info = {{0}};
@@ -2478,7 +2514,6 @@ codec_test_cleanup:
       MEDIAINFO MediaInfo = {0};
       
       FILE *fp_in = NULL, *fp_out = NULL;
-      char tmpstr[1024];
 
       int ret_val, frame_count = 0;
 
@@ -2679,7 +2714,7 @@ pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB
       printf("gpx test start \n");
    
       FILE *fp_in = NULL, *fp_out = NULL;
-      char tmpstr[1024], key;
+      char key;
       int i, j;
 
   #define N_LOOKBACK 16
@@ -2913,7 +2948,7 @@ gpx_process_cleanup:
       if (fp_out) fclose(fp_out);
    }
 
-   char tmpstr[100] = "x86 mediaTest end";
+   strcpy(tmpstr, "x86 mediaTest end");
    if (num_app_threads > 1) sprintf(&tmpstr[strlen(tmpstr)], " thread = %d", thread_index);
    else strcat(tmpstr, " process");
    printf("%s \n", tmpstr);

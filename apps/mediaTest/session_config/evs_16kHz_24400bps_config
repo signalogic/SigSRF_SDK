@@ -1,0 +1,8 @@
+# codec config file for EVS 24400 bps
+
+codec_type = EVS
+bitrate = 24400       # in bps
+sample_rate = 16000   # in Hz. Wav or .au files with a different sampling rate in their file header will be up/down sampled to 16 kHz prior to encoding
+dtx_enable = 1
+rf_enable = 0         # EVS only allows RF channel aware at 13.2 kbps
+header_format = full  # header-full format

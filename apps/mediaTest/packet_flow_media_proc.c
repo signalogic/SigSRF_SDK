@@ -166,6 +166,7 @@ Revision History
  Modified Mar 2024 JHB, fix mediaTest link fail under gcc 7.2 + ld 2.26 where get_session_thread_index() is undefined. Not sure why this is not showing up on other gcc versions; it does make sense though - for mediaTest, pktlib.c is not in the build, JHB Mar 2024
  Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG flag, which is now deprecated
  Modified Apr 2024 JHB, several updates and mods to verify functionality in mediaTest mode (look for PUSHPACKETS_REFERENCE below). This fixes the "EVS Player" and "AMR Player" command lines on the Github page
+ Modified May 2024 JHB, call DSGetBacktrace() before starting packet/media threads, show result as " ... start sequence = ..." in console output
 */
 
 #ifndef _GNU_SOURCE
@@ -725,7 +726,6 @@ void* packet_flow_media_proc(void* pExecuteMode) {
 */
 
    bool fMediaThread = ((char*)pExecuteMode)[0] == 't';
-   if (fMediaThread) free(pExecuteMode);
 
    bool packet_mode = !frame_mode;
 
@@ -862,15 +862,22 @@ void* packet_flow_media_proc(void* pExecuteMode) {
    sem_init(&pcap_write_sem, 0, 1);
    #endif
 
-   sprintf(tmpstr, "x86 pkt/media start");
-   #ifdef __LIBRARYMODE__
-   sprintf(&tmpstr[strlen(tmpstr)], ", pktlib");
-   #endif
+   sprintf(tmpstr, "x86 pkt/media worker thread start sequence = ");
 
-   if (fMediaThread) sprintf(&tmpstr[strlen(tmpstr)], ", thread execution, thread id = 0x%llx", (unsigned long long)pthread_self());
-   else sprintf(&tmpstr[strlen(tmpstr)], ", mediaTest cmd line");
+/* use backtrace() to show thread heritage (mediaTest, media command line, stress test mode, etc) JHB May 2024 */
+
+   if (fMediaThread) {
+
+      char* szBacktrace = &((char*)pExecuteMode)[4];
+      if (strlen(szBacktrace) < 1000 && strstr(szBacktrace, "backtrace:")) sprintf(&tmpstr[strlen(tmpstr)], "%s, ", &szBacktrace[11]);
+
+      free(pExecuteMode);
+   }
+
+   DSGetBacktrace(2, &tmpstr[strlen(tmpstr)], 0);  /* currently only 2 levels needed; might change, JHB May 2024 */
+
    if (frame_mode) sprintf(&tmpstr[strlen(tmpstr)], " (frame mode)");
-   strcat(tmpstr, "\n");
+   sprintf(&tmpstr[strlen(tmpstr)], ", thread id = 0x%llx \n", (unsigned long long)pthread_self());
    sig_printf(tmpstr, PRN_NO_LEVEL, -1);
 
 /* check if logging and libraries need to be initialized. Should be done by the app, but we check anyway, JHB Jan 2023 */

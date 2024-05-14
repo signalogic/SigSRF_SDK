@@ -59,7 +59,7 @@
 #define ENABLE_WAV_OUTPUT                    0x800  /* m| enable wav file output for stream group processing, such as audio stream merging */
 #define ROUND_ROBIN_SESSION_ALLOCATION       0x4000  /* m| allocate sessions to packet/media threads in round-robin manner. The idea is to keep p/m thread load balanced. This flag should be specified for high capacity situations */
 #define WHOLE_GROUP_THREAD_ALLOCATE          0x8000  /* m| do not split stream group sessions across packet/media threads. This avoids use of locks (semaphores) inside streamlib and gives higher performance */
-#define ANALYTICS_MODE                       0x40000  /* m| enable combination of pktlib FTRT mode and ptime interval packet push/pull. This is used in analytics mode when input packets do not have wall clock timing, or they do but timing is unreliable (lawful interception is one example) */
+#define ANALYTICS_MODE                       0x40000  /* m| analytics mode is used when (i) no reference should be made to wall clocks, (ii) input packets do not have wall clock timing, or they might but their values are unreliable (lawful interception is one example) */
 #define AUTO_ADJUST_PUSH_RATE                0x80000  /* m| enable automatically adjusting packet push rate. Currently supported only when ANALYTICS_MODE is enabled. Should not be specified concurrently with USE_PACKET_ARRIVAL_TIMES */
 
 /* disables, enables */

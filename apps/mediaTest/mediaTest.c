@@ -1270,7 +1270,7 @@ cmd_err: printf("Invalid cmd line options for %s, make sure: \n", modestr);
       *arg = 0;  /* give x86_mediaTest() default values of no app threads (process only) */
 
       #if 0
-      printf("before call, *arg = %d, executionMode[0] = %d, x86_pkt_test = %d, frame_mode = %d \n", *arg, executionMode[0], x86_pkt_test, frame_mode);
+      printf("before call, *arg = %d, executeMode[0] = %d, x86_pkt_test = %d, frame_mode = %d \n", *arg, executeMode[0], x86_pkt_test, frame_mode);
       #endif
 
       x86_mediaTest(arg);  /* run x86 mediaTest with default params of 1 app thread, thread index = 0 */

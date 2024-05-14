@@ -1,5 +1,5 @@
 /*
- $Header: /root/Signalogic/DirectCore/lib/diaglib/diaglib.c
+ $Header: /root/Signalogic/DirectCore/lib/diaglib/diaglib.cpp
 
  Copyright Signalogic Inc. 2017-2024
 
@@ -54,7 +54,6 @@
   Modified Apr 2020 JHB, fix bug in timestamp mismatch output where output sequence number didn't include wrap count
   Modified May 2020 JHB, implement STREAM_STATS struct changes to rename numRepair to numSIDRepair and add numMediaRepair
   Modified Mar 2021 JHB, add DIAGLIB_STANDALONE #define option to build without DirectCore header file
-  Modified Jan 2023 JHB, add DSConfigLogging() to allow apps to abort DSPktStatsWriteLogFile() and other potentially time-consuming APIs if needed
   Modified Jun 2023 JHB, minor changes to packet description format (i) "pkt len =" to "rtp pyld len =" (ii) print "media" instead of nothing for media packets
   Modified Nov 2023 JHB, in analysis_and_stats() (analysis of input vs output packets) implement input vs. output sequence number range check. This solves some cases of transmissions that incorrectly increment sequence numbers after a SID (i.e. increment sequence number without sending a packet), in which case pktlib sees missing packets as loss and fills them in with SID reuse. See comments for more detail
   Modified Nov 2023 JHB, in analysis_and_stats() correct what appears to be a mistake in overwriting search_offset
@@ -63,12 +62,16 @@
   Modified Mar 2024 JHB, move version string to lib_logging.c
   Modified Apr 2024 JHB, implement DS_PKT_PYLD_CONTENT_MEDIA_REUSE, rename sid_reuse_offset to search_offset
   Modified Apr 2024 JHB, add "long SID timestamp mismatch" case handling in analysis_and_stats()
+  Modified May 2024 JHB, convert to cpp
 */
 
 /* Linux includes */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>  /* std::min and std::max */
+
+using namespace std;
 
 /* SigSRF includes */
 
@@ -82,11 +85,10 @@
   #include <sys/time.h>
 #endif
 
-extern DEBUG_CONFIG lib_dbg_cfg;  /* in lib_logging.c */
+extern DEBUG_CONFIG lib_dbg_cfg;  /* in lib_logging.cpp */
 
-extern sem_t diaglib_sem;  /* in lib_logging.c */
+extern sem_t diaglib_sem;  /* in lib_logging.cpp */
 extern int diaglib_sem_init;
-extern int update_log_config(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags, bool fUseSem);
 
 /* private includes */
 
@@ -142,7 +144,7 @@ int        sorted_point;
 PKT_STATS  temp_pkts;
 int        seq_wrap[MAX_SSRC_TRANSITIONS] = { 0 };  /* MAX_SSRC_TRANSITIONS defined in shared_include/session.h, currently 128 */
 int        ssrc_idx, num_ssrcs;
-bool       fDebug = lib_dbg_cfg.uLogLevel > 8;  /* lib_dbg_cfg is in lib_logging.c */
+bool       fDebug = lib_dbg_cfg.uLogLevel > 8;  /* lib_dbg_cfg is in lib_logging.cpp */
 
 #define SEARCH_WINDOW        30
 #define MAX_MISSING_SEQ_GAP  20000  /* max missing seq number gap we can tolerate */
@@ -207,7 +209,7 @@ group_ssrcs:
                   if (pkts[j+k].rtp_SSRC == ssrcs[ssrc_idx]) {
 
 #define NEW_SEQ_CALC
-                     if (!nWrap && !seq_wrap[ssrc_idx]) first_seqnum = min(first_seqnum, pkts[j+k].rtp_seqnum);  /* if wrap has occurred at any point for this SSRC, no longer look for first seq number */
+                     if (!nWrap && !seq_wrap[ssrc_idx]) first_seqnum = min(first_seqnum, (unsigned int)pkts[j+k].rtp_seqnum);  /* if wrap has occurred at any point for this SSRC, no longer look for first seq number */
 #ifndef NEW_SEQ_CALC
                      last_seqnum = max(last_seqnum, pkts[j+k].rtp_seqnum + 65536L*nWrap);
 #endif
@@ -252,7 +254,7 @@ group_ssrcs:
             -the abs() is operating on unsigned ints, hopefully that's ok
           */
   
-            if (abs(last_seqnum - last_rtp_seqnum[ssrc_idx]) < MAX_MISSING_SEQ_GAP) last_rtp_seqnum[ssrc_idx] = max(last_seqnum, last_rtp_seqnum[ssrc_idx]);
+            if (abs((int32_t)(last_seqnum - last_rtp_seqnum[ssrc_idx])) < MAX_MISSING_SEQ_GAP) last_rtp_seqnum[ssrc_idx] = max(last_seqnum, last_rtp_seqnum[ssrc_idx]);
 
             if (pkts[j].rtp_seqnum == 65535L) seq_wrap[ssrc_idx]++;  /* check for seq number wrap */
 #endif
@@ -349,7 +351,7 @@ void print_packet_type(FILE* fp_log, unsigned int info_flags, int rtp_pyldlen, i
 }
 
 
-int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, char* label, uint32_t ssrcs[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[]) {
+int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, const char* label, uint32_t ssrcs[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[]) {
 
 int           i, j, k, nSpaces;
 bool          fFound_sn, fDup_sn, fOoo_sn;
@@ -585,6 +587,7 @@ char          ssrc_indent[20] = "";
 char          info_indent[20] = "  ";
 char          szLastSeq[100], szStreamStr[200], szGroupStr[200] = "";
 char          tmpstr[200];
+int           num_in_pkts, num_out_pkts;
 
 typedef struct {
    int output_index;
@@ -613,7 +616,7 @@ int nGroupIndex, stream_count, nNumGroups = 0;
 
    if (uFlags & DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP) {
 
-      GroupMap = calloc(MAX_GROUPS, sizeof(GROUPMAP));  /* as of Jan2020 there is still some problem with stack space in diaglib.  Declaring GroupMap on the stack causes a seg fault upon entry to analysis_and_stats() (even if first line is a printf, it won't print, and gdb shows nothing beyond the function header), so we're using calloc, JHB Jan2020 */
+      GroupMap = (GROUPMAP*)calloc(MAX_GROUPS, sizeof(GROUPMAP));  /* as of Jan2020 there is still some problem with stack space in diaglib.  Declaring GroupMap on the stack causes a seg fault upon entry to analysis_and_stats() (even if first line is a printf, it won't print, and gdb shows nothing beyond the function header), so we're using calloc, JHB Jan2020 */
 
       for (i=0; i<num_ssrcs; i++) {
 
@@ -687,8 +690,8 @@ int nGroupIndex, stream_count, nNumGroups = 0;
 
 //   printf("ssrc = 0x%x, in_first_pkt_idx = %d, in_last_pkt_idx = %d, out_first_pkt_idx = %d, out_last_pkt_idx = %d,\n", in_ssrcs[i], in_first_pkt_idx[i], in_last_pkt_idx[i], out_first_pkt_idx[i], out_last_pkt_idx[i]);
 
-      int num_in_pkts = in_last_pkt_idx[i+in_ssrc_start] - in_first_pkt_idx[i+in_ssrc_start] + 1;
-      int num_out_pkts = out_last_pkt_idx[i_out+out_ssrc_start] - out_first_pkt_idx[i_out+out_ssrc_start] + 1;
+      num_in_pkts = in_last_pkt_idx[i+in_ssrc_start] - in_first_pkt_idx[i+in_ssrc_start] + 1;
+      num_out_pkts = out_last_pkt_idx[i_out+out_ssrc_start] - out_first_pkt_idx[i_out+out_ssrc_start] + 1;
 
       sprintf(szStreamStr, " %d", i);  /* print a stream heading */
 
@@ -731,6 +734,7 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       -DTX expansion (aka SID reuse packets) are not matched, instead they increment a search offset (search_offset)
    */
 
+      {
       drop_cnt = 0;
       drop_consec_cnt = 0;
       dup_cnt = 0;
@@ -768,7 +772,7 @@ int nGroupIndex, stream_count, nNumGroups = 0;
 
          rtp_seqnum_chk = input_pkts[j].rtp_seqnum + in_seq_wrap[i]*65536L;  /* input seq number */
 
-         if (abs(rtp_seqnum_chk - rtp_seqnum) < SEARCH_WINDOW) rtp_seqnum = rtp_seqnum_chk;  /* watch for case where input seq number wrapped early due to ooo, JHB Jan 2020 */
+         if (abs((int32_t)(rtp_seqnum_chk - rtp_seqnum)) < SEARCH_WINDOW) rtp_seqnum = rtp_seqnum_chk;  /* watch for case where input seq number wrapped early due to ooo, JHB Jan 2020 */
          else rtp_seqnum = input_pkts[j].rtp_seqnum + max(in_seq_wrap[i]-1, 0)*65536L;
 
          mismatch_count = 0;
@@ -953,6 +957,7 @@ check_for_reuse:
          if ((rtp_seqnum & 0xffff) == 65535L) in_seq_wrap[i]++;
 
       }  /* end of j loop */
+      }
 
       total_search_offset[i_out] = search_offset;
 
@@ -1053,7 +1058,8 @@ STREAM_STATS*  OutputStreamStats = NULL;
 
 #endif
 
-unsigned long long t1, t2;
+uint64_t       t1, t2;
+int            nThreadIndex;
 
    if (uFlags & DS_PKTSTATS_LOG_APPEND) fp_log = fopen(szLogfile, "ab");
    else fp_log = fopen(szLogfile, "wb");
@@ -1063,25 +1069,25 @@ unsigned long long t1, t2;
       goto cleanup;
    }
 
-   int nThreadIndex = GetThreadIndex(true);
+   nThreadIndex = GetThreadIndex(true);
 
-   in_first_pkt_idx = calloc(MAX_SSRCS, sizeof(int));
-   in_last_pkt_idx = calloc(MAX_SSRCS, sizeof(int));
-   in_first_rtp_seqnum = calloc(MAX_SSRCS, sizeof(uint32_t));
-   in_last_rtp_seqnum = calloc(MAX_SSRCS, sizeof(uint32_t));
-   in_ssrcs = calloc(MAX_SSRCS, sizeof(uint32_t));
+   in_first_pkt_idx = (int*)calloc(MAX_SSRCS, sizeof(int));
+   in_last_pkt_idx = (int*)calloc(MAX_SSRCS, sizeof(int));
+   in_first_rtp_seqnum = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
+   in_last_rtp_seqnum = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
+   in_ssrcs = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
 
-   out_first_pkt_idx = calloc(MAX_SSRCS, sizeof(int));
-   out_last_pkt_idx = calloc(MAX_SSRCS, sizeof(int));
-   out_first_rtp_seqnum = calloc(MAX_SSRCS, sizeof(uint32_t));
-   out_last_rtp_seqnum = calloc(MAX_SSRCS, sizeof(uint32_t));
-   out_ssrcs = calloc(MAX_SSRCS, sizeof(uint32_t));
+   out_first_pkt_idx = (int*)calloc(MAX_SSRCS, sizeof(int));
+   out_last_pkt_idx = (int*)calloc(MAX_SSRCS, sizeof(int));
+   out_first_rtp_seqnum = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
+   out_last_rtp_seqnum = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
+   out_ssrcs = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
 
-   io_map_ssrcs = calloc(MAX_SSRCS, sizeof(int));
-   used_map_ssrcs = calloc(MAX_SSRCS, sizeof(int));
+   io_map_ssrcs = (int*)calloc(MAX_SSRCS, sizeof(int));
+   used_map_ssrcs = (int*)calloc(MAX_SSRCS, sizeof(int));
 
-   InputStreamStats = calloc(MAX_SSRCS, sizeof(STREAM_STATS));
-   OutputStreamStats = calloc(MAX_SSRCS, sizeof(STREAM_STATS));
+   InputStreamStats = (STREAM_STATS*)calloc(MAX_SSRCS, sizeof(STREAM_STATS));
+   OutputStreamStats = (STREAM_STATS*)calloc(MAX_SSRCS, sizeof(STREAM_STATS));
 
    #ifndef NO_HWLIB
    t1 = get_time(USE_CLOCK_GETTIME);
@@ -1158,6 +1164,7 @@ unsigned long long t1, t2;
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
       #endif
+
       if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
    }
 
@@ -1206,6 +1213,7 @@ unsigned long long t1, t2;
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
       #endif
+
       if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
 
       #ifndef NO_HWLIB
@@ -1267,7 +1275,7 @@ unsigned long long t1, t2;
          num_ssrcs = out_ssrc_groups;
       }   
 
-   /* before comparing / analyzing input vs. output SSRC groups, we match up the groups, in case their order is different.  JHB Jul2018 */
+   /* before comparing / analyzing input vs. output SSRC groups, we match up the groups, in case their order is different.  JHB Jul 2018 */
 
 //      for (i=0; i<num_ssrcs; i++) printf("in_ssrcs[%u] = 0x%x\n", i, in_ssrcs[i]);
 //      for (i=0; i<num_ssrcs; i++) printf("out_ssrcs[%u] = 0x%x\n", i, out_ssrcs[i]);
@@ -1305,6 +1313,7 @@ unsigned long long t1, t2;
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
+
          if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
 
@@ -1316,6 +1325,7 @@ unsigned long long t1, t2;
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
+
          if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
 
@@ -1327,6 +1337,7 @@ unsigned long long t1, t2;
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
+
          if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
    }
@@ -1347,11 +1358,13 @@ unsigned long long t1, t2;
    t2 = tv.tv_sec * 1000000L + tv.tv_usec;
    #endif
 
-   char tstr[] = "msec";
-   float ltime = (t2-t1)/1000.0;
-   if (ltime > 100) { ltime = (t2-t1)/1000000.0; strcpy(tstr, "sec"); }
+   {
+      char tstr[] = "msec";
+      float ltime = (t2-t1)/1000.0;
+      if (ltime > 100) { ltime = (t2-t1)/1000000.0; strcpy(tstr, "sec"); }
 
-   Log_RT(4, "INFO: DSPktStatsWriteLogFile() says packet log analysis completed in %2.1f %s, packet log file = %s\n", ltime, tstr, szLogfile);
+      Log_RT(4, "INFO: DSPktStatsWriteLogFile() says packet log analysis completed in %2.1f %s, packet log file = %s\n", ltime, tstr, szLogfile);
+   }
 
    ret_code = 1;
 
@@ -1378,61 +1391,4 @@ cleanup:
    if (OutputStreamStats) free(OutputStreamStats);
 
    return ret_code;
-}
-
-/* DSConfigLogging - set/get LogInfo[] items. We use the thread based indexes set by DSInitLogging() in lib_logging.c */
-
-unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, void* pLogInfo) {
-
-unsigned int ret_val = (unsigned int)-1;
-int i, nIndex, start, end;
-bool fUseSem = false;
-
-   (void)pLogInfo;
-
-      nIndex = GetThreadIndex(true);  /* get LogInfo[] index for the current thread */
-
-   if (uFlags & DS_CONFIG_LOGGING_ALL_THREADS) { start = 0; end = MAXTHREADS-1; }
-   else {
-
-      nIndex = GetThreadIndex(true);  /* get LogInfo[] index for the current thread */
-      if (nIndex < 0) return (unsigned int)-1;
- 
-      start = nIndex; end = nIndex;
-   }
-
-   if (diaglib_sem_init) { fUseSem = true; sem_wait(&diaglib_sem); }
-
-   for (i=start; i<=end; i++) {
-
-      switch (action & DS_CONFIG_LOGGING_ACTION_MASK) {
-
-         case DS_CONFIG_LOGGING_SET_FLAG:
-            ret_val = LogInfo[i].uFlags;
-            LogInfo[i].uFlags |= uFlags;
-            break;
-
-         case DS_CONFIG_LOGGING_CLEAR_FLAG:
-            ret_val = LogInfo[i].uFlags;
-            LogInfo[i].uFlags &= ~uFlags;
-            break;
-
-         case DS_CONFIG_LOGGING_SET_UFLAGS:
-            ret_val = LogInfo[i].uFlags;
-            LogInfo[i].uFlags = uFlags;
-            break;
-
-         case DS_CONFIG_LOGGING_GET_UFLAGS:
-            ret_val = LogInfo[i].uFlags;
-            break;
-
-         case DS_CONFIG_LOGGING_SET_DEBUG_CONFIG:
-            ret_val = update_log_config((DEBUG_CONFIG*)pLogInfo, uFlags, false);  /* update event log configuration dynamically */
-            break;
-      }
-   }
-
-   if (fUseSem) sem_post(&diaglib_sem);
-
-   return ret_val;
 }

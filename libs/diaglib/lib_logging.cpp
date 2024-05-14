@@ -1,60 +1,62 @@
 /*
-  $Header: /root/Signalogic/DirectCore/lib/diaglib/lib_logging.c
+ $Header: /root/Signalogic/DirectCore/lib/diaglib/lib_logging.cpp
  
-  Description: SigSRF and EdgeStream event logging APIs
+ Description: SigSRF and EdgeStream event logging APIs
  
-  Project: SigSRF, DirectCore
+ Project: SigSRF, DirectCore
  
-  Copyright Signalogic Inc. 2017-2024
+ Copyright Signalogic Inc. 2017-2024
 
-  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+ Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
-  Revision History
+ Revision History
   
-   Created Aug 2017 Chris Johnson
-   Modified Sep 2017 JHB, moved Log_RT() here from pktlib_logging.c.  Moved declaration of pktlib_dbg_cfg here from pktlib.c (and renamed to lib_dbg_cfg).  Added DSGetAPIStatus() error/warning and function codes
-   Modified Sep 2017 JHB, added more DS_API_CODE_xxx definitions
-   Modified Jul 2018 CKJ, look at LOG_SCREEN_ONLY, LOG_FILE_ONLY, AND LOG_SCREEN_FILE constants in Log_RT()
-   Modified Oct 2018 JHB, add timestamps to Log_RT() output (see USE_TIMESTAMP define below).  Possibly this should be an option in the DEBUG_CONFIG struct (shared_include/config.h)
-   Modified Jan 2019 JHB, remove 0..23 wrap from hours field of logging timestamp
-   Modified Feb 2019 JHB, add code to look at LOG_SET_API_STATUS flag
-   Modified Nov 2019 JHB, add va_end() to match va_start() in Log_RT().  Could not having then been cause of very slow mem leak ?
-   Modified Dec 2019 JHB, add log file creation if lib_dbg_cfg.uEventLogFile is NULL, recreation if the file is deleted (possibly by an external process), uEventLog_fflush_size and uEventLog_max_size support
-   Modified Jan 2020 JHB, use libg_dbg_cfg.uPrintfControl to determine screen output of Log_RT(), see comments near USE_NONBUFFERED_OUTPUT
-   Modified Feb 2020 JHB, implement wall clock timestamp option
-   Modified Mar 2020 JHB, implement DS_LOG_LEVEL_FILE_ONLY flag, handle leading newline (\n) in app supplied strings
-   Modified Mar 2020 JHB, implement uLineCursorPos and isCursorMidLine in screen output handling; isCursorPosMidLine determines leading \n decisions. uLineCursorPos records cursor position within a line
-   Modified Apr 2020 JHB, implement DSGetLogTimeStamp() API
-   Modified Jan 2021 JHB, include string.h with _GNU_SOURCE defined, change loglevel param in Log_RT() from uint16_t to uint32_t, implement DS_LOG_LEVEL_SUBSITUTE_WEC flag (config.h). See comments
-   Modified Mar 2021 JHB, minor adjustments to removal of unncessary Makefile defines, add DIAGLIB_STANDALONE #define option to build without isPmThread()
-   Modified Dec 2022 JHB, add DSInitLogging(), DSUpdateLogConfig(), and DSCloseLogging() APIs to (i) simply interface from apps, and (ii) clarify multiprocess use of diaglib
-   Modified Jan 2023 JHB, put in place new method of handling per-thread API status. See references to LogInfo[] and comments
-   Modified Jan 2023 JHB, in Log_RT(), replace strstr() with strcasestr(), avoid additional upper case copy to a temporary string
-   Modified Jan 2023 JHB, make GetThreadIndex() not static, callable from diaglib.c
-   Modified Feb 2024 JHB, Makefile now defines NO_PKTLIB and NO_HWLIB if standalone=1 given on command line. Delete DIAGLIB_STANDALONE reference
-   Modified Feb 2024 JHB, increase MAX_STR_SIZE and adjust max string size in vsnprintf() due to user-reported crash running pcap where one session had 20+ RFC8108 dynamic channel changes (evidently cell tower handoffs) and the run-time stats summary became very large
-   Modified Feb 2024 JHB, add optional user-defined time value param to DSGetLogTimestamp(), implement new DS_EVENT_LOG_USER_TIMEVAL and DS_EVENT_LOG_TIMEVAL_PRECISE flags (defined in shared_include/config.h)
-   Modified Feb 2024 JHB, add DSGetMD5Sum() API, see usage comments below and in diaglib.h
-   Modified Mar 2024 JHB, add return value to Log_RT(). Now it returns number of chars written, as with printf() and fprintf()
-   Modified Mar 2024 JHB, fix bug in open_log_file() where it attempted to use the diaglib semaphore before it's initialized
-   Modified Apr 2024 JHB, deprecate DS_LOG_LEVEL_UPTIME_TIMESTAMP flag (diaglib.h) and DS_EVENT_LOG_UPTIME_TIMESTAMPS flag (shared_include/config.h), the default (no flag) is now uptime timestamps. DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp
-   Modified Apr 2024 JHB, DSGetLogTimestamp() now returns length of timestamp string
+  Created Aug 2017 Chris Johnson
+  Modified Sep 2017 JHB, moved Log_RT() here from pktlib_logging.c.  Moved declaration of pktlib_dbg_cfg here from pktlib.c (and renamed to lib_dbg_cfg).  Added DSGetAPIStatus() error/warning and function codes
+  Modified Sep 2017 JHB, added more DS_API_CODE_xxx definitions
+  Modified Jul 2018 CKJ, look at LOG_SCREEN_ONLY, LOG_FILE_ONLY, AND LOG_SCREEN_FILE constants in Log_RT()
+  Modified Oct 2018 JHB, add timestamps to Log_RT() output (see USE_TIMESTAMP define below).  Possibly this should be an option in the DEBUG_CONFIG struct (shared_include/config.h)
+  Modified Jan 2019 JHB, remove 0..23 wrap from hours field of logging timestamp
+  Modified Feb 2019 JHB, add code to look at LOG_SET_API_STATUS flag
+  Modified Nov 2019 JHB, add va_end() to match va_start() in Log_RT().  Could not having then been cause of very slow mem leak ?
+  Modified Dec 2019 JHB, add log file creation if lib_dbg_cfg.uEventLogFile is NULL, recreation if the file is deleted (possibly by an external process), uEventLog_fflush_size and uEventLog_max_size support
+  Modified Jan 2020 JHB, use libg_dbg_cfg.uPrintfControl to determine screen output of Log_RT(), see comments near USE_NONBUFFERED_OUTPUT
+  Modified Feb 2020 JHB, implement wall clock timestamp option
+  Modified Mar 2020 JHB, implement DS_LOG_LEVEL_FILE_ONLY flag, handle leading newline (\n) in app supplied strings
+  Modified Mar 2020 JHB, implement uLineCursorPos and isCursorMidLine in screen output handling; isCursorPosMidLine determines leading \n decisions. uLineCursorPos records cursor position within a line
+  Modified Jan 2021 JHB, include string.h with _GNU_SOURCE defined, change loglevel param in Log_RT() from uint16_t to uint32_t, implement DS_LOG_LEVEL_SUBSITUTE_WEC flag (config.h). See comments
+  Modified Mar 2021 JHB, minor adjustments to removal of unncessary Makefile defines, add STANDALONE #define option to build without isPmThread()
+  Modified Dec 2022 JHB, add DSInitLogging(), DSUpdateLogConfig(), and DSCloseLogging() APIs to (i) simply interface from apps, and (ii) clarify multiprocess use of diaglib
+  Modified Jan 2023 JHB, put in place new method of handling per-thread API status. See references to LogInfo[] and comments
+  Modified Jan 2023 JHB, in Log_RT(), replace strstr() with strcasestr(), avoid additional upper case copy to a temporary string
+  Modified Jan 2023 JHB, make GetThreadIndex() not static, callable from diaglib.c
+  Modified Jan 2023 JHB, add DSConfigLogging() to allow apps to abort DSPktStatsWriteLogFile() and other potentially time-consuming APIs if needed
+  Modified Feb 2024 JHB, Makefile now defines NO_PKTLIB, NO_HWLIB, and STANDALONE if standalone=1 given on command line
+  Modified Feb 2024 JHB, increase MAX_STR_SIZE and adjust max string size in vsnprintf() due to user-reported crash running pcap where one session had 20+ RFC8108 dynamic channel changes (evidently cell tower handoffs) and the run-time stats summary became very large
+  Modified May 2024 JHB, convert to cpp, move DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs to diaglib_util.cpp
 */
 
 /* Linux and/or other OS includes */
 
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+  #define _GNU_SOURCE  /* strcasestr() */
+#endif
+
 #include <string.h>
 #include <stdarg.h>  /* va_start(), va_end() */
 #include <pthread.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#ifdef STANDALONE
+  #include <sys/stat.h>
+#endif
 #include <errno.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdbool.h>
+
+using namespace std;
 
 /* SigSRF includes */
 
@@ -71,12 +73,8 @@
 
 #include "diaglib_priv.h"
 
-#ifdef STANDALONE
-  #define MAX_INPUT_LEN  256
-#endif
-
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.8.1";
+const char DIAGLIB_VERSION[256] = "1.9.0";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 
@@ -88,26 +86,26 @@ int diaglib_sem_init = 0;
 static uint64_t last_size = 0;
 static int app_log_file_count = 0;
 
-DEBUG_CONFIG lib_dbg_cfg = { 5 };  /* moved here from pktlib.c, JHB Sep017.  Init to log level 5 for apps that don't make a DSConfigPktlib() call, JHB Jul2019 */
+DEBUG_CONFIG lib_dbg_cfg = { 5 };  /* moved here from pktlib.c, JHB Sep 2017.  Init to log level 5 for apps that don't make a DSConfigPktlib() call, JHB Jul 2019 */
 
 volatile uint8_t uLineCursorPos = 0;  /* referenced by p/m threads and apps if they want to know / set the current screen line cursor position */
 volatile uint8_t isCursorMidLine = 0;
 volatile uint32_t pm_thread_printf = 0;
 
-uint32_t event_log_critical_errors = 0;  /* keep track of event log errors and warnings for program lifespan. The main purpose of this is to quickly show a general error summary in the run-time stats without having to search the event log. It's not that useful because it doesn't break down by session or stream (channel), JHB May2020 */
+uint32_t event_log_critical_errors = 0;  /* keep track of event log errors and warnings for program lifespan. The main purpose of this is to quickly show a general error summary in the run-time stats without having to search the event log. It's not that useful because it doesn't break down by session or stream (channel), JHB May 2020 */
 uint32_t event_log_errors = 0;
 uint32_t event_log_warnings = 0;
 
 /* private APIs and definitions */
 
-/* create, get, and delete per-thread indexes for use in LogInfo[nThread].xxx access, JHB Jan2023:
+/* create, get, and delete per-thread indexes for use in LogInfo[nThread].xxx access, JHB Jan 2023:
 
   -pre-thread indexes are created by DSInitLogging() which calls private CreateThreadIndex(), and deleted by DSCloseLogging() which calls private DeleteThreadIndex(). Both use diaglib_sem to control multithread access
   -pktlib packet/media threads and mediaMin and mediaTest app threads call DSInitLogging() and DSCloseLogging()
   -the "zeroth" index is reserved for any applications or threads not calling DSInitLogging(); i.e. if GetThreadIndex() does not find a thread index, these share a thread index
 */
 
-LOGINFO LogInfo[MAXTHREADS] = {{ 0 }};  /* also referenced in diaglib.c */
+LOGINFO LogInfo[MAXTHREADS] = {{ 0 }};  /* also referenced in diaglib.cpp */
 
 
 static int CreateThreadIndex(void) {  /* local API */
@@ -187,7 +185,7 @@ int nIndex;
 #endif
 }
 
-static bool isFileDeleted(FILE* fp) {  /* check if file has been deleted, possibly be an external process.  Note we cannot use fwrite() or other error codes, we need to look at file descriptor level, JHB Dec2019 */
+static bool isFileDeleted(FILE* fp) {  /* check if file has been deleted, possibly be an external process.  Note we cannot use fwrite() or other error codes, we need to look at file descriptor level, JHB Dec 2019 */
 
 bool fRet = false;
 struct stat fd_stat;
@@ -203,7 +201,7 @@ int fd;
    return fRet;
 }
 
-static inline void strlcpy(char* dst, const char* src, int maxlen) {  /* implementation of strlcpy() since it's a BSD Linux function and evidently not available in gcc/g++, JHB Jan2020 */
+static inline void strlcpy(char* dst, const char* src, int maxlen) {  /* implementation of strlcpy() since it's a BSD Linux function and evidently not available in gcc/g++, JHB Jan 2020 */
 
    #ifndef STANDALONE
    int cpylen =  min((int)strlen(src), maxlen-1);
@@ -218,7 +216,7 @@ static int open_log_file(bool fAllowAppend, bool fUseSem) {
 
 bool fUseSemLocal = false;
 
-   if (!lib_dbg_cfg.uEventLogFile && strlen(lib_dbg_cfg.szEventLogFilePath)) {  /* create event log file (or open it for appending), if needed, JHB Dec2019 */
+   if (!lib_dbg_cfg.uEventLogFile && strlen(lib_dbg_cfg.szEventLogFilePath)) {  /* create event log file (or open it for appending), if needed, JHB Dec 2019 */
 
       if (fUseSem && diaglib_sem_init) { fUseSemLocal = true; sem_wait(&diaglib_sem); }
 
@@ -267,7 +265,7 @@ bool fUseSemLocal = false;
    return 0;  /* 0 indicates event log file aleady open */
 }
 
-int update_log_config(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags, bool fUseSem) {  /* not static, called by DSConfigLogging() in diaglib.c */
+static int update_log_config(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags, bool fUseSem) {  /* called by DSConfigLogging() below */
 
 bool fUseSemLocal = false;
 
@@ -377,6 +375,61 @@ static uint8_t lock = 0;
    return ret_val;
 }
 
+/* DSConfigLogging - set/get LogInfo[] items. We use the thread based indexes set by DSInitLogging() in lib_logging.cpp */
+
+unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, void* pLogInfo) {
+
+unsigned int ret_val = (unsigned int)-1;
+int i, nIndex, start, end;
+bool fUseSem = false;
+
+   (void)pLogInfo;
+
+   if (uFlags & DS_CONFIG_LOGGING_ALL_THREADS) { start = 0; end = MAXTHREADS-1; }
+   else {
+
+      nIndex = GetThreadIndex(true);  /* get LogInfo[] index for the current thread */
+      if (nIndex < 0) return (unsigned int)-1;
+ 
+      start = nIndex; end = nIndex;
+   }
+
+   if (diaglib_sem_init) { fUseSem = true; sem_wait(&diaglib_sem); }
+
+   for (i=start; i<=end; i++) {
+
+      switch (action & DS_CONFIG_LOGGING_ACTION_MASK) {
+
+         case DS_CONFIG_LOGGING_SET_FLAG:
+            ret_val = LogInfo[i].uFlags;
+            LogInfo[i].uFlags |= uFlags;
+            break;
+
+         case DS_CONFIG_LOGGING_CLEAR_FLAG:
+            ret_val = LogInfo[i].uFlags;
+            LogInfo[i].uFlags &= ~uFlags;
+            break;
+
+         case DS_CONFIG_LOGGING_SET_UFLAGS:
+            ret_val = LogInfo[i].uFlags;
+            LogInfo[i].uFlags = uFlags;
+            break;
+
+         case DS_CONFIG_LOGGING_GET_UFLAGS:
+            ret_val = LogInfo[i].uFlags;
+            break;
+
+         case DS_CONFIG_LOGGING_SET_DEBUG_CONFIG:
+            ret_val = update_log_config((DEBUG_CONFIG*)pLogInfo, uFlags, false);  /* update event log configuration dynamically */
+            break;
+      }
+   }
+
+   if (fUseSem) sem_post(&diaglib_sem);
+
+   return ret_val;
+}
+
 int DSCloseLogging(unsigned int uFlags) {
 
    (void)uFlags;
@@ -400,7 +453,8 @@ int DSCloseLogging(unsigned int uFlags) {
 #define MAX_STR_SIZE 8000  /* increased from 4000, JHB Feb 2024 */
 #define MAX_ERRSTR_SIZE 200
 
-static uint64_t usec_init = 0;
+uint64_t usec_base = 0;
+uint8_t usec_init_lock = 0;
 
 int Log_RT(uint32_t loglevel, const char* fmt, ...) {
 
@@ -412,17 +466,24 @@ int slen = 0, fmt_start = 0;
 
    if ((lib_dbg_cfg.uEventLogMode & DS_EVENT_LOG_WARN_ERROR_ONLY) && (loglevel & DS_LOG_LEVEL_MASK) > 3) return 0;  /* event log warn and error output only (temporarily) */
 
-   if (!usec_init) {
+/* set a memory barrier, prevent multiple uncoordinated threads from initializing usec_base more than once. Note this same lock also protects usec_base initialization in DSGetLogTimeStamp() (in diaglib_util.cpp), JHB May 2024 */
+
+   while (__sync_lock_test_and_set(&usec_init_lock, 1) != 0);  /* wait until the lock is zero then write 1 to it. While waiting keep writing a 1 */
+
+   if (!usec_base) {  /* initialize usec_base if needed. Log_RT() makes the same check, JHB May 2024 */
+
       struct timeval tv;
       gettimeofday(&tv, NULL);
-      usec_init = tv.tv_sec*1000000L + tv.tv_usec;
+      usec_base = tv.tv_sec*1000000L + tv.tv_usec;
    }
+
+   __sync_lock_release(&usec_init_lock);  /* clear the mem barrier (write 0 to the lock) */
 
    log_string[0] = (char)0;  /* ensure strlen(log_string) is zero */
 
    if (loglevel & DS_LOG_LEVEL_APPEND_STRING) {
 
-      char* p_fmt_start = strstr(fmt, "%s");
+      char* p_fmt_start = strstr((char*)fmt, "%s");
 
       if (p_fmt_start) {
          fmt_start = p_fmt_start - fmt;
@@ -454,7 +515,7 @@ int slen = 0, fmt_start = 0;
 
       va_end(va);  /* added JHB Nov 2019 */
 
-   /* leading newline handling: if first char in user string is a newline, move the newline to be in front of the timestamp, JHB Mar2020 */
+   /* leading newline handling: if first char in user string is a newline, move the newline to be in front of the timestamp, JHB Mar 2020 */
 
       if (log_string[ts_str_len] == '\n') {
          int i;
@@ -462,7 +523,7 @@ int slen = 0, fmt_start = 0;
          log_string[0] = '\n';
       }
 
-   /* add newline if one not already there, JHB Sep2017. Made optional with DS_EVENT_LOG_DONT_ADD_NEWLINE flag, JHB Apr2020 */
+   /* add newline if one not already there, JHB Sep2017. Made optional with DS_EVENT_LOG_DONT_ADD_NEWLINE flag, JHB Apr 2020 */
 
       if (!(loglevel & DS_LOG_LEVEL_DONT_ADD_NEWLINE) && log_string[strlen(log_string)-1] != '\n') strcat(log_string, "\n");
 
@@ -487,7 +548,7 @@ int slen = 0, fmt_start = 0;
          3) Maybe some internal APIs should be "2nd and 3rd level" flags that can be combined, if calls can go 3 levels deep
       */
 
-         if ((loglevel & DS_LOG_LEVEL_MASK) < 4) {  /* check only 0-3 for error/warning, JHB Jan2020 */
+         if ((loglevel & DS_LOG_LEVEL_MASK) < 4) {  /* check only 0-3 for error/warning, JHB Jan 2020 */
 
             int status_code = 0;
 
@@ -531,7 +592,7 @@ create_log_file_if_needed:
 
          if (lib_dbg_cfg.uEventLogFile) {
 
-         /* check for WEC substitution, notes:  JHB Jan2021
+         /* check for WEC substitution, notes:  JHB Jan 2021
 
             -applied to log file text only (not screen)
             -objective is to prevent false-positive keyword searches for warning, error, or critical when needed. Such searches may be manual or automated by scripts to check for stress test errors, in logs generated over hours or days
@@ -643,91 +704,4 @@ create_log_file_if_needed:
    }
 
    return slen;
-}
-
-int DSGetLogTimeStamp(char* timestamp, int max_str_len, uint64_t user_timeval, unsigned int uFlags) {
-
-time_t ltime;
-struct tm tm;
-struct timeval tv;
-uint64_t usec = 0;
-bool fWallClockTimestamp = (uFlags & DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS) != 0;
-#if 0  /* the default (no flag) is now uptime timestamps. When calling Log_RT(), the DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp, JHB Apr 2024 */
-bool fUptimeTimestamp = (uFlags & DS_EVENT_LOG_UPTIME_TIMESTAMPS) != 0;
-#else
-bool fUptimeTimestamp = true;
-#endif
-
-/* Note that wall clock and uptime timestamps can be combined (as an example, mediaMin interactive keyboard debug output ('d' key) does this), JHB Apr 2020 */
- 
-   if (fWallClockTimestamp) { /* include wall clock timestamp if specified, JHB Feb 2020 */
-   
-      ltime = time(NULL);
-      localtime_r(&ltime, &tm);
-      strftime(timestamp, max_str_len, "%m/%d/%Y %H:%M:%S", &tm);
-
-      if (uFlags & DS_EVENT_LOG_USER_TIMEVAL) usec = user_timeval;
-      else {
-         gettimeofday(&tv, NULL);
-         usec = tv.tv_sec*1000000L + tv.tv_usec - usec_init;
-      }
-
-      if (!fUptimeTimestamp || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISE)) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));  /* add msec and usec -- see uptime timestamp generation comments below */
-   }
-   
-   if (fUptimeTimestamp) {  /* include uptime timestamp if specified, JHB Apr 2020 */
-
-      if (!fWallClockTimestamp) {
-
-         timestamp[0] = '\0';  /* if wallclock timestamps were not requested, ensure timestamp has zero length before concatenating */
-
-         if (uFlags & DS_EVENT_LOG_USER_TIMEVAL) usec = user_timeval;
-         else {
-            gettimeofday(&tv, NULL);
-            usec = tv.tv_sec*1000000L + tv.tv_usec - usec_init;
-         }
-      }
-
-   /* generate uptime (relative) timestamp:
-
-      -hours, minutes, sec, msec, and usec. A high granularity is required to help measure and debug audio quality, stream alignment, and other timing issues
-      -note for number of hours we don't use modulus to stay within a range. When number of digits exceeds the %02 specifier, sprintf doesn't cut anything off (verified with 100+ hr stress tests, JHB Mar 2019)
-   */
-
-      if (fWallClockTimestamp) strcat(timestamp, " (");  /* note that parens () are applied only if both wallclock and uptime timestamps are requested */
-      int hours = (int)(usec/3600000000L);
-      if (!(uFlags & DS_EVENT_LOG_USER_TIMEVAL) || hours > 0) sprintf(&timestamp[strlen(timestamp)], "%02d:", hours);  /* for user-specified timeval, omit hours unless != zero, JHB Feb 2024 */
-      sprintf(&timestamp[strlen(timestamp)], "%02d:%02d", (int)(usec/60000000L) % 60, (int)(usec/1000000L) % 60);
-
-      if (!(uFlags & DS_EVENT_LOG_USER_TIMEVAL) || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISE)) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));
-      if (fWallClockTimestamp) strcat(timestamp, ")");  /* for user-specified timeval, omit sec and usec unless user gives TIMEVAL_PRECISE flag, JHB Feb 2024 */
-   }
-
-   return strlen(timestamp);
-}
-
-/* get md5sum of path+file in szFilename, max_str_len should specify maximum string length of md5str. Return value of 1 indicates success, negative values an error condition, JHB Feb 2024 */
-
-int DSGetMD5Sum(const char* szFilename, char* md5str, int max_str_len) {
-
-char cmdstr[2*MAX_INPUT_LEN] = "md5sum";  /* command string to format and give to popen(). MAX_INPUT_LEN is defined in shared_include/userInfo.h as equivalent to CMDOPT_MAX_INPUT_LEN (defined in apps/common/cmdLineOpt.h) */
-int ret_val = -1;
-
-   sprintf(&cmdstr[strlen(cmdstr)], " %s", szFilename);
-
-   if (md5str && max_str_len > 0) {
-
-      FILE *fp = popen(cmdstr, "r");  /* use popen() to execute md5sum cmd line and fscanf() to retrieve cmd line output */
-
-      if (fp) {
-
-         char formatstr[50];
-         sprintf(formatstr, "%%%ds", max_str_len);  /* create format string with limit on buffer read, for example "%200s" */
-
-         ret_val = fscanf(fp, formatstr, md5str);  /* if it runs correctly, md5sum will output 2 values: (i) md5 hash result (ii) filename. We are scanning only for first one, so we expect ret_val of 1 on success */
-         pclose(fp);
-      }
-   }
-   
-   return ret_val;
 }

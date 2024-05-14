@@ -52,6 +52,7 @@
    Modified Feb 2024 JHB, add fShow_md5sum and fShow_audio_classification to support --md5sum and --show_aud_clas command line options
    Modified Feb 2024 JHB, give CIM_GCL_MEDIATEST flag to cimGetCmdLine() if needed
    Modified Apr 2024 JHB, set executeMode[0] to 'a' for mediaTest packet and frame test modes, nail down initialization of RealTimeInterval[]
+   Modified May 2024 JHB, add more checks when setting executeMode[0]
 */
 
 
@@ -264,9 +265,12 @@ int i;
    gpx_process = (fGpxInputFile != 0);
 
    if (!codec_test && !pcap_extract && fPcapInputFile && (fAudioOutputFile || USBAudioOutput)) {
-   
-      executeMode[0] = 'a';  /* mediaTest packet and frame modes that assign threads to packet_flow_media_proc(), JHB Apr 2024 */
-      codec_test = true;
+
+      if (executeMode[0] != 't' && executeMode[0] != 'p' && executeMode[0] != 'c') {  /* safeguard -- don't overwrite executeMode[0] if it already has a different legit value, JHB May 2024 */
+
+         executeMode[0] = 'a';  /* mediaTest packet and frame modes that assign threads to packet_flow_media_proc(), JHB Apr 2024 */
+         codec_test = true;
+      }
    }
 
 // printf("codec_test = %d, pcap_extract = %d, pcap input file = %d\n", codec_test, pcap_extract, fPcapInputFile);

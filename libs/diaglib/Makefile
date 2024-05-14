@@ -24,6 +24,7 @@
 #  Modified Mar 2021 JHB, add INSTALLPATH to allow builds on relative folder structure, remove unnecessary defines
 #  Modified Feb 2024 JHB, if standalone=1 given on command line define STANDALONE, NO_HWLIB, and NO_PKTLIB, and build dialglib_standalone.so
 #  Modified Feb 2024 JHB, apply soname only to default libdiaglib.so to avoid ldconfig conflicts, rename CC_FLAGS to CFLAGS and LIB_FLAGS to LDFLAGS (Linux convention)
+#  Modified May 2024 JHB, change from gcc to g++
 
 # set install path var, from lib/diaglib folder SigSRF software install path is 3 levels up
 INSTALLPATH=../../..
@@ -37,15 +38,15 @@ ifeq ($(wildcard $(WRLPATH)),$(WRLPATH))
   DEFINES = -D_WRL_
 else
   # x86 build
-  CC = /usr/bin/gcc
+  CC = /usr/bin/g++
   DEFINES = -D_X86
 endif
 
 # include paths
 INCLUDE = -I$(INSTALLPATH) -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/lib
 
-cpp_objects =
-c_objects = diaglib.o lib_logging.o
+cpp_objects = diaglib.o lib_logging.o diaglib_util.o
+c_objects = 
 
 #comment/uncomment the following line to turn debug on/off
 #DEBUG=y
