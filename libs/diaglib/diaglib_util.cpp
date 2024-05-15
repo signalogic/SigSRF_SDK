@@ -175,7 +175,7 @@ bool fTopLevelRepeat = false;
    printf("nLevels = %d, nptrs = %d \n", nLevels, nptrs);
    #endif
 
-   for (i=min(nptrs-1, nLevels+1); i>=0; i--) {
+   for (i=min(nptrs-1, nLevels-1); i>=0; i--) {
 
       #ifdef DEBUG_OUTPUT
       printf("symbol %d = %s \n", i, strings[i]);

@@ -872,7 +872,7 @@ void* packet_flow_media_proc(void* pExecuteMode) {
 
    if (fMediaThread) free(pExecuteMode);
 
-   DSGetBacktrace(fMediaThread ? 2 : 3, &tmpstr[strlen(tmpstr)], 0);  /* currently only 2 levels needed for change in threads; might change, JHB May 2024 */
+   DSGetBacktrace(fMediaThread ? 4 : 5, &tmpstr[strlen(tmpstr)], 0);  /* currently only 4 levels needed for change in threads; might change, JHB May 2024 */
 
    if (frame_mode) sprintf(&tmpstr[strlen(tmpstr)], " (frame mode)");
    sprintf(&tmpstr[strlen(tmpstr)], ", thread id = 0x%llx \n", (unsigned long long)pthread_self());

@@ -463,7 +463,7 @@ char tmpstr[1024] = "";
       char* szBacktrace = &((char*)thread_arg)[4];
       if (strlen(szBacktrace) < 1000 && strstr(szBacktrace, "backtrace:")) sprintf(&tmpstr[strlen(tmpstr)], "%s", &szBacktrace[11]);
 
-      DSGetBacktrace(2, &tmpstr[strlen(tmpstr)], 0);  /* currently only 2 levels needed; might change, JHB May 2024 */
+      DSGetBacktrace(4, &tmpstr[strlen(tmpstr)], 0);  /* currently only 4 levels needed; might change, JHB May 2024 */
 
       char tstr[300];
       sprintf(tstr, "codec test start, debug flags = 0x%llx, start sequence = %s", (unsigned long long)debugMode, tmpstr);
@@ -2258,7 +2258,7 @@ codec_test_cleanup:
 
                   *arg = (num_threads << 8) | i;  /* tell mediaMin app thread which one it is and how many total threads */
 
-                  DSGetBacktrace(2, &((char*)arg)[4], DS_GETBACKTRACE_INSERT_MARKER);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
+                  DSGetBacktrace(4, &((char*)arg)[4], DS_GETBACKTRACE_INSERT_MARKER);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
 
                   if ((tc_ret = pthread_create(&mediaMinThreads[i], ptr_attr, mediaMin_thread, arg))) fprintf(stderr, "%s:%d: pthread_create() failed for mediaMin thread, thread number = %d, ret val = %d\n", __FILE__, __LINE__, i, tc_ret);
                   else {
@@ -2315,7 +2315,7 @@ codec_test_cleanup:
 
                   *arg = (num_threads << 8) | i;  /* tell mediaTest app thread which one it is and how many total threads */
 
-                  DSGetBacktrace(2, &((char*)arg)[4], DS_GETBACKTRACE_INSERT_MARKER);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
+                  DSGetBacktrace(4, &((char*)arg)[4], DS_GETBACKTRACE_INSERT_MARKER);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
 
                   if ((tc_ret = pthread_create(&mediaTestThreads[i], ptr_attr, mediaTest_proc, arg))) fprintf(stderr, "%s:%d: pthread_create() failed for mediaTest thread, thread number = %d, ret val = %d\n", __FILE__, __LINE__, i, tc_ret);
                   else {
