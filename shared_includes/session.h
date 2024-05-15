@@ -122,6 +122,9 @@
 
     Aug 2023 JHB
       -define TERMINFO "nickname" for TERMINATION_INFO
+
+    May 2024 JHB
+      -update comment that referenced x86_mediaTest.c to mediaTest_proc.c
 */
 
 #ifndef _SESSION_H_
@@ -147,7 +150,7 @@
                                 /*  Notes:
 
                                     1) Currently the mode field is processed but no mode values are being used.  Functionality originally provided by the "dont care" mode value has been replaced by a more flexible
-                                       "user managed" session operating mode.  See comments on this in pktlib.c and x86_mediaTest.c
+                                       "user managed" session operating mode.  See comments on this in pktlib.c and mediaTest_proc.c
 
                                     2) For reference, the "don't care" mode allows termN session config remote/local IP addr:port values to be designated as "don't care", for example term2 IP addr:port is a don't
                                        care because the user app is listening only, with no receive and transmit on term2 side

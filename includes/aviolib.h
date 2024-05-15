@@ -5,7 +5,7 @@
 
   Projects: SigSRF, DirectCore
  
-  Copyright Signalogic Inc. 2018
+  Copyright Signalogic Inc. 2018-2024
 
   Revision History:
   
@@ -13,6 +13,7 @@
    Modified Mar 2018 JHB, add DSCreateAvioSession() and DSDeleteAvioSession(), modified API params to be consistent with SigSRF libs
    Modified Jun 2018 JHB, add uFlags arg to DSOpenAvioDevice() (which can be DS_SND_PCM_STREAM_CAPTURE or DS_SND_PCM_STREAM_PLAYBACK), add DSWriteAvioBuffer()
    Modified Jun 2018 JHB, add shift arg to DSReadAvioBuffer() and DSWriteAvioBuffer()
+   Modified May 2024 JHB, update comment that referenced x86_mediaTest.c to mediaTest_proc.c
 */
  
 #ifndef _AVIOLIB_H_
@@ -62,7 +63,7 @@ extern "C" {
 
 /* DSReadAvioBuffer() and DSWriteAvioBuffer() notes:
 
-    -these APIs should be called from inside an ALSA callback function.  See USBAudioCallback() in x86_mediaTest.c for an example
+    -these APIs should be called from inside an ALSA callback function.  See USBAudioCallback() in mediaTest_proc.c for an example
 
     -if buf32 or buf16 is NULL, no sample format conversion is performed.  If both are non-NULL, then uFlags controls the format conversion (see constants above)
 */

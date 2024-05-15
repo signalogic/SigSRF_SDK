@@ -104,7 +104,7 @@
    Modified Mar 2017 CKJ - edits for codec testing
    Modified May 2017 CJ - added pcap extract mode
    Modified Aug 2018 JHB, command-line related items moved to cmd_line_interface.c
-   Modified Jul 2019 JHB, removed XDAIS references (which were not used anyway).  See comments in x86_mediaTest.c
+   Modified Jul 2019 JHB, removed XDAIS references (which were not used anyway).  See comments in mediaTest_proc.c
    Modified Sep 2019 JHB, change include folder for udp.h and ip.h from "linux" to "netinet" to fix -Wodr (one definition rule) warning with gcc 5.4.  Remove arpa/inet.h include (already in pktlib.h)
    Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0, include minmax.h (for min/max functions)
    Modified Jan 2021 JHB, improve error message output for invalid cmd line arguments, add some help text
@@ -116,9 +116,10 @@
    Modified Jul 2023 JHB, add const char* version_info param to cmdLineInterface()
    Modified Nov 2023 JHB, add const char* banner_info param to cmdLineInterface, implement version_info and banner_info to be uniform with mediaMin
    Modified Dec 2023 JHB, formatting only
-   Modified Feb 2024 JHB, modify x86_mediaTest() call and params to support multi-thread testing
+   Modified Feb 2024 JHB, modify mediaTest_proc() call and params to support multi-thread testing
    Modified Feb 2024 JHB, give CLI_MEDIA_APPS_MEDIATEST flag to cmdLineInterface()
    Modified Apr 2024 JHB, testing different modes with updated initialization for RealTimeInterval[] in cmd_line_interface.c
+   Modified May 2024 JHB, update x86_mediaTest references to mediaTest_proc
 */
 
 /* system header files */
@@ -1267,13 +1268,13 @@ cmd_err: printf("Invalid cmd line options for %s, make sure: \n", modestr);
 
       if (arg == NULL) { fprintf(stderr, "%s:%d: Could not allocate memory for mediaMin thread arg\n", __FILE__, __LINE__); goto exit; }
 
-      *arg = 0;  /* give x86_mediaTest() default values of no app threads (process only) */
+      *arg = 0;  /* give mediaTest_proc() default values of no app threads (process only) */
 
       #if 0
       printf("before call, *arg = %d, executeMode[0] = %d, x86_pkt_test = %d, frame_mode = %d \n", *arg, executeMode[0], x86_pkt_test, frame_mode);
       #endif
 
-      x86_mediaTest(arg);  /* run x86 mediaTest with default params of 1 app thread, thread index = 0 */
+      mediaTest_proc(arg);  /* run mediaTest_proc() with default params of 1 app thread, thread index = 0 */
       main_ret = 0;
       goto exit;
    }

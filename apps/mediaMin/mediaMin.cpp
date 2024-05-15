@@ -41,7 +41,7 @@
 
  Revision History
 
-   Created Jul 2018 JHB, see also revision history in x86_mediaTest.c and packet_flow_media_proc.c
+   Created Jul 2018 JHB, see also revision history in mediaTest_proc.c and packet_flow_media_proc.c
    Modified Jul 2018 CKJ, add pcap file I/O for testing
    Modified Jul 2018 JHB, fix problem with screen counters, pause before exiting to allow packet/media thread time to clean up and generate packet stats log
    Modified Jul 2018 JHB, enable user managed sessions and stream merging
@@ -154,6 +154,7 @@
    Modified Mar 2024 JHB, use fabsf() instead of abs() for float-point average jitter calculation. During tools/system regression test only gcc 5.x has a complaint about this, but doesn't matter for output results, so we can leave it this way
    Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG flag, which is now deprecated
    Modified May 2024 JHB, add RTP auto-detection for stereo EVS 5900 (handle Fraunhofer example 5900 bps .rtp files which include some stereo)
+   Modified May 2024 JHB, update comments that reference x86_mediaTest to mediaTest_proc
 */
 
 
@@ -343,7 +344,7 @@ void cmdLine(int argc, char** argv, char* tmpstr);
 #ifdef _MEDIAMIN_  /* _MEDIAMIN_ is defined in the mediaMin Makefile. This is true when mediaMin is run from the command line, in which case only one mediaMin application thread is active */
 int main(int argc, char **argv) {
 #else  /* _MEDIAMIN_ is not defined when mediaTest is run from the command line with the -Et and -tN options, in which case (i) mediaTest is the process, (ii) the entry point here is mediaMin_thread() instead of main(), and (iii) mediaTest starts one or more mediaMin application threads with mediaMin_thread() as the callable function entry point */
-void* mediaMin_thread(void* thread_arg) {  /* see the "executionMode[0]" switch statement in x86_mediaTest.c.  In that switch statement, the 't' case arrives here */
+void* mediaMin_thread(void* thread_arg) {  /* see the "executionMode[0]" switch statement in mediaTest_proc.c.  In that switch statement, the 't' case arrives here. See also console message " ... start sequence = ..." when mediaMin runs, which shows the call stack for packet/media worker threads */
 #endif
 
 HSESSION       hSessions[MAX_SESSIONS] = { 0 };

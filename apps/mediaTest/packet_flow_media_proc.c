@@ -36,7 +36,7 @@ Purposes
 
 Revision History
 
- Created Jul 2018 JHB, separated packet mode processing section from x86_mediaTest.c.  See revision history in x86_mediaTest.c
+ Created Jul 2018 JHB, separated packet mode processing section from x86_mediaTest.c. See revision history in x86_mediaTest.c (note this file is renamed to mediaTest_proc.c)
 
  Modified Jun CKJ 2017, added support for simultaneously using input pcap files of different link layer types 
                         added support for ipv6 in pcap extract mode, added check to exit cleanly if internet layer is not ipv4 or ipv6
@@ -866,15 +866,13 @@ void* packet_flow_media_proc(void* pExecuteMode) {
 
 /* use backtrace() to show thread heritage (mediaTest, media command line, stress test mode, etc) JHB May 2024 */
 
-   if (fMediaThread) {
+   char* szBacktrace = &((char*)pExecuteMode)[4];
+ 
+   if (strlen(szBacktrace) < 1000 && strstr(szBacktrace, "backtrace:")) sprintf(&tmpstr[strlen(tmpstr)], "%s, ", &szBacktrace[11]);
 
-      char* szBacktrace = &((char*)pExecuteMode)[4];
-      if (strlen(szBacktrace) < 1000 && strstr(szBacktrace, "backtrace:")) sprintf(&tmpstr[strlen(tmpstr)], "%s, ", &szBacktrace[11]);
+   if (fMediaThread) free(pExecuteMode);
 
-      free(pExecuteMode);
-   }
-
-   DSGetBacktrace(2, &tmpstr[strlen(tmpstr)], 0);  /* currently only 2 levels needed; might change, JHB May 2024 */
+   DSGetBacktrace(fMediaThread ? 2 : 3, &tmpstr[strlen(tmpstr)], 0);  /* currently only 2 levels needed for change in threads; might change, JHB May 2024 */
 
    if (frame_mode) sprintf(&tmpstr[strlen(tmpstr)], " (frame mode)");
    sprintf(&tmpstr[strlen(tmpstr)], ", thread id = 0x%llx \n", (unsigned long long)pthread_self());

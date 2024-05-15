@@ -172,7 +172,7 @@ bool fTopLevelRepeat = false;
    if (!strings || !nptrs) return -1;
 
    #ifdef DEBUG_OUTPUT
-   printf("nptrs = %d \n", nptrs);
+   printf("nLevels = %d, nptrs = %d \n", nLevels, nptrs);
    #endif
 
    for (i=min(nptrs-1, nLevels+1); i>=0; i--) {
@@ -181,15 +181,11 @@ bool fTopLevelRepeat = false;
       printf("symbol %d = %s \n", i, strings[i]);
       #endif
 
-      if (!fTopLevelRepeat && strstr(strings[i], "() [")) {  /* strip off top level app name repeat. Not sure why backtrace() prints it twice */
+      if ((p = strstr(strings[i], "() ["))) {  /* strip off repeats with no function name. This happens when executable was linked without -rdynamic flag, JHB May 2024 */
 
-         char tmpstr[300];
-         strcpy(tmpstr, strings[i]);
-         p = strstr(tmpstr, "() [") - 1;
-
-         char* p2 = strrchr(tmpstr, '/');
-         if (!p2) p2 = tmpstr;
-         else p2++;
+         char* p2 = strrchr(strings[i], '/');
+         if (p2) p2++;
+         else p2 = strings[i];
 
          bool fValidFuncName = true;
 
@@ -197,12 +193,18 @@ bool fTopLevelRepeat = false;
             if (!isalnum(p2[j]) && p2[j] != '_') { fValidFuncName = false; break; }  /* look for valid function name */
          }
 
-         if (fValidFuncName) { fTopLevelRepeat = true; continue; }
+         if (fValidFuncName) {  /* keep first one, strip any additional */
+            if (fTopLevelRepeat) continue;
+            else fTopLevelRepeat = true;
+         }
       }
 
       if (strstr(strings[i], "DSGetBacktrace")) continue;  /* this function name is meaningless - skip */
-      if (!(uFlags & DS_GETBACKTRACE_INCLUDE_GLIBC_FUNCS) && strstr(strings[i], "libc.so.") && !strstr(strings[i], "libc_start_main")) continue;  /* skip glibc, if found */
-      if (!(uFlags & DS_GETBACKTRACE_INCLUDE_GLIBC_FUNCS) && strstr(strings[i], "libpthread")) continue;  /* skip libpthread, if found */
+
+      if (!(uFlags & DS_GETBACKTRACE_INCLUDE_GLIBC_FUNCS)) {
+         if (strstr(strings[i], "libc.so.") && !strstr(strings[i], "libc_start_main")) continue;  /* skip glibc, if found */
+         if (strstr(strings[i], "libpthread")) continue;  /* skip libpthread, if found */
+      }
 
       p = strrchr(strings[i], ')');  /* strip off [0xNNNN...] */
       if (p) *(++p) = 0;
@@ -211,6 +213,10 @@ bool fTopLevelRepeat = false;
          if (uFlags & DS_GETBACKTRACE_INSERT_MARKER) strcpy(szBacktrace, "backtrace: ");  /* insert marker at start if asked by caller */
          else szBacktrace[0] = 0;
       }
+
+      #ifdef DEBUG_OUTPUT
+      printf("adding symbol %s \n", strings[i]);
+      #endif
 
       sprintf(&szBacktrace[strlen(szBacktrace)], "%s%s", k > 0 ? " " : "", strings[i]);
       k++;

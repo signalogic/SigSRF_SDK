@@ -53,6 +53,7 @@
    Modified Feb 2024 JHB, give CIM_GCL_MEDIATEST flag to cimGetCmdLine() if needed
    Modified Apr 2024 JHB, set executeMode[0] to 'a' for mediaTest packet and frame test modes, nail down initialization of RealTimeInterval[]
    Modified May 2024 JHB, add more checks when setting executeMode[0]
+   Modified May 2024 JHB, update comments that reference x86_mediaTest to mediaTest_proc
 */
 
 
@@ -87,11 +88,11 @@ PLATFORMPARAMS PlatformParams = {{ 0 }};
 MEDIAPARAMS MediaParams[MAXSTREAMS];
 float RealTimeInterval[MAX_INPUT_STREAMS] = { 0 };
 
-/* global vars referenced in mediaMin.c, x86_mediaTest.c, and packet_flow_media_proc.c */
+/* global vars referenced in mediaMin.c, mediaTest_proc.c, and packet_flow_media_proc.c */
 
 volatile int8_t  pm_run = 1;  /* may be cleared by application signal handler to stop packet / media processing loops */
 unsigned int     inFileType, outFileType, outFileType2 = 0, USBAudioInput = 0, USBAudioOutput = 0;
-char             executeMode[2] = { (char)-1, (char)-1 }; /* initialize to none. Look for switch (executeMode[0]) in x86_mediaTest.c for run-time options */
+char             executeMode[2] = { (char)-1, (char)-1 }; /* initialize to none. Look for switch (executeMode[0]) in mediaTest_proc.c for run-time options */
 int64_t          debugMode = 0;
 int              performanceMeasurementMode = 0;
 int              nReuseInputs = 0;

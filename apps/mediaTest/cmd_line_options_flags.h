@@ -3,7 +3,7 @@
 
   header file for mediaMin and mediaTest reference applications, definitions for -dN cmd line options and flags
   
-  Copyright (C) Signalogic, 2018-2023
+  Copyright (C) Signalogic, 2018-2024
 
   License
 
@@ -20,7 +20,8 @@
    Modified Jan 2023 JHB, add SIP handling options including ENABLE_STREAM_SDP_INFO, add ALLOW_OUTOFSPEC_RTP_PADDING flag
    Modified Jun 2023 JHB, add SLOW_DORMANT_SESSION_DETECTION flag
    Modified Jul 2023 JHB, add INCLUDE_PAUSES_IN_WAV_OUTPUT flag
-   Modified Aug 2023 JHB, ad ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag
+   Modified Aug 2023 JHB, add ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag
+   Modified May 2024 JHB, update comments
 */
 
 #ifndef _CMDLINEOPTIONSFLAGS_H_
@@ -29,7 +30,7 @@
 /* following are standard operating modes, stress tests, and options that can be specified by -dN cmd line entry. Notes:
 
   -N may be given in hex format, for example -d0xN
-  -value of N is referred to in mediaMin.cpp source as "Mode" and x86_mediaTest.c source as "debugMode" (they are the same)
+  -value of N is referred to in mediaMin.cpp source as "Mode" and mediaTest_proc.c source as "debugMode" (they are the same)
   -in the comments for each flag, m| indicates mediaMin only, mm| indicates both mediaMin and mediaTest
 */
 

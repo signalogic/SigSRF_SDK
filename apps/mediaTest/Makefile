@@ -40,8 +40,9 @@
 #  Modified Dec 2023 JHB, codecs_only=1 cmd line option will link with codecs_only version of voplib (voplib_codecs_only.so), a test/debug helper for customers using voplib and codecs but not pktlib. Also look for highcap=1 and define HIGHCAP if found
 #  Modified Dec 2023 JHB, add -L path and -rpath link options to build with special case voplib versions (codecs_only, highcap, etc)
 #  Modified Feb 2024 JHB, rename CC_FLAGS to CFLAGS and AR_FLAGS to LDFLAGS
-#  Modified Apr 2024 JHB, set INSTALLATH to $(shell pwd); this avoids relative paths in -rpath linker options
-
+#  Modified Apr 2024 JHB, set INSTALLPATH to $(shell pwd); this avoids relative paths in -rpath linker options
+#  Modified May 2024 JHB, add -rdynamic linker flag to include more symbols in executable output. This helps when backtrace_symbols() is used (which it is now by DSGetBacktrace() in diaglib)
+#  Modified May 2024 JHB, change x86_mediaTest.o to mediaTest_proc.o
 
 # check make cmd line for no_codecs, no_mediamin, no_pktlib, and codecs_only options
 
@@ -472,7 +473,7 @@ else
   LDFLAGS =
 endif
 
-LDFLAGS += -flto -Xlinker -Map=mediaTest.map -Wl,--disable-new-dtags
+LDFLAGS += -flto -Xlinker -Map=mediaTest.map -Wl,--disable-new-dtags -rdynamic
 
 # if Kaldi ASR present on the system, link inferlib, Kaldi libs, and ATLAS and BLAS linear algebra libs. Notes:
 # -if not found stublib will fill in inferlib API stubs (which won't be called)
@@ -529,7 +530,7 @@ ifneq ($(no_pktlib),1)
   c_objects += packet_flow_media_proc.o
 endif
 
-c_objects += x86_mediaTest.o
+c_objects += mediaTest_proc.o
 
 # build targets
 all: $(cpp_common_objects) $(cpp_sdp_objects) $(cpp_gpx_objects) $(c_common_objects) $(cpp_mediaMin_objects) $(c_objects) link

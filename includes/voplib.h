@@ -30,7 +30,7 @@
   Modified Oct 2020 JHB, add DSCodecGetInfo() API to pull all available encoder/decoder info as needed. First input param is codec handle or codec_type, depending on uFlags. Added codec_name, raw_frame_size, and coded_frame_size elements to CODEC_PARAMS struct support DSCodecGetInfo()
   Modified Jan 2022 JHB, add DS_CC_TRACK_MEM_USAGE flag
   Modified Feb 2022 JHB, change DSGetCodecTypeStr() to DSGetCodecName() and add uFlags to allow codec param to be interpreted as either HCODEC or codec_type (as with DSGetCodecInfo)
-  Modified Feb 2022 JHB, modify DSCodecEncode() and DSCodecDecode() to accept pointer to one or more codec handles and a num channels param. This enables multichannel encoding/decoding (e.g. stereo audio files) and simplified concurrent codec instance test and measurement (e.g. 30+ codec instances within one thread or CPU core). Multichannel input and output data must be interleaved; see API comments and examples in x86_mediaTest.c
+  Modified Feb 2022 JHB, modify DSCodecEncode() and DSCodecDecode() to accept pointer to one or more codec handles and a num channels param. This enables multichannel encoding/decoding (e.g. stereo audio files) and simplified concurrent codec instance test and measurement (e.g. 30+ codec instances within one thread or CPU core). Multichannel input and output data must be interleaved; see API comments and examples in mediaTest_proc.c
   Modified Sep 2022 JHB, add "payload_shift" to CODEC_DEC_PARAMS struct to allow RTP payload shift after encoding or before decoding for debug/test purposes. Shift conditions can be controlled by filter flags (in bits 15-8); shift amount ranges from -8 to +7 (in bits 7-0); see comments in TERMINATION_INFO struct in shared_include/session.h
   Modified Oct 2022 JHB, change DSGetPayloadHeaderFormat() to DSGetPayloadHeaderInfo() to reflect updates for additional params and info retrieval
   Modified Oct 2022 JHB, add pBitrateIndex param to DSGetCompressedFramesize()
@@ -50,6 +50,7 @@
   Modified Feb 2024 JHB, updates to audio classification definitions and enums, no change in struct definitions. Fix #if defines for shared_include/codec.h and shared_include/config.h
   Modified Mar 2024 JHB, add DS_CODEC_USE_EVENT_LOG and DEBUG_TEST_ABORT_EXIT_INTERCEPTION flags, consolidate separate DEBUG_OUTPUT_xxx encoder and decoder flags, reassign value of DEBUG_OUTPUT_ADD_TO_EVENT_LOG flag, deprecate DS_CV_GLOBALCONFIG and DS_CV_DEBUGCONFIG flags
   Modified Apr 2024 JHB, clarify documentation for CMR handling in CODEC_OUTARGS and CODEC_INARGS structs
+  Modified May 2024 JHB, change comments that reference x86_mediaTest.c to mediaTest_proc.c
 */
  
 #ifndef _VOPLIB_H_
@@ -303,13 +304,13 @@ extern "C" {
      uint16_t coded_frame_size;           /*   "    "    " */
      int payload_shift;                   /* special case item, when non-zero indicates shift payload after encoding or before decoding, depending on which codec and the case. Initially needed to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/-, JHB Sep 2022 */
 
-     CODEC_ENC_PARAMS enc_params;         /* if encoder instance is being created, this must point to desired encoder params. See examples in x86_mediaTest.c or hello_codec.c */
-     CODEC_DEC_PARAMS dec_params;         /* if decoder instance is being created, this must point to desired decoder params. See examples in x86_mediaTest.c or hello_codec.c */
+     CODEC_ENC_PARAMS enc_params;         /* if encoder instance is being created, this must point to desired encoder params. See examples in mediaTest_proc.c or hello_codec.c */
+     CODEC_DEC_PARAMS dec_params;         /* if decoder instance is being created, this must point to desired decoder params. See examples in mediaTest_proc.c or hello_codec.c */
 
   } CODEC_PARAMS;
 
 
-  HCODEC DSCodecCreate(void* pCodecInfo, unsigned int uFlags);  /* for direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see x86_mediaTest.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CC_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing) */
+  HCODEC DSCodecCreate(void* pCodecInfo, unsigned int uFlags);  /* for direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CC_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing) */
 
   int DSCodecDelete(HCODEC hCodec, unsigned int uFlags);
 

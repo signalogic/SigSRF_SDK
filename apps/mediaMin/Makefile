@@ -37,6 +37,7 @@
 #  Modified Mar 2023 JHB, fix -flto issue with ldd versions 2.23-2.24. See comments near GLIBC_VERSION
 #  Modified Feb 2024 JHB, rename CC_FLAGS to CPPFLAGS and AR_FLAGS to LDFLAGS
 #  Modified Apr 2024 JHB, set INSTALLATH to $(shell pwd); this avoids relative paths in -rpath linker options
+#  Modified May 2024 JHB, add -rdynamic linker flag to include more symbols in executable output. This helps when backtrace_symbols() is used (which it is now by DSGetBacktrace() in diaglib)
 
 
 # check make cmd line for "no_codecs" option
@@ -407,7 +408,7 @@ ifeq ($(ALSA_INSTALLED),y)
 endif
 
 # link flags
-LDFLAGS = -flto -Xlinker -Map=mediaMin.map -Wl,--disable-new-dtags
+LDFLAGS = -flto -Xlinker -Map=mediaMin.map -Wl,--disable-new-dtags -rdynamic
 
 # if Kaldi ASR present on the system, link inferlib, Kaldi libs, and ATLAS and BLAS linear algebra libs. Notes:
 # -if not found stublib will fill in inferlib API stubs (which won't be called)

@@ -48,9 +48,10 @@
    Modified Dec 2023 JHB, add char szStreamGroupPcapOutputPath[CMDOPT_MAX_INPUT_LEN]
    Modified Dec 2023 JHB, remove session_cmd.h and transcoding.h includes
    Modified Dec 2023 JHB, add bandwidth_limit and input_sample_rate fields to codec_test_params_t struct
-   Modified Feb 2024 JHB, modify definition of x86_mediaTest() to support multi-thread testing
+   Modified Feb 2024 JHB, modify definition of mediaTest_proc() to support multi-thread testing
    Modified Feb 2024 JHB, add fShow_md5sum and fShow_audio_classification to support --md5sum and --show_aud_clas command line options
    Modified Apr 2024 JHB, rename executionMode[] to executeMode[] for consistency across all source codes
+   Modified May 2024 JHB, change x86_mediaTest.c references to mediaTest_proc.c
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -281,13 +282,13 @@ void send_packet(uint8_t *packet, uint32_t length);
 
 /* mediaMin and mediaTest helper functions */
 
-extern void* x86_mediaTest(void*);
+extern void* mediaTest_proc(void*);
 extern void* mediaMin_thread(void*);
 extern int cmdLineInterface(int argc, char **argv, unsigned int uFlags, const char* version_info, const char* banner_info);
 extern int GetOutputFilename(char* out_filename, int output_type_file, const char* output_type_content);
 int GetCommandLine(char* cmdlinestr, int str_size);
 
-/* x86_mediaTest.cpp items */
+/* mediaTest_proc.cpp items */
 
 extern char x86_frame_test, x86_pkt_test, pcap_extract;
 

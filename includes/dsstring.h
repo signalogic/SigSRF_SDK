@@ -10,7 +10,7 @@
 
  Project: DirectCore
 
- Copyright Signalogic Inc. 1994-2023
+ Copyright Signalogic Inc. 1994-2024
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -26,9 +26,10 @@
 
    Modified Aug 2017 JHB, add strcpyrws() function
    Modified Aug 2019 JHB, add generic reverse strstr()
-   Modified Mar 2022 JHB, move str_remove_whitespace() here from transcoder_control.c, move strrstr() here from x86_mediaTest.c
+   Modified Mar 2022 JHB, move str_remove_whitespace() here from transcoder_control.c, move strrstr() here from mediaTest_proc.c
    Modified Apr 2022 JHB, add error checking to strrstr(), str_remove_whitespace(), and str_remove_linebreaks()
    Modified Jul 2023 JHB, add strncpy_s(), safe version of strncpy(), in case gcc version in use doesn't support it
+   Modified May 2024 JHB, change comment that references x86_mediaTest.c to mediaTest_proc.c
 */
 
 #ifndef _DSSTRING_H_

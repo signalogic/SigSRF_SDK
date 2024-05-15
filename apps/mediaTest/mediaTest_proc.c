@@ -1,5 +1,5 @@
 /*
- $Header: /root/Signalogic/apps/mediaTest/x86_mediaTest.c
+ $Header: /root/Signalogic/apps/mediaTest/mediaTest_proc.c
 
  Copyright (C) Signalogic Inc. 2017-2024
  
@@ -9,7 +9,7 @@
 
  Description
  
-  Source code for mediaTest x86 platform (see mediaTest.c for coCPU functionality)
+  Source code for mediaTest platform (see mediaTest.c for coCPU functionality)
 
  Purposes
  
@@ -45,7 +45,7 @@
    - Dependency on libpcap/libpcap-devel has been removed
    - ctrl-c signal is handled to exit x86 test modes cleanly
   Modified May CKJ 2017, added pcap extract mode - supports EVS only
-  Modified Mar 2018 JHB, added USB audio input, tested with a Focusrite 2i2 unit.  Significant mods made to (i) x86_mediaTest.c and mediaTest.c, (ii) aviolib (audio video I/O lib) which uses Alsa "asound" lib, and (iii) mediaTest Makefile (modified to link aviolib)
+  Modified Mar 2018 JHB, added USB audio input, tested with a Focusrite 2i2 unit.  Significant mods made to (i) mediaTest_proc.c and mediaTest.c, (ii) aviolib (audio video I/O lib) which uses Alsa "asound" lib, and (iii) mediaTest Makefile (modified to link aviolib)
   Modified Mar 2018 JHB, modified codec test mode to support (i) .wav file input (using DSLoadDataFile), (ii) USB audio input input, and (iii) pass-thru (codec type = NONE), in which case no encoding/decoding is performed (e.g. save USB audio to wav file, convert raw audio to wav file)
   Modified Mar-Apr 2018 JHB, CKJ, add support for MELPe codec
   Modified May 2018 CKJ, add support for G729 and G726 codecs
@@ -68,7 +68,7 @@
                          -bug did not affect back-to-back encode/decode (i.e. audio to audio)
   Modified Apr 2021 JHB, fix issues with G726 uncompressed vs. compressed mode, retest all bitrates
   Modified Jan 2022 JHB, use cmd line -dN flag to specify DS_CODEC_CREATE_TRACK_USAGE_FLAG in DSCodecCreate()
-  Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for ret_val in x86_mediaTest() ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized
+  Modified Jan 2022 JHB, fix warning in gcc/g++ 5.3.1 for ret_val in mediaTest_proc() ("may be used uninitialized"). Later tool versions are able to recognize there is no conditional logic path that leaves it uninitialized
   Modified Feb 2022 JHB, fix issues with sampling rate conversion applied to multichannel data (i) fs_convert_delay_buf not declared correctly and (ii) num_samples used in DSConvertFs() was incorrectly divided by numChan
   Modified Feb 2022 JHB, modify DSCodecEncode() and DSCodecDecode() to pass pointer to one or more codec handles and a num channels param. This enables multichannel encoding/decoding (e.g. stereo audio files) and simplifies concurrent codec instance test and measurement (e.g. 30+ codec instances within one thread or CPU core)
   Modified Feb 2022 JHB, make responsive to -RN command line entry (repeat), with same specs as mediaMin. For example, for an encoder-decoder data flow, -R2 repeats the data flow twice, wrapping the input waveform file after each repeat
@@ -94,6 +94,7 @@
   Modified Feb 2024 JHB, add DS_DATAFILE_USE_SEMAPHORE flag to all DSLoadDataFile() and DSSaveDataFile() DirectCore API calls to support multi-thread testing. As a note, an alternative method -- but intended for very high capacity, high performance apps and not used here -- is to call DSCreateFilelibThread() (in filelib.h) for each thread after creation
  Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG flag, which is now deprecated
  Modified May 2024 JHB, call DSGetBacktrace() before starting threads, show result as " ... start sequence = ..." in console output
+ Modified May 2024 JHB, rename x86_mediaTest() function to mediaTest_proc()
 */
 
 /* Linux header files */
@@ -447,7 +448,7 @@ uint8_t zerobuf[MAX_RAW_FRAME] = { 0 };
 
 /* main function entry */
 
-void* x86_mediaTest(void* thread_arg) {
+void* mediaTest_proc(void* thread_arg) {
 
 int thread_index = *((int*)thread_arg) & 0xff;
 int num_app_threads = (*((int*)thread_arg) & 0xff00) >> 8;
@@ -462,10 +463,9 @@ char tmpstr[1024] = "";
       char* szBacktrace = &((char*)thread_arg)[4];
       if (strlen(szBacktrace) < 1000 && strstr(szBacktrace, "backtrace:")) sprintf(&tmpstr[strlen(tmpstr)], "%s", &szBacktrace[11]);
 
-      char tstr[300];
-      DSGetBacktrace(2, tstr, 0);  /* currently only 2 levels needed; might change, JHB May 2024 */
-      if (strlen(tstr)) sprintf(&tmpstr[strlen(tmpstr)], ", %s", tstr);
+      DSGetBacktrace(2, &tmpstr[strlen(tmpstr)], 0);  /* currently only 2 levels needed; might change, JHB May 2024 */
 
+      char tstr[300];
       sprintf(tstr, "codec test start, debug flags = 0x%llx, start sequence = %s", (unsigned long long)debugMode, tmpstr);
       if (num_app_threads > 0) sprintf(&tstr[strlen(tstr)], ", thread = %d", thread_index);
       printf("%s \n", tstr);
@@ -2212,7 +2212,7 @@ codec_test_cleanup:
 
                ((char*)arg)[0] = (char)executeMode[0];
 
-               packet_flow_media_proc((void*)&arg);  /* packet data flow and media processing.  packet_flow_media_proc.c */
+               packet_flow_media_proc((void*)arg);  /* packet data flow and media processing.  packet_flow_media_proc.c */
 
                free(arg);
             }
@@ -2295,7 +2295,7 @@ codec_test_cleanup:
 
             printf("x86 multithread test start, num threads = %d \n", num_threads);
 
-            if (num_threads > 0) {  /* run x86_mediaTest() as one or more application level threads */
+            if (num_threads > 0) {  /* run mediaTest_proc() as one or more application level threads */
 
 
                uint32_t* arg;
@@ -2317,7 +2317,7 @@ codec_test_cleanup:
 
                   DSGetBacktrace(2, &((char*)arg)[4], DS_GETBACKTRACE_INSERT_MARKER);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
 
-                  if ((tc_ret = pthread_create(&mediaTestThreads[i], ptr_attr, x86_mediaTest, arg))) fprintf(stderr, "%s:%d: pthread_create() failed for mediaTest thread, thread number = %d, ret val = %d\n", __FILE__, __LINE__, i, tc_ret);
+                  if ((tc_ret = pthread_create(&mediaTestThreads[i], ptr_attr, mediaTest_proc, arg))) fprintf(stderr, "%s:%d: pthread_create() failed for mediaTest thread, thread number = %d, ret val = %d\n", __FILE__, __LINE__, i, tc_ret);
                   else {
 
                      cpu_set_t cpuset;
