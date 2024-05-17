@@ -16,7 +16,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 3Q-4Q 2023 - Use case driven improvements:
 
  - call recording "time stamp matching" mode for reproducible, bit-exact media output files
- - .rtp and .rtpdump format support
+ - .rtp and .rtpdump file format support
  - codec configuration options for binary-only codecs with exit() and abort() calls, codecs with protected sections of source not permissible to modify
  - improvements in low bit rate handling (e.g. EVS codec VBR mode)
  - silence trim, re-sampling, and other wav file post-processing options
@@ -113,6 +113,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[.rtpdump and .rtp file format support](#user-content-rtpfilesupportmediamin)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
@@ -164,6 +165,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#user-content-convertingpcaps2wav)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[.rtpdump and .rtp file format support](#user-content-rtpfilesupportmediatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS Player](#user-content-evsplayer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Player](#user-content-amrplayer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Wav to Pcaps](#user-content-convertingwav2pcaps)<br/>
@@ -390,6 +392,23 @@ Seq num 710              timestamp = 202080, rtp pyld len = 32 media
 ```
 
 Note the "ooo" packets in the ingress section of the packet log, which are corrected in jitter buffer output sections. Another packet log file example showing incoming DTMF event packets and how they are translated to buffer output packets is shown in [Packet Log](#user-content-packetlog) below.
+
+### .rtp and .rtpdump File Support
+<a name="RTPFileSupportMediaMin"></a>
+
+mediaMin command lines support .rtp and .rtpdump input files. Entry is the same as with .pcap or .pcapng files. Below are command line examples:
+
+    mediaMin -c x86 -i ../pcaps/evs_5900_1_hf0.rtpdump -L -d 0xc11 -r0.9
+    mediaMin -cx86 -i ../pcaps/evs_5900_1_hf1.rtpdump -L -d 0xc11 -r0.9
+    mediaMin -c x86 -i ../pcaps/evs_5900_2_hf0.rtpdump -L -d 0xc11 -r0.9
+    mediaMin -c x86 -i ../pcaps/evs_5900_2_hf1.rtpdump -L -d 0xc11 -r0.9
+
+Here is a description of the above examples:
+
+1) .rtp file containing EVS 5900 bps packets in compact header format
+2) same, but full header format
+3) same as 1) but with stereo frames
+4) same as 2) but with stereo frames
 
 <a name="Sessions"></a>
 ## Sessions
@@ -1552,6 +1571,11 @@ mediaTest -M4 -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps
 Simple mediaTest command lines can be used to convert pcaps containing one RTP stream to wav file, playout over USB audio, or both. This functionality is intended for testing codec functionality, audio quality, etc.
 
 To convert pcaps containing multiple RTP streams with different codecs to wav files, see the mediaMin section above [Dynamic Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). mediaMin generates wav files for each stream and also a "merged" stream wav file that combines all input streams. mediaMin uses pktlib packet processing APIs that handle jitter, packet loss/repair, child channels (RFC8108), etc, including very high amounts of packet ooo (out of order). Also mediaMin allows .sdp file input to override codec auto-detection and/or give specific streams to decode while ignoring others.
+
+### .rtp and .rtpdump File Support
+<a name="RTPFileSupportMediaTest"></a>
+
+mediaTest command lines support .rtp and .rtpdump input files. Entry is the same as with .pcap or .pcapng files.
 
 <a name="EVSPlayer"></a>
 ### EVS Player
