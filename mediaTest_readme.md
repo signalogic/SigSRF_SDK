@@ -1007,7 +1007,7 @@ Note that both print identical MD5 sums in mediaMin summary stats:
 
 Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and avoid wall clock references.
 
-<i><b><span style="color:blue">Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs. Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference. In the above command line examples you will almost definitely see different md5sum values on your system.</span></b></i>
+<pre><i><b><span style="color:blue">Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs. Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference. In the above command line examples you will almost definitely see different md5sum values on your system.</span></b></i></pre>
 
 <a name="BulkProcessingModeConsidersations"><a/>
 ### Bulk Processing Mode Considerations
