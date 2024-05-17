@@ -1007,7 +1007,7 @@ Note that both print identical MD5 sums in mediaMin summary stats:
 
 Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and avoid wall clock references.
 
-<b><span style="color:blue"><i><b>Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs. Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference. In the above command line examples you will almost definitely see different md5sum values on your system.<b></i></span>
+<i><b><span style="color:blue">Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs. Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference. In the above command line examples you will almost definitely see different md5sum values on your system.</span><b></i>
 
 <a name="BulkProcessingModeConsidersations"><a/>
 ### Bulk Processing Mode Considerations
@@ -1032,7 +1032,7 @@ The mediaMin and mediaTest command lines accept an MD5 sum entry:
 
 which will show output file MD5 sum in the console display summary stats.  The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
 
-<b><span style="color:blue"><i><b>Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs. Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference.<b></i></span>
+<i><b><span style="color:blue">Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs. Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference.</span><b></i>
 
 [1] All performance specs on this page are given for an x86 Xeon E5-2660 CPU running at 2.2 GHz
 
