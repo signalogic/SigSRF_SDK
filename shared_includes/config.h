@@ -78,6 +78,9 @@
 
    Modified Apr 2024 JHB
     -deprecate DS_EVENT_LOG_UPTIME_TIMESTAMPS flag, see comments
+
+   Modified May 2024 JHB
+    -change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
 */
 
 #ifndef _CONFIG_H_
@@ -122,7 +125,7 @@ typedef struct {
    uint32_t uNtpTsLsw;
 #endif
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    uint32_t uMaxSessionsPerThread;  /* allowed max value of sessions assigned to a packet/media thread.  Can be exceeded in some circumstances, see session-to-thread allocation logic in DSCreateSession (in pktlib.c) */
    uint32_t uMaxGroupsPerThread;    /*     ""     ""        stream groups    ""   */
 
@@ -287,7 +290,7 @@ typedef struct {
    uint8_t uDisableConvertFsLog;
    uint32_t uEventLogMode;          /* EVENT_LOG_MODE enums above, including log to screen, file, or both */
    FILE* uEventLogFile;
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    #define MAX_EVENT_LOG_PATHNAME_LEN 256
    char szEventLogFilePath[MAX_EVENT_LOG_PATHNAME_LEN];  /* event log path name, if not empty diaglib creates an event log using uLogMode definitions, JHB Dec 2019 */
    uint32_t uEventLog_fflush_size;  /* if set non-zero, specifies number of bytes of event log file growth before flushing. Some Linux and/or devices may have very large buffer sizes so flushing may help keep log files updated more often */ 

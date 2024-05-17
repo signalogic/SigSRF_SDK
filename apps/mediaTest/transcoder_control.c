@@ -37,6 +37,7 @@ Description:
   Modified Dec 2023 JHB, remove code not used in mediaMin and hello_codec builds, include transcoding.h for mediaTest build only
   Modified Dec 2023 JHB, look for input_sample_rate field in parse_codec_params(), this field can be used to supply an sampling rate for input raw audio files with no header
   Modified Apr 2024 JHB, comments and notes only
+  Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
 */
 
 #include <arpa/inet.h>
@@ -418,7 +419,7 @@ char tmpstr[256];
       params->term1.attr.voice_attr.ptime = atoi(value);
       params->term1.ptime = atoi(value);
    }
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"term1.buffer_interval") || strstr(name,"term1.input_buffer_interval"))
       params->term1.input_buffer_interval = atoi(value);
    else if (strstr(name,"term1.output_buffer_interval"))
@@ -450,7 +451,7 @@ char tmpstr[256];
       params->term1.attr.voice_attr.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name,"term1.vad"))
       params->term1.attr.voice_attr.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"term1.buffer_depth")) {
       strcpy(tmpstr, value);
       strupr(tmpstr);
@@ -470,7 +471,7 @@ char tmpstr[256];
 #endif
    else if (strstr(name,"term1.sample_rate"))
    {
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
       params->term1.sample_rate = atoi(value);
 #endif      
       if (params->term1.codec_type == DS_VOICE_CODEC_TYPE_EVS)
@@ -524,7 +525,7 @@ char tmpstr[256];
       params->term2.attr.voice_attr.ptime = atoi(value);
       params->term2.ptime = atoi(value);
    }
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"term2.buffer_interval") || strstr(name,"term2.input_buffer_interval"))
       params->term2.input_buffer_interval = atoi(value);
    else if (strstr(name,"term2.output_buffer_interval"))
@@ -556,7 +557,7 @@ char tmpstr[256];
       params->term2.attr.voice_attr.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name,"term2.vad"))
       params->term2.attr.voice_attr.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"term2.buffer_depth")) {
       strcpy(tmpstr, value);
       strupr(tmpstr);
@@ -576,7 +577,7 @@ char tmpstr[256];
 #endif
    else if (strstr(name,"term2.sample_rate"))
    {
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
       params->term2.sample_rate = atoi(value);
 #endif
       
@@ -631,7 +632,7 @@ char tmpstr[256];
       params->group_term.attr.voice_attr.ptime = atoi(value);
       params->group_term.ptime = atoi(value);
    }
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"merge_term.buffer_interval") || strstr(name,"merge_term.input_buffer_interval") || strstr(name,"group_term.input_buffer_interval"))
       params->group_term.input_buffer_interval = atoi(value);
    else if (strstr(name,"merge_term.output_buffer_interval") || strstr(name,"group_term.output_buffer_interval"))
@@ -663,7 +664,7 @@ char tmpstr[256];
       params->group_term.attr.voice_attr.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name,"merge_term.vad") || strstr(name,"group_term.vad"))
       params->group_term.attr.voice_attr.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"merge_term.buffer_depth") || strstr(name,"group_term.buffer_depth")) {
       strcpy(tmpstr, value);
       strupr(tmpstr);
@@ -683,7 +684,7 @@ char tmpstr[256];
 #endif
    else if (strstr(name,"merge_term.sample_rate") || strstr(name,"group_term.sample_rate"))
    {
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
       params->group_term.sample_rate = atoi(value);
 #endif
       
@@ -718,7 +719,7 @@ int parse_session_config(FILE *fp, SESSION_DATA *params)
    char *value, string[1024];
    int len;
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
 
 /* set some default values before any config file lines are processed */
 
@@ -791,7 +792,7 @@ static int parse_term_data(char *name, char *value, FRAME_TEST_INFO *info)
       info->term.attr.voice_attr.ptime = atoi(value);
       info->term.ptime = atoi(value);
    }
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strcmp(name,"buffer_interval") == 0 || strcmp(name,"input_buffer_interval") == 0)
       info->term.input_buffer_interval = atoi(value);
    else if (strcmp(name,"output_buffer_interval") == 0)
@@ -819,7 +820,7 @@ static int parse_term_data(char *name, char *value, FRAME_TEST_INFO *info)
       info->term.attr.voice_attr.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
    else if (strcmp(name,"evs_sample_rate") == 0 || strcmp(name,"sample_rate") == 0)
    {
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
       info->term.sample_rate = atoi(value);
 #endif
       if (atoi(value) > 3) info->term.attr.voice_attr.u.evs.codec_flags |= DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
@@ -1047,7 +1048,7 @@ static int parse_session_data(char *name, char *value, session_params_t* params)
 
 char tmpstr[256];
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    params->session_data.term1.input_buffer_interval = -1;  /* default values */
    params->session_data.term2.input_buffer_interval = -1;
    params->session_data.term1.output_buffer_interval = -1;
@@ -1085,7 +1086,7 @@ char tmpstr[256];
       params->session_data.term1.attr.voice_attr.ptime = atoi(value);
       params->session_data.term1.ptime = atoi(value);
    }
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"term1.buffer_interval") || strstr(name,"term1.input_buffer_interval"))
       params->session_data.term1.input_buffer_interval = atoi(value);
    else if (strstr(name,"term1.output_buffer_interval"))
@@ -1117,7 +1118,7 @@ char tmpstr[256];
       params->session_data.term1.attr.voice_attr.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name,"term1.vad"))
       params->session_data.term1.attr.voice_attr.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"term1.buffer_depth")) {
       strcpy(tmpstr, value);
       strupr(tmpstr);
@@ -1137,7 +1138,7 @@ char tmpstr[256];
 #endif
    else if (strstr(name,"term1.evs_sample_rate") || strstr(name,"term1.sample_rate"))
    {
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
       params->session_data.term1.sample_rate = atoi(value);
 #endif
       if (atoi(value) > 3) params->session_data.term1.attr.voice_attr.u.evs.codec_flags |= DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
@@ -1177,7 +1178,7 @@ char tmpstr[256];
       params->session_data.term2.attr.voice_attr.ptime = atoi(value);
       params->session_data.term2.ptime = atoi(value);
    }
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"term2.buffer_interval") || strstr(name,"term2.input_buffer_interval"))
       params->session_data.term2.input_buffer_interval = atoi(value);
    else if (strstr(name,"term2.output_buffer_interval"))
@@ -1209,7 +1210,7 @@ char tmpstr[256];
       params->session_data.term2.attr.voice_attr.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name,"term2.vad"))
       params->session_data.term2.attr.voice_attr.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    else if (strstr(name,"term2.buffer_depth")) {
       strcpy(tmpstr, value);
       strupr(tmpstr);
@@ -1229,7 +1230,7 @@ char tmpstr[256];
 #endif
    else if (strstr(name,"term2.evs_sample_rate") || strstr(name,"term2.sample_rate"))
    {
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
       params->session_data.term2.sample_rate = atoi(value);
 #endif
       if (atoi(value) > 3) params->session_data.term2.attr.voice_attr.u.evs.codec_flags |= DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
@@ -1449,7 +1450,7 @@ int create_sessions(PMEDIAPARAMS mediaParams)
 {
    uint32_t trans_id = 0xabab;
    uint32_t size;
-#ifndef _X86  /* x86 has additional session params that increase the SESSION_DATA struct size to beyond the mailbox depth, when building for c66x, _X86 should not be defined */
+#if !defined(_X86) && !defined(_ARM)  /* x86 has additional session params that increase the SESSION_DATA struct size to beyond the mailbox depth, when building for c66x, _X86 should not be defined */
    char *tx_buffer = (char *)calloc(TRANS_MAILBOX_MAX_PAYLOAD_SIZE, sizeof(char));
 #else
    char *tx_buffer = (char *)calloc(sizeof(struct cmd_hdr) + sizeof(struct cmd_create_session), sizeof(char));

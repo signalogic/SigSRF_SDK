@@ -13,7 +13,7 @@
   
     Support for c66x coCPU card PCIe and ATCA blade SRIO interfaces
 
-  Copyright (C) Signalogic, Inc, 2016-2023
+  Copyright (C) Signalogic, Inc, 2016-2024
 
     Add APIs to (i) encapsulate c66x PCIe and SRIO interfaces, and (ii) support x86-only or combined x86 and c66x server usage.  APIs are consistent between all use cases
 
@@ -125,6 +125,7 @@
 
     May 2024 JHB
       -update comment that referenced x86_mediaTest.c to mediaTest_proc.c
+      -change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
 */
 
 #ifndef _SESSION_H_
@@ -378,7 +379,7 @@ typedef struct {
   uint32_t mode;
 #endif
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
 
 /* "uFlags" definitions */
 
@@ -424,7 +425,7 @@ typedef struct {
 typedef struct {
 
    uint32_t session_id;
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    uint32_t thread_id;  /* thread or core id */
 #endif
    
@@ -433,7 +434,7 @@ typedef struct {
 
    TERMINATION_INFO term1;
    TERMINATION_INFO term2;
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    TERMINATION_INFO group_term;
    #define MAX_SESSION_NAME_LEN 128
    char szSessionName[MAX_SESSION_NAME_LEN];  /* session name used for some output pcap/wav file naming purposes (optional, does not need to be set), JHB Jun 2019 */
@@ -457,7 +458,7 @@ typedef struct {
 
 } HOST_REP_SESSION_DATA;
 
-#ifdef _X86  /* added JHB Nov 2018 */
+#if defined(_X86) || defined(_ARM)  /* added JHB Nov 2018 */
 
 /* thread level items indexed by session */
 

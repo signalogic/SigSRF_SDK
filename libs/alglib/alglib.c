@@ -5,7 +5,7 @@
  
   Projects: SigSRF, DirectCore
  
-  Copyright Signalogic Inc. 2018-2023
+  Copyright Signalogic Inc. 2018-2024
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -19,6 +19,7 @@
    Modified Oct 2019 JHB, add hybrid clip + high end compression algorithm in DSMergeStreamAudioEx() to avoid consecutive blocks of clipped output samples when scaling is not in effect.  Add DS_AUDIO_MERGE_ADD_COMPRESSION flag for experimental compression algorithm (see comments)
    Modified Feb 2022 JHB, update version string. Major changes made in fs_conv.c, see its comments
    Modified Aug 2023 JHB, add memadd()
+   Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
 */
 
 #include <stdlib.h>
@@ -216,7 +217,7 @@ int isArrayZero(uint8_t* array, int len) {
 
 int non_zero = 0;
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
 
    __asm__ (
       "cld\n"

@@ -35,13 +35,18 @@
  *
 */
 
+/*
+   Revision History
+     Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
+*/
+
 #ifndef _MAILBOX_H
 #define _MAILBOX_H
 
 /* add HCARD params and calling arguments to all mailbox functions for x86 builds w/wo coCPU.  This removes a global HCARD var from voplib, which is both better software design and also allows voplib
    to be used with minimum user apps without having to declare an artificial HCARD global var.  MailBoxLoc.h and mailBox.c are also modified to use card_param and card_arg.  JHB Aug 2018 */
 
-#if _X86
+#if defined(_X86) || defined(_ARM)
   #define card_param HCARD hCard,
   #define card_arg hCard,
   #define HCARD int32_t

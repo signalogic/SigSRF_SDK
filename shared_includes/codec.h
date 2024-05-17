@@ -21,9 +21,10 @@
 
   Revision History
 
-    Oct 2023 JHB, created from session.h, codec related items separated to more cleanly support codec-only applications
-    Dec 2023 JHB, comments only
-    Feb 2024 JHB, add DS_VOICE_CODEC_TYPE_L16 definition (linear PCM 16-bit)
+    Created Oct 2023 JHB, from session.h, codec related items separated to more cleanly support codec-only applications
+    Modified Dec 2023 JHB, comments only
+    Modified Feb 2024 JHB, add DS_VOICE_CODEC_TYPE_L16 definition (linear PCM 16-bit)
+    Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
 */
 
 #ifndef _CODEC_H_
@@ -160,7 +161,7 @@ enum opus_codec_flags
     DS_OPUS_FEC             = 0x08000000    /* 0 = FEC disabled, 1 = FEC enabled */
 };
 
-#if defined(USE_ATCA_EVS_MODS) || defined(_X86)
+#if defined(USE_ATCA_EVS_MODS) || defined(_X86) || defined(_ARM)
 
 #define DS_EVS_BITRATE_SHIFT             2
 #define DS_EVS_PACKET_FORMAT_SHIFT       6

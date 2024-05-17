@@ -1,23 +1,24 @@
 /*
-  transcoding.h
+ transcoding.h
 
-  Header file for:
+ Header file for:
 
-    -mailbox interface between control plane cores and coCPU cores
-    -buffer interface between data plane cores and coCPU cores
+   -mailbox interface between control plane cores and coCPU cores
+   -buffer interface between data plane cores and coCPU cores
 
-  Copyright (C) Signalogic and Mavenir Systems, 2013
-  Copyright (C) Signalogic, 2014-2019
+ Copyright (C) Signalogic and Mavenir Systems, 2013
+ Copyright (C) Signalogic, 2014-2024
 
-  Revision History
+ Revision History
 
-    Created Sep 2013 Liem
-    Modified 2015-2016 Signalogic, added support for ADV 8901
-    Modified May 2017 JHB, added MAX_SESSIONS_PER_CORE
-    Modified Nov 2018 JHB, move definition of MAX_SESSIONS here, remove from lib_priv.h, any other location
-    Modified Feb 2019 JHB, move primary definition of NCORECHAN here
-    Modified Mar 2019 JHB, add reference to DEMOBUILD, which is defined in pktlib, voplib, and/or hwlib Makefiles for demo build version
-    Modified Sep 2019 JHB, define NIPCHAN = NCORECHAN for x86 builds
+   Created Sep 2013 Liem
+   Modified 2015-2016 Signalogic, added support for ADV 8901
+   Modified May 2017 JHB, added MAX_SESSIONS_PER_CORE
+   Modified Nov 2018 JHB, move definition of MAX_SESSIONS here, remove from lib_priv.h, any other location
+   Modified Feb 2019 JHB, move primary definition of NCORECHAN here
+   Modified Mar 2019 JHB, add reference to DEMOBUILD, which is defined in pktlib, voplib, and/or hwlib Makefiles for demo build version
+   Modified Sep 2019 JHB, define NIPCHAN = NCORECHAN for x86 builds
+   Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
 */
 
 #ifndef TRANSCODING_H_
@@ -35,8 +36,7 @@
 #define NUM_CORES_PER_DSP      8
 #define MAGIC_NUMBER           0xbabeface
 
-#ifdef _X86
-//  #if defined(PKTLIB) && defined(DEMOBUILD)
+#if defined(_X86) || defined(_ARM)
   #ifdef DEMOBUILD
     #define MAX_SESSIONS_PER_CORE  4    /* demo version */
   #else
@@ -46,13 +46,13 @@
     #define MAX_SESSIONS_PER_CORE  2048  /* c66x build limit */
 #endif
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
   #define MAX_SESSIONS MAX_SESSIONS_PER_CORE
   #define NCORECHAN (4*MAX_SESSIONS_PER_CORE)   /* allow for dynamic channels */
   #define NIPCHAN   NCORECHAN
 #endif
 
-#if 0  /* remove, _NO_HASH_ should be defined in Makefile, JHB Sep2016 */
+#if 0  /* remove, _NO_HASH_ should be defined in Makefile if used, JHB Sep2016 */
   #if defined(_USE_NET_IO_) && !defined(_USE_PCIE_)
   #define _NO_HASH_
   #endif

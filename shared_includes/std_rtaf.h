@@ -3,7 +3,7 @@
 
  standard definitions for RTAF-based applications, supports C5xxx/C6xxx and x86.  Supports voice, video, CIM
 
- Copyright (C) Signalogic, 2002-2023
+ Copyright (C) Signalogic, 2002-2024
 
  License
 
@@ -20,12 +20,13 @@
   Modified Mar 2018 JHB, replaced _X86_ with _X86.  Change was made to maintain consistency with shared_include / coCPU usage.  _X86, _ARM, _TI66X, etc are "chip family" defines, specific chips are _X5_E930_, _C66XX, etc)
   Modified Oct 2018 JHB, moved DNUM definition here from diaglib_priv.h
   Modified Jul 2023 JHB, add _C66XX definition
+  Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
 */
 
 #ifndef RTC_DSP_INC
   #define RTC_DSP_INC
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
 
 /* add x86 chip type definitions here, as needed */
 
@@ -110,7 +111,7 @@
 
 #endif
 
-#endif /* ifndef _X86 */
+#endif /* if !_X86 and !_ARM */
 
 /************************************************************************/
 /*                   Constant and macro definition                      */
@@ -188,7 +189,7 @@
 
   typedef short               Shortword;
   
-#elif defined (_X86)
+#elif defined(_X86) || defined(_ARM)
 
   #ifndef DWORD
     #define DWORD               unsigned int
@@ -226,7 +227,7 @@
 #define START                   TRUE
 #define PAUSE                   FALSE                           
 
-#ifndef _X86
+#if !defined(_X86) && !defined(_ARM)
 #define LOWORD(a)               ((WORD)(a))
 #define HIWORD(a)               ((WORD)(((DWORD)(a) >> 16) & 0xffff))
 #endif
@@ -360,7 +361,7 @@
   
 #endif
 
-#ifndef _X86
+#if !defined(_X86) && !defined(_ARM)
 
 /* property alias definitions allow linking to host-shared properties defined in t54def.asm 
    or t6xdef.asm */
@@ -642,7 +643,7 @@ extern _FAR volatile BOOL USERCALL;
 void main_rtaf();
 #endif
 
-#endif /* ifndef _X86 */
+#endif /* if !_X86 and !_ARM */
 
 #endif /* #ifndef RTC_DSP_INC */
 

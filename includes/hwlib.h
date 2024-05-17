@@ -35,6 +35,7 @@
   Modified Sep 2020 JHB, fix #pragma GCC diagnostic ignored "-pedantic", should be "-Wpedantic". This was causing a warning in gcc 9.3.0
   Modified Feb 2022 JHB, add HFILE* param to DSLoadDataFile() to support optional use of filelib APIs while file is open
   Modified Feb 2024 JHB, change DS_DATAFILE_USE_SEM to DS_DATAFILE_USE_SEMAPHORE
+  Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
 */
  
 #ifndef _HWLIB_H_
@@ -451,7 +452,7 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
 
 /* TSC monitoring, Aug 2019 */
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
 
   #define USE_CLOCK_GETTIME  1
   #define USE_GETTIMEOFDAY   2
@@ -539,7 +540,7 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
 
   #pragma GCC diagnostic pop
 
-#endif  /* _X86 */
+#endif  /* if _X86 or _ARM is defined */
 
 #ifdef __cplusplus
 }

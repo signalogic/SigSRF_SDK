@@ -3,7 +3,7 @@
 
  Description: sampling rate conversion for common telecom / audio sampling sampling rates, using up/down conversion by integer ratios, for example 2, 3, 4, 6, 2/3, 4/3, etc
   
- Copyright (C) Signalogic, 2001-2023
+ Copyright (C) Signalogic, 2001-2024
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -29,6 +29,7 @@
    Modified Mar 2022 JHB, show a warning message when no filter is defined for a specified (and mathematically valid) sampling rate conversion ratio. Apps can avoid the warning by (i) giving the DS_FSCONV_NO_FILTER flag or (ii) supplying user-defined filter coefficients (pFilt)
    Modified Jul 2023 JHB, change _C66XX_ reference to _C66XX (see comments in std_rtaf.h)
    Modified Feb 2024 JHB, implement DS_FSCONV_SATURATE flag. If output of DSConvertFs() will wrap, saturate instead 
+   Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
 */
 
 #include <stdint.h>
@@ -108,7 +109,7 @@ Function Params
   pDelay       pointer to delay values (must be a per channel, saved area)
   data_len     length of x[n]
 
-Return Value (only if _X86 defined)
+Return Value (only if _X86 or _ARM is defined)
 
   Amount of valid data in pData; for example, for a down conversion by 2, then this would be data_len/2
 
@@ -129,7 +130,7 @@ Example usage:
   DSConvertFs(&inBuf[i*RTP_NSAMPLES], fs, up_factor, dn_factor, FirDelayBuf, RTP_NSAMPLES, 1)
 */  
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
 int DSConvertFs(
 #else
 void fs_conv(
@@ -157,7 +158,7 @@ const float* pFilt_f = NULL;
   int flen2, j2;
   #endif
   long long sum;
-  #ifdef _X86
+  #if defined(_X86) || defined(_ARM)
   int16_t temp_store[/*24576*/MAX_FSCONV_UP_DOWN_FACTOR*MAX_SAMPLES_FRAME];  /* temporary output storage allows in-place processing.  Increased from 1024 to allow 24x sampling rate down-conversion (see additional comments in voplib.h), JHB Mar2018. Increased again to allow 44.1 to 48 kHz conversion with input data_len of MAX_SAMPLES_FRAME (960) * 160. Note this size may be sensitive to caller amount of stack used; for example mediaTest uses a huge amount of stack and a size value here of 1MByte seems to cause a seg fault, JHB Feb2022 */
   #else
   int16_t temp_store[MAX_SAMPLES_FRAME];  /* temporary output storage allows in-place processing */
@@ -399,7 +400,7 @@ float* pData_f = NULL, *pDelay_f = NULL;
       }
    }
 
-#ifdef _X86
+#if defined(_X86) || defined(_ARM)
    return data_len;
 #endif
 }

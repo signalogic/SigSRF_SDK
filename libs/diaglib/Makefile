@@ -24,7 +24,8 @@
 #  Modified Mar 2021 JHB, add INSTALLPATH to allow builds on relative folder structure, remove unnecessary defines
 #  Modified Feb 2024 JHB, if standalone=1 given on command line define STANDALONE, NO_HWLIB, and NO_PKTLIB, and build dialglib_standalone.so
 #  Modified Feb 2024 JHB, apply soname only to default libdiaglib.so to avoid ldconfig conflicts, rename CC_FLAGS to CFLAGS and LIB_FLAGS to LDFLAGS (Linux convention)
-#  Modified May 2024 JHB, change from gcc to g++
+#  Modified May 2024 JHB, change from gcc to g++, change CFLAGS TO CPPFLAGS
+#  Modified May 2024 JHB, experimental: add -march=native compiler flag
 
 # set install path var, from lib/diaglib folder SigSRF software install path is 3 levels up
 INSTALLPATH=../../..
@@ -68,11 +69,14 @@ else
 endif
 
 # compiler flags
-CFLAGS = $(INCLUDE)
-CFLAGS += $(DBGFLAGS)
-CFLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 $(DEFINES)
+CPPFLAGS = $(INCLUDE)
+CPPFLAGS += $(DBGFLAGS)
+CPPFLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 $(DEFINES)
 
-CFLAGS += -Wextra -Wno-missing-field-initializers
+CPPFLAGS += -Wextra -Wno-missing-field-initializers
+
+# experimental in preparation for Arm support: let compiler figure out CPU type
+CPPFLAGS += -march=native
 
 # link flags. Apply -soname only for primary lib to avoid ldconfig conflicts
 LDFLAGS = -pthread -shared -flto
@@ -83,10 +87,10 @@ endif
 all: $(cpp_objects) $(c_objects) link
 
 $(cpp_objects): %.o: %.cpp
-	$(CC) $(CFLAGS) $< -o $@ 
+	$(CC) $(CPPFLAGS) $< -o $@ 
 
 $(c_objects): %.o: %.c
-	$(CC) $(CFLAGS) $< -o $@ 
+	$(CC) $(CPPFLAGS) $< -o $@ 
 
 link:
 	ar -rcsu libdiaglib.a $(cpp_objects) $(c_objects)
