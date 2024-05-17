@@ -1009,9 +1009,9 @@ Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to
 
 <i><b>
 ```diff
-- Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs.</br>
- Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference.</br>
- In the above command line examples you will almost definitely see different md5sum values on your system.
+- Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs.
+- Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference.
+- In the above command line examples you will almost definitely see different md5sum values on your system.
 ```
 </b></i>
 
@@ -1038,7 +1038,12 @@ The mediaMin and mediaTest command lines accept an MD5 sum entry:
 
 which will show output file MD5 sum in the console display summary stats.  The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
 
-<i><b>Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs. Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference.</b></i>
+<i><b>
+```diff
+- Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs.
+- Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference.
+```
+</b></i>
 
 [1] All performance specs on this page are given for an x86 Xeon E5-2660 CPU running at 2.2 GHz
 
