@@ -399,16 +399,16 @@ Note the "ooo" packets in the ingress section of the packet log, which are corre
 mediaMin command lines support .rtp and .rtpdump input files. Entry is the same as with .pcap or .pcapng files. Below are command line examples:
 
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf0.rtpdump -L -d 0xc11 -r20
-    mediaMin -cx86 -i ../pcaps/evs_5900_1_hf1.rtpdump -L -d 0xc11 -r0.5
+    mediaMin -c x86 -i ../pcaps/evs_5900_1_hf1.rtpdump -L -d 0xc11 -r0.5
     mediaMin -c x86 -i ../pcaps/evs_5900_2_hf0.rtpdump -L -d 0xc11 -r20
     mediaMin -c x86 -i ../pcaps/evs_5900_2_hf1.rtpdump -L -d 0xc11 -r0.2
 
 Here is a description of the above examples:
 
-1) .rtp file containing EVS 5900 bps packets in compact header format
-2) same, but full header format, 40x real-time processing speed
-3) same as 1) but with stereo frames
-4) same as 2) but with stereo frames, 100x real-time processing speed
+1. .rtp file containing EVS 5900 bps packets in compact header format
+2. same, but full header format, 40x real-time processing speed
+3. same as 1. but with stereo frames
+4. same as 2. but with stereo frames, 100x real-time processing speed
 
 <a name="Sessions"></a>
 ## Sessions
