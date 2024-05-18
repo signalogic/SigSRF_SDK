@@ -410,7 +410,7 @@ Here is a description of the above examples:
 3. same as 1. but with stereo frames
 4. same as 2. but with stereo frames, 100x real-time processing speed
 
-Note that .rtp file format seems to only supports IPv4 addresses. If you have an .rtp format file with IPv6 addresses, please send to Signalogic and we can take a look.
+Note that .rtp file format seems to only support one stream, with IPv4 addresses. Also in some cases the file header may contain zero values for source or destination IP address or port values; in that case the DSReadPcapRecord() API in pktlib will use generic values instead of zero. If you have an .rtp format file with multiple streams and/or IPv6 addresses, please send to Signalogic and we can take a look at expanding .rtp support.
 
 <a name="Sessions"></a>
 ## Sessions
