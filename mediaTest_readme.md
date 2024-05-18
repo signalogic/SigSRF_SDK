@@ -17,11 +17,11 @@ Input and output options include network I/O, pcap file, and audio file format f
 
  - call recording "time stamp matching" mode for reproducible, bit-exact media output files
  - .rtp and .rtpdump file format support
- - codec configuration options for binary-only codecs with exit() and abort() calls, codecs with protected sections of source not permissible to modify
+ - codec configuration options for binary-only codecs with exit() and abort() calls, and codecs with protected sections of source not permissible to modify
  - improvements in low bit rate handling (e.g. EVS codec VBR mode)
  - silence trim, re-sampling, and other wav file post-processing options
  - further improvements in RTP media type auto-detection
- - add DSFilterPacket() and DSFindPcapPacket() APIs in pktlib
+ - packet filter and search APIs in pktlib
 
 Bug fixes:
 
