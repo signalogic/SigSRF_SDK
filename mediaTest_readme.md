@@ -410,6 +410,8 @@ Here is a description of the above examples:
 3. same as 1. but with stereo frames
 4. same as 2. but with stereo frames, 100x real-time processing speed
 
+Note that .rtp file format seems to only supports IPv4 addresses. If you have an .rtp format file with IPv6 addresses, please send to Signalogic and we can take a look.
+
 <a name="Sessions"></a>
 ## Sessions
 
