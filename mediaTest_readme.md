@@ -113,7 +113,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[.rtpdump and .rtp file format support](#user-content-rtpfilesupportmediamin)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[.rtp and .rtpdump file format support](#user-content-rtpfilesupportmediamin)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
@@ -396,7 +396,7 @@ Note the "ooo" packets in the ingress section of the packet log, which are corre
 ### .rtp and .rtpdump File Support
 <a name="RTPFileSupportMediaMin"></a>
 
-mediaMin command lines support .rtp and .rtpdump input files. Entry is the same as with .pcap or .pcapng files. Below are command line examples:
+mediaMin and mediaTest command lines support .rtp and .rtpdump input files. Entry is the same as with .pcap or .pcapng files. Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
 
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf0.rtpdump -L -d 0xc11 -r20
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf1.rtpdump -L -d 0xc11 -r0.5
@@ -410,7 +410,7 @@ Here is a description of the above examples:
 3. same as 1. but with stereo frames
 4. same as 2. but with stereo frames, 100x real-time processing speed
 
-Note that .rtp file format seems to only support one stream, with IPv4 addresses. Also in some cases the file header may contain zero values for source or destination IP address or port values; in that case the DSReadPcapRecord() API in pktlib will use generic values instead of zero. If you have an .rtp format file with multiple streams and/or IPv6 addresses, please send to Signalogic and we can take a look at expanding .rtp support.
+Note that .rtp file format seems to only support one stream, with IPv4 addresses. Also .rtp file headers may contain zero values for source or destination IP address or port values; in that case the DSReadPcapRecord() API in pktlib will use generic local IP values instead of zero. If you have an .rtp format file with multiple streams and/or IPv6 addresses, please send to Signalogic and we can take a look at expanding .rtp support.
 
 <a name="Sessions"></a>
 ## Sessions
