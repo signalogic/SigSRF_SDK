@@ -405,10 +405,10 @@ mediaMin and mediaTest command lines support .rtp and .rtpdump input files. Entr
 
 Here is a description of the above examples:
 
-(1) .rtp file containing EVS 5900 bps packets in compact header format
-(2) same, but full header format, 40x real-time processing speed
-(3) same as (1) but with stereo frames
-(4) same as (2) but with stereo frames, 100x real-time processing speed
+1. rtp file containing EVS 5900 bps packets in compact header format
+2. same, but full header format, 40x real-time processing speed
+3. same as 1. but with stereo frames
+4. same as 2. but with stereo frames, 100x real-time processing speed
 
 Note that .rtp file format seems to only support one stream, with IPv4 addresses. Also .rtp file headers may contain zero values for source or destination IP address or port values; in that case the DSReadPcapRecord() API in pktlib will use generic local IP values instead of zero. If you have an .rtp format file with multiple streams and/or IPv6 addresses, please send to Signalogic and we can take a look at expanding .rtp support.
 
