@@ -2202,7 +2202,7 @@ codec_test_cleanup:
             {
                printf("x86 app test start \n");
 
-               uint32_t* arg = (uint32_t*)malloc(THREAD_ARG_SIZE);
+               uint32_t* arg = (uint32_t*)calloc(1, THREAD_ARG_SIZE);
 
                if (arg == NULL) 
                {
@@ -2248,7 +2248,7 @@ codec_test_cleanup:
 
                for (i=0; i<num_threads; i++) {
 
-                  arg = (uint32_t*)malloc(THREAD_ARG_SIZE);
+                  arg = (uint32_t*)calloc(1, THREAD_ARG_SIZE);
 
                   if (arg == NULL) 
                   {
@@ -2305,7 +2305,7 @@ codec_test_cleanup:
 
                for (i=0; i<num_threads; i++) {
       
-                  arg = (uint32_t*)malloc(THREAD_ARG_SIZE);
+                  arg = (uint32_t*)calloc(1, THREAD_ARG_SIZE);
 
                   if (arg == NULL) 
                   {
@@ -2616,7 +2616,7 @@ codec_test_cleanup:
 
       /* read next pcap packet */
 
-         if (!(packet_length = DSReadPcapRecord(fp_in, pkt_buffer, 0, NULL, link_layer_length, NULL))) break;
+         if (!(packet_length = DSReadPcapRecord(fp_in, pkt_buffer, 0, NULL, link_layer_length, NULL, NULL))) break;
 
          frame_count++;
          printf("\rExtracting frame %d", frame_count);

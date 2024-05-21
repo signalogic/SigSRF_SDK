@@ -94,13 +94,14 @@
   Modified May 2023 JHB, add DS_SESSION_INFO_RFC7198_LOOKBACK flag to allow retrieval of RFC7198 lookback depth
   Modified Jul 2023 JHB, add DS_JITTER_BUFFER_INFO_NUM_DTMF_PKTS
   Modified Sep 2023 JHB, add DSFilterPacket() and DSFindPcapPacket() APIs, DS_FILTER_PKT_XXX flags, and DS_FIND_PCAP_PACKET_XXX flags
-  Modified Nov 2023 JHB, modify pcap_hdr_t struct, add PCAP_TYPE_RTP flag, and update DSOpenPcap() and DSReadPcapRecord() to handle .rtpdump (.rtp) format
+  Modified Nov 2023 JHB, modify pcap_hdr_t struct, add PCAP_TYPE_RTP flag, and update DSOpenPcap() and DSReadPcapRecord() to handle .rtp (.rtpdump) format
   Modified Nov 2023 JHB, add DS_FMT_PKT_USER_RTP_HEADER flag so DSFormatPacket() can handle formatting an input payload that needs no RTP header modification (i.e. it already includes a full/correct RTP header)
   Modified Nov 2023 JHB, update comments and remove references to "background process"
   Modified Feb 2024 JHB, add DS_SESSION_INFO_LAST_ACTIVE_CHANNEL option for DSGetSessionInfo()
   Modified Feb 2024 JHB, add start and end optional params to DSFindPcapPacket(), add optional amount read param to DSFilterPacket(), add DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET flag (applicable to both DSFindPcapPacket() and DSFilterPacket()) to specify seek based search vs record based and greatly improve performance of these APIs
   Modified Apr 2024 JHB, in DSGetSessionInfo() add DS_SESSION_INFO_SAMPLE_RATE_MULT case, fix issue for DS_SESSION_INFO_OUTPUT_BUFFER_INTERVAL
   Modified Apr 2024 JHB, add DS_PKT_PYLD_CONTENT_MEDIA_REUSE packet payload content definition
+  Modified May 2024 JHB, add optional pcap_hdr_t* param to DSReadPcapRecord() API to reference the file header from a prior DSOpenPcap() call. For .rtp format files, DSReadPcapRecord() will use the optional pointer for src/dst IP addr and port values to extent possible when reading RTP records
 */
 
 #ifndef _PKTLIB_H_
@@ -714,7 +715,7 @@ extern "C" {
 
 /* pcap, pcapng, and .rtp file format support */
 
-  typedef struct pcap_hdr_s {  /* header for standard libpcap format, also for .rtpdump format */
+  typedef struct pcap_hdr_s {  /* header for standard libpcap format, also for .rtp (.rtpdump) format */
 
     union {
 
@@ -729,7 +730,7 @@ extern "C" {
         uint32_t link_type;      /* data link type */
       };
 
-      struct {  /* add rtpdump format as a union (https://formats.kaitai.io/rtpdump), JHB Nov 2023 */
+      struct {  /* add rtp format as a union (https://formats.kaitai.io/rtpdump), JHB Nov 2023 */
 
         char     shebang[12];
         char     space[1];
@@ -740,7 +741,7 @@ extern "C" {
         uint32_t src_ip_addr;
         uint16_t src_port;
         uint16_t padding;
-      } rtpdump;
+      } rtp;
     };
 
   } pcap_hdr_t;
@@ -864,9 +865,10 @@ extern "C" {
    -link_layer_info should be supplied from a prior DSOpenPcap() call. See comments above
    -uFlags are given in DS_READ_PCAP_XXX definitions below
    -if an optional hdr_type pointer is supplied, one or more ETH_P_XXX flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
+   -if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition)
 */
   
-  int DSReadPcapRecord(FILE* fp_pcap, uint8_t* pkt_buf, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* hdr_type);
+  int DSReadPcapRecord(FILE* fp_pcap, uint8_t* pkt_buf, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* hdr_type, pcap_hdr_t* pcap_file_hdr);
 
   #define DS_READ_PCAP_RECORD_COPY            0x0800    /* copy pcap record only, don't advance file pointer */
 

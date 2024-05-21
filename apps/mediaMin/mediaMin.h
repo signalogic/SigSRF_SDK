@@ -3,7 +3,7 @@
 
   header file for mediaMin reference application including (i) simplified SigSRF push/pull interface and (ii) test and measurement program
   
-  Copyright (C) Signalogic, 2018-2023
+  Copyright (C) Signalogic, 2018-2024
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -29,6 +29,7 @@
    Modified Sep 2023 JHB, change PKTINFO_ITEMS reference to PKTINFO (due to change in pktlib.h)
    Modified Dec 2023 JHB, add szGroupPcap[MAX_STREAM_GROUPS] to support --group_pcap cmd line option
    Modified Dec 2023 JHB, include voplib.h
+   Modified May 2024 JHB, add pcap_file_hdr[] to support .rtp format files (needed for use with modified DSReadPcapRecord() in pktlib)
 */
 
 #ifndef _MEDIAMIN_H_
@@ -106,34 +107,35 @@ typedef struct {
 
 typedef struct {
 
-  int      nSessionsCreated;
-  int      nSessionsDeleted;
-  int      nDynamicSessions;
-  uint32_t total_sessions_created;
+  int          nSessionsCreated;
+  int          nSessionsDeleted;
+  int          nDynamicSessions;
+  uint32_t     total_sessions_created;
 
-  int16_t  nInPcapFiles;
-  int16_t  nOutPcapFiles;
+  int16_t      nInPcapFiles;
+  int16_t      nOutPcapFiles;
 
-  int32_t  link_layer_len[MAX_INPUT_STREAMS];  /* note: the current definition of MAX_INPUT_STREAMS (512, in mediaTest.h) is overkill.  Something like 10 to 50 pcaps, with say up to 10 streams (sessions) each, is more realistic */
-  FILE*    pcap_in[MAX_INPUT_STREAMS];
-  uint16_t input_index[MAX_INPUT_STREAMS];
+  int32_t      link_layer_len[MAX_INPUT_STREAMS];  /* note: the current definition of MAX_INPUT_STREAMS (512, in mediaTest.h) is overkill.  Something like 10 to 50 pcaps, with say up to 10 streams (sessions) each, is more realistic */
+  FILE*        pcap_in[MAX_INPUT_STREAMS];
+  uint16_t     input_index[MAX_INPUT_STREAMS];
+  pcap_hdr_t*  pcap_file_hdr[MAX_INPUT_STREAMS];  /* used in DSOpenPcap() and DSOpenPcapRecord(), JHB May 2024 */
 
-  FILE*    pcap_out[MAX_INPUT_STREAMS];
+  FILE*        pcap_out[MAX_INPUT_STREAMS];
 
-  int      nSessions[MAX_INPUT_STREAMS];
-  int      nSessionIndex[MAX_INPUT_STREAMS][MAX_SESSIONS];
-  bool     fDuplicatedHeaders[MAX_INPUT_STREAMS];
-  FILE*    fp_pcap_jb[MAX_SESSIONS];
-  bool     init_err;
+  int          nSessions[MAX_INPUT_STREAMS];
+  int          nSessionIndex[MAX_INPUT_STREAMS][MAX_SESSIONS];
+  bool         fDuplicatedHeaders[MAX_INPUT_STREAMS];
+  FILE*        fp_pcap_jb[MAX_SESSIONS];
+  bool         init_err;
 
-  uint32_t num_tcp_packets_in[MAX_INPUT_STREAMS];
-  uint32_t num_udp_packets_in[MAX_INPUT_STREAMS];
+  uint32_t     num_tcp_packets_in[MAX_INPUT_STREAMS];
+  uint32_t     num_udp_packets_in[MAX_INPUT_STREAMS];
 
-  FILE*    fp_pcap_group[MAX_STREAM_GROUPS];  /* note:  this array is accessed by a session counter, and each app thread might handle up to 50 sessions, so this size (172, defined in shared_include/streamlib.h) is overkill.  But leave it for now */
-  FILE*    fp_text_group[MAX_STREAM_GROUPS];
-  char     szGroupPcap[MAX_STREAM_GROUPS][CMDOPT_MAX_INPUT_LEN];  /* added to support --group_pcap cmd line option, JHB Dec 2023 */
-  char     szGroupName[MAX_STREAM_GROUPS][MAX_GROUPID_LEN];
-  bool     fGroupTermCreated[MAX_STREAM_GROUPS][MAX_INPUT_REUSE];  /* used in dynamic session mode */
+  FILE*        fp_pcap_group[MAX_STREAM_GROUPS];  /* note:  this array is accessed by a session counter, and each app thread might handle up to 50 sessions, so this size (172, defined in shared_include/streamlib.h) is overkill.  But leave it for now */
+  FILE*        fp_text_group[MAX_STREAM_GROUPS];
+  char         szGroupPcap[MAX_STREAM_GROUPS][CMDOPT_MAX_INPUT_LEN];  /* added to support --group_pcap cmd line option, JHB Dec 2023 */
+  char         szGroupName[MAX_STREAM_GROUPS][MAX_GROUPID_LEN];
+  bool         fGroupTermCreated[MAX_STREAM_GROUPS][MAX_INPUT_REUSE];  /* used in dynamic session mode */
 
   bool                fFirstGroupPull[MAX_STREAM_GROUPS];
   GROUPPULLSTATS      GroupPullStats[MAX_GROUP_STATS];
@@ -144,16 +146,16 @@ typedef struct {
   DYNAMICSESSIONSTATS DynamicSessionStats[MAX_DYNAMIC_SESSION_STATS];
   int16_t             dynamic_session_stats_index;
 
-  uint32_t pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_xcode_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_xcode_ctr, prev_pkt_pull_streamgroup_ctr;
+  uint32_t     pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_xcode_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_xcode_ctr, prev_pkt_pull_streamgroup_ctr;
 
-  int8_t   flush_state[MAX_SESSIONS];
-  uint32_t flush_count;
+  int8_t       flush_state[MAX_SESSIONS];
+  uint32_t     flush_count;
 
-  bool     fDynamicSessions;
+  bool         fDynamicSessions;
 
-  uint64_t pkt_base_timestamp[MAX_INPUT_STREAMS];
-  uint64_t initial_push_time[MAX_INPUT_STREAMS];
-  uint64_t total_push_time[MAX_INPUT_STREAMS];
+  uint64_t     pkt_base_timestamp[MAX_INPUT_STREAMS];
+  uint64_t     initial_push_time[MAX_INPUT_STREAMS];
+  uint64_t     total_push_time[MAX_INPUT_STREAMS];
 
   uint16_t num_rtpmaps[MAX_INPUT_STREAMS];  /* SDP items, added JHB Jan2021 */
   vector<sdp::Attribute*> rtpmaps[MAX_INPUT_STREAMS];
@@ -162,19 +164,19 @@ typedef struct {
   bool fUnmatchedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
   bool fDisallowedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
 
-  HDERSTREAM hDerStreams[MAX_INPUT_STREAMS];  /* DER stream handles, added JHB Mar2021 */
-  FILE* hFile_ASN_XML[MAX_INPUT_STREAMS];     /* DER stream XML output file handles, JHB Dec 2022 */
+  HDERSTREAM   hDerStreams[MAX_INPUT_STREAMS];  /* DER stream handles, added JHB Mar2021 */
+  FILE*        hFile_ASN_XML[MAX_INPUT_STREAMS];     /* DER stream XML output file handles, JHB Dec 2022 */
 
-  uint8_t* sip_save[MAX_INPUT_STREAMS];  /* SIP aggregated packet handling, initially to support SIP invite packets, added JHB Mar2021 */
-  int      sip_save_len[MAX_INPUT_STREAMS];
+  uint8_t*     sip_save[MAX_INPUT_STREAMS];  /* SIP aggregated packet handling, initially to support SIP invite packets, added JHB Mar2021 */
+  int          sip_save_len[MAX_INPUT_STREAMS];
 
-  uint8_t  dynamic_terminate_stream[MAX_INPUT_STREAMS];  /* non-zero values will terminate a stream, for example a SIP BYE messsage from sender or recipient with same IP addr as active media stream.  See STREAM_TERMINATE_xxx defines above */
+  uint8_t      dynamic_terminate_stream[MAX_INPUT_STREAMS];  /* non-zero values will terminate a stream, for example a SIP BYE messsage from sender or recipient with same IP addr as active media stream.  See STREAM_TERMINATE_xxx defines above */
  
  /* items used only in PushPackets() */
 
-  bool           fReseek;                /* flag indicating whether current packet processing is a "reseek" (i) a packet arrival timestamp not yet elapsed (ii) a TCP packet being consumed in segments */
-  PKTINFO        PktInfo;                /* saved copy of PktInfo, can be used to compare current and previous packets */ 
-  unsigned int   tcp_redundant_discards[MAX_INPUT_STREAMS];  /* count of discarded TCP redundant retransmissions */
+  bool         fReseek;                /* flag indicating whether current packet processing is a "reseek" (i) a packet arrival timestamp not yet elapsed (ii) a TCP packet being consumed in segments */
+  PKTINFO      PktInfo;                /* saved copy of PktInfo, can be used to compare current and previous packets */ 
+  unsigned int tcp_redundant_discards[MAX_INPUT_STREAMS];  /* count of discarded TCP redundant retransmissions */
 
 /* AFAP and FTRT mode support */
 

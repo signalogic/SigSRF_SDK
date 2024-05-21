@@ -167,6 +167,7 @@ Revision History
  Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG flag, which is now deprecated
  Modified Apr 2024 JHB, several updates and mods to verify functionality in mediaTest mode (look for PUSHPACKETS_REFERENCE below). This fixes the "EVS Player" and "AMR Player" command lines on the Github page
  Modified May 2024 JHB, call DSGetBacktrace() before starting packet/media threads, show result as " ... start sequence = ..." in console output
+ Modified May 2024 JHB, add NULL param to DSReadPcapRecord() calls for unused pcap_file_hdr param, required by pktlib API update
 */
 
 #ifndef _GNU_SOURCE
@@ -1827,7 +1828,7 @@ run_loop:
 
             for (j=0; j<nInFiles; j++) if (in_type[j] == PCAP) {
 
-               pkt_len[0] = DSReadPcapRecord(fp_in[j], pkt_in_buf, 0, NULL, link_layer_length[j], NULL);
+               pkt_len[0] = DSReadPcapRecord(fp_in[j], pkt_in_buf, 0, NULL, link_layer_length[j], NULL, NULL);
 
                #if 0  /* no longer needed, done by DSRecvPackets() when DS_RECV_PKT_FILTER_RTCP flag is applied (see below) */
                if (pkt_len[0] > 0) {
@@ -5662,7 +5663,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
          if (cur_time - last_time[i] >= RealTimeInterval[i]*1000) {  /* has interval elapsed ?  (comparison is in usec) */
 
-            if (!(packet_length = DSReadPcapRecord(fp_in[i], pkt_buffer, 0, NULL, link_layer_length[i], NULL))) continue;
+            if (!(packet_length = DSReadPcapRecord(fp_in[i], pkt_buffer, 0, NULL, link_layer_length[i], NULL, NULL))) continue;
             else __sync_add_and_fetch(&num_pkts_read_multithread, 1);
 
             #ifdef ENABLE_MANAGED_SESSIONS

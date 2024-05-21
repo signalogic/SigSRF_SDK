@@ -155,6 +155,8 @@
    Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG flag, which is now deprecated
    Modified May 2024 JHB, add RTP auto-detection for stereo EVS 5900 (handle Fraunhofer example 5900 bps .rtp files which include some stereo)
    Modified May 2024 JHB, update comments that reference x86_mediaTest to mediaTest_proc
+   Modified May 2024 JHB, for .rtp format file support, save .rtp file headers in thread_info pcap_file_hdr[], then later give to DSReadPcapRecord() calls
+   Modified May 2024 JHB, in detect_codec_type_and_bitrate() auto-detect AMR 5900 and AMR-WB 6600
 */
 
 
@@ -795,7 +797,13 @@ cleanup:
 
    for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) {
    
-      if (thread_info[thread_index].pcap_in[i]) { DSClosePcap(thread_info[thread_index].pcap_in[i]); thread_info[thread_index].pcap_in[i] = NULL; }
+      if (thread_info[thread_index].pcap_in[i]) {
+
+         if (thread_info[thread_index].pcap_file_hdr[i]) free(thread_info[thread_index].pcap_file_hdr[i]);  /* free file header space, JHB May 2024 */
+
+         DSClosePcap(thread_info[thread_index].pcap_in[i]);
+         thread_info[thread_index].pcap_in[i] = NULL;
+      }
 
       #if 0
       if ((Mode & ENABLE_DER_STREAM_DECODE) && thread_info[thread_index].hDerStreams[i]) DSDeleteDerStream(thread_info[thread_index].hDerStreams[i]);
@@ -1431,7 +1439,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, uint8
 
          goto ret;  /* don't fall through to 15+ */
 
-      case 15:  /* these are here because Fraunhofer .rtp files have some EVS stereo 5900 bps examples (pcaps/evs_5900_2_hf0.rtpdump, pcaps/evs_5900_2_hf1.rtpdump), JHB Aug 2023. Notes, May 2024: (i) how to handle stereo EVS in the general case is still being considered, (ii) for the time being even if a mistake is made, as long as auto-detect comes up with EVS (e.g. from a SID packet) then media output should still mostly be corrrect (at least for channel 0), (iii) writing separate channel pcap files would need to be implemented and wav output would need to be modified */
+      case 15:  /* these are here because Fraunhofer .rtp files have some EVS stereo 5900 bps examples (mediaTest/pcaps/evs_5900_2_hf0.rtpdump, mediaTest/pcaps/evs_5900_2_hf1.rtpdump), JHB Aug 2023. Notes, May 2024: (i) how to handle stereo EVS in the general case is still being considered, (ii) for the time being even if a mistake is made, as long as auto-detect comes up with EVS (e.g. from a SID packet) then media output should still mostly be corrrect (at least for channel 0), (iii) writing separate channel pcap files would need to be implemented and wav output would need to be modified */
       case 16:
 
          DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &fAMRWB_IOMode, &fSID_EVS, NULL);
@@ -1441,10 +1449,19 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, uint8
             return EVS; 
          }
 
+         if ((rtp_pyld_len == 16 && (rtp_pkt[0] & 0xf0) == 0x20) || codec_type == AMR) {
+            *bitrate = 5900;  /* AMR (either bandwidth efficient or octet-aligned), JHB May 2024 */
+            return AMR;
+         }
+
          goto ret;  /* don't fall through to 17+ */
 
       case 17:  /* EVS AMR-WB IO 6600 bps, JHB Oct 2023 */
       case 18:  /* EVS primary 7.2 kbps, added JHB Dec 2020 */
+         if ((rtp_pyld_len == 18 && (rtp_pkt[0] & 0xf0) == 0x20) || codec_type == AMR_WB) {
+            *bitrate = 6600;  /* AMR-WB (either bandwidth efficient or octet-aligned), JHB May 2024 */
+            return AMR_WB;
+         }
       case 19:
          if (!codec_type || codec_type == EVS) {
             DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &fAMRWB_IOMode, NULL, NULL);
@@ -1493,7 +1510,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, uint8
          }
 
       case 33:  /* EVS 13200 bps, 33 for compact header format, 34 for full header format, 35 for full header with CMR byte */
-         if (codec_type == AMR || (!codec_type && !(rtp_pkt[0] & 0x80) && !(rtp_pkt[0] & 0x0f) && rtp_pyld_len > 6)) {  /* look for AMR 12200 octet-aligned with CMR byte, last 4 bits of first byte must be zero. Note for octect-aligned AMR SID RTP payload size must be > 6, JHB Jan 2023 */
+         if (codec_type == AMR || (!codec_type && !(rtp_pkt[0] & 0x80) && !(rtp_pkt[0] & 0x0f) && rtp_pyld_len > 6)) {  /* look for AMR 12200 octet-aligned with CMR byte, last 4 bits of first byte must be zero. Note for octet-aligned AMR SID RTP payload size must be > 6, JHB Jan 2023 */
             *bitrate = 12200;
             return AMR;
          }
@@ -2351,7 +2368,7 @@ read_packet:
 
          if (input_type == PCAP_TYPE_LIBPCAP || input_type == PCAP_TYPE_PCAPNG || input_type == PCAP_TYPE_RTP) {  /* handle pcap formats here, BER and other file formats below */
 
-            pkt_len = DSReadPcapRecord(thread_info[thread_index].pcap_in[j], pkt_in_buf, 0, p_pcap_rec_hdr, thread_info[thread_index].link_layer_len[j], &hdr_type);
+            pkt_len = DSReadPcapRecord(thread_info[thread_index].pcap_in[j], pkt_in_buf, 0, p_pcap_rec_hdr, thread_info[thread_index].link_layer_len[j], &hdr_type, thread_info[thread_index].pcap_file_hdr[j]);
 
             if (pkt_len > 0) {  /* add non IP packet handing, JHB Dec2021 */
 
@@ -3468,12 +3485,14 @@ unsigned int uFlags;
 
       if (strcasestr(MediaParams[i].Media.inputFilename, ".pcap") || strcasestr(MediaParams[i].Media.inputFilename, ".rtp")) {  /* look for .pcap and .pcapng, JHB Oct 2020. Look for .rtp and .rtpdump, JHB Nov 2023 */
 
-         if ((thread_info[thread_index].link_layer_len[j] = DSOpenPcap(MediaParams[i].Media.inputFilename, &thread_info[thread_index].pcap_in[j], NULL, "", uFlags)) < 0) {
+         thread_info[thread_index].pcap_file_hdr[j] = (pcap_hdr_t*)calloc(1, sizeof_field(pcap_hdr_t, rtp));  /* allocate space for file header (sizeof_field macro is in pktlib.h), JHB May 2024 */
+
+         if ((thread_info[thread_index].link_layer_len[j] = DSOpenPcap(MediaParams[i].Media.inputFilename, &thread_info[thread_index].pcap_in[j], thread_info[thread_index].pcap_file_hdr[j], "", uFlags)) < 0) {
 
             strcpy(tmpstr, "../");  /* try up one subfolder */
             strcat(tmpstr, MediaParams[i].Media.inputFilename);
 
-            if ((thread_info[thread_index].link_layer_len[j] = DSOpenPcap(tmpstr, &thread_info[thread_index].pcap_in[j], NULL, "", uFlags)) < 0) {
+            if ((thread_info[thread_index].link_layer_len[j] = DSOpenPcap(tmpstr, &thread_info[thread_index].pcap_in[j], thread_info[thread_index].pcap_file_hdr[j], "", uFlags)) < 0) {
 
                fprintf(stderr, "Failed to open input file %s, index = %d, thread_index = %d, ret_val = %d \n", tmpstr, j, thread_index, thread_info[thread_index].link_layer_len[j]);
                thread_info[thread_index].pcap_in[j] = NULL;
