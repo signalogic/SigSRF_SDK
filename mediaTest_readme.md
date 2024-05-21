@@ -412,6 +412,8 @@ Here is a description of the above examples:
 
 Note that .rtp file format seems to only support one stream, with IPv4 addresses. Also .rtp file headers may contain zero values for source or destination IP address or port values; in that case the DSReadPcapRecord() API in pktlib will use generic local IP values instead of zero. If you have an .rtp format file with multiple streams and/or IPv6 addresses, please send to Signalogic and we can take a look at expanding .rtp support.
 
+For .rtp files with incorrect or zero packet timestamp values, you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see section [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
+
 <a name="Sessions"></a>
 ## Sessions
 
@@ -451,6 +453,8 @@ Below are more command line examples, taken from pcaps found in the [the Brno Un
 ![SIP message example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_waiting_for_long_gap.png?raw=true "mediaMin SIP message and RTP pause example")
 
 ![stream termination on BYE message](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_termination_bye_stream.png?raw=true "mediaMin stream termination on BYE message")
+
+For .pcap or .pcapng files with incorrect or zero packet timestamp values (sometimes referred to as "arrival timestamps"), you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see section [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
 <a name="codecauto-detection"></a>
 #### Codec Auto-Detection
