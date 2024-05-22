@@ -1448,11 +1448,7 @@ double ret_val;
 extern "C" {
 #endif
 
-  int get_group_idx(HSESSION, int, bool, const char*);  /* in streamlib.so */
-
-#ifdef __cplusplus
-}
-#endif
+int get_group_idx(HSESSION, int, bool, const char*);  /* in streamlib.so */
 
 /* pktlib.so externs */
 
@@ -1486,6 +1482,10 @@ bool fTest, fIsPmThread = false;
 
    return fIsPmThread;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 /* inline version of DSGetSessionInfo(), compiled if USE_PKTLIB_INLINES is defined */
 

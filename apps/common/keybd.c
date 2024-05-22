@@ -3,16 +3,17 @@
 
   keyboard handling support for SigSRF and EdgeStream reference applications
 
-  Copyright (C) Signalogic, 2007-2023
+  Copyright (C) Signalogic, 2007-2024
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
   Revision History
 
-   Created May 2007, NR
-   Modified May-Jun 2010, VR, JHB, adjusted to updated DirectCore (merged with SigC641x)
+   Created May 2007 NR
+   Modified May-Jun 2010 VR, JHB, adjusted to updated DirectCore (merged with SigC641x)
    Modified Feb 2023 JHB, in getkey(), add simple multithread semaphore lock and fix problem in Docker containers where fgetc() input is ignored
    Modified Apr 2023 JHB, fix uninitialized variable in getkey(). See comment
+   Modified May 2024 JHB, add extern "C" around getkey(), which fixes link errors with g++ compilation (same mod made in keybd.h). Possibly other functions will need this at some point
 */
 
 #include <stdlib.h>
@@ -149,6 +150,10 @@ char ch;
    return fValidEntry;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int getkey() {
 
 int ch = 0;  /* initialized to zero to fix read(fileno, 1) not handling some upper case chars (don't know why this didn't manifest earlier), JHB Apr 2023 */
@@ -193,3 +198,7 @@ static int sem = 0;
 
    return ch;
 }
+
+#ifdef __cplusplus
+}
+#endif

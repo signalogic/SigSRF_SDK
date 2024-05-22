@@ -48,13 +48,12 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <fcntl.h>
-#ifdef STANDALONE
-  #include <sys/stat.h>
-#endif
+#include <sys/stat.h>
 #include <errno.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <algorithm>  /* bring in std::min and std::max */
 
 using namespace std;
 
@@ -203,11 +202,7 @@ int fd;
 
 static inline void strlcpy(char* dst, const char* src, int maxlen) {  /* implementation of strlcpy() since it's a BSD Linux function and evidently not available in gcc/g++, JHB Jan 2020 */
 
-   #ifndef STANDALONE
    int cpylen =  min((int)strlen(src), maxlen-1);
-   #else  /* avoid min() in standalone build, JHB Mar 2024 */
-   int cpylen =  (int)strlen(src) < maxlen-1 ? (int)strlen(src) : maxlen-1;
-   #endif
    memcpy(dst, src, cpylen);
    dst[cpylen] = (char)0;
 }

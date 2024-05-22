@@ -19,11 +19,16 @@
 
  Notes
  
-   -this example does not include audio file or USB I/O, intermediate coded output file I/O, sampling rate conversion, multichannel audio, etc. For a complete implementation, see x86_mediaTest() in x86_mediaTest.c
+   -this example does not include audio file or USB I/O, intermediate coded output file I/O, sampling rate conversion, multichannel audio, etc. For a complete implementation, see mediaTest_proc() in mediaTest_proc.c
    -notwithstanding the above note, a simple "write result to wav file" is included at the tail end of the test, to allow convenient verification of codec output
    -HPLATFORM is a handle used for platform, VM, and concurrency management provided by DirectCore. A platform handle is not needed for licensed codec-only applications
    -PLATFORMPARAMS, MEDIAPARAMS, and codec_test_params_t are struct definitions used for command line and codec config file handling. They are used here for convenience and not needed in application-specific programs
-   -example usage:  ./hello_codec -cx86 -C../session_config/evs_16kHz_13200bps_config  (see https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#hello-codec for more examples)
+
+ Example Usage
+
+   ./hello_codec -cx86 -C../session_config/evs_16kHz_13200bps_config
+
+   see https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#hello-codec for more examples
  
  Revision History
 
@@ -37,6 +42,7 @@
   Modified Nov 2023 JHB, update cmdLineInterface() to use banner_info param
   Modified Nov 2023 JHB, add codec max instances test code (look for ENABLE_MAX_INSTANCES_TESTING)
   Modified Feb 2024 JHB, omit hwlib references if NO_HWLIB defined, omit cimlib references if NO_CIMLIB defined
+  Modified May 2024 JHB, update comments that reference x86_mediaTest to mediaTest_proc
 */
 
 /* Linux header files */
@@ -456,7 +462,7 @@ bool fCreateCodec = true;
 
 int set_frame_sizes(codec_test_params_t* codec_test_params, float codec_frame_duration, int input_sampleRate, int output_sampleRate, int* input_framesize, int* coded_framesize, int* output_framesize, int* inbuf_size, int* outbuf_size) {
 
-int input_upFactor = 1, input_downFactor = 1; /* sampling rate conversion is disabled in hello_codec, for a full implementation see x86_mediaTest() in x86_mediaTest.c */ 
+int input_upFactor = 1, input_downFactor = 1; /* sampling rate conversion is disabled in hello_codec, for a full implementation see mediaTest_proc() in mediaTest_proc.c */ 
 int output_upFactor = 1, output_downFactor = 1;
 
 /* set buffer and frame sizes. Notes:
@@ -537,7 +543,7 @@ int write_wav_file(uint8_t* buffer, int input_sampleRate, int numChan, int len) 
 
   -MEDIAINFO and DSSaveDataFile() definitions are in hwlib.h
   -for file types that implement headers, MediaInfo should be filled in with header info
-  -by not giving any uFlags (DS_CREATE, DS_OPEN, DS_CLOSE, etc), we invoke the "unified" open, write, close form of calling DSSaveDataFile() (like "batch mode" re. MATLAB and Nvidia, haha). To see frame-based usage of DSSaveDataFile() and DSLoadDataFile(), see x86_mediaTest() in x86_mediaTest.c
+  -by not giving any uFlags (DS_CREATE, DS_OPEN, DS_CLOSE, etc), we invoke the "unified" open, write, close form of calling DSSaveDataFile() (like "batch mode" re. MATLAB and Nvidia, haha). To see frame-based usage of DSSaveDataFile() and DSLoadDataFile(), see mediaTest_proc() in mediaTest_proc.c
 */
 
 MEDIAINFO MediaInfo = { 0 };

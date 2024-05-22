@@ -13,9 +13,10 @@
 
    Revision History
      Created Nov 2014 AKM
-     Modified 2015, JHB, support additional modes
-     Modified 2015, JHB, make consistent with vid_streaming_host_rt.c OpenMP test program
-     Modified May-Jun 2017, AM & JHB, add x86 mode for purposes of (i) SigSRF image analytics demo and (ii) benchmark and comparison between x86 and coCPU
+     Modified 2015 JHB, support additional modes
+     Modified 2015 JHB, make consistent with vid_streaming_host_rt.c OpenMP test program
+     Modified May-Jun 2017 AM & JHB, add x86 mode for purposes of (i) SigSRF image analytics demo and (ii) benchmark and comparison between x86 and coCPU
+     Modified May 2024 JHB, convert to cpp; see also Makefile mods
 */
 
 /*
@@ -70,6 +71,7 @@
 #include "video.h"
 #include "ia.h"
 
+using namespace std;
 
 /* Global variables and default values */
 

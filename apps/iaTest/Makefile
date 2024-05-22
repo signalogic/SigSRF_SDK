@@ -9,7 +9,7 @@
 #  PPC:   MPC7447A/7448, Gentoo Linux 2.6.9 or 2.6.24
 #  coCPU: TI c66x
 #
-# Copyright (C) Signalogic Inc. 2014-2022
+# Copyright (C) Signalogic Inc. 2014-2024
 #
 # Revision History
 #  Created May 2015, AKM    
@@ -20,6 +20,9 @@
 #  Modified Jan 2022 JHB, fix INCLUDES to give correct path to find core_c.h (and other header files included by ia.c --> cv.h). On Sig lab systems this problem doesn't appear because OpenCV is installed (which sets up /usr/include/opencv2/core/core_c.h etc) but on user systems that's not assumed and these header files were not being found
 #  Modified Jan 2022 JHB, set OPENCV_LIBS var depending on whether OpenCV is found to be installed
 #  Modified Jan 2022 JHB, build all targets with g++, add -Wno-deprecated-xx flags to remove warnings in gcc 5.3.x and higher
+#  Modified Feb 2023 JHB, in OPENCV_LIBS var add explicit reference to -l:libstdc++.so.6.0.21 for Redhat dual ABI issues in gcc 5.x.x. Note this must be before -lstdc++ in the link order (see link target below)
+#  Modified May 2024 JHB, implement INSTALLPATH, use g++ compiler for iaTest.cpp (converted from iaTest.c), bring flag naming up to date
+#  Modified May 2024 JHB, add -L and -rpath linker options for lib/diaglib so diaglib_standalone.so can be linked and found at link time
 
 # determine if OpenCV is installed on the system
 OPENCVPATH=/usr/lib
@@ -30,63 +33,73 @@ else
    OPENCV_INSTALLED = n
 endif
 
-CPPC = /usr/bin/g++
+CPP = /usr/bin/g++
 CC = /usr/bin/gcc
 
-INCLUDES = -I./ -I../../../include -I../../../.. -I../../../../shared_include -I../../common  -I../../../../mCPU_target/Ia
+# set install path var, from iaTest folder SigSRF software install path is 4 levels up (without symlinks)
+INSTALLPATH:=$(shell pwd)/../../../..
+
+INCLUDES = -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/apps/common -I$(INSTALLPATH)/mCPU_target/Ia
+
 # OpenCV coCPU includes
 INCLUDES += -I../../../../mCPU_target/opencv/include -I../../../../mCPU_target/opencv/core  -I../../../../mCPU_target/core/include/ -I../../../../mCPU_target/opencv/include/opencv -I../../../../mCPU_target/opencv/legacy/include -I../../../../mCPU_target/opencv/core/include -I../../../../mCPU_target/opencv/imgproc/include -I../../../../mCPU_target/opencv/video/include -I../../../../mCPU_target/opencv/features2d/include -I../../../../mCPU_target/opencv/flann/include -I../../../../mCPU_target/opencv/calib3d/include -I../../../../mCPU_target/opencv/objdetect/include
 
 # INCLUDES += -I../../../../mCPU_target/opencv/dynamicuda/include
 
-CC_FLAGS = $(INCLUDES) 
-CC_FLAGS += -g3 -O3 -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_IA_ -D_USE_IA_ -Wno-deprecated-declarations -Wno-deprecated
-CPPC_FLAGS = $(CC_FLAGS) -std=c++0x
+CFLAGS = $(INCLUDES) 
+CFLAGS += -g3 -O3 -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_IA_ -D_USE_IA_ -Wno-deprecated-declarations -Wno-deprecated
+CPPFLAGS = $(CFLAGS) -std=c++0x
 
 ifdef _use_enmgr_
-   AR_FLAGS = -lenmgr
+   LDFLAGS = -lenmgr
 else
-   AR_FLAGS =
+   LDFLAGS =
 endif
-AR_FLAGS += -L../../../lib/opencv
+
+# linker search paths
+LINKER_INCLUDES = -L$(INSTALLPATH)/lib/opencv -L$(INSTALLPATH)/DirectCore/lib/diaglib
+
+#add -rpath option for lib/diaglib, JHB May 2024
+LDFLAGS += -Wl,-rpath=$(INSTALLPATH)/DirectCore/lib/diaglib
 
 # link with installed OpenCV libs if possible, otherwise use ones included in SigSRF SDK / demo
 ifeq ($(OPENCV_INSTALLED),y)
   OPENCV_LIBS = -lopencv_core -lopencv_imgproc
-else 
-  OPENCV_LIBS = -lopencv_core_sig -lopencv_imgproc_sig
+else
+  OPENCV_LIBS = -lopencv_core_sig -lopencv_imgproc_sig -l:libstdc++.so.6.0.21
+  #add -rpath option for lib/opencv, JHB May 2024
+  LDFLAGS += -Wl,-rpath=$(INSTALLPATH)/DirectCore/lib/opencv
 endif
 
-cpp_objects = timer.o getUserInterface.o cmdLineOpt.o
-lib_cpp_objects = streamlib.o
-c_objects = keybd.o
+cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
+c_common_objects = keybd.o
 coCPU_shared_ia_c_objects = ia.o yuv.o
 coCPU_shared_stream_c_objects = writestream.o readstream.o
+lib_cpp_objects = streamlib.o
+cpp_objects = iaTest.o
 
-all: iaTest.o $(cpp_objects) $(c_objects) $(coCPU_shared_ia_c_objects) $(coCPU_shared_stream_c_objects) $(lib_cpp_objects) link
+all: $(cpp_common_objects) $(c_common_objects) $(coCPU_shared_ia_c_objects) $(coCPU_shared_stream_c_objects) $(lib_cpp_objects) $(cpp_objects) link
 
-iaTest.o:
-	$(CPPC) $(CPPC_FLAGS) -c iaTest.c
+$(cpp_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.cpp
+	$(CPP) $(CPPFLAGS) -c $< -o $@
 
-$(cpp_objects): %.o: ../../common/%.cpp
-	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
+$(c_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(c_objects): %.o: ../../common/%.c
-	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
+$(coCPU_shared_ia_c_objects): %.o: $(INSTALLPATH)/mCPU_target/Ia/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(coCPU_shared_ia_c_objects): %.o: ../../../../mCPU_target/Ia/%.c
-#	$(CC) $(CC_FLAGS) -c $< -o $@
-	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
-
-$(coCPU_shared_stream_c_objects): %.o: ../../../../mCPU_target/Stream/%.c
-#	$(CC) $(CC_FLAGS) -c $< -o $@
-	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
+$(coCPU_shared_stream_c_objects): %.o: $(INSTALLPATH)/mCPU_target/Stream/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(lib_cpp_objects): %.o: ../streamTest/%.cpp
-	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
+	$(CPP) $(CPPFLAGS) -c $< -o $@
+
+$(cpp_objects): %.o: %.cpp
+	$(CPP) $(CPPFLAGS) -c $< -o $@ 
 
 link:
-	$(CPPC) $(cpp_objects) $(c_objects) $(coCPU_shared_ia_c_objects) $(coCPU_shared_stream_c_objects) $(lib_cpp_objects) iaTest.o $(AR_FLAGS) -o ./iaTest -lstdc++ -lpthread -lhwmgr -lhwlib -lcimlib -ldiaglib $(OPENCV_LIBS) -lstublib
+	$(CPP) $(LDFLAGS) $(cpp_common_objects) $(c_common_objects) $(coCPU_shared_ia_c_objects) $(coCPU_shared_stream_c_objects) $(lib_cpp_objects) $(cpp_objects) $(LINKER_INCLUDES) -o ./iaTest $(OPENCV_LIBS) -lstdc++ -lpthread -lhwmgr -lhwlib -lcimlib -ldiaglib_standalone -lstublib
 
 .PHONY: clean all
 clean:

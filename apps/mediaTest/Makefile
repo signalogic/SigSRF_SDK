@@ -270,7 +270,6 @@ ifeq ($(KALDIASR_INSTALLED),y)
 endif
 
 # linker search paths
-#LINKER_INCLUDES = -L$(INSTALLPATH)/DirectCore/lib -L$(INSTALLPATH)/SIG_LIBS/glibc -L/usr/lib -L$(INSTALLPATH)/DirectCore/lib/voplib
 LINKER_INCLUDES = -L$(INSTALLPATH)/SIG_LIBS/glibc -L/usr/lib -L$(INSTALLPATH)/DirectCore/lib/voplib
 
 # determine linking for codec libs built with --ffast-math
