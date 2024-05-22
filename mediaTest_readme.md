@@ -472,6 +472,8 @@ In dynamic session mode, when mediaMin finds a new unique combination of IP addr
 > 
 > 3. SAP/SDP protocol packet in the input packet flow
 
+Keep in mind though, SDP info can also be incorrect. For example, sender and receiver may negotiate via SIP offer and answer a codec type and bitrate, and then for whatever reason, the sender incorrectly uses the wrong codec. In this case auto-detection can be extremely useful.
+
 To review or modify codec auto-detection, look for detect_codec_type_and_bitrate() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
 
 <a name="StaticSessionConfig"></a>
