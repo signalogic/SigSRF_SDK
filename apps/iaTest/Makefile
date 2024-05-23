@@ -22,7 +22,7 @@
 #  Modified Jan 2022 JHB, build all targets with g++, add -Wno-deprecated-xx flags to remove warnings in gcc 5.3.x and higher
 #  Modified Feb 2023 JHB, in OPENCV_LIBS var add explicit reference to -l:libstdc++.so.6.0.21 for Redhat dual ABI issues in gcc 5.x.x. Note this must be before -lstdc++ in the link order (see link target below)
 #  Modified May 2024 JHB, implement INSTALLPATH, use g++ compiler for iaTest.cpp (converted from iaTest.c), bring flag naming up to date
-#  Modified May 2024 JHB, add -L and -rpath linker options for lib/diaglib so diaglib_standalone.so can be linked and found at link time
+#  Modified May 2024 JHB, add -L and -rpath linker options for lib/diaglib so diaglib_standalone.so can be linked and found at run-time
 
 # determine if OpenCV is installed on the system
 OPENCVPATH=/usr/lib
@@ -42,7 +42,7 @@ INSTALLPATH:=$(shell pwd)/../../../..
 INCLUDES = -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/apps/common -I$(INSTALLPATH)/mCPU_target/Ia
 
 # OpenCV coCPU includes
-INCLUDES += -I../../../../mCPU_target/opencv/include -I../../../../mCPU_target/opencv/core  -I../../../../mCPU_target/core/include/ -I../../../../mCPU_target/opencv/include/opencv -I../../../../mCPU_target/opencv/legacy/include -I../../../../mCPU_target/opencv/core/include -I../../../../mCPU_target/opencv/imgproc/include -I../../../../mCPU_target/opencv/video/include -I../../../../mCPU_target/opencv/features2d/include -I../../../../mCPU_target/opencv/flann/include -I../../../../mCPU_target/opencv/calib3d/include -I../../../../mCPU_target/opencv/objdetect/include
+INCLUDES += -I.$(INSTALLPATH)/mCPU_target/opencv/include -I$(INSTALLPATH)/mCPU_target/opencv/core  -I$(INSTALLPATH)/mCPU_target/core/include/ -I$(INSTALLPATH)/mCPU_target/opencv/include/opencv -I$(INSTALLPATH)/mCPU_target/opencv/legacy/include -I$(INSTALLPATH)/mCPU_target/opencv/core/include -I$(INSTALLPATH)/mCPU_target/opencv/imgproc/include -I$(INSTALLPATH)/mCPU_target/opencv/video/include -I$(INSTALLPATH)/mCPU_target/opencv/features2d/include -I$(INSTALLPATH)/mCPU_target/opencv/flann/include -I$(INSTALLPATH)/mCPU_target/opencv/calib3d/include -I$(INSTALLPATH)/mCPU_target/opencv/objdetect/include
 
 # INCLUDES += -I../../../../mCPU_target/opencv/dynamicuda/include
 
@@ -92,7 +92,7 @@ $(coCPU_shared_ia_c_objects): %.o: $(INSTALLPATH)/mCPU_target/Ia/%.c
 $(coCPU_shared_stream_c_objects): %.o: $(INSTALLPATH)/mCPU_target/Stream/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(lib_cpp_objects): %.o: ../streamTest/%.cpp
+$(lib_cpp_objects): %.o: $(INSTALLPATH)/apps/streamTest/%.cpp
 	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 $(cpp_objects): %.o: %.cpp
