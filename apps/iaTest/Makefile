@@ -42,7 +42,7 @@ INSTALLPATH:=$(shell pwd)/../../../..
 INCLUDES = -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/apps/common -I$(INSTALLPATH)/mCPU_target/Ia
 
 # OpenCV coCPU includes
-INCLUDES += -I.$(INSTALLPATH)/mCPU_target/opencv/include -I$(INSTALLPATH)/mCPU_target/opencv/core  -I$(INSTALLPATH)/mCPU_target/core/include/ -I$(INSTALLPATH)/mCPU_target/opencv/include/opencv -I$(INSTALLPATH)/mCPU_target/opencv/legacy/include -I$(INSTALLPATH)/mCPU_target/opencv/core/include -I$(INSTALLPATH)/mCPU_target/opencv/imgproc/include -I$(INSTALLPATH)/mCPU_target/opencv/video/include -I$(INSTALLPATH)/mCPU_target/opencv/features2d/include -I$(INSTALLPATH)/mCPU_target/opencv/flann/include -I$(INSTALLPATH)/mCPU_target/opencv/calib3d/include -I$(INSTALLPATH)/mCPU_target/opencv/objdetect/include
+INCLUDES += -I$(INSTALLPATH)/mCPU_target/opencv/include -I$(INSTALLPATH)/mCPU_target/opencv/core  -I$(INSTALLPATH)/mCPU_target/core/include/ -I$(INSTALLPATH)/mCPU_target/opencv/include/opencv -I$(INSTALLPATH)/mCPU_target/opencv/legacy/include -I$(INSTALLPATH)/mCPU_target/opencv/core/include -I$(INSTALLPATH)/mCPU_target/opencv/imgproc/include -I$(INSTALLPATH)/mCPU_target/opencv/video/include -I$(INSTALLPATH)/mCPU_target/opencv/features2d/include -I$(INSTALLPATH)/mCPU_target/opencv/flann/include -I$(INSTALLPATH)/mCPU_target/opencv/calib3d/include -I$(INSTALLPATH)/mCPU_target/opencv/objdetect/include
 
 # INCLUDES += -I../../../../mCPU_target/opencv/dynamicuda/include
 
