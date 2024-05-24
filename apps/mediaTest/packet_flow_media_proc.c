@@ -2466,7 +2466,7 @@ static int log_pkt_in_index = 0;
 
                      /* add packet stats entry */
 
-                        int num_stats = DSPktStatsAddEntries(input_pkts[chnum].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_ptr, (unsigned int*)&pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                        int num_stats = DSPktStatsAddEntries(input_pkts[chnum].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_ptr, &pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
                         if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
 
                         manage_pkt_stats_mem(input_pkts, chnum, num_stats);
@@ -2483,7 +2483,7 @@ static int log_pkt_in_index = 0;
 
                      /* add packet stats entry */
 
-                        int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_ptr, (unsigned int*)&pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                        int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_ptr, &pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
                         if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
 
                         if (pkt_counters[thread_index].num_input_pkts >= MAX_PKT_STATS) {
@@ -2647,7 +2647,7 @@ next_session:
 
             /* add packet stats entry */
 
-               int num_stats = DSPktStatsAddEntries(input_pkts[NCORECHAN].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_in_buf, (unsigned int*)packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
+               int num_stats = DSPktStatsAddEntries(input_pkts[NCORECHAN].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_in_buf, packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
 
                if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
                manage_pkt_stats_mem(input_pkts, NCORECHAN, num_stats);
@@ -2665,7 +2665,7 @@ next_session:
 
             /* add packet stats entry */
 
-               int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_in_buf, (unsigned int*)packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
+               int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_in_buf, packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
                if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
                if (pkt_counters[thread_index].num_input_pkts >= MAX_PKT_STATS) pkt_counters[thread_index].num_input_pkts = 0;
          #endif
@@ -3210,7 +3210,7 @@ pull:
 
                            /* add packet stats entry */
 
-                              int num_stats = DSPktStatsAddEntries(&pulled_pkts[pkt_counters[thread_index].num_pulled_pkts], 1, pkt_ptr, (unsigned int*)&packet_len[j], &payload_info[j], uFlags_info);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                              int num_stats = DSPktStatsAddEntries(&pulled_pkts[pkt_counters[thread_index].num_pulled_pkts], 1, pkt_ptr, &packet_len[j], &payload_info[j], uFlags_info);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
                               if (num_stats > 0) pkt_counters[thread_index].num_pulled_pkts += num_stats;
 
                               if (pkt_counters[thread_index].num_pulled_pkts >= MAX_PKT_STATS) {

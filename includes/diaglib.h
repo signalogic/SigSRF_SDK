@@ -44,6 +44,7 @@
   Modified Apr 2024 JHB, DSGetLogTimestamp() now returns length of timestamp string
   Modified Apr 2024 JHB, add numMediaReuse to STREAM_STATS struct
   Modified May 2024 JHB, add DSGetBacktrace() API
+  Modified May 2024 JHB, update documentation for DSPktStatsAddEntries()
 */
 
 #ifndef _DIAGLIB_H_
@@ -112,9 +113,9 @@ typedef struct __attribute__((packed)) {
    uint32_t rtp_timestamp;
    uint32_t rtp_SSRC;
    uint16_t rtp_pyldlen;
-   uint32_t info_flags;
-   int16_t  chnum;     /* optional channel (session) info, set by pktlib p/m threads.  Set to -1 if not used */
-   int16_t  idx;       /* optional stream group info,  "  "  */
+   uint32_t content_flags;  /* one of the DS_PKT_PYLD_CONTENT_xxx (payload content) flags */
+   int16_t  chnum;          /* optional channel (session) info, set by pktlib p/m threads. Set to -1 if not used */
+   int16_t  idx;            /* optional stream group info,  "  "  */
 
 } PKT_STATS;
 
@@ -156,14 +157,20 @@ typedef struct {
 } STREAM_STATS;
 
 
-/* DSPktStatsAddEntries() adds one or more entries packet stats entries.  Notes:
+/* DSPktStatsAddEntries() adds one or more packet stats entries. Notes:
 
-  1) for sessions created with DS_SESSION_USER_MANAGED flag, session_id should specify a valid session Id, otherwise session_id may be either a valid session Id or -1
+  -pkt_stats should point to a PKT_STATS struct
+  -pkt_buffer should contain num_pkts packets, each with a pkt_length[]. One or more pkt_length[] can be -1 if not known
+  -uFlags should contain one of the DS_BUFFER_PKT_xxx flags and optionally one or more of the "general API flags" defined in pktlib.h
+  -payload_content[] may optionally specify for each packet one of the DS_PKT_PYLD_CONTENT_xxx flags defined in pktlib.h
+  -return value is the number of packets added to pkt_stats, or -1 for an error condition
 
-  2) uFlags should specify one or more possible values for DSGetPacketInfo() in pktlib
+  -see mediaTest/packet_flow_media_proc.c for tested examples of API usage and PKT_STATS declaration
+
+  -if DSGetPacketInfo() does not exist in the build (i.e. the build does not link the pktlib library) then DSPktStatsAddEntries() will return -2
 */
 
-int DSPktStatsAddEntries(PKT_STATS*, int num_pkts, uint8_t* pkt_buffer, unsigned int pkt_length[], unsigned int pkt_info[], unsigned int uFlags);
+int DSPktStatsAddEntries(PKT_STATS* pkt_stats, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int payload_content[], unsigned int uFlags);
 
 
 /* DSFindSSRCGroups() find SSRC groups and returns start/end packet indexes and sequence numbers for each group */

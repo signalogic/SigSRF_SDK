@@ -107,7 +107,7 @@ uint32_t event_log_warnings = 0;
 
 LOGINFO LogInfo[MAXTHREADS] = {{ 0 }};  /* also referenced in diaglib.cpp */
 
-/* function pointers set with return value of dlsym(), which looks for run-time presence of SigSRF APIs in DSInitLogging(). Note hidden attribute to make sure linker doesn't confuse with SigSRF library functions when building apps, JHB May 2024 */
+/* function pointers set in DSInitLogging() with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused with their SigSRF library function counterparts if they both exist during app or library link, JHB May 2024 */
   
 __attribute__((visibility("hidden"))) int (*DSGetPacketInfo)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int*) = NULL;
 __attribute__((visibility("hidden"))) bool (*isPmThread)(HSESSION hSession, int* pThreadIndex) = NULL;

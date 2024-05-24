@@ -64,6 +64,7 @@
   Modified Apr 2024 JHB, add "long SID timestamp mismatch" case handling in analysis_and_stats()
   Modified May 2024 JHB, convert to cpp
   Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() in lib_logging.cpp now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile no longer recognizes standalone=1
+  Modified May 2024 JHB, update DSPktStatsAddEntries() documentation, param naming, and error handling. Make pkt_length[] param an int to allow -1 values (i.e. packet length unknown)
 */
 
 /* Linux includes */
@@ -79,19 +80,19 @@ using namespace std;
 
 #include "diaglib.h"
 
-#define NO_INLINE_IS_PMTHREAD    /* no inline version of isPmThread() defined in pktlib.h, JHB May 2024 */
+#define NO_INLINE_IS_PMTHREAD    /* prevent inline version of isPmThread() from being defined in pktlib.h, JHB May 2024 */
 #define NO_GET_PKTINFO
 #include "pktlib.h"  /* only constants and definitions */
 
 #define NO_INLINE_GET_TIME  /* prevent inline version of get_time() from being defined in hwlib.h */
-#include "hwlib.h"  /* DirectCore header file, for constants and definitions only */
+#include "hwlib.h"  /* DirectCore header file, constants and definitions only */
 
 extern DEBUG_CONFIG lib_dbg_cfg;  /* in lib_logging.cpp */
 
 extern sem_t diaglib_sem;  /* in lib_logging.cpp */
 extern int diaglib_sem_init;
 
-/* function pointers set with return value of dlsym(), which looks for run-time presence of SigSRF APIs in DSInitLogging() (in lib_logging.cpp). Note hidden attribute to make sure linker doesn't confuse with SigSRF library functions when linking apps, JHB May 2024 */
+/* function pointers set in DSInitLogging() in lib_logging.cpp with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused with their SigSRF library function counterparts if they both exist during app or library link, JHB May 2024 */
 
 extern __attribute__((visibility("hidden"))) int (*DSGetPacketInfo)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int*);
 extern __attribute__((visibility("hidden"))) uint64_t (*get_time)(unsigned int uFlags);
@@ -102,34 +103,41 @@ extern __attribute__((visibility("hidden"))) uint64_t (*get_time)(unsigned int u
 
 extern LOGINFO LogInfo[];
 
-#define DS_PKT_PYLD_CONTENT_DTMF_END  1         /* DTMF Event End, determined in DSPktStatsAddEntries and then passed thru to other functions, JHB Jun 2019 */
+#define DS_PKT_PYLD_CONTENT_DTMF_END  1  /* DTMF Event End, determined in DSPktStatsAddEntries and then passed thru to other functions, JHB Jun 2019 */
 
-int DSPktStatsAddEntries(PKT_STATS* pkt_stats, int num_pkts, uint8_t* pkt_buffer, unsigned int packet_length[], unsigned int packet_info[], unsigned int uFlags) {
+int DSPktStatsAddEntries(PKT_STATS* pkt_stats, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int payload_content[], unsigned int uFlags) {
 
-int j = 0;
+int j, len;
 unsigned int offset = 0;
 
-   if (!DSGetPacketInfo) return -1;  /* return error condition if DSGetPacketInfo() not in run-time build; see DSInitLogging() in lib_logging.cpp, JHB May 2024 */
+   if (!DSGetPacketInfo) return -2;  /* return error condition if DSGetPacketInfo() not in run-time build; see DSInitLogging() in lib_logging.cpp, JHB May 2024 */
+
+   if (!pkt_stats || !pkt_buffer) return -1;
 
    for (j=0; j<num_pkts; j++) {
 
-      pkt_stats->rtp_seqnum = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SEQNUM | uFlags, pkt_buffer + offset, packet_length[j], NULL, NULL);
-      pkt_stats->rtp_timestamp = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_TIMESTAMP | uFlags, pkt_buffer + offset, packet_length[j], NULL, NULL);
-      pkt_stats->rtp_SSRC = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SSRC | uFlags, pkt_buffer + offset, packet_length[j], NULL, NULL);
-      pkt_stats->rtp_pyldlen = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDLEN | uFlags, pkt_buffer + offset, packet_length[j], NULL, NULL);
+      if (!pkt_length || pkt_length[j] <= 0) len = -1;
+      else len = pkt_length[j];
 
-      if (packet_info) {
+      pkt_stats->rtp_seqnum = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SEQNUM | uFlags, pkt_buffer + offset, len, NULL, NULL);
+      pkt_stats->rtp_timestamp = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_TIMESTAMP | uFlags, pkt_buffer + offset, len, NULL, NULL);
+      pkt_stats->rtp_SSRC = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SSRC | uFlags, pkt_buffer + offset, len, NULL, NULL);
+      pkt_stats->rtp_pyldlen = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDLEN | uFlags, pkt_buffer + offset, len, NULL, NULL);
 
-         pkt_stats->info_flags = packet_info[j];
+      if (payload_content) {
 
-         if ((packet_info[j] & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF) {
+         pkt_stats->content_flags = payload_content[j];
 
-            unsigned int rtp_pyldoffset = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags, pkt_buffer + offset, packet_length[j], NULL, NULL);
-            if (pkt_buffer[offset + rtp_pyldoffset + 1] & 0x80) pkt_stats->info_flags |= DS_PKT_PYLD_CONTENT_DTMF_END;
+         if ((payload_content[j] & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF) {
+
+            unsigned int rtp_pyldoffset = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags, pkt_buffer + offset, len, NULL, NULL);
+            if (pkt_buffer[offset + rtp_pyldoffset + 1] & 0x80) pkt_stats->content_flags |= DS_PKT_PYLD_CONTENT_DTMF_END;
          }
       }
 
-      offset += packet_length[j];
+      if (len <= 0) len = DSGetPacketInfo(-1, DS_PKT_INFO_PKTLEN | uFlags, pkt_buffer + offset, -1, NULL, NULL);
+
+      offset += max(0, len);
 
       pkt_stats += sizeof(PKT_STATS);
    }
@@ -340,13 +348,13 @@ exit:
 
 /* print_packet_type() - helper function avoids repeating packet content labels, JHB Apr 2024 */
 
-void print_packet_type(FILE* fp_log, unsigned int info_flags, int rtp_pyldlen, int chnum) {
+void print_packet_type(FILE* fp_log, unsigned int content_flags, int rtp_pyldlen, int chnum) {
 
-   if ((info_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID) fprintf(fp_log, " (SID)");
-   else if ((info_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID_REUSE) fprintf(fp_log, " (SID CNG-R)");
-   else if ((info_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_MEDIA_REUSE) fprintf(fp_log, " (Media-R)");
-   else if ((info_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF) {
-      if (info_flags & DS_PKT_PYLD_CONTENT_DTMF_END)  fprintf(fp_log, " (DTMF Event End)");
+   if ((content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID) fprintf(fp_log, " (SID)");
+   else if ((content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID_REUSE) fprintf(fp_log, " (SID CNG-R)");
+   else if ((content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_MEDIA_REUSE) fprintf(fp_log, " (Media-R)");
+   else if ((content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF) {
+      if (content_flags & DS_PKT_PYLD_CONTENT_DTMF_END)  fprintf(fp_log, " (DTMF Event End)");
       else fprintf(fp_log, " (DTMF Event)");
    }
    else if (rtp_pyldlen > 0 && rtp_pyldlen <= 7) fprintf(fp_log, " (DTX)");
@@ -385,7 +393,7 @@ char          szLastSeq[100];
 
       fprintf(fp_log, "seq = %u, ssrc = 0x%x", pkts[j].rtp_seqnum, pkts[j].rtp_SSRC);
 
-      print_packet_type(fp_log, pkts[j].info_flags, -1, -1);
+      print_packet_type(fp_log, pkts[j].content_flags, -1, -1);
    }
    fprintf(fp_log, "\n");
    #endif
@@ -452,7 +460,7 @@ char          szLastSeq[100];
 
             fDup_sn = true;  /* duplicated seq number found */
 
-            if ((pkts[j].info_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF && !(uFlags & DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE)) fFound_sn = true;  /* if it's a DTMF event packet we don't label it duplicated (DTMF events can have several duplicated packets) */
+            if ((pkts[j].content_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF && !(uFlags & DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE)) fFound_sn = true;  /* if it's a DTMF event packet we don't label it duplicated (DTMF events can have several duplicated packets) */
          }
          else if (pkts[j].rtp_seqnum + seq_wrap[i]*65536L != rtp_seqnum) {  /* recorded seq number matches next (expected) seq number ? */
 
@@ -510,25 +518,25 @@ char          szLastSeq[100];
 
             sprintf(&tmpstr[strlen(tmpstr)], " timestamp = %u, rtp pyld len = %u", pkts[j].rtp_timestamp, pkts[j].rtp_pyldlen);  /* changed from "pkt len =", JHB Jun 2023 */
 
-            if ((pkts[j].info_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID) {
+            if ((pkts[j].content_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID) {
                StreamStats[i].numSID++;
                sprintf(&tmpstr[strlen(tmpstr)], " SID");
             }
-            else if ((pkts[j].info_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID_REUSE) {
+            else if ((pkts[j].content_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID_REUSE) {
                StreamStats[i].numSIDReuse++;
                sprintf(&tmpstr[strlen(tmpstr)], " SID CNG-R");
             }
-            else if ((pkts[j].info_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_MEDIA_REUSE) {
+            else if ((pkts[j].content_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_MEDIA_REUSE) {
                StreamStats[i].numMediaReuse++;
                sprintf(&tmpstr[strlen(tmpstr)], " media-R");
             }
-            else if ((pkts[j].info_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID_NODATA) {
+            else if ((pkts[j].content_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID_NODATA) {
                numSIDNoData++;
                sprintf(&tmpstr[strlen(tmpstr)], " SID NoData");
             }
-            else if ((pkts[j].info_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF) {
+            else if ((pkts[j].content_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF) {
                StreamStats[i].numDTMFEvent++;
-               if (pkts[j].info_flags & DS_PKT_PYLD_CONTENT_DTMF_END) sprintf(&tmpstr[strlen(tmpstr)], " DTMF Event End");
+               if (pkts[j].content_flags & DS_PKT_PYLD_CONTENT_DTMF_END) sprintf(&tmpstr[strlen(tmpstr)], " DTMF Event End");
                sprintf(&tmpstr[strlen(tmpstr)], " DTMF Event");
             }
             else if (pkts[j].rtp_pyldlen > 0 && pkts[j].rtp_pyldlen <= 7) {
@@ -537,9 +545,9 @@ char          szLastSeq[100];
             }
             else sprintf(&tmpstr[strlen(tmpstr)], " media");  /* added JHB Jun 2023 */
 
-            if (pkts[j].info_flags & DS_PKT_PYLD_CONTENT_REPAIR) {
+            if (pkts[j].content_flags & DS_PKT_PYLD_CONTENT_REPAIR) {
 
-               if ((pkts[j].info_flags & ~DS_PKT_PYLD_CONTENT_REPAIR) == DS_PKT_PYLD_CONTENT_MEDIA) StreamStats[i].numMediaRepair++;
+               if ((pkts[j].content_flags & ~DS_PKT_PYLD_CONTENT_REPAIR) == DS_PKT_PYLD_CONTENT_MEDIA) StreamStats[i].numMediaRepair++;
                else StreamStats[i].numSIDRepair++;
 
                sprintf(&tmpstr[strlen(tmpstr)], ", repaired");
@@ -797,7 +805,7 @@ int nGroupIndex, stream_count, nNumGroups = 0;
 check_for_reuse:
 
             if (fEnableReuse &&  /* increment search_offset if SID / media reuse is enabled, see sequence number range check above, JHB Nov 2023 */
-                (output_pkts[k].info_flags == DS_PKT_PYLD_CONTENT_SID_REUSE || output_pkts[k].info_flags == DS_PKT_PYLD_CONTENT_MEDIA_REUSE)) {  /* note that because repaired packets fill in for missing seq nums, they do not contribute to the search offset so we don't & with item mask to remove repair flags, JHB Feb 2020 */
+                (output_pkts[k].content_flags == DS_PKT_PYLD_CONTENT_SID_REUSE || output_pkts[k].content_flags == DS_PKT_PYLD_CONTENT_MEDIA_REUSE)) {  /* note that because repaired packets fill in for missing seq nums, they do not contribute to the search offset so we don't & with item mask to remove repair flags, JHB Feb 2020 */
 
                search_offset++;
             }
@@ -832,10 +840,10 @@ check_for_reuse:
                      -Signalogic testers: use tmpwpP7am.pcap in analytics mode, which without this will show timestamp mismatches in ssrc 0x73fc8880 starting at 3956254610
                   */
 
-                     if (!fTryRepairAsReuse && output_pkts[k].info_flags == (DS_PKT_PYLD_CONTENT_SID | DS_PKT_PYLD_CONTENT_REPAIR)) {
+                     if (!fTryRepairAsReuse && output_pkts[k].content_flags == (DS_PKT_PYLD_CONTENT_SID | DS_PKT_PYLD_CONTENT_REPAIR)) {
 
                         fTryRepairAsReuse = true;  /* re-try only once per inner loop */
-                        output_pkts[k].info_flags = DS_PKT_PYLD_CONTENT_MEDIA_REUSE;  /* change the info flag */
+                        output_pkts[k].content_flags = DS_PKT_PYLD_CONTENT_MEDIA_REUSE;  /* change the info flag */
                         pkt_cnt--;  /* undo match found */
                         long_SID_adjust_attempts++;  /* increment stat for this */
                         #if 0
@@ -877,7 +885,7 @@ check_for_reuse:
 
             for (k=out_first_pkt_idx[i_out+out_ssrc_start]; k<=out_last_pkt_idx[i_out+out_ssrc_start]; k++) {
 
-               if ((output_pkts[k].info_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID_REUSE) search_offset++;
+               if ((output_pkts[k].content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_SID_REUSE) search_offset++;
                else fprintf(fp_log, "no match, rtp_seqnum = %d, output_pkts[%d].rtp_seqnum = %d, search_offset = %d\n", rtp_seqnum, k, output_pkts[k].rtp_seqnum + out_seq_wrap[i_out]*65536L, search_offset);
             }
 
@@ -922,13 +930,13 @@ check_for_reuse:
             for (sp = 0; sp < splen; sp++) sprintf(&tmpstr[strlen(tmpstr)], " ");  
             fprintf(fp_log, "%stimestamp = %u, rtp len = %u", tmpstr, input_pkts[j].rtp_timestamp, input_pkts[j].rtp_pyldlen);
 
-            print_packet_type(fp_log, input_pkts[j].info_flags, input_pkts[j].rtp_pyldlen, -1);
+            print_packet_type(fp_log, input_pkts[j].content_flags, input_pkts[j].rtp_pyldlen, -1);
 
             drop_consec_cnt++;
          }
          else if (pkt_cnt > 1) {
 
-            if ((input_pkts[j].info_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) != DS_PKT_PYLD_CONTENT_DTMF || (uFlags & DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE)) {
+            if ((input_pkts[j].content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) != DS_PKT_PYLD_CONTENT_DTMF || (uFlags & DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE)) {
 
                dup_cnt++;
 
@@ -936,7 +944,7 @@ check_for_reuse:
                for (k=0; k<pkt_cnt; k++) sprintf(&tmpstr[strlen(tmpstr)], " %u", (unsigned int)(output_pkts[found_history[(found_index-k) & 3].output_index].rtp_seqnum + out_seq_wrap[i_out]*65536L));
                fprintf(fp_log, "%sDuplicate %d: input seq num %u corresponds to output seq nums%s, input rtp len = %u", info_indent, dup_cnt, rtp_seqnum, tmpstr, input_pkts[j].rtp_pyldlen);
 
-               print_packet_type(fp_log, input_pkts[j].info_flags, input_pkts[j].rtp_pyldlen, -1);
+               print_packet_type(fp_log, input_pkts[j].content_flags, input_pkts[j].rtp_pyldlen, -1);
             }
 
             drop_consec_cnt = 0;
@@ -1131,7 +1139,7 @@ int            nThreadIndex;
 
             fprintf(fp_log, "seq = %u, ssrc = 0x%x", input_pkts[j].rtp_seqnum, input_pkts[j].rtp_SSRC);
 
-            print_packet_type(fp_log, input_pkts[j].info_flags, -1, input_pkts[j].chnum);
+            print_packet_type(fp_log, input_pkts[j].content_flags, -1, input_pkts[j].chnum);
          }
          fprintf(fp_log, "\n");
       }
@@ -1206,7 +1214,7 @@ int            nThreadIndex;
 
             fprintf(fp_log, "seq = %u, ssrc = 0x%x", output_pkts[j].rtp_seqnum, output_pkts[j].rtp_SSRC);
 
-            print_packet_type(fp_log, output_pkts[j].info_flags, -1, output_pkts[j].chnum);
+            print_packet_type(fp_log, output_pkts[j].content_flags, -1, output_pkts[j].chnum);
          }
          fprintf(fp_log, "\n");
       }
