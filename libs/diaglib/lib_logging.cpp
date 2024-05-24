@@ -34,6 +34,7 @@
   Modified Feb 2024 JHB, Makefile now defines NO_PKTLIB, NO_HWLIB, and STANDALONE if standalone=1 given on command line
   Modified Feb 2024 JHB, increase MAX_STR_SIZE and adjust max string size in vsnprintf() due to user-reported crash running pcap where one session had 20+ RFC8108 dynamic channel changes (evidently cell tower handoffs) and the run-time stats summary became very large
   Modified May 2024 JHB, convert to cpp, move DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs to diaglib_util.cpp
+  Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile no longer recognizes standalone=1
 */
 
 /* Linux and/or other OS includes */
@@ -46,26 +47,26 @@
 #include <stdarg.h>  /* va_start(), va_end() */
 #include <pthread.h>
 #include <stdlib.h>
-#include <sys/time.h>
+#include <sys/time.h>  /* gettimeofday() */
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <dlfcn.h>  /* dlsym(), RTLD_DEFAULT definition */
 #include <algorithm>  /* bring in std::min and std::max */
 
 using namespace std;
 
 /* SigSRF includes */
 
-#ifndef NO_PKTLIB
-  #define __LIBRARYMODE__
-  #include "pktlib.h"  /* isPmThread() */
-  #undef __LIBRARYMODE__
-#endif
-
 #include "diaglib.h"
+
+#define NO_INLINE_IS_PMTHREAD    /* no inline version of isPmThread() defined in pktlib.h, JHB May 2024 */
+#define NO_GET_PKTINFO
+#include "pktlib.h"  /* for constants and definitions only */
+
 #include "shared_include/config.h"
 
 /* private includes */
@@ -73,7 +74,7 @@ using namespace std;
 #include "diaglib_priv.h"
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.9.0";
+const char DIAGLIB_VERSION[256] = "1.9.1";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 
@@ -106,6 +107,11 @@ uint32_t event_log_warnings = 0;
 
 LOGINFO LogInfo[MAXTHREADS] = {{ 0 }};  /* also referenced in diaglib.cpp */
 
+/* function pointers set with return value of dlsym(), which looks for run-time presence of SigSRF APIs in DSInitLogging(). Note hidden attribute to make sure linker doesn't confuse with SigSRF library functions when building apps, JHB May 2024 */
+  
+__attribute__((visibility("hidden"))) int (*DSGetPacketInfo)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int*) = NULL;
+__attribute__((visibility("hidden"))) bool (*isPmThread)(HSESSION hSession, int* pThreadIndex) = NULL;
+__attribute__((visibility("hidden"))) uint64_t (*get_time)(unsigned int uFlags) = NULL;
 
 static int CreateThreadIndex(void) {  /* local API */
 
@@ -337,9 +343,31 @@ static uint8_t lock = 0;
          return -1;
       }
 
+   /* one time symbol lookup for pktlib and hwlib functions, JHB May 2024 */
+
+      #pragma GCC diagnostic push
+      #if (_GCC_VERSION >= 50000)
+      #pragma GCC diagnostic ignored "-Wpedantic"  /* correct syntax is "Wpedantic", but evidently gcc 4.9 and lower only recognize "pedantic", JHB Dec 2023 */
+      #else
+      #pragma GCC diagnostic ignored "-pedantic"
+      #endif
+      void* temp = dlsym(RTLD_DEFAULT, "DSGetPacketInfo");  /* use dlsym() to see if DSGetPacketInfo() function exists in the build, JHB May 2024 */
+      memcpy(&DSGetPacketInfo, &temp, sizeof(void*));
+
+      temp = dlsym(RTLD_DEFAULT, "isPmThread");  /* look for isPmThread() in the build, JHB May 2024 */
+      memcpy(&isPmThread, &temp, sizeof(void*));
+
+      temp = dlsym(RTLD_DEFAULT, "get_time");  /* look for get_time() in the build, JHB May 2024 */
+      memcpy(&get_time, &temp, sizeof(void*));
+      #pragma GCC diagnostic pop
+
+      #if 0
+      printf("DSGetPacketInfo func ptr = %p, isPmThread func ptr = %p, get_time func ptr = %p \n", DSGetPacketInfo, isPmThread, get_time);
+      #endif
+
       diaglib_sem_init = 1;
    }
-   
+
    __sync_lock_release(&lock);  /* clear the mem barrier (write 0 to the lock) */
 
 /* Init global lib_dbg_cfg. Notes:
@@ -677,9 +705,7 @@ create_log_file_if_needed:
             -race conditions in determining when the cursor is mid-line can still occur, but they are greatly reduced
           */
 
-            #ifndef NO_PKTLIB
-            if (isPmThread(-1, &thread_index)) __sync_or_and_fetch(&pm_thread_printf, 1 << thread_index);  /* if this is a p/m thread, set corresponding bit in pm_thread_printf. isPmThread() is in pktlib.h; if pktlib is not used then this call can be stubbed out in a placeholder .so to always return 0 */
-            #endif
+            if (isPmThread && isPmThread(-1, &thread_index)) __sync_or_and_fetch(&pm_thread_printf, 1 << thread_index);  /* if this is a p/m thread, set corresponding bit in pm_thread_printf. isPmThread() is in pktlib.h; if pktlib is not used then this call can be stubbed out in a placeholder .so to always return 0 */
 
             if (!(loglevel & DS_LOG_LEVEL_IGNORE_LINE_CURSOR_POS) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) fNextLine = true;  /* fNextLine reflects leading \n decision. If semaphore is 1 (cursor currently at midline) then set to 0 (cursor is at start-of-line) and set fNextLine. If already 1 ignore. Note there is a tad bit of race condition here, but cursor control is not a critical thing; if we get it right 99% of the time that's fine */
             else if (log_string[slen-1] != '\n') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);  /* if line has no end-of-line, and cursor is at start-of-line, then set to 1 (midline) */

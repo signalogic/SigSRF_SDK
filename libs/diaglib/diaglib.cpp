@@ -53,22 +53,24 @@
   Modified Mar 2020 JHB, in analysis_and_stats() (inp vs output packet analysis), add brief info printout for timestamp mismatches as they occur, similar to packet drops.  This saves time when debugging timestamp alignment issues in pktlib
   Modified Apr 2020 JHB, fix bug in timestamp mismatch output where output sequence number didn't include wrap count
   Modified May 2020 JHB, implement STREAM_STATS struct changes to rename numRepair to numSIDRepair and add numMediaRepair
-  Modified Mar 2021 JHB, add DIAGLIB_STANDALONE #define option to build without DirectCore header file
+  Modified Mar 2021 JHB, add STANDALONE #define option to build without SigSRF header files
   Modified Jun 2023 JHB, minor changes to packet description format (i) "pkt len =" to "rtp pyld len =" (ii) print "media" instead of nothing for media packets
   Modified Nov 2023 JHB, in analysis_and_stats() (analysis of input vs output packets) implement input vs. output sequence number range check. This solves some cases of transmissions that incorrectly increment sequence numbers after a SID (i.e. increment sequence number without sending a packet), in which case pktlib sees missing packets as loss and fills them in with SID reuse. See comments for more detail
   Modified Nov 2023 JHB, in analysis_and_stats() correct what appears to be a mistake in overwriting search_offset
-  Modified Feb 2024 JHB, Makefile now defines NO_PKTLIB and NO_HWLIB if standalone=1 given on command line. Delete DIAGLIB_STANDALONE references
+  Modified Feb 2024 JHB, Makefile now defines NO_PKTLIB, NO_HWLIB, and STANDALONE if standalone=1 given on command line. Delete DIAGLIB_STANDALONE references
   Modified Feb 2024 JHB, increase version minor number due to changes in lib_logging.c
   Modified Mar 2024 JHB, move version string to lib_logging.c
   Modified Apr 2024 JHB, implement DS_PKT_PYLD_CONTENT_MEDIA_REUSE, rename sid_reuse_offset to search_offset
   Modified Apr 2024 JHB, add "long SID timestamp mismatch" case handling in analysis_and_stats()
   Modified May 2024 JHB, convert to cpp
+  Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() in lib_logging.cpp now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile no longer recognizes standalone=1
 */
 
 /* Linux includes */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>  /* gettimeofday() */
 #include <algorithm>  /* std::min and std::max */
 
 using namespace std;
@@ -77,18 +79,22 @@ using namespace std;
 
 #include "diaglib.h"
 
-#include "pktlib.h"  /* no functions are used, only constants, so we ignore NO_PKTLIB if defined */
+#define NO_INLINE_IS_PMTHREAD    /* no inline version of isPmThread() defined in pktlib.h, JHB May 2024 */
+#define NO_GET_PKTINFO
+#include "pktlib.h"  /* only constants and definitions */
 
-#ifndef NO_HWLIB
-  #include "hwlib.h"  /* DirectCore header file, used here for get_time(), run Makefile with standalone=1 to use getimeofday() instead and omit hwlib.h */
-#else
-  #include <sys/time.h>
-#endif
+#define NO_INLINE_GET_TIME  /* prevent inline version of get_time() from being defined in hwlib.h */
+#include "hwlib.h"  /* DirectCore header file, for constants and definitions only */
 
 extern DEBUG_CONFIG lib_dbg_cfg;  /* in lib_logging.cpp */
 
 extern sem_t diaglib_sem;  /* in lib_logging.cpp */
 extern int diaglib_sem_init;
+
+/* function pointers set with return value of dlsym(), which looks for run-time presence of SigSRF APIs in DSInitLogging() (in lib_logging.cpp). Note hidden attribute to make sure linker doesn't confuse with SigSRF library functions when linking apps, JHB May 2024 */
+
+extern __attribute__((visibility("hidden"))) int (*DSGetPacketInfo)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int*);
+extern __attribute__((visibility("hidden"))) uint64_t (*get_time)(unsigned int uFlags);
 
 /* private includes */
 
@@ -98,11 +104,12 @@ extern LOGINFO LogInfo[];
 
 #define DS_PKT_PYLD_CONTENT_DTMF_END  1         /* DTMF Event End, determined in DSPktStatsAddEntries and then passed thru to other functions, JHB Jun 2019 */
 
-#ifndef NO_PKTLIB
 int DSPktStatsAddEntries(PKT_STATS* pkt_stats, int num_pkts, uint8_t* pkt_buffer, unsigned int packet_length[], unsigned int packet_info[], unsigned int uFlags) {
 
-int j;
+int j = 0;
 unsigned int offset = 0;
+
+   if (!DSGetPacketInfo) return -1;  /* return error condition if DSGetPacketInfo() not in run-time build; see DSInitLogging() in lib_logging.cpp, JHB May 2024 */
 
    for (j=0; j<num_pkts; j++) {
 
@@ -129,7 +136,6 @@ unsigned int offset = 0;
 
    return j;  /* return number of entries added */
 }
-#endif
 
 /* #define SIMULATE_SLOW_TIME 1  // turn this on to simulate time-consuming packet logging, for example if app debug is needed when aborting during packet logging, JHB Jan 2023 */
 
@@ -1089,13 +1095,12 @@ int            nThreadIndex;
    InputStreamStats = (STREAM_STATS*)calloc(MAX_SSRCS, sizeof(STREAM_STATS));
    OutputStreamStats = (STREAM_STATS*)calloc(MAX_SSRCS, sizeof(STREAM_STATS));
 
-   #ifndef NO_HWLIB
-   t1 = get_time(USE_CLOCK_GETTIME);
-   #else
-   struct timeval tv;
-   gettimeofday(&tv, NULL);
-   t1 = tv.tv_sec * 1000000L + tv.tv_usec;
-   #endif
+   if (get_time) t1 = get_time(USE_CLOCK_GETTIME);
+   else {
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      t1 = tv.tv_sec * 1000000L + tv.tv_usec;
+   }
 
    fprintf(fp_log, "** Packet Ingress Stats **\n\n");
 
@@ -1216,13 +1221,12 @@ int            nThreadIndex;
 
       if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
 
-      #ifndef NO_HWLIB
-      t2 = get_time(USE_CLOCK_GETTIME);
-      #else
-      struct timeval tv;
-      gettimeofday(&tv, NULL);
-      t2 = tv.tv_sec * 1000000L + tv.tv_usec;
-      #endif
+      if (get_time) t2 = get_time(USE_CLOCK_GETTIME);
+      else {
+         struct timeval tv;
+         gettimeofday(&tv, NULL);
+         t2 = tv.tv_sec * 1000000L + tv.tv_usec;
+      }
 
       char tstr[] = "msec";
       float ltime = (t2-t1)/1000.0;
@@ -1351,12 +1355,12 @@ int            nThreadIndex;
    fprintf(fp_log, "Total packets output to network socket = %d\n", pkt_counters->pkt_output_cnt);
    fprintf(fp_log, "Total packets decoded and written to wav file = %d\n", pkt_counters->frame_write_cnt);
 
-   #ifndef NO_HWLIB
-   t2 = get_time(USE_CLOCK_GETTIME);
-   #else
-   gettimeofday(&tv, NULL);
-   t2 = tv.tv_sec * 1000000L + tv.tv_usec;
-   #endif
+   if (get_time) t2 = get_time(USE_CLOCK_GETTIME);
+   else {
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      t2 = tv.tv_sec * 1000000L + tv.tv_usec;
+   }
 
    {
       char tstr[] = "msec";

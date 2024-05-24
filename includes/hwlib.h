@@ -36,14 +36,12 @@
   Modified Feb 2022 JHB, add HFILE* param to DSLoadDataFile() to support optional use of filelib APIs while file is open
   Modified Feb 2024 JHB, change DS_DATAFILE_USE_SEM to DS_DATAFILE_USE_SEMAPHORE
   Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
+  Modified May 2024 JHB, honor NO_INLINE_GET_TIME if defined by app source to prevent inlining of get_time()
 */
  
 #ifndef _HWLIB_H_
 #define _HWLIB_H_
 
-/* needed by get_time() */
-#include <sys/time.h>
-#include <time.h>
 /* #define USE_X86INTRIN */
 #ifdef USE_X86INTRIN  /* in get_time() below, we use __builtin_ia32_xxx() functions directly to avoid including 86intrin.h, which seems to get tangled up in build issues with different versions of gcc and/or Linux (e.g. gcc 4.8.2 on Red Hat) */
   #include <x86intrin.h>
@@ -466,77 +464,16 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
     #pragma GCC diagnostic ignored "-pedantic"
   #endif
 
-  static inline uint64_t get_time(unsigned int uFlags) {
+  #ifndef NO_INLINE_GET_TIME  /* app or lib source file can set this before SigSRF includes and then use dlsym() to get run-time address of get_time(), JHB May 2024 */
 
-     uint64_t ret_val;
+    #include <sys/time.h>
+    #include <time.h>
 
-     #ifdef MONITOR_TSC_INTEGRITY
-     extern bool fRDTSCPSupported;  /* global var in hwlib */
+    static inline uint64_t get_time(unsigned int uFlags) {
 
-     static int64_t prev_rdtsc = 0;
-     static unsigned int prev_core_id = 0;
-     int64_t rdtsc1, rdtsc2, rdtsc3 = 0, slip1 = 0, slip2 = 0;
-
-     if (fRDTSCPSupported) {
-        unsigned int dummy;
-        #ifdef USE_X86INTRIN
-        rdtsc1 = __rdtscp(&dummy);
-        #else
-        rdtsc1 = __builtin_ia32_rdtscp(&dummy);
-        #endif
-     }
-     else {
-        #ifdef USE_X86INTRIN
-        rdtsc1 = __rdtsc();
-        #else
-        rdtsc1 = __builtin_ia32_rdtsc();
-        #endif
-      }
-     #endif
-
-     if (uFlags == USE_CLOCK_GETTIME) {
-        struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        ret_val = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
-     }
-     else {
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        ret_val = tv.tv_sec * 1000000L + tv.tv_usec;
-     }
-
-     #ifdef MONITOR_TSC_INTEGRITY
-     unsigned int core_id;
-
-     if (fRDTSCPSupported) {
-        #ifdef USE_X86INTRIN
-        rdtsc2 = __rdtscp(&core_id);
-        #else
-        rdtsc2 = __builtin_ia32_rdtscp(&core_id);
-        #endif
-        if (rdtsc2 <= rdtsc1) slip1 = rdtsc2 - rdtsc1;
-        core_id &= 0xff;  /* core id in lower 8 bits of TSC AUX register */
-        if (rdtsc2 <= (rdtsc3 = __sync_fetch_and_add(&prev_rdtsc, 0)) && core_id == prev_core_id) slip2 = rdtsc2 - rdtsc3;  /* only compare same-core TSC reads, in case CPU does not support invariant TSC synchronized between cores (Sig lab servers with Xeon 2660 do not) */
-     }
-     else {
-        #ifdef USE_X86INTRIN
-        rdtsc2 = __rdtsc();
-        #else
-        rdtsc2 = __builtin_ia32_rdtsc();
-        #endif
-        if (rdtsc2 <= rdtsc1) slip1 = rdtsc2 - rdtsc1;
-     }
-
-     if (slip1 || slip2) Log_RT(3, "WARNING: get_time() reports TSC integrity / adjustment issue, time slip = %ld, context switch slip = %ld (cycles), r2 = %ld, r3 = %ld, core_id = %u, prev_core_id = %u \n", -slip1, -slip2, rdtsc2, rdtsc3, core_id, prev_core_id);
-
-     if (fRDTSCPSupported) {
-        __sync_lock_test_and_set(&prev_rdtsc, &rdtsc2);
-        __sync_lock_test_and_set(&prev_core_id, &core_id);
-     }
-     #endif
-
-     return ret_val;
-  }
+      #include "get_time.c"  /* include get_time() source code */
+    }
+  #endif
 
   #pragma GCC diagnostic pop
 

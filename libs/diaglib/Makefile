@@ -26,6 +26,7 @@
 #  Modified Feb 2024 JHB, apply soname only to default libdiaglib.so to avoid ldconfig conflicts, rename CC_FLAGS to CFLAGS and LIB_FLAGS to LDFLAGS (Linux convention)
 #  Modified May 2024 JHB, change from gcc to g++, change CFLAGS TO CPPFLAGS
 #  Modified May 2024 JHB, experimental: add -march=native compiler flag
+#  Modified May 2024 JHB, remove standalone=1 handling. In lib_logging.cpp DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib
 
 # set install path var, from lib/diaglib folder SigSRF software install path is 3 levels up
 INSTALLPATH=../../..
@@ -61,13 +62,6 @@ endif
 #defines
 DEFINES += -D_LINUX_ -D_SIGRT
 
-ifeq ($(standalone),1)
-  DEFINES += -DSTANDALONE -DNO_HWLIB -DNO_PKTLIB
-  DIAGLIB = libdiaglib_standalone.so
-else
-  DIAGLIB = libdiaglib.so
-endif
-
 # compiler flags
 CPPFLAGS = $(INCLUDE)
 CPPFLAGS += $(DBGFLAGS)
@@ -79,10 +73,7 @@ CPPFLAGS += -Wextra -Wno-missing-field-initializers
 CPPFLAGS += -march=native
 
 # link flags. Apply -soname only for primary lib to avoid ldconfig conflicts
-LDFLAGS = -pthread -shared -flto
-ifeq ($(standalone),)
-  LDFLAGS += -Wl,-soname,libdiaglib.so.1.5.0
-endif
+LDFLAGS = -pthread -shared -flto -Wl,-soname,libdiaglib.so.1.5.0
 
 all: $(cpp_objects) $(c_objects) link
 
@@ -94,17 +85,13 @@ $(c_objects): %.o: %.c
 
 link:
 	ar -rcsu libdiaglib.a $(cpp_objects) $(c_objects)
-	$(CC) $(LDFLAGS) -o $(DIAGLIB) $(cpp_objects) $(c_objects) -lrt
+	$(CC) $(LDFLAGS) -o libdiaglib.so $(cpp_objects) $(c_objects) -lrt
 
 ifeq ($(wildcard $(WRLPATH)),$(WRLPATH)) # PPC link
- ifneq ($(standalone),1)
-	mv libdiaglib.a /opt/WindRiver/wrlinux-4/sysroots/adsp2-glibc_small/sysroot/te500v2/usr/lib
- endif
+ 	mv libdiaglib.a /opt/WindRiver/wrlinux-4/sysroots/adsp2-glibc_small/sysroot/te500v2/usr/lib
 else # x86 link
- ifneq ($(standalone),1)
 	cp -p libdiaglib.so /usr/lib
 	ldconfig
- endif
 endif
 
 .PHONY:	clean

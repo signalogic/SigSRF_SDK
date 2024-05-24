@@ -168,6 +168,7 @@ Revision History
  Modified Apr 2024 JHB, several updates and mods to verify functionality in mediaTest mode (look for PUSHPACKETS_REFERENCE below). This fixes the "EVS Player" and "AMR Player" command lines on the Github page
  Modified May 2024 JHB, call DSGetBacktrace() before starting packet/media threads, show result as " ... start sequence = ..." in console output
  Modified May 2024 JHB, add NULL param to DSReadPcapRecord() calls for unused pcap_file_hdr param, required by pktlib API update
+ Modified May 2024 JHB, check for error condition returned by DSPktStatsAddEntries()
 */
 
 #ifndef _GNU_SOURCE
@@ -2466,7 +2467,7 @@ static int log_pkt_in_index = 0;
                      /* add packet stats entry */
 
                         int num_stats = DSPktStatsAddEntries(input_pkts[chnum].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_ptr, (unsigned int*)&pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
-                        pkt_counters[thread_index].num_input_pkts += num_stats;
+                        if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
 
                         manage_pkt_stats_mem(input_pkts, chnum, num_stats);
                   #else
@@ -2482,7 +2483,8 @@ static int log_pkt_in_index = 0;
 
                      /* add packet stats entry */
 
-                        pkt_counters[thread_index].num_input_pkts += DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_ptr, (unsigned int*)&pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                        int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_ptr, (unsigned int*)&pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                        if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
 
                         if (pkt_counters[thread_index].num_input_pkts >= MAX_PKT_STATS) {
                            Log_RT(4, "INFO: input packet stats array exceeds %d packets, packet log will likely show missing SSRCs and/or packets \n", MAX_PKT_STATS);
@@ -2647,7 +2649,7 @@ next_session:
 
                int num_stats = DSPktStatsAddEntries(input_pkts[NCORECHAN].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_in_buf, (unsigned int*)packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
 
-               pkt_counters[thread_index].num_input_pkts += num_stats;
+               if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
                manage_pkt_stats_mem(input_pkts, NCORECHAN, num_stats);
 
          #else
@@ -2663,7 +2665,8 @@ next_session:
 
             /* add packet stats entry */
 
-               pkt_counters[thread_index].num_input_pkts += DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_in_buf, (unsigned int*)packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
+               int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_in_buf, (unsigned int*)packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
+               if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
                if (pkt_counters[thread_index].num_input_pkts >= MAX_PKT_STATS) pkt_counters[thread_index].num_input_pkts = 0;
          #endif
             }
@@ -3192,7 +3195,7 @@ pull:
 
                               int num_stats = DSPktStatsAddEntries(pulled_pkts[chnum].pkt_stats, 1, pkt_ptr, &packet_len[j], &payload_info[j], uFlags_info);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
 
-                              pkt_counters[thread_index].num_pulled_pkts += num_stats;
+                              if (num_stats > 0) pkt_counters[thread_index].num_pulled_pkts += num_stats;
 
                               manage_pkt_stats_mem(pulled_pkts, chnum, num_stats);
 
@@ -3207,7 +3210,8 @@ pull:
 
                            /* add packet stats entry */
 
-                              pkt_counters[thread_index].num_pulled_pkts += DSPktStatsAddEntries(&pulled_pkts[pkt_counters[thread_index].num_pulled_pkts], 1, pkt_ptr, (unsigned int*)&packet_len[j], &payload_info[j], uFlags_info);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                              int num_stats = DSPktStatsAddEntries(&pulled_pkts[pkt_counters[thread_index].num_pulled_pkts], 1, pkt_ptr, (unsigned int*)&packet_len[j], &payload_info[j], uFlags_info);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                              if (num_stats > 0) pkt_counters[thread_index].num_pulled_pkts += num_stats;
 
                               if (pkt_counters[thread_index].num_pulled_pkts >= MAX_PKT_STATS) {
                                  Log_RT(4, "INFO: pulled packet stats array exceeds %d packets, packet log will likely show missing SSRCs and/or packets \n", MAX_PKT_STATS);

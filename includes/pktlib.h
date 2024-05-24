@@ -102,6 +102,7 @@
   Modified Apr 2024 JHB, in DSGetSessionInfo() add DS_SESSION_INFO_SAMPLE_RATE_MULT case, fix issue for DS_SESSION_INFO_OUTPUT_BUFFER_INTERVAL
   Modified Apr 2024 JHB, add DS_PKT_PYLD_CONTENT_MEDIA_REUSE packet payload content definition
   Modified May 2024 JHB, add optional pcap_hdr_t* param to DSReadPcapRecord() API to reference the file header from a prior DSOpenPcap() call. For .rtp format files, DSReadPcapRecord() will use the optional pointer for src/dst IP addr and port values to extent possible when reading RTP records
+  Modified May 2024 JHB, honor NO_INLINE_IS_PMTHREAD if defined by app source to prevent inlining
 */
 
 #ifndef _PKTLIB_H_
@@ -622,7 +623,9 @@ extern "C" {
       -Term id values are typically 1 or 2 and refer to term1 and term2 session config file definitions (in the future arbitrary N values may be supported).  term_id values can be omitted (given as zero) when DS_SESSION_INFO_CHNUM is applied if other uFlags attributes imply a term_id value, for example DS_SESSION_INFO_CODEC_LINK implies term_id = 2
 */
 
+  #ifndef NO_GET_PKTINFO  /* app can specify no definition of DSGetPacketInfo() if it will be doing its own dlsym() lookup, JHB May 2024 */
   int DSGetPacketInfo(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int*);
+  #endif
 
 /* PKTINFO struct filled by DSGetPacketInfo() when uFlags subfield is set to DS_PKT_INFO_PKTINFO_STRUCT. PKTINFO is also used by DSFindPcapPacket() */
 
@@ -1402,7 +1405,9 @@ extern "C" {
   #define USE_PKTLIB_INLINES
   #define DSGetSessionInfo DSGetSessionInfoInline
   #define DSGetJitterBufferInfo DSGetJitterBufferInfoInline
-  #define isPmThread isPmThreadInline  /* changed from IsPmThread to isPmThread, JHB Jan 2023 */
+  #ifndef NO_INLINE_IS_PMTHREAD  /* app or lib source file can set this before SigSRF includes and then use dlsym() to obtain isPmThread() run-time address, JHB May 2024 */
+    #define isPmThread isPmThreadInline  /* changed from IsPmThread to isPmThread, JHB Jan 2023 */
+  #endif
 #endif
 
 /* DSGetSessionInfoInt2Float() and DSGetSessionInfoInt2Double() used when DSGetSessionInfo() returns a float or double contained inside int64_t */
@@ -1458,30 +1463,15 @@ extern int nPktMediaThreads;
 extern PACKETMEDIATHREADINFO packet_media_thread_info[];
 extern SESSION_INFO_THREAD session_info_thread[];  /* added Jan 2021, JHB */
 
-/* function to determine if current thread is an application thread (i.e. pktlib API is being called from a user app, not from a packet/media thread).  Returns true for app threads */
+#ifndef NO_INLINE_IS_PMTHREAD  /* app or lib source file can set this before SigSRF includes and then use dlsym() to get run-time address of isPmThread(), JHB May 2024 */
+
+/* function to determine if current thread is an application thread (i.e. pktlib API is being called from a user app, not from a packet/media thread). Returns true for app threads */
   
-static inline bool isPmThreadInline(HSESSION hSession, int* pThreadIndex) {
+  static inline bool isPmThreadInline(HSESSION hSession, int* pThreadIndex) {
 
-int i;
-bool fTest, fIsPmThread = false;
-
-   if (hSession >= 0 && !sessions[hSession].threadid) return false;
-
-   for (i=0; i<nPktMediaThreads; i++) {
-   
-      if (hSession >= 0) fTest = pthread_equal(sessions[hSession].threadid, packet_media_thread_info[i].threadid);  /* compare sessions's p/m thread Id with active p/m thread thread Ids */
-      else fTest = pthread_equal(pthread_self(), packet_media_thread_info[i].threadid);  /* compare current thread with p/m thread Id */
-
-      if (fTest) {
-   
-         fIsPmThread = true;  /* session belongs to a pkt/media thread */
-         if (pThreadIndex) *pThreadIndex = i;  /* return thread index if if pointer non-NULL */
-         break;
-      }
-   }
-
-   return fIsPmThread;
-}
+    #include "isPmThread.c"  /* include isPmThread() source */
+  }
+#endif
 
 #ifdef __cplusplus
 }
