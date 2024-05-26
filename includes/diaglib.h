@@ -160,9 +160,9 @@ typedef struct {
 /* DSPktStatsAddEntries() adds one or more packet stats entries. Notes:
 
   -pkt_stats should point to a PKT_STATS struct
-  -pkt_buffer should contain num_pkts packets, each with a pkt_length[]. One or more pkt_length[] can be -1 if not known
+  -pkt_buffer should contain num_pkts packets, each with a pkt_length[]. One or more pkt_length[] can be -1 if not known, or if all pkt_length[] are unknown pkt_length can be given as NULL
   -uFlags should contain one of the DS_BUFFER_PKT_xxx flags and optionally one or more of the "general API flags" defined in pktlib.h
-  -payload_content[] may optionally specify for each packet one of the DS_PKT_PYLD_CONTENT_xxx flags defined in pktlib.h
+  -payload_content[] may optionally specify one of the DS_PKT_PYLD_CONTENT_xxx flags defined in pktlib.h for one or more packets
   -return value is the number of packets added to pkt_stats, or -1 for an error condition
 
   -see mediaTest/packet_flow_media_proc.c for tested examples of API usage and PKT_STATS declaration

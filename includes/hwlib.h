@@ -36,7 +36,7 @@
   Modified Feb 2022 JHB, add HFILE* param to DSLoadDataFile() to support optional use of filelib APIs while file is open
   Modified Feb 2024 JHB, change DS_DATAFILE_USE_SEM to DS_DATAFILE_USE_SEMAPHORE
   Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
-  Modified May 2024 JHB, honor NO_INLINE_GET_TIME if defined by app source to prevent inlining of get_time()
+  Modified May 2024 JHB, define get_time_t typedef to support alternative get_time() function signatures in other apps and libs. Honor GET_TIME_TYPEDEF_ONLY if set by app or lib source to define only typedef for get_time() and no prototype
 */
  
 #ifndef _HWLIB_H_
@@ -456,7 +456,7 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
   #define USE_GETTIMEOFDAY   2
   #define MONITOR_TSC_INTEGRITY
 
-  #pragma GCC diagnostic push  /* some codecs are built with -pedantic, we suppress mixed declarations/code warning for those, JHB Aug 2019 */
+  #pragma GCC diagnostic push  /* if std=c99 in use we suppress mixed declarations/code warnings, JHB Aug 2019 */
   
   #if (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) >= 40800  /* check for gcc versions 4.8.0 or higher */
     #pragma GCC diagnostic ignored "-Wpedantic"
@@ -464,7 +464,9 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
     #pragma GCC diagnostic ignored "-pedantic"
   #endif
 
-  #ifndef NO_INLINE_GET_TIME  /* app or lib source file can set this before SigSRF includes and then use dlsym() to get run-time address of get_time(), JHB May 2024 */
+  typedef uint64_t get_time_t(unsigned int uFlags);
+  
+  #ifndef GET_TIME_TYPEDEF_ONLY  /* app or lib source file can set this before SigSRF includes and then use dlsym() to get run-time address of get_time(), JHB May 2024 */
 
     #include <sys/time.h>
     #include <time.h>

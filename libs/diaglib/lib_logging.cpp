@@ -63,9 +63,10 @@ using namespace std;
 
 #include "diaglib.h"
 
-#define NO_INLINE_IS_PMTHREAD    /* no inline version of isPmThread() defined in pktlib.h, JHB May 2024 */
-#define NO_GET_PKTINFO
-#include "pktlib.h"  /* for constants and definitions only */
+#define GET_PKT_INFO_TYPEDEF_ONLY  /* specify DSGetPacketInfo() typedef only (no prototype) in pktlib.h */
+#include "pktlib.h"  /* pktlib header file, only constants and definitions used here */
+#define GET_TIME_TYPEDEF_ONLY  /* specify get_time() typedef only (no prototype) in hwlib.h */
+#include "hwlib.h"  /* DirectCore header file, only constants and definitions used here */
 
 #include "shared_include/config.h"
 
@@ -108,10 +109,10 @@ uint32_t event_log_warnings = 0;
 LOGINFO LogInfo[MAXTHREADS] = {{ 0 }};  /* also referenced in diaglib.cpp */
 
 /* function pointers set in DSInitLogging() with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused with their SigSRF library function counterparts if they both exist during app or library link, JHB May 2024 */
-  
-__attribute__((visibility("hidden"))) int (*DSGetPacketInfo)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int*) = NULL;
-__attribute__((visibility("hidden"))) bool (*isPmThread)(HSESSION hSession, int* pThreadIndex) = NULL;
-__attribute__((visibility("hidden"))) uint64_t (*get_time)(unsigned int uFlags) = NULL;
+
+__attribute__((visibility("hidden"))) DSGetPacketInfo_t* DSGetPacketInfo = NULL;  /* DSGetPacketInfo_t typedef in pktlib.h */
+__attribute__((visibility("hidden"))) isPmThread_t* isPmThread = NULL;  /* isPmThread_t typedef in pktlib.h */
+__attribute__((visibility("hidden"))) get_time_t* get_time = NULL;  /* get_time_t typedef in hwlib.h */
 
 static int CreateThreadIndex(void) {  /* local API */
 

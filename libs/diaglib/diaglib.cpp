@@ -80,12 +80,11 @@ using namespace std;
 
 #include "diaglib.h"
 
-#define NO_INLINE_IS_PMTHREAD    /* prevent inline version of isPmThread() from being defined in pktlib.h, JHB May 2024 */
-#define NO_GET_PKTINFO
-#include "pktlib.h"  /* only constants and definitions */
+#define GET_PKT_INFO_TYPEDEF_ONLY  /* specify DSGetPacketInfo() typedef only (no prototype) in pktlib.h */
+#include "pktlib.h"  /* pktlib header file, only constants and definitions used here */
 
-#define NO_INLINE_GET_TIME  /* prevent inline version of get_time() from being defined in hwlib.h */
-#include "hwlib.h"  /* DirectCore header file, constants and definitions only */
+#define GET_TIME_TYPEDEF_ONLY  /* specify get_time() typedef only (no prototype) in hwlib.h */
+#include "hwlib.h"  /* DirectCore header file, only constants and definitions used here */
 
 extern DEBUG_CONFIG lib_dbg_cfg;  /* in lib_logging.cpp */
 
@@ -94,8 +93,8 @@ extern int diaglib_sem_init;
 
 /* function pointers set in DSInitLogging() in lib_logging.cpp with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused with their SigSRF library function counterparts if they both exist during app or library link, JHB May 2024 */
 
-extern __attribute__((visibility("hidden"))) int (*DSGetPacketInfo)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int*);
-extern __attribute__((visibility("hidden"))) uint64_t (*get_time)(unsigned int uFlags);
+extern __attribute__((visibility("hidden"))) DSGetPacketInfo_t* DSGetPacketInfo;  /* DSGetPacketInfo_t typedef in pktlib.h */
+extern __attribute__((visibility("hidden"))) get_time_t* get_time;  /* get_time_t typedef in hwlib.h */
 
 /* private includes */
 
