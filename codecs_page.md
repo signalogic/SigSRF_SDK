@@ -18,6 +18,11 @@ SigSRF Codecs Documentation
 &nbsp;&nbsp;&nbsp;[**DSCodecDelete**](#user-content-dscodecdelete)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Structs**](#user-content-structs)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_PARAMS**](#user-content-codecparams)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_DEC_PARAMS**](#user-content-codecdecparams)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_ENC_PARAMS**](#user-content-codecencparams)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_OUTARGS**](#user-content-codecoutargs)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_INARGS**](#user-content-codecinargs)<br/>
 
 [**_hello_codec Reference App_**](#user-content-hellocodecreferenceapp)<br/>
 
@@ -247,7 +252,66 @@ General flags, applicable in multiple APIs
 <a name="Structs"></a>
 ## Structs
 
-CODEC_ENC_PARAMS encode parameters struct
+<a name="CodecParams"></a>
+### CODEC_PARAMS
+
+Struct used in DSCodecCreate() and DSGetCodecInfo()
+
+```c++
+  typedef struct {
+
+     int codec_type;                      /* specifies codec type -- see "voice_codec_type" enums in shared_include/codec.h */
+     char codec_name[CODEC_NAME_MAXLEN];  /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecInfo() with DS_CODEC_INFO_NAME flag */
+     uint16_t raw_frame_size;             /* filled in by DSCodecCreate() and DSGetCodecInfo() */
+     uint16_t coded_frame_size;           /*   "    "    " */
+     int payload_shift;                   /* special case item, when non-zero indicates shift payload after encoding or before decoding, depending on which codec and the case. Initially needed to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/- */
+
+     CODEC_ENC_PARAMS enc_params;         /* if encoder instance is being created, this must point to desired encoder params. See examples in mediaTest_proc.c or hello_codec.c */
+     CODEC_DEC_PARAMS dec_params;         /* if decoder instance is being created, this must point to desired decoder params. See examples in mediaTest_proc.c or hello_codec.c */
+
+  } CODEC_PARAMS;
+```
+
+<a name="CodecDecParams"></a>
+### CODEC_DEC_PARAMS
+
+Decode parameters struct
+
+```c++
+  typedef struct {
+
+/* generic items */
+
+   int bitRate;               /* bitrate may not be used for codecs that can derive it from payload contents */
+   int samplingRate;          /* not used for most codecs */
+   float frameSize;           /* amount of data (in msec) processed by the codec per frame, for example 20 msec for AMR or EVS, 22.5 msec for MELPe, etc */
+
+/* G729, G726 items */
+
+   int uncompress;
+
+/* AMR-WB+ items */
+
+   int limiter;               /* avoids output clipping (recommended) */
+   int mono;
+
+/* LBR codec items (e.g. MELPe) */
+
+   int bitDensity;            /* channel bit density: 6, 54, 56 */
+   int post;                  /* post filter flag */
+   int noReseed;              /* disable random number generator seeding (used for jitter) */
+
+   unsigned int uFlags;       /* see RTP_FORMAT_xxx and DEBUG_OUTPUT_xxx flag definitions below */
+
+   int reserved[19];
+
+  } CODEC_DEC_PARAMS;
+```
+
+<a name="CodecEncParams"></a>
+### CODEC_ENC_PARAMS
+
+Encode parameters struct
 
 ```c++
   typedef struct  {
@@ -297,38 +361,8 @@ CODEC_ENC_PARAMS encode parameters struct
    int reserved[19];
 
   } CODEC_ENC_PARAMS;
-
-CODEC_DEC_PARAMS decode parameters struct
-
-  typedef struct {
-
-/* generic items */
-
-   int bitRate;               /* bitrate may not be used for codecs that can derive it from payload contents */
-   int samplingRate;          /* not used for most codecs */
-   float frameSize;           /* amount of data (in msec) processed by the codec per frame, for example 20 msec for AMR or EVS, 22.5 msec for MELPe, etc */
-
-/* G729, G726 items */
-
-   int uncompress;
-
-/* AMR-WB+ items */
-
-   int limiter;               /* avoids output clipping (recommended) */
-   int mono;
-
-/* LBR codec items (e.g. MELPe) */
-
-   int bitDensity;            /* channel bit density: 6, 54, 56 */
-   int post;                  /* post filter flag */
-   int noReseed;              /* disable random number generator seeding (used for jitter) */
-
-   unsigned int uFlags;       /* see RTP_FORMAT_xxx and DEBUG_OUTPUT_xxx flag definitions below */
-
-   int reserved[19];
-
-  } CODEC_DEC_PARAMS;
 ```
+
 Audio classification frame types returned in CODEC_OUTARGS frameType
 
 ```c++
@@ -353,25 +387,13 @@ Audio classification frame types returned in CODEC_OUTARGS frameType
     FRAMETYPE_ITEM_MASK = 0xff     /* mask to separate type items from flags */
   };
  ```
-CODEC_PARAMS struct used in DSCodecCreate() and DSGetCodecInfo()
 
-```c++
-  typedef struct {
+<a name="CodecOutArgs"></a>
+### CODEC_OUTARGS
 
-     int codec_type;                      /* specifies codec type -- see "voice_codec_type" enums in shared_include/codec.h */
-     char codec_name[CODEC_NAME_MAXLEN];  /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecInfo() with DS_CODEC_INFO_NAME flag */
-     uint16_t raw_frame_size;             /* filled in by DSCodecCreate() and DSGetCodecInfo() */
-     uint16_t coded_frame_size;           /*   "    "    " */
-     int payload_shift;                   /* special case item, when non-zero indicates shift payload after encoding or before decoding, depending on which codec and the case. Initially needed to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/- */
+Optional struct for output from DSCodecEncode() and DSCodecDecode() APIs
 
-     CODEC_ENC_PARAMS enc_params;         /* if encoder instance is being created, this must point to desired encoder params. See examples in mediaTest_proc.c or hello_codec.c */
-     CODEC_DEC_PARAMS dec_params;         /* if decoder instance is being created, this must point to desired decoder params. See examples in mediaTest_proc.c or hello_codec.c */
-
-  } CODEC_PARAMS;
-```
-CODEC_OUTARGS optional output struct from DSCodecEncode() and DSCodecDecode() APIs
-
-  * pOutArgs should point to a CODEC_OUTARGS struct, otherwise be given as NULL
+  * pOutArgs in DSCodecEncode() or DSCodecDecode() should point to a CODEC_OUTARGS struct, otherwise be given as NULL
 
 ```c++
   typedef struct {
@@ -391,9 +413,13 @@ CODEC_OUTARGS optional output struct from DSCodecEncode() and DSCodecDecode() AP
 
   } CODEC_OUTARGS;
 ```
-CODEC_INARGS optional input struct to DSCodecEncode() and DSCodecDecode() APIs
 
-  * pInArgs should point to a CODEC_INARGS struct, otherwise be given as NULL
+<a name="CodecOutArgs"></a>
+### CODEC_INARGS
+
+Optional struct for input to DSCodecEncode() and DSCodecDecode() APIs
+
+  * pInArgs in DSCodecEncode() or DSCodecDecode() should point to a CODEC_INARGS struct, otherwise be given as NULL
 
 ```c++
   typedef struct {
