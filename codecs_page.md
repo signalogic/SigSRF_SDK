@@ -96,9 +96,9 @@ API Interface
 
   DSCodecCreate
 
-    -create an encoder or decoder instance parameters specified in struct pointed to by pCodecInfo with type of struct specified by uFlags
-    -if pCodecInfo points to a CODEC_PARAMS struct, then either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct, or both, should be included in CODEC_PARAMS
-    -return value is an HCODEC (codec instance) > 0, 0 if no handle was created, and < 0 for an error condition
+  * create an encoder or decoder instance parameters specified in struct pointed to by pCodecInfo with type of struct specified by uFlags
+  * if pCodecInfo points to a CODEC_PARAMS struct, then either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct, or both, should be included in CODEC_PARAMS
+  * return value is an HCODEC (codec instance) > 0, 0 if no handle was created, and < 0 for an error condition
 
 ```c++
  HCODEC DSCodecCreate(void* pCodecInfo,            /* pointer to CODEC_PARAMS struct or TERMINATION_INFO struct - see comments below */
@@ -112,12 +112,13 @@ API Interface
   #define DS_CODEC_CREATE_USE_TERMINFO             /* pCodecInfo points to a TERMINATION_INFO struct */
 ```
 
-    For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CC_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing)
+For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CC_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing)
   
   DSCodecDecode
 
-    -decode one or more frames using one or more decoder handles
-    -returns length of decoded media frame (in bytes)
+  * decode one or more frames using one or more decoder handles
+  * returns length of decoded media frame (in bytes)
+
 ```c++
     int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
                       unsigned int     uFlags,        /* flags, see DS_CODEC_DECODE_xxx flags below */
@@ -137,8 +138,9 @@ API Interface
 ```
   DSCodecEncode
 
-    -encode one or more frames using one or more encoder handles
-    -returns length of encoded bitstream frame (in bytes)
+  * encode one or more frames using one or more encoder handles
+  * returns length of encoded bitstream frame (in bytes)
+
 ```c++
     int DSCodecEncode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
                       unsigned int     uFlags,        /* flags, see DS_CODEC_ENCODE_xxx flags below */
@@ -156,7 +158,7 @@ API Interface
 
   DSGetCodecInfo
 
-    -returns information for the specified codec and uFlags
+  * returns information for the specified codec and uFlags
   
   ```c++
     int DSGetCodecInfo(int codec,                     /* codec can be either a codec handle (HCODEC) or a codec type (int), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_HANDLE to interpret codec as an hCodec, returned by a previous call to DSCodecCreate(). If neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given, the default is DS_CODEC_INFO_HANDLE */
@@ -172,7 +174,7 @@ API Interface
     #define DS_CODEC_INFO_HANDLE                       /* specifies the "codec" param (first param) is interpreted as an hCodec (i.e. handle created by prior call to DSCodecCreate(). This is the default if neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given */ 
     #define DS_CODEC_INFO_TYPE                         /* specifies the "codec" param (first param) is interpreted as a codec_type */ 
 ```
-    -DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo is expected to point to a CODEC_PARAMS struct. Some item flags must be combined with the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
+DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo is expected to point to a CODEC_PARAMS struct. Some item flags must be combined with the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
 
 ```c++
      #define DS_CODEC_INFO_NAME                       /* returns codec name in text string pointed to by pInfo. A typical string length is 5-10 char, and always less than CODEC_NAME_MAXLEN char */
@@ -198,8 +200,8 @@ API Interface
 ```
   DSCodecDelete
 
-    - delete an encoder or decoder instance
-    - returns > 0 on success, or < 0 on error condition
+  * delete an encoder or decoder instance
+  * returns > 0 on success, or < 0 on error condition
 
 ```c++
     int DSCodecDelete(HCODEC hCodec,                  /* handle of encoder or decoder instance to be deleted */
