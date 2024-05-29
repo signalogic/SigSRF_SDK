@@ -11,11 +11,13 @@ SigSRF Codecs Documentation
 
 [**_API Interface_**](#user-content-apiinterface)<br/>
 
+<sub><sup>
 &nbsp;&nbsp;&nbsp;[**DSCodecCreate**](#user-content-dscodeccreate)<br/>
 &nbsp;&nbsp;&nbsp;[**DSCodecDecode**](#user-content-dscodecdecode)<br/>
 &nbsp;&nbsp;&nbsp;[**DSCodecEncode**](#user-content-dscodecencode)<br/>
 &nbsp;&nbsp;&nbsp;[**DSGetCodecInfo**](#user-content-dscodecgetcodecinfo)<br/>
 &nbsp;&nbsp;&nbsp;[**DSCodecDelete**](#user-content-dscodecdelete)<br/>
+</sup></sub>
 
 &nbsp;&nbsp;&nbsp;[**Structs**](#user-content-structs)<br/>
 <sub><sup>
@@ -124,7 +126,9 @@ Demo licenses are limited in total time and frame duration, after some point the
 The following APIs and structs are defined in [voplib.h](https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h).
 
 <a name="DSCodecCreate"></a>
+<sub><sup>
 ## DSCodecCreate
+</sup></sub>
 
   * create an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo
   * if pCodecInfo points to a CODEC_PARAMS struct, then either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct (or both) should be included in CODEC_PARAMS
@@ -145,7 +149,9 @@ The following APIs and structs are defined in [voplib.h](https://github.com/sign
 For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CODEC_CREATE_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing)
   
 <a name="DSCodecDecode"></a>
+<sub><sup>
 ## DSCodecDecode
+</sup></sub>
 
   * decode one or more frames using one or more decoder handles
   * returns length of decoded media frame (in bytes)
@@ -168,7 +174,9 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
     #define DS_CODEC_DECODE_GET_NUMFRAMES             /* return the number of frames in the payload. No decoding is performed */
 ```
 <a name="DSCodecEncode"></a>
+<sub><sup>
 ## DSCodecEncode
+</sup></sub>
 
   * encode one or more frames using one or more encoder handles
   * returns length of encoded bitstream frame (in bytes)
@@ -189,7 +197,9 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
     None
 
 <a name="DSGetCodecInfo"></a>
+<sub><sup>
 ## DSGetCodecInfo
+</sup></sub>
 
   * returns information for the specified codec and uFlags
   
@@ -235,7 +245,9 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
     #define DS_CODEC_INFO_ITEM_MASK                   /* the item mask can be used to AND uFlags and extract an item value */
 ```
 <a name="DSCodecDelete"></a>
+<sub><sup>
 ## DSCodecDelete
+</sup></sub>
 
   * delete an encoder or decoder instance
   * returns > 0 on success, or < 0 on error condition
@@ -255,7 +267,9 @@ General flags, applicable in multiple APIs
 ## Structs
 
 <a name="CodecParams"></a>
+<sub><sup>
 ### CODEC_PARAMS
+</sup></sub>
 
 Struct used in DSCodecCreate() and DSGetCodecInfo()
 
@@ -275,7 +289,9 @@ Struct used in DSCodecCreate() and DSGetCodecInfo()
 ```
 
 <a name="CodecDecParams"></a>
+<sub><sup>
 ### CODEC_DEC_PARAMS
+</sup></sub>
 
 Decode parameters struct
 
@@ -311,7 +327,9 @@ Decode parameters struct
 ```
 
 <a name="CodecEncParams"></a>
+<sub><sup>
 ### CODEC_ENC_PARAMS
+</sup></sub>
 
 Encode parameters struct
 
@@ -391,7 +409,9 @@ Audio classification frame types returned in CODEC_OUTARGS frameType
  ```
 
 <a name="CodecOutArgs"></a>
+<sub><sup>
 ### CODEC_OUTARGS
+</sup></sub>
 
 Optional struct for output from DSCodecEncode() and DSCodecDecode() APIs
 
@@ -417,7 +437,9 @@ Optional struct for output from DSCodecEncode() and DSCodecDecode() APIs
 ```
 
 <a name="CodecOutArgs"></a>
+<sub><sup>
 ### CODEC_INARGS
+</sup></sub>
 
 Optional struct for input to DSCodecEncode() and DSCodecDecode() APIs
 
