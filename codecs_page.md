@@ -107,9 +107,9 @@ API Interface
 ```
      Flags
 ```c++
-#define DS_CODEC_CREATE_ENCODER 0                        /* create an encoder instance - may be combined with DS_CODEC_CREATE_DECODER */
-#define DS_CODEC_CREATE_DECODER 1                        /* create a decoder instance - may be combined with DS_CODCEC_CREATE_ENCODER */
-DS_CODEC_CREATE_USE_TERMINFO                   /* pCodecInfo points to a TERMINATION_INFO struct */
+#define DS_CODEC_CREATE_ENCODER                        /* create an encoder instance - may be combined with DS_CODEC_CREATE_DECODER */
+#define DS_CODEC_CREATE_DECODER                        /* create a decoder instance - may be combined with DS_CODCEC_CREATE_ENCODER */
+#define DS_CODEC_CREATE_USE_TERMINFO                   /* pCodecInfo points to a TERMINATION_INFO struct */
 ```
 
     For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CC_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing)
