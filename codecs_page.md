@@ -100,17 +100,17 @@ API Interface
     -if pCodecInfo points to a CODEC_PARAMS struct, then either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct, or both, should be included in CODEC_PARAMS
     -return value is an HCODEC (codec instance) > 0, 0 if no handle was created, and < 0 for an error condition
 
-<pre lang="c"><code>
+```c++
  HCODEC DSCodecCreate(void* pCodecInfo,            /* pointer to CODEC_PARAMS struct or TERMINATION_INFO struct - see comments below */
                       unsigned int uFlags          /* one or more following DS_CODEC_CREATE_xxx flags, or general flags shown below */
                      );
-</code></pre>
+```
      Flags
-<pre lang="c"><code>
+```c++
 DS_CODEC_CREATE_ENCODER                        /* create an encoder instance - may be combined with DS_CODEC_CREATE_DECODER */
 DS_CODEC_CREATE_DECODER                        /* create a decoder instance - may be combined with DS_CODCEC_CREATE_ENCODER */
 DS_CODEC_CREATE_USE_TERMINFO                   /* pCodecInfo points to a TERMINATION_INFO struct */
-</code></pre>
+```
 
     For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CC_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing)
   
@@ -118,8 +118,7 @@ DS_CODEC_CREATE_USE_TERMINFO                   /* pCodecInfo points to a TERMINA
 
     -decode one or more frames using one or more decoder handles
     -returns length of decoded media frame (in bytes)
-
-<pre lang="c"><code>
+```c++
     int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
                       unsigned int     uFlags,        /* flags, see DS_CODEC_DECODE_xxx flags below */
                       uint8_t*         inData,        /* pointer to input coded bitstream data */
@@ -129,7 +128,7 @@ DS_CODEC_CREATE_USE_TERMINFO                   /* pCodecInfo points to a TERMINA
                       CODEC_INARGS*    pInArgs,       /* optional parameters for decoding RTP payloads; see CODEC_INARGS struct notes above. If not used this param should be NULL */
                       CODEC_OUTARGS*   pOutArgs       /* optional decoder output info; see CODEC_OUTARGS struct notes above. If not used this param should be NULL */
                      );
-</code></pre>
+```
 
    Flags
    
