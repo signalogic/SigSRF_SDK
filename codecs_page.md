@@ -9,6 +9,8 @@
 
 [**_Test, Measurement, and Interoperation_**](#user-content-testmeasurementandinteroperation)<br/>
 
+[**_I/O Support_**](#user-content-iosupport)<br/>
+
 [**_API Interface_**](#user-content-apiinterface)<br/>
 
 <sub><sup>
@@ -131,6 +133,9 @@ Some notes about the above diagram:
     AMR-WB
 
     AMR-NB 
+
+<a name="IOSupport"></a>
+# I/O Support
 
 <a name="APIInterface"></a>
 # API Interface
