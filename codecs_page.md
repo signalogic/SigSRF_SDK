@@ -95,7 +95,7 @@ API Interface
   DSCodecCreate
 
   * create an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo
-  * if pCodecInfo points to a CODEC_PARAMS struct, then either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct, or both, should be included in CODEC_PARAMS
+  * if pCodecInfo points to a CODEC_PARAMS struct, then either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct (or both) should be included in CODEC_PARAMS
   * returns an HCODEC (codec instance handle) > 0, 0 if no handle was created, and < 0 for an error condition
 
 ```c++
