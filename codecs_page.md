@@ -41,6 +41,10 @@ Codecs are an essential component in streaming use cases, necessary to decode RT
 
 SigSRF codecs are available in demo format in Docker containers and installable Rar packages, and in production / deployment format as a codec license, or included in mediaMin and mediaTest licenses. Demo licenses are limited in total time and frame duration; after some point they continue to operate but produce "noisy media".
 
+Below is a software architecture diagram showing the relationship between user applications, voplib, and codec libraries. Also shown is the hello_codec example codec usage application and the mediaMin and mediaTest reference applications.
+
+![SigSRF codecs software architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_codecs_software_architecture_diagram.png?raw=true "SigSRF codecs software architecture diagram")
+
 <a name="TestMeasurementandInteroperation"></a>
 # Test, Measurement, and Interoperation
 
