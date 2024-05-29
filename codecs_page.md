@@ -45,6 +45,12 @@ Below is a software architecture diagram showing the relationship between user a
 
 ![SigSRF codecs software architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_codecs_software_architecture_diagram.png?raw=true "SigSRF codecs software architecture diagram")
 
+Some notes about the above diagram:
+
+* the dashed line indicates pktlib APIs such as DSPushPackets() and DSPullPackets() to user applications. For example usage see [mediaMin.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
+
+* voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), TERMINATION_INFO and CODEC_PARAMS. See [API Interface](#user-content-apiinterface) below for more information
+   
 <a name="TestMeasurementandInteroperation"></a>
 # Test, Measurement, and Interoperation
 
