@@ -156,13 +156,13 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 ## DSCodecDecode
 
   * decodes one or more frames using one or more decoder handles
-  * returns length of decoded media frame (in bytes)
+  * returns length of decoded media frame(s) (in bytes)
 
 ```c++
     int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
                       unsigned int     uFlags,        /* see DS_CODEC_DECODE_xxx flags below */
                       uint8_t*         inData,        /* pointer to input coded bitstream data. Input may include a payload header and CMR value, if supported by the codec type and header/payload format */
-                      uint8_t*         outData,       /* pointer to output audio data */
+                      uint8_t*         outData,       /* pointer to output audio frame data */
                       uint32_t         in_frameSize,  /* size of coded bitstream data, in bytes */
                       int              numChan,       /* number of channels to be decoded. Multichannel data must be interleaved */
                       CODEC_INARGS*    pInArgs,       /* optional parameters for decoding RTP payloads; see CODEC_INARGS struct notes below. If not used this param should be NULL */
@@ -179,14 +179,14 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 ## DSCodecEncode
 
   * encodes one or more frames using one or more encoder handles
-  * returns length of encoded bitstream frame (in bytes)
+  * returns length of encoded bitstream frame(s) (in bytes)
 
 ```c++
     int DSCodecEncode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
                       unsigned int     uFlags,        /* see DS_CODEC_ENCODE_xxx flags below */
-                      uint8_t*         inData,        /* pointer to input audio data */
+                      uint8_t*         inData,        /* pointer to input audio frame data */
                       uint8_t*         outData,       /* pointer to output coded bitstream data. Output may include a payload header and CMR value, if supported by the codec type and header/payload format */
-                      uint32_t         in_frameSize,  /* size of input audio data, in bytes */
+                      uint32_t         in_frameSize,  /* size of input audio frame data, in bytes */
                       int              numChan,       /* number of channels to be encoded. Multichannel data must be interleaved */
                       CODEC_INARGS*    pInArgs,       /* optional parameters for encoding audio data; see CODEC_INARGS struct notes below. If not used this param should be NULL */
                       CODEC_OUTARGS*   pOutArgs       /* optional encoder output info; see CODEC_OUTARGS struct notes below. If not used this param should be NULL */
