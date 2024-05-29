@@ -47,6 +47,8 @@ Below is a software architecture diagram showing the relationship between user a
 
 Some notes about the above diagram:
 
+* voplib provides the documented, unified interface to all codecs. Codecs have different numbers of shared object (.so) files, rangiong from 1 to 3, depending on how their source code is organized
+
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
 
 * the dashed line indicates high-level pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example pktlib API usage see the [mediaMin Minimum API Interface](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-minimumapiinterface) and look for PushPackets() and PullPackets() in [mediaMin.cpp source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
