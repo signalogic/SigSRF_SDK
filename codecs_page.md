@@ -107,8 +107,8 @@ API Interface
 ```
      Flags
 ```c++
-DS_CODEC_CREATE_ENCODER                        /* create an encoder instance - may be combined with DS_CODEC_CREATE_DECODER */
-DS_CODEC_CREATE_DECODER                        /* create a decoder instance - may be combined with DS_CODCEC_CREATE_ENCODER */
+#define DS_CODEC_CREATE_ENCODER 0                        /* create an encoder instance - may be combined with DS_CODEC_CREATE_DECODER */
+#define DS_CODEC_CREATE_DECODER 1                        /* create a decoder instance - may be combined with DS_CODCEC_CREATE_ENCODER */
 DS_CODEC_CREATE_USE_TERMINFO                   /* pCodecInfo points to a TERMINATION_INFO struct */
 ```
 
