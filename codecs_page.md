@@ -18,11 +18,13 @@ SigSRF Codecs Documentation
 &nbsp;&nbsp;&nbsp;[**DSCodecDelete**](#user-content-dscodecdelete)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Structs**](#user-content-structs)<br/>
+<sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_PARAMS**](#user-content-codecparams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_DEC_PARAMS**](#user-content-codecdecparams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_ENC_PARAMS**](#user-content-codecencparams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_OUTARGS**](#user-content-codecoutargs)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_INARGS**](#user-content-codecinargs)<br/>
+</sup></sub>
 
 [**_hello_codec Reference App_**](#user-content-hellocodecreferenceapp)<br/>
 
