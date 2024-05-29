@@ -131,9 +131,10 @@ API Interface
 ```
 
    Flags
-   
-     #define DS_CODEC_DECODE_GET_NUMFRAMES            /* return the number of frames in the payload. No decoding is performed */
 
+```c++
+     #define DS_CODEC_DECODE_GET_NUMFRAMES            /* return the number of frames in the payload. No decoding is performed */
+```
   DSCodecEncode
 
     -encode one or more frames using one or more encoder handles
