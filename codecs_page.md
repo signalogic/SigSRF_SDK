@@ -214,7 +214,8 @@ DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE shou
 ```
   Structs
 
-```c++typedef struct  {  /* CODEC_ENC_PARAMS */
+```c++
+  typedef struct  {  /* CODEC_ENC_PARAMS */
 
 /* generic items */
 
