@@ -15,7 +15,7 @@
 &nbsp;&nbsp;&nbsp;[**DSCodecCreate**](#user-content-dscodeccreate)<br/>
 &nbsp;&nbsp;&nbsp;[**DSCodecDecode**](#user-content-dscodecdecode)<br/>
 &nbsp;&nbsp;&nbsp;[**DSCodecEncode**](#user-content-dscodecencode)<br/>
-&nbsp;&nbsp;&nbsp;[**DSGetCodecInfo**](#user-content-dscodecgetcodecinfo)<br/>
+&nbsp;&nbsp;&nbsp;[**DSGetCodecInfo**](#user-content-dsgetcodeccodecinfo)<br/>
 &nbsp;&nbsp;&nbsp;[**DSCodecDelete**](#user-content-dscodecdelete)<br/>
 </sup></sub>
 
