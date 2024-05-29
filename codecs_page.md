@@ -45,6 +45,8 @@ Below is a software architecture diagram showing the relationship between user a
 
 ![SigSRF codecs software architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_codecs_software_architecture_diagram.png?raw=true "SigSRF codecs software architecture diagram")
 
+<p></p>
+
 Some notes about the above diagram:
 
 * voplib provides the documented, unified interface to all codecs. Codecs have different numbers of shared object (.so) files, ranging from 1 to 3, depending on how their reference source code is organized
