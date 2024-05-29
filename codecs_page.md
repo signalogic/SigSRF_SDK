@@ -47,7 +47,7 @@ Below is a software architecture diagram showing the relationship between user a
 
 Some notes about the above diagram:
 
-* voplib provides the documented, unified interface to all codecs. Codecs have different numbers of shared object (.so) files, ranging from 1 to 3, depending on how their source code is organized
+* voplib provides the documented, unified interface to all codecs. Codecs have different numbers of shared object (.so) files, ranging from 1 to 3, depending on how their reference source code is organized
 
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
 
