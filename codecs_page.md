@@ -169,8 +169,8 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
    Flags
 
 ```c++
-    #define DS_CODEC_INFO_HANDLE                       /* specifies the "codec" param (first param) is interpreted as an hCodec (i.e. handle created by prior call to DSCodecCreate(). This is the default if neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given */ 
-    #define DS_CODEC_INFO_TYPE                         /* specifies the "codec" param (first param) is interpreted as a codec_type */ 
+     #define DS_CODEC_INFO_HANDLE                     /* specifies the "codec" param (first param) is interpreted as an hCodec (i.e. handle created by prior call to DSCodecCreate(). This is the default if neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given */ 
+     #define DS_CODEC_INFO_TYPE                       /* specifies the "codec" param (first param) is interpreted as a codec_type */ 
 ```
 DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo is expected to point to a CODEC_PARAMS struct. Some item flags must be combined with the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
 
@@ -190,11 +190,11 @@ DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE shou
 
      #define DS_CODEC_INFO_BITRATE_CODE               /* when combined with DS_CODEC_INFO_CODED_FRAMESIZE, indicates nInput1 should be treated as a "bitrate code" instead of a bitrate. A bitrate code is typically found in the RTP payload header, for example a 4 bit field specifying 16 possible bitrates. Currently only EVS and AMR codecs support this flag, according to Table A.4 and A.5 in section A.2.2.1.2, "ToC byte" of EVS spec TS 26.445. See mediaTest source code for usage examples */
 
-     #define DS_CODEC_INFO_SIZE_BITS                   /* indicates DS_CODEC_INFO_CODED_FRAMESIZE return value should be in size of bits (instead of bytes) */
+     #define DS_CODEC_INFO_SIZE_BITS                  /* indicates DS_CODEC_INFO_CODED_FRAMESIZE return value should be in size of bits (instead of bytes) */
 
-     #define DS_CODEC_INFO_SUPPRESS_WARNING_MSG        /* suppress any warning messages */
+     #define DS_CODEC_INFO_SUPPRESS_WARNING_MSG       /* suppress any warning messages */
 
-     #define DS_CODEC_INFO_ITEM_MASK                   /* the item mask can be used to AND uFlags and extract an item value */
+     #define DS_CODEC_INFO_ITEM_MASK                  /* the item mask can be used to AND uFlags and extract an item value */
 ```
   DSCodecDelete
 
