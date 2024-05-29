@@ -124,8 +124,8 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
                       uint8_t*         outData,       /* pointer to output audio data */
                       uint32_t         in_frameSize,  /* size of coded bitstream data, in bytes */
                       int              numChan,       /* number of channels to be decoded. Multichannel data must be interleaved */
-                      CODEC_INARGS*    pInArgs,       /* optional parameters for decoding RTP payloads; see CODEC_INARGS struct notes above. If not used this param should be NULL */
-                      CODEC_OUTARGS*   pOutArgs       /* optional decoder output info; see CODEC_OUTARGS struct notes above. If not used this param should be NULL */
+                      CODEC_INARGS*    pInArgs,       /* optional parameters for decoding RTP payloads; see CODEC_INARGS struct notes below. If not used this param should be NULL */
+                      CODEC_OUTARGS*   pOutArgs       /* optional decoder output info; see CODEC_OUTARGS struct notes below. If not used this param should be NULL */
                      );
 ```
 
@@ -146,8 +146,8 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
                       uint8_t*         outData,       /* pointer to output coded bitstream data */
                       uint32_t         in_frameSize,  /* size of input audio data, in bytes */
                       int              numChan,       /* number of channels to be encoded. Multichannel data must be interleaved */
-                      CODEC_INARGS*    pInArgs,       /* optional parameters for encoding audio data; see CODEC_INARGS struct notes above. If not used this param should be NULL */
-                      CODEC_OUTARGS*   pOutArgs       /* optional encoder output info; see CODEC_OUTARGS struct notes above. If not used this param should be NULL */
+                      CODEC_INARGS*    pInArgs,       /* optional parameters for encoding audio data; see CODEC_INARGS struct notes below. If not used this param should be NULL */
+                      CODEC_OUTARGS*   pOutArgs       /* optional encoder output info; see CODEC_OUTARGS struct notes below. If not used this param should be NULL */
                      );
 ```
   Flags
@@ -331,7 +331,9 @@ CODEC_PARAMS struct used in DSCodecCreate() and DSGetCodecInfo()
 
   } CODEC_PARAMS;
 ```
-Optional output from DSCodecEncode() and DSCodecDecode() APIs, if pOutArgs is non-NULL
+Optional output from DSCodecEncode() and DSCodecDecode() APIs
+
+  * pOutArgs should point to a CODEC_OUTARGS struct, otherwise be given as NULL
 
 ```c++
   typedef struct {
@@ -351,7 +353,9 @@ Optional output from DSCodecEncode() and DSCodecDecode() APIs, if pOutArgs is no
 
   } CODEC_OUTARGS;
 ```
-Optional input to DSCodecEncode() and DSCodecDecode() APIs, if pInArgs is non-NULL
+Optional input to DSCodecEncode() and DSCodecDecode() APIs
+
+  * pInArgs should point to a CODEC_INARGS struct, otherwise be given as NULL
 
 ```c++
   typedef struct {
