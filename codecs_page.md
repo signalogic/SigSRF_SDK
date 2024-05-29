@@ -326,7 +326,7 @@ CODEC_PARAMS struct used in DSCodecCreate() and DSGetCodecInfo()
      char codec_name[CODEC_NAME_MAXLEN];  /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecInfo() with DS_CODEC_INFO_NAME flag */
      uint16_t raw_frame_size;             /* filled in by DSCodecCreate() and DSGetCodecInfo() */
      uint16_t coded_frame_size;           /*   "    "    " */
-     int payload_shift;                   /* special case item, when non-zero indicates shift payload after encoding or before decoding, depending on which codec and the case. Initially needed to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/-, JHB Sep 2022 */
+     int payload_shift;                   /* special case item, when non-zero indicates shift payload after encoding or before decoding, depending on which codec and the case. Initially needed to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/- */
 
      CODEC_ENC_PARAMS enc_params;         /* if encoder instance is being created, this must point to desired encoder params. See examples in mediaTest_proc.c or hello_codec.c */
      CODEC_DEC_PARAMS dec_params;         /* if decoder instance is being created, this must point to desired decoder params. See examples in mediaTest_proc.c or hello_codec.c */
@@ -372,7 +372,7 @@ Optional input to DSCodecEncode() and DSCodecDecode() APIs, if pInArgs is non-NU
                             -normally SigSRF decoders expect CMR in frame input. If one is specified here, then it's inserted at the start of the frame and processed without any additional assumptions. This implies that if the frame already has a CMR, the calling application should remove it
                          */
 
-   CODEC_ENC_PARAMS* pCodecEncParams;  /* to change bitRate or codec-specific parameters within the duration of an encoder instance, specify a CODEC_ENC_PARAMS struct. Note this only applies to newer, advanced codecs such as EVS and Opus, JHB Mar 2023 */
+   CODEC_ENC_PARAMS* pCodecEncParams;  /* to change bitRate or codec-specific parameters within the duration of an encoder instance, specify a CODEC_ENC_PARAMS struct. Note this only applies to newer, advanced codecs such as EVS and Opus */
 
    CODEC_DEC_PARAMS* pCodecDecParams;  /* to change output sampling rate or codec-specific parameters within the duration of a decoder instance, specify a CODEC_DEC_PARAMS struct. Note this only applies to newer, advanced codecs such as EVS and Opus */
 
