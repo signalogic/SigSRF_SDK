@@ -41,16 +41,18 @@ Codecs are an essential component in streaming use cases, necessary to decode RT
 
 SigSRF codecs are available in demo format in Docker containers and installable Rar packages, and in production / deployment format as a codec license, or included in mediaMin and mediaTest licenses. Demo licenses are limited in total time and frame duration; after some point they continue to operate but produce "noisy media".
 
-Below is a software architecture diagram showing the relationship between user applications, voplib, and codec libraries. Also shown is the hello_codec example codec usage application and the mediaMin and mediaTest reference applications.
+Below is a software architecture diagram showing the relationship between user applications, voplib, and codec libraries. Also shown is the [hello_codec](#user-content-hellocodecreferenceapp) example codec usage application and the [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) and [mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) reference applications.
 
 ![SigSRF codecs software architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_codecs_software_architecture_diagram.png?raw=true "SigSRF codecs software architecture diagram")
 
 Some notes about the above diagram:
 
-* the dashed line indicates pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example usage see [mediaMin.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
-
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
-   
+
+* the dashed line indicates high-level pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example pktlib API usage see the [mediaMin Minimum API Interface](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-minimumapiinterface) and look for PushPackets() and PullPackets() in [mediaMin.cpp source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
+
+* for data flow diagrams, see [telecom and analytics mode data flow diagrams](https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram) on the main SigSRF SDK page
+
 <a name="TestMeasurementandInteroperation"></a>
 # Test, Measurement, and Interoperation
 
