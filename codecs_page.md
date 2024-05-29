@@ -47,7 +47,7 @@ Below is a software architecture diagram showing the relationship between user a
 
 Some notes about the above diagram:
 
-* the dashed line indicates pktlib APIs such as DSPushPackets() and DSPullPackets() to user applications. For example usage see [mediaMin.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
+* the dashed line indicates pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example usage see [mediaMin.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
 
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), TERMINATION_INFO and CODEC_PARAMS. See [API Interface](#user-content-apiinterface) below for more information
    
