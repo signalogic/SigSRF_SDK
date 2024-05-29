@@ -279,7 +279,7 @@ Struct used in DSCodecCreate() and DSGetCodecInfo()
 <a name="CodecDecParams"></a>
 ### CODEC_DEC_PARAMS
 
-Decode parameters struct
+Decode parameters struct, a substruct within CODEC_PARAMS and CODEC_INARGS
 
 ```c++
   typedef struct {
@@ -315,7 +315,7 @@ Decode parameters struct
 <a name="CodecEncParams"></a>
 ### CODEC_ENC_PARAMS
 
-Encode parameters struct
+Encode parameters struct, a substruct within CODEC_PARAMS and CODEC_INARGS
 
 ```c++
   typedef struct  {
