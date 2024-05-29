@@ -33,7 +33,7 @@
 <a name="Overview"></a>
 # Overview
 
-Codecs are an essential component in streaming use cases, necessary to decode RTP media in telecom, analytics, robotics, and many other applications. In addition, codecs are often necessary to encode media, for example transcoding in SBC, language translation, and other applications. This page documents codecs available in the mediaMin, mediaTest, and hello_codec reference applications, including EVS, AMR, AMR-WB, G711. Documentation is organized as:
+Codecs are an essential component in streaming use cases, necessary to decode RTP media in telecom, analytics, robotics, and many other applications. In addition, codecs are often necessary to encode media, for example transcoding in SBC, language translation, and other applications. This page documents codecs available in the mediaMin, mediaTest, and hello_codec reference applications, including EVS, AMR, AMR-WB, G711, and more. Documentation is organized as:
 
   * test, measurement, and interoperation
   * I/O support, including audio waveform files, pcap, and RTP
