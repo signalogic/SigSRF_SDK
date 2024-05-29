@@ -92,8 +92,6 @@ Test Coverage
 
 API Interface
 
-  APIs
-
   DSCodecCreate
 
   * create an encoder or decoder instance parameters specified in struct pointed to by pCodecInfo with type of struct specified by uFlags
