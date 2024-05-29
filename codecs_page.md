@@ -2,7 +2,27 @@
 
 SigSRF Codecs Documentation
 
-Background
+<a name="TOC"></a>
+# Table of Contents
+
+[**_Overview_**](#user-content-overview)<br/>
+
+[**_Test, Measurement, and Interoperation_**](#user-content-testmeasurementandinteroperation)<br/>
+
+[**_API Interface_**](#user-content-apiinterface)<br/>
+
+&nbsp;&nbsp;&nbsp;[**DSCodecCreate**](#user-content-dscodeccreate)<br/>
+&nbsp;&nbsp;&nbsp;[**DSCodecDecode**](#user-content-dscodecdecode)<br/>
+&nbsp;&nbsp;&nbsp;[**DSCodecEncode**](#user-content-dscodecencode)<br/>
+&nbsp;&nbsp;&nbsp;[**DSGetCodecInfo**](#user-content-dscodecgetcodecinfo)<br/>
+&nbsp;&nbsp;&nbsp;[**DSCodecDelete**](#user-content-dscodecdelete)<br/>
+
+&nbsp;&nbsp;&nbsp;[**Structs**](#user-content-structs)<br/>
+
+[**_hello_codec Reference App_**](#user-content-hellocodecreferenceapp)<br/>
+
+<a name="Overview"></a>
+# Overview
 
 Codecs are an essential component in streaming use cases of all types, decoding RTP media in telecom, analytics, robotics, and many other applications. Codecs are also useful for encoding media, for transcoding in SBC, language translation, and other applications. This page documents codecs available in the mediaMin, mediaTest, and hello_codec reference applications, including EVS, AMR, AMR-WB, G711, and several others, covering:
 
@@ -16,7 +36,8 @@ Codecs are an essential component in streaming use cases of all types, decoding 
 
 Demo licenses are limited in total time and frame duration, after some point they continue to operate but produce "noisy audio"
 
-Test Coverage
+<a name="TestMeasurementandInteroperation"></a>
+# Test, Measurement, and Interoperation
 
   background info
 
@@ -90,9 +111,13 @@ Test Coverage
 
     AMR-NB 
 
-API Interface
+<a name="APIInterface"></a>
+# API Interface
 
-  DSCodecCreate
+The following APIs and structs are defined in [voplib.h](https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h).
+
+<a name="DSCodecCreate"></a>
+## DSCodecCreate
 
   * create an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo
   * if pCodecInfo points to a CODEC_PARAMS struct, then either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct (or both) should be included in CODEC_PARAMS
@@ -100,7 +125,7 @@ API Interface
 
 ```c++
     HCODEC DSCodecCreate(void* pCodecInfo,            /* pointer to CODEC_PARAMS struct or TERMINATION_INFO struct - see comments below */
-                         unsigned int uFlags          /* one or more following DS_CODEC_CREATE_xxx flags, or general flags shown below */
+                         unsigned int uFlags          /* one or more DS_CODEC_CREATE_xxx flags, or general flags shown below */
                         );
 ```
      Flags
@@ -110,16 +135,17 @@ API Interface
     #define DS_CODEC_CREATE_USE_TERMINFO              /* pCodecInfo points to a TERMINATION_INFO struct. The default (no flag) is a CODEC_PARAMS struct */
 ```
 
-For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CC_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing)
+For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CODEC_CREATE_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing)
   
-  DSCodecDecode
+<a name="DSCodecDecode"></a>
+## DSCodecDecode
 
   * decode one or more frames using one or more decoder handles
   * returns length of decoded media frame (in bytes)
 
 ```c++
     int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
-                      unsigned int     uFlags,        /* flags, see DS_CODEC_DECODE_xxx flags below */
+                      unsigned int     uFlags,        /* see DS_CODEC_DECODE_xxx flags below */
                       uint8_t*         inData,        /* pointer to input coded bitstream data */
                       uint8_t*         outData,       /* pointer to output audio data */
                       uint32_t         in_frameSize,  /* size of coded bitstream data, in bytes */
@@ -134,14 +160,15 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 ```c++
     #define DS_CODEC_DECODE_GET_NUMFRAMES             /* return the number of frames in the payload. No decoding is performed */
 ```
-  DSCodecEncode
+<a name="DSCodecEncode"></a>
+## DSCodecEncode
 
   * encode one or more frames using one or more encoder handles
   * returns length of encoded bitstream frame (in bytes)
 
 ```c++
     int DSCodecEncode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
-                      unsigned int     uFlags,        /* flags, see DS_CODEC_ENCODE_xxx flags below */
+                      unsigned int     uFlags,        /* see DS_CODEC_ENCODE_xxx flags below */
                       uint8_t*         inData,        /* pointer to input audio data */
                       uint8_t*         outData,       /* pointer to output coded bitstream data */
                       uint32_t         in_frameSize,  /* size of input audio data, in bytes */
@@ -154,7 +181,8 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 
     None
 
-  DSGetCodecInfo
+<a name="DSGetCodecInfo"></a>
+## DSGetCodecInfo
 
   * returns information for the specified codec and uFlags
   
@@ -172,7 +200,10 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
     #define DS_CODEC_INFO_HANDLE                      /* specifies the "codec" param (first param) is interpreted as an hCodec (i.e. handle created by prior call to DSCodecCreate(). This is the default if neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given */ 
     #define DS_CODEC_INFO_TYPE                        /* specifies the "codec" param (first param) is interpreted as a codec_type */ 
 ```
-DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo is expected to point to a CODEC_PARAMS struct. Some item flags must be combined with the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
+  DSGetCodecInfo() item flags
+  
+  * if no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo is expected to point to a CODEC_PARAMS struct
+  * some item flags must be combined with the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
 
 ```c++
     #define DS_CODEC_INFO_NAME                        /* returns codec name in text string pointed to by pInfo. A typical string length is 5-10 char, and always less than CODEC_NAME_MAXLEN char */
@@ -196,26 +227,30 @@ DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE shou
 
     #define DS_CODEC_INFO_ITEM_MASK                   /* the item mask can be used to AND uFlags and extract an item value */
 ```
-  DSCodecDelete
+<a name="DSCodecDelete"></a>
+## DSCodecDelete
 
   * delete an encoder or decoder instance
   * returns > 0 on success, or < 0 on error condition
 
 ```c++
     int DSCodecDelete(HCODEC hCodec,                  /* handle of encoder or decoder instance to be deleted */
-                      unsigned int uFlags             /* flags - currently only the DS_CODEC_CREATE_TRACK_MEM_USAGE flag is recognized */
+                      unsigned int uFlags             /* flags - currently only the DS_CODEC_TRACK_MEM_USAGE flag is recognized */
                      );
 ```
-   General flags, applicable in multiple APIs
+General flags, applicable in multiple APIs
 
 ```c++
     #define DS_CODEC_TRACK_MEM_USAGE                  /* track instance memory usage */
     #define DS_CODEC_USE_EVENT_LOG                    /* Use the SigSRF diaglib event log for progress, debug, and error messages. By default codec event and error logging is handled according to uEventLogMode element of a DEBUG_CONFIG struct specified in DSConfigVoplib(). uEventLogMode should be set with EVENT_LOG_MODE enums in shared_include/config.h. This flag may be combined with uFlags in DSCodecCreate() and/or uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS structs to override uEventLogMode */
 ```
-  Structs
+<a name="Structs"></a>
+## Structs
+
+CODEC_ENC_PARAMS encode parameters struct
 
 ```c++
-  typedef struct  {  /* CODEC_ENC_PARAMS */
+  typedef struct  {
 
 /* generic items */
 
@@ -263,8 +298,9 @@ DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE shou
 
   } CODEC_ENC_PARAMS;
 
+CODEC_DEC_PARAMS decode parameters struct
 
-  typedef struct {  /* CODEC_DEC_PARAMS */
+  typedef struct {
 
 /* generic items */
 
@@ -297,7 +333,9 @@ Audio classification frame types returned in CODEC_OUTARGS frameType
 
 ```c++
   enum audio_classification_frametype {
- 
+
+/* classification type items */
+
     FRAMETYPE_VOICED,              /* speech, voiced */
     FRAMETYPE_UNVOICED,            /* speech, unvoiced */
     FRAMETYPE_SID,                 /* SID (silence / comfort noise) frames for codecs that support DTX */
@@ -306,13 +344,13 @@ Audio classification frame types returned in CODEC_OUTARGS frameType
     FRAMETYPE_AUDIO,               /* sounds and other audio for codecs that support audio classification */
     FRAMETYPE_MUSIC,               /* music for codecs that support audio classification */
 
-/* flags that may be combined with above types */
+/* flags that may be combined with above type items */
 
     FRAMETYPE_TRANSITION = 0x100,  /* transition between types */
     FRAMETYPE_MELP = 0x200,        /* low bitrate voiced (mixed excited linear prediction) */
     FRAMETYPE_NELP = 0x400,        /* low bitrate voiced (noise excited linear prediction) */
 
-    FRAMETYPE_ITEM_MASK = 0xff     /* mask to separate items from flags */
+    FRAMETYPE_ITEM_MASK = 0xff     /* mask to separate type items from flags */
   };
  ```
 CODEC_PARAMS struct used in DSCodecCreate() and DSGetCodecInfo()
@@ -331,7 +369,7 @@ CODEC_PARAMS struct used in DSCodecCreate() and DSGetCodecInfo()
 
   } CODEC_PARAMS;
 ```
-Optional output from DSCodecEncode() and DSCodecDecode() APIs
+CODEC_OUTARGS optional output struct from DSCodecEncode() and DSCodecDecode() APIs
 
   * pOutArgs should point to a CODEC_OUTARGS struct, otherwise be given as NULL
 
@@ -353,7 +391,7 @@ Optional output from DSCodecEncode() and DSCodecDecode() APIs
 
   } CODEC_OUTARGS;
 ```
-Optional input to DSCodecEncode() and DSCodecDecode() APIs
+CODEC_INARGS optional input struct to DSCodecEncode() and DSCodecDecode() APIs
 
   * pInArgs should point to a CODEC_INARGS struct, otherwise be given as NULL
 
@@ -402,5 +440,6 @@ Definitions for uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS
   #define DEBUG_OUTPUT_ADD_TO_EVENT_LOG                               /* add debug output to event log */
 ```
 
-  hello_codec reference app
+<a name="hellocodecReferenceApp"></a>
+# hello_codec reference app
  
