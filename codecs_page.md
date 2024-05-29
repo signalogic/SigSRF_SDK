@@ -49,7 +49,7 @@ Some notes about the above diagram:
 
 * the dashed line indicates pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example usage see [mediaMin.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
 
-* voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), TERMINATION_INFO and CODEC_PARAMS. See [API Interface](#user-content-apiinterface) below for more information
+* voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
    
 <a name="TestMeasurementandInteroperation"></a>
 # Test, Measurement, and Interoperation
