@@ -134,7 +134,7 @@ The following APIs and structs are defined in [voplib.h](https://github.com/sign
 <a name="DSCodecCreate"></a>
 ## DSCodecCreate
 
-  * create an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo
+  * creates an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo
   * if pCodecInfo points to a CODEC_PARAMS struct, then either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct (or both) should be included in CODEC_PARAMS
   * returns an HCODEC (codec instance handle) > 0, 0 if no handle was created, and < 0 for an error condition
 
@@ -155,7 +155,7 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 <a name="DSCodecDecode"></a>
 ## DSCodecDecode
 
-  * decode one or more frames using one or more decoder handles
+  * decodes one or more frames using one or more decoder handles
   * returns length of decoded media frame (in bytes)
 
 ```c++
@@ -178,7 +178,7 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 <a name="DSCodecEncode"></a>
 ## DSCodecEncode
 
-  * encode one or more frames using one or more encoder handles
+  * encodes one or more frames using one or more encoder handles
   * returns length of encoded bitstream frame (in bytes)
 
 ```c++
@@ -217,8 +217,8 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 ```
   DSGetCodecInfo() item flags
   
-  * if no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo is expected to point to a CODEC_PARAMS struct
-  * some item flags must be combined with the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
+  * if no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo should point to a CODEC_PARAMS struct
+  * some item flags require the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
 
 ```c++
     #define DS_CODEC_INFO_NAME                        /* returns codec name in text string pointed to by pInfo. A typical string length is 5-10 char, and always less than CODEC_NAME_MAXLEN char */
