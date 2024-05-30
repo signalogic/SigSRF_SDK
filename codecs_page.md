@@ -36,9 +36,9 @@
 Codecs are an essential component in streaming media use cases, necessary to decode RTP media in telecom, analytics, robotics, and many other applications. In addition, codecs are often necessary to encode media, for example transcoding in SBC, language translation, home and mobile assistants, and other applications. This page documents SigSRF codecs available in the mediaMin, mediaTest, and hello_codec reference applications, including EVS, AMR, AMR-WB, G711, and more. As part of the SigSRF SDK, codecs may also be incorporated into user applications for test and evaluation purposes. Documentation is organized as:
 
   * test, measurement, and interoperation [:link:](#user-content-testmeasurementandinteroperation)
-  * I/O support, including audio waveform files, pcap, and RTP
-  * API interface
-  * "hello codec" example user application
+  * I/O support, including audio waveform files, pcap, and RTP [:link:](#user-content-iosupport)
+  * API interface [:link:](#user-content-apiinterface)
+  * "hello codec" example user application [:link:](#user-content-hellocodecexampleapp)
 
 SigSRF codecs are available in demo format in Docker containers and installable Rar packages, and in production / deployment format as a codec license, or included in mediaMin and mediaTest licenses. Demo licenses are limited in total time and frame duration; after some point they continue to operate but produce "noisy media".
 
