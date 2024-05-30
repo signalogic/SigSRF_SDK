@@ -410,7 +410,7 @@ Audio classification frame types returned in CODEC_OUTARGS frameType
 <a name="CodecOutArgs"></a>
 ### CODEC_OUTARGS
 
-Optional struct for output from DSCodecEncode() and DSCodecDecode() APIs
+Optional struct for output from DSCodecEncode() and DSCodecDecode()
 
   * pOutArgs in DSCodecEncode() or DSCodecDecode() should point to a CODEC_OUTARGS struct, otherwise be given as NULL
 
@@ -436,7 +436,7 @@ Optional struct for output from DSCodecEncode() and DSCodecDecode() APIs
 <a name="CodecOutArgs"></a>
 ### CODEC_INARGS
 
-Optional struct for input to DSCodecEncode() and DSCodecDecode() APIs
+Optional struct for input to DSCodecEncode() and DSCodecDecode()
 
   * pInArgs in DSCodecEncode() or DSCodecDecode() should point to a CODEC_INARGS struct, otherwise be given as NULL
 
