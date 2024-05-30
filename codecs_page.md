@@ -28,7 +28,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_INARGS**](#user-content-codecinargs)<br/>
 </sup></sub>
 
-[**_hello_codec Reference App_**](#user-content-hellocodecreferenceapp)<br/>
+[**_hello_codec Example App_**](#user-content-hellocodeexampleapp)<br/>
 
 <a name="Overview"></a>
 # Overview
@@ -50,12 +50,12 @@ Below is a software architecture diagram showing the relationship between user a
 
 <p>&nbsp;</p>
 
-[mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is a tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and [create dynamic sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). [hello_codec](#user-content-hellocodecreferenceapp) is a simple codec example application. 
+[mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is a tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and [create dynamic sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). [hello_codec](#user-content-hellocodecexampleapp) is a simple codec example application. 
 
 
 Some additional notes about the above diagram:
 
-* voplib provides the documented, unified interface to all codecs. Codecs have different numbers of shared object (.so) files, ranging from 1 to 3, depending on how their reference source code is organized
+* voplib provides the documented, unified interface to all codecs. Codecs have different numbers of shared object (.so) files, ranging from 1 to 3, depending on how their standards body source code is organized
 
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
 
@@ -491,6 +491,6 @@ Definitions for uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS
   #define DEBUG_OUTPUT_ADD_TO_EVENT_LOG                               /* add debug output to event log */
 ```
 
-<a name="hellocodecReferenceApp"></a>
-# hello_codec reference app
+<a name="hellocodecExampleApp"></a>
+# hello_codec Example App
  
