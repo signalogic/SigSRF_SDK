@@ -28,7 +28,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_INARGS**](#user-content-codecinargs)<br/>
 </sup></sub>
 
-[**_hello_codec Example App_**](#user-content-hellocodeexampleapp)<br/>
+[**_hello_codec Example App_**](#user-content-hellocodecexampleapp)<br/>
 
 <a name="Overview"></a>
 # Overview
