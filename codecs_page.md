@@ -208,7 +208,7 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 <a name="DSGetCodecInfo"></a>
 ## DSGetCodecInfo
 
-  * returns information for the specified codec and uFlags
+  * returns information for the specified codec
   
 ```c++
     int DSGetCodecInfo(int codec,                     /* codec can be either a codec handle (HCODEC) or a codec type (int), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_HANDLE to interpret codec as an hCodec, returned by a previous call to DSCodecCreate(). If neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given, the default is DS_CODEC_INFO_HANDLE */
