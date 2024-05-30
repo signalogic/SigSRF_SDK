@@ -224,7 +224,7 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
     #define DS_CODEC_INFO_HANDLE                      /* specifies the "codec" param (first param) is interpreted as an hCodec (i.e. handle created by prior call to DSCodecCreate(). This is the default if neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given */ 
     #define DS_CODEC_INFO_TYPE                        /* specifies the "codec" param (first param) is interpreted as a codec_type */ 
 ```
-  DSGetCodecInfo() item flags
+  Item Flags
   
   * if no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo should point to a CODEC_PARAMS struct
   * some item flags require the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
