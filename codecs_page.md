@@ -41,13 +41,16 @@ Codecs are an essential component in streaming use cases, necessary to decode RT
 
 SigSRF codecs are available in demo format in Docker containers and installable Rar packages, and in production / deployment format as a codec license, or included in mediaMin and mediaTest licenses. Demo licenses are limited in total time and frame duration; after some point they continue to operate but produce "noisy media".
 
-Below is a software architecture diagram showing the relationship between user applications, voplib, and codec libraries. Also shown is the [hello_codec](#user-content-hellocodecreferenceapp) example codec usage application and the [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) and [mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) reference applications. mediaTest is tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). mediaMin is a  production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and [create dynamic sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation).
+Below is a software architecture diagram showing the relationship between user applications, voplib, and codec libraries. 
 
 ![SigSRF codecs software architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_codecs_software_architecture_diagram.png?raw=true "SigSRF codecs software architecture diagram")
 
 <p>&nbsp;</p>
 
-Some notes about the above diagram:
+[mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and [create dynamic sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). The [hello_codec](#user-content-hellocodecreferenceapp) is a simple codec example application. 
+
+
+Some additional notes about the above diagram:
 
 * voplib provides the documented, unified interface to all codecs. Codecs have different numbers of shared object (.so) files, ranging from 1 to 3, depending on how their reference source code is organized
 
