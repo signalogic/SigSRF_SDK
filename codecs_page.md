@@ -47,7 +47,7 @@ Below is a software architecture diagram showing the relationship between user a
 
 <p>&nbsp;</p>
 
-[mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and [create dynamic sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). The [hello_codec](#user-content-hellocodecreferenceapp) is a simple codec example application. 
+[mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and [create dynamic sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). [hello_codec](#user-content-hellocodecreferenceapp) is a simple codec example application. 
 
 
 Some additional notes about the above diagram:
