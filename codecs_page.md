@@ -141,6 +141,19 @@ Some additional notes about the above diagram:
 <a name="IOSupport"></a>
 # I/O Support
 
+The following input types are supported:
+
+| Input | mediaMin | mediaTest | Demo Versions | Comments |
+|-----|-----|-----|-----|-----|
+| UDP | Y | N | N |
+| pcap | Y | Y | Y |
+| pcapng | Y | Y | Y |
+| rtp | Y | Y | Y | same as .rtpdump |
+| wav | N | Y | Y |
+| au | N | Y | Y |
+| tim | N | Y | Y | Hypersignal waveform file format |
+| raw | N | Y | Y | no header, session configuration file can be used instead |
+ 
 <a name="APIInterface"></a>
 # API Interface
 
