@@ -157,7 +157,7 @@ The following media format file types are supported:
 | wav | N | Y | Y |
 | au | N | Y | Y |
 | tim | N | Y | Y | Hypersignal waveform file format |
-| raw | N | Y | Y | no header, session configuration file can be used instead |
+| raw | N | Y | Y | no header, a codec configuration file can be used instead |
 
 The following coded file types are supported:
 
@@ -521,3 +521,5 @@ Definitions for uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS
 <a name="hellocodecExampleApp"></a>
 # hello_codec Example App
  
+This section gives a step-by-step description of hello_codec source code use of the voplib codec API interface.  Click here for [information on hello_codec build and command line usag]e(https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-hellocodec).
+
