@@ -46,11 +46,11 @@ Below is a software architecture diagram showing the relationship between user a
 
 <p>&nbsp;</p>
 
-![SigSRF codecs software architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_codecs_software_architecture_diagram.png?raw=true "SigSRF codecs software architecture diagram")
+![SigSRF codecs software architecture diagram](https://www.github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_codecs_software_architecture_diagram.png?raw=true "SigSRF codecs software architecture diagram")
 
 <p>&nbsp;</p>
 
-[mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is a tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and [create dynamic sessions](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). [hello_codec](#user-content-hellocodecexampleapp) is a simple codec example application. 
+[mediaTest](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is a tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and [create dynamic sessions](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). [hello_codec](#user-content-hellocodecexampleapp) is a simple codec example application. 
 
 
 Some additional notes about the above diagram:
@@ -59,9 +59,9 @@ Some additional notes about the above diagram:
 
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
 
-* the dashed line indicates high-level pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example pktlib API usage see the <a href="../mediaTest_readme.md#minimum-api-interface">mediaMin Minimum API Interface</a> and look for PushPackets() and PullPackets() in [mediaMin.cpp source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
+* the dashed line indicates high-level pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example pktlib API usage see the [mediaMin Minimum API Interface](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#minimumapiinterface) and look for PushPackets() and PullPackets() in [mediaMin.cpp source code](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
 
-* for data flow diagrams, see [telecom and analytics mode data flow diagrams](https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram) on the main SigSRF SDK page
+* for data flow diagrams, see [telecom and analytics mode data flow diagrams](https://www.github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram) on the main SigSRF SDK page
 
 <a name="TestMeasurementandInteroperation"></a>
 # Test, Measurement, and Interoperation
@@ -144,7 +144,7 @@ Some additional notes about the above diagram:
 <a name="APIInterface"></a>
 # API Interface
 
-The following APIs and structs are defined in [voplib.h](https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h).
+The following APIs and structs are defined in [voplib.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h).
 
 <a name="DSCodecCreate"></a>
 ## DSCodecCreate
@@ -165,7 +165,7 @@ The following APIs and structs are defined in [voplib.h](https://github.com/sign
     #define DS_CODEC_CREATE_USE_TERMINFO              /* pCodecInfo points to a TERMINATION_INFO struct. The default (no flag) is a CODEC_PARAMS struct */
 ```
 
-For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see [mediaTest_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/mediaTest_proc.c) or [hello_codec.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/hello_codec/hello_codec.c). For packet based applications (indirect codec usage), if the DS_CODEC_CREATE_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in [shared_include/session.h](https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h)); for example usage see [packet_flow_media_proc.c (packet/media thread processing)](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)
+For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see [mediaTest_proc.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/mediaTest_proc.c) or [hello_codec.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/hello_codec/hello_codec.c). For packet based applications (indirect codec usage), if the DS_CODEC_CREATE_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in [shared_include/session.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h)); for example usage see [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)
   
 <a name="DSCodecDecode"></a>
 ## DSCodecDecode
