@@ -141,7 +141,7 @@ Some additional notes about the above diagram:
 <a name="IOSupport"></a>
 # I/O Support
 
-The following input types are supported:
+The following RTP input types are supported:
 
 | Input | mediaMin | mediaTest | Demo Versions | Comments |
 |-----|-----|-----|-----|-----|
@@ -149,11 +149,25 @@ The following input types are supported:
 | pcap | Y | Y | Y |
 | pcapng | Y | Y | Y |
 | rtp | Y | Y | Y | same as .rtpdump |
+
+The following media format file types are supported:
+
+| Input | mediaMin | mediaTest | Demo Versions | Comments |
+|-----|-----|-----|-----|-----|
 | wav | N | Y | Y |
 | au | N | Y | Y |
 | tim | N | Y | Y | Hypersignal waveform file format |
 | raw | N | Y | Y | no header, session configuration file can be used instead |
- 
+
+The following coded file types are supported:
+
+| Input | mediaMin | mediaTest | Demo Versions | Comments |
+|-----|-----|-----|-----|-----|
+| cod | N | Y | Y | raw coded bitstream, no header |
+| amr | N | Y | Y | AMR-NB bitstream file |
+| awb | N | Y | Y | AMR-WB bitstream file |
+| mime | N | Y | Y | 3GPP bitstream file |
+
 <a name="APIInterface"></a>
 # API Interface
 
