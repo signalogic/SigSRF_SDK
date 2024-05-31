@@ -50,7 +50,7 @@ Below is a software architecture diagram showing the relationship between user a
 
 <p>&nbsp;</p>
 
-[mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is a tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation">create dynamic sessions</a>. [hello_codec](#user-content-hellocodecexampleapp) is a simple codec example application. 
+[mediaTest](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is a tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation" target="_self">create dynamic sessions</a>. [hello_codec](#user-content-hellocodecexampleapp) is a simple codec example application. 
 
 
 Some additional notes about the above diagram:
@@ -59,7 +59,7 @@ Some additional notes about the above diagram:
 
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
 
-* the dashed line indicates high-level pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example pktlib API usage see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#minimum-api-interface">mediaMin Minimum API Interface</a> and look for PushPackets() and PullPackets() in [mediaMin.cpp source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
+* the dashed line indicates high-level pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example pktlib API usage see the <a href="../mediaTest_readme.md#minimum-api-interface">mediaMin Minimum API Interface</a> and look for PushPackets() and PullPackets() in [mediaMin.cpp source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
 
 * for data flow diagrams, see [telecom and analytics mode data flow diagrams](https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram) on the main SigSRF SDK page
 
