@@ -53,11 +53,13 @@ Below is a software architecture diagram showing the relationship between user a
 [mediaTest](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediatest) is a tool for codec measurement and interoperation testing (performance, audio quality measurement, reference vector comparison, debug, etc). [mediaMin](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) is a production / deployment grade application (telecom, analytics, call recording, lawful interception, robotics, etc). mediaMin can use RTP auto-detection, SDP packet info, or both to determine codec type and [create dynamic sessions](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). [hello_codec](#user-content-hellocodecexampleapp) is a simple codec example application. 
 
 
-Some additional notes about the above diagram:
+Notes about voplib (voice-over-packet library):
 
-* voplib provides the documented, unified interface to all codecs. Codecs have different numbers of shared object (.so) files, ranging from 1 to 3, depending on how their standards body source code is organized
+* voplib provides a unified, documented interface to all codecs, and handles all memory allocation per the XDAIS standard. voplib deals with codec architecture variation, for example codecs may have different numbers of shared object (.so) files, depending on how their standards body source code is organized. Also, voplib supports high capacity, "stand alone", diagnostic, and other specialized builds for application specific purposes
 
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
+
+Some additional notes about the above diagram:
 
 * the dashed line indicates high-level pktlib APIs such as DSPushPackets() and DSPullPackets() available to user applications. For example pktlib API usage see the [mediaMin Minimum API Interface](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#minimumapiinterface) and look for PushPackets() and PullPackets() in [mediaMin.cpp source code](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp)
 
