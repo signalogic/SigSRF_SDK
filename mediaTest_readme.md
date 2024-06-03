@@ -13,19 +13,23 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-1Q 2024 - Use case driven improvements:
+1Q 2024
+
+Use case driven improvements
 
  - codec configuration options for binary-only codecs with exit() and abort() calls, and codecs with protected sections of source not permissible to modify
  - silence trim, re-sampling, and other wav file post-processing options
  - further improvements in RTP media type auto-detection
 
-Bug fixes:
+Bug fixes
 
   - debug mode added to codecs to help find subtle NaN and other floating-point issues in deployments on wide range of Linux and GLIBC versions
   - fix EVS Player and AMR Player example/demo command lines (below). These were broken after not being retested after other improvements
   - fix problem with high numbers of dynamic channels in a stream (high capacity RFC8108)
 
-3Q-4Q 2023 - Use case driven improvements:
+3Q-4Q 2023
+
+Use case driven improvements
 
  - call recording "time stamp matching" mode for reproducible, bit-exact media output files
  - .rtp and .rtpdump file format support
@@ -33,12 +37,14 @@ Bug fixes:
  - further improvements in RTP media type auto-detection
  - packet filter and search APIs in pktlib
 
-Bug fixes:
+Bug fixes
 
   - fix bug in mediaTest NO_DATA frame handling
   - fix problem in packet gap/pause handling where short, successive gaps were not handled correctly
 
-1Q-2Q 2023 - Improvements over a wide range of areas, including:
+1Q-2Q 2023
+
+Improvements over a wide range of areas, including
 
  - mixed SIP and RTP stream handling
  - HI2 and HI3 decode
@@ -46,12 +52,14 @@ Bug fixes:
  - "accelerated time" for bulk pcap handling
  - return audio content type from codecs (only for codecs that support this)
 
-Bug fixes:
+Bug fixes
 
  - keyboard handling inside containers
  - codec type auto-detection (some cases wrongly detected)
 
-3Q-4Q 2022 - new releases of pktlib, voplib, mediaMin, and mediaTest, including:
+3Q-4Q 2022
+
+- new releases of pktlib, voplib, mediaMin, and mediaTest, including:
 
  - support for handsets and voice assistants found in the wild using non-compliant EVS "AMR-WB IO mode" format
  - improved jitter buffer dynamic adjust supporting ultra-deep jitter buffer depths
