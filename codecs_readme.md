@@ -5,6 +5,10 @@
 
 [**_Overview_**](#user-content-overview)<br/>
 
+<sub><sup>
+&nbsp;&nbsp;&nbsp;[**Codec Software Architecture Diagram**](#user-content-codecsoftwarearchitecturediagram)<br/>
+</sup></sub>
+
 [**_Test, Measurement, and Interoperation_**](#user-content-testmeasurementandinteroperation)<br/>
 
 [**_I/O Support_**](#user-content-iosupport)<br/>
@@ -43,6 +47,9 @@ Codecs are an essential component in streaming media use cases, necessary to dec
 SigSRF codecs are available in demo format as [Docker containers](https://www.github.com/signalogic/SigSRF_SDK/tree/master?tab=readme-ov-file#user-content-dockercontainers) and [installable Rar packages](https://www.github.com/signalogic/SigSRF_SDK/tree/master?tab=readme-ov-file#user-content-rarpackages), and in production / deployment format as a codec license, or included in mediaMin and mediaTest licenses. Demo licenses are limited in total time and frame duration; after some point they continue to operate but produce "noisy media".
 
 Below is a software architecture diagram showing the relationship between user applications, voplib, and codec libraries. 
+
+<a name="CodecSoftwareArchitectureDiagram"></a>
+## Codec Software Architecture Diagram
 
 <p>&nbsp;</p>
 
