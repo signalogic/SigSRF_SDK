@@ -5,7 +5,7 @@ After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-
  - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs
  - high capacity transcoding, RTP stream merging, and audio enhancement processing
  - test and measurement, including codec audio quality and performance, media RFC verification, and transcoding
- - application examples, including source code, showing how to use [pktlib](#user-content-pktlib) and voplib APIs (see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram">architecture diagram</a> on the SigSRF page)
+ - application examples, including source code, showing how to use [pktlib](#user-content-pktlib) and [voplib](#user-content-voplib) APIs (see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram">architecture diagram</a> on the SigSRF page)
 
 Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav). Example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the [SigSRF SDK](https://github.com/signalogic/SigSRF_SDK). SDK capacity is limited to four (4) concurrent transcoding streams, and four (4) concurrent instances (one instance = console window), for a total of eight (8) streams. The commercial software has no limitations for concurrency or multiuser, bare metal, VM, container, or other supported platforms.
 
@@ -249,7 +249,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 The mediaMin reference application runs optimized, high-capacity media packet streaming on x86 servers <sup>[1]</sup> used in bare-metal, VM, or container platforms. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams, with packet handling, DTX, media decoding, stream group processing, and event and packet logging and statistics.
 
-For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet worker threads), voplib (voice-over-packet interface), [streamlib](#user-content-streamlib) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
+For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet worker threads), [voplib](#user-content-voplib) (voice-over-packet interface), [streamlib](#user-content-streamlib) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
 
 To provide a simple, ready-to-use interface, mediaMin provides additional functionality. mediaMin command line options instruct pktlib to operate in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to [stream groups](#user-content-streamgroupusage), which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes RTP stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packet output.
 
@@ -259,7 +259,7 @@ mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreatio
 
 <sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. Stress testing includes concurrent session counts up to 50 per x86 core, with sustained test durations over 1400 hrs.</br>
 </br>
-<sup>2</sup> [pktlib](#user-content-pktlib), voplib, and [streamlib](#user-content-streamlib) are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
+<sup>2</sup> [pktlib](#user-content-pktlib), [voplib](#user-content-voplib), and [streamlib](#user-content-streamlib) are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
 
 <a name="RealTimeStreaming"></a>
 ## Real-Time Streaming and Packet Flow
@@ -1587,7 +1587,7 @@ Note that EVS -- unlike older codecs that rely only on a vocal tract model -- is
 <a name="FrameMode"></a>
 ## Frame Mode
 
-Frame mode performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  Voplib APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
+Frame mode performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  [voplib](#user-content-voplib) APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
 
     mediaTest -cx86 -M4 -Csession_config/frame_test_config -L
 
@@ -2101,7 +2101,7 @@ The screencaps below show run-time stats examples, with highlighting around the 
 <a name="EventLog"></a>
 # Event Log
 
-The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by SigSRF libraries including [pktlib](#user-content-pktlib), voplib, and [streamlib](#user-content-streamlib), and also by mediaMin and mediaTest reference apps. All diaglib APIs are also available for user-defined applications.
+The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by SigSRF libraries including [pktlib](#user-content-pktlib), [voplib](#user-content-voplib), and [streamlib](#user-content-streamlib), and also by mediaMin and mediaTest reference apps. All diaglib APIs are also available for user-defined applications.
 
 Event logs are .txt files, updated continuously by packet/media threads with informational events, status, warnings, and errors, with each entry prefixed by a timestamp (different timestamp formats may be specified, including absolute and relative time). Event log filenames use the following notation:
 
@@ -2184,7 +2184,7 @@ Below is an example event log.
 	Marginal stream group pulls = 0 
 </pre>
 
-[pktlib](#user-content-pktlib), voplib, and [streamlib](#user-content-streamlib) event log entries follow a labeling convention:
+[pktlib](#user-content-pktlib), [voplib](#user-content-voplib), and [streamlib](#user-content-streamlib) event log entries follow a labeling convention:
 
 * "INFO" indicates normal operation events, progress, and status
 * "WARNING" indicates an unusual event, something that may be a problem and needs attention
@@ -2527,10 +2527,12 @@ SigSRF x86 codecs are designed for concurrent, high capacity operation and imple
 
 XDAIS compliance allows SigSRF codecs to be implemented on coCPU targets with minimal code porting issues. In fact, several SigSRF codecs were first implemented on Texas Instruments multicore CPU devices. When TI failed to recognize the fundamental industry shift in CPU design towards AI and deep learning and <a href="https://www.linkedin.com/pulse/dsps-dead-jeff-brower/">prematurely purged their DSP core competence and expertise</a>, those codecs were then "back ported" to x86 with minimum hassle and high performance. Going forward, other vendors such as ARM clearly recognize the importance of adding low-power, small package size, high performance C code compatible cores to servers, and coCPU architecture considerations will continue to gain in importance.
 
-Application API interface to SigSRF codecs goes through voplib, which provides a generic API for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
+Application interface to SigSRF codecs is through [voplib](#user-content-voplib), which provides a generic [API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-apiinterface) for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
 
 1) mediaTest reference application (look for x86_mediatest() in [apps/mediaTest/x86_mediaTest.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/x86_mediaTest.c))
 2) packet/media thread processing ([packet_flow_media_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)), invoked indirectly by the [mediaMin reference application](#user-content-mediamin), via the [pktlib](#user-content-pktlib) shared lib
+
+The codec readme page has a [software architecture diagram](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-codecsoftwarearchitecturediagram) that shows the relationship between reference applications, voplib, and codecs.
 
 <a name="3GPPNotes"></a>
 ## 3GPP Reference Code Notes
