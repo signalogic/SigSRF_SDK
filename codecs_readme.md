@@ -55,7 +55,7 @@ Below is a software architecture diagram showing the relationship between user a
 
 Notes about voplib (voice-over-packet library):
 
-* voplib provides a unified, documented interface to all codecs, and handles all memory allocation per the XDAIS standard. voplib deals with codec architecture variation, for example codecs may have different numbers of shared object (.so) files, depending on how their standards body source code is organized. Also, voplib supports high capacity, "stand alone", diagnostic, and other specialized builds for application specific purposes
+* voplib provides a unified, documented interface to all codecs, and handles all memory allocation per the XDAIS standard. voplib abstracts codec architecture variation, for example codecs may have different numbers of shared object (.so) files, depending on how their standards body source code is organized, some support on-the-fly commands, the way errors are handled varies, etc. Also, voplib supports high capacity, "stand alone", diagnostic, and other specialized builds for application specific purposes
 
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
 
