@@ -15,6 +15,8 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 <i><b>1Q 2024</b></i>
 
+Arm support is under development !
+
 Use case driven improvements
 
  - codec configuration options for binary-only codecs with exit() and abort() calls, and codecs with protected sections of source not permissible to modify
@@ -1997,7 +1999,7 @@ voplib provides a unified, documented interface to all media codecs, and handles
 <a name="voplibAPIInterface"></a>
 ## voplib API Interface
 
-The voplib API interface supports two types of struct interfaces in DSCodecCreate(), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-apiinterface) on the [codec readme page](https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) for more information.
+The voplib API interface supports two types of struct interfaces in DSCodecCreate(), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-apiinterface) on the [codec readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) for more information.
 
 <a name="RunTimeStats"></a>
 # Run-Time Stats
