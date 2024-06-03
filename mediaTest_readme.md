@@ -13,21 +13,30 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-3Q-4Q 2023 - Use case driven improvements:
+1Q 2024 - Use case driven improvements:
 
- - call recording "time stamp matching" mode for reproducible, bit-exact media output files
- - .rtp and .rtpdump file format support
  - codec configuration options for binary-only codecs with exit() and abort() calls, and codecs with protected sections of source not permissible to modify
- - improvements in low bit rate handling (e.g. EVS codec VBR mode)
  - silence trim, re-sampling, and other wav file post-processing options
  - further improvements in RTP media type auto-detection
- - packet filter and search APIs in pktlib
 
 Bug fixes:
 
   - debug mode added to codecs to help find subtle NaN and other floating-point issues in deployments on wide range of Linux and GLIBC versions
   - fix EVS Player and AMR Player example/demo command lines (below). These were broken after not being retested after other improvements
   - fix problem with high numbers of dynamic channels in a stream (high capacity RFC8108)
+
+3Q-4Q 2023 - Use case driven improvements:
+
+ - call recording "time stamp matching" mode for reproducible, bit-exact media output files
+ - .rtp and .rtpdump file format support
+ - improvements in low bit rate handling (e.g. EVS codec VBR mode)
+ - further improvements in RTP media type auto-detection
+ - packet filter and search APIs in pktlib
+
+Bug fixes:
+
+  - fix bug in mediaTest NO_DATA frame handling
+  - fix problem in packet gap/pause handling where short, successive gaps were not handled correctly
 
 1Q-2Q 2023 - Improvements over a wide range of areas, including:
 
@@ -195,6 +204,11 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Stream Alignment**](#user-content-streamalignment)<br/>
 &nbsp;&nbsp;&nbsp;[**Audio Quality Processing**](#user-content-audioqualityprocessing)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Frame Loss Concealment (FLC)](#user-content-framelossconcealment)<br/>
+
+[**_voplib_**](#user-content-voplib)<br/>
+
+&nbsp;&nbsp;&nbsp;[**Unified Codec Interface**](#user-content-unifiedcodecinterface)<br/>
+&nbsp;&nbsp;&nbsp;[**voplib API Interface**](#user-content-voplibapiinterface)<br/>
 
 [**_Run-Time Stats_**](#user-content-runtimestats)<br/>
 
@@ -1961,6 +1975,21 @@ In addition to gap management and stream alignment mentioned above, streamlib co
 FLC occurs when, after all individual stream contributor management, merging, and other processing is complete, stream group ouptut will incur a gap and be unable to meet continuous real-time output requirements. Typically this occurs due to simultaneous packet loss in all stream group inputs, but not always, it can also happen due to anomalies in alignment between inputs. When an output gap is inevitable, streamlib applies an algorithm to conceal the frame gap, based on interpolation, prior stream group output history, and other factors.
 
 Note that FLC is similar, but not the same as PLC (Packet Loss Concealment), which is implemented by [pktlib](#user-content-pktlib) as part of [packet repair](#user-content-packetrepair), due to media or SID packet loss.
+
+<a name="voplib"></a>
+# voplib
+
+voplib is the voice-over-packet library used in SigSRF software. voplib is used by reference applications (e.g. mediaTest), other SigSRF libraries (e.g. pktlib), and user applications. The [codec readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) includes a [software architecture diagram](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-codecsoftwarearchitecturediagram) showing voplib's location in the SigSRF architecture.
+
+<a name="UnifiedCodecInterface"></a>
+## Unified Codec Interface
+
+voplib provides a unified, documented interface to all media codecs, and handles all memory allocation per the XDAIS standard. voplib abstracts codec architecture variation, for example codecs may have different numbers of shared object (.so) files, depending on how their standards body source code is organized, some support on-the-fly commands, the way errors are handled varies, etc. Also, voplib supports high capacity, "stand alone", diagnostic, and other specialized builds for application specific purposes.
+
+<a name="voplibAPIInterface"></a>
+## voplib API Interface
+
+The voplib API interface supports two types of struct interfaces in DSCodecCreate(), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-apiinterface) on the [codec readme page](https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) for more information.
 
 <a name="RunTimeStats"></a>
 # Run-Time Stats
