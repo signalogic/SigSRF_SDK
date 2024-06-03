@@ -1576,7 +1576,7 @@ The mediaTest command lines below show (i) USB audio acquisition of a stereo wav
 
     mediaTest -cx86 -iusb0 -ousb_codec_output.wav -Csession_config/evs_16kHz_13200bps_config
 
-Below are waveform displays for a 1.5 kHz sine wave from the HP 33120A function generator, sampled by the Focusrite 2i2 at 48 kHz, downsampled to 16 kHz using a voplib API, and run through an EVS 13200 bps encode API:
+Below are waveform displays for a 1.5 kHz sine wave from the HP 33120A function generator, sampled by the Focusrite 2i2 at 48 kHz, downsampled to 16 kHz using an alglib API, and run through an EVS 13200 bps [voplib](#user-content-voplib) encode API:
 
 ![USB audio input with codec processing, time domain waveform](https://github.com/signalogic/SigSRF_SDK/blob/master/images/usb_audio_evs_encoder_time_domain.png?raw=true "Time domain waveform showing EVS encoded pure sine wave from an HP 33120A function generator")
 
@@ -1922,7 +1922,7 @@ Stream group output enhancement includes:
 Stream group output post-processing includes:
 
  - sampling rate conversion, if needed for encoding, speech recognition, or other post-processing
- - encoding, if specified (e.g. G711, AMR, EVS, etc. by making voplib API calls), and formatting and queuing RTP packet output (by making pktlib API calls)
+ - encoding, if specified (e.g. G711, AMR, EVS, etc. by making [voplib](#user-content-voplib) API calls), and formatting and queuing RTP packet output (by making pktlib API calls)
  - speech recognition, if specified (by making inferlib API calls)
  - stream deduplication, if specified
  - user-defined signal processing
@@ -1999,7 +1999,7 @@ voplib provides a unified, documented interface to all codecs, and handles all m
 <a name="voplibAPIInterface"></a>
 ## voplib API Interface
 
-The voplib API interface supports two types of struct interfaces in DSCodecCreate(), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-apiinterface) on the [codec readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) for more information.
+The [voplib API interface](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-apiinterface) DSCodecCreate() API supports two general types of structs, CODEC_PARAMS for user and reference applications, and TERMINATION_INFO for packet/media worker threads. See the [codec readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) for detailed information.
 
 <a name="RunTimeStats"></a>
 # Run-Time Stats
