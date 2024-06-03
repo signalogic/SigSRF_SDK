@@ -2517,7 +2517,7 @@ do {
 <a name="x86CodecNotes"></a>
 ## SigSRF x86 Codec Notes
 
-SigSRF x86 codecs are designed for concurrent, high capacity operation and implemented as Linux shared libs. These libs are:
+[SigSRF x86 codecs](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) are designed for concurrent, high capacity operation and implemented as Linux shared libs. These libs are:
 
 <big><pre>
     - thread safe
