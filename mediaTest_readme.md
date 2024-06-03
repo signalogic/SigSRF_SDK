@@ -172,12 +172,12 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**_mediaTest_**](#user-content-mediatest)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Test & Measurement](#user-content-x86codectestmeasurement)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS](#user-content-x86codecevs)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR](#user-content-x86codecamr)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MELPe](#user-content-x86codecmelpe)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G729](#user-content-x86codecg729)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G726](#user-content-x86codecg726)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Test & Measurement](#user-content-codectestmeasurement)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS](#user-content-codecevs)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR](#user-content-codecamr)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MELPe](#user-content-codecmelpe)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G729](#user-content-codecg729)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[G726](#user-content-codecg726)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity Codec Test](#user-content-highcapacitycodectest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Fullband Audio Codec Test & Measurement](#user-content-fullbandaudiocodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
@@ -231,7 +231,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 [**_RFCs_**](#user-content-supportedrfcs)<br/>
 [**_User-Defined Signal Processing Insertion Points_**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
 [**_API Usage_**](#user-content-apiusage)<br/>
-[**_SigSRF x86 Codec Notes_**](#user-content-x86codecnotes)<br/>
+[**_SigSRF Codec Notes_**](#user-content-codecnotes)<br/>
 [**_3GPP Reference Code Notes_**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
 &nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#user-content-verifyingevspcap)<br/>
@@ -1185,17 +1185,17 @@ Codec + audio mode supports the following functionality:
 
 * sampling rate conversion is applied whenever input sampling rate does not match the specified codec (or pass-thru) rate
 
-<a name="x86CodecTestMeasurement"></a>
-### x86 Codec Test & Measurement
+<a name="CodecTestMeasurement"></a>
+### Codec Test & Measurement
 
-Several mediaTest codec + audio mode command lines are given below for different codecs, showing examples of encoding, decoding, and back-to-back encode and decode. These commands run on x86 servers, with no coCPU, GPU, or other hardware required. For more codec information, see [SigSRF x86 Codec Notes](#user-content-x86codecnotes) below.
+Several mediaTest codec + audio mode command lines are given below for different codecs, showing examples of encoding, decoding, and back-to-back encode and decode. These commands run on x86 servers, with no coCPU, GPU, or other hardware required. For more codec information, see [SigSRF Codec Notes](#user-content-codecnotes) below.
 
 For encoding, if the audio input rate differs from the rate specified in the codec config file, then mediaTest will automatically perform sampling rate conversion. However, this is not always applicable, here are a couple of things to keep in mind about this:
 
 > 1) For raw audio input files, mediaTest doesn't know the sampling rate as raw files don't have a waveform header. For other cases, such as .wav, .au, and USB audio, mediaTest knows the sampling rate
 > 2) Advanced codecs such as EVS accept multiple sampling rates, so depending on what rate you enter in the codec config file given on the command line, mediaTest sampling rate conversion is often not needed and the codec itself performs sampling rate conversion to some intermediate "normalized" rate internal to the codec algorithm
 
-<a name="x86CodecEVS"></a>
+<a name="CodecEVS"></a>
 #### EVS
 
 The following command line applies the EVS encoder to a 3GPP reference audio file (WB sampling rate, 13.2 kbps), generating a compressed bitstream file:
@@ -1234,7 +1234,7 @@ The following command line EVS encodes and then decodes a 3GPP reference bitstre
 mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.wav -Csession_config/evs_32kHz_13200bps_config
 ```
 
-<a name="x86CodecAMR"></a>
+<a name="CodecAMR"></a>
 #### AMR
 
 The following mediaTest command line does back-to-back AMR encode/decode; i.e. audio input, audio output:
@@ -1276,7 +1276,7 @@ Audio output can be raw audio file, .wav, .au, or USB audio.
 
 For AMR coded data, it's recommended to stick with file extensions .amr and .awb. Other extensions, such as .cod (used with EVS codecs) might work for AMR command lines, as mediaTest knows the codec type due to the codec configuration file, but are not supported at this time. Theoretically .wav files can support coded data types also, although not widely used. There is some functionality supporting coded data .wav files in mediaTest; if you need that and find it's not working correctly, please create an issue on the SigSRF_SDK repository.
 
-<a name="x86CodecMELPe"></a>
+<a name="CodecMELPe"></a>
 #### MELPe
 
 The following mediaTest command lines do back-to-back MELPe encode/decode; i.e. audio to audio, using different combinations of MELPe bitrates, noise pre-processing (NPP), and synthesis filter post processing:
@@ -1307,12 +1307,12 @@ mediaTest -cx86 -itest_files/bf2d.INP -obf2d_600_54.cod -Csession_config/melpe_c
 
 In the above command lines audio input is in raw audio format and the .cod file format is used for output MELPe coded data.
 
-<a name="x86CodecG729"></a>
+<a name="CodecG729"></a>
 #### G729
 
 The following mediaTest command line does back-to-back G729 encode/decode; i.e. audio input, audio output:
 
-<a name="x86CodecG726"></a>
+<a name="CodecG726"></a>
 #### G726
 
 The following mediaTest command line does back-to-back G726 encode/decode; i.e. audio input, audio output:
@@ -1644,7 +1644,7 @@ mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/
 ```
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument). Other USB ports can be specified, depending on what is physically connected to the server.
 
-Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measurement](#user-content-x86codectestmeasurement) above), .pcap input, and .rtp input (or .rtpdump), this makes mediaTest a flexible "EVS player".
+Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measurement](#user-content-codectestmeasurement) above), .pcap input, and .rtp input (or .rtpdump), this makes mediaTest a flexible "EVS player".
 
 ### Session Configuration File
 
@@ -2514,10 +2514,10 @@ do {
 
    } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* handle user input or other loop control */
 ```
-<a name="x86CodecNotes"></a>
-## SigSRF x86 Codec Notes
+<a name="CodecNotes"></a>
+## SigSRF Codec Notes
 
-[SigSRF x86 codecs](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) are designed for concurrent, high capacity operation and implemented as Linux shared libs. These libs are:
+[SigSRF codecs](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) are designed for concurrent, high capacity operation and implemented as Linux shared libs. These libs are:
 
 <big><pre>
     - thread safe
