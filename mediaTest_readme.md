@@ -13,7 +13,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-1Q 2024
+<i><b>1Q 2024</b></i>
 
 Use case driven improvements
 
@@ -27,7 +27,7 @@ Bug fixes
   - fix EVS Player and AMR Player example/demo command lines (below). These were broken after not being retested after other improvements
   - fix problem with high numbers of dynamic channels in a stream (high capacity RFC8108)
 
-3Q-4Q 2023
+<i><b>3Q-4Q 2023</b></i>
 
 Use case driven improvements
 
@@ -42,7 +42,7 @@ Bug fixes
   - fix bug in mediaTest NO_DATA frame handling
   - fix problem in packet gap/pause handling where short, successive gaps were not handled correctly
 
-1Q-2Q 2023
+<i><b>1Q-2Q 2023</b></i>
 
 Improvements over a wide range of areas, including
 
@@ -57,7 +57,7 @@ Bug fixes
  - keyboard handling inside containers
  - codec type auto-detection (some cases wrongly detected)
 
-3Q-4Q 2022
+<i><b>3Q-4Q 2022</b></i>
 
 - new releases of pktlib, voplib, mediaMin, and mediaTest, including:
 
