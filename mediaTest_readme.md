@@ -1989,12 +1989,12 @@ Note that FLC is similar, but not the same as PLC (Packet Loss Concealment), whi
 <a name="voplib"></a>
 # voplib
 
-voplib is the voice-over-packet library used in SigSRF software. voplib is used by reference applications (e.g. mediaTest), other SigSRF libraries (e.g. pktlib), and user applications. The [codec readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) includes a [software architecture diagram](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-codecsoftwarearchitecturediagram) showing voplib's location in the SigSRF architecture.
+voplib is the voice-over-packet library used in SigSRF software. voplib is used by reference applications (e.g. mediaTest), other SigSRF libraries (e.g. pktlib), and user applications. The [codec readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) has a [software architecture diagram](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-codecsoftwarearchitecturediagram) showing voplib's location in the SigSRF architecture.
 
 <a name="UnifiedCodecInterface"></a>
 ## Unified Codec Interface
 
-voplib provides a unified, documented interface to all media codecs, and handles all memory allocation per the XDAIS standard. voplib abstracts codec architecture variation, for example codecs may have different numbers of shared object (.so) files, depending on how their standards body source code is organized, some support on-the-fly commands, the way errors are handled varies, etc. Also, voplib supports high capacity, "stand alone", diagnostic, and other specialized builds for application specific purposes.
+voplib provides a unified, documented interface to all codecs, and handles all memory allocation per the [XDAIS standard](https://en.wikipedia.org/wiki/XDAIS_algorithms). voplib abstracts codec architecture variation, for example codecs may have different numbers of shared object (.so) files, depending on how their standards body source code is organized, some support on-the-fly commands, the way errors are handled varies, etc. Also, voplib supports high capacity, "stand alone", diagnostic, and other specialized builds for application specific purposes.
 
 <a name="voplibAPIInterface"></a>
 ## voplib API Interface
