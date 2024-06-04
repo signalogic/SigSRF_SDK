@@ -21,9 +21,9 @@ Arm support is under development !
 
 Use case driven improvements
 
+ - further improvements in RTP media type auto-detection
  - codec configuration options for binary-only codecs with exit() and abort() calls, and codecs with protected sections of source not permissible to modify
  - silence trim, re-sampling, and other wav file post-processing options
- - further improvements in RTP media type auto-detection
 
 Bug fixes
 
@@ -2006,7 +2006,7 @@ The [voplib API interface](https://www.github.com/signalogic/SigSRF_SDK/blob/mas
 <a name="RunTimeStats"></a>
 # Run-Time Stats
 
-Run-time stats are displayed onscreen and/or in the event log by calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API for a session or range of sessions from user-defined applications. Also mediaMin displays run-time stats when:
+mediaMin displays run-time stats onscreen and/or in the event log by calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API for a session or range of sessions from user-defined applications. Also mediaMin displays run-time stats when:
 
   * the last session of a stream group closes
   * stream groups are not active and a session closes
