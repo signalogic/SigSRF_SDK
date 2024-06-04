@@ -62,7 +62,7 @@ Below is a software architecture diagram showing the relationship between user a
 
 Notes about voplib (voice-over-packet library):
 
-* voplib provides a unified, documented interface to all codecs, and handles all memory allocation per the XDAIS standard. voplib abstracts codec architecture variation, for example codecs may have different numbers of shared object (.so) files, depending on how their standards body source code is organized, some support on-the-fly commands, the way errors are handled varies, etc. Also, voplib supports high capacity, "stand alone", diagnostic, and other specialized builds for application specific purposes
+* voplib provides a unified, documented interface to all codecs, and manages all memory allocation per the [XDAIS standard](https://en.wikipedia.org/wiki/XDAIS_algorithms). voplib abstracts codec architecture variation, for example codecs may have different numbers of shared object (.so) files, depending on how their standards body source code is organized, some support on-the-fly commands, the way errors are handled varies, etc. Also, voplib supports high capacity, "stand alone", diagnostic, and other specialized builds for application specific purposes
 
 * voplib supports two types of struct interfaces in [DSCodecCreate()](#user-content-dscodeccreate), CODEC_PARAMS and TERMINATION_INFO. See [API Interface](#user-content-apiinterface) below for more information
 
@@ -206,11 +206,11 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 <a name="DSCodecDecode"></a>
 ## DSCodecDecode
 
-  * decodes one or more frames using one or more decoder handles
+  * decodes one or more frames using one or more decoder instance handles
   * returns length of decoded media frame(s) (in bytes)
 
 ```c++
-    int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
+    int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec instance handles, as specified by numChan */
                       unsigned int     uFlags,        /* see DS_CODEC_DECODE_xxx flags below */
                       uint8_t*         inData,        /* pointer to input coded bitstream data. Input may include a payload header and CMR value, if supported by the codec type and header/payload format */
                       uint8_t*         outData,       /* pointer to output audio frame data */
@@ -229,11 +229,11 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 <a name="DSCodecEncode"></a>
 ## DSCodecEncode
 
-  * encodes one or more frames using one or more encoder handles
+  * encodes one or more frames using one or more encoder instance handles
   * returns length of encoded bitstream frame(s) (in bytes)
 
 ```c++
-    int DSCodecEncode(HCODEC*          hCodec,        /* pointer to one or more codec handles, as specified by numChan */
+    int DSCodecEncode(HCODEC*          hCodec,        /* pointer to one or more codec instance handles, as specified by numChan */
                       unsigned int     uFlags,        /* see DS_CODEC_ENCODE_xxx flags below */
                       uint8_t*         inData,        /* pointer to input audio frame data */
                       uint8_t*         outData,       /* pointer to output coded bitstream data. Output may include a payload header and CMR value, if supported by the codec type and header/payload format */
@@ -253,7 +253,7 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
   * returns information for the specified codec
   
 ```c++
-    int DSGetCodecInfo(int codec,                     /* codec can be either a codec handle (HCODEC) or a codec type (int), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_HANDLE to interpret codec as an hCodec, returned by a previous call to DSCodecCreate(). If neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given, the default is DS_CODEC_INFO_HANDLE */
+    int DSGetCodecInfo(int codec,                     /* codec can be either a codec instance handle (HCODEC) or a codec type (int), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_HANDLE to interpret codec as an hCodec, returned by a previous call to DSCodecCreate(). If neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given, the default is DS_CODEC_INFO_HANDLE */
                        unsigned int uFlags,           /* if uFlags specifies DS_CODEC_INFO_TYPE, codec should be one of the types specified in shared_include/codec.h, and uFlags can also contain DS_CODEC_INFO_NAME, DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, or DS_CODEC_INFO_PARAMS */
                        int nInput1,                   /* nInput1 is required for the DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE flag. nInput1 and nInput2 are required for uFlags DS_CODEC_INFO_BITRATE_TO_INDEX, DS_CODEC_INFO_INDEX_TO_BITRATE, and DS_CODEC_INFO_CODED_FRAMESIZE */
                        int nInput2,
@@ -263,7 +263,7 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
    Flags
 
 ```c++
-    #define DS_CODEC_INFO_HANDLE                      /* specifies the "codec" param (first param) is interpreted as an hCodec (i.e. handle created by prior call to DSCodecCreate(). This is the default if neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given */ 
+    #define DS_CODEC_INFO_HANDLE                      /* specifies the "codec" param (first param) is interpreted as an hCodec (i.e. codec instance handle created by prior call to DSCodecCreate(). This is the default if neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given */ 
     #define DS_CODEC_INFO_TYPE                        /* specifies the "codec" param (first param) is interpreted as a codec_type */ 
 ```
   Item Flags
