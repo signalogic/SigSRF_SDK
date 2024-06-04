@@ -13,7 +13,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-<i><b>1Q 2024</b></i>
+<i><b>1Q-2Q 2024</b></i>
 
 [Codecs documentation](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) is on Github
 
