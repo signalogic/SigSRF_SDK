@@ -15,6 +15,8 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 <i><b>1Q 2024</b></i>
 
+[Codecs documentation](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) is on Github
+
 Arm support is under development !
 
 Use case driven improvements
