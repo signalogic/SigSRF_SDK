@@ -59,7 +59,7 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 * Call Recording, Call Transcription, Multiparty Call Reconstruction
 * Session Border Controller (SBC) and Media Gateway
 * Bulk Pcap Processing
-* RTP Decoder (<a href="https://www.signalogic.com/evs_codec.html" target=_blank>EVS</a>, AMR, G729, MELPe, etc)
+* RTP Decoding (EVS <sup>2</sup>, AMR, G729, MELPe, etc)
 * RTP Malware Detection
 * Network Analyzers
 
@@ -75,12 +75,13 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 
 EdgeStream and SigSRF software are designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Reference SDK applications have low resource and footprint profiles and are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
 
-EdgeStream and SigSRF support media delivery, transcoding, deep learning <sup>1</sup>, OpenCV, speech recognition, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
+EdgeStream and SigSRF support media delivery, transcoding, deep learning <sup>3</sup>, OpenCV, speech recognition, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
-For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture, for an overview see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/WhenSoftwareOnlyIsNotEnough.md">When Software Only Is Not Enough</a>.
+For applications facing SWaP <sup>1</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture, for an overview see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/WhenSoftwareOnlyIsNotEnough.md">When Software Only Is Not Enough</a>.
 
-<sup>1</sup> In progress<br/>
-<sup>2</sup> SWaP = size, weight, and power consumption
+<sup>1</sup> SWaP = size, weight, and power consumption</br>
+<sup>2</sup> For more information on EVS see the [documentation page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) or product page <a href="https://www.signalogic.com/evs_codec.html" target=_blank> product page</a></br>
+<sup>3</sup> In progress<br/>
 
 <a name="TelecomMode"></a>
 ## Telecom Mode
