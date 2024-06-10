@@ -77,7 +77,7 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 
 <sup>1</sup> For more information on EVS see the [documentation page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) or product page <a href="https://www.signalogic.com/evs_codec.html" target=_blank> product page</a></br>
 <sup>2</sup> ASR = Automatic Speech Recognition</br>
-<sup>3</sup> <a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hardware and software product page</a></br>
+<sup>3</sup> For more information see the <a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hardware and software product page</a></br>
 
 <a name="PlatformsSupported"></a>
 ## Platforms Supported
