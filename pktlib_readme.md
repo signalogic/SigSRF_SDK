@@ -7,29 +7,31 @@
 
 [**_API Interface_**](#user-content-apiinterface)<br/>
 
+[**_Packet API Interface_**](#user-content-packetapiinterface)<br/>
+
 <sub><sup>
-&nbsp;&nbsp;&nbsp;[**DSGetPacketInfo**](#user-content-dsgetpacketinfo)<br/>
-&nbsp;&nbsp;&nbsp;[**DSBufferPackets**](#user-content-dsbufferpackets)<br/>
-&nbsp;&nbsp;&nbsp;[**DSGetOrderedPackets**](#user-content-dsgetorderedpackets)<br/>
-&nbsp;&nbsp;&nbsp;[**DSFormatPacket**](#user-content-dsformatpacket)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSGetPacketInfo**](#user-content-dsgetpacketinfo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSBufferPackets**](#user-content-dsbufferpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSGetOrderedPackets**](#user-content-dsgetorderedpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFormatPacket**](#user-content-dsformatpacket)<br/>
 </sup></sub>
 
 [**_Pcap API Interface_**](#user-content-pcapapiinterface)<br/>
 
 <sub><sup>
-&nbsp;&nbsp;&nbsp;[**DSOpenPcap**](#user-content-dsopenpcap)<br/>
-&nbsp;&nbsp;&nbsp;[**DSReadPcap**](#user-content-dsreapcap)<br/>
-&nbsp;&nbsp;&nbsp;[**DSWritePcap**](#user-content-dsbufferpackets)<br/>
-&nbsp;&nbsp;&nbsp;[**DSFindPcapPacket**](#user-content-dsbufferpackets)<br/>
-&nbsp;&nbsp;&nbsp;[**DSFilterPacket**](#user-content-dsbufferpackets)<br/>
-&nbsp;&nbsp;&nbsp;[**DSClosePcap**](#user-content-dsgetorderedpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSOpenPcap**](#user-content-dsopenpcap)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSReadPcap**](#user-content-dsreapcap)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSWritePcap**](#user-content-dsbufferpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFindPcapPacket**](#user-content-dsbufferpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFilterPacket**](#user-content-dsbufferpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSClosePcap**](#user-content-dsgetorderedpackets)<br/>
 </sup></sub>
 
-[**_Minimum API Interface_**](#user-content-minimumapiinterface)<br/>
+[**_Minimum Push/Pull API Interface_**](#user-content-minimumapiinterface)<br/>
 
 <sub><sup>
-&nbsp;&nbsp;&nbsp;[**DSPushPackets**](#user-content-dspushpackets)<br/>
-&nbsp;&nbsp;&nbsp;[**DSPullPackets**](#user-content-dspullpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPushPackets**](#user-content-dspushpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPullPackets**](#user-content-dspullpackets)<br/>
 </sup></sub>
 
 &nbsp;&nbsp;&nbsp;[**Structs**](#user-content-structs)<br/>
@@ -58,6 +60,15 @@ Not all pktlib APIs are included here yet, so this is a work in progress. But th
 
 The following APIs and structs are defined in [pktlib.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/includes/pktlib.h).
 
+The pktlib API is large, so here it's divided into the following groups:
+
+  * [Packet API Interface](#user-content-packetapiinterface)
+  * [Pcap API Interface](#user-content-pcapapiinterface)
+  * [Minimum Push/Pull Interface](#user-content-minimumapiinterface)
+
+<a name="PacketAPIInterface"></a>
+# Packet API Interface
+
 <a name="DSGetPacketInfo"></a>
 ## DSGetPacketInfo
 
@@ -76,6 +87,19 @@ int DSGetPacketInfo(HSESSION sessionHandle,  /* additional sessionHandle notes: 
                     int* chnum               /* chnum, if not NULL, will contain a matching channel number when the DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT flags are given. If the packet matches a child channel number and the DS_PKT_INFO_CHNUM_PARENT flag is given, chnum will contain the child channel number and the parent channel number will be returned */
                    );
 ```
+
+<a name="PcapAPIInterface"></a>
+# Pcap API Interface
+
+The pktlib pcap API interface supports read/write to pcap, pcapng, and rtp files.
+
+<a name="MininumAPIInterface"></a>
+# Minimum Push/Pull API Interface
+
+The pktlib minimum API interface supports application level "push" and "pull" to/from packet queues, from which packet/media worker threads receive/send packets for RTP jitter buffer, packet repair, RTP decoding, media domain, and other processing.
+
+<a name="Structs"></a>
+# Structs
 
 /* PKTINFO struct filled by DSGetPacketInfo() when uFlags includes the DS_PKT_INFO_PKTINFO flag. A PKTINFO struct param is also used by DSFindPcapPacket() */
 
