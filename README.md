@@ -59,7 +59,7 @@ The primary objectives of EdgeStream and SigSRF software are:
 EdgeStream and SigSRF software are currently deployed in the following cloud and edge application areas:
 
 ### Cloud Use Cases
-* Audio Quality Optimizer
+* Audio Quality Optimization
 * Lawful Intercept and Lawful Intelligence (LI)
 * Call Recording, Call Transcription, Multiparty Call Reconstruction
 * Session Border Controller (SBC) and Media Gateway
@@ -69,13 +69,15 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 * Network Analyzers
 
 ### Edge Use Cases
-* Robotics -- implement voice commands (ASR, automatic speech recognition) (<a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hw + sw product page</a>
+* Robotics - implement ASR <sup>2</sup> voice commands for hands-free, urgent, or safety related requirements without cloud dependency <sup>3</sup>
 * Factory, construction, warehouse equipment - implement accident avoidance for remotely controlled and automated equipment
 * Vehicle automation - implement small server add-on / after-market products such as small form-factor Lidar
 * Satcom and HF Radio Speech Compression
 * R&D Labs and Workstations
 
 <sup>1</sup> For more information on EVS see the [documentation page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) or product page <a href="https://www.signalogic.com/evs_codec.html" target=_blank> product page</a></br>
+<sup>2</sup> ASR = Automatic Speech Recognition</br>
+<sup>3</sup> <a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hardware and software product page</a></br>
 
 <a name="PlatformsSupported"></a>
 ## Platforms Supported
