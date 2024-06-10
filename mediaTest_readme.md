@@ -1794,6 +1794,8 @@ Upon completion, hello_codec saves output in file codec_output_test.wav for conv
 
 Pktlib is a SigSRF library module providing high-capacity media/packet worker threads, analytics and telecom operating modes, jitter buffer, DTX (discontinuous transmission) and variable ptime handling, packet re-ordering and repair (both SID and media packets), packet formatting, and packet tracing and stats collection. Pktlib also interfaces to voplib for media decoding and encoding, and to streamlib for [stream group](#user-content-streamgroups) processing.
 
+The [pktlib readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md) documents the [pktlib API interface](https://www.github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md#user-content-apiinterface).
+
 <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Source code for packet/media threads</a> is available for reference and application purposes. This source
 
    - is used by the mediaMin and mediaTest reference apps and can be modified to change their behavior
