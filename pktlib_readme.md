@@ -49,9 +49,9 @@
 <a name="Overview"></a>
 # Overview
 
-This page documents the SigSRF pktlib, or packet library. Pktlib contains a number of generic, useful APIs for handling IP packets and pcap, pcapng, and rtp files, with an emphasis on RTP media. The deployment and production grade mediaMin and mediaTest apps rely on pktlib for high-performance, multi-threaded, stable operation.
+This page documents the SigSRF pktlib, or packet library. Pktlib contains a number of generic, useful APIs for handling IP packets and pcap, pcapng, and rtp files, with emphasis on RTP media. The deployment / production grade mediaMin and mediaTest apps rely on pktlib for high-performance, multi-threaded, stable operation.
 
-Not all pklib APIs are included here yet, so this is a work in progress. But the number of developers using pktlib has increased greatly since 2021, so this page is needed and should be helpful.
+Not all pktlib APIs are included here yet, so this is a work in progress. But the number of developers using pktlib has increased greatly since 2021, so this page is needed and should be helpful.
 
 <a name="APIInterface"></a>
 # API Interface
@@ -65,21 +65,7 @@ The following APIs and structs are defined in [pktlib.h](https://www.github.com/
   * sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. See additional sessionHandle notes below
   * uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If the DS_BUFFER_PKT_IP_PACKET flag is given the packet should start with an IP header; if the DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET flags are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default no flag is given. Use the DS_PKT_INFO_HOST_BYTE_ORDER flag if packet headers are in host byte order. Network byte order is the default if no flag is given (or the DS_PKT_INFO_NETWORK_BYTE_ORDER flag can be given). Byte order flags apply only to headers, not payload contents. See additional uFlags notes below
   * returns packet items as specified, or < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int)
-  * both mediaMin.cpp and packet_flow_media_proc.c contain many examples of DSGetPacketInfo() usage
-
-```c++
-    HCODEC DSCodecCreate(void* pCodecInfo,            /* pointer to CODEC_PARAMS struct or TERMINATION_INFO struct - see comments below */
-                         unsigned int uFlags          /* one or more DS_CODEC_CREATE_xxx flags, or general flags shown below */
-                        );
-```
-     Flags
-```c++
-    #define DS_CODEC_CREATE_ENCODER                   /* create an encoder instance - may be combined with DS_CODEC_CREATE_DECODER */
-    #define DS_CODEC_CREATE_DECODER                   /* create a decoder instance - may be combined with DS_CODCEC_CREATE_ENCODER */
-    #define DS_CODEC_CREATE_USE_TERMINFO              /* pCodecInfo points to a TERMINATION_INFO struct. The default (no flag) is a CODEC_PARAMS struct */
-```
-
-For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see [mediaTest_proc.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/mediaTest_proc.c) or [hello_codec.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/hello_codec/hello_codec.c). For packet based applications (indirect codec usage), if the DS_CODEC_CREATE_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in [shared_include/session.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h)); for example usage see [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)
+  * both [mediaMin.cpp](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMint/mediaMin.cpp) and [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) contain many examples of DSGetPacketInfo() usage
 
 ```c++
 int DSGetPacketInfo(HSESSION sessionHandle,           /* additional sessionHandle notes: (i) if both sessionHandle is -1 and uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, then all existing sessions will be searched. (ii) SigSRF documentation often refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession() */
