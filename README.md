@@ -200,7 +200,7 @@ The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/m
 <a name="Reproducibility"></a>
 ### Reproducibility
 
-The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) includes a timestamp matching option that relies on [Analytics Mode](#user-content-analyticsmode), with no references to wall clocks, to generate bit-exact repeatable RTP audio and wav output, independent of other parameters (such as accelerated processing mode). This can be useful for call recording applications. The [reproducibility section](www.https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-reproducibility) on the mediaMin page has a detailed discussion of this option. 
+The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) includes a timestamp matching option that relies on [Analytics Mode](#user-content-analyticsmode), with no references to wall clocks, to generate bit-exact repeatable RTP audio and wav output, independent of other parameters (such as accelerated processing mode). This can be useful for call recording applications. The [reproducibility section](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-reproducibility) on the mediaMin page has a detailed discussion of this option. 
 
 <a name="SoftwareArchitectureDiagram"></a>
 ## SigSRF Software and I/O Architecture Diagram
