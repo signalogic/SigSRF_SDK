@@ -13,6 +13,9 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2/HI3 and OpenLI Support](#user-content-openlisupport)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[High Capacity Multithreaded Operation](#user-content-multithreaded)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Deployment Grade](#user-content-deploymentgrade)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Live Streaming](#user-content-livestreaming)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Accelerated Mode (Bulk Pcap Processing)](#user-content-acceleratedmodebulkpcapprocessing)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Reproducibilty](#user-content-reproducibility)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Software and I/O Architecture Diagram](#user-content-softwarearchitecturediagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Packet and Media Processing Data Flow Diagram](#user-content-packetmediathreaddataflowdiagram)<br/>
 [Using the SDK - Run Demos and Reference Apps, Build User Apps](#user-content-sdkdownload)<br/>
@@ -81,7 +84,7 @@ EdgeStream and SigSRF software are designed to run on (i) private, public, or hy
 
 EdgeStream and SigSRF support media delivery, transcoding, deep learning <sup>1</sup>, OpenCV, speech recognition, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
-For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture, for an overview see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/WhenSoftwareOnlyIsNotEnough.md">When Software Only Is Not Enough</a>.
+For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture, for an overview see <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/WhenSoftwareOnlyIsNotEnough.md">When Software Only Is Not Enough</a>.
 
 <sup>1</sup> In progress<br/>
 <sup>2</sup> SWaP = size, weight, and power consumption</br>
@@ -101,7 +104,7 @@ Telecom mode is defined as direct handling of IP/UDP/RTP traffic.  This mode is 
 
 Analytics mode is defined as indirect handling of IP/UDP/RTP traffic, where traffic is encapsulated or "one step removed", having been captured, copied, or relayed from direct traffic for additional processing.  This mode is sometimes also referred to as data driven or “clockless” mode, the latter description referring to jitter buffer packet processing either wholly or partially without a wall clock reference.  In general, analytics mode applications operate after real-time traffic has already occurred, although it may be incorrect to say "non-real-time" as they may need to reproduce or emulate the original real-time behavior.  Examples of analytics mode include Lawful Intercept (LI) and web IT data analytics such as speaker identification and automatic speech recognition (ASR).
 
-Applications include user-defined apps and the mediaMin and mediaTest reference apps described on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin / mediaTest page</a>.
+Applications include user-defined apps and the mediaMin and mediaTest reference apps described on the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin / mediaTest page</a>.
 
 <a name="AnalyticsModeDataFlowDiagram"></a>
 ### Analytics Mode Data Flow Diagram
@@ -113,13 +116,13 @@ Applications include user-defined apps and the mediaMin and mediaTest reference 
 <a name="MinimumAPIInterface"></a>
 ## Minimum API Interface
 
-At a high-level the SigSRF API allows simple interfaces, for example a basic, continuous push-pull loop using bare minimum APIs, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin</a> source code excerpt below:
+At a high-level the SigSRF API allows simple interfaces, for example a basic, continuous push-pull loop using bare minimum APIs, as shown in the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin</a> source code excerpt below:
   
 ![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface")
 
 Some notes about the above example:
 
-> 1. PushPackets() and PullPackets() call [pktlib](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
+> 1. PushPackets() and PullPackets() call [pktlib](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
 > 2. Sessions are created dynamically inside PushPackets()
 > 3. PullPackets() saves (i) de-jittered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio to pcap or UDP port
 
@@ -138,7 +141,7 @@ For information on DER decoding library API functions, see derlib.h in the SigSR
 <a name="OpenLISupport"></a>
 ### HI2/HI3 and OpenLI Support
 
-For information on HI2 and HI3 intercept decoding with <a href="https://openli.nz" target="_blank">OpenLI</a> example pcaps, see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-encapsulatedstreams">Encapsulated Streams section</a> on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>.
+For information on HI2 and HI3 intercept decoding with <a href="https://openli.nz" target="_blank">OpenLI</a> example pcaps, see the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-encapsulatedstreams">Encapsulated Streams section</a> on the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>.
 
 <a name="Multithreaded"></a>
 ## High Capacity Multithreaded Operation
@@ -167,9 +170,9 @@ Using the thread ratio and per stream workload given above, necessary per CPU am
 
 where N is the required number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
-<sup>1</sup> [pktlib](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) provides packet/media APIs, examples include DSCreateSession(), DSPushPacket(), and DSPullPackets(), and DSGetSessionInfo()
+<sup>1</sup> [pktlib](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) provides packet/media APIs, examples include DSCreateSession(), DSPushPacket(), and DSPullPackets(), and DSGetSessionInfo()
   
-<sup>2</sup> [Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-sessions) create unique stream identifiers (from IP header, UDP port, and SSRC information) allowing management of a stream during its lifespan
+<sup>2</sup> [Sessions](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-sessions) create unique stream identifiers (from IP header, UDP port, and SSRC information) allowing management of a stream during its lifespan
 
 <sup>3</sup> Available CPUs can be located in one or more servers
 
@@ -183,6 +186,21 @@ EdgeStream and SigSRF software, unlike many open source repositories, are not ex
 For calculation-intensive shared library components, such as codecs, signal processing, and inference, SigSRF implements the XDAIS standard made popular by Texas Instruments.  XDAIS was designed to manage shared resources and conflict between calculation- and memory-intensive algorithms.  Originally XDAIS was intended by TI to help produce robust, reliable software on highly resource-constrained embedded platforms.  It continues to help achieve that on today's modern Linux servers.
 
 In addition to customer production testing, stress tests are always ongoing in Signalogic lab servers.  New releases must pass 672 hours (4 weeks) of continuous stress test at full capacity, running on HP DL380 series servers.  For more information on these tests, and Linux configuration used for high capacity operation, see [SigSRF Documentation](#user-content-documentationsupport) below.
+
+<a name="LiveStreaming"></a>
+### Live Streaming
+
+The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) generates live streaming output, including both real-time RTP audio and wav file output. RTP audio can be directed to a UDP port or pcap file. wav files include individual input streams, merged streams, and N-channel wav file.
+
+<a name="AcceleratedModeBulkPcapProcessing"></a>
+### Accelerated Mode (Bulk Pcap Processing)
+
+The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) includes a "faster than real-time" accelerated processing mode, which supports [bulk pcap processing](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-bulkpcaphandling). Depending on CPU type and clock rate, processing can be typically be accelerated between 20 and 50 times.
+
+<a name="Reproducibility"></a>
+### Reproducibility
+
+The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) includes a timestamp matching option that relies on [Analytics Mode](#user-content-analyticsmode), with no references to wall clocks, to generate bit-exact repeatable RTP audio and wav output, independent of other parameters (such as accelerated processing mode). This can be useful for call recording applications. The [reproducibility section](www.https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-reproducibility) on the mediaMin page has a detailed discussion of this option. 
 
 <a name="SoftwareArchitectureDiagram"></a>
 ## SigSRF Software and I/O Architecture Diagram
@@ -202,11 +220,11 @@ In addition to the APIs referenced below, SigSRF offers a simplified set of APIs
 
 Some notes about the above data flow diagram:
 
-   1) Data flow matches <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest</a> application C source code (packet_flow_media_proc.c).  Subroutine symbols are labeled with pktlib, voplib, and alglib API names.
+   1) Data flow matches <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaTest</a> application C source code (packet_flow_media_proc.c).  Subroutine symbols are labeled with pktlib, voplib, and alglib API names.
 
    2) A few areas of the flow diagram are somewhat approximated, to simplify and make easier to read.  For example, loops do not have "for" or "while" flow symbols, and some APIs, such as DSCodecEncode() and DSFormatPacket(), appear in the flow once, but actually may be called multiple times, depending on what signal processing algorithms are in effect.
 
-   3) <b>Multisession</b>.  The "Input and Packet Buffering", "Packet Processing", and "Media Processing and Output" stages are per-session, and repeat for multiple sessions.  See <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-sessionconfig">Session Config</a> for more info.
+   3) <b>Multisession</b>.  The "Input and Packet Buffering", "Packet Processing", and "Media Processing and Output" stages are per-session, and repeat for multiple sessions.  See <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-sessionconfig">Session Config</a> for more info.
 
    4) <b>Multichannel</b>.  For each session, The "Input and Packet Buffering", "Packet Processing", and "Media Processing and Output" stages of data flow are multichannel and optimized for high capacity channel processing.
 
@@ -263,7 +281,7 @@ or
 
     cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest/mediaMin
 
-... depending on which EdgeStream app you want to run. The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
+... depending on which EdgeStream app you want to run. The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
 
 <a name="ASRDockerContainer"></a>
 ### ASR Docker Container
@@ -273,7 +291,7 @@ The ASR (automatic speech recognition) container is larger than other containers
 <a name="GeneralDockerContainerNotes"></a>
 ### General Docker Container Notes
 
-1. All available containers have been tested on x86 Linux bare metal servers, including performance and capacity measurements given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. Measurements on x86 VMs on other OS (e.g MacOS, WinXX) are likely to be slower.
+1. All available containers have been tested on x86 Linux bare metal servers, including performance and capacity measurements given on the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. Measurements on x86 VMs on other OS (e.g MacOS, WinXX) are likely to be slower.
 
 2. All available containers are configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
 
@@ -549,14 +567,14 @@ Additional advanced pcap examples are also available, including:
 
 For these pcaps, the "advanced pcap" .rar file must also be downloaded. This rar is password protected; to get the password please register with Signalogic (either from the website homepage or through e-mail). Depending on the business case, a short NDA covering only the advanced pcaps may be required. These restrictions are in place as as these pcaps were painstakingly compiled over several years of deployment and field work; they provide an advanced test suite our competitors don't have. If you already have multistream pcaps the reference apps will process these without limitation. Depending on your results you may want the Signalogic pcap examples for comparison. Both libpcap and pcapng formats are supported.
 
-Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. 
+Example command lines for both the default set of pcaps and wav files and advanced pcaps are given on the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. 
 
 <a name="ASRNotes"></a>
 ## ASR Notes
                  
 The SigSRF "inferlib" (inference library) module provides an interface to Kaldi ASR. In the SigSRF and EdgeStreawm SDK the Kaldi "mini-librispeech" model is used, which is trained with English speech and has a vocabulary size around 20k words. More information is at <a href="https://medium.com/@qianhwan/understanding-kaldi-recipes-with-mini-librispeech-example-part-1-hmm-models-472a7f4a0488"> Understanding Kaldi with mini-librispeech</a>.
 
-To run ASR, you can either download a Docker container (see [Docker Containers](#user-content-dockercontainers) above) or install the ASR version Rar package (see [ASR Install Notes](#user-content-asrinstallnotes) above). The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin page</a> has command line examples running ASR on RTP encoded pcaps. mediaTest can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded with any of the codecs supported in the SDK. mediaMin is currently being modified to support direct .wav and USB audio input.
+To run ASR, you can either download a Docker container (see [Docker Containers](#user-content-dockercontainers) above) or install the ASR version Rar package (see [ASR Install Notes](#user-content-asrinstallnotes) above). The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin page</a> has command line examples running ASR on RTP encoded pcaps. mediaTest can be used to generate pcaps from USB input or audio file (wav, au, etc). pcaps may be encoded with any of the codecs supported in the SDK. mediaMin is currently being modified to support direct .wav and USB audio input.
 
 For ASR performance and accuracy, system performance is crucial -- unless you are running a Xeon E5-25xx core or similar you won't see sustained real-time performance. However, because SigSRF libs have been developed and deployed on Linux systems for telecoms who are extremely sensitive to losing any amount of data, near-real-time ASR is possible even on slow CPUs such as Atom C2300 series. On slower CPUs, thread preemption and buffer management built into SigSRF libs allows for several seconds of real-time ASR operation separated by pauses.
                  
@@ -578,7 +596,7 @@ If you would prefer an evaluation version with increased data and concurrency li
 <a name="mediaMin_and_mediaTest"></a>
 ### mediaMin and mediaTest Reference Applications
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
+The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
 
 mediaMin is a production reference application, using a minimum set of APIs (create/delete session, push/pull packets), it can handle a wide range of RTP audio packet inputs. mediaTest is focused on test and measurement functionality and accepts USB and wav file audio input. Some things you can do with mediaMin and mediaTest command lines:
 
@@ -600,12 +618,12 @@ For both mediaMin and mediaTest, reference application C/C++ source code is incl
 <a name="iaTest"></a>
 ### iaTest
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest page</a> gives example command lines for image analytics and OpenCV testing.  The iaTest app performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.  Application C/C++ source code is included.
+The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/iaTest_readme.md">iaTest page</a> gives example command lines for image analytics and OpenCV testing.  The iaTest app performs image analytics operations vs. example surveillance video files and allows per-core performance measurement and comparison for x86 and coCPU cores.  .yuv and .h264 file formats are supported.  Application C/C++ source code is included.
 
 <a name="paTest"></a>
 ### paTest
 
-The <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md">paTest page</a> gives example command lines for a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies.  Application Java and C/C++ source code is included.
+The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md">paTest page</a> gives example command lines for a predictive analytics application that applies algorithms and deep learning to continuous log data in order to predict failure anomalies.  Application Java and C/C++ source code is included.
 
 <a name="SDKDemoTestedPlatforms"></a>
 # SDK / Demo Tested Platforms
