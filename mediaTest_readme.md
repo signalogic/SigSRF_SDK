@@ -678,7 +678,7 @@ a=ptime:20
 
   * Both command line SDP info and packet flow SDP descriptions are added to mediaMin's internal SDP database. SDP descriptions are added only if they contain one or more non-zero, unique Origin fields
 
-  * In all cases of packet flow containing SAP protocol, SIP Invite messages, and other forms of SDP descriptions, mediaMin automatically discovers media ports, and allows those for dynamic session creation and media packet processing. If any are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), mediaMin will allow them as media ports. Also see [Port Allow List](#user-content-portallowlist) below for more information.
+  * In all cases of packet flow containing SAP protocol, SIP Invite messages, and other forms of SDP descriptions, mediaMin automatically discovers media ports, and allows those for dynamic session creation and media packet processing. If any are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), mediaMin will allow them as media ports. Also see [Port Allow List](#user-content-portallowlist) below for more information
 
   * The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path
 
@@ -2783,7 +2783,7 @@ indicate non-consecutive packet duplication, which can be confirmed by examining
 
 on the mediaMin command line.
 
-Note that mediaMin will automatically discover UDP ports in SDP info and SIP Invite message packets, and if they are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), will allow them as media ports.
+Note that mediaMin will automatically discover UDP ports in SDP info and SIP Invite message packets, and if they are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), allow them as media ports.
 
 #### Include Input Pauses in Wav Output
 
