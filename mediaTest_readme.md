@@ -629,7 +629,7 @@ a=rtpmap:100 telephone-event/16000
 
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
 
-#### SDP Info Packets
+#### SDP Info and SIP Invite Packets
 
 mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If [-dN command line options](#user-content-mediamincommandlineoptions) include the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite and SDP info messages.
 
@@ -670,9 +670,11 @@ a=ptime:20
 
 #### SDP Notes
 
-Both command line SDP info and packet flow SDP descriptions are added to mediaMin's internal SDP database. SDP descriptions are added only if they contain a non-zero, unique Origin field.
+  * Both command line SDP info and packet flow SDP descriptions are added to mediaMin's internal SDP database. SDP descriptions are added only if they contain one or more non-zero, unique Origin fields
 
-The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path.
+  * In all cases of packet flow containing SAP protocol, SIP Invite messages, and other forms of SDP descriptions, mediaMin automatically discovers media ports, and allows those for dynamic session creation and media packet processing. If any are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), mediaMin will allow them as media ports. Also see [Port Allow List](#user-content-portallowlist) below for more information.
+
+  * The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path
 
 <a name="PacketPushRateControl"></a>
 ## Packet Push Rate Control
@@ -2263,14 +2265,14 @@ Below is a packet stats log file excerpt:
 ```CoffeeScript
 Packet info for SSRC = 353707 (cont), first seq num = 685, last seq num = 872 ...
 
-Seq num 685              timestamp = 547104, pkt len = 33
-Seq num 686              timestamp = 547424, pkt len = 33
-Seq num 688 ooo 687      timestamp = 548064, pkt len = 33
-Seq num 687 ooo 688      timestamp = 547744, pkt len = 33
-Seq num 690 ooo 689      timestamp = 548704, pkt len = 33
-Seq num 689 ooo 690      timestamp = 548384, pkt len = 33
-Seq num 691              timestamp = 549024, pkt len = 33
-Seq num 692              timestamp = 549344, pkt len = 6 (DTX)
+Seq num 685              timestamp = 547104, pkt len = 33 media
+Seq num 686              timestamp = 547424, pkt len = 33 media
+Seq num 688 ooo 687      timestamp = 548064, pkt len = 33 media
+Seq num 687 ooo 688      timestamp = 547744, pkt len = 33 media
+Seq num 690 ooo 689      timestamp = 548704, pkt len = 33 media
+Seq num 689 ooo 690      timestamp = 548384, pkt len = 33 media
+Seq num 691              timestamp = 549024, pkt len = 33 media
+Seq num 692              timestamp = 549344, pkt len = 6 DTX
 :
 :
 ```
@@ -2280,10 +2282,10 @@ Here is an excerpt from a stream summary:
 ```CoffeeScript
 :
 :
-Seq num 10001            timestamp = 451024, pkt len = 33
-Seq num 10002            timestamp = 451344, pkt len = 6 (DTX)
-Seq num 10003            timestamp = 453904, pkt len = 6 (DTX)
-Seq num 10004            timestamp = 456464, pkt len = 6 (DTX)
+Seq num 10001            timestamp = 451024, pkt len = 33 media
+Seq num 10002            timestamp = 451344, pkt len = 6 DTX
+Seq num 10003            timestamp = 453904, pkt len = 6 DTX
+Seq num 10004            timestamp = 456464, pkt len = 6 DTX
 
 Out-of-order seq numbers = 0, missing seq numbers = 22, number of DTX packets = 78
 
@@ -2296,12 +2298,12 @@ As mentioned in "DTX Handling" above, here is a log file example, first showing 
 ```CoffeeScript
 :
 :
-Seq num 22              timestamp = 107024, pkt len = 33
-Seq num 23              timestamp = 107344, pkt len = 33
-Seq num 24              timestamp = 107664, pkt len = 6 (SID)
-Seq num 25              timestamp = 110224, pkt len = 6 (SID)
-Seq num 26              timestamp = 112144, pkt len = 33
-Seq num 27              timestamp = 112464, pkt len = 33
+Seq num 22              timestamp = 107024, pkt len = 33 media
+Seq num 23              timestamp = 107344, pkt len = 33 media
+Seq num 24              timestamp = 107664, pkt len = 6 SID
+Seq num 25              timestamp = 110224, pkt len = 6 SID
+Seq num 26              timestamp = 112144, pkt len = 33 media
+Seq num 27              timestamp = 112464, pkt len = 33 media
 :
 :
 ```
@@ -2312,24 +2314,24 @@ Seq num 27              timestamp = 112464, pkt len = 33
 ```CoffeeScript
 :
 :
-Seq num 22              timestamp = 107024, pkt len = 33
-Seq num 23              timestamp = 107344, pkt len = 33
-Seq num 24              timestamp = 107664, pkt len = 6 (SID)
-Seq num 25              timestamp = 107984, pkt len = 6 (SID CNG-R)
-Seq num 26              timestamp = 108304, pkt len = 6 (SID CNG-R)
-Seq num 27              timestamp = 108624, pkt len = 6 (SID CNG-R)
-Seq num 28              timestamp = 108944, pkt len = 6 (SID CNG-R)
-Seq num 29              timestamp = 109264, pkt len = 6 (SID CNG-R)
-Seq num 30              timestamp = 109584, pkt len = 6 (SID CNG-R)
-Seq num 31              timestamp = 109904, pkt len = 6 (SID CNG-R)
-Seq num 32              timestamp = 110224, pkt len = 6 (SID)
-Seq num 33              timestamp = 110544, pkt len = 6 (SID CNG-R)
-Seq num 34              timestamp = 110864, pkt len = 6 (SID CNG-R)
-Seq num 35              timestamp = 111184, pkt len = 6 (SID CNG-R)
-Seq num 36              timestamp = 111504, pkt len = 6 (SID CNG-R)
-Seq num 37              timestamp = 111824, pkt len = 6 (SID CNG-R)
-Seq num 38              timestamp = 112144, pkt len = 33
-Seq num 39              timestamp = 112464, pkt len = 33
+Seq num 22              timestamp = 107024, pkt len = 33 media
+Seq num 23              timestamp = 107344, pkt len = 33 media
+Seq num 24              timestamp = 107664, pkt len = 6 SID
+Seq num 25              timestamp = 107984, pkt len = 6 SID CNG-R
+Seq num 26              timestamp = 108304, pkt len = 6 SID CNG-R
+Seq num 27              timestamp = 108624, pkt len = 6 SID CNG-R
+Seq num 28              timestamp = 108944, pkt len = 6 SID CNG-R
+Seq num 29              timestamp = 109264, pkt len = 6 SID CNG-R
+Seq num 30              timestamp = 109584, pkt len = 6 SID CNG-R
+Seq num 31              timestamp = 109904, pkt len = 6 SID CNG-R
+Seq num 32              timestamp = 110224, pkt len = 6 SID
+Seq num 33              timestamp = 110544, pkt len = 6 SID CNG-R
+Seq num 34              timestamp = 110864, pkt len = 6 SID CNG-R
+Seq num 35              timestamp = 111184, pkt len = 6 SID CNG-R
+Seq num 36              timestamp = 111504, pkt len = 6 SID CNG-R
+Seq num 37              timestamp = 111824, pkt len = 6 SID CNG-R
+Seq num 38              timestamp = 112144, pkt len = 33 media
+Seq num 39              timestamp = 112464, pkt len = 33 media
 :
 :
 ```
@@ -2339,15 +2341,15 @@ As mentioned in "DTMF Handling" above, here is a log file example showing incomi
 ```CoffeeScript
 :
 :
-Seq num 269              timestamp = 47600, pkt len = 160
-Seq num 270              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 271              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 272              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 273              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 274              timestamp = 47760, pkt len = 4 (DTMF Event)
-Seq num 275              timestamp = 48400, pkt len = 160
+Seq num 269              timestamp = 47600, pkt len = 160 media
+Seq num 270              timestamp = 47760, pkt len = 4 DTMF Event
+Seq num 271              timestamp = 47760, pkt len = 4 DTMF Event
+Seq num 272              timestamp = 47760, pkt len = 4 DTMF Event
+Seq num 273              timestamp = 47760, pkt len = 4 DTMF Event
+Seq num 274              timestamp = 47760, pkt len = 4 DTMF Event
+Seq num 274              timestamp = 47760, pkt len = 4 DTMF Event
+Seq num 274              timestamp = 47760, pkt len = 4 DTMF Event
+Seq num 275              timestamp = 48400, pkt len = 160 media
 :
 :
 ```
@@ -2766,6 +2768,7 @@ indicate non-consecutive packet duplication, which can be confirmed by examining
 
 -l2 cmd line entry would correct this, removing the mediaMin warnings and ooo (out-of-order) in the packet log caused by duplication.
 
+<a name="PortAllowList"></a>
 #### Port Allow List
 
 -pN entry specifies a UDP port to add to the "allow list", a list of non-dynamic UDP ports (from 1 to 4095) that are normally treated as non-RTP ports by mediaMin when processing media streams. For example if you need to allow ports 3258, 1019, and 2233, you can enter:
@@ -2773,6 +2776,8 @@ indicate non-consecutive packet duplication, which can be confirmed by examining
     -p3258 -p1019 -p2233
 
 on the mediaMin command line.
+
+Note that mediaMin will automatically discover UDP ports in SDP info and SIP Invite packets, and if they are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), will allow them as media ports.
 
 #### Include Input Pauses in Wav Output
 
