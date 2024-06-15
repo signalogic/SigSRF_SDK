@@ -101,8 +101,7 @@ The pktlib minimum API interface supports application level "push" and "pull" to
 <a name="Structs"></a>
 # Structs
 
-/* PKTINFO struct filled by DSGetPacketInfo() when uFlags includes the DS_PKT_INFO_PKTINFO flag. A PKTINFO struct param is also used by DSFindPcapPacket() */
-
+```c++
   typedef struct {
 
      uint8_t             version;
@@ -112,21 +111,32 @@ The pktlib minimum API interface supports application level "push" and "pull" to
      int                 ip_hdr_len;
      unsigned short int  src_port;
      unsigned short int  dst_port;
-     unsigned int        seqnum;          /* TCP sequence number or UDP/RTP sequence number */
-     unsigned int        ack_seqnum;      /* TCP acknowlegement sequence number */
-     int                 pyld_ofs;        /* TCP or UDP payload offset */
-     int                 pyld_len;        /* TCP or UDP payload length */
-     int                 rtp_hdr_ofs;     /* RTP items filled for UDP packets. If not a valid RTP packet then RTP items may be undefined */
+     unsigned int        seqnum;                  /* TCP sequence number or UDP/RTP sequence number */
+     unsigned int        ack_seqnum;              /* TCP acknowlegement sequence number */
+     unsigned int        ip_hdr_checksum;         /* IP header checksum */
+     unsigned int        seg_length;              /* TCP segment length */
+     int                 pyld_ofs;                /* TCP or UDP payload offset from start of packet to payload data */
+     int                 pyld_len;                /* TCP or UDP payload size, not including UDP header */
+     int                 pyld_len_all_fragments;  /* for a packet with MF flag set and no fragment offset, this is the total size of all fragments, not including UDP header */
+     unsigned int        udp_checksum;            /* UDP checksum */
+
+  /* RTP items filled for UDP packets. If not a valid RTP packet then RTP items may be undefined. The DS_PKT_INFO_PKTINFO_EXCLUDE_RTP flag can be combined with the DS_PKT_INFO_PKTINFO flag to specify that RTP items should not be processed */
+
+     int                 rtp_hdr_ofs;             /* offset from start of packet to RTP header */
      int                 rtp_hdr_len;
-     int                 rtp_pyld_ofs;
+     int                 rtp_pyld_ofs;            /* offset from start of packet to RTP payload data */
      int                 rtp_pyld_len;
      uint8_t             rtp_pyld_type;
      int                 rtp_padding_len;
      uint32_t            rtp_timestamp;
      uint32_t            rtp_ssrc;
+     uint16_t            rtp_seqnum;
 
   } PKTINFO;
 
 /* PKTINFO flags definitions */
 
-  #define PKT_FRAGMENT  1  /* set in PKTINFO "flags" if either of packet's MF flag (more fragments) or fragment offset are non-zero */
+  #define PKT_FRAGMENT_MF         1  /* set in PKTINFO "flags" if packet MF flag (more fragments) is set */
+  #define PKT_FRAGMENT_OFS        2  /* set in PKTINFO "flags" if packet fragment offset is non-zero */
+  #define PKT_FRAGMENT_ITEM_MASK  7  /* mask for fragment related flags */
+```
