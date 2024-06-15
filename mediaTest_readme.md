@@ -500,7 +500,7 @@ In dynamic session mode, when mediaMin finds a new unique combination of IP addr
 > 
 >      See [SDP Support](#user-content-sdpsupport) below
 >
-> 2. SIP INVITE packet in the input packet flow (occurring before RTP packets)
+> 2. SIP INVITE message in the input packet flow (occurring before RTP packets)
 > 
 > 3. SAP/SDP protocol packet in the input packet flow
 
@@ -593,11 +593,11 @@ SDP input is processed by mediaMin in two (2) ways
     ```
     .sdp files should be basic text files, with either CR line endings (typical for Linux) or CRLF (typical for Windows).
 
-2) As contents of SIP Invite or other SDP info packets contained in packet flow. This also works for [encapsulated streams](#user-content-encapsulatedstreams).
+2) As contents of SIP Invite message or other SDP info packets contained in packet flow. This also works for [encapsulated streams](#user-content-encapsulatedstreams).
 
 #### Command Line SDP File
 
-Command line SDP input applies to all pcaps or UDP inputs, so the .sdp file should cover all expected payload types and configurations. Packet SDP input applies only to the input packet flow in which SIP invite packets are received, and should appear before input stream(s) start in order to take effect.
+Command line SDP input applies to all pcaps or UDP inputs, so the .sdp file should cover all expected payload types and configurations. Packet SDP input applies only to the input packet flow in which SIP Invite message packets are received, and should appear before input stream(s) start in order to take effect.
 
 Below is the example.sdp file included in the SDK download:
 
@@ -635,11 +635,11 @@ a=rtpmap:100 telephone-event/16000
 
 Note in the above SDP file example that comments, marked by "#", are supported, although there is no widely accepted method of commenting SDP info mentioned in RFCs or other standards.
 
-#### SDP Info and SIP Invite Packets
+#### SDP Info and SIP Invite Message Packets
 
-mediaMin recognizes SAP/SDP protocol, SIP Invite, and other packets containing SDP info. If [-dN command line options](#user-content-mediamincommandlineoptions) include the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite and SDP info messages.
+mediaMin recognizes SAP/SDP protocol, SIP Invite message, and other packets containing SDP info. If [-dN command line options](#user-content-mediamincommandlineoptions) include the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite message and SDP information.
 
-Below is an example of mediaMin display showing a SIP Invite found message, along with other SIP messages. Note in this case the SDP description contains a unique Origin session ID.
+Below is an example of mediaMin display showing a SIP Invite message found in packet flow, along with other SIP messages. Note in this case the SDP description contains a unique Origin session ID.
 
 ```
 00:00:00.051.074 mediaMin INFO: SIP Invite found, dst port = 5060, pyld len = 3377, len = 597, rem = 2043, index = 0, SDP info contents as follows
@@ -2783,7 +2783,7 @@ indicate non-consecutive packet duplication, which can be confirmed by examining
 
 on the mediaMin command line.
 
-Note that mediaMin will automatically discover UDP ports in SDP info and SIP Invite packets, and if they are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), will allow them as media ports.
+Note that mediaMin will automatically discover UDP ports in SDP info and SIP Invite message packets, and if they are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), will allow them as media ports.
 
 #### Include Input Pauses in Wav Output
 
