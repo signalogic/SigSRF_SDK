@@ -15,7 +15,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 Use case driven improvements
 
- - SDP info development, including port discovery and handling of fragmented packets containing [SDP info ](#user-content-sdpsupport)
+ - SDP info expanded support, including port discovery and handling of fragmented packets containing [SDP info ](#user-content-sdpsupport)
 
 <i><b>3Q 2024</b></i>
 
