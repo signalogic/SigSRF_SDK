@@ -2783,7 +2783,7 @@ indicate non-consecutive packet duplication, which can be confirmed by examining
 
 on the mediaMin command line.
 
-Note that mediaMin will automatically discover UDP ports in SDP info and SIP Invite message packets, and if they are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), allow them as media ports.
+Note that mediaMin will automatically discover media ports in SDP info and SIP Invite message packets, and if they are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), add them to the port allow list.
 
 #### Include Input Pauses in Wav Output
 
