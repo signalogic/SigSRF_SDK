@@ -116,7 +116,7 @@ The pktlib minimum API interface supports application level "push" and "pull" to
      unsigned int        ip_hdr_checksum;         /* IP header checksum */
      unsigned int        seg_length;              /* TCP segment length */
      int                 pyld_ofs;                /* TCP or UDP payload offset from start of packet to payload data */
-     int                 pyld_len;                /* TCP or UDP payload size, not including UDP header */
+     int                 pyld_len;                /* TCP or UDP payload size, excluding UDP header. To include the UDP header add the DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR flag to uFlags */
      int                 pyld_len_all_fragments;  /* for a packet with MF flag set and no fragment offset, this is the total size of all fragments, not including UDP header */
      unsigned int        udp_checksum;            /* UDP checksum */
 
