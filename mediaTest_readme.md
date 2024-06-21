@@ -23,6 +23,10 @@ Use case driven improvements
 
 Arm support is under development !
 
+Bug fixes
+
+  - fix to AMR NB decoder handling of bandwidth-efficient mode for 4750 and 5150 bitrates
+
 <i><b>1Q-2Q 2024</b></i>
 
 Use case driven improvements
