@@ -13,30 +13,22 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
-<i><b>3Q 2024</b></i>
-
-Use case driven improvements
-
- - SDP info expanded support, including port discovery and handling of fragmented packets containing [SDP info ](#user-content-sdpsupport)
+<i><b>1Q-2Q 2024</b></i>
 
 [Codecs documentation](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) is on Github
 
 Arm support is under development !
 
-Bug fixes
-
-  - fix to AMR NB decoder handling of bandwidth-efficient mode for 4750 and 5150 bitrates
-
-<i><b>1Q-2Q 2024</b></i>
-
 Use case driven improvements
 
+ - SDP info expanded support, including port discovery and handling of fragmented packets containing [SDP info ](#user-content-sdpsupport)
  - further improvements in RTP media type auto-detection
  - codec configuration options for binary-only codecs with exit() and abort() calls, and codecs with protected sections of source not permissible to modify
  - silence trim, re-sampling, and other wav file post-processing options
 
 Bug fixes
 
+  - fix to AMR NB decoder handling of bandwidth-efficient mode for 4750 and 5150 bitrates
   - debug mode added to codecs to help find subtle NaN and other floating-point issues in deployments on wide range of Linux and GLIBC versions
   - fix EVS Player and AMR Player example/demo command lines (below). These were broken after not being retested after other improvements
   - fix problem with high numbers of dynamic channels in a stream (high capacity RFC8108)
