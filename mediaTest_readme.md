@@ -13,11 +13,11 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+<i><b>3Q 2024</b></i>
+
 Use case driven improvements
 
  - SDP info expanded support, including port discovery and handling of fragmented packets containing [SDP info ](#user-content-sdpsupport)
-
-<i><b>3Q 2024</b></i>
 
 [Codecs documentation](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) is on Github
 
