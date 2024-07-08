@@ -22,17 +22,18 @@ Arm support is under development !
 Use case driven improvements
 
  - packet fragmentation and reassembly management, including UDP duplicate packet detection
- - [SDP info](#user-content-sdpsupport) expanded support, including media port discovery  
+ - [SDP info](#user-content-sdpsupport) expanded support, including media port discovery
  - further improvements in RTP media type auto-detection
  - codec configuration options for binary-only codecs with exit() and abort() calls, and codecs with protected sections of source not permissible to modify
  - silence trim, re-sampling, and other wav file post-processing options
 
 Bug fixes
 
-  - fix to AMR NB decoder handling of bandwidth-efficient mode for 4750 and 5150 bitrates
-  - debug mode added to codecs to help find subtle NaN and other floating-point issues in deployments on wide range of Linux and GLIBC versions
-  - fix EVS Player and AMR Player example/demo command lines (below). These were broken after not being retested after other improvements
-  - fix problem with high numbers of dynamic channels in a stream (high capacity RFC8108)
+ - fix to AMR NB decoder handling of bandwidth-efficient mode for 4750 and 5150 bitrates
+ - packet logging and tracing now handles SSRCs shared across streams
+ - debug mode added to codecs to help find subtle NaN and other floating-point issues in deployments on wide range of Linux and GLIBC versions
+ - fix EVS Player and AMR Player example/demo command lines (below). These were broken after not being retested after other improvements
+ - fix problem with high numbers of dynamic channels in a stream (high capacity RFC8108)
 
 <i><b>3Q-4Q 2023</b></i>
 
@@ -46,8 +47,8 @@ Use case driven improvements
 
 Bug fixes
 
-  - fix bug in mediaTest NO_DATA frame handling
-  - fix problem in packet gap/pause handling where short, successive gaps were not handled correctly
+ - fix bug in mediaTest NO_DATA frame handling
+ - fix problem in packet gap/pause handling where short, successive gaps were not handled correctly
 
 <i><b>1Q-2Q 2023</b></i>
 
