@@ -23,6 +23,7 @@ Use case driven improvements
 
  - packet fragmentation and reassembly management, including UDP duplicate packet detection
  - [SDP info](#user-content-sdpsupport) expanded support, including media port discovery
+ - packet numbering and tracing for Wireshark comparison
  - further improvements in RTP media type auto-detection
  - codec configuration options for binary-only codecs with exit() and abort() calls, and codecs with protected sections of source not permissible to modify
  - silence trim, re-sampling, and other wav file post-processing options
