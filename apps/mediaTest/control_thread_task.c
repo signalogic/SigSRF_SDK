@@ -5,11 +5,12 @@
  
    Function for handling C66x->host mailbox ran in a separate thread from main application
  
- Copyright (C) Signalogic Inc. 2015-2023
+ Copyright (C) Signalogic Inc. 2015-2024
  
  Revision History
    Created Sep 2015 CKJ
    Modified Dec 2023 JHB, include transcoding.h
+   Modified Jun 2024 JHB, change DS_VOICE_CODEC_TYPE_INVALID to DS_CODEC_TYPE_INVALID
 */
 
 #include <arpa/inet.h>
@@ -220,7 +221,7 @@ static const char* getCodecName(uint8_t codecType)
       "INVALID" 
    };
 
-   if (codecType < DS_VOICE_CODEC_TYPE_INVALID)
+   if (codecType < DS_CODEC_TYPE_INVALID)
       return codecName[codecType];
    else
       return "INVALID";

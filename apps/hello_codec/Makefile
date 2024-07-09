@@ -27,7 +27,7 @@
 #  Modified Feb 2024 JHB, define NO_HWLIB and NO_CIMLIB if command line has codecs_only=1
 #  Modified Feb 2024 JHB, rename CC_FLAGS to CPPFLAGS and AR_FLAGS to LDFLAGS
 #  Modified Apr 2024 JHB, set INSTALLPATH to $(shell pwd); this avoids relative paths in -rpath linker options
-#  Modified May 2024 JHB, add -L and -rpath linker option for ../lib/diaglib so diaglib_standalone.so can be linked and found at run-time
+#  Modified Jun 2024 JHB, comments only
 
 # check make cmd line for no_codecs, codecs_only, highcap, and max_instances_testing options
 
@@ -164,7 +164,7 @@ CFLAGS = $(INCLUDES) -Wall -g3 -O3 -flto -pthread -std=c++0x
 # add necessary defines
 #   _LINUX_     if not set, then a Win32 system is assumed
 #   _USE_PCIE_  applies to coCPU option (ignored if no coCPU accelerator card). If not set than ATCA or other hardware is assumed
-#   _SIGRT_     use real-time options where applicable
+#   _SIGRT      SigSRF builds with real-time options
 #   _X86        host platform is x86
 
 DEFINES += -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_USE_PCIE_ -D_SIGRT -D_X86
@@ -196,7 +196,7 @@ ifeq ($(AMRWBPLUS_INSTALLED),y)
 endif
 
 # linker search paths
-LINKER_INCLUDES = -L$(INSTALLPATH)/SIG_LIBS/glibc -L/usr/lib -L$(INSTALLPATH)/DirectCore/lib/voplib -L$(INSTALLPATH)/DirectCore/lib/diaglib
+LINKER_INCLUDES = -L$(INSTALLPATH)/SIG_LIBS/glibc -L/usr/lib -L$(INSTALLPATH)/DirectCore/lib/voplib
 
 # determine linking for codec libs built with --ffast-math
 #
@@ -373,7 +373,7 @@ endif
 #  cimlib      command line handling                        O
 #  stublib     defines null APIs for codecs not installed   O
 
-SIG_LIBS = -l$(VOPLIB) $(CODEC_LIBS) -ldiaglib_standalone
+SIG_LIBS = -l$(VOPLIB) $(CODEC_LIBS) -ldiaglib
 
 ifeq ($(codecs_only),) 
   SIG_LIBS += -lhwlib -lcimlib
@@ -385,9 +385,8 @@ LDFLAGS += -flto -Xlinker -Map=hello_codec.map -Wl,--disable-new-dtags
 #  -this is part of high performance codec lib handling
 #  -glibc contains glibc 2.35 versions of libmvec.so.1 and libm.so.6, which is specified with -l: in link target if host system GLIBC version is lower than 2.35
 # also add voplib folder run-time executable path, this handles special cases of voplib (e.g. voplib_codecs_only.so, voplib_codecs_only_highcap.so, etc), JHB Dec 2023
-# also add diaglib folder run-time executable path, this allows diaglib_standalone.so to be found at run-time
 
-LDFLAGS += -Wl,-rpath=$(INSTALLPATH)/SIG_LIBS/glibc -Wl,-rpath=$(INSTALLPATH)/DirectCore/lib/voplib -Wl,-rpath=$(INSTALLPATH)/DirectCore/lib/diaglib
+LDFLAGS += -Wl,-rpath=$(INSTALLPATH)/SIG_LIBS/glibc -Wl,-rpath=$(INSTALLPATH)/DirectCore/lib/voplib
 
 # turn on verbose link if in command line (e.g. Make all verbose_link=1)
 ifeq ($(verbose_link),1)

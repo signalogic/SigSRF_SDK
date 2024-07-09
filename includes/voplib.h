@@ -51,6 +51,7 @@
   Modified Mar 2024 JHB, add DS_CODEC_USE_EVENT_LOG and DEBUG_TEST_ABORT_EXIT_INTERCEPTION flags, consolidate separate DEBUG_OUTPUT_xxx encoder and decoder flags, reassign value of DEBUG_OUTPUT_ADD_TO_EVENT_LOG flag, deprecate DS_CV_GLOBALCONFIG and DS_CV_DEBUGCONFIG flags
   Modified Apr 2024 JHB, clarify documentation for CMR handling in CODEC_OUTARGS and CODEC_INARGS structs
   Modified May 2024 JHB, change comments that reference x86_mediaTest.c to mediaTest_proc.c
+  Modified Jun 2024 JHB, rename DS_CODEC_DECODE_GET_NUMFRAMES to DS_CODEC_GET_NUMFRAMES
 */
  
 #ifndef _VOPLIB_H_
@@ -114,7 +115,7 @@
 #define HEADERCOMPACT       0
 #define HEADERFULL          1
 #define BANDWIDTHEFFICIENT  HEADERCOMPACT
-#define OCTETALIGNED        HEADERFULL
+#define OCTETALIGN          HEADERFULL
 
 /* typedefs for various voplib handles */
 
@@ -128,14 +129,18 @@
   typedef HGLOBAL HCODEC;  /* channel handle */
 #endif
   
-/* Operation modes and corresponding APIs:
+/* Operational modes and APIs
+
    - Packet-based transcoding
-      - Use pktlib APIs where media type is set to speech in session data
-   - Frame-based encoding/decoding/transcoding
-      - DSCodecCreate() - setup an encoder and decoder for a codec with associated termination info 
-      - DSCodecEncode()/DSCodecDecode() - encode/decode a frame with the given codec
-      - DSCodecTranscode() - transcode between the two given codecs
-      - DSCodecDelete() - teardown the encoder and decoder associated with the handle
+      - used by pktlib to create encoder and decoder instances based on session and termination info
+
+   - Frame-based encoding/decoding
+      - DSCodecCreate() - create an encoder or decoder instance with specified parameters, receiving a handle to the instance 
+      - DSCodecEncode() - encode one or more frames using one or more encoder handles
+      - DSCodecDecode() - decode one or more frames using one or more decoder handles
+      - DSCodecDelete() - delete an encoder or decoder instance
+
+      - DSCodecTranscode() - transcode between two codecs [CURRENTLY DEPRECATED; use mediaTest or mediaMin apps instead]
 */
   
 #ifdef __cplusplus
@@ -231,7 +236,7 @@ extern "C" {
 
   } CODEC_DEC_PARAMS;
 
-/* audio classification frame types returned in CODEC_OUTARGS frameType, updated Feb 2024  */
+/* audio classification frame types returned in CODEC_OUTARGS frameType */
 
   enum audio_classification_frametype {
  
@@ -252,7 +257,7 @@ extern "C" {
     FRAMETYPE_ITEM_MASK = 0xff     /* mask to separate items from flags */
   };
  
-  typedef struct {  /* optional output from DSCodecEncode() and DSCodecDecode() APIs, if pOutArgs is non-NULL  */
+  typedef struct {  /* optional output from DSCodecEncode() and DSCodecDecode() APIs, if pOutArgs is non-NULL */
 
    short int size;       /* generic size field, used differently by codecs */
    short int frameType;  /* audio content frame type classified by the encoder, if supported by the codec type. Possible types are enumerated in audio_classification_frametype */
@@ -262,7 +267,7 @@ extern "C" {
 
                             -for AMR codecs CMR examples include 0xf0 (no mode request), 0x20 (AMR-WB 12.65 bps), 0x70 (AMR-NB 1.20 kbps), etc. If the bitstream CMR is "no mode request" (the default value), CMR will be 0xf0
                             -for EVS codecs CMR will be non-zero only if present in the input bitstream. Examples include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. CMR will be non-zero if the input bitstream is (a) in headerfull format and includes a CMR byte or (b) in AMR-WB IO mode compact format
-                            -received CMR values are not shifted in any way. For octet aligned and headerfull formats, CMR contains the whole byte as received (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR contains the partial 4 or 3 bits, in the exact position they were received, with other CMR bits zero
+                            -received CMR values are not shifted in any way. For octet align and headerfull formats, CMR contains the whole byte as received (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR contains the partial 4 or 3 bits, in the exact position they were received, with other CMR bits zero
                          */
 
    int bitRate;          /* for DSCodecDecode(), bitrate detected by the decoder (in bps) from the input bitstream, if supported by the codec type */
@@ -277,7 +282,7 @@ extern "C" {
                             -for AMR codecs if "no mode request" should be inserted, then specify 0xf0. When pInArgs is NULL, the default CMR value is 0xf0
                             -for EVS codecs using headerfull format, if pInArgs is non-NULL then zero CMR values are ignored. Examples of valid CMR values include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. Note the CMR value msb should be set in order to comply with spec section A.2.2.1.1 (the "H" bit). When pInArgs is NULL, or when compact format is in use, CMR is ignored
                             -for EVS codecs using AMR-WB IO mode in compact format valid values of CMR include 0 (6.6 kbps), 0xc0 (23.85 kbps), 0xe0 (no mode request), etc.
-                            -CMR should not be shifted in any way. For octet aligned and headerfull formats, CMR should give the whole byte to insert in the output frame (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR should give the partial 4 or 3 bits, in the exact position within a payload byte as shown in the codec spec, with the rest of CMR zero'ed
+                            -CMR should not be shifted in any way. For octet align and headerfull formats, CMR should give the whole byte to insert in the output frame (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR should give the partial 4 or 3 bits, in the exact position within a payload byte as shown in the codec spec, with the rest of CMR zero'ed
 
                             for DSCodecDecode(), this is the CMR in the decoder input bitstream frame. Notes:
 
@@ -310,7 +315,7 @@ extern "C" {
   } CODEC_PARAMS;
 
 
-  HCODEC DSCodecCreate(void* pCodecInfo, unsigned int uFlags);  /* for direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CC_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing) */
+  HCODEC DSCodecCreate(void* pCodecInfo, unsigned int uFlags);  /* for direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see mediaTest_proc.c or hello_codec.c. For packet based applications (indirect codec usage), if the DS_CODEC_CREATE_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in shared_include/session.h); for example usage see packet_flow_media_proc.c (packet/media thread processing) */
 
   int DSCodecDelete(HCODEC hCodec, unsigned int uFlags);
 
@@ -372,7 +377,7 @@ extern "C" {
      -codec can be either a codec type (int) or a codec handle (an HCODEC returned by a pevious call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec as one of the types specified in shared_include/codec.h. If neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given, the default is DS_CODEC_INFO_TYPE
      -payload should point to a codec RTP payload
      -payload_len should give the size (in bytes) of the RTP payload pointed to by payload
-     -return value is (i) for EVS 0 for CH (compact header) format, 1 for FH (full header) format, (ii) for AMR 0 for bandwidth-efficient format, 1 for octet-aligned format, (iii) for other codecs 0, and (iv) for error conditions -1
+     -return value is (i) for EVS 0 for CH (compact header) format, 1 for FH (full header) format, (ii) for AMR 0 for bandwidth-efficient format, 1 for octet-align format, (iii) for other codecs 0, and (iv) for error conditions -1
      -only for EVS, if fAMRWB_IOMode is non-NULL then the value it points to is set true for an AMR-WB IO mode payload, or false for a primary mode payload
      -if fSID is non-NULL then the value it points to is set true if the packet is a SID, or false if not
      -if CMR is non-NULL then the value it points to is set to the payload CMR if present, or zero if not
@@ -411,14 +416,14 @@ extern "C" {
 
 /* DSCodecCreate() uFlags */
 
-#define DS_CODEC_CREATE_ENCODER                0x01
-#define DS_CODEC_CREATE_DECODER                0x02
-#define DS_CODEC_CREATE_USE_TERMINFO           0x100
-#define DS_CODEC_CREATE_TRACK_MEM_USAGE        0x200
+#define DS_CODEC_CREATE_ENCODER                0x01   /* create an encoder instance - may be combined with DS_CODEC_CREATE_DECODER */
+#define DS_CODEC_CREATE_DECODER                0x02   /* create a decoder instance - may be combined with DS_CODCEC_CREATE_ENCODER */
+#define DS_CODEC_CREATE_USE_TERMINFO           0x100  /* pCodecInfo points to a TERMINATION_INFO struct */
+#define DS_CODEC_CREATE_NO_MEM_BUFS            0x200  /* create codec instance with no mem buffers - Reserved, for test purposes only; codec handle is not valid for use */
 
 /* DSCodecDecode() uFlags */
 
-#define DS_CODEC_DECODE_GET_NUMFRAMES          0x100  /* if specified in uFlags, DSCodecDecode() returns the number of frames in the payload. No decoding is performed */
+#define DS_CODEC_GET_NUMFRAMES                 0x100  /* if specified in uFlags, DSCodecDecode() returns the number of frames in the payload. No decoding is performed */
 
 /* DSGetCodecInfo() flags */
 
@@ -448,6 +453,11 @@ extern "C" {
 
 #define DS_CODEC_INFO_ITEM_MASK                0xff
 
+/* general API flags */
+
+#define DS_CODEC_TRACK_MEM_USAGE                         0x400      /* track instance memory usage, can be applied to DSCodecCreate() and DSCodecDelete() */
+#define DS_CODEC_USE_EVENT_LOG                           0x800      /* Use the SigSRF diaglib event log for progress, debug, and error messages. By default codec event and error logging is handled according to uEventLogMode element of a DEBUG_CONFIG struct specified in DSConfigVoplib(). uEventLogMode should be set with EVENT_LOG_MODE enums in shared_include/config.h. This flag may be combined with uFlags in DSCodecCreate() and/or uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS structs to override uEventLogMode */
+
 /* definitions for uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS */
 
 #define RTP_FORMAT_ENCODER_NO_AMRWBIO_PADDING_BYTES      1
@@ -455,10 +465,6 @@ extern "C" {
 #define RTP_FORMAT_DECODER_IGNORE_AMRWBIO_PADDING_BYTES  4
 #define RTP_FORMAT_DECODER_IGNORE_VBR_PADDING_BYTES      8
 #define RTP_FORMAT_ENCODER_FORCE_CMR                     0x10       /* force CMR to be inserted at start of output (value of 0xff "NO_REQ" is used). Intended for test/debug purposes */
-
-                                                                    /* 0x800-0xf000 reserved for overlapping DS_CODEC_CREATE_xxx flags */ 
-
-#define DS_CODEC_USE_EVENT_LOG                           0x800      /* by default codec event and error logging is handled according to uEventLogMode element of a DEBUG_CONFIG struct specified in DSConfigVoplib(). uEventLogMode should be set with EVENT_LOG_MODE enums in shared_include/config.h. This flag may be combined with uFlags in DSCodecCreate() and/or uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS structs to override uEventLogMode */
 
 #define DEBUG_OUTPUT_VOPLIB_ONTHEFLY_UPDATES             0x10000    /* show on-the-fly updates at voplib level */
 #define DEBUG_OUTPUT_CODEC_LIB_ONTHEFLY_UPDATES          0x20000    /* show on-the-fly updates at encoder or decoder lib level */

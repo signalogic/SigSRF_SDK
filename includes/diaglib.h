@@ -15,6 +15,16 @@
 
   SigSRF, DirectCore
  
+ Documentation
+
+ https://github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediamin
+
+ Older documentation links:
+  
+  after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+
+  before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
+
  Revision History
   
   Created Aug 2017 Jeff Brower, based on original c66x diagnostics APIs, created Oct-Dec 2016
@@ -45,6 +55,8 @@
   Modified Apr 2024 JHB, add numMediaReuse to STREAM_STATS struct
   Modified May 2024 JHB, add DSGetBacktrace() API
   Modified May 2024 JHB, update documentation for DSPktStatsAddEntries()
+  Modified Jun 2024 JHB, change last param in in DSConfigLogging() from void* to DEBUG_CONFIG*
+  Modified Jul 2024 JHB, add DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to support SSRCs shared across streams. mediaMin sets this flag when dormant session detection is disabled on its command line
 */
 
 #ifndef _DIAGLIB_H_
@@ -52,19 +64,13 @@
 
 #include <stdio.h>  /* FILE* definition */
 
-#include "shared_include/config.h"
+#include "shared_include/config.h"  /* config.h provides DEBUG_CONFIG struct definition used in DSInitLogging() and DSConfigLogging(); only includes Linux headers */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* SigSRF diaglib event logging APIs */
-
-int DSInitLogging(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags);  /* initialize event logging. Note that DSInitLogging() should not be called twice without a matching DSCloseLogging() call, as it increments a semaphore count to track multithread usage */
-
-int DSCloseLogging(unsigned int uFlags);  /* close event logging (decrement usage count and close event log file if zero) */
-
-FILE* DSGetLogFileHandle(unsigned int uFlags);
 
 int Log_RT(uint32_t loglevel, const char *fmt, ...);  /* loglevel can be combined with DS_LOG_LEVEL_xxx flags, and also DS_EVENT_LOG__XXX_TIMESTAMPS flags, defined in shared_include/config.h */
 
@@ -77,6 +83,30 @@ int Log_RT(uint32_t loglevel, const char *fmt, ...);  /* loglevel can be combine
 #define DS_LOG_LEVEL_USER_TIMEVAL            DS_EVENT_LOG_USER_TIMEVAL
 #define DS_LOG_LEVEL_TIMEVAL_PRECISE         DS_EVENT_LOG_TIMEVAL_PRECISE
 
+int DSInitLogging(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags);  /* initialize event logging. Note that DSInitLogging() should not be called twice without a matching DSCloseLogging() call, as it increments a semaphore count to track multithread usage */
+
+int DSCloseLogging(unsigned int uFlags);  /* close event logging (decrement usage count and close event log file if zero) */
+
+FILE* DSGetLogFileHandle(unsigned int uFlags);
+
+/* config packet logging */
+
+unsigned int DSConfigLogging(unsigned int action, DEBUG_CONFIG* pDebugConfig, unsigned int uFlags);
+
+/* actions */
+
+#define DS_CONFIG_LOGGING_SET_FLAG             1         /* set one or more flags */
+#define DS_CONFIG_LOGGING_CLEAR_FLAG           2         /* clear one or more flags */
+#define DS_CONFIG_LOGGING_SET_UFLAGS           3         /* set all flags */
+#define DS_CONFIG_LOGGING_GET_UFLAGS           4         /* get all flags */ 
+#define DS_CONFIG_LOGGING_SET_DEBUG_CONFIG     5         /* update lib_dbg_cfg (event logging) */
+
+#define DS_CONFIG_LOGGING_ACTION_MASK          0xff
+
+/* uFlags */
+
+#define DS_CONFIG_LOGGING_ALL_THREADS          0x100     /* apply set/clear action to all currently active threads */
+
 int DSGetLogTimeStamp(char* timestamp, int max_str_len, uint64_t user_timeval, unsigned int uFlags);
 
 int DSGetAPIStatus(unsigned int uFlags);  /* get per-thread API status */
@@ -88,7 +118,7 @@ int DSGetBacktrace(int nLevels, char* szBacktrace, unsigned int uFlags);  /* cal
 #define DS_GETBACKTRACE_INSERT_MARKER        1                            /* insert "backtrace: " marker at start of return string */
 #define DS_GETBACKTRACE_INCLUDE_GLIBC_FUNCS  2                            /* include glibc functions (e.g. lib.so.N, libpthread.so, etc). Default is these are omitted */
 
-/* diaglib version string (declared in diaglib.c) */
+/* diaglib version string (declared in diaglib.cpp) */
 
 extern const char DIAGLIB_VERSION[256];
 
@@ -175,11 +205,11 @@ int DSPktStatsAddEntries(PKT_STATS* pkt_stats, int num_pkts, uint8_t* pkt_buffer
 
 /* DSFindSSRCGroups() find SSRC groups and returns start/end packet indexes and sequence numbers for each group */
 
-int DSFindSSRCGroups(PKT_STATS*, int num_pkts, uint32_t ssrcs[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], unsigned int uFlags);
+int DSFindSSRCGroups(PKT_STATS*, int num_pkts, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], unsigned int uFlags);
 
 /* DSPktStatsLogSeqnums() gathers stats for, and logs to file (if fp_log is non-NULL), a collection of packet stats entries.  DSPktStatsLogSeqnums() does the following:
 
-  1) Organzies packets by stream (SSRC) and within each SSRC by sequence number
+  1) Organizes packets by stream (SSRC) and within each SSRC by sequence number
 
   2) If logging is requested, lists packets by sequence number with columns including problems (out-of-order, missing) and attributes including timestamp, payload length, and payload contents (SID, RTCP, etc)
   
@@ -192,7 +222,7 @@ int DSFindSSRCGroups(PKT_STATS*, int num_pkts, uint32_t ssrcs[], int first_pkt_i
   4) Returns per-stream stats, see STREAM_STATS struct in diaglib.h.  Each stream has a unique SSRC
 */
 
-int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, char* label, uint32_t ssrcs[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[]);
+int DSPktStatsLogSeqnums(FILE* fp_log, PKT_STATS* pkts, int num_pkts, char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[], unsigned int uFlags);
 
 
 /* DSPktStatsWriteLogFile() writes packet stats (previously added to PKT_STATS structs by DSPktStatsAddEntries) to a log file. Notes:
@@ -212,34 +242,34 @@ int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int
   4) Use the DS_PKTSTATS_LOG_APPEND flag to add entries to an existing log file
 */
 
-int DSPktStatsWriteLogFile(const char* szLogFilename, unsigned int uFlags, PKT_STATS*, PKT_STATS*, PKT_COUNTERS*);
+int DSPktStatsWriteLogFile(const char* szLogFilename, PKT_STATS*, PKT_STATS*, PKT_COUNTERS*, unsigned int uFlags);
 
 /* flags for DSPktStatsWriteLogFile() -- note these flags can be combined with DS_WRITE_PKT_STATS_HISTORY_xx flags for DSWritePacketStatsHistoryLog() API in pktlib.h */
 
-#define DS_PKTSTATS_LOG_PACKETMODE             0x01
-#define DS_PKTSTATS_LOG_FRAMEMODE              0x02      /* Use this flag if input entries were added in frame mode; i.e. no buffering is used, no output network or pcap output is used */
-#define DS_PKTSTATS_LOG_APPEND                 0x04
-#define DS_PKTSTATS_LOG_COLLATE_STREAMS        0x08      /* Applies to DSPktStatsWriteLogFile() and DSFindSSRCGroups().  Notes:
+#define DS_PKTSTATS_LOG_PACKETMODE               0x01
+#define DS_PKTSTATS_LOG_FRAMEMODE                0x02      /* Use this flag if input entries were added in frame mode; i.e. no buffering is used, no output network or pcap output is used */
+#define DS_PKTSTATS_LOG_APPEND                   0x04
+#define DS_PKTSTATS_LOG_COLLATE_STREAMS          0x08      /* Applies to DSPktStatsWriteLogFile(), DSPktStatsLogSeqnums(), and DSFindSSRCGroups().  Notes:
 
                                                               -collates streams so that entries are grouped by SSRC number.  Entry sorting is done in place; i.e. contents of the PKT_STATS* pointer arg are modified
                                                               -this flag will work with dynamically created streams (RFC8108), but if there is interleaving between the streams or other issue that needs to be viewed
                                                                or debugged, then collating streams will mask that, so the flag should be used carefully
-                                                         */
+                                                           */
 
-#define DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE    0x10      /* DTMF packets are not normally included in duplicated packet counts as RFC4733 allows for sequence numbers and timestamps to be duplicated.  To mark these as duplicates use this flag */
-#define DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS   0x20      /* show RTP sequence numbers with wrapping.  Typically this makes it harder to detect missing and ooo packets.  The default is to show sequence numbers without wrapping, for example the sequence 65534, 65535, 0, 1 becomes 65534, 65535, 65536, 65537.  For spreadsheet analysis and other packet math, this can be helpful */
-#define DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY      0x40      /* print to event log a brief summary for each stream analyzed */
+#define DS_PKTSTATS_LOG_MARK_DTMF_DUPLICATE      0x10      /* DTMF packets are not normally included in duplicated packet counts as RFC4733 allows for sequence numbers and timestamps to be duplicated.  To mark these as duplicates use this flag */
+#define DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS     0x20      /* show RTP sequence numbers with wrapping.  Typically this makes it harder to detect missing and ooo packets.  The default is to show sequence numbers without wrapping, for example the sequence 65534, 65535, 0, 1 becomes 65534, 65535, 65536, 65537.  For spreadsheet analysis and other packet math, this can be helpful */
+#define DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY        0x40      /* print to event log a brief summary for each stream analyzed */
 
-#define DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS    0x100     /* Prints all input packets with no grouping, ooo detection, or other labeling */
-#define DS_PKTSTATS_LOG_LIST_ALL_PULLED_PKTS   0x200     /* Prints all buffer output packets,  "  "  */
-#define DS_PKTSTATS_LOG_RFC7198_DEBUG          0x1000
+#define DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS      0x100     /* Prints all input packets with no grouping, ooo detection, or other labeling */
+#define DS_PKTSTATS_LOG_LIST_ALL_PULLED_PKTS     0x200     /* Prints all buffer output packets,  "  "  */
+#define DS_PKTSTATS_LOG_RFC7198_DEBUG            0x1000
 
 /* DSPktStatsWriteLogFile() pkt stats organization flags:  can be combined, organize by SSRC is default if no flag specified */
 
-#define DS_PKTSTATS_ORGANIZE_BY_SSRC           0x100000  /* organize analysis and stats by SSRC */
-#define DS_PKTSTATS_ORGANIZE_BY_CHNUM          0x200000  /* ... by channel */
-#define DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP    0x400000  /* ... by stream group */
-
+#define DS_PKTSTATS_ORGANIZE_BY_SSRC             0x100000  /* organize analysis and stats by SSRC */
+#define DS_PKTSTATS_ORGANIZE_BY_CHNUM            0x200000  /* ... by channel */
+#define DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP      0x400000  /* ... by stream group */
+#define DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM  0x800000  /* combine SSRC and channel to define a unique stream when sorting and analyzing packets. Can be combined with all DS_PKTSTATS_ORGANIZE_xxx flags */
 
 /* DSGetAPIStatus retrieves API status and/or error and warning conditions.  Notes:
 
@@ -250,6 +280,8 @@ int DSPktStatsWriteLogFile(const char* szLogFilename, unsigned int uFlags, PKT_S
 
   3) API identifiers defined below may be combined.  For example a code might be returned that identifies both DSBufferPackets() and an internal API such as validate_rtp()
 */
+
+#define DS_PKTLOG_ABORT                          0x1000    /* set this flag if for any reason it's necessary to abort DSPktStatsWriteLogFile() or other packet logging APIs with potentially long processing times. To be effective, DSConfigLogging() should be called from a thread separate from one calling packet logging APIs, JHB Jan 2023 */
 
 int DSGetAPIStatus(unsigned int uFlags);
 
@@ -276,26 +308,6 @@ int DSGetAPIStatus(unsigned int uFlags);
 #define DS_API_CODE_VALIDATERTP                0x10000
 #define DS_API_CODE_GETCHANPACKETS             0x20000
 #define DS_API_CODE_CREATEDYNAMICCHAN          0x40000
-
-/* config packet logging */
-
-unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, void* pLogInfo);
-
-/* actions */
-
-#define DS_CONFIG_LOGGING_SET_FLAG             1         /* set one or more flags */
-#define DS_CONFIG_LOGGING_CLEAR_FLAG           2         /* clear one or more flags */
-#define DS_CONFIG_LOGGING_SET_UFLAGS           3         /* set all flags */
-#define DS_CONFIG_LOGGING_GET_UFLAGS           4         /* get all flags */ 
-#define DS_CONFIG_LOGGING_SET_DEBUG_CONFIG     5         /* update lib_dbg_cfg (event logging) */
-
-#define DS_CONFIG_LOGGING_ACTION_MASK          0xff
-
-/* uFlags */
-
-#define DS_CONFIG_LOGGING_ALL_THREADS          0x100     /* apply set/clear action to all currently active threads */
-
-#define DS_PKTLOG_ABORT                        0x1000    /* set this flag if for any reason it's necessary to abort DSPktStatsWriteLogFile() or other packet logging APIs with potentially long processing times. To be effective, DSConfigLogging() should be called from a thread separate from one calling packet logging APIs, JHB Jan 2023 */
 
 #ifdef __cplusplus
 }

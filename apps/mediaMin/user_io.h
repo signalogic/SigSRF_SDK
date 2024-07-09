@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/user_io.h
 
- Copyright (C) Signalogic Inc. 2021-2023
+ Copyright (C) Signalogic Inc. 2021-2024
 
  License
 
@@ -13,14 +13,19 @@
 
  Documentation
 
-  ftp://ftp.signalogic.com/documentation/SigSRF
+  https://www.github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediamin
 
-  (as of Oct 2019, most recent doc is ftp://ftp.signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+  Older documentation links:
+  
+    after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+
+    before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
 
  Revision History
 
    Created Apr 2021 JHB, split off from mediaMin.cpp
    Modified Jan 2023 JHB, add APP_PRINTF_PRINT_ONLY flag
+   Modified Jun 2024 JHB, add PrintPacketBuffer()
 */
 
 #ifndef _USER_IO_H_
@@ -42,6 +47,7 @@
 void UpdateCounters(uint64_t cur_time, int thread_index);
 bool ProcessKeys(HSESSION hSessions[], uint64_t, DEBUG_CONFIG*, int);  /* process keyboard command input */
 void app_printf(unsigned int uFlags, int thread_index, const char* fmt, ...);
+void PrintPacketBuffer(uint8_t* buf, int len, const char*, const char*);
+void PrintSIPInviteFragments(uint8_t* pkt_buf, PKTINFO* PktInfo, int pkt_len);
 
 #endif
-

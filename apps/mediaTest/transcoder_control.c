@@ -33,11 +33,12 @@ Description:
   Modified Mar 2022 JHB, moved str_remove_whitespace() to dsstring.h
   Modified Sep 2022 JHB, add flexibility and readability improvements to "header_format" field in codec config files. Add a "framesize" option for codec config files, this allows a framesize to be specified for pass-thru cases such as .cod to .pcap, where no encoding/decoding is specified
   Modified Oct 2022 JHB, add payload_shift field in codec config files for debug/test purposes. +/- shift amount and filter flags can be specified (see definitions in shared_include/session.h). use strtoul() instead of atoi() to allow hex entry
-  Modified Oct 2023 JHB, fix bug in handling of keywords for header_format field (full, compact, octet-aligned, and bandwidth-efficient). Applies to encoding only
+  Modified Oct 2023 JHB, fix bug in handling of keywords for header_format field (full, compact, octet-align, and bandwidth-efficient). Applies to encoding only
   Modified Dec 2023 JHB, remove code not used in mediaMin and hello_codec builds, include transcoding.h for mediaTest build only
   Modified Dec 2023 JHB, look for input_sample_rate field in parse_codec_params(), this field can be used to supply an sampling rate for input raw audio files with no header
   Modified Apr 2024 JHB, comments and notes only
   Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
+  Modified Jun 2024 JHB, change DS_VOICE_CODEC_TYPE_INVALID to DS_CODEC_TYPE_INVALID, implement H.26x codecs
 */
 
 #include <arpa/inet.h>
@@ -102,7 +103,7 @@ char tmpstr[256];
    strupr(tmpstr);
 
    if (strstr(tmpstr,"NONE"))
-      return DS_VOICE_CODEC_TYPE_NONE;
+      return DS_CODEC_TYPE_NONE;
    else if (strstr(tmpstr,"G711_ULAW"))
       return DS_VOICE_CODEC_TYPE_G711_ULAW;
    else if (strstr(tmpstr,"G711_ALAW"))
@@ -149,10 +150,16 @@ char tmpstr[256];
       return DS_VOICE_CODEC_TYPE_EVS;
    else if (strstr(tmpstr,"MELPE"))  /* added Apr 2018, JHB */
       return DS_VOICE_CODEC_TYPE_MELPE;
+   else if (strstr(tmpstr,"H.263"))
+      return DS_VIDEO_CODEC_TYPE_H263;
+   else if (strstr(tmpstr,"H.264"))
+      return DS_VIDEO_CODEC_TYPE_H264;
+   else if (strstr(tmpstr,"H.265"))
+      return DS_VIDEO_CODEC_TYPE_H265;
    else if (strstr(tmpstr,"INVALID"))
-      return DS_VOICE_CODEC_TYPE_INVALID;
+      return DS_CODEC_TYPE_INVALID;
 
-   else return DS_VOICE_CODEC_TYPE_NONE;
+   else return DS_CODEC_TYPE_NONE;
 }
 
 /* modified to handle dsp_tester format entries, JHB Jun 2016 */
@@ -832,6 +839,7 @@ static int parse_term_data(char *name, char *value, FRAME_TEST_INFO *info)
       if (strcasestr(value, "full")) val = 1;
       else if (strcasestr(value, "compact")) val = 0;
       else if (strcasestr(value, "octet-aligned")) val = 1;
+      else if (strcasestr(value, "octet-align")) val = 1;
       else if (strcasestr(value, "bandwidth-efficient")) val = 0;
       else val = atoi(value);
 
@@ -959,7 +967,7 @@ static void parse_codec_params(char *name, char *value, codec_test_params_t *par
    else if (strcasestr(name, "header_compact")) {
       params->header_format = !atoi(value);
    }
-   else if (strcasestr(name, "octet_align"))  /* AMR octet aligned */
+   else if (strcasestr(name, "octet_align"))  /* AMR octet align */
       params->header_format = atoi(value);
    else if (strcasestr(name, "bandwidth_efficient")) {
       params->header_format = !atoi(value);
@@ -973,12 +981,14 @@ static void parse_codec_params(char *name, char *value, codec_test_params_t *par
          if (strcasestr(value, "full")) params->header_format = 1;
          else if (strcasestr(value, "compact")) params->header_format = 0;
          else if (strcasestr(value, "octet-aligned")) params->header_format = 1;
+         else if (strcasestr(value, "octet-align")) params->header_format = 1;
          else if (strcasestr(value, "bandwidth-efficient")) params->header_format = 0;
       }
       #else  /* better way, seems that atoi("full") was producing a zero, JHB Oct 2023 */
       if (strcasestr(value, "full")) params->header_format = 1;
       else if (strcasestr(value, "compact")) params->header_format = 0;
       else if (strcasestr(value, "octet-aligned")) params->header_format = 1;
+      else if (strcasestr(value, "octet-align")) params->header_format = 1;
       else if (strcasestr(value, "bandwidth-efficient")) params->header_format = 0;
       else params->header_format = atoi(value);
       #endif
@@ -1033,7 +1043,7 @@ void parse_codec_config(FILE *fp, codec_test_params_t *params)
    if ((int)params->codec_type == -1) {
 
       if ((int)params->bitrate > 0) params->codec_type = DS_VOICE_CODEC_TYPE_EVS;  /* default to EVS if bitrate is specified but codec_type is not */
-      else params->codec_type = DS_VOICE_CODEC_TYPE_NONE;  /* if neither are specified then set codec type to none */
+      else params->codec_type = DS_CODEC_TYPE_NONE;  /* if neither are specified then set codec type to none */
    }
    
    if ((int)params->num_chan == -1) params->num_chan = 1;

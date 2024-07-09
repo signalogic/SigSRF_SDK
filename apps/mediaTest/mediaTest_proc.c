@@ -31,6 +31,16 @@
 
   7) Provide basis for limited, demo/eval version available on Github
 
+ Documentation
+
+  https://www.github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediatest
+
+  Older documentation links:
+  
+    after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+
+    before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
+
  Revision History
 
   Created Jan 2017 CKJ
@@ -95,6 +105,7 @@
  Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG flag, which is now deprecated
  Modified May 2024 JHB, call DSGetBacktrace() before starting threads, show result as " ... start sequence = ..." in console output
  Modified May 2024 JHB, rename x86_mediaTest() function to mediaTest_proc()
+ Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap() and DSWritePcapRecord() to DSWritePcap(), per change in pktlib.h
 */
 
 /* Linux header files */
@@ -736,7 +747,7 @@ char tmpstr[1024] = "";
 
       if (!fp_cfg) {
 
-         codec_test_params.codec_type = DS_VOICE_CODEC_TYPE_NONE;
+         codec_test_params.codec_type = DS_CODEC_TYPE_NONE;
 
          if (!USBAudioInput) {
 
@@ -796,7 +807,7 @@ char tmpstr[1024] = "";
    /* print some config file items */
  
       sprintf(&szConfigInfo[strlen(szConfigInfo)], "codec = %s, ", szCodecName);
-      if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) sprintf(&szConfigInfo[strlen(szConfigInfo)], "bitrate = %d bps, ", codec_test_params.bitrate);
+      if (codec_test_params.codec_type != DS_CODEC_TYPE_NONE) sprintf(&szConfigInfo[strlen(szConfigInfo)], "bitrate = %d bps, ", codec_test_params.bitrate);
       if (inFileType != ENCODED) sprintf(&szConfigInfo[strlen(szConfigInfo)], "input sample rate = %d Hz, ", sampleRate_input);
       if (outFileType != ENCODED && outFileType != PCAP) sprintf(&szConfigInfo[strlen(szConfigInfo)], "output sample rate = %d Hz, ", sampleRate_output);
       else {
@@ -809,7 +820,7 @@ char tmpstr[1024] = "";
 
       printf("%s \n", szConfigInfo);
 
-      if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE && (int)codec_test_params.bitrate <= 0) {
+      if (codec_test_params.codec_type != DS_CODEC_TYPE_NONE && (int)codec_test_params.bitrate <= 0) {
 
          printf("Error: config file specifies a codec but not a bitrate\n");
          goto codec_test_cleanup;
@@ -1029,7 +1040,7 @@ char tmpstr[1024] = "";
 
          CodecParams.enc_params.frameSize = CodecParams.dec_params.frameSize = codec_frame_duration;  /* in msec */
          CodecParams.codec_type = codec_test_params.codec_type;
-         unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in cmd_line_options_flags.h, JHB Jan2022 */
+         unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in cmd_line_options_flags.h, JHB Jan2022 */
 
          for (i=0; i<numChan; i++) {
 
@@ -1103,7 +1114,7 @@ char tmpstr[1024] = "";
             coded_framesize = DSGetCodecInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params.bitrate, codec_test_params.bitDensity, NULL);
             break;
 
-         case DS_VOICE_CODEC_TYPE_NONE:
+         case DS_CODEC_TYPE_NONE:
 
 #if defined(_ALSA_INSTALLED_) && defined(ENABLE_USBAUDIO)
             if (fUSBTestMode) input_framesize = period_size_USBAudio*AUDIO_SAMPLE_SIZE;  /* for USB test mode, use hardcoded params (see above) */
@@ -1118,7 +1129,7 @@ char tmpstr[1024] = "";
             break;
       }
 
-      if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE && !coded_framesize) {
+      if (codec_test_params.codec_type != DS_CODEC_TYPE_NONE && !coded_framesize) {
 
          printf("Error: DSGetCodecInfo() with DS_CODEC_INFO_CODED_FRAMESIZE flag returns zero \n");
          goto codec_test_cleanup;
@@ -1130,7 +1141,7 @@ char tmpstr[1024] = "";
 
    /* print some relevant params and stats */
 
-      if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) {
+      if (codec_test_params.codec_type != DS_CODEC_TYPE_NONE) {
          if (encoder_handle[0]) strcpy(tmpstr, "encoder");
          if (decoder_handle[0]) sprintf(tmpstr2, "coded framesize (bytes) = %d, ", coded_framesize);
       }
@@ -1162,7 +1173,7 @@ char tmpstr[1024] = "";
 
          if (outFileType & USB_AUDIO) {
 
-            if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) {  /* in this case Fs conversion may be needed twice, once prior to codec processing, and once after, JHB Oct 2018 */
+            if (codec_test_params.codec_type != DS_CODEC_TYPE_NONE) {  /* in this case Fs conversion may be needed twice, once prior to codec processing, and once after, JHB Oct 2018 */
 
                period_size_USBAudio_output = output_framesize*upFactor_output/downFactor_output/AUDIO_SAMPLE_SIZE;
                buffer_size_USBAudio_output = period_size_USBAudio_output * bytesPerSample_device * 2;
@@ -1786,7 +1797,7 @@ PollBuffer:
 
                coded_framesize = framesize;  /* used in DSCodecDecode() */
             }
-            else if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) {  /* all codecs except for AMR-WB+ */
+            else if (codec_test_params.codec_type != DS_CODEC_TYPE_NONE) {  /* all codecs except for AMR-WB+ */
 
                #ifndef DSGETPAYLOADSIZE
                framesize = DSGetCodecInfo(codec_test_params.codec_type, uFlags, bitrate_code, header_format, NULL);  /* voplib API to get payload size */
@@ -2016,8 +2027,8 @@ PollBuffer:
                ts_pcap.tv_nsec = nsec_pcap % 1000000000L;
                nsec_pcap += 20000000;  /* increment by 20 msec */
 
-               if ((ret_val = DSWritePcapRecord(fp_out, pkt_buf, NULL, NULL, &term_info, &ts_pcap, pkt_len)) < 0) {
-                  fprintf(stderr, "ERROR: WritePcapRecord() returns %d error code \n", ret_val);
+               if ((ret_val = DSWritePcap(fp_out, pkt_buf, NULL, NULL, &term_info, &ts_pcap, pkt_len)) < 0) {
+                  fprintf(stderr, "ERROR: DSWritePcap() returns %d error code \n", ret_val);
                   goto codec_test_cleanup;
                }
             }
@@ -2063,7 +2074,7 @@ PollBuffer:
 
          if (outFileType & USB_AUDIO) {
 
-            if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE && upFactor_output != downFactor_output) {
+            if (codec_test_params.codec_type != DS_CODEC_TYPE_NONE && upFactor_output != downFactor_output) {
 
                int num_samples = len/numChan/AUDIO_SAMPLE_SIZE;
 
@@ -2129,7 +2140,7 @@ codec_test_cleanup:
 
    /* codec tear down / cleanup */
 
-      unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;
+      unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_TRACK_MEM_USAGE : 0;
 
       for (i=0; i<numChan; i++) {
          if (encoder_handle[i] > 0) DSCodecDelete(encoder_handle[i], uFlags);
@@ -2385,7 +2396,7 @@ codec_test_cleanup:
       while (parse_codec_config_frame_mode(fp_cfg, &ft_info) != -1) {
 
          unsigned int uFlags = DS_CODEC_CREATE_ENCODER | DS_CODEC_CREATE_DECODER | DS_CODEC_CREATE_USE_TERMINFO;
-         uFlags |= (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;
+         uFlags |= (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_TRACK_MEM_USAGE : 0;
 
          if ((hCodec[nCodecs] = DSCodecCreate(&ft_info.term, uFlags)) < 0)
          {
@@ -2482,7 +2493,7 @@ codec_test_cleanup:
 
    /* cleanup */
 
-      unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;
+      unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_TRACK_MEM_USAGE : 0;
 
       for (i=0; i<nCodecs; i++) {
 
@@ -2616,7 +2627,7 @@ codec_test_cleanup:
 
       /* read next pcap packet */
 
-         if (!(packet_length = DSReadPcapRecord(fp_in, pkt_buffer, 0, NULL, link_layer_length, NULL, NULL))) break;
+         if (!(packet_length = DSReadPcap(fp_in, pkt_buffer, 0, NULL, link_layer_length, NULL, NULL))) break;
 
          frame_count++;
          printf("\rExtracting frame %d", frame_count);

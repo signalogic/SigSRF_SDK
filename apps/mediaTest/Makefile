@@ -43,6 +43,7 @@
 #  Modified Apr 2024 JHB, set INSTALLPATH to $(shell pwd); this avoids relative paths in -rpath linker options
 #  Modified May 2024 JHB, add -rdynamic linker flag to include more symbols in executable output. This helps when backtrace_symbols() is used (which it is now by DSGetBacktrace() in diaglib)
 #  Modified May 2024 JHB, change x86_mediaTest.o to mediaTest_proc.o
+#  Modified Jun 2024 JHB, add crc32 object
 
 # check make cmd line for no_codecs, no_mediamin, no_pktlib, and codecs_only options
 
@@ -228,10 +229,10 @@ endif
 
 # add necessary defines
 #   _LINUX_     if not set, then a Win32 system is assumed
-#   _USE_PCIE_  applies to coCPU option (ignored if no coCPU accelerator card).  If not set than ATCA or other hardware is assumed
-#   _SIGRT_     use real-time options where applicable
+#   _USE_PCIE_  applies to coCPU option (ignored if no coCPU accelerator card). If not set than ATCA or other hardware is assumed
+#   _SIGRT      SigSRF builds with real-time options
 #   _X86        host platform is x86
-#   MEDIATEST   mediaTest reference application
+#   _MEDIATEST_  mediaTest reference application
 
 DEFINES += -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_USE_PCIE_ -D_SIGRT -D_X86 -D_MEDIATEST_
 
@@ -517,6 +518,7 @@ LDFLAGS += -Wl,--no-as-needed
 cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
 c_common_objects = keybd.o
 cpp_sdp_objects = types.o sdp.o utils.o reader.o writer.o
+c_crc_objects = crc32.o
 cpp_gpx_objects = gpxlib.o
 
 ifneq ($(no_mediamin),1)
@@ -532,12 +534,15 @@ endif
 c_objects += mediaTest_proc.o
 
 # build targets
-all: $(cpp_common_objects) $(cpp_sdp_objects) $(cpp_gpx_objects) $(c_common_objects) $(cpp_mediaMin_objects) $(c_objects) link
+all: $(cpp_common_objects) $(cpp_sdp_objects) $(c_crc_objects) $(cpp_gpx_objects) $(c_common_objects) $(cpp_mediaMin_objects) $(c_objects) link
 
 $(cpp_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
 $(cpp_sdp_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/sdp/%.cpp
+	$(CC) $(CFLAGS) -c $< -o $@ 
+
+$(c_crc_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/crc/%.c
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
 $(cpp_gpx_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/gpx/%.cpp
@@ -554,7 +559,7 @@ $(c_objects): %.o: %.c
 
 # link object files, essential libs, and cimlib which provides cmd line handling
 link:
-	$(CC) $(LDFLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(cpp_gpx_objects) $(c_common_objects) $(c_objects) $(cpp_mediaMin_objects) $(LINKER_INCLUDES) -o ./mediaTest -lstdc++ $(SIG_LIBS) -lcimlib -ldl -lpthread $(GLIB_2-35_LIBMVEC) -lm -lstublib
+	$(CC) $(LDFLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(c_crc_objects) $(cpp_gpx_objects) $(c_common_objects) $(c_objects) $(cpp_mediaMin_objects) $(LINKER_INCLUDES) -o ./mediaTest -lstdc++ $(SIG_LIBS) -lcimlib -ldl -lpthread $(GLIB_2-35_LIBMVEC) -lm -lstublib
 
 .PHONY: clean all 
 clean:

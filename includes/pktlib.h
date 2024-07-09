@@ -103,6 +103,11 @@
   Modified Apr 2024 JHB, add DS_PKT_PYLD_CONTENT_MEDIA_REUSE packet payload content definition
   Modified May 2024 JHB, add optional pcap_hdr_t* param to DSReadPcapRecord() API to reference the file header from a prior DSOpenPcap() call. For .rtp format files, DSReadPcapRecord() will use the optional pointer for src/dst IP addr and port values to extent possible when reading RTP records
   Modified May 2024 JHB, define DSGetPacketInfo_t typedef to support alternative DSGetPacketInfo() function signatures in other apps and libs. Honor GET_PKT_INFO_TYPEDEF_ONLY if set by app or lib source to define only typedef for DSGetPacketInfo() and no prototype
+  Modified Jun 2024 JHB, add fields to PKTINFO struct: flags, fragment_offset, ip_hdr_checksum, pkt_len_all_fragments, rtp_ssrc, and rtp_seqnum. Define DS_PKT_FRAGMENT_xxx flags, set in PktInfo flags by DSGetPacketInfo() if the packet is a fragment
+  Modified Jun 2024 JHB, implement DS_PKT_INFO_PKTINFO_EXCLUDE_RTP flag to allow DSGetPacketInfo() with DS_PKT_INFO_PKTINFO flag to exclude RTP items. Saves time and possibly avoids errors if items needed are non-RTP 
+  Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap() and DSWritePcapRecord() to DSWritePcap()
+  Modified Jun 2024 JHB, define range for SIP ports of 5060 thru 5090 (before it was only 5060 and 5061)
+  Modified Jun 2024 JHB, implement packet fragmentation and reassembly. See DS_INFO_PKT_FRAGMENT_xxx, DS_INFO_PKT_REASSEMBLY_xxx, and DS_INFO_PKT_RETURN_xxx DSGetPacketInfo() uFlags definitions; usage example is in mediaMin.cpp
 */
 
 #ifndef _PKTLIB_H_
@@ -116,7 +121,7 @@
 
 #include "alias.h"
 #include "filelib.h"
-#include "diaglib.h"
+#include "diaglib.h"  /* PKT_STATS struct */
 
 /* session and configuration struct and related definitions */
 
@@ -194,7 +199,7 @@ extern "C" {
 
   } RTPHeader;
 
-  /* UDP header struct */
+/* UDP header struct */
 
   typedef struct {
 
@@ -218,7 +223,7 @@ extern "C" {
 
   } TCPHeader;
 
-  /* FORMAT_PKT struct, used in DSFormatPacket() API */
+/* FORMAT_PKT struct, used in DSFormatPacket() API */
 
   typedef struct {
 
@@ -237,7 +242,7 @@ extern "C" {
     uint8_t    SrcAddr[16];     /* IPv4 or IPv6 source addr */
     uint8_t    DstAddr[16];     /* IPv4 or IPv6 dest addr */
     uint32_t   IP_Version;      /* DS_IPV4 or DS_IPV6 - defined in session.h */
-   
+
     UDPHeader  udpHeader;
     RTPHeader  rtpHeader;
     TCPHeader  tcpHeader;       /* used only if DSFormatPacket() uFlags includes DS_FMT_PKT_TCPIP */
@@ -246,7 +251,33 @@ extern "C" {
 
   } FORMAT_PKT;
 
-  /* basic IP, UDP, and RTP header lengths */
+/* struct used for packet fragmentation management linked lists */
+
+typedef struct PKT_FRAGMENT {
+
+  uint8_t   flags;            /* fragment flags */
+  uint16_t  offset;           /* fragment offset */
+  uint16_t  identifier;       /* identification field */
+
+/* 3-way tuple defines the stream connection */
+
+  uint8_t   protocol;
+  unsigned __int128 ip_src_addr;  /* 12 bytes left unused for IPv4 */
+  unsigned __int128 ip_dst_addr;
+
+/* saved fragment data */
+
+  uint16_t  ip_hdr_len;       /* IP header length and saved header data (copied from first fragment) */
+  uint8_t*  ip_hdr_buf;
+
+  uint16_t  len;              /* fragment length and saved packet data (no IP headers) */
+  uint8_t*  pkt_buf;
+
+  struct PKT_FRAGMENT* next;  /* pointer to next fragment */
+
+} PKT_FRAGMENT;
+
+/* basic IP, UDP, and RTP header lengths */
 
   #define IPV4_HEADER_LEN                 20
   #define IPV6_HEADER_LEN                 40
@@ -260,17 +291,47 @@ extern "C" {
   #define MAX_RTP_PACKET_LEN              (MAX_RAW_FRAME + MAX_IP_UDP_RTP_HEADER_LEN)
   #define MAX_TCP_PACKET_LEN              65535
 
-  #define UDP_PROTOCOL                    17
-  #define TCP_PROTOCOL                    6
-  #define ICMP_PROTOCOL                   1
-  #define ENCAPSULATING_SECURITY_PAYLOAD  2
+/* IP protocols */
 
-  #define SIP_UDP_PORT                    5060  /* default UDP port for processing SIP messages */
-  #define SIP_UDP_PORT_ENCRYPTED          5061  /* same, encrypted */
-  #define SAP_UDP_PORT                    9875  /* default UDP port for processing Session Announcement Protocol (SAP) SDP info */
+  #ifndef IPv4
+    #define IPv4                          4
+  #endif
+  #ifndef IPv6
+    #define IPv6                          6
+  #endif
+  #define UDP_PROTOCOL                    17
+  #ifndef UDP
+    #define UDP UDP_PROTOCOL                    /* define short version if system allows it, JHB Jun 2024 */
+  #endif
+  #define TCP_PROTOCOL                    6
+  #ifndef TCP
+    #define TCP TCP_PROTOCOL
+  #endif
+  #define ICMP_PROTOCOL                   1
+  #ifndef ICMP
+    #define ICMP ICMP_PROTOCOL
+  #endif
+  #define ENCAPSULATING_SECURITY_PAYLOAD  50
+  #define VRRP                            112
+
+/* SIP / SDP info ports */
+
+  #define SIP_PORT                        5060  /* default SIP message port */
+  #define SIP_PORT_ENCRYPTED              5061  /* same, encrypted */
+  #define SIP_PORT_RANGE_LOWER            SIP_PORT
+  #define SIP_PORT_RANGE_UPPER            5090  /* typical range of SIP ports (https://portforward.com/sip) */
+  #define SAP_PORT                        9875  /* default UDP port for processing Session Announcement Protocol (SAP) SDP info */
+
+  /* GPRS Tunneling protocol port */
+  
+  #define GTP_PORT                        2152
+
+/* RTCP payload types */
 
   #define RTCP_PYLD_TYPE_MIN              72
   #define RTCP_PYLD_TYPE_MAX              82
+
+/* fixed RTP payload types */
 
   #define PCMU_PYLD_TYPE                  0
   #define PCMA_PYLD_TYPE                  8
@@ -302,6 +363,7 @@ extern "C" {
 
     int        numSessions;  /* current number of assigned sessions */
     int        numGroups;    /* current number of assigned stream groups */
+    int        numSessionsMax;
 
     int        nEnergySaverState;  /* current energy saver state */
     int        energy_saver_state_count;  /* number of times energy state has been entered */
@@ -366,7 +428,7 @@ extern "C" {
 
   typedef struct {
 
-    PKT_STATS*  pkt_stats;  /* pointer to channel's PKT_STATS[] array */
+    PKT_STATS*  pkt_stats;  /* pointer to channel's PKT_STATS[] array (defined in diaglib.h) */
     int32_t     mem_usage;  /* current amount of mem usage, in bytes */
     int32_t     num_pkts;   /* channel's current number of pkt stats */
 
@@ -596,22 +658,8 @@ extern "C" {
   int64_t DSGetJitterBufferInfo(int chnum, unsigned int uFlags);
   int DSSetJitterBufferInfo(int chnum, unsigned int uFlags, int value);
 
+/* Session info APIs
 
-/* Packet and session info APIs 
-
-    -DSGetPacketInfo() - retrieves information about packets.  Notes:
-
-      -if uFlag values of DS_PKT_INFO_SESSION, DS_PKT_INFO_CODEC, DS_PKT_INFO_CODEC_LINK, or DS_PKT_INFO_CHNUM are given, packet headers (plus session handle if user
-       managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct.  If user managed sessions are not active, the sessionHandle arg is ignored
-
-      -if DS_PKT_INFO_RTP_xxx uFlags are given, the corresponding RTP header value is returned from the pkt* arg, using an offset indicated by a DS_BUFFER_PKT_xxx_PACKET flag (the default is DS_BUFFER_PKT_IP_PACKET).  The sessionHandle arg is ignored and pInfo is not used
-
-      -use the DS_PKT_INFO_HOST_BYTE_ORDER flag if packet headers are in host byte order.  Network byte order is the default if no flag is given (or the DS_PKT_INFO_NETWORK_BYTE_ORDER flag can be given).  The byte order flags apply only to headers, not payload contents
-
-      -if a DS_PKT_INFO_RTP_HEADER uFlag value is given, the input packet RTP header is copied to pInfo as an RTPHeader struct (see above definition) containing separate elements for RTP header items 
-
-      -the *pkt argument should point to a packet, and the pktlen argument should contain the length of the packet, in bytes.  If the DS_BUFFER_PKT_IP_PACKET flag is given the packet should include IP, UDP, and RTP headers; if the DS_BUFFER_PKT_RTP_PACKET FLAG is given the packet should include only an RTP header
- 
     -DSGetSessionInfo() - retrieves information about a session, including (i) terminations defined in session configurations, (ii) channels, including dynamic channels, in use by the session, and (iii) other session info
 
       -if uFlags specifies DS_SESSION_INFO_HANDLE, a valid session handle must be given.  If uFlags specifies DS_SESSION_INFO_CHNUM, a valid channel number must be given. Supplying a channel number is useful when dyanmic channels are active, in which case new channels can be created after session creation -- at any time during packet flow -- depending on packet contents (see discussion of RFC 8108).  Unlike some other APIs, -1 is not allowed as a session handle argument, as no internal session matching based on packet headers is performed
@@ -621,42 +669,93 @@ extern "C" {
       -if DS_SESSION_INFO_SESSION is included in uFlags, pInfo should point to a SESSION_DATA struct; otherwise pInfo should point to a TERMINATION_INFO struct.  If pInfo is given as NULL, no struct data is copied
 
       -Term id values are typically 1 or 2 and refer to term1 and term2 session config file definitions (in the future arbitrary N values may be supported).  term_id values can be omitted (given as zero) when DS_SESSION_INFO_CHNUM is applied if other uFlags attributes imply a term_id value, for example DS_SESSION_INFO_CODEC_LINK implies term_id = 2
+
 */
 
- typedef int (DSGetPacketInfo_t)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int*);
- 
- #ifndef GET_PKT_INFO_TYPEDEF_ONLY  /* app or lib can specify no prototype for DSGetPacketInfo() if it will be doing its own dlsym() lookup, JHB May 2024 */
- DSGetPacketInfo_t DSGetPacketInfo;
- #endif
+  int64_t DSGetSessionInfo(HSESSION sessionHandle, unsigned int uFlags, int64_t term_id, void* pInfo);
 
-/* PKTINFO struct filled by DSGetPacketInfo() when uFlags subfield is set to DS_PKT_INFO_PKTINFO_STRUCT. PKTINFO is also used by DSFindPcapPacket() */
+  int DSSetSessionInfo(HSESSION sessionHandle, unsigned int uFlags, int64_t term_id, void* pInfo);
+
+/* Packet info API
+
+    -DSGetPacketInfo() retrieves packet information. Notes:
+
+      -sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. Some additional sessionHandle notes:
+
+        -if both sessionHandle is -1 and uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, then all existing sessions will be searched
+
+        -SigSRF documentation often refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession()
+
+      -pkt should point to a packet, and pktlen should contain the length of the packet, in bytes. If a packet length is unknown, pktlen can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet
+
+      -uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If the DS_BUFFER_PKT_IP_PACKET flag is given the packet should start with an IP header; if the DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET flags are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default if no flag is given. Use the DS_PKT_INFO_HOST_BYTE_ORDER flag if packet headers are in host byte order. Network byte order is the default if no flag is given (or the DS_PKT_INFO_NETWORK_BYTE_ORDER flag can be given). Byte order flags apply only to headers, not payload contents
+
+      -if a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned
+
+      -if uFlags values of DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1
+
+      -pInfo, if not NULL, will contain:
+
+       -a PKTINFO struct (see definition below) if uFlags includes the DS_PKT_INFO_PKTINFO flag
+       -a TERMINATINO_INFO or SESSION_DATA struct if uFlags includes DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags
+       -an RTPHeader struct (see definition above) if uFlags includes the DS_PKT_INFO_RTP_HEADER flag
+       -a fully re-assembled packet if uFlags includes the DS_PKT_INFO_REASSEMBLY_GET_PACKET flag
+
+      -chnum, if not NULL, will contain a matching channel number when the DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT flags are given. If the packet matches a child channel number and the DS_PKT_INFO_CHNUM_PARENT flag is given, chnum will contain the child channel number and the parent channel number will be returned
+
+      -return value is < 0 for an error condition, or as specified in the above notes. Note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int
+
+      -both mediaMin.cpp and packet_flow_media_proc.c contain many examples of DSGetPacketInfo() usage
+ */
+
+  typedef int (DSGetPacketInfo_t)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt, int pktlen, void* pInfo, int* chnum);
+
+  #ifndef GET_PKT_INFO_TYPEDEF_ONLY  /* app or lib can specify no prototype for DSGetPacketInfo() if it will be doing its own dlsym() lookup, JHB May 2024 */
+  DSGetPacketInfo_t DSGetPacketInfo;
+  #endif
+
+/* PKTINFO struct filled by DSGetPacketInfo() when uFlags includes the DS_PKT_INFO_PKTINFO flag. A PKTINFO struct param is also used by DSFindPcapPacket() */
 
   typedef struct {
 
      uint8_t             version;
      uint8_t             protocol;
+     uint8_t             flags;
+     uint16_t            fragment_offset;
      int                 pkt_len;
      int                 ip_hdr_len;
      unsigned short int  src_port;
      unsigned short int  dst_port;
-     unsigned int        seqnum;          /* TCP sequence number or UDP/RTP sequence number */
-     unsigned int        ack_seqnum;      /* TCP acknowlegement sequence number */
-     int                 pyld_ofs;        /* TCP or UDP payload offset */
-     int                 pyld_len;        /* TCP or UDP payload length */
-     int                 rtp_hdr_ofs;     /* RTP items filled for UDP packets. If not a valid RTP packet then RTP items may be undefined */
+     unsigned int        seqnum;                  /* TCP sequence number or UDP/RTP sequence number */
+     unsigned int        ack_seqnum;              /* TCP acknowlegement sequence number */
+     unsigned int        ip_hdr_checksum;         /* IP header checksum */
+     unsigned int        seg_length;              /* TCP segment length */
+     int                 pyld_ofs;                /* TCP or UDP payload offset from start of packet to payload data */
+     int                 pyld_len;                /* TCP or UDP payload size, excluding UDP header. To include the UDP header add the DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR flag to uFlags */
+     int                 pyld_len_all_fragments;  /* for a UDP packet with MF flag set and no fragment offset, this is the total payload size of all fragments, excluding UDP header */
+     unsigned int        udp_checksum;            /* UDP checksum */
+
+  /* RTP items filled for UDP packets. If not a valid RTP packet then RTP items may be undefined. The DS_PKT_INFO_PKTINFO_EXCLUDE_RTP flag can be combined with the DS_PKT_INFO_PKTINFO flag to specify that RTP items should not be processed */
+
+     int                 rtp_hdr_ofs;             /* offset from start of packet to RTP header */
      int                 rtp_hdr_len;
-     int                 rtp_pyld_ofs;
+     int                 rtp_pyld_ofs;            /* offset from start of packet to RTP payload data */
      int                 rtp_pyld_len;
      uint8_t             rtp_pyld_type;
      int                 rtp_padding_len;
      uint32_t            rtp_timestamp;
      uint32_t            rtp_ssrc;
+     uint16_t            rtp_seqnum;
 
   } PKTINFO;
 
-  int64_t DSGetSessionInfo(HSESSION sessionHandle, unsigned int uFlags, int64_t term_id, void* pInfo);
+/* PKTINFO flags definitions */
 
-  int DSSetSessionInfo(HSESSION sessionHandle, unsigned int uFlags, int64_t term_id, void* pInfo);
+  #define DS_PKT_FRAGMENT_MF         1  /* set in PKTINFO "flags" if packet MF flag (more fragments) is set */
+  #define DS_PKT_FRAGMENT_OFS        2  /* set in PKTINFO "flags" if packet fragment offset is non-zero */
+  #define DS_PKT_FRAGMENT_ITEM_MASK  7  /* mask for fragment related flags */
+
+int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int* max_list_fragments, unsigned int uFlags);  /* Reserved API: currently undocumented */
 
 /* media processing related APIs:
    
@@ -711,7 +810,7 @@ extern "C" {
     -sets pcap file header struct if one is passed in the params
     -returns size of data link layer
 
-  DSReadPcapRecord() - reads in next pcap record
+  DSReadPcap() - reads in next pcap record
 
     -skips over data link layer
     -reads and interprets vlan header
@@ -847,7 +946,7 @@ extern "C" {
 
     where link_type is one of the LINKTYPE_XXX definitions above, file_type is one of the PCAP_TYPE_XXX definitions above, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14)
 
-   -note the full return value should be saved and then given as link_layer_info in DSReadPcapRecord() and DSFilterPacket(). A return value < 0 indicates an error
+   -note the full return value should be saved and then given as link_layer_info in DSReadPcap() and DSFilterPacket(). A return value < 0 indicates an error
    -uFlags are given in DS_OPEN_PCAP_XXX definitions below
    -errstr is optional; if used it should point to an error info string to be included in warning or error messages. NULL indicates not used
 */
@@ -863,7 +962,7 @@ extern "C" {
   #define DS_OPEN_PCAP_QUIET                  0x0400
   #define DS_OPEN_PCAP_RESET                  0x1000    /* seek to start of pcap; assumes a valid (already open) file handle given to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ, JHB Dec 2021 */
 
-/* DSReadPcapRecord() reads a pcap record at the current file position of fp_pcap into pkt_buf, and fills in a pcaprec_hdr_t struct (above). Notes:
+/* DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see above definition). Notes:
   
    -pkt_buf should point to a sufficiently large memory area to contain the packet dara
    -return value is the length of the packet, zero if no file end has been reached, or < 0 for an error condition
@@ -873,11 +972,11 @@ extern "C" {
    -if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition)
 */
   
-  int DSReadPcapRecord(FILE* fp_pcap, uint8_t* pkt_buf, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* hdr_type, pcap_hdr_t* pcap_file_hdr);
+  int DSReadPcap(FILE* fp_pcap, uint8_t* pkt_buf, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* hdr_type, pcap_hdr_t* pcap_file_hdr);
 
-  #define DS_READ_PCAP_RECORD_COPY            0x0800    /* copy pcap record only, don't advance file pointer */
+  #define DS_READ_PCAP_COPY                   0x0800    /* copy pcap record(s) only, don't advance file pointer */
 
-  int DSWritePcapRecord(FILE* fp_pcap, uint8_t* pkt_buf, pcaprec_hdr_t* pcap_pkt_hdr, struct ether_header* eth_hdr, TERMINATION_INFO* termInfo,  struct timespec* ts, int pkt_buf_len);
+  int DSWritePcap(FILE* fp_pcap, uint8_t* pkt_buf, pcaprec_hdr_t* pcap_pkt_hdr, struct ether_header* eth_hdr, TERMINATION_INFO* termInfo,  struct timespec* ts, int pkt_buf_len);
   int DSClosePcap(FILE* fp_pcap);
 
 /* DSFilterPacket() returns the next packet from a pcap matching given filter specs */
@@ -910,11 +1009,6 @@ extern "C" {
   #define DS_FIND_PCAP_PACKET_FIRST_MATCHING  0x1000
   #define DS_FIND_PCAP_PACKET_LAST_MATCHING   0x2000
   #define DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET 0x4000  /* use byte offset instead of record offset. Seek offset gives faster performance but record offset can be useful when the number of records searched prior to a match is needed. Record offset is the default. This flag may be combined with DS_FILTER_PKT_xxx flags and affects the return value of pNumRead in DSFilterPacket() */
-
-  #if 0  /* the marker bit is now defined as a bit field in the RTPHeader struct and can be set/cleared directly, JHB Jan2021 */
-  void DSSetMarkerBit(FORMAT_PKT* formatPkt, unsigned int uFlags);
-  void DSClearMarkerBit(FORMAT_PKT* formatPkt, unsigned int uFlags);
-  #endif
 
 /* DSConfigMediaService() -- start the SigSRF media service as a process or some number of packet/media threads.  Notes:
 
@@ -989,7 +1083,7 @@ extern "C" {
 
 /* write full/detailed packet stats history to packet log text file, using either session handle or thread index.  The DS_ENABLE_PACKET_STATS_HISTORY_LOGGING flag must be set in the DEBUG_CONFIG struct uPktStatsLogging item (see shared_include/config.h).  See also DS_WRITE_PKT_STATS_HISTORY_LOG_xx flags below and DS_PKTSTATS_xx flags in diaglib.h */
 
-  int DSWritePacketStatsHistoryLog(HSESSION hSession, unsigned int uFlags, const char* szLogFilename);
+  int DSWritePacketStatsHistoryLog(HSESSION hSession, const char* szLogFilename, unsigned int uFlags);
 
   bool DSIsPktStatsHistoryLoggingEnabled(int thread_index);
 
@@ -1155,8 +1249,8 @@ extern "C" {
 #define DS_PKT_INFO_RTP_SSRC                  0x0a00
 #define DS_PKT_INFO_RTP_PYLDOFS               0x0b00         /* retrieves offset to start of RTP payload */
 #define DS_PKT_INFO_RTP_PYLDLEN               0x0c00
-#define DS_PKT_INFO_RTP_PYLD_CONTENT          0x0d00         /* retrieves content type, not payload data. Use either DS_PKT_INFO_PYLDOFS or DS_PKT_INFO_RTP_PYLDOFS to get offset to start of packet data, JHB Dec2020 */
-#define DS_PKT_INFO_RTP_HDRLEN                0x0e00         /* retrieves RTP header length, including extensions if any, JHB Dec2021 */
+#define DS_PKT_INFO_RTP_PYLD_CONTENT          0x0d00         /* retrieves content type, not payload data. Use either DS_PKT_INFO_PYLDOFS or DS_PKT_INFO_RTP_PYLDOFS to get offset to start of packet data, JHB Dec 2020 */
+#define DS_PKT_INFO_RTP_HDRLEN                0x0e00         /* retrieves RTP header length, including extensions if any, JHB Dec 2021 */
 
 #define DS_PKT_INFO_RTP_HEADER                0xff00         /* returns whole RTP header in void* pInfo arg */
 
@@ -1167,14 +1261,29 @@ extern "C" {
 #define DS_PKT_INFO_IP_VERSION                0x5000
 #define DS_PKT_INFO_PROTOCOL                  0x6000
 #define DS_PKT_INFO_PYLDOFS                   0x7000         /* returns offset to start of UDP or TCP payload data */
-#define DS_PKT_INFO_PYLDLEN                   0x8000         /* returns size of packet payload (for UDP this is "Length" field in UDP header, for TCP this is packet length excluding IP and TCP headers) */
+#define DS_PKT_INFO_PYLDLEN                   0x8000         /* returns size of packet payload. For UDP packets this is the UDP header "Length" field excluding the UDP header size (to include the UDP header add the DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR flag). For TCP packets this is packet length excluding IP and TCP headers */
 #define DS_PKT_INFO_SRC_ADDR                  0x9000         /* requires pInfo to point to array of sufficient size, returns IP version */
 #define DS_PKT_INFO_DST_ADDR                  0xa000
 
-#define DS_PKT_INFO_PKTINFO_STRUCT            0xf000         /* returns PKTINFO struct in void* pInfo (if specified). This API is intended for minimal packet processing overhead if several packet items are needed. See PKTINFO struct, containing both TCP and RTP items */
-#define DS_PKT_INFO_PKTINFO                   DS_PKT_INFO_PKTINFO_STRUCT
+#define DS_PKT_INFO_PKTINFO                   0xf000         /* stores a PKTINFO struct in pInfo (if specified) with a return value of 1 on success, 2 if a fully re-assembled packet is available, and -1 on error condition. This API is intended to minimize packet processing overhead if several packet items are needed. See PKTINFO struct definition above, containing TCP, UDP, and RTP items */
+
+#define DS_PKT_INFO_PKTINFO_EXCLUDE_RTP      0x10000
+#define DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR  0x20000
+
+#define DS_PKT_INFO_FRAGMENT_SAVE            0x40000         /* if packet IP header contains fragmentation info save fragment to pktlib internal fragment list using header's Identification field */
+#define DS_PKT_INFO_FRAGMENT_REMOVE          0x80000         /* if packet IP header contains fragmentation info remove fragment from pktlib internal list using header's Identification field */
+#define DS_PKT_INFO_REASSEMBLY_GET_PACKET   0x100000         /* retrieve fully reassembled packet in pInfo and return the reassembled packet's length. This flag should only be specified if a previous call to DSGetPacketInfo() with the DS_PKT_INFO_FRAGMENT_SAVE flag has returned a flag value indicating a fully re-assembled packet is available */
 
 #define DS_PKT_INFO_ITEM_MASK                 0xff00
+#define DS_PKT_INFO_RTP_ITEM_MASK             0x0f00
+
+/* DSGetPacketInfo() return flags when uFlags contains DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags */
+
+#define DS_PKT_INFO_RETURN_OK                     1          /* PktInfo struct filled successfully */
+#define DS_PKT_INFO_RETURN_FRAGMENT               2          /* packet is a fragment */
+#define DS_PKT_INFO_RETURN_FRAGMENT_SAVED         4          /* fragment was saved to pktlib internal list */
+#define DS_PKT_INFO_RETURN_FRAGMENT_REMOVED       8          /* fragment was removed from pktlib internal list */
+#define DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE  16  /* a fully re-assembled packet is available using the DS_PKT_INFO_GET_REASSEMBLED_PACKET flag in a subsequent DSGetPacketInfo() call */
 
 
 /* pktlib general API flags, for use with DSGetPacketInfo(), DSFormatPacket(), DSBufferPackets(), and DSGetOrderedPackets() */

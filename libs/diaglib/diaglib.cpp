@@ -19,7 +19,17 @@
 
  Project
 
-  DirectCore, SigSRF
+ DirectCore, SigSRF
+
+ Documentation
+
+  https://github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediamin
+
+  Older documentation links:
+  
+   after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+
+   before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
 
  Revision History
   
@@ -63,8 +73,9 @@
   Modified Apr 2024 JHB, implement DS_PKT_PYLD_CONTENT_MEDIA_REUSE, rename sid_reuse_offset to search_offset
   Modified Apr 2024 JHB, add "long SID timestamp mismatch" case handling in analysis_and_stats()
   Modified May 2024 JHB, convert to cpp
-  Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() in lib_logging.cpp now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile no longer recognizes standalone=1
+  Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() in lib_logging.cpp now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile cmd line no longer recognizes standalone=1
   Modified May 2024 JHB, update DSPktStatsAddEntries() documentation, param naming, and error handling. Make pkt_length[] param an int to allow -1 values (i.e. packet length unknown)
+  Modified Jul 2024 JHB, to support SSRCs shared across streams, implement DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag, create in_chnum[] and out_chnum[], and add to chnum[] param to DSFindSSRCGroups() and DSPktStatsLogSeqnums() 
 */
 
 /* Linux includes */
@@ -72,7 +83,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>  /* gettimeofday() */
-#include <algorithm>  /* std::min and std::max */
+#include <algorithm>   /* std::min and std::max */
 
 using namespace std;
 
@@ -91,7 +102,7 @@ extern DEBUG_CONFIG lib_dbg_cfg;  /* in lib_logging.cpp */
 extern sem_t diaglib_sem;  /* in lib_logging.cpp */
 extern int diaglib_sem_init;
 
-/* function pointers set in DSInitLogging() in lib_logging.cpp with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused with their SigSRF library function counterparts if they both exist during app or library link, JHB May 2024 */
+/* function pointers set in DSInitLogging() in lib_logging.cpp with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused at link-time with their SigSRF library function counterparts if they both exist, JHB May 2024 */
 
 extern __attribute__((visibility("hidden"))) DSGetPacketInfo_t* DSGetPacketInfo;  /* DSGetPacketInfo_t typedef in pktlib.h */
 extern __attribute__((visibility("hidden"))) get_time_t* get_time;  /* get_time_t typedef in hwlib.h */
@@ -100,7 +111,7 @@ extern __attribute__((visibility("hidden"))) get_time_t* get_time;  /* get_time_
 
 #include "diaglib_priv.h"
 
-extern LOGINFO LogInfo[];
+extern LOGGING_THREAD_INFO Logging_Thread_Info[];
 
 #define DS_PKT_PYLD_CONTENT_DTMF_END  1  /* DTMF Event End, determined in DSPktStatsAddEntries and then passed thru to other functions, JHB Jun 2019 */
 
@@ -148,7 +159,7 @@ unsigned int offset = 0;
 
 /* group data by unique SSRCs */
 
-int DSFindSSRCGroups(PKT_STATS* pkts, int num_pkts, uint32_t ssrcs[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], unsigned int uFlags) {
+int DSFindSSRCGroups(PKT_STATS* pkts, int num_pkts, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], unsigned int uFlags) {
 
 int        i, j, k;
 uint32_t   first_seqnum, last_seqnum;
@@ -175,18 +186,18 @@ group_ssrcs:
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
       #endif
-      if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+      if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
-   /* first check if we've already seen this SSRC */
+   /* first check if we've already seen this SSRC and chnum (channel number) combination */
 
       bool fExistingSSRC = false;
 
       if (num_ssrcs > 0) for (i=0; i<num_ssrcs; i++) {
 
-         if (pkts[j].rtp_SSRC == ssrcs[i]) {
+         if (pkts[j].rtp_SSRC == ssrcs[i] && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || pkts[j].chnum == chnum[i])) {  /* add chnum comparison, JHB Jul 2024 */
 
          /* this can't actually happen unless there is corruption in the ssrcs[] array */
-            if (fDebug && fExistingSSRC && ssrc_idx != i) Log_RT(8, "INFO: DSFindSSRCGroups (diaglib packet logging) says SSRC 0x%x appears more than once, ssrc_idx = %d, i = %d, num_ssrcs = %d \n", pkts[j].rtp_SSRC, ssrc_idx, i, num_ssrcs);
+            if (fDebug && fExistingSSRC && ssrc_idx != i) Log_RT(8, "INFO: DSFindSSRCGroups (diaglib packet logging) says SSRC 0x%x chan %d appears more than once, ssrc_idx = %d, i = %d, num_ssrcs = %d \n", pkts[j].rtp_SSRC, pkts[j].chnum, ssrc_idx, i, num_ssrcs);
 
             ssrc_idx = i;
             fExistingSSRC = true;
@@ -201,6 +212,7 @@ group_ssrcs:
          ssrc_idx = num_ssrcs;
 
          ssrcs[ssrc_idx] = pkts[j].rtp_SSRC;
+         chnum[ssrc_idx] = pkts[j].chnum;  /* note we save chnum regardless of flags, so they can be printed in log summaries, JHB Jul 2024 */
          first_pkt_idx[ssrc_idx] = j;
          last_pkt_idx[ssrc_idx] = j;
          seq_wrap[ssrc_idx] = 0;
@@ -219,7 +231,7 @@ group_ssrcs:
 
                if (j+k < num_pkts) {
 
-                  if (pkts[j+k].rtp_SSRC == ssrcs[ssrc_idx]) {
+                  if (pkts[j+k].rtp_SSRC == ssrcs[ssrc_idx] && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || pkts[j+k].chnum == chnum[ssrc_idx])) {  /* add chnum comparison, JHB Jul 2024 */
 
 #define NEW_SEQ_CALC
                      if (!nWrap && !seq_wrap[ssrc_idx]) first_seqnum = min(first_seqnum, (unsigned int)pkts[j+k].rtp_seqnum);  /* if wrap has occurred at any point for this SSRC, no longer look for first seq number */
@@ -305,13 +317,13 @@ find_transition:
             #ifdef SIMULATE_SLOW_TIME
             usleep(SIMULATE_SLOW_TIME);
             #endif
-            if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+            if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
-            if (pkts[j].rtp_SSRC != ssrcs[k]) {
+            if (pkts[j].rtp_SSRC != ssrcs[k] || ((uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) && pkts[j].chnum != chnum[k])) {  /* add chnum comparison, JHB Jul 2024 */
 
                if (!i) {
 
-                  i = j;  /* find first non-matching SSRC */
+                  i = j;  /* find first non-matching SSRC or chnum */
                   sorted_point = i-1;  /* adjust sorted point.  Note -- added this to fix the "orphan SSRC" number of SSRC groups problem, see comments below near in_ssrc_start and out_ssrc_start.  This also makes the sort faster, avoids unnecessary moving of already sorted enrties, JHB Feb 2019 */
 
 //  printf("non-matching SSRC = 0x%x, current ssrc = 0x%x, i = %d\n", pkts[j].rtp_SSRC, unique_ssrcs[k], i);
@@ -364,7 +376,7 @@ void print_packet_type(FILE* fp_log, unsigned int content_flags, int rtp_pyldlen
 }
 
 
-int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, const char* label, uint32_t ssrcs[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[]) {
+int DSPktStatsLogSeqnums(FILE* fp_log, PKT_STATS* pkts, int num_pkts, const char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[], unsigned int uFlags) {
 
 int           i, j, k, nSpaces;
 bool          fFound_sn, fDup_sn, fOoo_sn;
@@ -379,12 +391,12 @@ char          szLastSeq[100];
 
 /* first group data by unique SSRCs */
 
-   num_ssrcs = DSFindSSRCGroups(pkts, num_pkts, ssrcs, first_pkt_idx, last_pkt_idx, first_rtp_seqnum, last_rtp_seqnum, uFlags);
+   num_ssrcs = DSFindSSRCGroups(pkts, num_pkts, ssrcs, chnum, first_pkt_idx, last_pkt_idx, first_rtp_seqnum, last_rtp_seqnum, uFlags);
 
    #ifdef SIMULATE_SLOW_TIME
    usleep(SIMULATE_SLOW_TIME);
    #endif
-   if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+   if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
    #if 0  /* debug -- see if sort looks ok */
    fprintf(fp_log, "%s sorted by SSRC (no analysis), numpkts = %d\n", label, num_pkts);
@@ -409,8 +421,8 @@ char          szLastSeq[100];
  
       strcpy(tmpstr, "");
       for (k=i-1; k >= 0; k--) {
-         if (ssrcs[i] == ssrcs[k]) {
-            strcpy(tmpstr, " (cont)");  /* annotate if this SSRC has appeared before */
+         if (ssrcs[i] == ssrcs[k] && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || chnum[i] == chnum[k])) {  /* add chnum comparison, JHB Jul 2024 */
+            strcpy(tmpstr, " (cont)");  /* annotate if this SSRC and chnum combination have appeared before */
             break;
          }
       }
@@ -419,7 +431,7 @@ char          szLastSeq[100];
          if (label) fprintf(fp_log, "%s ", label);
          sprintf(szLastSeq, "%u", last_rtp_seqnum[i]);
          if (uFlags & DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS) sprintf(&szLastSeq[strlen(szLastSeq)], " (%u)", last_rtp_seqnum[i] & 0xffff);
-         fprintf(fp_log, "Packet info for SSRC = 0x%x%s, first seq num = %u, last seq num = %s ...\n\n", ssrcs[i], tmpstr, first_rtp_seqnum[i], szLastSeq);
+         fprintf(fp_log, "Packet info for SSRC = 0x%x chnum = %d%s, first seq num = %u, last seq num = %s ...\n\n", ssrcs[i], chnum[i], tmpstr, first_rtp_seqnum[i], szLastSeq);
       }
 
       j = first_pkt_idx[i];
@@ -433,11 +445,11 @@ char          szLastSeq[100];
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
-         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
-         if (StreamStats[i].chnum[max(StreamStats[i].num_chnum - 1, 0)] != pkts[j].chnum) {  /* handle"dormant SSRCs" that are taken over by another channel, JHB Jan 2020 */
+         if (StreamStats[i].chnum[max(StreamStats[i].num_chnum - 1, 0)] != pkts[j].chnum) {  /* handle "dormant SSRCs" that are taken over by another channel, JHB Jan 2020 */
 
-            if (StreamStats[i].num_chnum < MAX_CHAN_PER_SSRC) {
+            if (StreamStats[i].num_chnum < MAX_CHAN_PER_SSRC) {  /* need to review this now that we're handling SSRCs shared across streams, JHB Jul 2024 */
                StreamStats[i].chnum[StreamStats[i].num_chnum] = pkts[j].chnum;
                StreamStats[i].num_chnum++;;
             }
@@ -565,7 +577,7 @@ char          szLastSeq[100];
 
       if (fp_log) {
 
-         fprintf(fp_log, "\n%s SSRC 0x%x out-of-order seq numbers = %u, duplicate seq numbers = %u, missing seq numbers = %u, max consec missing seq numbers = %u", label, ssrcs[i], StreamStats[i].ooo_seqnum, StreamStats[i].dup_seqnum, StreamStats[i].missing_seqnum, StreamStats[i].max_consec_missing_seqnum);
+         fprintf(fp_log, "\n%s SSRC 0x%x chnum %d out-of-order seq numbers = %u, duplicate seq numbers = %u, missing seq numbers = %u, max consec missing seq numbers = %u", label, ssrcs[i], chnum[i], StreamStats[i].ooo_seqnum, StreamStats[i].dup_seqnum, StreamStats[i].missing_seqnum, StreamStats[i].max_consec_missing_seqnum);
          if (StreamStats[i].numSID) fprintf(fp_log, ", SID packets = %u", StreamStats[i].numSID);
          if (StreamStats[i].numSIDReuse) fprintf(fp_log, ", SID CNG-R packets = %u", StreamStats[i].numSIDReuse);
          if (StreamStats[i].numSIDRepair) fprintf(fp_log, ", repaired SID packets = %u", StreamStats[i].numSIDRepair);
@@ -586,7 +598,7 @@ exit:
 }
 
 
-static int analysis_and_stats(FILE* fp_log, int num_ssrcs, uint32_t in_ssrcs[], PKT_STATS input_pkts[], int in_first_pkt_idx[], int in_last_pkt_idx[], uint32_t in_first_rtp_seqnum[], uint32_t in_last_rtp_seqnum[], STREAM_STATS InputStreamStats[], uint32_t out_ssrcs[], PKT_STATS output_pkts[], int out_first_pkt_idx[], int out_last_pkt_idx[], uint32_t out_first_rtp_seqnum[], uint32_t out_last_rtp_seqnum[], STREAM_STATS OutputStreamStats[], int in_ssrc_start, int out_ssrc_start, int io_map_ssrcs[], unsigned int uFlags) {
+static int analysis_and_stats(FILE* fp_log, int num_ssrcs, uint32_t in_ssrcs[], uint16_t in_chnum[], PKT_STATS input_pkts[], int in_first_pkt_idx[], int in_last_pkt_idx[], uint32_t in_first_rtp_seqnum[], uint32_t in_last_rtp_seqnum[], STREAM_STATS InputStreamStats[], uint32_t out_ssrcs[], uint16_t out_chnum[], PKT_STATS output_pkts[], int out_first_pkt_idx[], int out_last_pkt_idx[], uint32_t out_first_rtp_seqnum[], uint32_t out_last_rtp_seqnum[], STREAM_STATS OutputStreamStats[], int in_ssrc_start, int out_ssrc_start, int io_map_ssrcs[], unsigned int uFlags) {
 
 int           i = 0, j, k, i_out, pkt_cnt;
 unsigned int  rtp_seqnum, rtp_seqnum_chk, mismatch_count, search_offset = 0;
@@ -617,6 +629,8 @@ typedef struct {
 GROUPMAP* GroupMap = NULL;
 int nGroupIndex, stream_count, nNumGroups = 0;
 
+   (void)in_chnum;  /* currently not used */
+  
    int nThreadIndex = GetThreadIndex(true);
 
    if (num_ssrcs <= 0 || !fp_log) {
@@ -781,7 +795,7 @@ int nGroupIndex, stream_count, nNumGroups = 0;
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
-         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
          rtp_seqnum_chk = input_pkts[j].rtp_seqnum + in_seq_wrap[i]*65536L;  /* input seq number */
 
@@ -823,7 +837,7 @@ check_for_reuse:
                      #if 0  /* have not been able to get this to work. Evidently once timestamps no longer match, the amount of mismatch varies constantly. That makes it hard to print a couple of lines of output and then "get back on track".  Ends up being 100s of lines of meaningless output, JHB Feb 2020 */
 
                      timestamp_adjust = output_pkts[k].rtp_timestamp - input_pkts[j].rtp_timestamp;  /* update adjustment once difference stabilizes */
-                     printf("ssrc 0x%x inp seq number %u matches out seq num %u, but inp timestamp %u + adjust > out timestamp %u by = %d, adjust = %d \n", in_ssrcs[i+in_ssrc_start], rtp_seqnum, output_pkts[k].rtp_seqnum, input_pkts[j].rtp_timestamp, output_pkts[k].rtp_timestamp, diff, timestamp_adjust);
+                     printf("ssrc 0x%x chnum %d inp seq number %u matches out seq num %u, but inp timestamp %u + adjust > out timestamp %u by = %d, adjust = %d \n", in_ssrcs[i+in_ssrc_start], in_chnum[i+in_ssrc_start], rtp_seqnum, output_pkts[k].rtp_seqnum, input_pkts[j].rtp_timestamp, output_pkts[k].rtp_timestamp, diff, timestamp_adjust);
                      #endif
 
                      #if 0  /* timestamp mismatch debug helper. Note - not a good idea to enable if you have 100s of mismatches */
@@ -976,7 +990,7 @@ check_for_reuse:
 
       for (k=i_out+1; k<num_ssrcs; k++) {  /* update total search offset for any subsequent output SSRC stream that has same SSRC number as the SSRC stream just processed; i.e. if they are a resumption of the current stream, JHB Sep2017 */
 
-         if (out_ssrcs[k+out_ssrc_start] == out_ssrcs[i_out+out_ssrc_start]) {
+         if (out_ssrcs[k+out_ssrc_start] == out_ssrcs[i_out+out_ssrc_start] && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || out_chnum[k+out_ssrc_start] == out_chnum[i_out+out_ssrc_start])) {
 
             total_search_offset[k] = total_search_offset[i_out];
 //            printf("i_out = %u, updating total_search_offset[%d] = %u\n", i_out, k, total_search_offset[k]);
@@ -1023,7 +1037,7 @@ exit:
 }
 
 
-int DSPktStatsWriteLogFile(const char* szLogfile, unsigned int uFlags, PKT_STATS* input_pkts, PKT_STATS* output_pkts, PKT_COUNTERS* pkt_counters) {
+int DSPktStatsWriteLogFile(const char* szLogfile, PKT_STATS* input_pkts, PKT_STATS* output_pkts, PKT_COUNTERS* pkt_counters, unsigned int uFlags) {
 
 FILE*         fp_log = NULL;
 int           input_idx = 0, output_idx = 0;
@@ -1039,29 +1053,33 @@ int           in_last_pkt_idx[MAX_SSRCS] = { 0 };
 uint32_t      in_first_rtp_seqnum[MAX_SSRCS] = { 0 };
 uint32_t      in_last_rtp_seqnum[MAX_SSRCS] = { 0 };
 uint32_t      in_ssrcs[MAX_SSRCS] = { 0 };
+uint16_t      in_chnum[MAX_SSRCS] = { 0 };
 
 int           out_first_pkt_idx[MAX_SSRCS] = { 0 };
 int           out_last_pkt_idx[MAX_SSRCS] = { 0 };
 uint32_t      out_first_rtp_seqnum[MAX_SSRCS] = { 0 };
 uint32_t      out_last_rtp_seqnum[MAX_SSRCS] = { 0 };
 uint32_t      out_ssrcs[MAX_SSRCS] = { 0 };
+uint16_t      out_chnum[MAX_SSRCS] = { 0 };
 
 int           io_map_ssrcs[MAX_SSRCS] = { 0 };
 int           used_map_ssrcs[MAX_SSRCS] = { 0 };
 
 #else
 
-int*          in_first_pkt_idx = NULL;  /* packet index math in diaglib.c depends on indexes being int.  Don't change these to uint32_t, JHB Oct 2019 */ 
+int*          in_first_pkt_idx = NULL;  /* packet index math in diaglib.cpp depends on indexes being int.  Don't change these to uint32_t, JHB Oct 2019 */ 
 int*          in_last_pkt_idx = NULL;
 uint32_t*     in_first_rtp_seqnum = NULL;
 uint32_t*     in_last_rtp_seqnum = NULL;
 uint32_t*     in_ssrcs = NULL;
+uint16_t*     in_chnum = NULL;
 
 int*          out_first_pkt_idx = NULL;
 int*          out_last_pkt_idx = NULL;
 uint32_t*     out_first_rtp_seqnum = NULL;
 uint32_t*     out_last_rtp_seqnum = NULL;
 uint32_t*     out_ssrcs = NULL;
+uint16_t*     out_chnum = NULL;
 
 int*          io_map_ssrcs = NULL;
 int*          used_map_ssrcs = NULL;
@@ -1089,12 +1107,14 @@ int            nThreadIndex;
    in_first_rtp_seqnum = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
    in_last_rtp_seqnum = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
    in_ssrcs = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
+   in_chnum = (uint16_t*)calloc(MAX_SSRCS, sizeof(uint16_t));
 
    out_first_pkt_idx = (int*)calloc(MAX_SSRCS, sizeof(int));
    out_last_pkt_idx = (int*)calloc(MAX_SSRCS, sizeof(int));
    out_first_rtp_seqnum = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
    out_last_rtp_seqnum = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
    out_ssrcs = (uint32_t*)calloc(MAX_SSRCS, sizeof(uint32_t));
+   out_chnum = (uint16_t*)calloc(MAX_SSRCS, sizeof(uint16_t));
 
    io_map_ssrcs = (int*)calloc(MAX_SSRCS, sizeof(int));
    used_map_ssrcs = (int*)calloc(MAX_SSRCS, sizeof(int));
@@ -1169,15 +1189,15 @@ int            nThreadIndex;
          }
       }
 
-   /* log ingress packet info -- grouped by SSRC values, including ooo and missing seq numbers */
+   /* log ingress packet info -- group by SSRC values, including ooo and missing seq numbers */
 
-      in_ssrc_groups = DSPktStatsLogSeqnums(fp_log, uFlags, input_pkts, input_idx, "Ingress", in_ssrcs, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats);
+      in_ssrc_groups = DSPktStatsLogSeqnums(fp_log, input_pkts, input_idx, "Ingress", in_ssrcs, in_chnum, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, uFlags);
 
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
       #endif
 
-      if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+      if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
    }
 
 /* log jitter buffer stats */
@@ -1220,13 +1240,13 @@ int            nThreadIndex;
 
    /* log jitter buffer output packet info -- grouped by SSRC values, including ooo and missing seq numbers */
 
-      out_ssrc_groups = DSPktStatsLogSeqnums(fp_log, uFlags, output_pkts, output_idx, "Jitter Buffer", out_ssrcs, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats);
+      out_ssrc_groups = DSPktStatsLogSeqnums(fp_log, output_pkts, output_idx, "Jitter Buffer", out_ssrcs, out_chnum, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, uFlags);
 
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
       #endif
 
-      if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+      if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
 
       if (get_time) t2 = get_time(USE_CLOCK_GETTIME);
       else {
@@ -1298,7 +1318,7 @@ int            nThreadIndex;
 
          for (j=0; j<num_ssrcs; j++) {
 
-            if ((io_map_ssrcs[i] == -1) && (used_map_ssrcs[j] == -1) && (in_ssrcs[i+in_ssrc_start] == out_ssrcs[j+out_ssrc_start])) {
+            if ((io_map_ssrcs[i] == -1) && (used_map_ssrcs[j] == -1) && (in_ssrcs[i+in_ssrc_start] == out_ssrcs[j+out_ssrc_start]) && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || (in_chnum[i+in_ssrc_start] == out_chnum[j+out_ssrc_start]))) {
 
                io_map_ssrcs[i] = j;
                used_map_ssrcs[j] = i;  /* we set both sides of the mapping, as it has to be 1:1 relationship, no entry on one side or the other mapped twice */
@@ -1308,7 +1328,7 @@ int            nThreadIndex;
          }
       }
 
-      for (i=0; i<num_ssrcs; i++) if (io_map_ssrcs[i] == -1) fprintf(fp_log, "\nCorresponding output SSRC group not found for input SSRC 0x%x, group %u\n", in_ssrcs[i+in_ssrc_start], i);
+      for (i=0; i<num_ssrcs; i++) if (io_map_ssrcs[i] == -1) fprintf(fp_log, "\nCorresponding output SSRC group not found for input SSRC 0x%x chnum %d, group %u\n", in_ssrcs[i+in_ssrc_start], in_chnum[i+in_ssrc_start], i);
 
 
    /* call analysis_and_stats() as needed, depending on uFlags */
@@ -1319,37 +1339,37 @@ int            nThreadIndex;
       if (uFlags & DS_PKTSTATS_ORGANIZE_BY_SSRC) {
 
          uFlags_as = uFlags & ~DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP & ~DS_PKTSTATS_ORGANIZE_BY_CHNUM;
-         ret_val = analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
+         ret_val = analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, in_chnum, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, out_chnum, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
 
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
 
-         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
 
       if (ret_val > 0 && (uFlags & DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP)) {
 
          uFlags_as = uFlags & ~DS_PKTSTATS_ORGANIZE_BY_SSRC & ~DS_PKTSTATS_ORGANIZE_BY_CHNUM;
-         analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
+         analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, in_chnum, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, out_chnum, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
 
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
 
-         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
 
       if (ret_val > 0 && (uFlags & DS_PKTSTATS_ORGANIZE_BY_CHNUM)) {
 
          uFlags_as = uFlags & ~DS_PKTSTATS_ORGANIZE_BY_SSRC & ~DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP;
-         analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
+         analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, in_chnum, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, out_chnum, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
 
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
 
-         if (LogInfo[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
    }
 
@@ -1388,12 +1408,14 @@ cleanup:
    if (in_first_rtp_seqnum) free(in_first_rtp_seqnum);
    if (in_last_rtp_seqnum) free(in_last_rtp_seqnum);
    if (in_ssrcs) free(in_ssrcs);
+   if (in_chnum) free(in_chnum);
 
    if (out_first_pkt_idx) free(out_first_pkt_idx);
    if (out_last_pkt_idx) free(out_last_pkt_idx);
    if (out_first_rtp_seqnum) free(out_first_rtp_seqnum);
    if (out_last_rtp_seqnum) free(out_last_rtp_seqnum);
    if (out_ssrcs) free(out_ssrcs);
+   if (out_chnum) free(out_chnum);
 
    if (io_map_ssrcs) free(io_map_ssrcs);
    if (used_map_ssrcs) free(used_map_ssrcs);

@@ -38,7 +38,7 @@
 #  Modified Feb 2024 JHB, rename CC_FLAGS to CPPFLAGS and AR_FLAGS to LDFLAGS
 #  Modified Apr 2024 JHB, set INSTALLATH to $(shell pwd); this avoids relative paths in -rpath linker options
 #  Modified May 2024 JHB, add -rdynamic linker flag to include more symbols in executable output. This helps when backtrace_symbols() is used (which it is now by DSGetBacktrace() in diaglib)
-
+#  Modified Jun 2024 JHB, add crc32 object
 
 # check make cmd line for "no_codecs" option
 
@@ -201,9 +201,9 @@ endif
 # add necessary defines
 #   _LINUX_     if not set, then a Win32 system is assumed
 #   _USE_PCIE_  applies to coCPU option.  If not set than ATCA or other hardware is assumed
-#   _SIGRT_     indicates to use real-time options where applicable
+#   _SIGRT      indicates SigSRF builds with real-time options
 #   _X86        indicates host platform is x86
-#   MEDIAMIN    indicates the build is a minimum API interface using packet flow and media processing thread provided by pktlib
+#   _MEDIAMIN_  indicates the build is a minimum API interface using packet flow and media processing thread provided by pktlib
 CPPFLAGS += -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_USE_PCIE_ -D_SIGRT -D_X86 -D_MEDIAMIN_
 
 ifeq ($(ALSA_INSTALLED),y)
@@ -399,7 +399,7 @@ ifeq ($(AMRWBPLUS_INSTALLED),y)
   CODEC_LIBS += -lamrwbplusdec_sig.x86
 endif
 
-# essential libs for user apps (pktlib = packet handling, voplib = voice-over-packet (including codec interface), CODEC_LIBS (variable, depending on which codecs are installed), diaglib = diagnostics, hwlib = DirectCore, streamlib = stream groups and merging. Kaldi, ATLAS, and BLAS are handled with -Wl,-rpath 
+# essential libs for user apps (pktlib = packet handling, voplib = voice-over-packet (including codec interface), CODEC_LIBS (variable, depending on which codecs are installed), diaglib = diagnostics, hwlib = DirectCore, streamlib = stream groups and merging. Kaldi, ATLAS, and BLAS are handled with -Wl,-rpath
 SIG_LIBS = -lvoplib $(CODEC_LIBS) -lpktlib -ldiaglib -lhwlib -lalglib -lstreamlib -lderlib
 
 # add aviolib lib if ALSA present on the system (USB audio I/O support)
@@ -480,6 +480,7 @@ LDFLAGS += -Wl,--no-as-needed
 cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
 c_common_objects = keybd.o
 cpp_sdp_objects = types.o sdp.o utils.o reader.o writer.o
+c_crc_objects = crc32.o
 c_mediaTest_objects = transcoder_control.o cmd_line_interface.o
 cpp_objects = sdp_app.o session_app.o user_io.o mediaMin.o
 # add sources as needed for user defined processing. For example, adding audio_domain_processing.c will take precedence over the default version included in streamlib.so
@@ -487,12 +488,15 @@ cpp_objects = sdp_app.o session_app.o user_io.o mediaMin.o
 # c_objects += packet_media_flow_proc.o
 
 # build targets
-all: $(cpp_common_objects) $(cpp_sdp_objects) $(c_common_objects) $(c_mediaTest_objects) $(cpp_objects) $(c_objects) link	
+all: $(cpp_common_objects) $(cpp_sdp_objects) $(c_crc_objects) $(c_common_objects) $(c_mediaTest_objects) $(cpp_objects) $(c_objects) link	
 
 $(cpp_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.cpp
 	$(CC) $(CPPFLAGS) -c $< -o $@ 
 
 $(cpp_sdp_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/sdp/%.cpp
+	$(CC) $(CPPFLAGS) -c $< -o $@ 
+
+$(c_crc_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/crc/%.c
 	$(CC) $(CPPFLAGS) -c $< -o $@ 
 
 $(c_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.c
@@ -509,7 +513,7 @@ $(c_objects): %.o: %.c
 
 # link object files, essential libs, and cimlib which provides cmd line handling. stublib is last in link order and fills in top-level APIs for any modules not available (their XX_INSTALLED flags not set) due to version, demo, license etc (examples would be some not-always-installed codecs)
 link:
-	$(CC) $(LDFLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(c_common_objects) $(c_mediaTest_objects) $(cpp_objects) $(c_objects) $(LINKER_INCLUDES) -o ./mediaMin -lstdc++ $(SIG_LIBS) -lcimlib -ldl -lpthread $(GLIB_2-35_LIBMVEC) -lm -lstublib
+	$(CC) $(LDFLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(c_crc_objects) $(c_common_objects) $(c_mediaTest_objects) $(cpp_objects) $(c_objects) $(LINKER_INCLUDES) -o ./mediaMin -lstdc++ $(SIG_LIBS) -lcimlib -ldl -lpthread $(GLIB_2-35_LIBMVEC) -lm -lstublib
 
 .PHONY: clean all
 clean:

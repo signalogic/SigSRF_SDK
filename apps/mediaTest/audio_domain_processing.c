@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/audio_domain_processing.c
 
- Copyright (C) Signalogic Inc. 2018-2023
+ Copyright (C) Signalogic Inc. 2018-2024
 
  License
 
@@ -33,6 +33,7 @@
   Modified Mar 2023 JHB, add pInArgs param to DSCodecEncode(). See voplib.h comments
   Modified May 2023 JHB, add FTRT and AFAP mode support
   Modified Nov 2023 JHB, comments and formatting only
+  Modified Jun 2024 JHB, rename DSWritePcapRecord() to DSWritePcap()
 */
 
 
@@ -385,10 +386,10 @@ HASRDECODER hASRDecoder;
                   fAcceleratedTime = true;
                }
 
-               if (DSWritePcapRecord(fp_out_pcap_merge, group_audio_packet, NULL, NULL, &output_term, fAcceleratedTime ? &ts : NULL, packet_length) < 0) {
+               if (DSWritePcap(fp_out_pcap_merge, group_audio_packet, NULL, NULL, &output_term, fAcceleratedTime ? &ts : NULL, packet_length) < 0) {
 
                   sem_post(&pcap_write_sem);
-                  Log_RT(2, "ERROR: DSProcessAudio() says DSWritePcapRecord() failed, hSession = %d, idx = %d, chnum = %d, j = %d, num_frames = %d, packet_length = %d \n", hSession, idx, chnum, j, *num_frames, packet_length);
+                  Log_RT(2, "ERROR: DSProcessAudio() says DSWritePcap() failed, hSession = %d, idx = %d, chnum = %d, j = %d, num_frames = %d, packet_length = %d \n", hSession, idx, chnum, j, *num_frames, packet_length);
                   ret_val = -1;
                   *num_frames = j;
                   break;  /* break out of audio frame loop */

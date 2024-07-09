@@ -34,6 +34,16 @@ Purposes
 
  6) Provide basis for limited, demo/eval version available on Github
 
+Documentation
+
+  https://www.github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-pktlib
+
+  Older documentation links:
+  
+    after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+
+    before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
+
 Revision History
 
  Created Jul 2018 JHB, separated packet mode processing section from x86_mediaTest.c. See revision history in x86_mediaTest.c (note this file is renamed to mediaTest_proc.c)
@@ -163,12 +173,14 @@ Revision History
  Modified Jan 2024 JHB, add audio classification to per channel codec info displayed in run-time summary stats. Look for fShow_audio_classification
  Modified Feb 2024 JHB, modify CheckForPacketLossFlush() to avoid reference to wall-clock in timestamp matching mode
  Modified Feb 2024 JHB, increase MAX_PKT_STATS_STRLEN and MAX_STATS_STRLEN to handle call recoding pcaps with numerous RFC8108 channels (for example cell-tower handoffs and media announcements)
- Modified Mar 2024 JHB, fix mediaTest link fail under gcc 7.2 + ld 2.26 where get_session_thread_index() is undefined. Not sure why this is not showing up on other gcc versions; it does make sense though - for mediaTest, pktlib.c is not in the build, JHB Mar 2024
+ Modified Mar 2024 JHB, fix mediaTest link fail under gcc 7.2 + ld 2.26 where get_session_thread_index() is undefined. Not sure why this is not showing up on other gcc versions; it does make sense though - for mediaTest, pktlib.c is not in the build
  Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG flag, which is now deprecated
  Modified Apr 2024 JHB, several updates and mods to verify functionality in mediaTest mode (look for PUSHPACKETS_REFERENCE below). This fixes the "EVS Player" and "AMR Player" command lines on the Github page
  Modified May 2024 JHB, call DSGetBacktrace() before starting packet/media threads, show result as " ... start sequence = ..." in console output
  Modified May 2024 JHB, add NULL param to DSReadPcapRecord() calls for unused pcap_file_hdr param, required by pktlib API update
  Modified May 2024 JHB, check for error condition returned by DSPktStatsAddEntries()
+ Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap() and DSWritePcapRecord() to DSWritePcap(), per change in pktlib.h
+ Modified Jul 2024 JHB, set DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM packet logging flag in WritePktLog() if dormant session detection is disabled (see diaglib.h for flag info)
 */
 
 #ifndef _GNU_SOURCE
@@ -451,8 +463,7 @@ static int ReuseInputs(uint8_t*, unsigned int, uint32_t, SESSION_DATA*);
 
   4) Packet stats and logging requires the diaglib module, and diaglib.h header file
 
-  5) DSPktStatsAddEntries() records one or more packet entries in PKT_STATS structs, and DSPktStatsWriteLogFile() writes a specified number of entries to a packet stats history log file (the latter
-     API is used in the "cleanup" code below)
+  5) DSPktStatsAddEntries() records one or more packet entries in PKT_STATS structs, and DSPktStatsWriteLogFile() writes a specified number of entries to a packet stats history log file (the latter API is used in the "cleanup" code below)
 */
   
 #define ENABLE_PKT_STATS
@@ -1829,7 +1840,7 @@ run_loop:
 
             for (j=0; j<nInFiles; j++) if (in_type[j] == PCAP) {
 
-               pkt_len[0] = DSReadPcapRecord(fp_in[j], pkt_in_buf, 0, NULL, link_layer_length[j], NULL, NULL);
+               pkt_len[0] = DSReadPcap(fp_in[j], pkt_in_buf, 0, NULL, link_layer_length[j], NULL, NULL);
 
                #if 0  /* no longer needed, done by DSRecvPackets() when DS_RECV_PKT_FILTER_RTCP flag is applied (see below) */
                if (pkt_len[0] > 0) {
@@ -3414,7 +3425,7 @@ pull:
                         wav_index = get_wav_index(i, n);  /* map session handle and channel number to output wav file indexes */
                         #endif
 
-                        if (termInfo.codec_type != DS_VOICE_CODEC_TYPE_NONE) {  /* check for term1 (decoder) pass-thru (codec type constants are in session.h) */
+                        if (termInfo.codec_type != DS_CODEC_TYPE_NONE) {  /* check for term1 (decoder) pass-thru (codec type constants are in session.h) */
 
                            in_media_sample_rate = DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_SAMPLERATE, 0, 0, NULL);
                            pkt_decode_cnt++;
@@ -3714,7 +3725,7 @@ extern int32_t merge_save_buffer_read[NCORECHAN], merge_save_buffer_write[NCOREC
 
                         if ((int)pyld_len_encode < 0) break;  /* error condition */
 
-                        if (termInfo_link.codec_type != DS_VOICE_CODEC_TYPE_NONE) {  /* check for term2 (encoder) pass-thru (codec type constants are in session.h) */
+                        if (termInfo_link.codec_type != DS_CODEC_TYPE_NONE) {  /* check for term2 (encoder) pass-thru (codec type constants are in session.h) */
 
                            out_media_sample_rate = DSGetCodecInfo(hCodec_link, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_SAMPLERATE, 0, 0, NULL);
                            pkt_xcode_cnt++;
@@ -3865,9 +3876,9 @@ static int log_pkt_index = 0;
 
                         sem_wait(&pcap_write_sem);
 
-                        if (DSWritePcapRecord(fp_out[pcap_index], pkt_out_buf, NULL, NULL, &termInfo_link, NULL, packet_length) < 0) {
+                        if (DSWritePcap(fp_out[pcap_index], pkt_out_buf, NULL, NULL, &termInfo_link, NULL, packet_length) < 0) {
                            sem_post(&pcap_write_sem);
-                           fprintf(stderr, "Main thread test, problem with DSWritePcapRecord()\n");
+                           fprintf(stderr, "Main thread test, problem with DSWritePcap()\n");
                            break;
                         }
 
@@ -3921,7 +3932,8 @@ static int log_pkt_index = 0;
                      num_thread_encode_packets++;
 
                      prev_chnum = chnum;
-                  }
+
+                  }  /* end of data_len loop */
 
                   if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_TRANSMIT) DSLogPktTrace(hSession_flags, pkt_out_buf, packet_length, thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_TRANSMIT);
                }
@@ -4826,6 +4838,7 @@ bool fChanFound, fAnalyticsMode, fAnalyticsCompatibilityMode;
    return num_chan;
 }
 
+/* InitStream() is used only with static sessions */
 
 int InitStream(HSESSION hSessions[], int i, int thread_index, bool* fAnalyticsMode) {
 
@@ -4918,7 +4931,7 @@ void ResetPktStats(HSESSION hSession) {
 }
 
 
-/* initialize a session with thread-level and/or app-level items */
+/* initialize a session with thread-level and/or app-level items. InitSession() is used with both static and dynamic sessions */
 
 int InitSession(HSESSION hSession, int thread_index, uint64_t cur_time) {
 
@@ -5377,14 +5390,12 @@ get_num_sessions:
 #endif
 }
 
-
 /* return uFlags for a session */
 
 static inline unsigned int uFlags_session(HSESSION hSession) {
 
    return (unsigned int)DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, 0, NULL);
 }
-
 
 /* write out packet stats logs for currently active sessions.  Note the hSession param is for the time being only used to determine whether "collate streams" is set in log analysis */
 
@@ -5477,9 +5488,18 @@ int i;
 
       if (!(uFlags_log & DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP) && !(uFlags_log & DS_PKTSTATS_ORGANIZE_BY_CHNUM)) uFlags_log |= DS_PKTSTATS_ORGANIZE_BY_SSRC;  /* if no stream groups found, set organize-by-SSRC flag by default */
 
-   /* enable event log summary for each stream */
+      uFlags_log |= DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY;  /* enable event log summary for each stream */
 
-      uFlags_log |= DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY;
+   /* if dormant SSRC detection is disabled, then combine SSRC and channel number to uniquely define streams, JHB Jul 2024 */
+
+      if (hSession >= 0) uFlags_log |= ((unsigned int)DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, 1, NULL) & TERM_DISABLE_DORMANT_SESSION_DETECTION) ? DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM : 0;  /* Term1 flags for pecific hSession */
+      else for (i=0; i<packet_media_thread_info[thread_index].numSessionsMax; i++) {  /* term_uFlags[] and packet_media_thread_info[thread_index].numSessionsMax are persistent after thread clean up */
+      
+         if ((term_uFlags[i][0] & TERM_DISABLE_DORMANT_SESSION_DETECTION) || (term_uFlags[i][0] & TERM_DISABLE_DORMANT_SESSION_DETECTION)) {  /* any session with dormant session detection disabled will set the combined ssrc + chnum logging flag, JHB Jul 2024 */
+            uFlags_log |= DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM;
+            break;
+         }
+      }
 
       #if 0  /* turn on these flags for debug purposes */
       uFlags_log |= DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS;
@@ -5505,7 +5525,7 @@ int i;
          sprintf(&tmpstr[strlen(tmpstr)], ", total input pkts = %d, total jb pkts = %d", pkt_counters[thread_index].num_input_pkts, pkt_counters[thread_index].num_pulled_pkts);
          Log_RT(4, "%s... \n", tmpstr);
 
-         DSPktStatsWriteLogFile(szPktLogFile, uFlags_log, input_pkts, pulled_pkts, &pkt_counters[thread_index]);
+         DSPktStatsWriteLogFile(szPktLogFile, input_pkts, pulled_pkts, &pkt_counters[thread_index], uFlags_log);
       }
 
       return 1;
@@ -5517,7 +5537,7 @@ int i;
 
 /* published API that does more or less what WritePktLog() does, with some extras, such as packet stats history reset, JHB Dec2019 */
 
-int DSWritePacketStatsHistoryLog(HSESSION hSession, unsigned int uFlags, const char* szLogFilename) {
+int DSWritePacketStatsHistoryLog(HSESSION hSession, const char* szLogFilename, unsigned int uFlags) {
 
 int thread_index;
 char* szLocalLogFilename = NULL;
@@ -5558,7 +5578,7 @@ char* szLocalLogFilename = NULL;
 
 /* call DSPktStatsWriteLogFile() in diaglib */
 
-   int ret_val = DSPktStatsWriteLogFile(szLocalLogFilename, uFlags, input_pkts, pulled_pkts, &pkt_counters[thread_index]);  /* input_pkts, pulled_pkts, and pkt_counters are static vars, see top */
+   int ret_val = DSPktStatsWriteLogFile(szLocalLogFilename, input_pkts, pulled_pkts, &pkt_counters[thread_index], uFlags);  /* input_pkts, pulled_pkts, and pkt_counters are static vars, see top */
 
 /* reset stats after logging is complete, if requested */
 
@@ -5667,7 +5687,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
          if (cur_time - last_time[i] >= RealTimeInterval[i]*1000) {  /* has interval elapsed ?  (comparison is in usec) */
 
-            if (!(packet_length = DSReadPcapRecord(fp_in[i], pkt_buffer, 0, NULL, link_layer_length[i], NULL, NULL))) continue;
+            if (!(packet_length = DSReadPcap(fp_in[i], pkt_buffer, 0, NULL, link_layer_length[i], NULL, NULL))) continue;
             else __sync_add_and_fetch(&num_pkts_read_multithread, 1);
 
             #ifdef ENABLE_MANAGED_SESSIONS
@@ -5779,9 +5799,9 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
             if (pcap_index >= 0 && fp_out[pcap_index] != NULL)
             {
                sem_wait(&pcap_write_sem);
-               if (DSWritePcapRecord(fp_out[pcap_index], pkt_buffer, NULL, NULL, &termInfo_link, NULL, packet_length) < 0) {
+               if (DSWritePcap(fp_out[pcap_index], pkt_buffer, NULL, NULL, &termInfo_link, NULL, packet_length) < 0) {
                   sem_post(&pcap_write_sem);
-                  fprintf(stderr, "Multithread test thread id = %d, problem with DSWritePcapRecord()\n", threadid);
+                  fprintf(stderr, "Multithread test thread id = %d, problem with DSWritePcap()\n", threadid);
                   continue;
                }
                sem_post(&pcap_write_sem);

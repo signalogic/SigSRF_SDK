@@ -4,7 +4,7 @@
  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
- Copyright (c) 2021-2023 Signalogic, Dallas, Texas
+ Copyright (c) 2021-2024 Signalogic, Dallas, Texas
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -12,6 +12,7 @@
   Modified Jan 2021 JHB, add a=rtpmap attribute support
   Modified Mar 2021 JHB, more codec types
   Modified Jan 2023 JHB, additional codec types
+  Modified Jun 2024 JHB, add H.263 and H.265 codec types
 */
 
 #include <sdp/utils.h>
@@ -105,8 +106,14 @@ namespace sdp {
     else if (input == "CN") {
       result = SDP_CN;  // comfort noise
     }
+    else if (input == "H263") {
+      result = SDP_H263;
+    }
     else if (input == "H264") {
       result = SDP_H264;
+    }
+    else if (input == "H265") {
+      result = SDP_H265;
     }
     else if (input == "iLBC") {
       result = SDP_iLBC;
@@ -173,10 +180,10 @@ namespace sdp {
     else if (input == "RTP/AVP") {
       result = SDP_RTP_AVP;
     }
-    else if(input == "RTP/SAVP") {
+    else if (input == "RTP/SAVP") {
       result = SDP_RTP_SAVP;
     }
-    else if(input == "RTP/SAVPF") {
+    else if (input == "RTP/SAVPF") {
       result = SDP_RTP_SAVPF;
     }
 
@@ -243,6 +250,10 @@ namespace sdp {
       case SDP_Speex: { return "Speex"; }
       case SDP_gsm: { return "gsm"; }
       case SDP_SILK: { return "SILK"; }
+      case SDP_CN: { return "Comfort Noise"; }
+      case SDP_H263: { return "H.263"; }
+      case SDP_H264: { return "H.264"; }
+      case SDP_H265: { return "H.265"; }
       case SDP_TELEPHONE_EVENT: { return "telephone-event"; }
       default: { return "unknown"; }
     };

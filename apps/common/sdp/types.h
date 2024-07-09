@@ -4,7 +4,7 @@
  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
- Copyright (c) 2021-2023 Signalogic, Dallas, Texas
+ Copyright (c) 2021-2024 Signalogic, Dallas, Texas
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -15,6 +15,7 @@
   Modified Mar 2021 JHB, add SDP_MEDIA_ANY for use in media element find()
   Modified Jan 2023 JHB, add Node::find() function for Origin objects
   Modified Jan 2023 JHB, handle more codec types
+  Modified Jun 2024 JHB, add H.263 and H.265 codec types
 */
 
 /*
@@ -101,7 +102,9 @@ namespace sdp {
     SDP_gsm,
     SDP_SILK,
     SDP_CN,                          /* comfort noise */
+    SDP_H263,                        /* video codecs */
     SDP_H264,
+    SDP_H265,
     SDP_TELEPHONE_EVENT,
     SDP_TONE                         /* not sure what this is, but seeing it in SIP Invite messages */
   };

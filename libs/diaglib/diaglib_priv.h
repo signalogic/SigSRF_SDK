@@ -40,9 +40,9 @@ typedef struct {
    unsigned int  status_code;
    int           uFlags;  /* can be set by DSConfigPacketLogging() */
 
-} LOGINFO;
+} LOGGING_THREAD_INFO;
 
-int GetThreadIndex(bool);
+__attribute__((visibility("hidden"))) int GetThreadIndex(bool fUseSem);
 
 #ifdef __cplusplus
 }

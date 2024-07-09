@@ -9,6 +9,16 @@
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
+ Documentation
+
+  https://www.github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediamin
+
+  Older documentation links:
+  
+    after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+
+    before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
+
   Revision History
 
    Created Jan 2022 JHB, option and flag definitions moved here from mediaMin.h to allow Mode flags to apply to both mediaMin and mediaTest. Note use below of m| and mm| to specify whether a flag applies to mediaMin only or both
@@ -22,6 +32,7 @@
    Modified Jul 2023 JHB, add INCLUDE_PAUSES_IN_WAV_OUTPUT flag
    Modified Aug 2023 JHB, add ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag
    Modified May 2024 JHB, update comments
+   Modified Jun 2024 JHB, add DISABLE_PORT_IGNORE_MESSAGES and DISABLE_SIP_INFO_REQUEST_OK_MESSAGES flags
 */
 
 #ifndef _CMDLINEOPTIONSFLAGS_H_
@@ -85,6 +96,11 @@
 #define ENABLE_INTERMEDIATE_PCAP             0x400000000LL  /* m| for HI2/HI3 and .ber input, enable intermediate pcap output after decoding */
 #define ENABLE_ASN_OUTPUT                    0x800000000LL  /* m| for HI2/HI3 input, enable ASN.1 output to XML file */
 #define ENABLE_ASN_OUTPUT_DEBUG_INFO         0x1000000000LL  /* m| enable intermediate ASN decoding info, warning, and error messages */
+
+/* disable some console output */
+
+#define DISABLE_PORT_IGNORE_MESSAGES         0x2000000000LL  /* m|  after first media packet is received, disable "xxx port ignore" and other non-RTP related port messages to reduce/simplify console output. Suggest not to do this until you have confidence that messages you're seeing accurately reflect expected UDP and/or TCP ports */
+#define DISABLE_SIP_INFO_REQUEST_OK_MESSAGES 0x4000000000LL  /* m|  after first media packet is received, disable SIP Info Request and Ok messages to reduce/simplify console output */
 
 /* alarms */
 

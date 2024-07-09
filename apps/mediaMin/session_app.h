@@ -13,9 +13,13 @@
 
  Documentation
 
-  ftp://ftp.signalogic.com/documentation/SigSRF
+  https://github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediamin
 
-  (as of Oct 2019, most recent doc is ftp://ftp.signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+  Older documentation links:
+  
+    after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+
+    before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
 
  Revision History
 

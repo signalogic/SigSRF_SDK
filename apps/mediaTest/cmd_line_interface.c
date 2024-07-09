@@ -54,6 +54,7 @@
    Modified Apr 2024 JHB, set executeMode[0] to 'a' for mediaTest packet and frame test modes, nail down initialization of RealTimeInterval[]
    Modified May 2024 JHB, add more checks when setting executeMode[0]
    Modified May 2024 JHB, update comments that reference x86_mediaTest to mediaTest_proc
+   Modified Jul 2024 JHB, adjust param order in DSConfigLogging() after change in diaglib.h
 */
 
 
@@ -139,7 +140,7 @@ void intHandler(int sig) {
    
    fCtrl_C_pressed = true;
 
-   DSConfigLogging(DS_CONFIG_LOGGING_SET_FLAG, DS_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS, NULL);  /* tell possibly time-consuming packet logging functions to abort. Currently we combine with "ALL_THREADS" flag which will terminate packet logging for any apps running. See additional comments in mediaMin.cpp JHB Jan 2023 */
+   DSConfigLogging(DS_CONFIG_LOGGING_SET_FLAG, NULL, DS_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS);  /* tell possibly time-consuming packet logging functions to abort. Currently we combine with "ALL_THREADS" flag which will terminate packet logging for any apps running. See additional comments in mediaMin.cpp JHB Jan 2023 */
 }
 
 /* global vars used by other files in the build */

@@ -27,14 +27,16 @@
   Modified Jan 2021 JHB, include string.h with _GNU_SOURCE defined, change loglevel param in Log_RT() from uint16_t to uint32_t, implement DS_LOG_LEVEL_SUBSITUTE_WEC flag (config.h). See comments
   Modified Mar 2021 JHB, minor adjustments to removal of unncessary Makefile defines, add STANDALONE #define option to build without isPmThread()
   Modified Dec 2022 JHB, add DSInitLogging(), DSUpdateLogConfig(), and DSCloseLogging() APIs to (i) simply interface from apps, and (ii) clarify multiprocess use of diaglib
-  Modified Jan 2023 JHB, put in place new method of handling per-thread API status. See references to LogInfo[] and comments
+  Modified Jan 2023 JHB, put in place new method of handling per-thread API status. See references to Logging_Thread_Info[] and comments
   Modified Jan 2023 JHB, in Log_RT(), replace strstr() with strcasestr(), avoid additional upper case copy to a temporary string
-  Modified Jan 2023 JHB, make GetThreadIndex() not static, callable from diaglib.c
+  Modified Jan 2023 JHB, make GetThreadIndex() not static, callable from diaglib.cpp
   Modified Jan 2023 JHB, add DSConfigLogging() to allow apps to abort DSPktStatsWriteLogFile() and other potentially time-consuming APIs if needed
   Modified Feb 2024 JHB, Makefile now defines NO_PKTLIB, NO_HWLIB, and STANDALONE if standalone=1 given on command line
   Modified Feb 2024 JHB, increase MAX_STR_SIZE and adjust max string size in vsnprintf() due to user-reported crash running pcap where one session had 20+ RFC8108 dynamic channel changes (evidently cell tower handoffs) and the run-time stats summary became very large
   Modified May 2024 JHB, convert to cpp, move DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs to diaglib_util.cpp
   Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile no longer recognizes standalone=1
+  Modified Jun 2024 JHB, change last param in in DSConfigLogging() from void* to DEBUG_CONFIG*
+  Modified Jun 2024 JHB, some var and struct renaming and comment updates to improve readability
 */
 
 /* Linux and/or other OS includes */
@@ -75,7 +77,7 @@ using namespace std;
 #include "diaglib_priv.h"
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.9.1";
+const char DIAGLIB_VERSION[256] = "1.9.2";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 
@@ -99,30 +101,30 @@ uint32_t event_log_warnings = 0;
 
 /* private APIs and definitions */
 
-/* create, get, and delete per-thread indexes for use in LogInfo[nThread].xxx access, JHB Jan 2023:
+/* function pointers set in DSInitLogging() with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused at link-time with their SigSRF library function counterparts if they both exist, JHB May 2024 */
+
+__attribute__((visibility("hidden"))) DSGetPacketInfo_t* DSGetPacketInfo = NULL;  /* DSGetPacketInfo_t typedef in pktlib.h */
+__attribute__((visibility("hidden"))) isPmThread_t* isPmThread = NULL;  /* isPmThread_t typedef in pktlib.h */
+__attribute__((visibility("hidden"))) get_time_t* get_time = NULL;  /* get_time_t typedef in hwlib.h */
+
+/* create, get, and delete per-thread indexes for use in Logging_Thread_Info[nThread].xxx access, JHB Jan 2023:
 
   -pre-thread indexes are created by DSInitLogging() which calls private CreateThreadIndex(), and deleted by DSCloseLogging() which calls private DeleteThreadIndex(). Both use diaglib_sem to control multithread access
   -pktlib packet/media threads and mediaMin and mediaTest app threads call DSInitLogging() and DSCloseLogging()
   -the "zeroth" index is reserved for any applications or threads not calling DSInitLogging(); i.e. if GetThreadIndex() does not find a thread index, these share a thread index
 */
 
-LOGINFO LogInfo[MAXTHREADS] = {{ 0 }};  /* also referenced in diaglib.cpp */
+LOGGING_THREAD_INFO Logging_Thread_Info[MAXTHREADS] = {{ 0 }};  /* LOGGING_THREAD_INFO struct defined in diaglib_priv.h. Also referenced in diaglib.cpp */
 
-/* function pointers set in DSInitLogging() with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused with their SigSRF library function counterparts if they both exist during app or library link, JHB May 2024 */
-
-__attribute__((visibility("hidden"))) DSGetPacketInfo_t* DSGetPacketInfo = NULL;  /* DSGetPacketInfo_t typedef in pktlib.h */
-__attribute__((visibility("hidden"))) isPmThread_t* isPmThread = NULL;  /* isPmThread_t typedef in pktlib.h */
-__attribute__((visibility("hidden"))) get_time_t* get_time = NULL;  /* get_time_t typedef in hwlib.h */
-
-static int CreateThreadIndex(void) {  /* local API */
+static int CreateThreadIndex(void) {  /* create a thread index from its Id */
 
 int i;
 
-   for (i=1; i<MAXTHREADS; i++) if (LogInfo[i].ThreadId == pthread_self()) return i;  /* first check to see if current thread already has a slot */
+   for (i=1; i<MAXTHREADS; i++) if (Logging_Thread_Info[i].ThreadId == pthread_self()) return i;  /* first check to see if current thread already has a slot */
 
-   for (i=1; i<MAXTHREADS; i++) if (LogInfo[i].ThreadId == 0) {  /* get a new slot */
+   for (i=1; i<MAXTHREADS; i++) if (Logging_Thread_Info[i].ThreadId == 0) {  /* get a new slot */
 
-      LogInfo[i].ThreadId = pthread_self();
+      Logging_Thread_Info[i].ThreadId = pthread_self();
 //      printf("thread[%d] id = %llu \n", i, (long long unsigned int)Threads[i]);
       break;
    }
@@ -131,37 +133,37 @@ int i;
    else return -1;
 }
 
-int GetThreadIndex(bool fUseSem) {  /* diaglib-private API, also called by functions in lib_logging.c */
+__attribute__((visibility("hidden"))) int GetThreadIndex(bool fUseSem) {  /* Get a thread index from its Id. This is a diaglib-private API, also called by functions in diaglib.cpp */
 
 int i, ret_val = 0;
 bool fUseSemLocal = false;
 
    if (fUseSem && diaglib_sem_init) { fUseSemLocal = true; sem_wait(&diaglib_sem); }
 
-   for (i=1; i<MAXTHREADS; i++) if (LogInfo[i].ThreadId == pthread_self()) { ret_val = i; break; }
+   for (i=1; i<MAXTHREADS; i++) if (Logging_Thread_Info[i].ThreadId == pthread_self()) { ret_val = i; break; }
 
    if (fUseSemLocal) sem_post(&diaglib_sem);
 
    return ret_val;  /* return zeroth slot -- any/all apps or threads not calling DSInitLogging() */
 }
 
-static int DeleteThreadIndex(void) {  /* local API */
+static int DeleteThreadIndex(void) {  /* clear a thread index */
 
-int nIndex = GetThreadIndex(false);
+int nIndex = GetThreadIndex(false);  /* note - DeleteThreadIndex() called only from DSCloseLogging() which obtains the diaglib_sem semaphore */
 
-   if (nIndex >= 0) { LogInfo[nIndex].ThreadId = 0; return nIndex; }
+   if (nIndex >= 0) { Logging_Thread_Info[nIndex].ThreadId = 0; return nIndex; }
    else return -1;
 }
 
 
-#if 0  /* use of problematic pthread_key_create() and pthread_setspecific() ripped out, new method in place; see LogInfo[] and comments above, JHB Jan 2023 */
+#if 0  /* use of problematic pthread_key_create() and pthread_setspecific() ripped out, new method in place; see Logging_Thread_Info[] and comments above, JHB Jan 2023 */
 static void make_key()
 {
    pthread_key_create(&status_key, NULL);
 }
 #endif
 
-static int set_api_status(int status_code, unsigned int uFlags) {  /* local API */
+static int set_api_status(int status_code, unsigned int uFlags) {  /* set Logging_Thread_Info[].status_code, later retrieved by DSGetAPIStatus() */
 #if 0
 int *ptr;
 
@@ -184,7 +186,7 @@ int nIndex;
    (void)uFlags;  /* avoid compiler warning (Makefile has -Wextra flag) */
 
    nIndex = GetThreadIndex(false);
-   if (nIndex >= 0) LogInfo[nIndex].status_code = status_code;
+   if (nIndex >= 0) Logging_Thread_Info[nIndex].status_code = status_code;
 
    return nIndex;
 
@@ -267,7 +269,7 @@ bool fUseSemLocal = false;
    return 0;  /* 0 indicates event log file aleady open */
 }
 
-static int update_log_config(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags, bool fUseSem) {  /* called by DSConfigLogging() below */
+static int update_log_config(DEBUG_CONFIG* dbg_cfg, bool fUseSem, unsigned uFlags) {  /* called by DSConfigLogging() below */
 
 bool fUseSemLocal = false;
 
@@ -300,7 +302,7 @@ int DSGetAPIStatus(unsigned int uFlags) {  /* per-thread API status */
 
    (void)uFlags;  /* avoid compiler warning (Makefile has -Wextra flag) */
    
-#if 0  /* use of problematic pthread_key_create() and pthread_setspecific() ripped out, new method in place; see LogInfo[] and comments above, JHB Jan 2023 */
+#if 0  /* use of problematic pthread_key_create() and pthread_setspecific() ripped out, new method in place; see Logging_Thread_Info[] and comments above, JHB Jan 2023 */
 int *ptr = pthread_getspecific(status_key);
 
 /* if no value has been set, ptr will be NULL and we return 0 indicating no status */
@@ -311,7 +313,7 @@ int *ptr = pthread_getspecific(status_key);
 
 int nIndex = GetThreadIndex(false);
 
-   if (nIndex >= 0) return LogInfo[nIndex].status_code;  /* return current API status code */
+   if (nIndex >= 0) return Logging_Thread_Info[nIndex].status_code;  /* return current API status code */
    else return -1;
 
 #endif
@@ -399,20 +401,18 @@ static uint8_t lock = 0;
    return ret_val;
 }
 
-/* DSConfigLogging - set/get LogInfo[] items. We use the thread based indexes set by DSInitLogging() in lib_logging.cpp */
+/* DSConfigLogging - set/get Logging_Thread_Info[] items. We use the thread based indexes set by DSInitLogging() in lib_logging.cpp */
 
-unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, void* pLogInfo) {
+unsigned int DSConfigLogging(unsigned int action, DEBUG_CONFIG* pDebugConfig, unsigned int uFlags) {
 
 unsigned int ret_val = (unsigned int)-1;
 int i, nIndex, start, end;
 bool fUseSem = false;
 
-   (void)pLogInfo;
-
    if (uFlags & DS_CONFIG_LOGGING_ALL_THREADS) { start = 0; end = MAXTHREADS-1; }
    else {
 
-      nIndex = GetThreadIndex(true);  /* get LogInfo[] index for the current thread */
+      nIndex = GetThreadIndex(true);  /* get Logging_Thread_Info[] index for the current thread. Ask GetThreadIndex() to obtain the diaglib_sem semaphore */
       if (nIndex < 0) return (unsigned int)-1;
  
       start = nIndex; end = nIndex;
@@ -425,26 +425,26 @@ bool fUseSem = false;
       switch (action & DS_CONFIG_LOGGING_ACTION_MASK) {
 
          case DS_CONFIG_LOGGING_SET_FLAG:
-            ret_val = LogInfo[i].uFlags;
-            LogInfo[i].uFlags |= uFlags;
+            ret_val = Logging_Thread_Info[i].uFlags;
+            Logging_Thread_Info[i].uFlags |= uFlags;
             break;
 
          case DS_CONFIG_LOGGING_CLEAR_FLAG:
-            ret_val = LogInfo[i].uFlags;
-            LogInfo[i].uFlags &= ~uFlags;
+            ret_val = Logging_Thread_Info[i].uFlags;
+            Logging_Thread_Info[i].uFlags &= ~uFlags;
             break;
 
          case DS_CONFIG_LOGGING_SET_UFLAGS:
-            ret_val = LogInfo[i].uFlags;
-            LogInfo[i].uFlags = uFlags;
+            ret_val = Logging_Thread_Info[i].uFlags;
+            Logging_Thread_Info[i].uFlags = uFlags;
             break;
 
          case DS_CONFIG_LOGGING_GET_UFLAGS:
-            ret_val = LogInfo[i].uFlags;
+            ret_val = Logging_Thread_Info[i].uFlags;
             break;
 
          case DS_CONFIG_LOGGING_SET_DEBUG_CONFIG:
-            ret_val = update_log_config((DEBUG_CONFIG*)pLogInfo, uFlags, false);  /* update event log configuration dynamically */
+            ret_val = update_log_config(pDebugConfig, false, uFlags);  /* update event log configuration dynamically */
             break;
       }
    }

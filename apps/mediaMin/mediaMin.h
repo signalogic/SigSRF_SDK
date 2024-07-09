@@ -7,6 +7,16 @@
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
+  Documentation
+
+   https://github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediamin
+
+   Older documentation links:
+  
+    after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+
+    before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
+
   Revision History
 
    Created Nov 2018 JHB, moved struct typedefs and other items out of mediaMin.c
@@ -16,7 +26,7 @@
    Modified Mar 2020 JHB, index fFirstGroupPull[], add first_packet_push_time[]
    Modified Apr 2020 JHB, add hSession to DYNAMICSESSIONSTATS struct, increase max number of dynamic session stats to allow for repeating tests with multiple cmd line inputs
    Modified Oct 2020 JHB, expand link_layer_len to int32_t to handle mods to DSOpenPcap() and DSReadPcap() (pktlib) made to support pcapng format. Note - still needs to be an int (not unint) because DSOpenPcap() returns values < 0 for error conditions
-   Modified Jan 2021 JHB, for SDP info support, add rtpmaps records (a vector of rtpmaps) and a few other items (see comments)
+   Modified Jan 2021 JHB, for SDP info and SIP Invite message support, add rtpmaps records (a vector of rtpmaps) and a few other items (see comments)
    Modified Mar 2021 JHB, add hDerStreams[] to support DER encoded encapsulated streams
    Modified Mar 2021 JHB, add SIP invite items
    Modified Apr 2021 JHB, add include for derlib.h
@@ -30,6 +40,10 @@
    Modified Dec 2023 JHB, add szGroupPcap[MAX_STREAM_GROUPS] to support --group_pcap cmd line option
    Modified Dec 2023 JHB, include voplib.h
    Modified May 2024 JHB, add pcap_file_hdr[] to support .rtp format files (needed for use with modified DSReadPcapRecord() in pktlib)
+   Modified Jun 2024 JHB, separate counters for UDP and RTP packet stats, fragmented packet counter, encapsulated packet counter
+   Modified Jun 2024 JHB, add SDP info and SIP Invite message media descriptions, look for media_descriptions[]
+   Modified Jun 2024 JHB, add per-stream source and destination ports, which are set for most recent (i) non-fragmented packet or (ii) first segment of a fragmented packet
+   Modified Jun 2024 JHB, add isPortAllowed() return definitions, sip_info_checksum (use to help find SDP info duplicates)
 */
 
 #ifndef _MEDIAMIN_H_
@@ -55,6 +69,15 @@
 #define STREAM_TERMINATE_BYE_MESSAGE             1
 #define STREAM_TERMINATE_PORT_CLOSES             2
 #define STREAM_TERMINATE_INPUT_ENDS_NO_SESSIONS  0x10
+
+/* definitions returned by isPortAllowed(). Look for nAllowedPortStatus in mediaMin.cpp */
+
+#define PORT_ALLOW_UNKNOWN               0
+#define PORT_ALLOW_KNOWN                 1
+#define PORT_ALLOW_ON_MEDIA_ALLOW_LIST   2
+#define PORT_ALLOW_SDP_MEDIA_DISCOVERED  3
+#define PORT_ALLOW_SDP_INFO              4
+
 
 extern GLOBAL_CONFIG pktlib_gbl_cfg;
 
@@ -128,8 +151,16 @@ typedef struct {
   FILE*        fp_pcap_jb[MAX_SESSIONS];
   bool         init_err;
 
-  uint32_t     num_tcp_packets_in[MAX_INPUT_STREAMS];
-  uint32_t     num_udp_packets_in[MAX_INPUT_STREAMS];
+/* packet stats */
+
+  uint32_t     packet_number[MAX_INPUT_STREAMS];  /* for pcaps this stat matches "packet number" in Wireshark displays. It also serves as a counter for total number of packets per stream */
+  uint32_t     num_tcp_packets[MAX_INPUT_STREAMS];
+  uint32_t     num_udp_packets[MAX_INPUT_STREAMS];
+  uint32_t     num_packets_encapsulated[MAX_INPUT_STREAMS];
+  uint32_t     num_rtp_packets[MAX_INPUT_STREAMS];
+
+  uint32_t     num_packets_fragmented[MAX_INPUT_STREAMS];
+  uint32_t     num_packets_reassembled[MAX_INPUT_STREAMS];
 
   FILE*        fp_pcap_group[MAX_STREAM_GROUPS];  /* note:  this array is accessed by a session counter, and each app thread might handle up to 50 sessions, so this size (172, defined in shared_include/streamlib.h) is overkill.  But leave it for now */
   FILE*        fp_text_group[MAX_STREAM_GROUPS];
@@ -157,27 +188,43 @@ typedef struct {
   uint64_t     initial_push_time[MAX_INPUT_STREAMS];
   uint64_t     total_push_time[MAX_INPUT_STREAMS];
 
-  uint16_t num_rtpmaps[MAX_INPUT_STREAMS];  /* SDP items, added JHB Jan2021 */
+/* SDP info and SIP invite message items, added JHB Jan 2021 */
+
+  uint16_t                num_rtpmaps[MAX_INPUT_STREAMS];
   vector<sdp::Attribute*> rtpmaps[MAX_INPUT_STREAMS];
-  uint16_t num_origins[MAX_INPUT_STREAMS];  /* SDP items, added JHB Jan2021 */
-  vector<sdp::Origin*> origins[MAX_INPUT_STREAMS];
-  bool fUnmatchedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
-  bool fDisallowedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
+  uint16_t                num_origins[MAX_INPUT_STREAMS];
+  vector<sdp::Origin*>    origins[MAX_INPUT_STREAMS];
+  uint16_t                num_media_descriptions[MAX_INPUT_STREAMS];  /* add media descriptions, JHB Jun 2024 */
+  vector<sdp::Media*>     media_descriptions[MAX_INPUT_STREAMS];
 
-  HDERSTREAM   hDerStreams[MAX_INPUT_STREAMS];  /* DER stream handles, added JHB Mar2021 */
-  FILE*        hFile_ASN_XML[MAX_INPUT_STREAMS];     /* DER stream XML output file handles, JHB Dec 2022 */
-
-  uint8_t*     sip_save[MAX_INPUT_STREAMS];  /* SIP aggregated packet handling, initially to support SIP invite packets, added JHB Mar2021 */
-  int          sip_save_len[MAX_INPUT_STREAMS];
+  bool         fUnmatchedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
+  bool         fDisallowedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
 
   uint8_t      dynamic_terminate_stream[MAX_INPUT_STREAMS];  /* non-zero values will terminate a stream, for example a SIP BYE messsage from sender or recipient with same IP addr as active media stream.  See STREAM_TERMINATE_xxx defines above */
- 
- /* items used only in PushPackets() */
 
-  bool         fReseek;                /* flag indicating whether current packet processing is a "reseek" (i) a packet arrival timestamp not yet elapsed (ii) a TCP packet being consumed in segments */
-  PKTINFO      PktInfo;                /* saved copy of PktInfo, can be used to compare current and previous packets */ 
+/* SIP aggregated packet handling, supports SIP messages, SIP invite, SAP protocol, and other SDP info packets, added JHB Mar 2021 */
+  
+  uint8_t*     sip_info_save[MAX_INPUT_STREAMS];
+  int          sip_info_save_len[MAX_INPUT_STREAMS];
+  int32_t      sip_info_crc32[MAX_INPUT_STREAMS];
+
+/* LI HI2/HI3 items */
+
+  HDERSTREAM   hDerStreams[MAX_INPUT_STREAMS];  /* DER stream handles, added JHB Mar 2021 */
+  FILE*        hFile_ASN_XML[MAX_INPUT_STREAMS];  /* DER stream XML output file handles, JHB Dec 2022 */
+
+ /* items used in PushPackets() */
+
+  bool         fReseek[MAX_INPUT_STREAMS];                 /* flag indicating whether current packet processing is a "reseek" (i) a packet arrival timestamp not yet elapsed (ii) a TCP packet being consumed in segments */
+  PKTINFO      PktInfo[MAX_INPUT_STREAMS];                 /* saved copy of PktInfo, can be used to compare current and previous packets */ 
   unsigned int tcp_redundant_discards[MAX_INPUT_STREAMS];  /* count of discarded TCP redundant retransmissions */
+  unsigned int udp_redundant_discards[MAX_INPUT_STREAMS];  /* count of discarded UDP redundant retransmissions, JHB Jun 2024 */
 
+/* packet fragmentation items, JHB Jun 2024 */
+
+  uint16_t     dst_port[MAX_INPUT_STREAMS];                /* ports are saved when MF flag is set and fragment offset is not */
+  uint16_t     src_port[MAX_INPUT_STREAMS];
+  
 /* AFAP and FTRT mode support */
 
   struct timespec  accel_time_ts[MAX_STREAM_GROUPS];  /* added to support FTRT and AFAP modes, JHB May 2023 */

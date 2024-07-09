@@ -13,9 +13,13 @@
 
  Documentation
 
-  ftp://ftp.signalogic.com/documentation/SigSRF
+  https://www.github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediamin
 
-  (as of Oct 2019, most recent doc is ftp://ftp.signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+  Older documentation links:
+  
+    after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+
+    before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
 
  Revision History
 
@@ -26,6 +30,7 @@
    Modified Feb 2023 JHB, one-time set stdout to non-buffered in ProcessKeys(). See comments
    Modified Feb 2024 JHB, update usage of DSGetLogTimeStamp() per changes in diaglib.h
    Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG and DS_LOG_LEVEL_UPTIME_TIMESTAMP flags, which are now deprecated (for the latter uptime timestamps are the default). See comments in pktlib.h and diaglib.h
+   Modified Jun 2024 JHB, include '\r' in updating isCursorMidLine and uLineCursorPos 
 */
 
 #include <stdio.h>
@@ -279,9 +284,9 @@ int slen;
    if (slen) {
 
       if ((uFlags & APP_PRINTF_NEW_LINE) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) *(--p) = '\n';  /* prefix with newline, update isCursorMidLine if needed */
-      else if (p[slen-1] != '\n') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);
+      else if (p[slen-1] != '\n' && p[slen-1] != '\r') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);
 
-      uLineCursorPos = p[slen-1] != '\n' ? slen : 0;  /* update line cursor position */
+      uLineCursorPos = (p[slen-1] != '\n' && p[slen-1] != '\r') ? slen : 0;  /* update line cursor position */
 
       printf("%s", p);  /* use buffered output */
       
@@ -297,6 +302,94 @@ int slen;
          }
 
          Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY | ((uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP) ? DS_LOG_LEVEL_NO_TIMESTAMP : 0), p);  /* if specified also print to event log */
+      }
+   }
+}
+
+void PrintPacketBuffer(uint8_t* buf, int len, const char* szStartMarker, const char* szEndMarker) {
+
+bool fNewLine = false;
+
+   if (szStartMarker && strlen(szStartMarker)) printf("%s%s", isCursorMidLine ? "\n" : "", szStartMarker);
+
+   for (int i=0; i<len; i++) {
+
+      fNewLine = false;
+
+      switch (buf[i]) {
+         case 0 ... 9:
+            printf("%c", 178);
+            break;
+         case 0xa:
+            printf("%c", buf[i]);
+            fNewLine = true;
+            break;
+         case 0xb ... 0x0c:
+            printf("%c", 178);
+            break;
+         case 0xd:
+            printf("%c", buf[i]);
+            fNewLine = true;
+            break;
+         case 0xe ... 31:
+            printf("%c", 178);
+            break;
+         case 127 ... 255:
+            printf("%c", 178);
+            break;
+         default:
+            printf("%c", buf[i]);
+      }
+   }
+
+   if (szEndMarker && strlen(szEndMarker)) {
+
+      printf("%s%s", !fNewLine ? "\n" : "", szEndMarker);
+      if (szEndMarker[strlen(szEndMarker)-1] == '\n') __sync_val_compare_and_swap(&isCursorMidLine, 1, 0);
+   }
+}
+
+void PrintSIPInviteFragments(uint8_t* pkt_buf, PKTINFO* PktInfo, int pkt_len) {
+
+static int state = 0, count = 0;
+
+   switch (state) {
+
+      case 0:
+      {
+         char s[] = "Length:";
+         int i = 0, len;
+         uint8_t* p = (uint8_t*)memmem(pkt_buf, pkt_len, s, strlen(s));
+
+         if (p) {
+            p += strlen(s);
+            while (p[i] >= 0x20) i++;
+            uint8_t save = p[i];
+            p[i] = 0;
+            len = atoi((const char*)p);
+            p[i] = save;
+
+            if (len > 1) {
+               printf("\n *** found Length = %d, pkt len = %d, flags = 0x%x, ip hdr checksum = 0x%x, udp checksum = 0x%x, src port = %u, dst port = %u \n", len, pkt_len, PktInfo->flags, PktInfo->ip_hdr_checksum, PktInfo->udp_checksum, PktInfo->src_port, PktInfo->dst_port);
+               PrintPacketBuffer(&pkt_buf[PktInfo->ip_hdr_len], pkt_len-PktInfo->ip_hdr_len, "*** buf start \n", "*** buf end \n");
+               state = 1;
+            }
+         }
+         break;
+      }
+
+      case 1:
+      {
+         if (count < 4) {
+
+            printf("\n *** count = %d, pkt_len = %d, flags = 0x%x, ip hdr checksum = 0x%x, udp checksum = 0x%x, src port = %u, dst port = %u \n", count++, pkt_len, PktInfo->flags, PktInfo->ip_hdr_checksum, PktInfo->udp_checksum, PktInfo->src_port, PktInfo->dst_port);
+            PrintPacketBuffer(&pkt_buf[PktInfo->ip_hdr_len], pkt_len-PktInfo->ip_hdr_len, "*** buf start \n", "*** buf end \n");
+         }
+         else {
+            count = 0;
+            state = 0;
+         }
+         break;
       }
    }
 }
