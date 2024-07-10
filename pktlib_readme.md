@@ -90,7 +90,7 @@ int DSGetPacketInfo(HSESSION sessionHandle,  /* additional sessionHandle notes: 
                                                 -a PKTINFO struct (see definition below) if uFlags includes the DS_PKT_INFO_PKTINFO flag
                                                 -an RTPHeader struct (see definition above) if uFlags includes the DS_PKT_INFO_RTP_HEADER flag
                                                 -a fully re-assembled packet if uFlags includes the DS_PKT_INFO_REASSEMBLY_GET_PACKET flag
-                                                -a TERMINATINO_INFO or SESSION_DATA struct if uFlags includes DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags
+                                                -a TERMINATION_INFO or SESSION_DATA struct if uFlags includes DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags
                                              */
                     int* chnum               /* chnum, if not NULL, will contain a matching channel number when the DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT flags are given. If the packet matches a child channel number and the DS_PKT_INFO_CHNUM_PARENT flag is given, chnum will contain the child channel number and the parent channel number will be returned */
                    );
