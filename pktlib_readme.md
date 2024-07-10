@@ -86,7 +86,9 @@ int DSGetPacketInfo(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_bu
   * pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1
 
   * return value is the packet item(s) as specified, PKT_INFO_RET_XXX flags if uFlags includes DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags, packet length for reassembled packets, or < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int)
-  
+
+Below is more detailed parameter information.
+
 ```c++
 int DSGetPacketInfo(HSESSION sessionHandle,  /* additional sessionHandle notes: (i) if both sessionHandle is -1 and uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, then all existing sessions will be searched. (ii) SigSRF documentation often refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession() */
                     unsigned int uFlags,     /* See [Packet Info Flags](#user-content-packetinfoflags) below. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. (ii) if flag values of DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1 */
