@@ -74,7 +74,7 @@ The pktlib API is large, so here it's divided into the following groups:
 <a name="DSGetPacketInfo"></a>
 ## DSGetPacketInfo
 
-DSGetPacketInfo() retrieves specified packet information, either individual items, a PKTINFO struct, or reassembled packet data. Both [mediaMin.cpp](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp) and [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) contain several examples of DSGetPacketInfo() usage.
+DSGetPacketInfo() retrieves specified packet information as individual items, a PKTINFO struct, or reassembled packet data. Both [mediaMin.cpp](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp) and [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) contain several examples of DSGetPacketInfo() usage.
 
 ```c++
 int DSGetPacketInfo(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int pkt_buf_len, void* pInfo, int* chnum);
