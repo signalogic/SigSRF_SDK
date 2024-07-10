@@ -159,7 +159,7 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo():
 #define DS_PKT_INFO_FRAGMENT_REMOVE           /* if packet IP header contains fragmentation info remove fragment from pktlib internal list using header's Identification field */
 #define DS_PKT_INFO_REASSEMBLY_GET_PACKET     /* retrieve fully reassembled packet in pInfo and return the reassembled packet's length. This flag should only be specified if a previous call to DSGetPacketInfo() with the DS_PKT_INFO_FRAGMENT_SAVE flag has returned a flag value indicating a fully re-assembled packet is available */
 
-/* DSGetPacketInfo() return flags when uFlags contains DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags */
+/* the following flags are returned by DSGetPacketInfo() when uFlags contains DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags */
 
 #define DS_PKT_INFO_RETURN_OK                           /* PktInfo struct filled successfully */
 #define DS_PKT_INFO_RETURN_FRAGMENT                      /* packet is a fragment */
