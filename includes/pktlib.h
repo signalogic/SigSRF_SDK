@@ -589,9 +589,9 @@ typedef struct PKT_FRAGMENT {
        internal Pktlib values
 */
 
-  int DSRecvPackets(HSESSION hSession, unsigned int uFlags, uint8_t* pkt_buf, int* pkt_buf_len, unsigned int pkt_max_buf_len, int numPkts, uint64_t cur_time);
+  int DSRecvPackets(HSESSION hSession, unsigned int uFlags, uint8_t pkt_buf[], int pkt_buf_len[], unsigned int pkt_max_buf_len, int numPkts, uint64_t cur_time);
 
-  int DSSendPackets(HSESSION hSession[], unsigned int uFlags, uint8_t* pkt_buf, int* pkt_buf_len, int numPkts);
+  int DSSendPackets(HSESSION hSession[], unsigned int uFlags, uint8_t pkt_buf[], int pkt_buf_len[], int numPkts);
 
   int DSFormatPacket(int chnum, unsigned int uFlags, uint8_t* pyld, unsigned int pyldSize, FORMAT_PKT* formatHdr, uint8_t* pkt_buf);
 
@@ -651,9 +651,9 @@ typedef struct PKT_FRAGMENT {
       -uTimestamp should be provided in usec (it's divided internally by 1000 to get msec). If uTimestamp is zero the API will generate its own timestamp, but this may cause timing variations between successive calls depending on intervening processing and its duration
 */
 
-  int DSBufferPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int pkt_buf_len[], unsigned int payload_info[], int chnum[], uint64_t cur_time);
+  int DSBufferPackets(HSESSION sessionHandle, unsigned int uFlags, uint8_t pkt_buf[], int pkt_buf_len[], unsigned int payload_info[], int chnum[], uint64_t cur_time);
 
-  int DSGetOrderedPackets(HSESSION sessionHandle, unsigned int uFlags, uint64_t uTimestamp, uint8_t* pkt_buf, int pkt_buf_len[], unsigned int payload_info[], unsigned int* uInfo);
+  int DSGetOrderedPackets(HSESSION sessionHandle, unsigned int uFlags, uint64_t uTimestamp, uint8_t pkt_buf[], int pkt_buf_len[], unsigned int payload_info[], unsigned int* uInfo);
 
   int64_t DSGetJitterBufferInfo(int chnum, unsigned int uFlags);
   int DSSetJitterBufferInfo(int chnum, unsigned int uFlags, int value);
@@ -1072,8 +1072,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int* max_list_fragments, unsi
   -pkt_max_buf_len is the maximum amount of buffer space pointed to by pkt_buf that DSPullPackets can write
 */
 
-  int DSPushPackets(unsigned int uFlags, uint8_t* pkt_buf, int* pkt_buf_len, HSESSION* hSession, unsigned int numPkts);
-  int DSPullPackets(unsigned int uFlags, uint8_t* pkt_buf, int* pkt_buf_len, HSESSION hSession, uint64_t* pktInfo, unsigned int pkt_max_buf_len, int numPkts);
+  int DSPushPackets(unsigned int uFlags, uint8_t pkt_buf[], int pkt_buf_len[], HSESSION* hSession, unsigned int numPkts);
+  int DSPullPackets(unsigned int uFlags, uint8_t pkt_buf[], int pkt_buf_len[], HSESSION hSession, uint64_t* pktInfo, unsigned int pkt_max_buf_len, int numPkts);
 
   int DSGetDebugInfo(unsigned int uFlags, int, int*, int*);  /* for internal use only */
 
