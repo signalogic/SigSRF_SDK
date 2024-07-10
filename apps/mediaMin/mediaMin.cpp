@@ -2055,7 +2055,7 @@ err_msg:
    if ((!(Mode & ANALYTICS_MODE) || fUntimedMode) || target_delay > 7) session->term1.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
    if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term1.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
    session->term1.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
-   session->term1.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets(), default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
+   session->term1.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets() (see usage example in packet_flow_media_proc.c). Default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
 
    if (Mode & ENABLE_STREAM_GROUPS) {
 
@@ -2243,7 +2243,7 @@ err_msg:
    if ((!(Mode & ANALYTICS_MODE) || fUntimedMode) || target_delay > 7) session->term2.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
    if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term2.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
    session->term2.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
-   session->term2.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets(), default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
+   session->term2.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets() (see packet_media_flow_proc.c for usage example). Default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
 
 /* group term setup */
 
@@ -3155,7 +3155,7 @@ rtp_packet_processing:
 
          -RTCP packets are already filtered by packet/media threads ** but if the push rate is 2 msec or faster then we filter here to avoid FlushCheck() prematurely seeing empty queues and flushing the session (is this still needed ? JHB Jun 2023)
          -session flush for USE_PACKET_ARRIVAL_TIMES mode is not dependent on empty queues, so it's excluded
-         -** packet_flow_media_proc() applies the DS_RECV_PKT_FILTER_RTCP flag in DSRecvPackets()
+         -** packet_flow_media_proc() in packet_media_flow_proc.c applies the DS_RECV_PKT_FILTER_RTCP flag in DSRecvPackets()
          -as a side note, repetitive RTCP packets have been observed in multisession flows with long on-hold or call-waiting periods (one or more streams are not sending RTP)
       */
          if ((rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && rtp_pyld_type <= RTCP_PYLD_TYPE_MAX) && RealTimeInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto next_packet;  /* move on to next packet */
@@ -4736,15 +4736,15 @@ bool isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, int nInput, int thre
 
    if (PktInfo->protocol != PktInfo2->protocol) return false;
    
-   /* remove redundant TCP retransmissions. Notes, JHB Apr 2023:
-
-      -streams may contain redundant TCP retransmission of some or all packets. Normally this may be due to transmission errors, but appears there are other cases also, such as for FEC purposes like F5 does, or some HI2/HI3 streams where every packet is duplicated
-      -we detect and strip these out. Sequence numbers, length, and ports must be an exact copy
-      -currently this is a rudimentary implementation, not likely to work with multiple/mixed TCP sessions
-      -to-do: implement TCP session management, separate but similar to existing UDP sessions handled by pktlib
-   */
-
    if (PktInfo->protocol == TCP) {
+
+      /* remove redundant TCP retransmissions. Notes, JHB Apr 2023:
+
+         -streams may contain redundant TCP retransmission of some or all packets. Normally this may be due to transmission errors, but appears there are other cases also, such as for FEC purposes like F5 does, or some HI2/HI3 streams where every packet is duplicated
+         -we detect and strip these out. Sequence numbers, length, and ports must be an exact copy
+         -currently this is a rudimentary implementation, not likely to work with multiple/mixed TCP sessions
+         -to-do: implement TCP session management, separate but similar to existing UDP sessions handled by pktlib
+      */
 
       if (PktInfo->seqnum == PktInfo2->seqnum && PktInfo->ack_seqnum == PktInfo2->ack_seqnum && PktInfo->pkt_len == PktInfo2->pkt_len && PktInfo->dst_port == PktInfo2->dst_port && PktInfo->src_port == PktInfo2->src_port) {
 

@@ -2004,7 +2004,7 @@ get_pkt_info:
 
             if (DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM_FLAGS, 2, NULL) & TERM_EXPECT_BIDIRECTIONAL_TRAFFIC) {
 
-               numPkts = DSRecvPackets(hSession, DS_RECV_PKT_QUEUE | DS_RECV_PKT_QUEUE_COPY | DS_RECV_PKT_FILTER_RTCP | DS_RECV_PKT_ENABLE_RFC7198_DEDUP, pkt_in_buf, sizeof(pkt_in_buf), pkt_len, look_ahead, cur_time);  /* look ahead N packets */
+               numPkts = DSRecvPackets(hSession, DS_RECV_PKT_QUEUE | DS_RECV_PKT_QUEUE_COPY | DS_RECV_PKT_FILTER_RTCP | DS_RECV_PKT_ENABLE_RFC7198_DEDUP, pkt_in_buf, pkt_len, sizeof(pkt_in_buf), look_ahead, cur_time);  /* look ahead N packets */
 
                if (!session_info_thread[hSession].look_ahead_time && numPkts < look_ahead && cur_time - session_info_thread[hSession].init_time < 200000L*timeScale) goto next_session;  /* wait to obtain look-ahead number of packets at start of stream flow for this session. Stop waiting if it doesn't happen for 100 msec after the session is initialized */
                else session_info_thread[hSession].look_ahead_time = cur_time - session_info_thread[hSession].init_time;
@@ -2016,7 +2016,7 @@ get_pkt_info:
 
                #define PKTS_TO_READ 1  /* up to 4 tested in telecom mode, works fine. But so far have not found a reason/advantage to use it */
 
-               numPkts = DSRecvPackets(hSession, DS_RECV_PKT_QUEUE | DS_RECV_PKT_FILTER_RTCP | DS_RECV_PKT_ENABLE_RFC7198_DEDUP, pkt_in_buf, sizeof(pkt_in_buf), pkt_len, PKTS_TO_READ, cur_time);
+               numPkts = DSRecvPackets(hSession, DS_RECV_PKT_QUEUE | DS_RECV_PKT_FILTER_RTCP | DS_RECV_PKT_ENABLE_RFC7198_DEDUP, pkt_in_buf, pkt_len, sizeof(pkt_in_buf), PKTS_TO_READ, cur_time);
                fNoLookAhead = true;
             }
 
@@ -2123,7 +2123,7 @@ get_pkt_info:
             -even if numStreams is zero, we still try to pull one even if there is no match, in case the queue contains wrong packets for this session (i.e. user error), we never want the queue to overflow
          */
 
-            if (!fNoLookAhead && numPkts > 0) numPkts = DSRecvPackets(hSession, DS_RECV_PKT_QUEUE | DS_RECV_PKT_FILTER_RTCP | DS_RECV_PKT_ENABLE_RFC7198_DEDUP, pkt_in_buf, sizeof(pkt_in_buf), pkt_len, max(numStreams, 1), cur_time);
+            if (!fNoLookAhead && numPkts > 0) numPkts = DSRecvPackets(hSession, DS_RECV_PKT_QUEUE | DS_RECV_PKT_FILTER_RTCP | DS_RECV_PKT_ENABLE_RFC7198_DEDUP, pkt_in_buf, pkt_len, sizeof(pkt_in_buf), max(numStreams, 1), cur_time);
 
             if (isMasterThread) uQueueRead ^= 1;
 
@@ -2605,7 +2605,7 @@ next_session:
 
       if (fNetIOAllowed && isMasterThread) {
          #ifdef USE_PKTLIB_NETIO
-         recv_len =  DSRecvPackets(0, DS_RECV_PKT_FILTER_RTCP, pkt_in_buf, MAX_RTP_PACKET_LEN, NULL, 1, cur_time);  /* use pktlib API */
+         recv_len =  DSRecvPackets(0, DS_RECV_PKT_FILTER_RTCP, pkt_in_buf, NULL, MAX_RTP_PACKET_LEN, 1, cur_time);  /* use pktlib API */
          #else
          recv_len = recv(recv_sock_fd, pkt_in_buf, MAX_RTP_PACKET_LEN, 0);  /* user defined socket */
          #endif
@@ -5085,7 +5085,7 @@ int session_state, j;
 
       DSPushPackets(DS_PUSHPACKETS_INIT, NULL, 0, &hSession, 1);
 
-      DSRecvPackets(hSession, DS_RECV_PKT_INIT, NULL, 0, NULL, 0, cur_time);
+      DSRecvPackets(hSession, DS_RECV_PKT_INIT, NULL, NULL, 0, 0, cur_time);
 
    /* mark session state as initialized */
  
