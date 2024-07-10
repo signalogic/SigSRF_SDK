@@ -161,7 +161,7 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo():
 
 /* the following flags are returned by DSGetPacketInfo() when uFlags contains DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags */
 
-#define DS_PKT_INFO_RETURN_OK                           /* PktInfo struct filled successfully */
+#define DS_PKT_INFO_RETURN_OK                            /* PktInfo struct filled successfully */
 #define DS_PKT_INFO_RETURN_FRAGMENT                      /* packet is a fragment */
 #define DS_PKT_INFO_RETURN_FRAGMENT_SAVED                /* fragment was saved to pktlib internal list */
 #define DS_PKT_INFO_RETURN_FRAGMENT_REMOVED              /* fragment was removed from pktlib internal list */
