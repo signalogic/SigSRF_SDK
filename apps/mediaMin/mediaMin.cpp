@@ -339,8 +339,8 @@ void TimerSetup();
 /* misc helpers */
 
 int packet_actions(uint8_t* pyld_data, uint8_t* pkt_buf, uint8_t protocol, int* pkt_len, unsigned int uFlags);
-int isPortAllowed(uint16_t port, uint8_t* pkt_buf, int pkt_len, int thread_index);
-bool isReservedUDP(uint16_t port, int thread_index);
+int isPortAllowed(uint16_t port, uint8_t* pkt_buf, int pkt_len, int nInput, int thread_index);
+bool isReservedUDP(uint16_t port);
 void cmdLine(int argc, char** argv, char* tmpstr);
 void GetMD5Sum(char* tmpstr, int thread_index);
 int isPacketFragment(uint8_t* pkt_buf, PKTINFO* PktInfo, int pkt_len, int nInput, int _thread_index);
@@ -2537,7 +2537,7 @@ next_packet:  /* next packet input */
                pkt_info_ret_val = DSGetPacketInfo(-1, uFlags, pkt_buf, -1, &PktInfo, NULL);
 
                #if 0  // debug
-               if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) printf("\n *** mediaMin packet fragment added, protocol = %d, pkt num = %d, pkt info ret val = 0x%x \n", PktInfo.protocol, thread_info[thread_index].packet_number[j], pkt_info_ret_val);
+               if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) printf("\n *** mediaMin packet fragment added, protocol = %d, pkt number = %d, pkt info ret val = 0x%x \n", PktInfo.protocol, thread_info[thread_index].packet_number[j], pkt_info_ret_val);
                #endif
 
                if (thread_info[thread_index].fReseek[j]) {  /* avoid repeating in reseek case */
@@ -2734,11 +2734,11 @@ next_packet:  /* next packet input */
 
                if (isAFAPMode || isFTRTMode) strcpy(descripstr, "processing");
                DSGetLogTimeStamp(proctimestr, sizeof(proctimestr), total_push_time, DS_EVENT_LOG_USER_TIMEVAL);  /* use DSGetLogTimeStamp() user-specified time value feature to format as hours:min:sec (hours not shown if not > 0), JHB Feb 2024 */
-               sprintf(tmpstr, "=== mediaMin INFO: %sinput pcap[%d] %s time = %s", !(Mode & USE_PACKET_ARRIVAL_TIMES) ? "estimated " : "", j, descripstr, proctimestr);
+               sprintf(tmpstr, "=== mediaMin INFO: %sinput pcap[%d] %s time %s", !(Mode & USE_PACKET_ARRIVAL_TIMES) ? "estimated " : "", j, descripstr, proctimestr);
 
                if (isFTRTMode) {  /* show both processing and media time in FTRT mode, JHB Feb 2024 */
                   DSGetLogTimeStamp(mediatimestr, sizeof(mediatimestr), total_push_time*timeScale, DS_EVENT_LOG_USER_TIMEVAL);
-                  sprintf(&tmpstr[strlen(tmpstr)], ", media time = %s", mediatimestr);
+                  sprintf(&tmpstr[strlen(tmpstr)], ", media time %s", mediatimestr);
                }
 
                app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, tmpstr);
@@ -2999,20 +2999,20 @@ protocol_based_processing:
          #if 0  /* example of printing a range of packet buffers to compare with Wireshark display */
          if (thread_info[thread_index].packet_number[j] >= 648 && thread_info[thread_index].packet_number[j] <= 655) {
             char tmpstr[300];
-            sprintf(tmpstr, "\n *** before UDP port checks, pkt num = %d, pkt len = %d, pyld ofs = %d, frag flags = 0x%x, dst port = %u, buf start[ \n", thread_info[thread_index].packet_number[j], pkt_len, PktInfo.pyld_ofs, PktInfo.flags, dst_port);
+            sprintf(tmpstr, "\n *** before UDP port checks, pkt number = %d, pkt len = %d, pyld ofs = %d, frag flags = 0x%x, dst port = %u, buf start[ \n", thread_info[thread_index].packet_number[j], pkt_len, PktInfo.pyld_ofs, PktInfo.flags, dst_port);
             PrintPacketBuffer(&pkt_buf[PktInfo.pyld_ofs], PktInfo.pyld_len, tmpstr, " *** buf end] \n");
          }
          #endif
 
       /* SIP message, SIP Invite, SAP and other SDP Info port handling */
 
-         nPortAllowedStatus = isPortAllowed(dst_port, pkt_buf, pkt_len, thread_index);  /* isPortAllowed() will come back with any media or SIP port exceptions to the standard port range. PORT_ALLOW_xxx definitions are in mediaMin.h */
+         nPortAllowedStatus = isPortAllowed(dst_port, pkt_buf, pkt_len, j, thread_index);  /* isPortAllowed() will come back with any media or SIP port exceptions to the standard port range. PORT_ALLOW_xxx definitions are in mediaMin.h */
 
       /* if dst port is on media port allow list or discovered in SDP media info then we look no further and submit the packet for RTP processing, JHB Jan 2023 */
 
          if (nPortAllowedStatus == PORT_ALLOW_ON_MEDIA_ALLOW_LIST || nPortAllowedStatus == PORT_ALLOW_SDP_MEDIA_DISCOVERED) goto rtp_packet_processing;
 
-         if (dst_port < NON_DYNAMIC_UDP_PORT_RANGE || isReservedUDP(dst_port, thread_index)) {  /* ignore non-dynamic and reserved UDP ports */
+         if (dst_port < NON_DYNAMIC_UDP_PORT_RANGE || isReservedUDP(dst_port)) {  /* ignore non-dynamic and reserved UDP ports */
 
             nShowPorts = 3;
 
@@ -3082,7 +3082,7 @@ ignore_udp_packet:
 
                   sprintf(pkt_ignore_str, " (%d)", pkt_ignore_count);
 
-                  sprintf(pkt_num_str, "pkt num%s", pkt_ignore_count > 1 ? "s" : "");
+                  sprintf(pkt_num_str, "pkt number%s", pkt_ignore_count > 1 ? "s" : "");
                   sprintf(pkt_len_str, "pkt len%s", pkt_ignore_count > 1 ? "s" : "");
                   sprintf(frag_flags_str, "frag flags");
 
@@ -3114,7 +3114,7 @@ ignore_udp_packet:
          }
          else if (  /* if source port in UDP SIP range we look for and display SIP messages but don't act on them, JHB Mar 2023 */
                   (src_port >= SIP_PORT_RANGE_LOWER && src_port <= SIP_PORT_RANGE_UPPER) || src_port == SAP_PORT ||
-                  (nPortAllowedStatus = isPortAllowed(src_port, pkt_buf, pkt_len, thread_index)) == PORT_ALLOW_SDP_INFO
+                  (nPortAllowedStatus = isPortAllowed(src_port, pkt_buf, pkt_len, j, thread_index)) == PORT_ALLOW_SDP_INFO
                  ) {
 
             fSIP = true;
@@ -4605,7 +4605,7 @@ bool SDPInfoCheck(uint8_t* pkt_buf, int pkt_len) {
 
 /* look through lists of allowed UDP ports, JHB Jan 2023 */
 
-int isPortAllowed(uint16_t port, uint8_t* pkt_buf, int pkt_len, int thread_index) {
+int isPortAllowed(uint16_t port, uint8_t* pkt_buf, int pkt_len, int nInput, int thread_index) {
 
 char portstr[50] = "", countstr[50] = "";
 unsigned int i = 0;
@@ -4659,7 +4659,7 @@ static unsigned num_GPRS = 0;
 
    if (fFound) {
 
-      if (!(Mode & DISABLE_PORT_IGNORE_MESSAGES) && strlen(portstr)) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%s packet found%s, dst port = %u \n", portstr, countstr, port);
+      if (!(Mode & DISABLE_PORT_IGNORE_MESSAGES) && strlen(portstr)) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%s packet found%s, pkt number = %u, dst port = %u \n", portstr, countstr, thread_info[thread_index].packet_number[nInput], port);
 
       if (fSDPInfoFound) return PORT_ALLOW_SDP_INFO;
 
@@ -4669,11 +4669,22 @@ static unsigned num_GPRS = 0;
    return PORT_ALLOW_UNKNOWN;
 }
 
-bool isReservedUDP(uint16_t port, int thread_index) {
+bool isReservedUDP(uint16_t port) {
 
    switch (port) {
+
+      case 137:
+      case 138:   /* NetBIOS */
+         return true;
+
       case 9009:  /* pichat */
-        return true;
+         return true;
+
+      case 547:   /* DHCPv6 */
+         return true;
+
+      case GTP_PORT:
+         return true;
    }
    
    return false;
@@ -4748,37 +4759,43 @@ bool isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, int nInput, int thre
    }
    else if (PktInfo->protocol == UDP) {
 
-   /* UDP/RTP packets are not typically duplicated with exception of RFC 7198, which applies to RTP media and is handled in pktlib. However, fragmented UDP packets (for example long SIP messages and SDP info descriptions) may be duplicated because senders are extremely cautious about losing a fragment, making reassembly impossible. PushPackets() looks for fragmented UDP packets and if found strips identical fragments. Notes, JHB Jun 2024:
+   /* UDP/RTP packets are not typically duplicated with exception of RFC 7198, which applies to RTP media and is handled in pktlib. However, in general (not RTP) fragmented UDP packets (for example long SIP messages and SDP info descriptions) and certain ports may be duplicated because senders are worried about dropping the packet, making reassembly impossible or losing key network control info (e.g. DHCP). PushPackets() calls isDuplicatePacket() to look for such UDP packets and if found strips them out. Notes, JHB Jun 2024:
 
-      -UDP checksum is ignored for fragments with offset != 0
+      -UDP checksum is ignored -- unreliable due to Wireshark warning about "UDP checksum offload". There is a lot of online discussion about this
 
-      -currently UDP-over-GTP duplicate packets are discarded even if they are not fragmented. This likely needs refinement for RTP over GTP, in which case we need to let same-SSRC detection and RFC 7198 make duplication decisions
+      -currently certain packets sent to certain ports are looked at, including GTP, DHCP, and NetBIOS. This likely needs refinement for RTP over GTP, in which case we need to let same-SSRC detection and RFC 7198 make duplication decisions
 
-      -UDP duplicates showing up 2 or more packets later are not currently detected. This may be the case if you see a console message like:
+      -UDP duplicates appearing 2 or more packets later are not currently detected. This may be the case if you see a console message like:
 
         ignoring UDP SIP fragment packet (2), pkt len = 653, frag flags = 0x2, last keyword search = "application"
 
-      -the RFC 7198 implementation in pktlib will "look back" up to 8 packets. mediaMin allows control over this with the -lN command line option
+      -pktlib's RFC 7198 implementation will "look back" up to 8 packets. mediaMin allows control over this with the -lN command line option where N is the number of packets to look back
    */
 
    #if 0
    if (thread_info[thread_index].packet_number[nInput] >= 627 && thread_info[thread_index].packet_number[nInput] <= 655) {
 
       char tmpstr[400];
-      sprintf(tmpstr, "\n *** inside isDuplicatePacket pkt num %d, len = %d, len prev = %d, flags = 0x%x flags prev = 0x%x, offset = %d offset prev = %d, ip hdr checksum = 0x%x, ip hdr checksum prev = 0x%x", thread_info[thread_index].packet_number[nInput], PktInfo->pkt_len, PktInfo2->pkt_len, PktInfo->flags, PktInfo2->flags, PktInfo->fragment_offset, PktInfo2->fragment_offset, PktInfo->ip_hdr_checksum, PktInfo2->ip_hdr_checksum);
+      sprintf(tmpstr, "\n *** inside isDuplicatePacket pkt number %d, len = %d, len prev = %d, flags = 0x%x flags prev = 0x%x, offset = %d offset prev = %d, ip hdr checksum = 0x%x, ip hdr checksum prev = 0x%x", thread_info[thread_index].packet_number[nInput], PktInfo->pkt_len, PktInfo2->pkt_len, PktInfo->flags, PktInfo2->flags, PktInfo->fragment_offset, PktInfo2->fragment_offset, PktInfo->ip_hdr_checksum, PktInfo2->ip_hdr_checksum);
       if (PktInfo->fragment_offset == 0) sprintf(&tmpstr[strlen(tmpstr)], " udp checksum = 0x%x, udp checksum prev = 0x%x", PktInfo->udp_checksum, PktInfo2->udp_checksum);
       printf("%s \n", tmpstr);
    }
    #endif
 
-      bool fFirstLevelCheck = ((PktInfo->flags & DS_PKT_FRAGMENT_ITEM_MASK) && (PktInfo->flags & DS_PKT_FRAGMENT_ITEM_MASK) == (PktInfo2->flags & DS_PKT_FRAGMENT_ITEM_MASK)) || (PktInfo->dst_port == GTP_PORT && PktInfo2->dst_port == GTP_PORT);
+      bool fFragmentCompare = (PktInfo->flags & DS_PKT_FRAGMENT_ITEM_MASK) && (PktInfo->flags & DS_PKT_FRAGMENT_ITEM_MASK) == (PktInfo2->flags & DS_PKT_FRAGMENT_ITEM_MASK);  /* both current and previous packet contain identical fragment info ? */
+      bool fPortCompare = isReservedUDP(PktInfo->dst_port) && PktInfo->dst_port == PktInfo2->dst_port;  /* both current and previous packet are sent to specific dst ports ? */
 
-      if (fFirstLevelCheck &&
-          (PktInfo->fragment_offset == PktInfo2->fragment_offset) &&
-          (PktInfo->fragment_offset != 0 || PktInfo->udp_checksum == PktInfo2->udp_checksum) &&
-          (PktInfo->pkt_len == PktInfo2->pkt_len && PktInfo->ip_hdr_checksum == PktInfo2->ip_hdr_checksum)) {
-
-//   if (thread_info[thread_index].packet_number[nInput] >= 627 && thread_info[thread_index].packet_number[nInput] <= 655)  printf("\n *** inside isDuplicatePacket pkt num %d, discarding ... \n", thread_info[thread_index].packet_number[nInput]);
+      if (
+          (fFragmentCompare || fPortCompare) &&
+          (
+           #if 0  /* UDP checksum ignored, as noted above. Maybe there is some way to know when / when not */
+           (PktInfo->udp_checksum == PktInfo2->udp_checksum) &&
+           #endif
+           (PktInfo->fragment_offset != 0 || PktInfo2->fragment_offset != 0 || PktInfo->pyld_len == PktInfo2->pyld_len) &&  /* compare UDP payload lengths if both fragment offsets are zero */
+           PktInfo->pkt_len == PktInfo2->pkt_len &&  /* compare packet lengths */
+           PktInfo->ip_hdr_checksum == PktInfo2->ip_hdr_checksum  /* compare IP header checksums, which implicitly compares IP header lengths */
+          )
+         ) {
 
          thread_info[thread_index].udp_redundant_discards[nInput]++;  /* increment number of redundant UDP transmissions discarded for input stream */
 

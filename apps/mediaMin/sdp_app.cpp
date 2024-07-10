@@ -659,7 +659,7 @@ type_check:
 
             if (fFragmentData && crc32_val == thread_info[thread_index].sip_info_crc32[nInput]) {  /* ignore duplicates: no parsing, no announcement */
 
-               Log_RT(4, "mediaMin INFO: duplicate %s found, pkt num = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d \n", (candidate_session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nInput], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nInput], pyld_len, PktInfo.flags, len, rem, index);
+               Log_RT(4, "mediaMin INFO: duplicate %s found, pkt number = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d \n", (candidate_session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nInput], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nInput], pyld_len, PktInfo.flags, len, rem, index);
 
                goto update_index;
             }
@@ -674,7 +674,7 @@ type_check:
 
             if (!(uFlags & SESSION_CONTROL_DISABLE_MESSAGE_DISPLAY)) {  /* display/log mediaMin INFO message and SDP info contents */
 
-               Log_RT(4, "mediaMin INFO: %s found, pkt num = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d, SDP info content as follows \n%s", (session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nInput], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nInput], pyld_len, PktInfo.flags, len, rem, index, szSDP);
+               Log_RT(4, "mediaMin INFO: %s found, pkt number = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d, SDP info content as follows \n%s", (session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nInput], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nInput], pyld_len, PktInfo.flags, len, rem, index, szSDP);
 
                fSIPInviteFoundMessageDisplayed = true;
             }
@@ -712,7 +712,7 @@ update_index:
 
          if (!(uFlags & SESSION_CONTROL_DISABLE_MESSAGE_DISPLAY)) {  /* display/log mediaMin INFO SIP message contents */
 
-            Log_RT(4, "mediaMin INFO: SIP %s message found, pkt num = %d, %s dst port = %u, pyld len = %d, index = %d \n", search_str, thread_info[thread_index].packet_number[nInput], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nInput], pyld_len, index);  /* include packet number, non-fragmented packet dst port, and protocol in message, JHB Jun 2024 */
+            Log_RT(4, "mediaMin INFO: SIP %s message found, pkt number = %d, %s dst port = %u, pyld len = %d, index = %d \n", search_str, thread_info[thread_index].packet_number[nInput], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nInput], pyld_len, index);  /* include packet number, non-fragmented packet dst port, and protocol in message, JHB Jun 2024 */
          }
 
          break;
