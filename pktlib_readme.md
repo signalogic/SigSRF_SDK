@@ -85,7 +85,7 @@ int DSGetPacketInfo(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_bu
   * pkt_buf should point to a packet, and pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet
   * pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1
 
-  * return value is the packet item(s) as specified, PKT_INFO_RET_XXX flags if uFlags includes DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags, packet length for reassembled packets, or < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int)
+  * return value is the packet item(s) as specified, PKT_INFO_RET_xxx flags if uFlags includes DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags, packet length for reassembled packets, or < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int)
 
 Below is more detailed parameter information.
 
@@ -120,7 +120,7 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo():
 #define DS_PKT_INFO_CODEC_TYPE
 #define DS_PKT_INFO_CODEC_TYPE_LINK
 
-#define DS_PKT_INFO_INDEX_MASK                /* mask value to isolate above DS_PKT_INFO_XXX index item flags */
+#define DS_PKT_INFO_INDEX_MASK                /* mask value to isolate above DS_PKT_INFO_xxx index item flags */
 
 /* DSGetPacketInfo() RTP item uFlags definitions */
 
@@ -137,7 +137,7 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo():
 #define DS_PKT_INFO_RTP_PYLD_CONTENT          /* retrieves content type, not payload data. Use either DS_PKT_INFO_PYLDOFS or DS_PKT_INFO_RTP_PYLDOFS to get offset to start of packet data */
 #define DS_PKT_INFO_RTP_HDRLEN                /* retrieves RTP header length, including extensions if any */
 
-#define DS_PKT_INFO_RTP_ITEM_MASK             /* mask value to isolate above DS_PKT_INFO_RTP_XXX item flags */
+#define DS_PKT_INFO_RTP_ITEM_MASK             /* mask value to isolate above DS_PKT_INFO_RTP_xxx item flags */
 
 #define DS_PKT_INFO_RTP_HEADER                /* returns whole RTP header in void* pInfo arg */
 
@@ -154,7 +154,7 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo():
 #define DS_PKT_INFO_SRC_ADDR                  /* requires pInfo to point to array of sufficient size, returns IP version */
 #define DS_PKT_INFO_DST_ADDR
 
-#define DS_PKT_INFO_ITEM_MASK                 /* mask value to isolate above DS_PKT_INFO_XXX item flags */
+#define DS_PKT_INFO_ITEM_MASK                 /* mask value to isolate above DS_PKT_INFO_xxx item flags */
 
 /* DSGetPacketInfo() PKTINFO struct related uFlags definitions */
 
