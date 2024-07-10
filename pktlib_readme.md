@@ -89,7 +89,7 @@ int DSGetPacketInfo(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_bu
 
 Below is more detailed parameter information.
 
-```c++
+<pre>```c++
 int DSGetPacketInfo(HSESSION sessionHandle,  /* additional sessionHandle notes: (i) if both sessionHandle is -1 and uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, then all existing sessions will be searched. (ii) SigSRF documentation often refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession() */
                     unsigned int uFlags,     /* See <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md#user-content-pktlibinfoflags">Packet Info Flags</a> below. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. (ii) if flag values of DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1 */
                     uint8_t* pkt_buf,        /* pkt_buf should point to a byte (uint8_t) array of packet data. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcapRecord() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet */
@@ -102,7 +102,7 @@ int DSGetPacketInfo(HSESSION sessionHandle,  /* additional sessionHandle notes: 
                                              */
                     int* chnum               /* chnum, if not NULL, will contain a matching channel number when the DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT flags are given. If the packet matches a child channel number and the DS_PKT_INFO_CHNUM_PARENT flag is given, chnum will contain the child channel number and the parent channel number will be returned */
                    );
-```
+```</pre>
 
 <a name="PacketInfoFlags"></a>
 # Packet Info Flags
