@@ -81,11 +81,11 @@ int DSGetPacketInfo(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_bu
 ```
 
   * sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. See additional sessionHandle notes below
-  * uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If the DS_BUFFER_PKT_IP_PACKET flag is given the packet should start with an IP header; if the DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET flags are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default if no flag is given. Use the DS_PKT_INFO_HOST_BYTE_ORDER flag if packet headers are in host byte order. Network byte order is the default if no flag is given (or the DS_PKT_INFO_NETWORK_BYTE_ORDER flag is given). Byte order flags apply only to headers, not payload contents. See additional uFlags notes below
+  * uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If DS_BUFFER_PKT_IP_PACKET is given the packet should start with an IP header; if DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default if no flag is given. Use DS_PKT_INFO_HOST_BYTE_ORDER if packet headers are in host byte order. Network byte order is the default if no flag (or DS_PKT_INFO_NETWORK_BYTE_ORDER) is given. Byte order flags apply only to headers, not payload contents. See additional uFlags notes below
   * pkt_buf should point to a packet, and pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet
   * pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1
 
-  * return value is the packet item(s) as specified, PKT_INFO_RET_xxx flags if uFlags includes DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags, packet length for reassembled packets, or < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int)
+  * return value is (i) packet item(s) as specified, (ii) PKT_INFO_RET_xxx flags if uFlags includes DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags, (iii) packet length for reassembled packets, or (iv) < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int)
 
 Below is more detailed parameter information.
 
@@ -95,12 +95,12 @@ int DSGetPacketInfo(HSESSION sessionHandle,  /* additional sessionHandle notes: 
                     uint8_t* pkt_buf,        /* pkt_buf should point to a byte (uint8_t) array of packet data. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcapRecord() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet */
                     int pkt_buf_len,         /* pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1 */
                     void* pInfo,             /* pInfo, if not NULL, will contain
-                                                -a PKTINFO struct (see definition below) if uFlags includes the DS_PKT_INFO_PKTINFO flag
-                                                -an RTPHeader struct (see definition above) if uFlags includes the DS_PKT_INFO_RTP_HEADER flag
-                                                -a fully re-assembled packet if uFlags includes the DS_PKT_INFO_REASSEMBLY_GET_PACKET flag
-                                                -a TERMINATION_INFO or SESSION_DATA struct if uFlags includes DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags
+                                                -a PKTINFO struct (see definition below) if uFlags includes DS_PKT_INFO_PKTINFO
+                                                -an RTPHeader struct (see definition above) if uFlags includes DS_PKT_INFO_RTP_HEADER
+                                                -a fully re-assembled packet if uFlags includes DS_PKT_INFO_REASSEMBLY_GET_PACKET
+                                                -a TERMINATION_INFO or SESSION_DATA struct if uFlags includes DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx
                                              */
-                    int* chnum               /* chnum, if not NULL, will contain a matching channel number when the DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT flags are given. If the packet matches a child channel number and the DS_PKT_INFO_CHNUM_PARENT flag is given, chnum will contain the child channel number and the parent channel number will be returned */
+                    int* chnum               /* chnum, if not NULL, will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given in uFlags. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned */
                    );
 ```
 
@@ -150,7 +150,7 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo():
 #define DS_PKT_INFO_IP_VERSION
 #define DS_PKT_INFO_PROTOCOL
 #define DS_PKT_INFO_PYLDOFS                   /* returns offset to start of UDP or TCP payload data */
-#define DS_PKT_INFO_PYLDLEN                   /* returns size of packet payload. For UDP packets this is the UDP header "Length" field excluding the UDP header size (to include the UDP header add the DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR flag). For TCP packets this is packet length excluding IP and TCP headers */
+#define DS_PKT_INFO_PYLDLEN                   /* returns size of packet payload. For UDP packets this is the UDP header "Length" field excluding the UDP header size (to include the UDP header add DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR). For TCP packets this is packet length excluding IP and TCP headers */
 #define DS_PKT_INFO_SRC_ADDR                  /* requires pInfo to point to array of sufficient size, returns IP version */
 #define DS_PKT_INFO_DST_ADDR
 
@@ -165,7 +165,7 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo():
 
 #define DS_PKT_INFO_FRAGMENT_SAVE             /* if packet IP header contains fragmentation info save fragment to pktlib internal fragment list using header's Identification field */
 #define DS_PKT_INFO_FRAGMENT_REMOVE           /* if packet IP header contains fragmentation info remove fragment from pktlib internal list using header's Identification field */
-#define DS_PKT_INFO_REASSEMBLY_GET_PACKET     /* retrieve fully reassembled packet in pInfo and return the reassembled packet's length. This flag should only be specified if a previous call to DSGetPacketInfo() with the DS_PKT_INFO_FRAGMENT_SAVE flag has returned a flag value indicating a fully re-assembled packet is available */
+#define DS_PKT_INFO_REASSEMBLY_GET_PACKET     /* retrieve fully reassembled packet in pInfo and return the reassembled packet's length. This flag should only be specified if a previous call to DSGetPacketInfo() with DS_PKT_INFO_FRAGMENT_SAVE has returned a DS_PKT_INFO_RETURN_XXX value indicating a fully re-assembled packet is available */
 
 /* the following flags are returned by DSGetPacketInfo() when uFlags contains DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags */
 
@@ -173,7 +173,7 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo():
 #define DS_PKT_INFO_RETURN_FRAGMENT                      /* packet is a fragment */
 #define DS_PKT_INFO_RETURN_FRAGMENT_SAVED                /* fragment was saved to pktlib internal list */
 #define DS_PKT_INFO_RETURN_FRAGMENT_REMOVED              /* fragment was removed from pktlib internal list */
-#define DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE  /* a fully re-assembled packet is available using the DS_PKT_INFO_GET_REASSEMBLED_PACKET flag in a subsequent DSGetPacketInfo() call */
+#define DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE  /* a fully re-assembled packet is available using DS_PKT_INFO_GET_REASSEMBLED_PACKET in a subsequent DSGetPacketInfo() call */
 
 ```
 
@@ -205,11 +205,11 @@ The pktlib minimum API interface supports application level "push" and "pull" to
      unsigned int        ip_hdr_checksum;         /* IP header checksum */
      unsigned int        seg_length;              /* TCP segment length */
      int                 pyld_ofs;                /* TCP or UDP payload offset from start of packet to payload data */
-     int                 pyld_len;                /* TCP or UDP payload size, excluding UDP header. To include the UDP header add the DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR flag to uFlags */
+     int                 pyld_len;                /* TCP or UDP payload size, excluding UDP header. To include the UDP header add DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR to uFlags */
      int                 pyld_len_all_fragments;  /* for a packet with MF flag set and no fragment offset, this is the total size of all fragments, not including UDP header */
      unsigned int        udp_checksum;            /* UDP checksum */
 
-  /* RTP items filled for UDP packets. If not a valid RTP packet then RTP items may be undefined. The DS_PKT_INFO_PKTINFO_EXCLUDE_RTP flag can be combined with the DS_PKT_INFO_PKTINFO flag to specify that RTP items should not be processed */
+  /* RTP items filled for UDP packets. If not a valid RTP packet then RTP items may be undefined. DS_PKT_INFO_PKTINFO_EXCLUDE_RTP can be combined with DS_PKT_INFO_PKTINFO to specify that RTP items should not be processed */
 
      int                 rtp_hdr_ofs;             /* offset from start of packet to RTP header */
      int                 rtp_hdr_len;
