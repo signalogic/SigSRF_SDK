@@ -85,7 +85,7 @@ int DSGetPacketInfo(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_bu
   * pkt_buf should point to a packet, and pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet
   * pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1
 
-  * return value is (i) packet item(s) as specified, (ii) PKT_INFO_RET_xxx flags if uFlags includes DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags, (iii) packet length for reassembled packets, or (iv) < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int)
+  * return value is (i) packet item(s) as specified, (ii) PKT_INFO_RET_xxx flags if uFlags includes DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx, (iii) packet length for reassembled packets, or (iv) < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int)
 
 Below is more detailed parameter information.
 
