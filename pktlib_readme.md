@@ -195,7 +195,7 @@ The pktlib minimum API interface supports application level "push" and "pull" to
 
      uint8_t             version;
      uint8_t             protocol;
-     uint8_t             flags;
+     uint8_t             flags;                   /* one or more DS_PKT_FRAGMENT_XXX flags (see below) */
      int                 pkt_len;
      int                 ip_hdr_len;
      unsigned short int  src_port;
@@ -225,9 +225,9 @@ The pktlib minimum API interface supports application level "push" and "pull" to
 
 /* PKTINFO flags definitions */
 
-  #define PKT_FRAGMENT_MF         1               /* set in PKTINFO "flags" if packet MF flag (more fragments) is set */
-  #define PKT_FRAGMENT_OFS        2               /* set in PKTINFO "flags" if packet fragment offset is non-zero */
-  #define PKT_FRAGMENT_ITEM_MASK  7               /* mask for fragment related flags */
+  #define PKT_FRAGMENT_MF                         /* set in PKTINFO "flags" if packet MF flag (more fragments) is set */
+  #define PKT_FRAGMENT_OFS                        /* set in PKTINFO "flags" if packet fragment offset is non-zero */
+  #define PKT_FRAGMENT_ITEM_MASK                  /* mask for fragment related flags */
 ```
 
 <a name="General Pktlib API Flags"></a>
