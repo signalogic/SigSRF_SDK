@@ -81,17 +81,17 @@ DSGetPacketInfo() retrieves specified packet information as individual items, a 
 
 ```c++
 int DSGetPacketInfo(HSESSION      sessionHandle,
-                    unsigned int  uFlags,
                     uint8_t*      pkt_buf,
                     int           pkt_buf_len,
                     void*         pInfo,
-                    int*          chnum);
+                    int*          chnum,
+                    unsigned int  uFlags);
 ```
 
   * sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. See additional sessionHandle notes below
-  * uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If DS_BUFFER_PKT_IP_PACKET is given the packet should start with an IP header; if DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default if no flag is given. Use DS_PKT_INFO_HOST_BYTE_ORDER if packet headers are in host byte order. Network byte order is the default if no flag (or DS_PKT_INFO_NETWORK_BYTE_ORDER) is given. Byte order flags apply only to headers, not payload contents. See additional uFlags notes below
   * pkt_buf should point to a packet, and pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet
   * pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1
+  * uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If DS_BUFFER_PKT_IP_PACKET is given the packet should start with an IP header; if DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default if no flag is given. Use DS_PKT_INFO_HOST_BYTE_ORDER if packet headers are in host byte order. Network byte order is the default if no flag (or DS_PKT_INFO_NETWORK_BYTE_ORDER) is given. Byte order flags apply only to headers, not payload contents. See additional uFlags notes below
 
   * return value is (i) packet item(s) as specified, (ii) PKT_INFO_RETURN_xxx flags if uFlags includes DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx, (iii) packet length for reassembled packets, or (iv) < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int)
 
@@ -99,7 +99,6 @@ Below is more detailed parameter information.
 
 ```c++
 int DSGetPacketInfo(HSESSION      sessionHandle,  /* additional sessionHandle notes: (i) if both sessionHandle is -1 and uFlags contains DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, DS_PKT_INFO_CHNUM_xxx flags, then all existing sessions will be searched. (ii) SigSRF documentation refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession() */
-                    unsigned int  uFlags,         /* one or more of the flags given in Packet Info Flags below. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. (ii) if DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1 */
                     uint8_t*      pkt_buf,        /* pkt_buf should point to a byte (uint8_t) array of packet data. Packets may be provided from socket APIs, pcap files, or other sources. The pktlib DSOpenPcap() and DSReadPcapRecord() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet */
                     int           pkt_buf_len,    /* pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1 */
                     void*         pInfo,          /* pInfo, if not NULL, on return will contain:
@@ -108,7 +107,8 @@ int DSGetPacketInfo(HSESSION      sessionHandle,  /* additional sessionHandle no
                                                      -a fully re-assembled packet if uFlags includes DS_PKT_INFO_REASSEMBLY_GET_PACKET
                                                      -a TERMINATION_INFO or SESSION_DATA struct if uFlags includes a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag
                                                   */
-                    int* chnum                    /* chnum, if not NULL, will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given in uFlags. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned */
+                    int* chnum,                   /* chnum, if not NULL, will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given in uFlags. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned */
+                    unsigned int  uFlags          /* one or more of the flags given in Packet Info Flags below. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. (ii) if DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1 */
                    );
 ```
 
