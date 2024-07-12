@@ -47,7 +47,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap Record Struct**](#user-content-pcaprechdrtstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng IDB Struct**](#user-content-pcapngidbtstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng EPB Struct**](#user-content-pcapngepbtstruct)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**VLAN Header Struct**](#user-content-vlanhdrstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**VLAN Header Struct**](#user-content-vlanheaderstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**FORMAT_PKT Struct**](#user-content-formatpktstruct)<br/>
 </sup></sub>
 
@@ -77,7 +77,7 @@ The pktlib API is large, so here it's divided into the following groups:
 <a name="DSGetPacketInfo"></a>
 ## DSGetPacketInfo
 
-DSGetPacketInfo() retrieves specified packet information as individual items, a PKTINFO struct, or reassembled packet data. Both [mediaMin.cpp](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp) and [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) contain several examples of DSGetPacketInfo() usage.
+DSGetPacketInfo() retrieves specified packet information as individual items, a [PKTINFO struct](#user-content-pktinfostruct), or reassembled packet data. Both [mediaMin.cpp](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp) and [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) contain several examples of DSGetPacketInfo() usage.
 
 ```c++
 int DSGetPacketInfo(HSESSION      sessionHandle,
@@ -102,8 +102,8 @@ int DSGetPacketInfo(HSESSION      sessionHandle,  /* additional sessionHandle no
                     uint8_t*      pkt_buf,        /* pkt_buf should point to a byte (uint8_t) array of packet data. Packets may be provided from socket APIs, pcap files, or other sources. The pktlib DSOpenPcap() and DSReadPcapRecord() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet */
                     int           pkt_buf_len,    /* pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1 */
                     void*         pInfo,          /* pInfo, if not NULL, on return will contain:
-                                                     -a PKTINFO struct (see definition below) if uFlags includes DS_PKT_INFO_PKTINFO
-                                                     -an RTPHeader struct (see definition below) if uFlags includes DS_PKT_INFO_RTP_HEADER
+                                                     -a [PKTINFO struct[(#user-content-pktinfostruct") if uFlags includes DS_PKT_INFO_PKTINFO
+                                                     -an [RTPHeader struct](#user-content-rtpheaderstruct") if uFlags includes DS_PKT_INFO_RTP_HEADER
                                                      -a fully re-assembled packet if uFlags includes DS_PKT_INFO_REASSEMBLY_GET_PACKET
                                                      -a TERMINATION_INFO or SESSION_DATA struct if uFlags includes a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag
                                                   */
@@ -192,7 +192,7 @@ The pktlib pcap API interface supports read/write to pcap, pcapng, and rtp files
 <a name="DSOpenPcap"></a>
 ## DSOpenPcap
 
-DSOpenPcap() opens a pcap, pcapng, or rtp/rtpdump file and fills in a pcap_hdr_t struct (see [Structs](#user-content-structs) below), performing basic verification on magic number and supported link layer types.
+DSOpenPcap() opens a pcap, pcapng, or rtp/rtpdump file and fills in a pcap_hdr_t struct (see [Pcap API Structs](#user-content-pcapapistructs) below), performing basic verification on magic number and supported link layer types.
 
 ```c++
 int DSOpenPcap(const char*   pcap_file,
@@ -218,7 +218,7 @@ int DSOpenPcap(const char*   pcap_file,
 <a name="DSReadPcap"></a>
 ## DSReadPcap
 
-DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see [Structs](#user-content-structs) below). DSReadPcap() skips over the data link layer of each record, reads and interprets vlan header, and fills in structs with returns packet data, timestamp, and length.
+DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see [Pcap API Structs](#user-content-pcapapistructs) below). DSReadPcap() skips over the data link layer of each record, reads and interprets vlan header, and fills in structs with returns packet data, timestamp, and length.
 
 ```c++  
 int DSReadPcap(FILE*           fp_pcap,
@@ -482,7 +482,7 @@ typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng form
 
 } pcapng_epb_t;
 ```
-<a name="vlanhdrStruct"></a>
+<a name="VLANHeaderStruct"></a>
 ```c++
 typedef struct {                  /* pcap record vlan header */
 
