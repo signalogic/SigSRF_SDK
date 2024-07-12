@@ -47,6 +47,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap Record Struct**](#user-content-pcaprechdrtstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng IDB Struct**](#user-content-pcapngidbtstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng EPB Struct**](#user-content-pcapngepbtstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**VLAN Header Struct**](#user-content-vlanhdrstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**FORMAT_PKT Struct**](#user-content-formatpktstruct)<br/>
 </sup></sub>
 
@@ -114,7 +115,7 @@ int DSGetPacketInfo(HSESSION      sessionHandle,  /* additional sessionHandle no
 <a name="PacketInfoFlags"></a>
 # Packet Info Flags
 
-Below are flags that can be used in the uFlags param of DSGetPacketInfo():
+Below are flags that can be used in the uFlags param of DSGetPacketInfo()
 
 ```c++
 /* DSGetPacketInfo() index item uFlags definitions */
@@ -238,7 +239,7 @@ int DSReadPcap(FILE*           fp_pcap,
 <a name="PcapAPIFlags"></a>
 # Pcap API Flags
 
-Following are definitions used by pktlib pcap APIs.
+Following are definitions used by pktlib pcap APIs
 
 ```c++
 #define PCAP_TYPE_LIBPCAP                     /* PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered */
@@ -278,12 +279,12 @@ The pktlib minimum API interface supports application level "push" and "pull" to
 <a name="Structs"></a>
 # Structs
 
-Following are structs used in pktlib APIs.
+Following are structs used in pktlib APIs
 
 <a name="TCPHeaderStruct"></a>
 ## TCP Header
 
-TCP header struct.
+TCP header struct
 
 ```c++
   typedef struct {
@@ -303,7 +304,7 @@ TCP header struct.
 <a name="UDPHeaderStruct"></a>
 ## UDP Header
 
-UDP header struct.
+UDP header struct
 
 ```c++
   typedef struct {
@@ -319,7 +320,7 @@ UDP header struct.
 <a name="RTPHeaderStruct"></a>
 ## RTP Header
 
-RTP header struct.
+RTP header struct
 
 ```c++
 typedef struct {
@@ -349,7 +350,7 @@ typedef struct {
 <a name="PKTINFOStruct"></a>
 ## PKTINFO Struct
 
-Following is the PKTINFO struct used in DSGetPacketInfo().
+Following is the PKTINFO struct used in DSGetPacketInfo()
 
 ```c++
   typedef struct {
@@ -394,26 +395,26 @@ Following is the PKTINFO struct used in DSGetPacketInfo().
 <a name="PcapAPIStructs"></a>
 ## Pcap API Structs
 
-Following are DSOpenPcap() and DSReadPcap() structs.
+Following are DSOpenPcap() and DSReadPcap() structs
 
 <a name="pcaphdrtStruct"></a>
 ```c++
-typedef struct pcap_hdr_s {      /* header for standard libpcap format, also for .rtp (.rtpdump) format */
+typedef struct pcap_hdr_s {       /* header for standard libpcap format, also for .rtp (.rtpdump) format */
 
   union {
 
-    struct {                     /* pcap and pcapng format, the default */
+    struct {                      /* pcap and pcapng format, the default */
 
-      uint32_t magic_number;     /* magic number */
-      uint16_t version_major;    /* major version number */
-      uint16_t version_minor;    /* minor version number */
-      int32_t  thiszone;         /* GMT to local correction */
-      uint32_t sigfigs;          /* accuracy of timestamps */
-      uint32_t snaplen;          /* max length of captured packets, in octets */
-      uint32_t link_type;        /* data link type */
+      uint32_t magic_number;      /* magic number */
+      uint16_t version_major;     /* major version number */
+      uint16_t version_minor;     /* minor version number */
+      int32_t  thiszone;          /* GMT to local correction */
+      uint32_t sigfigs;           /* accuracy of timestamps */
+      uint32_t snaplen;           /* max length of captured packets, in octets */
+      uint32_t link_type;         /* data link type */
     };
 
-    struct {                     /* add rtp format as a union (https://formats.kaitai.io/rtpdump), JHB Nov 2023 */
+    struct {                      /* add rtp format as a union (https://formats.kaitai.io/rtpdump) */
 
       char     shebang[12];
       char     space[1];
@@ -431,7 +432,7 @@ typedef struct pcap_hdr_s {      /* header for standard libpcap format, also for
 ```
 <a name="pcapnghdrtStruct"></a>
 ```c++
-typedef struct pcapng_hdr_s {       /* section header block (SHB) for pcapng format */
+typedef struct pcapng_hdr_s {     /* section header block (SHB) for pcapng format */
 
   uint32_t magic_number;          /* magic number */
   uint32_t block_length;
@@ -481,12 +482,44 @@ typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng form
 ```
 <a name="vlanhdrtStruct"></a>
 ```c++
-typedef struct {  /* pcap record vlan header */
+typedef struct {                  /* pcap record vlan header */
 
   uint16_t id;
   uint16_t type;
 
 } vlan_hdr_t;
+```
+
+FORMAT_PKT struct, used in DSFormatPacket() API
+
+<a name="formatpktStruct"></a>
+```c++
+typedef struct {
+typedef struct pcaprec_hdr_s {    /* pcap packet (record) header */
+
+  uint8_t    BitFields;           /* Bit fields = Vers:4, Header length:4 */
+  uint8_t    Type;                /* Type of Service:8 */
+  uint16_t   TotalLength;         /* Total length */
+  uint16_t   ID;                  /* Identification */
+  uint16_t   FlagFrag;            /* Flag:3, Fragment Offset:13 */
+  uint8_t    TimeLive;            /* Time to live, Hop Count for IPv6 */
+  uint8_t    Protocol;            /* Protocol */
+  uint16_t   HeaderChecksum;      /* Header Checksum */
+  uint8_t    TrafficClass;        /* Traffic Class */
+  uint32_t   FlowLabel;           /* Flow Label */
+  uint16_t   PayloadLength;       /* Size of the payload in octets */
+  uint8_t    NextHeader;          /* Next header type */
+  uint8_t    SrcAddr[16];         /* IPv4 or IPv6 source addr */
+  uint8_t    DstAddr[16];         /* IPv4 or IPv6 dest addr */
+  uint32_t   IP_Version;          /* DS_IPV4 or DS_IPV6 - defined in session.h */
+
+  UDPHeader  udpHeader;
+  RTPHeader  rtpHeader;
+  TCPHeader  tcpHeader;           /* used only if DSFormatPacket() uFlags includes DS_FMT_PKT_TCPIP */
+
+  uint16_t   ptime;
+
+} FORMAT_PKT;
 ```
 
 <a name="General Pktlib API Flags"></a>
