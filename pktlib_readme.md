@@ -199,13 +199,14 @@ int DSOpenPcap(const char*   pcap_file,
                unsigned int  uFlags);
 ```
 
-  * on success, leaves file fp_pcap pointing at file's first pcap record and returns a filled pcap_hdr_t struct pointed to by pcap_file_hdr
-  * uFlags options are given in DS_OPEN_PCAP_XXX definitions below
-  * errstr is optional; if used it should point to an error info string to be included in warning or error messages. NULL indicates not used
+  * on success, reads the file header(s) and leaves file fp_pcap pointing at the first pcap record, and returns a filled pcap_hdr_t struct pointed to by pcap_file_hdr
+  * uFlags options are given in DS_OPEN_PCAP_XXX definitions (see [Pcap API Flags](#user-content-pcapapiflags) below)
+  * errstr is optional; if used it should point to an error information string to be included in warning or error messages. NULL indicates not used
 
   * return value is a 32-bit int formatted as:
       (link_type << 20) | (file_type << 16) | link_layer_length
     where link_type is one of the LINKTYPE_XXX definitions below, file_type is one of the PCAP_TYPE_XXX definitions below, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14)
+  
   * note the full return value should be saved and then given as the link_layer_info param in DSReadPcap() and DSFilterPacket()
   * a return value < 0 indicates an error
 
@@ -217,24 +218,25 @@ DSReadPcap() reads one or more pcap records at the current file position of fp_p
 ```c++  
 int DSReadPcap(FILE*           fp_pcap,
                uint8_t*        pkt_buf,
-               unsigned int    uFlags,
                pcaprec_hdr_t*  pcap_pkt_hdr,
                int             link_layer_info,
                uint16_t*       hdr_type,
-               pcap_hdr_t*     pcap_file_hdr);
+               pcap_hdr_t*     pcap_file_hdr,
+               unsigned int    uFlags);
 ```
 
   * pkt_buf should point to a sufficiently large memory area to contain returned packet data
-  * return value is the length of the packet, zero if no file end has been reached, or < 0 for an error condition
   * link_layer_info should be supplied from a prior DSOpenPcap() call. See DSOpenPcap() comments above
-  * uFlags are given in DS_READ_PCAP_XXX definitions below
   * if an optional hdr_type pointer is supplied, one or more ETH_P_XXX flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
-  * if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition)
+  * if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition). NULL indicates not used
+  * uFlags are given in DS_READ_PCAP_XXX definitions (see [Pcap API Flags](#user-content-pcapapiflags) below)
+
+  * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
 
 <a name="PcapAPIFlags"></a>
 # Pcap API Flags
 
-Following are definitions used by pktlib pcap API.
+Following are definitions used by pktlib pcap APIs.
 
 ```c++
 #define PCAP_TYPE_LIBPCAP                     /* PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered */
@@ -257,12 +259,12 @@ Following are definitions used by pktlib pcap API.
   #define LINKTYPE_IPV6                       /* Raw IPv6 */
 #endif
 
-#define DS_OPEN_PCAP_READ           DS_READ   /* use filelib.h definitions */
-#define DS_OPEN_PCAP_WRITE          DS_WRITE
+#define DS_OPEN_PCAP_READ                     /* use filelib.h definitions */
+#define DS_OPEN_PCAP_WRITE
 #define DS_OPEN_PCAP_READ_HEADER
 #define DS_OPEN_PCAP_WRITE_HEADER
 #define DS_OPEN_PCAP_QUIET
-#define DS_OPEN_PCAP_RESET                    /* seek to start of pcap; assumes a valid (already open) file handle given to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ
+#define DS_OPEN_PCAP_RESET                    /* seek to start of pcap; assumes a valid (already open) file handle given to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ */
 
 #define DS_READ_PCAP_COPY                     /* copy pcap record(s) only, don't advance file pointer */
 ```
@@ -281,13 +283,13 @@ Following are TCP, UDP, and RTP header structs.
 
   typedef struct {
 
-    uint16_t  SrcPort;         /* Source Port */
-    uint16_t  DstPort;         /* Destination Port */
+    uint16_t  SrcPort;         /* source port */
+    uint16_t  DstPort;         /* destination port */
     uint32_t  seq_num;         /* sequence number */
     uint32_t  ack_num;         /* ack number */
     uint16_t  hdr_len_misc;    /* header size and flags */
     uint16_t  window;
-    uint16_t  checksum;        /* Checksum */
+    uint16_t  checksum;        /* checksum */
     uint16_t  urgent;
 
   } TCPHeader;
@@ -296,10 +298,10 @@ Following are TCP, UDP, and RTP header structs.
 
   typedef struct {
 
-    uint16_t  SrcPort;         /* Source Port */
-    uint16_t  DstPort;         /* Destination Port */
-    uint16_t  UDP_length;      /* Length */
-    uint16_t  UDP_checksum;    /* Checksum */
+    uint16_t  SrcPort;         /* source port */
+    uint16_t  DstPort;         /* destination port */
+    uint16_t  UDP_length;      /* length */
+    uint16_t  UDP_checksum;    /* checksum */
 
   } UDPHeader;
 
@@ -325,7 +327,7 @@ Following are TCP, UDP, and RTP header structs.
     uint16_t  Sequence;        /* Sequence number */
     uint32_t  Timestamp;       /* Timestamp */
     uint32_t  SSRC;            /* SSRC */
-    uint32_t  CSRC[1];         /* remainder of header */
+    uint32_t  CSRC[1];         /* remainder of header, depending on CSRC count and extension header */
 
   } RTPHeader;
 
