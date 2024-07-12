@@ -203,7 +203,7 @@ int DSOpenPcap(const char*   pcap_file,
 ```
 
   * on success, reads the file header(s) and leaves file fp_pcap pointing at the first pcap record, and returns a filled pcap_hdr_t struct pointed to by pcap_file_hdr
-  * uFlags options are given in DS_OPEN_PCAP_XXX definitions (see [Pcap API Flags](#user-content-pcapapiflags) below)
+  * uFlags options are given in DS_OPEN_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
   * errstr is optional; if used it should point to an error information string to be included in warning or error messages. NULL indicates not used
 
   * return value is a 32-bit int formatted as:<br>
@@ -234,14 +234,14 @@ int DSReadPcap(FILE*           fp_pcap,
   * link_layer_info should be supplied from a prior DSOpenPcap() call. See DSOpenPcap() comments above
   * if an optional hdr_type pointer is supplied, one or more ETH_P_XXX flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
   * if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition). NULL indicates not used
-  * uFlags are given in DS_READ_PCAP_XXX definitions (see [Pcap API Flags](#user-content-pcapapiflags) below)
+  * uFlags are given in DS_READ_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
 
   * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
 
 <a name="PcapAPIFlags"></a>
-# Pcap API Flags
+# Pcap API Definitions & Flags
 
-Following are definitions used by pktlib pcap APIs
+Following are definitions and flags used by pktlib pcap APIs
 
 ```c++
 #define PCAP_TYPE_LIBPCAP                     /* PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered */
