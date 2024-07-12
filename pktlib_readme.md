@@ -206,8 +206,8 @@ int DSOpenPcap(const char*   pcap_file,
   * uFlags options are given in DS_OPEN_PCAP_XXX definitions (see [Pcap API Flags](#user-content-pcapapiflags) below)
   * errstr is optional; if used it should point to an error information string to be included in warning or error messages. NULL indicates not used
 
-  * return value is a 32-bit int formatted as:
-      (link_type << 20) | (file_type << 16) | link_layer_length
+  * return value is a 32-bit int formatted as:<br>
+      (link_type << 20) | (file_type << 16) | link_layer_length<br>
     where link_type is one of the LINKTYPE_XXX definitions below, file_type is one of the PCAP_TYPE_XXX definitions below, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14)
   
   * note the full return value should be saved and then given as the link_layer_info param in DSReadPcap() and DSFilterPacket()
