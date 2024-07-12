@@ -208,11 +208,12 @@ int DSOpenPcap(const char*   pcap_file,
                unsigned int  uFlags);
 ```
 
-  * on success, reads the file header(s) and leaves file fp_pcap pointing at the first pcap record, and returns a filled pcap_hdr_t struct pointed to by pcap_file_hdr
+  * pcap_file should contain the path and/or filename of the pcap, pcapng, or rtp/rtpdump file to open. The string should be null-terminated
+  * pcap_file_hdr pointer, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct)) that will on return contain header information about the file. NULL indicates not used
   * uFlags options are given in DS_OPEN_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
   * errstr is optional; if used it should point to an error information string to be included in warning or error messages. NULL indicates not used
 
-  * return value is a 32-bit int formatted as:<br>
+  * on success, DSOpenPcap() reads the file's header(s) and leaves file fp_pcap pointing at the first pcap record. The return value is a 32-bit int formatted as:<br>
       &nbsp;<br>
       &nbsp;&nbsp;&nbsp;&nbsp;(link_type << 20) | (file_type << 16) | link_layer_length<br>
       &nbsp;<br>
@@ -224,7 +225,7 @@ int DSOpenPcap(const char*   pcap_file,
 <a name="DSReadPcap"></a>
 ## DSReadPcap
 
-DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see [Pcap API Structs](#user-content-pcapapistructs) below). DSReadPcap() skips over the data link layer of each record, reads and interprets vlan header, and fills in structs with returns packet data, timestamp, and length.
+DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see [Pcap API Structs](#user-content-pcapapistructs) below). DSReadPcap() skips over the data link layer of each record, reads and interprets VLAN headers (if any), and fills in structs with returns packet data, timestamp, and length.
 
 ```c++  
 int DSReadPcap(FILE*           fp_pcap,
@@ -237,9 +238,10 @@ int DSReadPcap(FILE*           fp_pcap,
 ```
 
   * pkt_buf should point to a sufficiently large memory area to contain returned packet data
+  * pcap_pkt_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaprechdrtstruct) to hold packet record info. NULL indicates not used
   * link_layer_info should be supplied from a prior DSOpenPcap() call. See DSOpenPcap() comments above
-  * if an optional hdr_type pointer is supplied, one or more ETH_P_XXX flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
-  * if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition). NULL indicates not used
+  * hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags(as defined in linux/if_ether.h). NULL indicates not used
+  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct)) that on return will contain the file's header(s). This allows an app to obtain a file header at any time after a prior DSOpenPcap() call, if the file header was not previously saved or not available. NULL indicates not used
   * uFlags are given in DS_READ_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
 
   * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
