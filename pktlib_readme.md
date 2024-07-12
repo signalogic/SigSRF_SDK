@@ -218,7 +218,7 @@ int DSOpenPcap(const char*   pcap_file,
 <a name="DSReadPcap"></a>
 ## DSReadPcap
 
-DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see [Structs](#user-content-structs) below). DSReadPcap() skips over data link layer of each record, reads and interprets vlan header, and fills in structs with returns packet data, timestamp, length.
+DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see [Structs](#user-content-structs) below). DSReadPcap() skips over the data link layer of each record, reads and interprets vlan header, and fills in structs with returns packet data, timestamp, and length.
 
 ```c++  
 int DSReadPcap(FILE*           fp_pcap,
