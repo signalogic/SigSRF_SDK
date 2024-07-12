@@ -92,6 +92,7 @@ int DSGetPacketInfo(HSESSION      sessionHandle,
   * pkt_buf should point to a packet, and pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet
   * pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1
   * pInfo, if not NULL, on return will contain<br>
+        &nbsp;<br>
         -a [PKTINFO struct](#user-content-pktinfostruct) if uFlags includes DS_PKT_INFO_PKTINFO<br>
         -an [RTPHeader struct](#user-content-rtpheaderstruct) if uFlags includes DS_PKT_INFO_RTP_HEADER<br>
         -a fully re-assembled packet if uFlags includes DS_PKT_INFO_REASSEMBLY_GET_PACKET<br>
