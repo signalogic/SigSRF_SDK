@@ -511,7 +511,7 @@ typedef struct pcaprec_hdr_s {    /* pcap packet (record) header */
   uint8_t    NextHeader;          /* Next header type */
   uint8_t    SrcAddr[16];         /* IPv4 or IPv6 source addr */
   uint8_t    DstAddr[16];         /* IPv4 or IPv6 dest addr */
-  uint32_t   IP_Version;          /* DS_IPV4 or DS_IPV6 - defined in session.h */
+  uint32_t   IP_Version;          /* either IPv4 or IPv6 constants defined in pktlib.h or DS_IPV4 or DS_IPV6 enums defined in shared_include/session.h */
 
   UDPHeader  udpHeader;
   RTPHeader  rtpHeader;
