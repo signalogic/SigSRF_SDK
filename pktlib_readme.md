@@ -209,9 +209,10 @@ int DSOpenPcap(const char*   pcap_file,
 ```
 
   * pcap_file should contain the path and/or filename of the pcap, pcapng, or rtp/rtpdump file to open. The string should be null-terminated
+  * fp_pcap should point to a file handle that on return will contain the new file handle
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct)) that will on return contain header information about the file. NULL indicates not used
-  * uFlags options are given in DS_OPEN_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
   * errstr is optional; if used it should point to an error information string to be included in warning or error messages. NULL indicates not used
+  * uFlags options are given in DS_OPEN_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
 
   * on success, DSOpenPcap() reads the file's header(s) and leaves file fp_pcap pointing at the first pcap record. The return value is a 32-bit int formatted as:<br>
       &nbsp;<br>
