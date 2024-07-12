@@ -37,15 +37,17 @@
 &nbsp;&nbsp;&nbsp;[**Structs**](#user-content-structs)<br/>
 
 <sub><sup>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**TCPHeader**](#user-content-tcpheader)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**UDPHeader**](#user-content-udpheader)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**RTPHeader**](#user-content-rtpheader)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**PKTINFO**](#user-content-pktinfo)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**pcap_hdr_t**](#user-content-pcaphdrt)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**pcapng_hdr_t**](#user-content-pcapnghdrt)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**pcapng_idb_t**](#user-content-pcapngidbt)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**pcapng_epb_t**](#user-content-pcapngepbt)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**FORMAT_PKT**](#user-content-formatpkt)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**TCP Header Struct**](#user-content-tcpheaderstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**UDP Header Struct**](#user-content-udpheaderstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**RTP Header Struct**](#user-content-rtpheaderstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**PKTINFO Struct**](#user-content-pktinfostruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap API Structs**](#user-content-pcapapistructs)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap File Header Struct**](#user-content-pcaphdrtstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng File Header Struct**](#user-content-pcapnghdrtstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap Record Struct**](#user-content-pcaprechdrtstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng IDB Struct**](#user-content-pcapngidbtstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng EPB Struct**](#user-content-pcapngepbtstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**FORMAT_PKT Struct**](#user-content-formatpktstruct)<br/>
 </sup></sub>
 
 &nbsp;&nbsp;&nbsp;[**General Pktlib API Flags**](#user-content-GeneralPktlibAPIFlags)<br/>
@@ -276,11 +278,14 @@ The pktlib minimum API interface supports application level "push" and "pull" to
 <a name="Structs"></a>
 # Structs
 
-Following are TCP, UDP, and RTP header structs.
+Following are structs used in pktlib APIs.
+
+<a name="TCPHeaderStruct"></a>
+## TCP Header
+
+TCP header struct.
 
 ```c++
-/* UDP header struct */
-
   typedef struct {
 
     uint16_t  SrcPort;         /* source port */
@@ -293,9 +298,14 @@ Following are TCP, UDP, and RTP header structs.
     uint16_t  urgent;
 
   } TCPHeader;
+```
 
-/* UDP header struct */
+<a name="UDPHeaderStruct"></a>
+## UDP Header
 
+UDP header struct.
+
+```c++
   typedef struct {
 
     uint16_t  SrcPort;         /* source port */
@@ -304,34 +314,41 @@ Following are TCP, UDP, and RTP header structs.
     uint16_t  UDP_checksum;    /* checksum */
 
   } UDPHeader;
+```
 
-  /* RTP header struct */
+<a name="RTPHeaderStruct"></a>
+## RTP Header
 
-  typedef struct {
+RTP header struct.
+
+```c++
+typedef struct {
 
  /* Implemented as bit fields:
 
     -this makes all RTP header fields defined in RFC 3550 directly accessible from C/C++ application code and avoids host vs. network byte ordering issues for first 2 bytes of the RTP header
     -bit fields are in lsb order due to gcc limitations, so ordering within each byte is reversed from msb-first layout defined in RFC 3550
  */
- 
- /* 1st byte of RTP header */
-    uint8_t   CC        : 4;   /* CSRC count */
-    uint8_t   ExtHeader : 1;   /* Extension header */
-    uint8_t   Padding   : 1;   /* Padding */
-    uint8_t   Version   : 2;   /* RTP version */
- /* 2nd byte of RTP header */
-    uint8_t   PyldType  : 7;   /* Payload type */
-    uint8_t   Marker    : 1;   /* Marker bit */
 
-    uint16_t  Sequence;        /* Sequence number */
-    uint32_t  Timestamp;       /* Timestamp */
-    uint32_t  SSRC;            /* SSRC */
-    uint32_t  CSRC[1];         /* remainder of header, depending on CSRC count and extension header */
+/* 1st byte of RTP header */
+  uint8_t   CC        : 4;   /* CSRC count */
+  uint8_t   ExtHeader : 1;   /* Extension header */
+  uint8_t   Padding   : 1;   /* Padding */
+  uint8_t   Version   : 2;   /* RTP version */
+/* 2nd byte of RTP header */
+  uint8_t   PyldType  : 7;   /* Payload type */
+  uint8_t   Marker    : 1;   /* Marker bit */
 
-  } RTPHeader;
+  uint16_t  Sequence;        /* Sequence number */
+  uint32_t  Timestamp;       /* Timestamp */
+  uint32_t  SSRC;            /* SSRC */
+  uint32_t  CSRC[1];         /* remainder of header, depending on CSRC count and extension header */
 
+} RTPHeader;
 ```
+<a name="PKTINFOStruct"></a>
+## PKTINFO Struct
+
 Following is the PKTINFO struct used in DSGetPacketInfo().
 
 ```c++
@@ -374,8 +391,12 @@ Following is the PKTINFO struct used in DSGetPacketInfo().
   #define PKT_FRAGMENT_ITEM_MASK                  /* mask for fragment related flags */
 ```
 
+<a name="PcapAPIStructs"></a>
+## Pcap API Structs
+
 Following are DSOpenPcap() and DSReadPcap() structs.
 
+<a name="pcaphdrtStruct"></a>
 ```c++
 typedef struct pcap_hdr_s {      /* header for standard libpcap format, also for .rtp (.rtpdump) format */
 
@@ -407,7 +428,9 @@ typedef struct pcap_hdr_s {      /* header for standard libpcap format, also for
   };
 
 } pcap_hdr_t;
-
+```
+<a name="pcapnghdrtStruct"></a>
+```c++
 typedef struct pcapng_hdr_s {       /* section header block (SHB) for pcapng format */
 
   uint32_t magic_number;          /* magic number */
@@ -418,7 +441,9 @@ typedef struct pcapng_hdr_s {       /* section header block (SHB) for pcapng for
   int64_t  section_length;        /* can be -1 */
 
 } pcapng_hdr_t;
-
+```
+<a name="pcapngidbtStruct"></a>
+```c++
 typedef struct pcapng_idb_s {     /* interface description block (IDB) for pcapng format */
 
   uint32_t block_type;
@@ -428,10 +453,10 @@ typedef struct pcapng_idb_s {     /* interface description block (IDB) for pcapn
   uint32_t snaplen;
 
 } pcapng_idb_t;
-
-/* pcap packet (record) header */
-
-typedef struct pcaprec_hdr_s {
+```
+<a name="pcaprechdrtStruct"></a>
+```c++
+typedef struct pcaprec_hdr_s {    /* pcap packet (record) header */
 
   uint32_t ts_sec;                /* timestamp seconds */
   uint32_t ts_usec;               /* timestamp microseconds */
@@ -439,7 +464,9 @@ typedef struct pcaprec_hdr_s {
   uint32_t orig_len;              /* actual length of packet */
 
 } pcaprec_hdr_t;
-
+```
+<a name="pcapngepbtStruct"></a>
+```c++
 typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng format */
 
   uint32_t block_type;
@@ -451,10 +478,10 @@ typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng form
   uint32_t original_pkt_len;
 
 } pcapng_epb_t;
-
-/* pcap record vlan header */
-
-typedef struct {
+```
+<a name="vlanhdrtStruct"></a>
+```c++
+typedef struct {  /* pcap record vlan header */
 
   uint16_t id;
   uint16_t type;
