@@ -480,7 +480,7 @@ typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng form
 
 } pcapng_epb_t;
 ```
-<a name="vlanhdrtStruct"></a>
+<a name="vlanhdrStruct"></a>
 ```c++
 typedef struct {                  /* pcap record vlan header */
 
