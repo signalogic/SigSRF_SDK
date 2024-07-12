@@ -77,7 +77,12 @@ The pktlib API is large, so here it's divided into the following groups:
 DSGetPacketInfo() retrieves specified packet information as individual items, a PKTINFO struct, or reassembled packet data. Both [mediaMin.cpp](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp) and [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) contain several examples of DSGetPacketInfo() usage.
 
 ```c++
-int DSGetPacketInfo(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int pkt_buf_len, void* pInfo, int* chnum);
+int DSGetPacketInfo(HSESSION  sessionHandle,
+                    unsigned  int uFlags,
+                    uint8_t*  pkt_buf,
+                    int       pkt_buf_len,
+                    void*     pInfo,
+                    int*      chnum);
 ```
 
   * sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. See additional sessionHandle notes below
@@ -186,6 +191,14 @@ The pktlib pcap API interface supports read/write to pcap, pcapng, and rtp files
 
 DSOpenPcap() opens a pcap, pcapng, or rtp/rtpdump file and fills in a pcap_hdr_t struct (see [Structs](#user-content-structs) below), performing basic verification on magic number and supported link layer types.
 
+```c++
+int DSOpenPcap(const char*  pcap_file,
+               FILE**       fp_pcap,
+               pcap_hdr_t*  pcap_file_hdr,
+               const char*  errstr,
+               unsigned int uFlags);
+```
+
   * on success, leaves file fp_pcap pointing at file's first pcap record and returns a filled pcap_hdr_t struct pointed to by pcap_file_hdr
   * uFlags options are given in DS_OPEN_PCAP_XXX definitions below
   * errstr is optional; if used it should point to an error info string to be included in warning or error messages. NULL indicates not used
@@ -196,10 +209,29 @@ DSOpenPcap() opens a pcap, pcapng, or rtp/rtpdump file and fills in a pcap_hdr_t
   * note the full return value should be saved and then given as the link_layer_info param in DSReadPcap() and DSFilterPacket()
   * a return value < 0 indicates an error
 
-```c++
-int DSOpenPcap(const char* pcap_file, FILE** fp_pcap, pcap_hdr_t* pcap_file_hdr, const char* errstr, unsigned int uFlags);
+<a name="DSReadPcap"></a>
+## DSReadPcap
+
+DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see [Structs](#user-content-structs) below). DSReadPcap() skips over data link layer of each record, reads and interprets vlan header, and fills in structs with returns packet data, timestamp, length.
+
+```c++  
+int DSReadPcap(FILE*           fp_pcap,
+               uint8_t*        pkt_buf,
+               unsigned int    uFlags,
+               pcaprec_hdr_t*  pcap_pkt_hdr,
+               int             link_layer_info,
+               uint16_t*       hdr_type,
+               pcap_hdr_t*     pcap_file_hdr);
 ```
-<a name="PcapFlags"></a>
+
+  * pkt_buf should point to a sufficiently large memory area to contain returned packet data
+  * return value is the length of the packet, zero if no file end has been reached, or < 0 for an error condition
+  * link_layer_info should be supplied from a prior DSOpenPcap() call. See DSOpenPcap() comments above
+  * uFlags are given in DS_READ_PCAP_XXX definitions below
+  * if an optional hdr_type pointer is supplied, one or more ETH_P_XXX flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
+  * if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition)
+
+<a name="PcapAPIFlags"></a>
 # Pcap API Flags
 
 Following are definitions used by pktlib pcap API.
@@ -224,35 +256,14 @@ Following are definitions used by pktlib pcap API.
   #define LINKTYPE_IPV4                       /* Raw IPv4 */
   #define LINKTYPE_IPV6                       /* Raw IPv6 */
 #endif
-```
-DSOpenPcap() definitions:
 
-```c++
-  #define DS_OPEN_PCAP_READ         DS_READ   /* use filelib.h definitions */
-  #define DS_OPEN_PCAP_WRITE        DS_WRITE
-  #define DS_OPEN_PCAP_READ_HEADER
-  #define DS_OPEN_PCAP_WRITE_HEADER
-  #define DS_OPEN_PCAP_QUIET
-  #define DS_OPEN_PCAP_RESET                  /* seek to start of pcap; assumes a valid (already open) file handle given to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ
-```
+#define DS_OPEN_PCAP_READ           DS_READ   /* use filelib.h definitions */
+#define DS_OPEN_PCAP_WRITE          DS_WRITE
+#define DS_OPEN_PCAP_READ_HEADER
+#define DS_OPEN_PCAP_WRITE_HEADER
+#define DS_OPEN_PCAP_QUIET
+#define DS_OPEN_PCAP_RESET                    /* seek to start of pcap; assumes a valid (already open) file handle given to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ
 
-<a name="DSReadPcap"></a>
-## DSReadPcap
-
-DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see [Structs](#user-content-structs) below). DSReadPcap() skips over data link layer of each record, reads and interprets vlan header, and fills in structs with returns packet data, timestamp, length.
-
-```c++  
-  int DSReadPcap(FILE* fp_pcap, uint8_t* pkt_buf, unsigned int uFlags, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* hdr_type, pcap_hdr_t* pcap_file_hdr);
-```
-
-  * pkt_buf should point to a sufficiently large memory area to contain returned packet data
-  * return value is the length of the packet, zero if no file end has been reached, or < 0 for an error condition
-  * link_layer_info should be supplied from a prior DSOpenPcap() call. See DSOpenPcap() comments above
-  * uFlags are given in DS_READ_PCAP_XXX definitions below
-  * if an optional hdr_type pointer is supplied, one or more ETH_P_XXX flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
-  * if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition)
-
-```c++
 #define DS_READ_PCAP_COPY                     /* copy pcap record(s) only, don't advance file pointer */
 ```
 <a name="MininumAPIInterface"></a>
@@ -263,7 +274,7 @@ The pktlib minimum API interface supports application level "push" and "pull" to
 <a name="Structs"></a>
 # Structs
 
-DSGetPacketInfo() structs.
+Following are DSGetPacketInfo() structs.
 
 ```c++
   typedef struct {
@@ -305,25 +316,25 @@ DSGetPacketInfo() structs.
   #define PKT_FRAGMENT_ITEM_MASK                  /* mask for fragment related flags */
 ```
 
-Structs for DSReadPcap() pcap, pcapng, and .rtp file format support.
+Following are DSOpenPcap() and DSReadPcap() structs.
 
 ```c++
-  typedef struct pcap_hdr_s {  /* header for standard libpcap format, also for .rtp (.rtpdump) format */
+  typedef struct pcap_hdr_s {      /* header for standard libpcap format, also for .rtp (.rtpdump) format */
 
     union {
 
-      struct {  /* pcap and pcapng format, the default */
+      struct {                     /* pcap and pcapng format, the default */
 
-        uint32_t magic_number;   /* magic number */
-        uint16_t version_major;  /* major version number */
-        uint16_t version_minor;  /* minor version number */
-        int32_t  thiszone;       /* GMT to local correction */
-        uint32_t sigfigs;        /* accuracy of timestamps */
-        uint32_t snaplen;        /* max length of captured packets, in octets */
-        uint32_t link_type;      /* data link type */
+        uint32_t magic_number;     /* magic number */
+        uint16_t version_major;    /* major version number */
+        uint16_t version_minor;    /* minor version number */
+        int32_t  thiszone;         /* GMT to local correction */
+        uint32_t sigfigs;          /* accuracy of timestamps */
+        uint32_t snaplen;          /* max length of captured packets, in octets */
+        uint32_t link_type;        /* data link type */
       };
 
-      struct {  /* add rtp format as a union (https://formats.kaitai.io/rtpdump), JHB Nov 2023 */
+      struct {                     /* add rtp format as a union (https://formats.kaitai.io/rtpdump), JHB Nov 2023 */
 
         char     shebang[12];
         char     space[1];
@@ -339,18 +350,18 @@ Structs for DSReadPcap() pcap, pcapng, and .rtp file format support.
 
   } pcap_hdr_t;
 
-typedef struct pcapng_hdr_s {  /* section header block (SHB) for pcapng format */
+typedef struct pcapng_hdr_s {       /* section header block (SHB) for pcapng format */
 
-    uint32_t magic_number;   /* magic number */
+    uint32_t magic_number;          /* magic number */
     uint32_t block_length;
     uint32_t byte_order_magic;
-    uint16_t version_major;  /* major version number */
-    uint16_t version_minor;  /* minor version number */
-    int64_t  section_length; /* can be -1 */
+    uint16_t version_major;         /* major version number */
+    uint16_t version_minor;         /* minor version number */
+    int64_t  section_length;        /* can be -1 */
 
   } pcapng_hdr_t;
 
-  typedef struct pcapng_idb_s {  /* interface description block (IDB) for pcapng format */
+  typedef struct pcapng_idb_s {     /* interface description block (IDB) for pcapng format */
 
     uint32_t block_type;
     uint32_t block_length;
@@ -364,14 +375,14 @@ typedef struct pcapng_hdr_s {  /* section header block (SHB) for pcapng format *
 
   typedef struct pcaprec_hdr_s {
 
-    uint32_t ts_sec;         /* timestamp seconds */
-    uint32_t ts_usec;        /* timestamp microseconds */
-    uint32_t incl_len;       /* number of octets of packet saved in file */
-    uint32_t orig_len;       /* actual length of packet */
+    uint32_t ts_sec;                /* timestamp seconds */
+    uint32_t ts_usec;               /* timestamp microseconds */
+    uint32_t incl_len;              /* number of octets of packet saved in file */
+    uint32_t orig_len;              /* actual length of packet */
 
   } pcaprec_hdr_t;
 
-  typedef struct pcapng_epb_s {  /* enhanced packet block (EPB) for pcapng format */
+  typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng format */
 
     uint32_t block_type;
     uint32_t block_length;
