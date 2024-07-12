@@ -20,11 +20,11 @@
 
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSOpenPcap**](#user-content-dsopenpcap)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSReadPcap**](#user-content-dsreapcap)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSWritePcap**](#user-content-dsbufferpackets)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFindPcapPacket**](#user-content-dsbufferpackets)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFilterPacket**](#user-content-dsbufferpackets)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSClosePcap**](#user-content-dsgetorderedpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSReadPcap**](#user-content-dsreadpcap)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSWritePcap**](#user-content-dswritepcap)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFindPcapPacket**](#user-content-dsfindpcappacket)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFilterPacket**](#user-content-dsfilterpacket)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSClosePcap**](#user-content-dsclosepcap)<br/>
 </sup></sub>
 
 [**_Minimum Push/Pull API Interface_**](#user-content-minimumapiinterface)<br/>
@@ -41,11 +41,11 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**UDPHeader**](#user-content-udpheader)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**RTPHeader**](#user-content-rtpheader)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**PKTINFO**](#user-content-pktinfo)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**FORMAT_PKT**](#user-content-formatpkt)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**pcap_hdr_t**](#user-content-pcaphdrt)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**pcapng_hdr_t**](#user-content-pcapnghdrt)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**pcapng_idb_t**](#user-content-pcapngidbt)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**pcapng_epb_t**](#user-content-pcapngepbt)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**FORMAT_PKT**](#user-content-formatpkt)<br/>
 </sup></sub>
 
 &nbsp;&nbsp;&nbsp;[**General Pktlib API Flags**](#user-content-GeneralPktlibAPIFlags)<br/>
@@ -77,12 +77,12 @@ The pktlib API is large, so here it's divided into the following groups:
 DSGetPacketInfo() retrieves specified packet information as individual items, a PKTINFO struct, or reassembled packet data. Both [mediaMin.cpp](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp) and [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) contain several examples of DSGetPacketInfo() usage.
 
 ```c++
-int DSGetPacketInfo(HSESSION  sessionHandle,
-                    unsigned  int uFlags,
-                    uint8_t*  pkt_buf,
-                    int       pkt_buf_len,
-                    void*     pInfo,
-                    int*      chnum);
+int DSGetPacketInfo(HSESSION      sessionHandle,
+                    unsigned int  uFlags,
+                    uint8_t*      pkt_buf,
+                    int           pkt_buf_len,
+                    void*         pInfo,
+                    int*          chnum);
 ```
 
   * sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. See additional sessionHandle notes below
@@ -95,17 +95,17 @@ int DSGetPacketInfo(HSESSION  sessionHandle,
 Below is more detailed parameter information.
 
 ```c++
-int DSGetPacketInfo(HSESSION sessionHandle,  /* additional sessionHandle notes: (i) if both sessionHandle is -1 and uFlags contains DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, DS_PKT_INFO_CHNUM_xxx flags, then all existing sessions will be searched. (ii) SigSRF documentation refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession() */
-                    unsigned int uFlags,     /* one or more of the flags given in Packet Info Flags below. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. (ii) if DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1 */
-                    uint8_t* pkt_buf,        /* pkt_buf should point to a byte (uint8_t) array of packet data. Packets may be provided from socket APIs, pcap files, or other sources. The pktlib DSOpenPcap() and DSReadPcapRecord() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet */
-                    int pkt_buf_len,         /* pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1 */
-                    void* pInfo,             /* pInfo, if not NULL, on return will contain:
-                                                -a PKTINFO struct (see definition below) if uFlags includes DS_PKT_INFO_PKTINFO
-                                                -an RTPHeader struct (see definition below) if uFlags includes DS_PKT_INFO_RTP_HEADER
-                                                -a fully re-assembled packet if uFlags includes DS_PKT_INFO_REASSEMBLY_GET_PACKET
-                                                -a TERMINATION_INFO or SESSION_DATA struct if uFlags includes a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag
-                                             */
-                    int* chnum               /* chnum, if not NULL, will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given in uFlags. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned */
+int DSGetPacketInfo(HSESSION      sessionHandle,  /* additional sessionHandle notes: (i) if both sessionHandle is -1 and uFlags contains DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, DS_PKT_INFO_CHNUM_xxx flags, then all existing sessions will be searched. (ii) SigSRF documentation refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession() */
+                    unsigned int  uFlags,         /* one or more of the flags given in Packet Info Flags below. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. (ii) if DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1 */
+                    uint8_t*      pkt_buf,        /* pkt_buf should point to a byte (uint8_t) array of packet data. Packets may be provided from socket APIs, pcap files, or other sources. The pktlib DSOpenPcap() and DSReadPcapRecord() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet */
+                    int           pkt_buf_len,    /* pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1 */
+                    void*         pInfo,          /* pInfo, if not NULL, on return will contain:
+                                                     -a PKTINFO struct (see definition below) if uFlags includes DS_PKT_INFO_PKTINFO
+                                                     -an RTPHeader struct (see definition below) if uFlags includes DS_PKT_INFO_RTP_HEADER
+                                                     -a fully re-assembled packet if uFlags includes DS_PKT_INFO_REASSEMBLY_GET_PACKET
+                                                     -a TERMINATION_INFO or SESSION_DATA struct if uFlags includes a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag
+                                                  */
+                    int* chnum                    /* chnum, if not NULL, will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given in uFlags. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned */
                    );
 ```
 
@@ -192,11 +192,11 @@ The pktlib pcap API interface supports read/write to pcap, pcapng, and rtp files
 DSOpenPcap() opens a pcap, pcapng, or rtp/rtpdump file and fills in a pcap_hdr_t struct (see [Structs](#user-content-structs) below), performing basic verification on magic number and supported link layer types.
 
 ```c++
-int DSOpenPcap(const char*  pcap_file,
-               FILE**       fp_pcap,
-               pcap_hdr_t*  pcap_file_hdr,
-               const char*  errstr,
-               unsigned int uFlags);
+int DSOpenPcap(const char*   pcap_file,
+               FILE**        fp_pcap,
+               pcap_hdr_t*   pcap_file_hdr,
+               const char*   errstr,
+               unsigned int  uFlags);
 ```
 
   * on success, leaves file fp_pcap pointing at file's first pcap record and returns a filled pcap_hdr_t struct pointed to by pcap_file_hdr
@@ -274,7 +274,63 @@ The pktlib minimum API interface supports application level "push" and "pull" to
 <a name="Structs"></a>
 # Structs
 
-Following are DSGetPacketInfo() structs.
+Following are TCP, UDP, and RTP header structs.
+
+```c++
+/* UDP header struct */
+
+  typedef struct {
+
+    uint16_t  SrcPort;         /* Source Port */
+    uint16_t  DstPort;         /* Destination Port */
+    uint32_t  seq_num;         /* sequence number */
+    uint32_t  ack_num;         /* ack number */
+    uint16_t  hdr_len_misc;    /* header size and flags */
+    uint16_t  window;
+    uint16_t  checksum;        /* Checksum */
+    uint16_t  urgent;
+
+  } TCPHeader;
+
+/* UDP header struct */
+
+  typedef struct {
+
+    uint16_t  SrcPort;         /* Source Port */
+    uint16_t  DstPort;         /* Destination Port */
+    uint16_t  UDP_length;      /* Length */
+    uint16_t  UDP_checksum;    /* Checksum */
+
+  } UDPHeader;
+
+  /* RTP header struct */
+
+  typedef struct {
+
+ /* Implemented as bit fields:
+
+    -this makes all RTP header fields defined in RFC 3550 directly accessible from C/C++ application code and avoids host vs. network byte ordering issues for first 2 bytes of the RTP header
+    -bit fields are in lsb order due to gcc limitations, so ordering within each byte is reversed from msb-first layout defined in RFC 3550
+ */
+ 
+ /* 1st byte of RTP header */
+    uint8_t   CC        : 4;   /* CSRC count */
+    uint8_t   ExtHeader : 1;   /* Extension header */
+    uint8_t   Padding   : 1;   /* Padding */
+    uint8_t   Version   : 2;   /* RTP version */
+ /* 2nd byte of RTP header */
+    uint8_t   PyldType  : 7;   /* Payload type */
+    uint8_t   Marker    : 1;   /* Marker bit */
+
+    uint16_t  Sequence;        /* Sequence number */
+    uint32_t  Timestamp;       /* Timestamp */
+    uint32_t  SSRC;            /* SSRC */
+    uint32_t  CSRC[1];         /* remainder of header */
+
+  } RTPHeader;
+
+```
+Following is the PKTINFO struct used in DSGetPacketInfo().
 
 ```c++
   typedef struct {
@@ -319,89 +375,89 @@ Following are DSGetPacketInfo() structs.
 Following are DSOpenPcap() and DSReadPcap() structs.
 
 ```c++
-  typedef struct pcap_hdr_s {      /* header for standard libpcap format, also for .rtp (.rtpdump) format */
+typedef struct pcap_hdr_s {      /* header for standard libpcap format, also for .rtp (.rtpdump) format */
 
-    union {
+  union {
 
-      struct {                     /* pcap and pcapng format, the default */
+    struct {                     /* pcap and pcapng format, the default */
 
-        uint32_t magic_number;     /* magic number */
-        uint16_t version_major;    /* major version number */
-        uint16_t version_minor;    /* minor version number */
-        int32_t  thiszone;         /* GMT to local correction */
-        uint32_t sigfigs;          /* accuracy of timestamps */
-        uint32_t snaplen;          /* max length of captured packets, in octets */
-        uint32_t link_type;        /* data link type */
-      };
-
-      struct {                     /* add rtp format as a union (https://formats.kaitai.io/rtpdump), JHB Nov 2023 */
-
-        char     shebang[12];
-        char     space[1];
-        char     dst_ip_addr[128];  /* run-time strings have terminator values 47 and 10, we declare more than needed */
-        char     dst_port[128];
-        uint32_t start_sec;
-        uint32_t start_usec;
-        uint32_t src_ip_addr;
-        uint16_t src_port;
-        uint16_t padding;
-      } rtp;
+      uint32_t magic_number;     /* magic number */
+      uint16_t version_major;    /* major version number */
+      uint16_t version_minor;    /* minor version number */
+      int32_t  thiszone;         /* GMT to local correction */
+      uint32_t sigfigs;          /* accuracy of timestamps */
+      uint32_t snaplen;          /* max length of captured packets, in octets */
+      uint32_t link_type;        /* data link type */
     };
 
-  } pcap_hdr_t;
+    struct {                     /* add rtp format as a union (https://formats.kaitai.io/rtpdump), JHB Nov 2023 */
+
+      char     shebang[12];
+      char     space[1];
+      char     dst_ip_addr[128];  /* run-time strings have terminator values 47 and 10, we declare more than needed */
+      char     dst_port[128];
+      uint32_t start_sec;
+      uint32_t start_usec;
+      uint32_t src_ip_addr;
+      uint16_t src_port;
+      uint16_t padding;
+    } rtp;
+  };
+
+} pcap_hdr_t;
 
 typedef struct pcapng_hdr_s {       /* section header block (SHB) for pcapng format */
 
-    uint32_t magic_number;          /* magic number */
-    uint32_t block_length;
-    uint32_t byte_order_magic;
-    uint16_t version_major;         /* major version number */
-    uint16_t version_minor;         /* minor version number */
-    int64_t  section_length;        /* can be -1 */
+  uint32_t magic_number;          /* magic number */
+  uint32_t block_length;
+  uint32_t byte_order_magic;
+  uint16_t version_major;         /* major version number */
+  uint16_t version_minor;         /* minor version number */
+  int64_t  section_length;        /* can be -1 */
 
-  } pcapng_hdr_t;
+} pcapng_hdr_t;
 
-  typedef struct pcapng_idb_s {     /* interface description block (IDB) for pcapng format */
+typedef struct pcapng_idb_s {     /* interface description block (IDB) for pcapng format */
 
-    uint32_t block_type;
-    uint32_t block_length;
-    uint16_t link_type;
-    uint16_t reserved;
-    uint32_t snaplen;
+  uint32_t block_type;
+  uint32_t block_length;
+  uint16_t link_type;
+  uint16_t reserved;
+  uint32_t snaplen;
 
-  } pcapng_idb_t;
+} pcapng_idb_t;
 
 /* pcap packet (record) header */
 
-  typedef struct pcaprec_hdr_s {
+typedef struct pcaprec_hdr_s {
 
-    uint32_t ts_sec;                /* timestamp seconds */
-    uint32_t ts_usec;               /* timestamp microseconds */
-    uint32_t incl_len;              /* number of octets of packet saved in file */
-    uint32_t orig_len;              /* actual length of packet */
+  uint32_t ts_sec;                /* timestamp seconds */
+  uint32_t ts_usec;               /* timestamp microseconds */
+  uint32_t incl_len;              /* number of octets of packet saved in file */
+  uint32_t orig_len;              /* actual length of packet */
 
-  } pcaprec_hdr_t;
+} pcaprec_hdr_t;
 
-  typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng format */
+typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng format */
 
-    uint32_t block_type;
-    uint32_t block_length;
-    uint32_t interface_id;
-    uint32_t timestamp_hi;
-    uint32_t timestamp_lo;
-    uint32_t captured_pkt_len;
-    uint32_t original_pkt_len;
+  uint32_t block_type;
+  uint32_t block_length;
+  uint32_t interface_id;
+  uint32_t timestamp_hi;
+  uint32_t timestamp_lo;
+  uint32_t captured_pkt_len;
+  uint32_t original_pkt_len;
 
-  } pcapng_epb_t;
+} pcapng_epb_t;
 
 /* pcap record vlan header */
 
-  typedef struct {
+typedef struct {
 
-    uint16_t id;
-    uint16_t type;
+  uint16_t id;
+  uint16_t type;
 
-  } vlan_hdr_t;
+} vlan_hdr_t;
 ```
 
 <a name="General Pktlib API Flags"></a>
