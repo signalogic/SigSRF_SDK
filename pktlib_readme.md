@@ -239,10 +239,10 @@ int DSReadPcap(FILE*           fp_pcap,
 ```
 
   * pkt_buf should point to a sufficiently large memory area to contain returned packet data
-  * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) to hold packet record info, incuding arrival timestamp. NULL indicates not used
+  * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct)that on return will contain packet record info, incuding arrival timestamp. NULL indicates not used
   * link_layer_info should be supplied from a prior DSOpenPcap() call. See DSOpenPcap() comments above
   * hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags(as defined in linux/if_ether.h). NULL indicates not used
-  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that on return will contain the file's header(s). This allows an app to obtain a file header at any time after a prior DSOpenPcap() call, if the file header was not previously saved or not available. NULL indicates not used
+  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that on return will contain file header information. This allows an app to obtain a file header at any time after a prior DSOpenPcap() call, if file header information was not previously saved or is not readily available. NULL indicates not used
   * uFlags are given in DS_READ_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
 
   * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
