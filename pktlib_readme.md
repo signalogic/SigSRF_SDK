@@ -212,15 +212,15 @@ int DSOpenPcap(const char*   pcap_file,
   * fp_pcap should point to a stdio.h FILE* that on return will contain the new file handle
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that will on return contain header information about the file. NULL indicates not used
   * errstr, if supplied, should point to an error information string to be included in warning or error messages. NULL indicates not used
-  * uFlags options are given in DS_OPEN_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
+  * uFlags options are given in DS_OPEN_PCAP_XXX flag definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below). Typically DS_OPEN_PCAP_READ is used for reading and DS_OPEN_PCAP_WRITE for writing
 
-  * on success, DSOpenPcap() reads the file's header(s) and leaves file fp_pcap pointing at the first pcap record. The return value is a 32-bit int formatted as:<br>
+  * on success, DSOpenPcap() reads or writes the file's header(s) and leaves file fp_pcap pointing at the first pcap record. The return value is a 32-bit int formatted as:<br>
       &nbsp;<br>
       &nbsp;&nbsp;&nbsp;&nbsp;(link_type << 20) | (file_type << 16) | link_layer_length<br>
       &nbsp;<br>
     where link_type is one of the LINKTYPE_XXX definitions below, file_type is one of the PCAP_TYPE_XXX definitions below, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14)
   
-  * note the full return value should be saved and then given as the link_layer_info param in DSReadPcap() and DSFilterPacket()
+  * note - for file read, the full return value should be saved and then given as the link_layer_info param in DSReadPcap() and DSFilterPacket()
   * a return value < 0 indicates an error
 
 <a name="DSReadPcap"></a>
@@ -273,11 +273,11 @@ Following are definitions and flags used by pktlib pcap APIs
   #define LINKTYPE_IPV6                       /* Raw IPv6 */
 #endif
 
-#define DS_OPEN_PCAP_READ                     /* use filelib.h definitions */
-#define DS_OPEN_PCAP_WRITE
-#define DS_OPEN_PCAP_READ_HEADER
-#define DS_OPEN_PCAP_WRITE_HEADER
-#define DS_OPEN_PCAP_QUIET
+#define DS_OPEN_PCAP_READ                     /* open pcap, pcapng, or rtp/rtpdump file for reading */
+#define DS_OPEN_PCAP_WRITE                    /* open pcap, pcapng, or rtp/rtpdump file writing. If the path/file does not exist, create */
+#define DS_OPEN_PCAP_DONT_READ_HEADER         /* don't read file header */
+#define DS_OPEN_PCAP_DONT_WRITE_HEADER        /* don't write file header */
+#define DS_OPEN_PCAP_QUIET                    /* suppress status and progress messages */
 #define DS_OPEN_PCAP_RESET                    /* seek to start of pcap; assumes a valid (already open) file handle given to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ */
 
 #define DS_READ_PCAP_COPY                     /* copy pcap record(s) only, don't advance file pointer */
