@@ -105,9 +105,9 @@ Below is more detailed parameter information.
 
 ```c++
 int DSGetPacketInfo(HSESSION      sessionHandle,  /* additional sessionHandle notes: (i) if both sessionHandle is -1 and uFlags contains DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, DS_PKT_INFO_CHNUM_xxx flags, then all existing sessions will be searched. (ii) SigSRF documentation refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession() */
-                    unsigned int  uFlags,         /* one or more of the flags given in Packet Info Flags below. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. (ii) if DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1 */
+                    unsigned int  uFlags,         /* one or more flags defined in Packet Info Flags below. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. (ii) if DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1 */
                     uint8_t*      pkt_buf,        /* pkt_buf should point to a buffer of packet data. Packets may originate from socket APIs, pcap files, or other sources. The pktlib DSOpenPcap() and DSReadPcapRecord() APIs can be used for pcap, pcapng, and rtp/rtpdump files. The DSFormatPacket() API can be used to construct a packet */
-                    int           pkt_len,        /* pkt_len should contain the length of the packet, in bytes. If packet length is unknown, pkt_len can be given as -1. Note that pkt_len *does not* specify the overall length of the packet data buffer, which is assumed to be sufficiently large enough to contain all packet data, including reassembled packet data if the DS_PKT_INFO_REASSEMBLY_GET_PACKET flag has been given */
+                    int           pkt_len,        /* pkt_len should contain the length of the packet, in bytes. If packet length is unknown, pkt_len can be given as -1. Note that pkt_len *does not* specify the overall length of the packet data buffer, which is assumed to be sufficiently large enough to contain all packet data, including reassembled packet data if DS_PKT_INFO_REASSEMBLY_GET_PACKET is given */
                     void*         pInfo,          /* pInfo, if not NULL, on return will contain:
                                                      -a PKTINFO struct (see struct definitions below) if uFlags includes DS_PKT_INFO_PKTINFO
                                                      -an RTPHeader struct (see struct definitions below) if uFlags includes DS_PKT_INFO_RTP_HEADER
@@ -209,7 +209,7 @@ int DSOpenPcap(const char*   pcap_file,
 ```
 
   * pcap_file should contain a null-terminated path and/or filename of the pcap, pcapng, or rtp/rtpdump file to open
-  * uFlags options are given in DS_OPEN_PCAP_XXX flag definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below). Typically DS_OPEN_PCAP_READ is used for reading and DS_OPEN_PCAP_WRITE for writing
+  * uFlags may be one or more DS_OPEN_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below). Typically DS_OPEN_PCAP_READ is used for reading and DS_OPEN_PCAP_WRITE for writing
   * fp_pcap should point to a FILE* (in stdio.h) that on return will contain the new file handle
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that will on return contain header information about the file. NULL indicates not used
   * errstr, if supplied, should point to an error information string to be included in warning or error messages. NULL indicates not used
@@ -239,7 +239,7 @@ int DSReadPcap(FILE*           fp_pcap,
 ```
 
   * pkt_buf should point to a sufficiently large buffer to contain returned packet data
-  * uFlags are given in DS_READ_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
+  * uFlags may be one or more DS_READ_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
   * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, incuding arrival timestamp. NULL indicates not used
   * link_layer_info should be supplied from a prior DSOpenPcap() call return value. See DSOpenPcap() comments above
   * hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags(as defined in linux/if_ether.h). NULL indicates not used
