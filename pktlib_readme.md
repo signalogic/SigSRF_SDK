@@ -91,7 +91,7 @@ int DSGetPacketInfo(HSESSION      sessionHandle,
   * sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. See additional sessionHandle notes below
   * uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If DS_BUFFER_PKT_IP_PACKET is given the packet should start with an IP header; if DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default if no flag is given. Use DS_PKT_INFO_HOST_BYTE_ORDER if packet headers are in host byte order. Network byte order is the default if no flag (or DS_PKT_INFO_NETWORK_BYTE_ORDER) is given. Byte order flags apply only to headers, not payload contents. See additional uFlags notes below
   * pkt_buf should point to a packet, and pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap, pcapng, and rtp/rtpdump files. The DSFormatPacket() API can be used to help construct a packet
-  * pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1
+  * pkt_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1
   * pInfo, if not NULL, on return will contain<br>
         &nbsp;<br>
         -a [PKTINFO struct](#user-content-pktinfostruct) if uFlags includes DS_PKT_INFO_PKTINFO<br>
@@ -106,8 +106,8 @@ Below is more detailed parameter information.
 ```c++
 int DSGetPacketInfo(HSESSION      sessionHandle,  /* additional sessionHandle notes: (i) if both sessionHandle is -1 and uFlags contains DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, DS_PKT_INFO_CHNUM_xxx flags, then all existing sessions will be searched. (ii) SigSRF documentation refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession() */
                     unsigned int  uFlags,          /* one or more of the flags given in Packet Info Flags below. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. (ii) if DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1 */
-                    uint8_t*      pkt_buf,        /* pkt_buf should point to a byte (uint8_t) array of packet data. Packets may be provided from socket APIs, pcap files, or other sources. The pktlib DSOpenPcap() and DSReadPcapRecord() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet */
-                    int           pkt_buf_len,    /* pkt_buf_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_buf_len can be given as -1 */
+                    uint8_t*      pkt_buf,        /* pkt_buf should point to a buffer of packet data. Packets may originate from socket APIs, pcap files, or other sources. The pktlib DSOpenPcap() and DSReadPcapRecord() APIs can be used for pcap, pcapng, and rtp/rtpdump files. The DSFormatPacket() API can be used to construct a packet */
+                    int           pkt_len,        /* pkt_len should contain the length of the packet, in bytes. If packet length is unknown, pkt_buf_len can be given as -1. Note that pkt_len *does not* specify the overall length of the packet data buffer, which is assumed to be sufficiently large enough to contain all packet data */
                     void*         pInfo,          /* pInfo, if not NULL, on return will contain:
                                                      -a PKTINFO struct (see struct definitions below) if uFlags includes DS_PKT_INFO_PKTINFO
                                                      -an RTPHeader struct (see struct definitions below) if uFlags includes DS_PKT_INFO_RTP_HEADER
@@ -238,12 +238,12 @@ int DSReadPcap(FILE*           fp_pcap,
                pcap_hdr_t*     pcap_file_hdr);
 ```
 
-  * pkt_buf should point to a sufficiently large memory area to contain returned packet data
+  * pkt_buf should point to a sufficiently large buffer to contain returned packet data
+  * uFlags are given in DS_READ_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
   * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, incuding arrival timestamp. NULL indicates not used
   * link_layer_info should be supplied from a prior DSOpenPcap() call return value. See DSOpenPcap() comments above
   * hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags(as defined in linux/if_ether.h). NULL indicates not used
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call. NULL indicates not used
-  * uFlags are given in DS_READ_PCAP_XXX definitions (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
 
   * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
 
