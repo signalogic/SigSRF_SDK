@@ -19,7 +19,8 @@
   Modified Apr 2024 JHB, deprecate DS_LOG_LEVEL_UPTIME_TIMESTAMP flag (diaglib.h) and DS_EVENT_LOG_UPTIME_TIMESTAMPS flag (shared_include/config.h), the default (no flag) is now uptime timestamps. DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp
   Modified Apr 2024 JHB, DSGetLogTimestamp() now returns length of timestamp string
   Modified May 2024 JHB, add DSGetBacktrace() API
-  Created May 2024, DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs moved here from lib_logging.cpp
+  Created May 2024 JHB, DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs moved here from lib_logging.cpp
+  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSGetLogTimeStamp() and DSGetBacktrace() 
 */
 
 /* Linux and/or other OS includes */
@@ -52,7 +53,7 @@ extern uint8_t usec_init_lock;
 
 /* retrieve and format a timestamp, can be absolute (wall-clock) time, relative to start, or both. Log_RT() (lib_logging.cpp) depends on this */
 
-int DSGetLogTimeStamp(char* timestamp, int max_str_len, uint64_t user_timeval, unsigned int uFlags) {
+int DSGetLogTimeStamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval) {
 
 time_t ltime;
 struct tm tm;
@@ -155,7 +156,7 @@ int ret_val = -1;
 
 /* use glibc backtrace() to get nLevels of call stack, clean that up, remove repeats, and format in szBacktrace (return string) */
 
-int DSGetBacktrace(int nLevels, char* szBacktrace, unsigned int uFlags) {
+int DSGetBacktrace(int nLevels, unsigned int uFlags, char* szBacktrace) {
 
 #define BT_BUF_SIZE 512
 int nptrs, i, j, k = 0;

@@ -75,7 +75,8 @@
   Modified May 2024 JHB, convert to cpp
   Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() in lib_logging.cpp now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile cmd line no longer recognizes standalone=1
   Modified May 2024 JHB, update DSPktStatsAddEntries() documentation, param naming, and error handling. Make pkt_length[] param an int to allow -1 values (i.e. packet length unknown)
-  Modified Jul 2024 JHB, to support SSRCs shared across streams, implement DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag, create in_chnum[] and out_chnum[], and add to chnum[] param to DSFindSSRCGroups() and DSPktStatsLogSeqnums() 
+  Modified Jul 2024 JHB, to support SSRCs shared across streams, implement DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag, create in_chnum[] and out_chnum[], and add to chnum[] param to DSFindSSRCGroups() and DSPktStatsLogSeqnums()
+  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to be second param in all relevant APIs. Also in non-published API analysis_and_stats() 
 */
 
 /* Linux includes */
@@ -115,7 +116,7 @@ extern LOGGING_THREAD_INFO Logging_Thread_Info[];
 
 #define DS_PKT_PYLD_CONTENT_DTMF_END  1  /* DTMF Event End, determined in DSPktStatsAddEntries and then passed thru to other functions, JHB Jun 2019 */
 
-int DSPktStatsAddEntries(PKT_STATS* pkt_stats, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int payload_content[], unsigned int uFlags) {
+int DSPktStatsAddEntries(PKT_STATS* pkt_stats, unsigned int uFlags, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int payload_content[]) {
 
 int j, len;
 unsigned int offset = 0;
@@ -159,7 +160,7 @@ unsigned int offset = 0;
 
 /* group data by unique SSRCs */
 
-int DSFindSSRCGroups(PKT_STATS* pkts, int num_pkts, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], unsigned int uFlags) {
+int DSFindSSRCGroups(PKT_STATS* pkts, unsigned int uFlags, int num_pkts, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[]) {
 
 int        i, j, k;
 uint32_t   first_seqnum, last_seqnum;
@@ -376,7 +377,7 @@ void print_packet_type(FILE* fp_log, unsigned int content_flags, int rtp_pyldlen
 }
 
 
-int DSPktStatsLogSeqnums(FILE* fp_log, PKT_STATS* pkts, int num_pkts, const char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[], unsigned int uFlags) {
+int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, const char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[]) {
 
 int           i, j, k, nSpaces;
 bool          fFound_sn, fDup_sn, fOoo_sn;
@@ -391,7 +392,7 @@ char          szLastSeq[100];
 
 /* first group data by unique SSRCs */
 
-   num_ssrcs = DSFindSSRCGroups(pkts, num_pkts, ssrcs, chnum, first_pkt_idx, last_pkt_idx, first_rtp_seqnum, last_rtp_seqnum, uFlags);
+   num_ssrcs = DSFindSSRCGroups(pkts, uFlags, num_pkts, ssrcs, chnum, first_pkt_idx, last_pkt_idx, first_rtp_seqnum, last_rtp_seqnum);
 
    #ifdef SIMULATE_SLOW_TIME
    usleep(SIMULATE_SLOW_TIME);
@@ -598,7 +599,7 @@ exit:
 }
 
 
-static int analysis_and_stats(FILE* fp_log, int num_ssrcs, uint32_t in_ssrcs[], uint16_t in_chnum[], PKT_STATS input_pkts[], int in_first_pkt_idx[], int in_last_pkt_idx[], uint32_t in_first_rtp_seqnum[], uint32_t in_last_rtp_seqnum[], STREAM_STATS InputStreamStats[], uint32_t out_ssrcs[], uint16_t out_chnum[], PKT_STATS output_pkts[], int out_first_pkt_idx[], int out_last_pkt_idx[], uint32_t out_first_rtp_seqnum[], uint32_t out_last_rtp_seqnum[], STREAM_STATS OutputStreamStats[], int in_ssrc_start, int out_ssrc_start, int io_map_ssrcs[], unsigned int uFlags) {
+static int analysis_and_stats(FILE* fp_log, unsigned int uFlags, int num_ssrcs, uint32_t in_ssrcs[], uint16_t in_chnum[], PKT_STATS input_pkts[], int in_first_pkt_idx[], int in_last_pkt_idx[], uint32_t in_first_rtp_seqnum[], uint32_t in_last_rtp_seqnum[], STREAM_STATS InputStreamStats[], uint32_t out_ssrcs[], uint16_t out_chnum[], PKT_STATS output_pkts[], int out_first_pkt_idx[], int out_last_pkt_idx[], uint32_t out_first_rtp_seqnum[], uint32_t out_last_rtp_seqnum[], STREAM_STATS OutputStreamStats[], int in_ssrc_start, int out_ssrc_start, int io_map_ssrcs[]) {
 
 int           i = 0, j, k, i_out, pkt_cnt;
 unsigned int  rtp_seqnum, rtp_seqnum_chk, mismatch_count, search_offset = 0;
@@ -1037,7 +1038,7 @@ exit:
 }
 
 
-int DSPktStatsWriteLogFile(const char* szLogfile, PKT_STATS* input_pkts, PKT_STATS* output_pkts, PKT_COUNTERS* pkt_counters, unsigned int uFlags) {
+int DSPktStatsWriteLogFile(const char* szLogfile, unsigned int uFlags, PKT_STATS* input_pkts, PKT_STATS* output_pkts, PKT_COUNTERS* pkt_counters) {
 
 FILE*         fp_log = NULL;
 int           input_idx = 0, output_idx = 0;
@@ -1191,7 +1192,7 @@ int            nThreadIndex;
 
    /* log ingress packet info -- group by SSRC values, including ooo and missing seq numbers */
 
-      in_ssrc_groups = DSPktStatsLogSeqnums(fp_log, input_pkts, input_idx, "Ingress", in_ssrcs, in_chnum, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, uFlags);
+      in_ssrc_groups = DSPktStatsLogSeqnums(fp_log, uFlags, input_pkts, input_idx, "Ingress", in_ssrcs, in_chnum, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats);
 
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
@@ -1240,7 +1241,7 @@ int            nThreadIndex;
 
    /* log jitter buffer output packet info -- grouped by SSRC values, including ooo and missing seq numbers */
 
-      out_ssrc_groups = DSPktStatsLogSeqnums(fp_log, output_pkts, output_idx, "Jitter Buffer", out_ssrcs, out_chnum, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, uFlags);
+      out_ssrc_groups = DSPktStatsLogSeqnums(fp_log, uFlags, output_pkts, output_idx, "Jitter Buffer", out_ssrcs, out_chnum, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats);
 
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
@@ -1339,7 +1340,7 @@ int            nThreadIndex;
       if (uFlags & DS_PKTSTATS_ORGANIZE_BY_SSRC) {
 
          uFlags_as = uFlags & ~DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP & ~DS_PKTSTATS_ORGANIZE_BY_CHNUM;
-         ret_val = analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, in_chnum, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, out_chnum, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
+         ret_val = analysis_and_stats(fp_log, uFlags_as, num_ssrcs, in_ssrcs, in_chnum, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, out_chnum, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs);
 
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
@@ -1351,7 +1352,7 @@ int            nThreadIndex;
       if (ret_val > 0 && (uFlags & DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP)) {
 
          uFlags_as = uFlags & ~DS_PKTSTATS_ORGANIZE_BY_SSRC & ~DS_PKTSTATS_ORGANIZE_BY_CHNUM;
-         analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, in_chnum, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, out_chnum, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
+         analysis_and_stats(fp_log, uFlags_as, num_ssrcs, in_ssrcs, in_chnum, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, out_chnum, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs);
 
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
@@ -1363,7 +1364,7 @@ int            nThreadIndex;
       if (ret_val > 0 && (uFlags & DS_PKTSTATS_ORGANIZE_BY_CHNUM)) {
 
          uFlags_as = uFlags & ~DS_PKTSTATS_ORGANIZE_BY_SSRC & ~DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP;
-         analysis_and_stats(fp_log, num_ssrcs, in_ssrcs, in_chnum, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, out_chnum, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs, uFlags_as);
+         analysis_and_stats(fp_log, uFlags_as, num_ssrcs, in_ssrcs, in_chnum, input_pkts, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats, out_ssrcs, out_chnum, output_pkts, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats, in_ssrc_start, out_ssrc_start, io_map_ssrcs);
 
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);

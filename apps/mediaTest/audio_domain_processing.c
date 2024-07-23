@@ -34,6 +34,8 @@
   Modified May 2023 JHB, add FTRT and AFAP mode support
   Modified Nov 2023 JHB, comments and formatting only
   Modified Jun 2024 JHB, rename DSWritePcapRecord() to DSWritePcap()
+  Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, add uFlags param and move pkt buffer length to fourth param in DSWritePcap()
+  Modified Jul 2024 JHB, in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, remove timestamp* param (the packet record header param now supplies a timestamp, if needed). See pktlib.h comments
 */
 
 
@@ -168,7 +170,7 @@ HASRDECODER hASRDecoder;
  
    /* call DSGetTermChan() for term1 with channel validation flag.  The concern is to not push anything into application queues if the session's channels are pending deletion or no longer exist */
 
-      if ((ret_val = DSGetTermChan(hSession, &chnum, 1, DS_CHECK_CHAN_DELETE_PENDING | DS_CHECK_CHAN_EXIST)) <= 0) return ret_val;  /* ret_val is < 0 for an error condition, and == 0 for a "not an error but don't send any data to the app" condition */
+      if ((ret_val = DSGetTermChan(hSession, DS_CHECK_CHAN_DELETE_PENDING | DS_CHECK_CHAN_EXIST, &chnum, 1)) <= 0) return ret_val;  /* ret_val is < 0 for an error condition, and == 0 for a "not an error but don't send any data to the app" condition */
 
       if (uFlags & DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT) {  /* get input audio from stream group owner session's group_term */
 
@@ -351,8 +353,13 @@ HASRDECODER hASRDecoder;
 
                sem_wait(&pcap_write_sem);
 
+               #if 0
                bool fAcceleratedTime = false;
                struct timespec ts;
+               #else
+               unsigned int uFlags = DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;
+               pcaprec_hdr_t pcap_pkt_hdr = { 0 };
+               #endif
 
                if (input_buffer_interval == 0) {  /* in AFAP mode advance packet arrival timestamp at regular ptime intervals. There is no concept of overrun and underrun, missed intervals, etc. Note that mediaMin.cpp does same thing with stream group output pcaps, JHB May 2023 */
 
@@ -365,10 +372,17 @@ HASRDECODER hASRDecoder;
                      accel_time_ts[idx].tv_nsec = (t - 1000000ULL*accel_time_ts[idx].tv_sec)*1000;
                   } 
 
+                  #if 0
                   ts = accel_time_ts[idx];
                   fAcceleratedTime = true;
+                  #else
+                  uFlags = 0;
+                  pcap_pkt_hdr.ts_sec = accel_time_ts[idx].tv_sec;
+                  #endif
                }
                else if (input_buffer_interval < 1) {  /* in FTRT mode advance packet arrival timestamp at ptime intervals but with accelerated time, JHB May 2023 */
+
+                  struct timespec ts = { 0 };
 
                   clock_gettime(CLOCK_REALTIME, &ts);
 
@@ -380,13 +394,22 @@ HASRDECODER hASRDecoder;
 
                   uint64_t t = base_time + (cur_time - base_time) * 1.0/input_buffer_interval;
 
+                  #if 0
                   ts.tv_sec = t/1000000ULL;  /* update stream group's packet timestamp */
                   ts.tv_nsec = (t - 1000000ULL*ts.tv_sec)*1000;
-
                   fAcceleratedTime = true;
+                  #else
+                  pcap_pkt_hdr.ts_sec = t/1000000ULL;  /* update stream group output packet timestamp */
+                  pcap_pkt_hdr.ts_usec = (t - 1000000ULL*pcap_pkt_hdr.ts_sec);
+                  uFlags = 0;
+                  #endif
                }
 
-               if (DSWritePcap(fp_out_pcap_merge, group_audio_packet, NULL, NULL, &output_term, fAcceleratedTime ? &ts : NULL, packet_length) < 0) {
+               #if 0
+               if (DSWritePcap(fp_out_pcap_merge, uFlags, group_audio_packet, packet_length, &pcap_pkt_hdr, NULL, &output_term, fAcceleratedTime ? &ts : NULL) < 0) {
+               #else
+               if (DSWritePcap(fp_out_pcap_merge, uFlags, group_audio_packet, packet_length, &pcap_pkt_hdr, NULL, NULL, &output_term) < 0) {
+               #endif
 
                   sem_post(&pcap_write_sem);
                   Log_RT(2, "ERROR: DSProcessAudio() says DSWritePcap() failed, hSession = %d, idx = %d, chnum = %d, j = %d, num_frames = %d, packet_length = %d \n", hSession, idx, chnum, j, *num_frames, packet_length);

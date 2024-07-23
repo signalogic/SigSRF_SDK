@@ -55,6 +55,10 @@
    Modified May 2024 JHB, add more checks when setting executeMode[0]
    Modified May 2024 JHB, update comments that reference x86_mediaTest to mediaTest_proc
    Modified Jul 2024 JHB, adjust param order in DSConfigLogging() after change in diaglib.h
+   Modified Jul 2024 JHB, trim leading and trailing spaces of -g and --group_pcap cmd line argument strings, in case apps are run from shell scripts
+   Modified Jul 2024 JHB, add  fGroupOutputNoCopy to support --group_pcap_nocopy cmd line option, integrate CmdLineFlags_t changes in userInfo.h
+   Modified Jul 2024 JHB, set mediaTest pcap_extract when both input and output files are pcaps, to support pcap modification operations (insert bit errors, filter, etc)
+   Modified Jul 2024 JHB, add nRandomBitErrorPercentage to support --random_bit_error cmd line option
 */
 
 
@@ -72,6 +76,7 @@
 
 #include "test_programs.h"   /* misc program support (command line entry, etc) */
 #include "minmax.h"
+#include "dsstring.h"  /* lstrtrim() */
 
 /* mediaTest definitions (also includes DirectCore library header and host/coCPU shared header files) */
 
@@ -122,6 +127,8 @@ int              nCut = 0;  /* command line --cut input */
 char             szStreamGroupPcapOutputPath[CMDOPT_MAX_INPUT_LEN] = "";
 bool             fShow_md5sum = false;
 bool             fShow_audio_classification = false;
+bool             fGroupOutputNoCopy = false;
+int              nRandomBitErrorPercentage = 0;
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 
@@ -140,7 +147,7 @@ void intHandler(int sig) {
    
    fCtrl_C_pressed = true;
 
-   DSConfigLogging(DS_CONFIG_LOGGING_SET_FLAG, NULL, DS_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS);  /* tell possibly time-consuming packet logging functions to abort. Currently we combine with "ALL_THREADS" flag which will terminate packet logging for any apps running. See additional comments in mediaMin.cpp JHB Jan 2023 */
+   DSConfigLogging(DS_CONFIG_LOGGING_ACTION_SET_FLAG, DS_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS, NULL);  /* tell possibly time-consuming packet logging functions to abort. Currently we combine with "ALL_THREADS" flag which will terminate packet logging for any apps running. See additional comments in mediaMin.cpp JHB Jan 2023 */
 }
 
 /* global vars used by other files in the build */
@@ -263,7 +270,7 @@ int i;
    executeMode[0] = userIfs.executeMode;  /* execution mode used by mediaTest to specify app, thread, and cmd line execution modes */
 
    codec_test = ((fAudioInputFile || USBAudioInput || fCodedInputFile) && (fAudioOutputFile || USBAudioOutput || fCodedOutputFile || fPcapOutputFile));  /* codec mode = both I/O audio or compressed bitstream of some type (also includes output pcap) */
-   pcap_extract = (fPcapInputFile && fCodedOutputFile);
+   pcap_extract = (fPcapInputFile && fCodedOutputFile) || (fPcapInputFile && fPcapOutputFile);
    gpx_process = (fGpxInputFile != 0);
 
    if (!codec_test && !pcap_extract && fPcapInputFile && (fAudioOutputFile || USBAudioOutput)) {
@@ -302,9 +309,9 @@ int i;
       if (!strstr(userIfs.logFile[0], "[default]")) strcpy((char*)pktStatsLogFile, userIfs.logFile[0]);  /* if default entry (only -L entered with no path+filename) then just set the var, don't copy the string, JHB Sep2017 */
    }
 
-   if (userIfs.md5sum) fShow_md5sum = true;  /* check for default value, which indicates --md5sum was entered on the cmd line, JHB Feb 2024 */
+   if (userIfs.CmdLineFlags.md5sum) fShow_md5sum = true;  /* check for default value, which indicates --md5sum was entered on the cmd line, JHB Feb 2024 */
 
-   if (userIfs.show_audio_classification) fShow_audio_classification = true;
+   if (userIfs.CmdLineFlags.show_audio_classification) fShow_audio_classification = true;
 
    for (int i=0; i<min(MAXSTREAMS, MAX_INPUT_STREAMS); i++) {
    
@@ -324,8 +331,19 @@ int i;
    nRepeat = (int)userIfs.nRepeatTimes;  /* -1 = no entry (no repeat), 0 = repeat forever, > 1 is repeat number of times, JHB Jan2020 */
    if (strlen(userIfs.szSDPFile)) strcpy(szSDPFile, userIfs.szSDPFile);
    nSamplingFrequency = userIfs.nSamplingFrequency;  /* sampling frequency for gpx processing */
-   if (strlen(userIfs.szStreamGroupWavOutputPath)) strcpy(szStreamGroupWavOutputPath, userIfs.szStreamGroupWavOutputPath);
-   if (strlen(userIfs.szStreamGroupPcapOutputPath)) strcpy(szStreamGroupPcapOutputPath, userIfs.szStreamGroupPcapOutputPath);
+
+   if (strlen(userIfs.szStreamGroupWavOutputPath)) {
+      strcpy(szStreamGroupWavOutputPath, userIfs.szStreamGroupWavOutputPath);
+      lstrtrim(szStreamGroupWavOutputPath);  /* trim leading and trailing spaces, if any ... can happen when apps are run inside shell scripts, JHB Jul 2024 */
+   }
+   if (strlen(userIfs.szStreamGroupPcapOutputPath)) {
+      strcpy(szStreamGroupPcapOutputPath, userIfs.szStreamGroupPcapOutputPath);
+      lstrtrim(szStreamGroupPcapOutputPath);  /* trim leading and trailing spaces, if any ... can happen when apps are run inside shell scripts, JHB Jul 2024 */
+   }
+
+   nRandomBitErrorPercentage = userIfs.nRandomBitErrorPercentage;
+
+   fGroupOutputNoCopy = userIfs.CmdLineFlags.group_output_no_copy;
 
    for (i=0; i<MAX_CONCURRENT_STREAMS; i++) uPortList[i] = userIfs.dstUdpPort[i];  /* fill in port list, JHB May 2023 */
 
@@ -570,7 +588,6 @@ content_label:
 }
 
 /* read command line from /proc/self/cmdline, JHB Jan 2023 */
-
 
 int GetCommandLine(char* cmdlinestr, int str_size) {
 

@@ -269,7 +269,7 @@ bool fUseSemLocal = false;
    return 0;  /* 0 indicates event log file aleady open */
 }
 
-static int update_log_config(DEBUG_CONFIG* dbg_cfg, bool fUseSem, unsigned uFlags) {  /* called by DSConfigLogging() below */
+static int update_log_config(DEBUG_CONFIG* dbg_cfg, unsigned uFlags, bool fUseSem) {  /* called by DSConfigLogging() below */
 
 bool fUseSemLocal = false;
 
@@ -403,7 +403,7 @@ static uint8_t lock = 0;
 
 /* DSConfigLogging - set/get Logging_Thread_Info[] items. We use the thread based indexes set by DSInitLogging() in lib_logging.cpp */
 
-unsigned int DSConfigLogging(unsigned int action, DEBUG_CONFIG* pDebugConfig, unsigned int uFlags) {
+unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, DEBUG_CONFIG* pDebugConfig) {
 
 unsigned int ret_val = (unsigned int)-1;
 int i, nIndex, start, end;
@@ -424,27 +424,27 @@ bool fUseSem = false;
 
       switch (action & DS_CONFIG_LOGGING_ACTION_MASK) {
 
-         case DS_CONFIG_LOGGING_SET_FLAG:
+         case DS_CONFIG_LOGGING_ACTION_SET_FLAG:
             ret_val = Logging_Thread_Info[i].uFlags;
             Logging_Thread_Info[i].uFlags |= uFlags;
             break;
 
-         case DS_CONFIG_LOGGING_CLEAR_FLAG:
+         case DS_CONFIG_LOGGING_ACTION_CLEAR_FLAG:
             ret_val = Logging_Thread_Info[i].uFlags;
             Logging_Thread_Info[i].uFlags &= ~uFlags;
             break;
 
-         case DS_CONFIG_LOGGING_SET_UFLAGS:
+         case DS_CONFIG_LOGGING_ACTION_SET_UFLAGS:
             ret_val = Logging_Thread_Info[i].uFlags;
             Logging_Thread_Info[i].uFlags = uFlags;
             break;
 
-         case DS_CONFIG_LOGGING_GET_UFLAGS:
+         case DS_CONFIG_LOGGING_ACTION_GET_UFLAGS:
             ret_val = Logging_Thread_Info[i].uFlags;
             break;
 
-         case DS_CONFIG_LOGGING_SET_DEBUG_CONFIG:
-            ret_val = update_log_config(pDebugConfig, false, uFlags);  /* update event log configuration dynamically */
+         case DS_CONFIG_LOGGING_ACTION_SET_DEBUG_CONFIG:
+            ret_val = update_log_config(pDebugConfig, uFlags, false);  /* update event log configuration dynamically */
             break;
       }
    }
@@ -522,7 +522,7 @@ int slen = 0, fmt_start = 0;
 
       if (!(loglevel & DS_LOG_LEVEL_NO_TIMESTAMP)) {
 
-         if (DSGetLogTimeStamp(&log_string[fmt_start], sizeof(log_string), 0, (unsigned int)lib_dbg_cfg.uEventLogMode)) strcat(log_string, " ");  /* DSGetLogTimestamp() returns length of timestamp, JHB Apr 2024 */
+         if (DSGetLogTimeStamp(&log_string[fmt_start], (unsigned int)lib_dbg_cfg.uEventLogMode, sizeof(log_string), 0)) strcat(log_string, " ");  /* DSGetLogTimestamp() returns length of timestamp, JHB Apr 2024 */
       }
 
       int ts_str_len = strlen(log_string);  /* zero or length of timestamp */

@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/session_app.cpp
 
- Copyright (C) Signalogic Inc. 2021-2023
+ Copyright (C) Signalogic Inc. 2021-2024
 
  License
 
@@ -28,6 +28,7 @@
    Modified Dec 2022 JHB, change references to DYNAMIC_CALL to DYNAMIC_SESSIONS
    Modified Jan 2023 JHB, added reference to extern fUntimedMode, in case it should be needed in SetSessionTiming(). See comments in mediaMin.cpp
    Modified May 2023 JHB, set group_term.input_buffer_interval in SetSessionTiming(). This is needed in streamlib for "fast as possible" and "faster than real-time" modes (when 0 <= N < 1 is given for -rN entry on the mediaMin cmd line)
+   Modified Jul 2024 JHB, per change in pktlib.h, move uFlags to second param in DSCreateSession()
 */
 
 #include <stdio.h>
@@ -382,7 +383,7 @@ HSESSION hSession;
 
    /* call DSCreateSession() API (in pktlib .so) */
 
-      if ((hSession = DSCreateSession(hPlatform, NULL, &session_data[i], GetSessionFlags())) >= 0) {
+      if ((hSession = DSCreateSession(hPlatform, GetSessionFlags(), NULL, &session_data[i])) >= 0) {
 
          hSessions[nSessionsCreated++] = hSession;  /* valid session was handle returned from DSCreateSession(), add to hSessions[] */
 

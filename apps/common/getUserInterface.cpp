@@ -42,6 +42,7 @@
    Modified Feb 2024 JHB, modify default value of 'E' command line option. This was done to support mediaTest multi-thread testing (see comments in mediaTest.c and cmd_line_interface.c)
    Modified Feb 2024 JHB, add --md5sum and --show_aud_clas cmd line options, used by mediaMin and mediaTest apps
    Modified Feb 2024 JHB, add static to options[]. Reference apps (mediaTest, mediaMin) and cimlib.so both pull in getUserInterface.cpp and depending on gcc and ld version, without static options[] may appear twice and cause warning message such as "/usr/bin/ld: warning: size of symbol `options' changed from 30080 in getUserInterface.o (symbol from plugin) to 30720 in /tmp/ccqwricj.ltrans2.ltrans.o"
+   Modified Jul 2024 JHB, add --group_pcap_nocopy and --random_bit_error cmd line options, integrate userInfo.h CmdLineFlags_t struct with 1-bit flags. Look for CmdLineFlags.xxx
 */
 
 #include <stdlib.h>
@@ -171,7 +172,7 @@ static CmdLineOpt::Record options[] = {
 	{'d', CmdLineOpt::INT64, NOTMANDATORY,
           (char *)"Debug mode for most programs (enter as -dN, where N is mode value). dkLen parameter for Scrypt Algorithm test program", {{(void*)-1}} },
 
-/* long options. The actual commands are in long_options[] in cmdLineOt.cpp, JHB Jul 2023 */
+/* long options. The command definitions are in long_options[] in cmdLineOpt.cpp, JHB Jul 2023 */
 
    {(char)128, CmdLineOpt::STRING, NOTMANDATORY,
           (char *)"show version info", {{(void*)0}} },  /* --version */
@@ -179,10 +180,14 @@ static CmdLineOpt::Record options[] = {
           (char *)"frame or packet cut amount", {{(void*)0}} },  /* --cut <N>, JHB Nov 2023 */
    {(char)130, CmdLineOpt::STRING, NOTMANDATORY,
           (char *)"stream group pcap output path", {{(void*)0}} },  /* --group_pcap <path>, JHB Dec 2023 */
-   {(char)131, CmdLineOpt::BOOLEAN, NOTMANDATORY,
-          (char *)"display md5sum for output wav file", {{(void*)0}} },  /* --md5sum, JHB Feb 2024 */
+   {(char)131, CmdLineOpt::STRING, NOTMANDATORY,
+          (char *)"stream group pcap output path, no copy", {{(void*)0}} },  /* --group_pcap_nocopy <path>, JHB Jul 2024 */
    {(char)132, CmdLineOpt::BOOLEAN, NOTMANDATORY,
-          (char *)"show per-channel audio classification", {{(void*)0}} }  /* --show_aud_clas, JHB Feb 2024 */
+          (char *)"display md5sum for output wav file", {{(void*)0}} },  /* --md5sum, JHB Feb 2024 */
+   {(char)133, CmdLineOpt::BOOLEAN, NOTMANDATORY,
+          (char *)"show per-channel audio classification", {{(void*)0}} },  /* --show_aud_clas, JHB Feb 2024 */
+   {(char)134, CmdLineOpt::INTEGER, NOTMANDATORY,
+          (char *)"insert N% random bit errors per frame", {{(void*)0}} }  /* --random_bit_error, JHB Jul 2024 */
 };
 
 /* global storage of cmd line options */
@@ -398,9 +403,17 @@ char clkstr[100];
 
          if ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) && cmdOpts.getStr((char)130, 0) != NULL) strncpy(userIfs->szStreamGroupPcapOutputPath, cmdOpts.getStr((char)130, 0), CMDOPT_MAX_INPUT_LEN);  /* look for --group_pcap cmd line option. Added for mediaMin stream group pcap output path (including ramdisk), JHB Dec 2023 */
 
-         userIfs->md5sum = (cmdOpts.nInstances((char)131) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --md5sum cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Feb 2024 */
+         if ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) && cmdOpts.getStr((char)131, 0) != NULL) {
 
-         userIfs->show_audio_classification = (cmdOpts.nInstances((char)132) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --show_aud_clas cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Feb 2024 */
+            strncpy(userIfs->szStreamGroupPcapOutputPath, cmdOpts.getStr((char)131, 0), CMDOPT_MAX_INPUT_LEN);  /* look for --group_pcap_nocopy cmd line option. Added for shell script / stress test mediaMin stream group pcap output path (including ramdisk), JHB Jul 2024 */
+            userIfs->CmdLineFlags.group_output_no_copy = true;  /* set no copy flag */
+         }
+
+         userIfs->CmdLineFlags.md5sum = (cmdOpts.nInstances((char)132) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --md5sum cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Feb 2024 */
+
+         userIfs->CmdLineFlags.show_audio_classification = (cmdOpts.nInstances((char)133) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --show_aud_clas cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Feb 2024 */
+
+         if (cmdOpts.nInstances((char)134) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST))) userIfs->nRandomBitErrorPercentage = cmdOpts.getInt((char)134, 0, 0);  /* look for --random_bit_error cmd line option. Added for mediaTest payload/packet impairment operations, JHB Jul 2024 */
 
          if (userIfs->programMode >= 0) {
 

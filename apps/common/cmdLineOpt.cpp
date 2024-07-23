@@ -27,6 +27,7 @@
    Modified Feb 2024 JHB, add --md5sum and --show_aud_clas cmd line options
    Modified Feb 2024 JHB, handle "no_argument" case for long options (look for fNoArgument)
    Modified Feb 2024 JHB, add static to long_options[]. Reference apps (mediaTest, mediaMin) and both cimlib.so pull in cmdLineOpt.cpp and depending on gcc and ld version, without static long_options[] may appear twice and cause warning message such as "/usr/bin/ld: warning: size of symbol `long_options' changed from 160 in cmdLineOpt.o (symbol from plugin) to 192 in /tmp/ccqwricj.ltrans0.ltrans.o"
+   Modified Jul 2024 JHB, add --group_pcap_nocopy and --random_bit_error cmd line options
 */
 
 #include <stdint.h>
@@ -47,7 +48,7 @@ using namespace std;
 
 /* used when calling getopt_long(), JHB Jul 2023 */
 
-static const struct option long_options[] = { { "version", no_argument, NULL, (char)128 }, { "cut", required_argument, NULL, (char)129 }, { "group_pcap", required_argument, NULL, (char)130 }, { "md5sum", no_argument, NULL, (char)131 }, { "show_aud_clas", no_argument, NULL, (char)132 }, /* insert additional options here */ {NULL, 0, NULL, 0 } };
+static const struct option long_options[] = { { "version", no_argument, NULL, (char)128 }, { "cut", required_argument, NULL, (char)129 }, { "group_pcap", required_argument, NULL, (char)130 }, { "group_pcap_nocopy", required_argument, NULL, (char)131 }, { "md5sum", no_argument, NULL, (char)132 }, { "show_aud_clas", no_argument, NULL, (char)133 }, { "random_bit_error", required_argument, NULL, (char)134 }, /* insert additional options here */ {NULL, 0, NULL, 0 } };
 
 //
 // CmdLineOpt - Default constructor.

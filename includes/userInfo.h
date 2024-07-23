@@ -34,6 +34,8 @@
    Modified Nov 2023 JHB, add nCut command line option
    Modified Dec 2023 JHB, add szStreamGroupPcapOutputPath #define to support --group_pcap cmd line option for mediaMin app
    Modified Feb 2024 JHB, add md5sum and show_audio_classification #defines to support --md5sum and --show_aud_clas cmd line options for mediaMin and mediaTest apps
+   Modified Jul 2024 JHB, add CmdLineFlags_t struct with 1-bit flags to support continued command-line options expansion
+   Modified Jul 2024 JHB, add nRandomBitErrorPercentage define to support mediaTest payload / packet impairment operations
 */
 
 #ifndef _USERINFO_H_
@@ -64,7 +66,16 @@
 extern "C" {
 #endif
 
-typedef struct {
+typedef struct CmdLineFlags_t {  /* 1-bit flags used inside UserInterface_t, JHB Jul 2024 */
+
+  uint64_t  md5sum: 1;
+  uint64_t  show_audio_classification : 1;
+  uint64_t  group_output_no_copy : 1;
+  uint64_t  Reserved : 61;
+
+} CmdLineFlags_t;
+
+typedef struct UserInterface_t {
 
 /* shared/common test program parameters */
 
@@ -129,35 +140,36 @@ typedef struct {
    bool      userMode;
    bool      encMode;
    bool      decMode;
-   uint64_t  scryptParamN; 
+   union {                                            /* overlay CmdLineFlags struct on unused scrypt parameters. Each flag is 1 bit, JHB Jul 2024 */
+     uint64_t  scryptParamN;
+     CmdLineFlags_t CmdLineFlags;
+   };
    uint32_t	 scryptParamr;
    uint32_t  scryptParamp; 
    uint32_t  scryptdklen;
 
-/* re-use some items for different apps, try to avoid changing this struct when possible, JHB Sep2018 */
+/* re-use some items for different apps, try to avoid changing this struct when possible, JHB Sep 2018 */
 
-   #define   uPerformanceMeasurement scryptParamp     /* non-Scrypt app usage of -p cmd line entry, JHB Sep2018 */
+   #define   uPerformanceMeasurement scryptParamp     /* non-Scrypt app usage of -p cmd line entry, JHB Sep 2018 */
 #if 0
-   #define   lReuseInputs scryptParamN                /* non-Scrypt app usage of -N cmd line entry, JHB Jan2019 */
+   #define   lReuseInputs scryptParamN                /* non-Scrypt app usage of -N cmd line entry, JHB Jan 2019 */
 #else
-   #define   nReuseInputs fftOrder                    /* mediaMin app usage of -n cmd line entry, JHB Apr2019 */
+   #define   nReuseInputs fftOrder                    /* mediaMin app usage of -n cmd line entry, JHB Apr 2019 */
 #endif
-   #define   nSegmentation inputType                  /* mediaTest app usage of -s cmd line entry, JHB Jul2019 */
-   #define   nInterval scryptParamr                   /* mediaTest app usage of -I cmd line entry, JHB Jul2019 */
-   #define   nAmplitude baseAddr                      /* mediaTest app usage of -A cmd line entry, JHB Jul2019 */
-   #define   nJitterBufferOptions scryptParamp        /* mediaMin app usage of -j cmd line entry, JHB Dec2019 */ 
-   #define   nRepeatTimes scryptdklen                 /* mediaMin app usasge of -R cmd line entry, JHB Jan2020 */
-   #define   szSDPFile szScryptFile                   /* mediaMin app usasge of -s cmd line entry for SDP file input. Note that mediaTest uses -s for audio file segmentation, JHB Jan2021 */
+   #define   nSegmentation inputType                  /* mediaTest app usage of -s cmd line entry, JHB Jul 2019 */
+   #define   nInterval scryptParamr                   /* mediaTest app usage of -I cmd line entry, JHB Jul 2019 */
+   #define   nAmplitude baseAddr                      /* mediaTest app usage of -A cmd line entry, JHB Jul 2019 */
+   #define   nJitterBufferOptions scryptParamp        /* mediaMin app usage of -j cmd line entry, JHB Dec 2019 */ 
+   #define   nRepeatTimes scryptdklen                 /* mediaMin app usasge of -R cmd line entry, JHB Jan 2020 */
+   #define   szSDPFile szScryptFile                   /* mediaMin app usasge of -s cmd line entry for SDP file input. Note that mediaTest uses -s for audio file segmentation, JHB Jan 2021 */
    #define   szStreamGroupWavOutputPath scryptpasswd  /* mediaMin app usasge of -g cmd line entry for stream group wav output path, JHB Dec 2022 */
    #define   szStreamGroupPcapOutputPath scryptsalt   /* mediaMin app usasge of --group_pcaps cmd line entry for stream group pcap output path, JHB Dec 2023 */
-   #define   nSamplingFrequency scryptParamp          /* mediaTest app Fs for gpx processing, JHB Mar2022 */
+   #define   nSamplingFrequency scryptParamp          /* mediaTest app Fs for gpx processing, JHB Mar 2022 */
    #define   nLookbackDepth libFlags                  /* mediamin app usage of -l for RFC7198 lookback depth. Note default value of 1 if no entry, handled in getUserInfo() in get_user_interface.cpp, JHB May 2023 */
    #define   nCut detailsLevel
-   #define   md5sum encMode
-   #define   show_audio_classification decMode
+   #define   nRandomBitErrorPercentage algorithmIdNum
 
 } UserInterface;
-
 
 extern int getUserInfo(int argc, char* argv[], UserInterface *userIfs, unsigned int uFlags, const char* ver_str);
 

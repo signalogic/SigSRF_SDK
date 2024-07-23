@@ -46,6 +46,7 @@
    Modified Jun 2024 JHB, in SDPParseInfo() add media descriptions (e.g. m=video 45002 RTP/AVP xxx xxx) to thread_info[]
    Modified Jun 2024 JHB, include packet number, non-fragment dst port, and protocol in log/console messages
    Modified Jun 2024 JHB, use CRC32 to look for duplicate SDP info; if found, don't parse and don't report
+   Modified Jul 2024 JHB, per change in pktlib.h, edit DSGetPacketInfo() calls to make uFlags last param
 */
 
 #include <fstream>

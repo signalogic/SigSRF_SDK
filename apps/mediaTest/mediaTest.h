@@ -52,6 +52,8 @@
    Modified Feb 2024 JHB, add fShow_md5sum and fShow_audio_classification to support --md5sum and --show_aud_clas command line options
    Modified Apr 2024 JHB, rename executionMode[] to executeMode[] for consistency across all source codes
    Modified May 2024 JHB, change x86_mediaTest.c references to mediaTest_proc.c
+   Modified Jul 2024 JHB, add fGroupOutputNoCopy to support --group_pcap_nocopy cmd line option
+   Modified Jul 2024 JHB, add nRandomBitErrorPercentage to support --random_bit_error cmd line option
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -91,6 +93,8 @@
 #define MAX_INPUT_STREAMS          512  /* number of possible input streams, including streams that are re-used for multithread and high capacity testing */
 #define MAX_APP_THREADS            64
 #define MAX_CMDLINE_STR_LEN        1024
+
+#define RTP_DETECT_EXCLUDE_VIDEO   1    /* flags for detect_codec_type_and_bitrate() in mediaMin.cpp */
 
 #ifdef __cplusplus
   extern "C" {
@@ -243,8 +247,10 @@ extern double            timeScale;  /* support FTRT and AFAP modes, see comment
 extern unsigned int      uTimestampMatchMode;  /* timestamp-match wav output mode, flags are defined in shared_include/streamlib.h, JHB Aug 2023 */
 extern bool              fCapacityTest;  /* set by apps if they are doing capacity test (moved here from mediaMin.cpp), JHB Sep 2023 */
 extern int               nCut;  /* command line --cut input */
-extern bool              fShow_md5sum;
-extern bool              fShow_audio_classification;
+extern bool              fShow_md5sum;  /* command line --md5sum */
+extern bool              fShow_audio_classification;  /* command line --show_aud_clas */
+extern bool              fGroupOutputNoCopy;  /* command line --group_pcap_nocopy */
+extern int               nRandomBitErrorPercentage;  /* command line --random_bit_error */
 
 #define szAppFullCmdLine (((const char*)full_cmd_line))  /* szAppFullCmdLine is what apps should use. full_cmd_line should not be modified so this is a half-attempt to remind user apps that it should be treated as const char* */
 

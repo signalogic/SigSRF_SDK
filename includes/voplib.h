@@ -52,6 +52,7 @@
   Modified Apr 2024 JHB, clarify documentation for CMR handling in CODEC_OUTARGS and CODEC_INARGS structs
   Modified May 2024 JHB, change comments that reference x86_mediaTest.c to mediaTest_proc.c
   Modified Jun 2024 JHB, rename DS_CODEC_DECODE_GET_NUMFRAMES to DS_CODEC_GET_NUMFRAMES
+  Modified Jul 2024 JHB, add pToC param to DSGetPayloadInfo(), update comments for DSGetPayloadHeaderToC()
 */
  
 #ifndef _VOPLIB_H_
@@ -382,9 +383,9 @@ extern "C" {
      -if fSID is non-NULL then the value it points to is set true if the packet is a SID, or false if not
      -if CMR is non-NULL then the value it points to is set to the payload CMR if present, or zero if not
 */
-  int DSGetPayloadInfo(int codec, unsigned int uFlags, uint8_t* payload, unsigned int payload_len, bool* fAMRWB_IOMode, bool* fSID, unsigned char* CMR);
+  int DSGetPayloadInfo(int codec, unsigned int uFlags, uint8_t* payload, unsigned int payload_len, bool* fAMRWB_IOMode, bool* fSID, uint8_t* pCMR, uint8_t* pToc);
 
-/* DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. The ToC is normally one byte, but could be larger for future codecs. See the AMR and EVS specs for bit fields defined in the ToC */
+/* DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with compact header mode and non-collision payload sizes. The ToC is normally one byte, so it's returned in the low byte of the return value, but could be larger for future codecs. See the AMR and EVS specs for ToC bit fields definitions */
 
   int DSGetPayloadHeaderToC(unsigned int codec_type, unsigned int pyld_len);
 

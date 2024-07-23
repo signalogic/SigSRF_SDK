@@ -181,6 +181,9 @@ Revision History
  Modified May 2024 JHB, check for error condition returned by DSPktStatsAddEntries()
  Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap() and DSWritePcapRecord() to DSWritePcap(), per change in pktlib.h
  Modified Jul 2024 JHB, set DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM packet logging flag in WritePktLog() if dormant session detection is disabled (see diaglib.h for flag info)
+ Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSGetTermChan(), in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, remove timestamp* param
+ Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSWritePacketStatsHistoryLog() and in all diaglib calls (e.g. DSPktStatsAddEntries, DSGetBacktrace)
+ Modified Jul 2024 JHB, add NULL for pToC param in DSGetPayloadInfo()
 */
 
 #ifndef _GNU_SOURCE
@@ -749,7 +752,7 @@ void* packet_flow_media_proc(void* pExecuteMode) {
    int32_t i, j, ret_val, num_chan, n, session_status, num_pkts;
    int32_t nSessionsCreated = 0, nSessionsInit = 0, nStreamsInit = 0, numStreams, numSessions;
 
-   int hSession = -1, hSession_flags = -1;
+   int hSession = -1, hSession_param = -1;
 
 #ifndef __LIBRARYMODE__
    char key;
@@ -885,7 +888,7 @@ void* packet_flow_media_proc(void* pExecuteMode) {
 
    if (fMediaThread) free(pExecuteMode);
 
-   DSGetBacktrace(fMediaThread ? 4 : 5, &tmpstr[strlen(tmpstr)], 0);  /* currently only 4 levels needed for change in threads; might change, JHB May 2024 */
+   DSGetBacktrace(fMediaThread ? 4 : 5, 0, &tmpstr[strlen(tmpstr)]);  /* currently only 4 levels needed for change in threads; might change, JHB May 2024 */
 
    if (frame_mode) sprintf(&tmpstr[strlen(tmpstr)], " (frame mode)");
    sprintf(&tmpstr[strlen(tmpstr)], ", thread id = 0x%llx \n", (unsigned long long)pthread_self());
@@ -1155,7 +1158,7 @@ too_many_threads:
 
       if (strstr(strupr(strcpy(tmpstr, MediaParams[inFilesIndex].Media.inputFilename)), ".PCAP"))
       {
-         if ((link_layer_length[nInFiles] = DSOpenPcap(MediaParams[inFilesIndex].Media.inputFilename, &fp_in[nInFiles], NULL, "", DS_READ | DS_OPEN_PCAP_READ_HEADER)) < 0) break;
+         if ((link_layer_length[nInFiles] = DSOpenPcap(MediaParams[inFilesIndex].Media.inputFilename, DS_READ, &fp_in[nInFiles], NULL, "")) < 0) break;
       }
       else
       {
@@ -1208,7 +1211,7 @@ too_many_threads:
 
       if (strstr(strupr(strcpy(tmpstr, MediaParams[nOutFiles].Media.outputFilename)), ".PCAP") && packet_media_thread_info[thread_index].packet_mode) {
 
-         if (DSOpenPcap(MediaParams[nOutFiles].Media.outputFilename, &fp_out[nOutFiles], NULL, "", DS_WRITE | DS_OPEN_PCAP_WRITE_HEADER) < 0) break;
+         if (DSOpenPcap(MediaParams[nOutFiles].Media.outputFilename, DS_WRITE, &fp_out[nOutFiles], NULL, "") < 0) break;
          out_type[nOutFiles] = PCAP;
          num_pcap_outputs++;
       }
@@ -1374,7 +1377,7 @@ init_sessions:
 
       if (!fNetIOAllowed) uFlags_session_create |= DS_SESSION_DISABLE_NETIO;
 
-      hSessions_t[i] = DSCreateSession(hPlatform, NULL, &session_data_t[i], uFlags_session_create);
+      hSessions_t[i] = DSCreateSession(hPlatform, uFlags_session_create, NULL, &session_data_t[i]);
 
       if (hSessions_t[i] == -1) 
       {
@@ -1418,7 +1421,7 @@ init_sessions:
       {
          GetOutputFilename(merge_pcap_filename, PCAP, "_merge");
          
-         ret_val = DSOpenPcap(merge_pcap_filename, &fp_out_pcap_merge, NULL, "", DS_WRITE | DS_OPEN_PCAP_WRITE_HEADER);
+         ret_val = DSOpenPcap(merge_pcap_filename, DS_WRITE, &fp_out_pcap_merge, NULL, "");
          
          if (fp_out_pcap_merge == NULL) {
             fprintf(stderr, "Failed to open output merge pcap file: %s ret_val = %d\n", merge_pcap_filename, ret_val);
@@ -1840,7 +1843,7 @@ run_loop:
 
             for (j=0; j<nInFiles; j++) if (in_type[j] == PCAP) {
 
-               pkt_len[0] = DSReadPcap(fp_in[j], pkt_in_buf, 0, NULL, link_layer_length[j], NULL, NULL);
+               pkt_len[0] = DSReadPcap(fp_in[j], 0, pkt_in_buf, NULL, link_layer_length[j], NULL, NULL);
 
                #if 0  /* no longer needed, done by DSRecvPackets() when DS_RECV_PKT_FILTER_RTCP flag is applied (see below) */
                if (pkt_len[0] > 0) {
@@ -2069,7 +2072,7 @@ get_pkt_info:
             int chnums_lookahead[MAX_TERMS*16];
             memset(chnums_lookahead, 0xff, sizeof(chnums_lookahead));  /* set all chnum to -1 */
 
-            hSession_flags = (uFlags_session(hSession) & DS_SESSION_USER_MANAGED) ? hSession : -1;
+            hSession_param = (uFlags_session(hSession) & DS_SESSION_USER_MANAGED) ? hSession : -1;
 
             pkt_ptr = pkt_in_buf;
             numStreams = 0;
@@ -2080,7 +2083,7 @@ get_pkt_info:
 
             for (j=0; j<numPkts; j++) {  /* find channels matching this session */
 
-               chnums_lookahead[j] = DSGetPacketInfo(hSession_flags, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_ptr, pkt_len[j], NULL, &chnums[j]);
+               chnums_lookahead[j] = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_ptr, pkt_len[j], NULL, &chnums[j]);
                pkt_ptr += pkt_len[j];
 
                if (chnums_lookahead[j] >= 0) {  /* channel matches ? */
@@ -2175,9 +2178,9 @@ get_pkt_info:
                   chnum_parent = chnums_lookahead[j];  /* parent (and child if applicable) already filled in, JHB Jan2020 */
                   chnum = chnums[j];
                }
-               else chnum_parent = DSGetPacketInfo(hSession_flags, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_ptr, pkt_len[j], NULL, &chnum);
+               else chnum_parent = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_ptr, pkt_len[j], NULL, &chnum);
 
-               if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_RECEIVE) DSLogPktTrace(hSession_flags, pkt_ptr, pkt_len[j], thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_RECEIVE);
+               if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_RECEIVE) DSLogPktTrace(hSession_param, pkt_ptr, pkt_len[j], thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_RECEIVE);
 
                pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_ptr, pkt_len[j], NULL, NULL);
 
@@ -2332,7 +2335,7 @@ static int log_pkt_in_index = 0;
   log_pkt_in_index++;
 #endif
 
-                        ret_val = DSBufferPackets(hSession_flags, uFlags_add, pkt_ptr, packet_len, &payload_info[j], &chnum, cur_time);  /* buffer one or more packets for this session, applying flags as required. chnum[] is returned as the packet match, either parent or child, as applicable, JHB Jan2020. Note that DS_PKTLIB_SUPPRESS_ERROR_MSG and DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG are not set, so display and/or event log is going to show any packet issues */
+                        ret_val = DSBufferPackets(hSession_param, uFlags_add, pkt_ptr, packet_len, &payload_info[j], &chnum, cur_time);  /* buffer one or more packets for this session, applying flags as required. chnum[] is returned as the packet match, either parent or child, as applicable, JHB Jan2020. Note that DS_PKTLIB_SUPPRESS_ERROR_MSG and DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG are not set, so display and/or event log is going to show any packet issues */
 
    //#define DEBUG_TELECOM_MODE_TIMESTAMP_GAP
 
@@ -2397,7 +2400,7 @@ static int log_pkt_in_index = 0;
                         uFlags_add = 0;  /* avoid compiler warning */
                         pkts_read[i] += 1;
                         packet_len[j] = pkt_len[j];
-                        payload_info[j] = DSGetPacketInfo(hSession_flags, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLD_CONTENT, pkt_ptr, pkt_len[j], NULL, NULL);
+                        payload_info[j] = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLD_CONTENT, pkt_ptr, pkt_len[j], NULL, NULL);
                         ret_val = 1;  /* ok to check for SSRC change and log packet */
                      }
 
@@ -2477,7 +2480,7 @@ static int log_pkt_in_index = 0;
 
                      /* add packet stats entry */
 
-                        int num_stats = DSPktStatsAddEntries(input_pkts[chnum].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_ptr, &pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                        int num_stats = DSPktStatsAddEntries(input_pkts[chnum].pkt_stats, uFlags_info, ret_val >= 0 ? ret_val : 1, pkt_ptr, &pkt_len[j], &payload_info[j]);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
                         if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
 
                         manage_pkt_stats_mem(input_pkts, chnum, num_stats);
@@ -2494,7 +2497,7 @@ static int log_pkt_in_index = 0;
 
                      /* add packet stats entry */
 
-                        int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_ptr, &pkt_len[j], &payload_info[j], uFlags_info);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                        int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], uFlags_info, ret_val >= 0 ? ret_val : 1, pkt_ptr, &pkt_len[j], &payload_info[j]);  /* log input packets; for multiple input streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
                         if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
 
                         if (pkt_counters[thread_index].num_input_pkts >= MAX_PKT_STATS) {
@@ -2658,7 +2661,7 @@ next_session:
 
             /* add packet stats entry */
 
-               int num_stats = DSPktStatsAddEntries(input_pkts[NCORECHAN].pkt_stats, ret_val >= 0 ? ret_val : 1, pkt_in_buf, packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
+               int num_stats = DSPktStatsAddEntries(input_pkts[NCORECHAN].pkt_stats, DS_BUFFER_PKT_IP_PACKET, ret_val >= 0 ? ret_val : 1, pkt_in_buf, packet_len, payload_info);
 
                if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
                manage_pkt_stats_mem(input_pkts, NCORECHAN, num_stats);
@@ -2676,7 +2679,7 @@ next_session:
 
             /* add packet stats entry */
 
-               int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], ret_val >= 0 ? ret_val : 1, pkt_in_buf, packet_len, payload_info, DS_BUFFER_PKT_IP_PACKET);
+               int num_stats = DSPktStatsAddEntries(&input_pkts[pkt_counters[thread_index].num_input_pkts], DS_BUFFER_PKT_IP_PACKET, ret_val >= 0 ? ret_val : 1, pkt_in_buf, packet_len, payload_info);
                if (num_stats > 0) pkt_counters[thread_index].num_input_pkts += num_stats;
                if (pkt_counters[thread_index].num_input_pkts >= MAX_PKT_STATS) pkt_counters[thread_index].num_input_pkts = 0;
          #endif
@@ -2743,7 +2746,7 @@ next_session:
 
             if (!num_chan) continue;  /* no jitter buffer output, decode/transcode, media processing if (i) this session currently has no input streams that map to channels, or (ii) active channel has no packets available in jitter buffer */
 
-            hSession_flags = (uFlags_session(hSession) & DS_SESSION_USER_MANAGED) ? hSession : -1;
+            hSession_param = (uFlags_session(hSession) & DS_SESSION_USER_MANAGED) ? hSession : -1;
 
             #if 0
             static bool fOnce[MAX_SESSIONS] = { false };
@@ -3167,7 +3170,7 @@ pull:
 
                   /* find the channel number matching the buffer output packet (could be parent or child), and error check */
 
-                     if ((chnum = DSGetPacketInfo(hSession_flags, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, packet_len[j], NULL, NULL)) < 0) {
+                     if ((chnum = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, packet_len[j], NULL, NULL)) < 0) {
 
                         Log_RT(2, "ERROR: p/m thread %d says chum not found; failed to match packet header to a channel, chan_nums[%d] = %d, packet_len[%d] = %d \n", thread_index, n, chan_nums[n], j, packet_len[j]);  /* Note -- if user managed sessions are active, then hSession cannot be -1 */
                         break;
@@ -3184,7 +3187,7 @@ pull:
 
                         if (packet_media_thread_info[thread_index].packet_mode && session_info_thread[hSession].fUseJitterBuffer) {
 
-                           if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_JITTER_BUFFER) DSLogPktTrace(hSession_flags, pkt_ptr, packet_len[j], thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_JITTER_BUFFER);
+                           if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_JITTER_BUFFER) DSLogPktTrace(hSession_param, pkt_ptr, packet_len[j], thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_JITTER_BUFFER);
 
                            #ifdef PACKET_TIME_STATS
                            if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_TIME_STATS && !fPreemptAlarm) RecordPacketTimeStats(chnum, pkt_ptr, packet_len[j], 0, PACKET_TIME_STATS_PULL);
@@ -3204,7 +3207,7 @@ pull:
 
                            /* add packet stats entry */
 
-                              int num_stats = DSPktStatsAddEntries(pulled_pkts[chnum].pkt_stats, 1, pkt_ptr, &packet_len[j], &payload_info[j], uFlags_info);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                              int num_stats = DSPktStatsAddEntries(pulled_pkts[chnum].pkt_stats, uFlags_info, 1, pkt_ptr, &packet_len[j], &payload_info[j]);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
 
                               if (num_stats > 0) pkt_counters[thread_index].num_pulled_pkts += num_stats;
 
@@ -3221,7 +3224,7 @@ pull:
 
                            /* add packet stats entry */
 
-                              int num_stats = DSPktStatsAddEntries(&pulled_pkts[pkt_counters[thread_index].num_pulled_pkts], 1, pkt_ptr, &packet_len[j], &payload_info[j], uFlags_info);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
+                              int num_stats = DSPktStatsAddEntries(&pulled_pkts[pkt_counters[thread_index].num_pulled_pkts], uFlags_info, 1, pkt_ptr, &packet_len[j], &payload_info[j]);  /* we log all buffer output packets; for multiple output streams the DS_PKTSTATS_LOG_COLLATE_STREAMS flag is used (see below) */
                               if (num_stats > 0) pkt_counters[thread_index].num_pulled_pkts += num_stats;
 
                               if (pkt_counters[thread_index].num_pulled_pkts >= MAX_PKT_STATS) {
@@ -3243,7 +3246,7 @@ pull:
                         }
 
                         rtp_pyld_ptr = pkt_ptr + rtp_pyld_ofs;
-                        pyld_len = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDLEN | uFlags_info, pkt_ptr, packet_len[j], NULL, NULL);
+                        pyld_len = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_PYLDLEN, pkt_ptr, packet_len[j], NULL, NULL);
                      }
                      else {
 
@@ -3876,7 +3879,7 @@ static int log_pkt_index = 0;
 
                         sem_wait(&pcap_write_sem);
 
-                        if (DSWritePcap(fp_out[pcap_index], pkt_out_buf, NULL, NULL, &termInfo_link, NULL, packet_length) < 0) {
+                        if (DSWritePcap(fp_out[pcap_index], DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, pkt_out_buf, packet_length, NULL, NULL, NULL, &termInfo_link) < 0) {
                            sem_post(&pcap_write_sem);
                            fprintf(stderr, "Main thread test, problem with DSWritePcap()\n");
                            break;
@@ -3935,7 +3938,7 @@ static int log_pkt_index = 0;
 
                   }  /* end of data_len loop */
 
-                  if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_TRANSMIT) DSLogPktTrace(hSession_flags, pkt_out_buf, packet_length, thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_TRANSMIT);
+                  if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_TRANSMIT) DSLogPktTrace(hSession_param, pkt_out_buf, packet_length, thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_TRANSMIT);
                }
 
                #ifdef ENABLE_STREAM_GROUPS
@@ -4611,7 +4614,7 @@ bool fChanFound = false;
             /* check if we exceed time period before a channel SSRC can be considered dormant. Notes, JHB Sep 2022:
                
                -before we didn't have any wait-time period, but now we've seen duplicated streams (or near duplicated) with same SSRCs active at same time, they may even alternate (thrash) rapidly (within a few hundred msec)
-               -current default in DSCreateSession (pktilb.c) is 100 msec if not set by user code. CreateDynamicSession() in mediaMin.cpp uses the SLOW_DORMANT_SESSION_DETECTION flag to extend this to 1 sec. See CreateDynamicSession() source for example setting this option at session create time, Jun 2023
+               -current default in DSCreateSession (pktlib.c) is 100 msec if not set by user code. CreateDynamicSession() in mediaMin.cpp uses the SLOW_DORMANT_SESSION_DETECTION flag to extend this to 1 sec. See CreateDynamicSession() source for example setting this option at session create time, Jun 2023
              */
   
                if ((int64_t)((cur_time - last_buffer_time[chnum]) - (cur_time - last_buffer_time[chnum2]))/1000 > term1.dormant_SSRC_wait_time) {  /* note we don't use timeScale here; we assume the app is also operating at accelerated time, JHB Jun 2023 */
@@ -5525,7 +5528,7 @@ int i;
          sprintf(&tmpstr[strlen(tmpstr)], ", total input pkts = %d, total jb pkts = %d", pkt_counters[thread_index].num_input_pkts, pkt_counters[thread_index].num_pulled_pkts);
          Log_RT(4, "%s... \n", tmpstr);
 
-         DSPktStatsWriteLogFile(szPktLogFile, input_pkts, pulled_pkts, &pkt_counters[thread_index], uFlags_log);
+         DSPktStatsWriteLogFile(szPktLogFile, uFlags_log, input_pkts, pulled_pkts, &pkt_counters[thread_index]);
       }
 
       return 1;
@@ -5537,7 +5540,7 @@ int i;
 
 /* published API that does more or less what WritePktLog() does, with some extras, such as packet stats history reset, JHB Dec2019 */
 
-int DSWritePacketStatsHistoryLog(HSESSION hSession, const char* szLogFilename, unsigned int uFlags) {
+int DSWritePacketStatsHistoryLog(HSESSION hSession, unsigned int uFlags, const char* szLogFilename) {
 
 int thread_index;
 char* szLocalLogFilename = NULL;
@@ -5578,7 +5581,7 @@ char* szLocalLogFilename = NULL;
 
 /* call DSPktStatsWriteLogFile() in diaglib */
 
-   int ret_val = DSPktStatsWriteLogFile(szLocalLogFilename, input_pkts, pulled_pkts, &pkt_counters[thread_index], uFlags);  /* input_pkts, pulled_pkts, and pkt_counters are static vars, see top */
+   int ret_val = DSPktStatsWriteLogFile(szLocalLogFilename, uFlags, input_pkts, pulled_pkts, &pkt_counters[thread_index]);  /* input_pkts, pulled_pkts, and pkt_counters are static vars, see top */
 
 /* reset stats after logging is complete, if requested */
 
@@ -5641,7 +5644,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
       if (!fNetIOAllowed) uFlags_session |= DS_SESSION_DISABLE_NETIO;
  
-      hSessions_t[i] = DSCreateSession(hPlatform, NULL, &session_data_g[i], uFlags_session);  /* create session handle from global session data */
+      hSessions_t[i] = DSCreateSession(hPlatform, uFlags_session, NULL, &session_data_g[i]);  /* create session handle from global session data */
 
       if (hSessions_t[i] == -1) {
 
@@ -5687,7 +5690,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
          if (cur_time - last_time[i] >= RealTimeInterval[i]*1000) {  /* has interval elapsed ?  (comparison is in usec) */
 
-            if (!(packet_length = DSReadPcap(fp_in[i], pkt_buffer, 0, NULL, link_layer_length[i], NULL, NULL))) continue;
+            if (!(packet_length = DSReadPcap(fp_in[i], 0, pkt_buffer, NULL, link_layer_length[i], NULL, NULL))) continue;
             else __sync_add_and_fetch(&num_pkts_read_multithread, 1);
 
             #ifdef ENABLE_MANAGED_SESSIONS
@@ -5799,7 +5802,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
             if (pcap_index >= 0 && fp_out[pcap_index] != NULL)
             {
                sem_wait(&pcap_write_sem);
-               if (DSWritePcap(fp_out[pcap_index], pkt_buffer, NULL, NULL, &termInfo_link, NULL, packet_length) < 0) {
+               if (DSWritePcap(fp_out[pcap_index], DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, pkt_buffer, packet_length, NULL, NULL, NULL, &termInfo_link) < 0) {
                   sem_post(&pcap_write_sem);
                   fprintf(stderr, "Multithread test thread id = %d, problem with DSWritePcap()\n", threadid);
                   continue;
@@ -5827,7 +5830,8 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
       }
    }
 
-   /* Delete Sessions */
+/* delete sessions */
+
    for (i = threadid; i < (int)nSessions_gbl; i += nThreads_gbl)
    {
       if ((int)hSessions_t[i] >= 0) {
@@ -5855,13 +5859,13 @@ struct udphdr *udp_hdr;
 
    uint8_t version = (pkt_buffer[0] & 0xf0) >> 4;
 
-   if (version == 4)
+   if (version == IPv4)
    {
       ip_hdr = (struct iphdr *)pkt_buffer;
       ip_hdr->saddr = session_data->term1.remote_ip.u.ipv4;
       ip_hdr->daddr = session_data->term1.local_ip.u.ipv4;
    }
-   else if (version == 6)
+   else if (version == IPv6)
    {
       ipv6_hdr = (struct ipv6hdr *)pkt_buffer;
       memcpy(ipv6_hdr->saddr.s6_addr, session_data->term1.remote_ip.u.ipv6, DS_IPV6_ADDR_LEN);

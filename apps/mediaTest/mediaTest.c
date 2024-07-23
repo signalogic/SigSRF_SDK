@@ -120,6 +120,7 @@
    Modified Feb 2024 JHB, give CLI_MEDIA_APPS_MEDIATEST flag to cmdLineInterface()
    Modified Apr 2024 JHB, testing different modes with updated initialization for RealTimeInterval[] in cmd_line_interface.c
    Modified May 2024 JHB, update x86_mediaTest references to mediaTest_proc
+   Modified Jul 2024 JHB, print command line along with banner info
 */
 
 /* system header files */
@@ -1167,7 +1168,7 @@ exit:
 
 static char prog_str[] = "mediaTest";
 static char banner_str[] = "SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms";
-static char ver_str[] = "v2.9.11";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
+static char ver_str[] = "v2.9.12";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
 static char copyright_str[] = "Copyright (C) Signalogic 2015-2024";
 
 int main(int argc, char **argv) {
@@ -1187,7 +1188,7 @@ DWORD             dw_chipid_addr, chip_id;
 
 int               main_ret = -1;                   /* main() return value */
 char              modestr[20], debugstr[200];
-char              version_info[500], lib_info[500], banner_info[500];
+char              version_info[500], lib_info[500], banner_info[2048];
 
 /* code start - display banner messages, process command line */
 
@@ -1208,8 +1209,10 @@ char              version_info[500], lib_info[500], banner_info[500];
    if (demo_build) printf("Using demo-only library versions\n");
    #endif
 
+   GetCommandLine((char*)szAppFullCmdLine, MAX_CMDLINE_STR_LEN);  /* save full command in szAppFullCmdLine global var, for use as needed, JHB Jan 2023 */
+
    sprintf(version_info, "%s %s \n%s \n", prog_str, ver_str, copyright_str);
-   sprintf(banner_info, "%s: %s %s \n%s \n%s \n", prog_str, banner_str, ver_str, copyright_str, lib_info);
+   sprintf(banner_info, "%s: %s %s \n%s \n%s \ncmd line: %s \n", prog_str, banner_str, ver_str, copyright_str, lib_info, szAppFullCmdLine);  /* include command line here in case mediaTest is invoked from a shell script, JHB Jul 2024 */
 
    if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS | CLI_MEDIA_APPS_MEDIATEST, version_info, banner_info)) exit(EXIT_FAILURE);
    {

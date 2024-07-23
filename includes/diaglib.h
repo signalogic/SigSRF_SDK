@@ -55,8 +55,8 @@
   Modified Apr 2024 JHB, add numMediaReuse to STREAM_STATS struct
   Modified May 2024 JHB, add DSGetBacktrace() API
   Modified May 2024 JHB, update documentation for DSPktStatsAddEntries()
-  Modified Jun 2024 JHB, change last param in in DSConfigLogging() from void* to DEBUG_CONFIG*
   Modified Jul 2024 JHB, add DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to support SSRCs shared across streams. mediaMin sets this flag when dormant session detection is disabled on its command line
+  Modified Jul 2024 JHB, due to documentation review, uFlags moved to second param in all relevant APIs
 */
 
 #ifndef _DIAGLIB_H_
@@ -91,29 +91,29 @@ FILE* DSGetLogFileHandle(unsigned int uFlags);
 
 /* config packet logging */
 
-unsigned int DSConfigLogging(unsigned int action, DEBUG_CONFIG* pDebugConfig, unsigned int uFlags);
+unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, DEBUG_CONFIG* pDebugConfig);
 
 /* actions */
 
-#define DS_CONFIG_LOGGING_SET_FLAG             1         /* set one or more flags */
-#define DS_CONFIG_LOGGING_CLEAR_FLAG           2         /* clear one or more flags */
-#define DS_CONFIG_LOGGING_SET_UFLAGS           3         /* set all flags */
-#define DS_CONFIG_LOGGING_GET_UFLAGS           4         /* get all flags */ 
-#define DS_CONFIG_LOGGING_SET_DEBUG_CONFIG     5         /* update lib_dbg_cfg (event logging) */
+#define DS_CONFIG_LOGGING_ACTION_SET_FLAG          1      /* set one or more flags */
+#define DS_CONFIG_LOGGING_ACTION_CLEAR_FLAG        2      /* clear one or more flags */
+#define DS_CONFIG_LOGGING_ACTION_SET_UFLAGS        3      /* set all flags */
+#define DS_CONFIG_LOGGING_ACTION_GET_UFLAGS        4      /* get all flags */ 
+#define DS_CONFIG_LOGGING_ACTION_SET_DEBUG_CONFIG  5      /* update lib_dbg_cfg (event logging) */
 
-#define DS_CONFIG_LOGGING_ACTION_MASK          0xff
+#define DS_CONFIG_LOGGING_ACTION_MASK              0xff
 
 /* uFlags */
 
-#define DS_CONFIG_LOGGING_ALL_THREADS          0x100     /* apply set/clear action to all currently active threads */
+#define DS_CONFIG_LOGGING_ALL_THREADS              0x100  /* apply set/clear action to all currently active threads */
 
-int DSGetLogTimeStamp(char* timestamp, int max_str_len, uint64_t user_timeval, unsigned int uFlags);
+int DSGetLogTimeStamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval);
 
 int DSGetAPIStatus(unsigned int uFlags);  /* get per-thread API status */
 
 int DSGetMD5Sum(const char* szFilename, char* md5str, int max_str_len);  /* return md5 sum of szFilename in md5str. max_str_len should specify maximum string length of md5str. Return value of 1 indicates success, negative values on error condition */
 
-int DSGetBacktrace(int nLevels, char* szBacktrace, unsigned int uFlags);  /* calls glibc backtrace() to get nLevels of call stack, cleans that up, removes repeats if any, and formats into szBacktrace. Returns negative values on error condition */
+int DSGetBacktrace(int nLevels, unsigned int uFlags, char* szBacktrace);  /* calls glibc backtrace() to get nLevels of call stack, cleans that up, removes repeats if any, and formats into szBacktrace. Returns negative values on error condition */
 
 #define DS_GETBACKTRACE_INSERT_MARKER        1                            /* insert "backtrace: " marker at start of return string */
 #define DS_GETBACKTRACE_INCLUDE_GLIBC_FUNCS  2                            /* include glibc functions (e.g. lib.so.N, libpthread.so, etc). Default is these are omitted */
@@ -200,12 +200,12 @@ typedef struct {
   -if DSGetPacketInfo() does not exist in the build (i.e. the build does not link the pktlib library) then DSPktStatsAddEntries() will return -2
 */
 
-int DSPktStatsAddEntries(PKT_STATS* pkt_stats, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int payload_content[], unsigned int uFlags);
+int DSPktStatsAddEntries(PKT_STATS* pkt_stats, unsigned int uFlags, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int payload_content[]);
 
 
 /* DSFindSSRCGroups() find SSRC groups and returns start/end packet indexes and sequence numbers for each group */
 
-int DSFindSSRCGroups(PKT_STATS*, int num_pkts, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], unsigned int uFlags);
+int DSFindSSRCGroups(PKT_STATS*, unsigned int uFlags, int num_pkts, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[]);
 
 /* DSPktStatsLogSeqnums() gathers stats for, and logs to file (if fp_log is non-NULL), a collection of packet stats entries.  DSPktStatsLogSeqnums() does the following:
 
@@ -222,7 +222,7 @@ int DSFindSSRCGroups(PKT_STATS*, int num_pkts, uint32_t ssrcs[], uint16_t chnum[
   4) Returns per-stream stats, see STREAM_STATS struct in diaglib.h.  Each stream has a unique SSRC
 */
 
-int DSPktStatsLogSeqnums(FILE* fp_log, PKT_STATS* pkts, int num_pkts, char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[], unsigned int uFlags);
+int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[]);
 
 
 /* DSPktStatsWriteLogFile() writes packet stats (previously added to PKT_STATS structs by DSPktStatsAddEntries) to a log file. Notes:
@@ -242,7 +242,7 @@ int DSPktStatsLogSeqnums(FILE* fp_log, PKT_STATS* pkts, int num_pkts, char* labe
   4) Use the DS_PKTSTATS_LOG_APPEND flag to add entries to an existing log file
 */
 
-int DSPktStatsWriteLogFile(const char* szLogFilename, PKT_STATS*, PKT_STATS*, PKT_COUNTERS*, unsigned int uFlags);
+int DSPktStatsWriteLogFile(const char* szLogFilename, unsigned int uFlags, PKT_STATS*, PKT_STATS*, PKT_COUNTERS*);
 
 /* flags for DSPktStatsWriteLogFile() -- note these flags can be combined with DS_WRITE_PKT_STATS_HISTORY_xx flags for DSWritePacketStatsHistoryLog() API in pktlib.h */
 

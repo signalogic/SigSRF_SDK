@@ -106,6 +106,10 @@
  Modified May 2024 JHB, call DSGetBacktrace() before starting threads, show result as " ... start sequence = ..." in console output
  Modified May 2024 JHB, rename x86_mediaTest() function to mediaTest_proc()
  Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap() and DSWritePcapRecord() to DSWritePcap(), per change in pktlib.h
+ Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap(), add uFlags param and move pkt buffer len to fourth param in DSWritePcap()
+ Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, move uFlags to second param in calls to DSGetBackTrace()
+ Modified Jul 2024 JHB, update pcap_extract mode to support payload and/or packet operations (e.g. insert impairments, filter/remove packets by matching criteria (e.g. SSRC), etc). Initially it supports the --random_bit_error N command line argument, with --filter_packet_ssrc N,N,N ... planned, and others to follow
+ Modified Jul 2024 JHB, modify calls to DSWritePcap() to add pcap_hdr_t* param, remove timestamp param (the packet record header param now supplies a timestamp, if needed). See pktlib.h comments
 */
 
 /* Linux header files */
@@ -132,6 +136,7 @@
 #include "alglib.h"
 #include "diaglib.h"
 
+int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsigned int uFlags, uint8_t payload_type, int codec_type, uint32_t* bitrate, uint32_t* ptime, uint8_t* cat);
 
 /* Used to hold input file names for codec test mode */
 /* when the ft_info struct is populated, memory is allocated to hold the filename strings */
@@ -174,7 +179,7 @@ int buf32_in[MAX_USBAUDIO_BUFLEN32] = { 0 };
 short int buf16_out[MAX_USBAUDIO_BUFLEN16] = { 0 };
 int buf32_out[MAX_USBAUDIO_BUFLEN32] = { 0 };
 
-unsigned int numChan_device = 2;  /* currently set for Focusrite 2i2.  These will be replaced with reference to SESSION_CONTROL struct, which will contain per-device info */
+unsigned int numChan_device = 2;  /* currently set for Focusrite 2i2. These will be replaced with reference to SESSION_CONTROL struct, which will contain per-device info */
 unsigned int bytesPerSample_device = 4;
 
 snd_pcm_uframes_t period_size_USBAudio = DEFAULT_USBAUDIO_PERIOD_SIZE;
@@ -474,7 +479,7 @@ char tmpstr[1024] = "";
       char* szBacktrace = &((char*)thread_arg)[4];
       if (strlen(szBacktrace) < 1000 && strstr(szBacktrace, "backtrace:")) sprintf(&tmpstr[strlen(tmpstr)], "%s", &szBacktrace[11]);
 
-      DSGetBacktrace(4, &tmpstr[strlen(tmpstr)], 0);  /* currently only 4 levels needed; might change, JHB May 2024 */
+      DSGetBacktrace(4, 0, &tmpstr[strlen(tmpstr)]);  /* currently only 4 levels needed; might change, JHB May 2024 */
 
       char tstr[300];
       sprintf(tstr, "codec test start, debug flags = 0x%llx, start sequence = %s", (unsigned long long)debugMode, tmpstr);
@@ -1367,7 +1372,7 @@ char tmpstr[1024] = "";
 
          if (outFileType == PCAP) {
 
-            ret_val = DSOpenPcap(szOutFilename, &fp_out, NULL, "", DS_WRITE | DS_OPEN_PCAP_WRITE_HEADER);
+            ret_val = DSOpenPcap(szOutFilename, DS_WRITE, &fp_out, NULL, "");
 
             if (ret_val < 0) {
                fprintf(stderr, "Failed to open output pcap file: %s, ret_val = %d\n", szOutFilename, ret_val);
@@ -1411,7 +1416,7 @@ char tmpstr[1024] = "";
             #endif
 
             clock_gettime(CLOCK_REALTIME, &ts_pcap);
-            nsec_pcap = ts_pcap.tv_sec*1000000000L + ts_pcap.tv_nsec;
+            nsec_pcap = ts_pcap.tv_sec*1000000L + ts_pcap.tv_nsec;
          }
          else
          #endif  /* ifndef _NO_PKTLIB_ */
@@ -1588,7 +1593,7 @@ PollBuffer:
 
                CODEC_INARGS* pInArgs = NULL;
 
-               // #define ENCODER_USE_INARGS   /* define to test debug outputs and/or on-the-fly encoder param updates, if supported by the codec type */
+               //#define ENCODER_USE_INARGS   /* define to test debug outputs and/or on-the-fly encoder param updates, if supported by the codec type */
                #ifdef ENCODER_USE_INARGS
                CODEC_INARGS CodecInArgs = { 0 };  /* create a CODEC_INARGS struct, init to zero. Especially CMR should be set to zero if not sending a CMR */
 
@@ -2023,11 +2028,21 @@ PollBuffer:
                   goto codec_test_cleanup;
                }
 
+               #if 0
                ts_pcap.tv_sec = nsec_pcap / 1000000000L;
                ts_pcap.tv_nsec = nsec_pcap % 1000000000L;
-               nsec_pcap += 20000000;  /* increment by 20 msec */
+               #else
+               pcaprec_hdr_t pcaprec_hdr = { 0 };
+               pcaprec_hdr.ts_sec = nsec_pcap / 1000000000L;
+               pcaprec_hdr.ts_usec = (nsec_pcap % 1000000000L)/1000;
+               #endif
+               nsec_pcap += 20000000L;  /* increment by 20 msec */
 
-               if ((ret_val = DSWritePcap(fp_out, pkt_buf, NULL, NULL, &term_info, &ts_pcap, pkt_len)) < 0) {
+               #if 0
+               if ((ret_val = DSWritePcap(fp_out, 0, pkt_buf, pkt_len, NULL, NULL, &term_info, &ts_pcap)) < 0) {
+               #else
+               if ((ret_val = DSWritePcap(fp_out, 0, pkt_buf, pkt_len, &pcaprec_hdr, NULL, NULL, &term_info)) < 0) {
+               #endif
                   fprintf(stderr, "ERROR: DSWritePcap() returns %d error code \n", ret_val);
                   goto codec_test_cleanup;
                }
@@ -2269,7 +2284,7 @@ codec_test_cleanup:
 
                   *arg = (num_threads << 8) | i;  /* tell mediaMin app thread which one it is and how many total threads */
 
-                  DSGetBacktrace(4, &((char*)arg)[4], DS_GETBACKTRACE_INSERT_MARKER);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
+                  DSGetBacktrace(4, DS_GETBACKTRACE_INSERT_MARKER, &((char*)arg)[4]);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
 
                   if ((tc_ret = pthread_create(&mediaMinThreads[i], ptr_attr, mediaMin_thread, arg))) fprintf(stderr, "%s:%d: pthread_create() failed for mediaMin thread, thread number = %d, ret val = %d\n", __FILE__, __LINE__, i, tc_ret);
                   else {
@@ -2326,7 +2341,7 @@ codec_test_cleanup:
 
                   *arg = (num_threads << 8) | i;  /* tell mediaTest app thread which one it is and how many total threads */
 
-                  DSGetBacktrace(4, &((char*)arg)[4], DS_GETBACKTRACE_INSERT_MARKER);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
+                  DSGetBacktrace(4, DS_GETBACKTRACE_INSERT_MARKER, &((char*)arg)[4]);  /* get backtrace info before thread starts, then thread also gets its own backtrace info, JHB May 2024 */
 
                   if ((tc_ret = pthread_create(&mediaTestThreads[i], ptr_attr, mediaTest_proc, arg))) fprintf(stderr, "%s:%d: pthread_create() failed for mediaTest thread, thread number = %d, ret val = %d\n", __FILE__, __LINE__, i, tc_ret);
                   else {
@@ -2513,27 +2528,29 @@ codec_test_cleanup:
       printf("Attempting to call pktlib() functions but build had pktlib disabled (i.e. make cmd line with no_pktlib=1) \n");
 #else
 
-   /* pcap extract mode extracts RTP payloads from pcap files and writes to 3GPP decoder compatible .cod files. Notes:
-   
-      1) The 3GPP decoder supports MIME and G.192 file formats.  In the case of MIME it expects consecutive RTP payloads in FH (Header-Full) format, each including a leading ToC byte
+   /* pcap extract mode (i) extracts RTP payloads from pcap files and writes to 3GPP decoder compatible .cod files or (ii) copies between pcap files, applying operations to RTP media contents. Notes:
 
-      2) Currently the pcap extract mode only supports MIME format
+      1) 3GPP decoders typically support MIME and G.192 file formats. MIME format normally expects consecutive RTP payloads in FH (Header-Full) format, each including a leading ToC byte
 
-      3) If pcap RTP payloads are in CH (Compact Header) format, they are converted to FH (header-full) format by adding a ToC payload header byte
+      2) Currently the pcap extract mode only supports MIME format. If pcap RTP payloads are in CH (Compact Header) format, they are converted to FH (header-full) format by adding a ToC payload header byte
+
+      3) Major overhaul to support pacp-to-pcap operations, JHB Jul 2024
    */
 
       MEDIAINFO MediaInfo = {0};
-      
+
       FILE *fp_in = NULL, *fp_out = NULL;
 
-      int ret_val, frame_count = 0;
+      int ret_val, frame_count = 0, rtcp_packet_count = 0;
 
       uint8_t pkt_buffer[MAX_RTP_PACKET_LEN];
-      char toc;
 
-      int packet_length, link_layer_length, rtp_pyld_len;
+      int packet_length, link_layer_info, rtp_pyld_len;
+      uint8_t rtp_pyld_type;
       uint8_t *rtp_pyld_ptr;
       unsigned int uFlags;
+      pcap_hdr_t pcap_file_hdr = { 0 };
+      pcaprec_hdr_t pcap_pkt_hdr = { 0 };
 
    /* define STRIP_SID to remove SID frames from .cod output */
       // #define STRIP_SID
@@ -2541,34 +2558,42 @@ codec_test_cleanup:
       int pyld_datatype, SID_drop_count = 0;
       #endif
 
-   /* define LIST_TOCS to list unique ToC values found (displayed after pcap extraction finishes). ToC values are one or more "table of contents" bytes in the RTP payload header, as defined in the EVS spec */
+   /* define LIST_TOCS to track unique ToC values found (displayed after pcap extraction finishes). ToC values are one or more "table of contents" bytes in the RTP payload header, as defined in the EVS spec */
       #define LIST_TOCS
       #ifdef LIST_TOCS
-      int i, num_tocs = 0, sav_tocs[256] = { 0 };
+      #define MAX_TOCS 256
+      int i, num_tocs = 0, sav_tocs[MAX_TOCS];
       #endif
 
       printf("pcap extract start\n");
+
+      memset(sav_tocs, 0xff, sizeof(sav_tocs));  /* set all sav_toc[] to 0xff */
 
       #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
       #pragma GCC diagnostic ignored "-Waddress"
       if (MediaParams[0].Media.inputFilename != NULL) {
       #pragma GCC diagnostic pop
 
+         #if 0
          strcpy(tmpstr, MediaParams[0].Media.inputFilename);
          strupr(tmpstr);
 
          if (strstr(tmpstr, ".PCAP"))
+         #else
+         if (inFileType == PCAP)
+         #endif
          {
-            if ((link_layer_length = DSOpenPcap(MediaParams[0].Media.inputFilename, &fp_in, NULL, "", DS_READ | DS_OPEN_PCAP_READ_HEADER)) < 0) goto pcap_extract_cleanup;
+            if ((link_layer_info = DSOpenPcap(MediaParams[0].Media.inputFilename, DS_READ | DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT, &fp_in, &pcap_file_hdr, "")) < 0) goto pcap_extract_cleanup;  /* open pcap for reading, retrieve file header info in legacy libpcap format (regardless of whether file is pcap or pcapng) */
+            #if 0
+            printf("\n *** after pcap open, link type = %d, file_type = %d, link_layer len = %d, file hdr link type = %u \n", link_layer_info >> 20, (link_layer_info >> 16) & 0xf, link_layer_info & 0xffff, pcap_file_hdr.link_type);
+            #endif
          }
-         else
-         {
-            fprintf(stderr, "Input file %s is not a pcap file\n", MediaParams[0].Media.inputFilename);
+         else {
+            fprintf(stderr, "Input file %s is not a pcap file as required in pcap extract mode \n", MediaParams[0].Media.inputFilename);
             goto pcap_extract_cleanup;
          }
       }
-      else
-      {
+      else {
          fprintf(stderr, "No input file given\n");
          goto pcap_extract_cleanup;
       }
@@ -2578,40 +2603,48 @@ codec_test_cleanup:
       if (MediaParams[0].Media.outputFilename != NULL) {
       #pragma GCC diagnostic pop
 
+         #if 0
          strcpy(tmpstr, MediaParams[0].Media.outputFilename);
          strupr(tmpstr);
 
          if (strstr(tmpstr, ".COD") || strstr(tmpstr, ".AMR") || strstr(tmpstr, ".AWB") || strstr(tmpstr, ".BIT"))
+         #else
+         if (outFileType == ENCODED)
+         #endif
          {
             strcpy(MediaInfo.szFilename, MediaParams[0].Media.outputFilename);
 
             MediaInfo.CompressionCode = DS_GWH_CC_EVS;  /* default */
-            int codec_type = 0;  /* not sure yet how to determine codec type -- payload contents can't be used without a session config file, so maybe something on the command line */
+            int codec_type = 0;  /* not sure yet how to determine codec type -- payload contents can't be used without a session config file, so maybe something on the command line, or maybe make mediaMin codec detection heuristic into a callable function ... */
 
-            if (strstr(tmpstr, ".AWB") || codec_type == DS_VOICE_CODEC_TYPE_AMR_WB) MediaInfo.CompressionCode = DS_GWH_CC_GSM_AMRWB;
-            else if (strstr(tmpstr, ".AMR") || codec_type == DS_VOICE_CODEC_TYPE_AMR_NB) MediaInfo.CompressionCode = DS_GWH_CC_GSM_AMR;
+            if (strcasestr(MediaInfo.szFilename, ".awb") || codec_type == DS_VOICE_CODEC_TYPE_AMR_WB) MediaInfo.CompressionCode = DS_GWH_CC_GSM_AMRWB;
+            else if (strcasestr(MediaInfo.szFilename, ".amr") || codec_type == DS_VOICE_CODEC_TYPE_AMR_NB) MediaInfo.CompressionCode = DS_GWH_CC_GSM_AMR;
             else if (codec_type == DS_VOICE_CODEC_TYPE_EVS) MediaInfo.CompressionCode = DS_GWH_CC_EVS;  /* EVS uses .cod extension */
-            else if (codec_type == DS_VOICE_CODEC_TYPE_MELPE)  MediaInfo.CompressionCode = DS_GWH_CC_MELPE;  /* no file extension defined for MELPe */
+            else if (codec_type == DS_VOICE_CODEC_TYPE_MELPE) MediaInfo.CompressionCode = DS_GWH_CC_MELPE;  /* no file extension defined for MELPe */
 
             ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, MediaParams[0].Media.outputFilename, (uintptr_t)NULL, 0, DS_CREATE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);  /* DSSaveDataFile returns bytes written, with DS_CREATE flag it returns header length (if any, depending on file type) */
 
-            if (fp_out == NULL) 
-            {
-               fprintf(stderr, "Failed to open coded output file: %s, ret_val = %d\n", MediaParams[0].Media.outputFilename, ret_val);
+            if (fp_out == NULL) {
+               fprintf(stderr, "Failed to open coded bitstream output file: %s, ret_val = %d \n", MediaParams[0].Media.outputFilename, ret_val);
                goto pcap_extract_cleanup;
             }
-            else
-               printf("Opened coded output file: %s\n", MediaParams[0].Media.outputFilename);
+            else printf("Opened coded output file: %s\n", MediaParams[0].Media.outputFilename);
          }
-         else
-         {
-            fprintf(stderr, "Output file %s is not a cod file\n", MediaParams[0].Media.outputFilename);
+         else if (outFileType == PCAP) {  /* add pcap output, JHB Jul 2024 */
+
+            if ((ret_val = DSOpenPcap(MediaParams[0].Media.outputFilename, DS_WRITE, &fp_out, &pcap_file_hdr, "")) < 0) {  /* open write pcap with file header from read pcap */
+
+               fprintf(stderr, "Failed to open pcap output file: %s, ret_val = %d \n", MediaParams[0].Media.outputFilename, ret_val);  /* DSOpenPcap() will display an error message so displaying another one not necessary */
+               goto pcap_extract_cleanup;
+            }
+         }
+         else {
+            fprintf(stderr, "ERROR: output file %s is not an encoded bitstream or pcap format file \n", MediaParams[0].Media.outputFilename);
             goto pcap_extract_cleanup;
          }
       }
-      else
-      {
-         fprintf(stderr, "No output file given\n");
+      else {
+         fprintf(stderr, "No output file given \n");
          goto pcap_extract_cleanup;
       }
 
@@ -2627,12 +2660,15 @@ codec_test_cleanup:
 
       /* read next pcap packet */
 
-         if (!(packet_length = DSReadPcap(fp_in, pkt_buffer, 0, NULL, link_layer_length, NULL, NULL))) break;
+         uint16_t eth_hdr_type;
+
+         if (!(packet_length = DSReadPcap(fp_in, 0, pkt_buffer, &pcap_pkt_hdr, link_layer_info, &eth_hdr_type, NULL))) break;  /* read pcap, save packet header in pcap_pkt_hdr in case needed for DSPcapWrite(), JHB Jul 2024 */
 
          frame_count++;
-         printf("\rExtracting frame %d", frame_count);
+         if (outFileType == ENCODED) printf("\rExtracting frame %d", frame_count);
+         else if (outFileType == PCAP) printf("\rOperating on pcap record %d", frame_count);
 
-         #ifdef STRIP_SID
+         #ifdef STRIP_SID  /* typically not defined unless for debug purposes */
          pyld_datatype = DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDDATATYPE, pkt_buffer, packet_length, NULL, NULL);
 
          if (pyld_datatype == DS_PKT_PYLDDATATYPE_SID) {
@@ -2642,28 +2678,67 @@ codec_test_cleanup:
          }
          #endif
 
-         rtp_pyld_ptr = pkt_buffer + DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDOFS, pkt_buffer, packet_length, NULL, NULL);
-         rtp_pyld_len = DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDLEN, pkt_buffer, packet_length, NULL, NULL);
+         rtp_pyld_ptr = pkt_buffer + DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDOFS, pkt_buffer, -1, NULL, NULL);
+         rtp_pyld_len = DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDLEN, pkt_buffer, -1, NULL, NULL);
+         rtp_pyld_type = DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDTYPE, pkt_buffer, -1, NULL, NULL);  /* payload type used to filter RTCP packets, JHB Jul 2024 */
+
+         uint32_t bitrate = 0;
+         uint8_t cat = 0;
+         int codec_type = detect_codec_type_and_bitrate(rtp_pyld_ptr, rtp_pyld_len, RTP_DETECT_EXCLUDE_VIDEO, rtp_pyld_type, 0, &bitrate, NULL, &cat);
+         if (codec_type == -1 && rtp_pyld_len == 2) codec_type = DS_VOICE_CODEC_TYPE_EVS;  /* not sure is DSGetPayloadXXX APIs can handle AMR NO_DATA payloads, they can for EVS */
+
+         //#define CODEC_TYPE_DEBUG
+         #ifdef CODEC_TYPE_DEBUG
+         static int count = 0;
+         #endif
+
+      /* packet type filtering. Notes:
+
+         -ignore RTCP packets for bitstream coded output
+         -many other types of non-RTP packet filtering should be added. PushPackets() in mediaMin.cpp does this
+      */
+
+         if (rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && rtp_pyld_type <= RTCP_PYLD_TYPE_MAX) {
+
+            rtcp_packet_count++;
+
+            if (outFileType == PCAP) goto pcap_out;     /* for pcap output, write RTCP packets but apply no operations */
+            else if (outFileType == ENCODED) continue;  /* for bitstream coded output, strip / ignore RTCP packets */
+         }
 
       /* determine header format */
 
-         if (!DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pyld_ptr, rtp_pyld_len, NULL, NULL, NULL))  /* returns zero if compact header format */
-         {
-            toc = DSGetPayloadHeaderToC(DS_VOICE_CODEC_TYPE_EVS, rtp_pyld_len);  /* add ToC byte based on payload size (convert to FH format) */
+         bool fAMRWB_IO_Mode, fSID;  /* currently not used, but available if needed */
+         uint8_t CMR, ToC;           /* payload header CMR and ToC (table of contents) */
+         bool fTocInPyld;
 
-            ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)&toc, 1, DS_WRITE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);  /* write ToC byte (DSSaveDataFile returns bytes written) */
+         fTocInPyld = true;  /* default until found otherwise */
 
-            if (ret_val != 1) 
-            {
-               printf("Error writing ToC byte for frame %d, wrote %d bytes\n", frame_count, ret_val);
-               goto pcap_extract_cleanup;
+         if (!DSGetPayloadInfo(codec_type, DS_CODEC_INFO_TYPE, rtp_pyld_ptr, rtp_pyld_len, &fAMRWB_IO_Mode, &fSID, &CMR, &ToC)) {  /* returns zero if compact header or bandwidth efficient format; fills in AMR-WB IO mode, SID, CMR, and ToC */
+
+            if (codec_type == DS_VOICE_CODEC_TYPE_EVS) {
+
+               ToC = DSGetPayloadHeaderToC(codec_type, rtp_pyld_len);  /* generate a ToC byte based on payload size (convert to FH format) */
+               fTocInPyld = false;
+
+               if (outFileType == ENCODED) {
+
+                  ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)&ToC, 1, DS_WRITE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);  /* write ToC byte (DSSaveDataFile returns bytes written) */
+
+                  if (ret_val != 1) {
+                     printf("Error writing ToC byte for frame %d, return val = %d \n", frame_count, ret_val);
+                     goto pcap_extract_cleanup;
+                  }
+               }
             }
          }
          else {  /* full header format */
 
-            toc =  rtp_pyld_ptr[0];  /* save toc value */
-
+            #if 0
             if (rtp_pyld_ptr[0] & 0x80)  /* check for CMR byte */
+            #else  /* make use of CMR returned from DSGetPayloadInfo(), JHB Jul 2024 */
+            if (outFileType == ENCODED && CMR)  /* if CMR byte present, don't include in MIME output coded bitstream frame write to file. ToC is included */
+            #endif
             {
                rtp_pyld_ptr++;
                rtp_pyld_len--;
@@ -2671,50 +2746,105 @@ codec_test_cleanup:
          }
 
          #ifdef LIST_TOCS
-         bool found = false;
-         for (i=0; i<max(1, num_tocs); i++) {
+         {
+            bool found = false;
+            for (i=0; i<num_tocs; i++) {
 
-            if (toc == sav_tocs[i]) {
-               found = true;
-               break;
+               if (ToC == sav_tocs[i]) {
+                  found = true;
+                  break;
+               }
             }
+            if (!found) { sav_tocs[min(num_tocs, MAX_TOCS-1)] = ToC; num_tocs++; }  /* if not found then add this ToC value to saved list */
          }
-         if (!found) sav_tocs[num_tocs++] = toc;  /* if not found then add this toc value to saved list */
          #endif
 
-         ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)rtp_pyld_ptr, rtp_pyld_len, DS_WRITE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);
+      /* check for payload/packet impairment and filtering operations, JHB Jul 2024 */
 
-         if (ret_val != rtp_pyld_len) 
-         {
-            printf("Error writing frame %d, wrote %d bytes\n", frame_count, ret_val);
-            goto pcap_extract_cleanup;
+      // #define ERROR_DISTRIBUTION_DEBUG  /* error distribution debug */
+      
+         if (nRandomBitErrorPercentage > 0) {  /* if random bit error percentage specified on command line, insert random bit errors in the payload */
+
+            int pyld_hdr_ofs = (CMR ? 1 : 0) + (fTocInPyld ? 1 : 0);  /* not quite right for AMR bandwidth efficient, but won't matter */
+            float num_bit_errors = 1.0*(rtp_pyld_len-pyld_hdr_ofs)*8*nRandomBitErrorPercentage/100;
+
+            #ifdef CODEC_TYPE_DEBUG
+            char tocstr[20];
+            sprintf(tocstr, "0x%x", ToC);
+            if (codec_type != DS_VOICE_CODEC_TYPE_EVS) { count++; printf("\n *** codec type = %d, bitrate = %d, count = %d, rtp_pyld_len = %d, CMR = %d, rtp pyld[0] = 0x%x, cat = %d, ToC = %s, num_bit_errors = %2.4f \n", codec_type, bitrate, count, rtp_pyld_len, CMR, rtp_pyld_ptr[0], cat, fTocInPyld ? tocstr : "none", num_bit_errors); }
+            #endif
+
+            #ifdef ERROR_DISTRIBUTION_DEBUG
+            int min_bit_pos = 32767;
+            int max_bit_pos = 0;
+            #endif
+
+            for (i=0; i<(int)num_bit_errors; i++) {
+
+               int bit_pos = 1.0*rand()/RAND_MAX*(rtp_pyld_len-pyld_hdr_ofs)*8;
+
+               rtp_pyld_ptr[max(1, pyld_hdr_ofs) + bit_pos/8] ^= 1 << (bit_pos & 7);  /* flip bit specified by bit_pos. For full header, start at location immediately after ToC, for compact header don't mess with first byte otherwise we might accidentally create a bogus CMR byte, which would cause errors in codec decoder */
+
+               #ifdef ERROR_DISTRIBUTION_DEBUG
+               max_bit_pos = max(bit_pos, max_bit_pos);
+               min_bit_pos = min(bit_pos, min_bit_pos);
+               #endif
+            }
+
+            #ifdef ERROR_DISTRIBUTION_DEBUG
+            static int count = 0;
+            int count_prev = count;
+            if (rtp_pyld_len == 63 || rtp_pyld_len == 61) {
+               if (count < 50) count++;
+            }
+            else count++;
+            if (count_prev != count && count < 500) printf("\n *** min_bit_pos = %d, max_bit_pos = %d, pyld len = %d \n", min_bit_pos, max_bit_pos, rtp_pyld_len-pyld_hdr_ofs);
+            #endif
+         }
+
+         if (outFileType == ENCODED) {
+
+            ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)rtp_pyld_ptr, rtp_pyld_len, DS_WRITE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);
+
+            if (ret_val != rtp_pyld_len) {
+               printf("Error writing encoded bitstream output frame %d, wrote %d bytes\n", frame_count, ret_val);
+               goto pcap_extract_cleanup;
+            }
+         }
+         else if (outFileType == PCAP) {  /* add pcap write, JHB Jul 2024 */
+pcap_out:
+            ret_val = DSWritePcap(fp_out, 0, pkt_buffer, packet_length, &pcap_pkt_hdr, NULL, &pcap_file_hdr, NULL);
+            if (ret_val < 0) { fprintf(stderr, "pcap extract mode DSWritePcap() failed, ret_val = %d \n", ret_val); goto pcap_extract_cleanup; }
          }
       }
 
       #ifdef STRIP_SID
       frame_count = max(0, frame_count - SID_drop_count);
       #endif
-      printf("\nExtracted %d frames", frame_count);
+      if (outFileType == ENCODED) printf("\nExtracted %d frames", frame_count);
+      else if (outFileType == PCAP)  printf("\nOperated on %d pcap records", frame_count);
       #ifdef STRIP_SID
       if (SID_drop_count > 0) printf(", not including %d SID frames (which are not supported in .cod file MIME format)", SID_drop_count);
       #endif
-      printf("\n");
+      printf(" \n");
 
       #ifdef LIST_TOCS
       printf("Unique ToC values found: ");
-      for (i=0; i<num_tocs; i++) printf("%d ", sav_tocs[i]);
+      for (i=0; i<num_tocs; i++) printf("0x%x ", sav_tocs[i]);
       printf("\n");
       #endif
+      printf("RTCP packets found: %d \n", rtcp_packet_count);
 
-      if (!feof(fp_in))
-      {
-         fprintf(stderr, "Error while reading input pcap file\n");
-      }
+      if (!feof(fp_in)) fprintf(stderr, "Error while reading input pcap file \n");
 
-pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB Jun2017 */
+pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB Jun 2017 */
 
       if (fp_in) fclose(fp_in);
-      if (fp_out) DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)NULL, 0, DS_CLOSE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);
+
+      if (fp_out) {
+         if (outFileType == ENCODED) DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)NULL, 0, DS_CLOSE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);
+         else if (outFileType == PCAP) DSClosePcap(fp_out);
+      }
 
       printf("pcap extract end\n");
 
