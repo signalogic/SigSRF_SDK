@@ -234,7 +234,7 @@ int DSReadPcap(FILE*           fp_pcap,
                uint8_t*        pkt_buf,
                pcaprec_hdr_t*  pcap_pkt_hdr,
                int             link_layer_info,
-               uint16_t*       hdr_type,
+               uint16_t*       eth_hdr_type,
                pcap_hdr_t*     pcap_file_hdr);
 ```
 
@@ -242,7 +242,7 @@ int DSReadPcap(FILE*           fp_pcap,
   * uFlags may be one or more DS_READ_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
   * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, incuding arrival timestamp. NULL indicates not used
   * link_layer_info should be supplied from a prior DSOpenPcap() call return value. See DSOpenPcap() comments above
-  * hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags(as defined in linux/if_ether.h). NULL indicates not used
+  * eth_hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags (as defined in linux/if_ether.h). NULL indicates not used
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call. NULL indicates not used
 
   * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
@@ -279,6 +279,7 @@ Following are definitions and flags used by pktlib pcap APIs
 #define DS_OPEN_PCAP_DONT_WRITE_HEADER        /* don't write file header */
 #define DS_OPEN_PCAP_QUIET                    /* suppress status and progress messages */
 #define DS_OPEN_PCAP_RESET                    /* seek to start of pcap; assumes a valid (already open) file handle given to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ */
+#define DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT     /* info returned in pcap_file_hdr will be in pcap (libpcap) file format, even if the file being opened is in pcapng format */
 
 #define DS_READ_PCAP_COPY                     /* copy pcap record(s) only, don't advance file pointer */
 ```
