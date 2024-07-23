@@ -23,6 +23,7 @@ Use case driven improvements
 
  - packet fragmentation and reassembly management, including UDP duplicate packet detection
  - [SDP info](#user-content-sdpsupport) expanded support, including media port discovery
+ - pktlib now supports pcap editing and packet operations 
  - packet numbering and tracing for Wireshark comparison
  - further improvements in RTP media type auto-detection
  - codec configuration options for binary-only codecs with exit() and abort() calls, and codecs with protected sections of source not permissible to modify
@@ -30,7 +31,7 @@ Use case driven improvements
 
 Bug fixes
 
- - fix to AMR NB decoder handling of bandwidth-efficient mode for 4750 and 5150 bitrates
+ - codec fixes:  fix to AMR NB decoder handling of bandwidth-efficient mode for 4750 and 5150 bitrates, fix to EVS AMR WB IO mode decoder (in compact header mode at 23850 bps)
  - packet logging and tracing now handles SSRCs shared across streams
  - debug mode added to codecs to help find subtle NaN and other floating-point issues in deployments on wide range of Linux and GLIBC versions
  - fix EVS Player and AMR Player example/demo command lines (below). These were broken after not being retested after other improvements
