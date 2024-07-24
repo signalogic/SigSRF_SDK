@@ -3685,7 +3685,7 @@ pull:
 
                pcap_pkt_hdr.ts_sec = thread_info[thread_index].accel_time_ts[group_idx].tv_sec;  /* set timestamp in packet record header param we give to DSWritePcap() */
                pcap_pkt_hdr.ts_usec = thread_info[thread_index].accel_time_ts[group_idx].tv_nsec/1000;
-               uFlags_write = 0;  /* turn off wallclock flag to DSWritePcap() */
+               uFlags_write &= ~DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;  /* we are supplying a timestamp, so turn off wallclock flag to DSWritePcap() */
             }
             else if (isFTRTMode) {  /* for stream group output in FTRT mode we advance packet timestamps at accelerated time (based on timeScale value), JHB May 2023 */
 
@@ -3702,7 +3702,7 @@ pull:
 
                pcap_pkt_hdr.ts_sec = t/1000000ULL;  /* set stream group output packet timestamp in packet record header param we give to DSWritePcap() */
                pcap_pkt_hdr.ts_usec = (t - 1000000ULL*pcap_pkt_hdr.ts_sec);
-               uFlags_write = 0;  /* turn off wallclock flag to DSWritePcap() */
+               uFlags_write &= ~DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;  /* we are supplying a timestamp, so turn off wallclock flag to DSWritePcap() */
             }
          }
 
