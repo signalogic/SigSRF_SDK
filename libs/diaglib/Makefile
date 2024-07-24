@@ -27,6 +27,7 @@
 #  Modified May 2024 JHB, change from gcc to g++, change CFLAGS TO CPPFLAGS
 #  Modified May 2024 JHB, experimental: add -march=native compiler flag
 #  Modified May 2024 JHB, remove standalone=1 handling. In lib_logging.cpp DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib
+#  Modified Jul 2024 JHB, change CC to CXX and CPPFLAGS to CXXFLAGS, per https://stackoverflow.com/questions/495598/difference-between-cppflags-and-cxxflags-in-gnu-make
 
 # set install path var, from lib/diaglib folder SigSRF software install path is 3 levels up
 INSTALLPATH=../../..
@@ -36,11 +37,11 @@ WRLPATH=/opt/WindRiver/wrlinux-4
 ifeq ($(wildcard $(WRLPATH)),$(WRLPATH))
   # PowerPC build
   export PATH := /opt/WindRiver/wrlinux-4/sysroots/adsp2-glibc_small/x86-linux2/:/opt/WindRiver/wrlinux-4/layers/wrll-toolchain-4.4a-341/powerpc/toolchain/x86-linux2/bin:$(PATH)
-  CC = /opt/WindRiver/wrlinux-4/sysroots/adsp2-glibc_small/x86-linux2/powerpc-wrs-linux-gnu-ppc_e500v2-glibc_small-gcc
+  CXX = /opt/WindRiver/wrlinux-4/sysroots/adsp2-glibc_small/x86-linux2/powerpc-wrs-linux-gnu-ppc_e500v2-glibc_small-gcc
   DEFINES = -D_WRL_
 else
   # x86 build
-  CC = /usr/bin/g++
+  CXX = /usr/bin/g++
   DEFINES = -D_X86
 endif
 
@@ -63,14 +64,14 @@ endif
 DEFINES += -D_LINUX_ -D_SIGRT
 
 # compiler flags
-CPPFLAGS = $(INCLUDE)
-CPPFLAGS += $(DBGFLAGS)
-CPPFLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 $(DEFINES)
+CXXFLAGS = $(INCLUDE)
+CXXFLAGS += $(DBGFLAGS)
+CXXFLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 $(DEFINES)
 
-CPPFLAGS += -Wextra -Wno-missing-field-initializers
+CXXFLAGS += -Wextra -Wno-missing-field-initializers
 
 # experimental in preparation for Arm support: let compiler figure out CPU type
-CPPFLAGS += -march=native
+CXXFLAGS += -march=native
 
 # link flags. Apply -soname only for primary lib to avoid ldconfig conflicts
 LDFLAGS = -pthread -shared -flto -Wl,-soname,libdiaglib.so.1.5.0
@@ -78,14 +79,14 @@ LDFLAGS = -pthread -shared -flto -Wl,-soname,libdiaglib.so.1.5.0
 all: $(cpp_objects) $(c_objects) link
 
 $(cpp_objects): %.o: %.cpp
-	$(CC) $(CPPFLAGS) $< -o $@ 
+	$(CXX) $(CXXFLAGS) $< -o $@ 
 
 $(c_objects): %.o: %.c
-	$(CC) $(CPPFLAGS) $< -o $@ 
+	$(CXX) $(CXXFLAGS) $< -o $@ 
 
 link:
 	ar -rcsu libdiaglib.a $(cpp_objects) $(c_objects)
-	$(CC) $(LDFLAGS) -o libdiaglib.so $(cpp_objects) $(c_objects) -lrt
+	$(CXX) $(LDFLAGS) -o libdiaglib.so $(cpp_objects) $(c_objects) -lrt
 
 ifeq ($(wildcard $(WRLPATH)),$(WRLPATH)) # PPC link
  	mv libdiaglib.a /opt/WindRiver/wrlinux-4/sysroots/adsp2-glibc_small/sysroot/te500v2/usr/lib
