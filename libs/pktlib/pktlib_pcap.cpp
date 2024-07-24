@@ -127,7 +127,7 @@ char tmpstr[2*MAX_INPUT_LEN];
 
       /* write output pcap file header */
 
-         fwrite(p_file_hdr, SIZEOF_PCAP_HDR_T, 1, *fp_pcap);
+         fwrite(p_file_hdr, SIZEOF_PCAP_HDR_T, 1, *fp_pcap);  /* SIZEOF_PCAP_HDR_T macro defined in pktlib.h */
       }
 
 wr_ret:
@@ -182,7 +182,7 @@ wr_ret:
          #if 0
          if (fread(p_file_hdr, sizeof(pcap_hdr_t), 1, *fp_pcap) != 1) {
          #else  /* this way handles rtp struct union inside pcap_hdr_t. See definition in pktlib.h, JHB Nov 2023 */
-         if (fread(p_file_hdr, SIZEOF_PCAP_HDR_T, 1, *fp_pcap) != 1) {
+         if (fread(p_file_hdr, SIZEOF_PCAP_HDR_T, 1, *fp_pcap) != 1) {  /* SIZEOF_PCAP_HDR_T macro defined in pktlib.h */
          #endif
 
             sprintf(tmpstr, "WARNING: failed to read %spcap file header in file: %s", estr, pcap_file ? pcap_file : "");
@@ -217,7 +217,7 @@ wr_ret:
 
                char* p = (char*)p_file_hdr;  /* make a byte pointer we can use to handle variable length fields */
 
-               if (fread(&p[SIZEOF_PCAP_HDR_T], sizeof(pcap_hdr_t) - SIZEOF_PCAP_HDR_T, 1, *fp_pcap) != 1) {
+               if (fread(&p[SIZEOF_PCAP_HDR_T], sizeof(pcap_hdr_t) - SIZEOF_PCAP_HDR_T, 1, *fp_pcap) != 1) {  /* SIZEOF_PCAP_HDR_T macro defined in pktlib.h */
 
                   sprintf(tmpstr, "WARNING: Failed to read %srtp file header in file: %s", estr, pcap_file ? pcap_file : "");
                   Log_RT(3, tmpstr);
@@ -313,7 +313,7 @@ wr_ret:
 
                p_file_hdr_ng = (pcapng_hdr_t*)p_file_hdr;
 
-               int i, num_int32 = (p_file_hdr_ng->block_length - SIZEOF_PCAP_HDR_T)/4;  /* sub amount we've already read */
+               int i, num_int32 = (p_file_hdr_ng->block_length - SIZEOF_PCAP_HDR_T)/4;  /* subtract amount we've already read */
                uint32_t dummy_uint32;
                for (i=0; i<num_int32; i++) ret_val = fread(&dummy_uint32, sizeof(uint32_t), 1, *fp_pcap);  /* read past options, if any, and duplicated block length */
 
@@ -400,7 +400,7 @@ typedef struct {
 
 #endif
 
-/* read one pcap record */
+/* read a pcap record */
 
 int DSReadPcap(FILE* fp_in, unsigned int uFlags, uint8_t* pkt_buffer, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* p_eth_hdr_type, pcap_hdr_t* pcap_file_hdr) {
 
@@ -514,7 +514,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
          if (fread(&vlan_hdr, sizeof(vlan_hdr), 1, fp_in) != 1) return 0;  /* read vlan header */
 
-         link_len += sizeof(vlan_hdr);  /* adjust amount read, so packet_length below is calculated correctly. This fixes a bug where mediaMin got the wrong timestamp (and stopped pushing packets because it calculated negative time) after the first packet when reading AMRWB_SID.pcap, and presumably other pcaps with VLAN headers, JHB Jan2021 */
+         link_len += sizeof(vlan_hdr);  /* adjust amount read, so packet_length below is calculated correctly. This fixes a bug where mediaMin got the wrong timestamp (and stopped pushing packets because it calculated negative time) after the first packet when reading AMRWB_SID.pcap, and presumably other pcaps with VLAN headers, JHB Jan 2021 */
       }
 
       #ifdef DEBUG_SUBHEADERS
@@ -543,7 +543,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
    if ((packet_length = p_pkt_hdr->incl_len - link_len) <= 0) return 0;  /* error check amount of next file read */
 
- //if (packet_length > (int)MAX_RTP_PACKET_LEN) printf(" *** DSReadPcap says huge fucking packet len = %d \n", packet_length);
+ //if (packet_length > (int)MAX_RTP_PACKET_LEN) printf(" *** DSReadPcap says way huge packet len = %d \n", packet_length);
 
    if (file_type != PCAP_TYPE_RTP) {  /* for pcap formats we read whole packet data from each record */
 
@@ -726,79 +726,6 @@ struct timespec       ts = { 0 };
 
    return packet_length;
 }
-
-
-/* these codes left here for reference, in case of issues reading pcap headers and determining IP version number. They were deleted from mediaTest_proc.c and replaced by DSOpenPcapReadHeader() and DSReadPcap() APIs. JHB Jul2017 */
-
-#ifdef PREV_PCAP_CODE
-      pcap_hdr_t pcap_file_hdr;
-      pcaprec_hdr_t pcap_pkt_hdr;
-      int all_hdr_length;
-      iphdr *ip_hdr;
-      struct ether_header eth_hdr;
-
-            fp_in = fopen(MediaParams[0].Media.inputFilename, "rb");
-            if (fp_in == NULL) 
-            {
-               Log_RT(3, "Failed to open input file: %s\n", MediaParams[0].Media.inputFilename);
-               return;
-            }
-            else
-               printf("Opened pcap input file: %s\n", MediaParams[0].Media.inputFilename);
-            
-            /* read file header and check for magic number */
-            if (fread(&pcap_file_hdr, sizeof(pcap_hdr_t), 1, fp_in) != 1)
-            {
-               Log_RT(3, "Failed to read pcap file header in file: %s\n", MediaParams[0].Media.inputFilename);
-               goto pcap_extract_cleanup;
-            }
-            else
-            {
-               if (pcap_file_hdr.magic_number != 0xa1b2c3d4)
-               {
-                  Log_RT(3, "In pcap file: %s, unexpected magic number: 0x%x\nCapture file format is unsupported\n", MediaParams[0].Media.inputFilename, pcap_file_hdr.magic_number);
-                  goto pcap_extract_cleanup;
-               }
-                  
-               if (pcap_file_hdr.network != 1)
-               {
-                  Log_RT(3, "In pcap file: %s, unsupported data link type: %d\n", MediaParams[0].Media.inputFilename, pcap_file_hdr.network);
-                  goto pcap_extract_cleanup;
-               }
-            }
-#endif
-
-#ifdef PREV_PCAP_CODE  /* this is old code left here for reference if needed.  Can be deleted, JHB Sep2017 */
-
-      /* read in next pcap record header */
-      while (pm_run && (fread(&pcap_pkt_hdr, sizeof(pcaprec_hdr_t), 1, fp_in) == 1))
-      {
-         printf("\rExtracting frame %d", frame_count);
-         
-         /* read ethernet header */
-         if (fread(&eth_hdr, sizeof(ether_header), 1, fp_in) != 1) break;
-         packet_length = pcap_pkt_hdr.incl_len - ETH_HLEN;
-         if (fread(pkt_buffer, packet_length, 1, fp_in) != 1) break;
-         
-         if (htons(eth_hdr.ether_type) == 0x0800)        /* ipv4 */
-         {
-            ip_hdr = (iphdr*)pkt_buffer;
-            all_hdr_length = ip_hdr->ihl * 4 + UDP_HDR_I8LEN + RTP_HDR_I8LEN;
-         }
-         else if (htons(eth_hdr.ether_type) == 0x86DD)   /* ipv6 */
-         {
-            all_hdr_length = IP6_ALL_HDRLEN;
-         }
-         else 
-         {
-            Log_RT(3, "In pcap file: %s, unsupported ether type in ethernet header: %d\n", MediaParams[0].Media.inputFilename, htons(eth_hdr.ether_type));
-         }
-         
-         rtp_pyld_ptr = &pkt_buffer[all_hdr_length];
-         pyld_len = packet_length - all_hdr_length;
-      }
-#endif
-
 
 /* DSFilterPcapRecord() reads a pcap file to find the next occurrence of a desired packet type. Notes JHB Sep 2023:
 
