@@ -193,7 +193,7 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo()
 <a name="PcapAPIInterface"></a>
 # Pcap API Interface
 
-The pktlib pcap API interface supports read/write to pcap, pcapng, and rtp files.
+The pktlib pcap API interface supports read/write to pcap, pcapng, and rtp files.  [pcap API source code](https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_pcap.cpp) is available if behavior should be modified or improved. 
 
 <a name="DSOpenPcap"></a>
 ## DSOpenPcap
@@ -211,8 +211,8 @@ int DSOpenPcap(const char*   pcap_file,
   * pcap_file should contain a null-terminated path and/or filename of the pcap, pcapng, or rtp/rtpdump file to open
   * uFlags may be one or more DS_OPEN_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below). Typically DS_OPEN_PCAP_READ is used for reading and DS_OPEN_PCAP_WRITE for writing
   * fp_pcap should point to a FILE* (defined in stdio.h) that on return will contain the new file handle
-  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that will on return contain header information about the file. NULL indicates not used
-  * errstr, if supplied, should point to an error information string to be included in warning or error messages. NULL indicates not used
+  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that will on return contain header information about the file. NULL indicates not supplied
+  * errstr, if supplied, should point to an error information string to be included in warning or error messages. NULL indicates not supplied
 
   * on success, DSOpenPcap() reads or writes the file's header(s) and leaves file fp_pcap pointing at the first pcap record. The return value is a 32-bit int formatted as:<br>
       &nbsp;<br>
@@ -220,13 +220,13 @@ int DSOpenPcap(const char*   pcap_file,
       &nbsp;<br>
     where link_type is one of the LINKTYPE_XXX definitions below, file_type is one of the PCAP_TYPE_XXX definitions below, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14)
   
-  * note - for file read, the full return value should be saved and then given as the link_layer_info param in DSReadPcap() and DSFilterPacket()
+  * note - for file read, the full return value should be saved and then supplied as the link_layer_info param in DSReadPcap() and DSFilterPacket()
   * a return value < 0 indicates an error
 
 <a name="DSReadPcap"></a>
 ## DSReadPcap
 
-DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcap record  structs (see [Pcap Record Structs](#user-content-pcaprechdrt) below). DSReadPcap() navigates each record it reads, including data link layer and VLAN headers (if any), and fills in packet record structs with packet data, timestamp, and length, and other information.
+DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcap record structs (see [Pcap Record Structs](#user-content-pcaprechdrt) below). DSReadPcap() navigates each record it reads, including data link layer and VLAN headers (if any), and fills in packet record structs with packet data, timestamp, and length, and other information.
 
 ```c++  
 int DSReadPcap(FILE*           fp_pcap,
@@ -238,14 +238,39 @@ int DSReadPcap(FILE*           fp_pcap,
                pcap_hdr_t*     pcap_file_hdr);
 ```
 
-  * pkt_buf should point to a sufficiently large buffer to contain returned packet data
+  * fp_pcap is the file handle of the pcap file to read
   * uFlags may be one or more DS_READ_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
-  * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, incuding arrival timestamp. NULL indicates not used
+  * pkt_buf should point to a sufficiently large buffer to contain returned packet data
+  * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, including arrival timestamp. NULL indicates not supplied
   * link_layer_info should be supplied from a prior DSOpenPcap() call return value. See DSOpenPcap() comments above
-  * eth_hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags (as defined in linux/if_ether.h). NULL indicates not used
-  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call. NULL indicates not used
+  * eth_hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
+  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call. NULL indicates not supplied
 
   * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
+
+<a name="DSWritePcap"></a>
+## DSWritePcap
+
+DSWritePcap() writes packet data in pkt_buf to one or more pcap records and ethernet headers at the current file position of fp_pcap, based on pcap record structs pointed to by pcap_pkt_hdr (see [Pcap Record Structs](#user-content-pcaprechdrt) below), ethernet header pointed to by p_eth_hdr, and pcap file header struct pointed to by pcap_file_hdr, if supplied.
+
+```c++  
+int DSWritePcap(FILE*           fp_pcap,
+                unsigned int    uFlags,
+                uint8_t*        pkt_buf,
+                int             pkt_buf_len,
+                pcaprec_hdr_t*  pcap_pkt_hdr,
+                struct ethhdr*  p_eth_hdr,
+                pcap_hdr_t*     pcap_file_hdr);
+```
+
+  * fp_pcap is the file handle of the pcap file to write
+  * uFlags may be one or more DS_WRITE_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
+  * pkt_buf should point to a a buffer containing pkt_buf_len amount (in bytes) of packet data to be written
+  * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) containing packet record info, including arrival timestamp. NULL indicates not supplied
+  * p_eth_hdr, if supplied, should point to an ethhdr struct (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
+  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) containing pcap file header information such as link layer type. NULL indicates not supplied
+
+  * return value is the length of the amount of data written (in bytes) or < 0 for an error condition
 
 <a name="PcapAPIFlags"></a>
 # Pcap API Definitions & Flags
@@ -253,35 +278,37 @@ int DSReadPcap(FILE*           fp_pcap,
 Following are definitions and flags used by pktlib pcap APIs
 
 ```c++
-#define PCAP_TYPE_LIBPCAP                     /* PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered */
+#define PCAP_TYPE_LIBPCAP                      /* PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered */
 #define PCAP_TYPE_PCAPNG
-#define PCAP_TYPE_BER                         /* PCAP_TYPE_BER and PCAP_TYPE_HI3 are used by mediaMin for intermediate packet output */
+#define PCAP_TYPE_BER                          /* PCAP_TYPE_BER and PCAP_TYPE_HI3 are used by mediaMin for intermediate packet output */
 #define PCAP_TYPE_HI3
 #define PCAP_TYPE_RTP
 
-#define PCAP_LINK_LAYER_LEN_MASK              /* return value of DSOpenPcap() contains link type in bits 27-20, file type in bits 19-16, and link layer length in lower 16 bits */
+#define PCAP_LINK_LAYER_LEN_MASK               /* return value of DSOpenPcap() contains link type in bits 27-20, file type in bits 19-16, and link layer length in lower 16 bits */
 #define PCAP_LINK_LAYER_FILE_TYPE_MASK
 #define PCAP_LINK_LAYER_LINK_TYPE_MASK
 
-#ifndef LINKTYPE_ETHERNET                     /* define pcap file link types if needed. We don't require libpcap to be installed */
+#ifndef LINKTYPE_ETHERNET                      /* define pcap file link types if needed. We don't require libpcap to be installed */
 
-  #define LINKTYPE_ETHERNET                   /* standard Ethernet Link Layer */
-  #define LINKTYPE_LINUX_SLL                  /* Linux "cooked" capture encapsulation */
-  #define LINKTYPE_RAW_BSD                    /* Raw IP, OpenBSD compatibility value */
-  #define LINKTYPE_RAW                        /* Raw IP */
-  #define LINKTYPE_IPV4                       /* Raw IPv4 */
-  #define LINKTYPE_IPV6                       /* Raw IPv6 */
+  #define LINKTYPE_ETHERNET                    /* standard Ethernet Link Layer */
+  #define LINKTYPE_LINUX_SLL                   /* Linux "cooked" capture encapsulation */
+  #define LINKTYPE_RAW_BSD                     /* Raw IP, OpenBSD compatibility value */
+  #define LINKTYPE_RAW                         /* Raw IP */
+  #define LINKTYPE_IPV4                        /* Raw IPv4 */
+  #define LINKTYPE_IPV6                        /* Raw IPv6 */
 #endif
 
-#define DS_OPEN_PCAP_READ                     /* open pcap, pcapng, or rtp/rtpdump file for reading */
-#define DS_OPEN_PCAP_WRITE                    /* open pcap, pcapng, or rtp/rtpdump file writing. If the path/file does not exist, create */
-#define DS_OPEN_PCAP_DONT_READ_HEADER         /* don't read file header */
-#define DS_OPEN_PCAP_DONT_WRITE_HEADER        /* don't write file header */
-#define DS_OPEN_PCAP_QUIET                    /* suppress status and progress messages */
-#define DS_OPEN_PCAP_RESET                    /* seek to start of pcap; assumes a valid (already open) file handle given to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ */
-#define DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT     /* info returned in pcap_file_hdr will be in pcap (libpcap) file format, even if the file being opened is in pcapng format */
+#define DS_OPEN_PCAP_READ                      /* open pcap, pcapng, or rtp/rtpdump file for reading */
+#define DS_OPEN_PCAP_WRITE                     /* open pcap, pcapng, or rtp/rtpdump file writing. If the path/file does not exist, create */
+#define DS_OPEN_PCAP_DONT_READ_HEADER          /* don't read file header */
+#define DS_OPEN_PCAP_DONT_WRITE_HEADER         /* don't write file header */
+#define DS_OPEN_PCAP_QUIET                     /* suppress status and progress messages */
+#define DS_OPEN_PCAP_RESET                     /* seek to start of pcap; assumes a valid (already open) file handle supplied to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ */
+#define DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT      /* info returned in pcap_file_hdr will be in pcap (libpcap) file format, even if the file being opened is in pcapng format */
 
-#define DS_READ_PCAP_COPY                     /* copy pcap record(s) only, don't advance file pointer */
+#define DS_READ_PCAP_COPY                      /* copy pcap record(s) only, don't advance file pointer */
+
+#define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK  /* use the wall clock to set packet record header timestamp (arrival timestamp in Wireshark) */
 ```
 <a name="MininumAPIInterface"></a>
 # Minimum Push/Pull API Interface
