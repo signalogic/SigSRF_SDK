@@ -41,6 +41,7 @@ Revision History
   Modified Jul 2024 JHB, DSOpenPcap() DS_WRITE changes including:
                         -use pcap_hdr_t* (pcap file header) param struct fields as-is if already initialized
                         -implement DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT flag to cause file header data to be returned in pcap (libpcap) format instead of pcapng
+  Modified Jul 2024 JHB, correctly return total number of bytes written in DSWritePcap()
 */
 
 /* Linux and/or other OS includes */
@@ -636,8 +637,9 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
 /* write a pcap record */
 
-int DSWritePcap(FILE* fp_out, unsigned int uFlags, uint8_t* pkt_buffer, int packet_length, pcaprec_hdr_t* pcap_pkt_hdr, struct ethhdr* eth_hdr, pcap_hdr_t* pcap_file_hdr, TERMINATION_INFO* termInfo
-#ifdef USE_TIMESPEC_PARAM  /* remove timespec param, JHB Jul 2024 */
+int DSWritePcap(FILE* fp_out, unsigned int uFlags, uint8_t* pkt_buffer, int packet_length, pcaprec_hdr_t* pcap_pkt_hdr, struct ethhdr* eth_hdr, pcap_hdr_t* pcap_file_hdr
+#ifdef USE_LEGACY_PARAMS  /* remove pTermInfo and timespec params, JHB Jul 2024 */
+, TERMINATION_INFO* pTermInfo
 ,  struct timespec* ts
 #endif
 ) {  /* add pcap_hdr_t* param, JHB Jul 2024 */
@@ -646,7 +648,7 @@ pcaprec_hdr_t         pcap_pkt_hdr_local = { 0 };
 pcaprec_hdr_t*        p_pkt_hdr;
 struct ethhdr         eth_hdr_local;
 struct ethhdr*        p_eth_hdr;
-#ifdef USE_TIMESPEC_PARAM
+#ifdef USE_LEGACY_PARAMS
 struct timespec       ts_local = { 0 };
 struct timespec*      p_ts;
 #else
@@ -664,7 +666,7 @@ struct timespec       ts = { 0 };
 
    int link_type = pcap_file_hdr ? pcap_file_hdr->link_type : LINKTYPE_ETHERNET;  /* default link type is standard 14-byte ethernet header unless file header struct is given, JHB Jul 2024 */
 
-   #ifdef USE_TIMESPEC_PARAM
+   #ifdef USE_LEGACY_PARAMS
    if (!ts) p_ts = &ts_local;
    else p_ts = ts;
 
@@ -696,35 +698,38 @@ struct timespec       ts = { 0 };
 
       memset(p_eth_hdr->h_dest, 0, sizeof(eth_hdr_local.h_dest));  /* for MAC addresses we use Localhost (all zeros) */
       memset(p_eth_hdr->h_source, 0, sizeof(eth_hdr_local.h_source));
-   
-      if (termInfo != NULL) {
 
-         if (termInfo->remote_ip.type == DS_IPV4 || termInfo->remote_ip.type == IPv4) p_eth_hdr->h_proto = htons(0x0800);
-         else if (termInfo->remote_ip.type == DS_IPV6 || termInfo->remote_ip.type == IPv6) p_eth_hdr->h_proto = htons(0x86DD);
+      #ifdef USE_LEGACY_PARAMS  /* remove legacy pTermInfo param. See comments in packet_flow_media_proc.c near DSWritePcap() that give additional explanation, JHB Jul 2024 */
+      if (pTermInfo != NULL) {
+
+         if (pTermInfo->remote_ip.type == DS_IPV4 || pTermInfo->remote_ip.type == IPv4) p_eth_hdr->h_proto = htons(0x0800);
+         else if (pTermInfo->remote_ip.type == DS_IPV6 || pTermInfo->remote_ip.type == IPv6) p_eth_hdr->h_proto = htons(0x86DD);
          else
          {
             Log_RT(2, "ERROR: DSWritePcap, invalid IP type in term info, unable to write packet\n");
             return -1;
          }
       }
-      else {
+      else
+      #endif
+      {
 
-         int version = pkt_buffer[0] >> 4;
-         if (version == 4) p_eth_hdr->h_proto = htons(0x0800);
-         else if (version == 6) p_eth_hdr->h_proto = htons(0x86DD);
+         uint8_t version = pkt_buffer[0] >> 4;
+         if (version == IPv4) p_eth_hdr->h_proto = htons(0x0800);
+         else if (version == IPv6) p_eth_hdr->h_proto = htons(0x86DD);
          else
          {
-            Log_RT(2, "ERROR: DSWritePcap, invalid IP header version number: %d\n", version);
+            Log_RT(2, "ERROR: DSWritePcap() says invalid IP header version number: %d found in pkt_buf \n", version);
             return -1;
          }
       }
    }
 
-   fwrite(p_pkt_hdr, sizeof(pcaprec_hdr_t), 1, fp_out);
-   if (fWriteEthHdr) fwrite(p_eth_hdr, sizeof(eth_hdr_local), 1, fp_out);
-   fwrite(pkt_buffer, packet_length, 1, fp_out);
+   int num_bytes_written = fwrite(p_pkt_hdr, sizeof(pcaprec_hdr_t), 1, fp_out) * sizeof(pcaprec_hdr_t);
+   if (fWriteEthHdr) num_bytes_written += fwrite(p_eth_hdr, sizeof(eth_hdr_local), 1, fp_out) * sizeof(eth_hdr_local);
+   num_bytes_written += fwrite(pkt_buffer, packet_length, 1, fp_out) * packet_length;
 
-   return packet_length;
+   return num_bytes_written;
 }
 
 /* DSFilterPcapRecord() reads a pcap file to find the next occurrence of a desired packet type. Notes JHB Sep 2023:

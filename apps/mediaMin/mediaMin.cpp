@@ -175,7 +175,7 @@
    Modified Jul 2024 JHB, mods to isDuplicatePacket() and isReservedUDP() after regression test
    Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap() and DSConfigMediaService(), add uFlags param and move pkt buffer len to fourth param in DSWritePcap()
  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, move uFlags to second param in calls to DSGetLogTimeStamp() and DSWritePacketStatsHistoryLog(), support --group_ccap_nocopy command line option
- Modified Jul 2024 JHB, modify calls to DSWritePcap() to add pcap_hdr_t*, remove timestamp param (the packet record header param now supplies a timestamp, if any). See pktlib.h comments
+ Modified Jul 2024 JHB, modify calls to DSWritePcap() to add pcap_hdr_t*, remove timestamp (struct timespec*) and TERMINFO_INFO* params (the packet record header param now supplies a timestamp, if any, and IP type is read from packet data in pkt_buf). See pktlib.h comments
  Modified Jul 2024 JHB, improve detection for EVS AMR IO modes 23.05 and 23.85
 */
 
@@ -3706,7 +3706,7 @@ pull:
             }
          }
 
-         if (DSWritePcap(fp, uFlags_write, pkt_out_ptr, packet_out_len[j], &pcap_pkt_hdr, NULL, NULL, NULL) < 0) { fprintf(stderr, "DSWritePcap() failed for %s output\n", errstr); return -1; }
+         if (DSWritePcap(fp, uFlags_write, pkt_out_ptr, packet_out_len[j], &pcap_pkt_hdr, NULL, NULL) < 0) { fprintf(stderr, "DSWritePcap() failed for %s output\n", errstr); return -1; }
          else pkt_out_ptr += packet_out_len[j];
       }
    }
@@ -4633,7 +4633,7 @@ uint8_t pcap_type;
 
          fp_pcap_out = fopen(temp_filename, "rb+");
          fseek(fp_pcap_out, 0, SEEK_END);
-         DSWritePcap(fp_pcap_out, DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, pkt_in_buf, *pkt_len, NULL, NULL, NULL, NULL);
+         DSWritePcap(fp_pcap_out, DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, pkt_in_buf, *pkt_len, NULL, NULL, NULL);
          fclose(fp_pcap_out);
       }
    }

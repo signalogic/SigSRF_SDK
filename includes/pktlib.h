@@ -109,7 +109,7 @@
   Modified Jun 2024 JHB, define range for SIP ports of 5060 thru 5090 (before it was only 5060 and 5061)
   Modified Jun 2024 JHB, implement packet fragmentation and reassembly. See DS_INFO_PKT_FRAGMENT_xxx, DS_INFO_PKT_REASSEMBLY_xxx, and DS_INFO_PKT_RETURN_xxx DSGetPacketInfo() uFlags definitions; usage example is in mediaMin.cpp
   Modified Jul 2024 JHB, changes required per documentation review: DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap(), DSGetTermChan(), and DSConfigMediaService(), move pkt_buf_len to fourth param and add uFlags param in DSWritePcap()
-  Modified Jul 2024 JHB, modify DSWritePcap() to remove timestamp param and instead use the packet record header param timestamp and uFlags definition DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK
+  Modified Jul 2024 JHB, modify DSWritePcap() to remove (i) struct timespec* param and instead use the packet record header param timestamp and uFlags definition DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, and (ii) TERMINATION_INFO* param and instead use IP type in pkt_buf
 */
 
 #ifndef _PKTLIB_H_
@@ -980,9 +980,9 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
   #define DS_READ_PCAP_COPY                      0x0100     /* copy pcap record(s) only, don't advance file pointer */
 
-  int DSWritePcap(FILE* fp_pcap, unsigned int uFlags, uint8_t* pkt_buf, int pkt_buf_len, pcaprec_hdr_t* pcap_pkt_hdr, struct ethhdr* eth_hdr, pcap_hdr_t* pcap_file_hdr, TERMINATION_INFO* termInfo);
+  int DSWritePcap(FILE* fp_pcap, unsigned int uFlags, uint8_t* pkt_buf, int pkt_buf_len, pcaprec_hdr_t* pcap_pkt_hdr, struct ethhdr* p_eth_hdr, pcap_hdr_t* pcap_file_hdr);
 
-  #define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK  0x0100  /* use wall clock to set packet record header timestamp (this is the arrival timestamp in Wireshark) */
+  #define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK  0x0100     /* use wall clock to set packet record header timestamp (this is the arrival timestamp in Wireshark) */
 
   int DSClosePcap(FILE* fp_pcap);
 

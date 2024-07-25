@@ -109,7 +109,7 @@
  Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap(), add uFlags param and move pkt buffer len to fourth param in DSWritePcap()
  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, move uFlags to second param in calls to DSGetBackTrace()
  Modified Jul 2024 JHB, update pcap_extract mode to support payload and/or packet operations (e.g. insert impairments, filter/remove packets by matching criteria (e.g. SSRC), etc). Initially it supports the --random_bit_error N command line argument, with --filter_packet_ssrc N,N,N ... planned, and others to follow
- Modified Jul 2024 JHB, modify calls to DSWritePcap() to add pcap_hdr_t* param, remove timestamp param (the packet record header param now supplies a timestamp, if needed). See pktlib.h comments
+ Modified Jul 2024 JHB, modify calls to DSWritePcap() to add pcap_hdr_t* param, remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See pktlib.h comments
 */
 
 /* Linux header files */
@@ -2040,8 +2040,8 @@ PollBuffer:
 
                #if 0
                if ((ret_val = DSWritePcap(fp_out, 0, pkt_buf, pkt_len, NULL, NULL, &term_info, &ts_pcap)) < 0) {
-               #else
-               if ((ret_val = DSWritePcap(fp_out, 0, pkt_buf, pkt_len, &pcaprec_hdr, NULL, NULL, &term_info)) < 0) {
+               #else  /* remove struct timespec* param (timestamp in pcap_pkt_hdr is used instead), and remove TERMINATION_INFO* (IP type in pkt_buf is used instead), JHB Jul 2024 */
+               if ((ret_val = DSWritePcap(fp_out, 0, pkt_buf, pkt_len, &pcaprec_hdr, NULL, NULL)) < 0) {
                #endif
                   fprintf(stderr, "ERROR: DSWritePcap() returns %d error code \n", ret_val);
                   goto codec_test_cleanup;
@@ -2813,7 +2813,7 @@ codec_test_cleanup:
          }
          else if (outFileType == PCAP) {  /* add pcap write, JHB Jul 2024 */
 pcap_out:
-            ret_val = DSWritePcap(fp_out, 0, pkt_buffer, packet_length, &pcap_pkt_hdr, NULL, &pcap_file_hdr, NULL);
+            ret_val = DSWritePcap(fp_out, 0, pkt_buffer, packet_length, &pcap_pkt_hdr, NULL, &pcap_file_hdr);
             if (ret_val < 0) { fprintf(stderr, "pcap extract mode DSWritePcap() failed, ret_val = %d \n", ret_val); goto pcap_extract_cleanup; }
          }
       }

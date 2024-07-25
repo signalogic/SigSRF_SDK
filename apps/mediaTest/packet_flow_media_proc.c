@@ -54,7 +54,7 @@ Revision History
  Modified Jun 2017 JHB, added pcap and jitter buffer stats logging
  Modified Jun 2017 JHB, added frame mode option for pcap input (see "packet mode" and "frame mode" comments)
  Modified Jul 2017 JHB, modified packet info log to group data by SSRC.  Currently a max of 8 unique SSRCs are supported in one session
- Modified Jul 2017 JHB, added multithread operation test code (see ENABLE_MULTITHREAD_OPERATION)
+ Modified Jul 2017 JHB, added multithread operation test code (see OLD_MULTITHREAD_OPERATION)
  Modified Jul 2017 JHB, added DSOpenPcap(), DSReadPcapRecord(), and DSWritePcapRecord() APIs to consolidate and reduce pcap file handling code
  Modified Jul 2017 CKJ, moved pcap file related structs and functions to pktlib
  Modified Jul 2017 JHB, added example showing use of DS_GETORD_PKT_RETURN_ALL_DELIVERABLE flag for multiple SSRC streams within the same session.  The flag is applied briefly to force remaining packets for the current stream out of the buffer when a new stream starts
@@ -181,7 +181,7 @@ Revision History
  Modified May 2024 JHB, check for error condition returned by DSPktStatsAddEntries()
  Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap() and DSWritePcapRecord() to DSWritePcap(), per change in pktlib.h
  Modified Jul 2024 JHB, set DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM packet logging flag in WritePktLog() if dormant session detection is disabled (see diaglib.h for flag info)
- Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSGetTermChan(), in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, remove timestamp* param
+ Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSGetTermChan(), in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, and remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See comments in pktlib.h
  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSWritePacketStatsHistoryLog() and in all diaglib calls (e.g. DSPktStatsAddEntries, DSGetBacktrace)
  Modified Jul 2024 JHB, add NULL for pToC param in DSGetPayloadInfo()
 */
@@ -613,12 +613,12 @@ void ThreadAbort(int, char*);
   2) Currently the "core list" cmd line option (-mN, where N is a bitwise core list) is not active for x86 operation.  This may be used at some future point for core pinning (aka processor affinity).
      The core list option is used for high capacity coCPU operation (it's a required cmd line entry in that case)
   
-  3) ENABLE_MULTITHREAD_OPERATION may be undefined to de-activte multithread code
+  3) OLD_MULTITHREAD_OPERATION may be undefined to de-activte multithread code
 */
   
-#define ENABLE_MULTITHREAD_OPERATION
+#define OLD_MULTITHREAD_OPERATION
 
-#if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
+#if defined(OLD_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
 
 static SESSION_DATA session_data_g[MAX_SESSIONS] = {{ 0 }};  /* used by secondaryThreads() */
 
@@ -792,7 +792,7 @@ void* packet_flow_media_proc(void* pExecuteMode) {
    int last_pkt_decode_cnt = 0;
 
    uint32_t threadid = 0;
-   #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
+   #if defined(OLD_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
    pthread_t threads[MAX_SESSIONS] = { 0 };
    int last_multithread_buffered_cnt = 0, last_multithread_pkt_write_cnt = 0;
    #endif
@@ -925,7 +925,7 @@ void* packet_flow_media_proc(void* pExecuteMode) {
       if (!DSConfigPktlib(NULL, NULL, 0)) DSConfigPktlib(NULL, NULL, DS_CP_INIT); // | DS_CP_DEBUGCONFIG);
       if (!DSConfigVoplib(NULL, NULL, 0)) DSConfigVoplib(NULL, NULL, DS_CV_INIT);
 
-      #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
+      #if defined(OLD_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
       if (!fMediaThread) nThreads_gbl = PlatformParams.cimInfo[0].taskAssignmentCoreLists[0];  /* this is the -tN cmd line value, if entered */
       #endif
 
@@ -1139,7 +1139,7 @@ too_many_threads:
       nSessions_gbl = MAX_SESSIONS;
    }
 
-   #ifdef ENABLE_MULTITHREAD_OPERATION
+   #ifdef OLD_MULTITHREAD_OPERATION
    if (nThreads_gbl > nSessions_gbl) {
       printf("More threads specified than sessions available, reducing number of threads to %d\n", nSessions_gbl);
       nThreads_gbl = nSessions_gbl;
@@ -1290,7 +1290,7 @@ too_many_threads:
       #endif
    }
 
-   #ifdef ENABLE_MULTITHREAD_OPERATION  /* deprecated, see comments above near SECONDARY_THREADS_DEPRECATED */
+   #ifdef OLD_MULTITHREAD_OPERATION  /* deprecated, see comments above near SECONDARY_THREADS_DEPRECATED */
 
 /* if multithread test enabled using -tN cmd line option (N > 1), then start N-1 threads that open / process N-1 additional sessions and pcap files.  The primary thread is
    processed here in main(), and secondary threads are processed in the secondaryThreads() local function.  The main purpose of secondary threads is to test and measure
@@ -1525,7 +1525,7 @@ run_loop:
          if (nStatsDisplayPause > 0) nStatsDisplayPause--;  /* if stats display "pause count" non-zero then decrement and temporarily don't display stats, JHB May 2023 */
 
          else if ((int)pkt_counters[thread_index].pkt_input_cnt != last_pkt_input_cnt || (int)pkt_counters[thread_index].pkt_read_cnt != last_pkt_read_cnt || (int)pkt_counters[thread_index].pkt_add_to_jb_cnt != last_pkt_add_to_jb_cnt || pkt_xcode_cnt != last_pkt_xcode_cnt || pkt_pulled_cnt != last_pkt_pulled_cnt || pkt_group_cnt != last_pkt_group_cnt
-             #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
+             #if defined(OLD_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
              || last_multithread_buffered_cnt != num_pkts_buffered_multithread || last_multithread_pkt_write_cnt != pkt_write_cnt_multithread
              #endif
              || pkt_decode_cnt != last_pkt_decode_cnt
@@ -1594,7 +1594,7 @@ run_loop:
             }
 
 
-            #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
+            #if defined(OLD_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
             if (num_pkts_buffered_multithread) sprintf(&tmpstr[strlen(tmpstr)], " Other threads buffered %d", num_pkts_buffered_multithread);
             if (pkt_write_cnt_multithread) sprintf(&tmpstr[strlen(tmpstr)], " Other threads transcoded %d", pkt_write_cnt_multithread);
             #endif
@@ -1641,7 +1641,7 @@ run_loop:
             last_pkt_add_to_jb_cnt = pkt_counters[thread_index].pkt_add_to_jb_cnt;
             last_pkt_pulled_cnt = pkt_pulled_cnt;
             last_pkt_xcode_cnt = pkt_xcode_cnt;
-             #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
+             #if defined(OLD_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
             last_multithread_buffered_cnt = num_pkts_buffered_multithread;
             last_multithread_pkt_write_cnt = pkt_write_cnt_multithread;
             #endif
@@ -3879,7 +3879,12 @@ static int log_pkt_index = 0;
 
                         sem_wait(&pcap_write_sem);
 
-                        if (DSWritePcap(fp_out[pcap_index], DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, pkt_out_buf, packet_length, NULL, NULL, NULL, &termInfo_link) < 0) {
+                        if (DSWritePcap(fp_out[pcap_index], DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, pkt_out_buf, packet_length, NULL, NULL, NULL
+                                        #if 0  /* remove pTermInfo param - we just called DSFormatPacket() and formatted a packet using termInfo_link, so the IP type in pkt_out_buf should be used. Anything different would be a mismatch and result in a basic / Wireshark error. See DSWritePcap() in pktlib_pcap.cpp for more detail, JHB Jul 2024 */
+                                        , &termInfo_link
+                                        #endif
+                                       ) < 0) {
+
                            sem_post(&pcap_write_sem);
                            fprintf(stderr, "Main thread test, problem with DSWritePcap()\n");
                            break;
@@ -4102,7 +4107,7 @@ static int log_pkt_index = 0;
       }
    }
 
-   #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
+   #if defined(OLD_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
 /* wait for other threads to exit */
    for (i = 1; i < (int)nThreads_gbl; i++) pthread_join(threads[i], NULL);
    #endif
@@ -4150,7 +4155,7 @@ static int log_pkt_index = 0;
 
 cleanup:
 
-   #if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
+   #if defined(OLD_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)
    if (nThreads_gbl > 1) {
 
       printf("Multithread test, number of packets input + read = %d, buffered = %d", num_pkts_read_multithread, num_pkts_buffered_multithread);
@@ -5590,7 +5595,7 @@ char* szLocalLogFilename = NULL;
    return ret_val;
 }
 
-#if defined(ENABLE_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)  /* secondaryThreads() is deprecated, no longer used.  See comments near SECONDARY_THREADS_DEPRECATED above */
+#if defined(OLD_MULTITHREAD_OPERATION) && !defined(__LIBRARYMODE__)  /* secondaryThreads() is deprecated, no longer used.  See comments near SECONDARY_THREADS_DEPRECATED above */
 
 /* multithread / concurrent channel example source */
 
@@ -5802,7 +5807,13 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
             if (pcap_index >= 0 && fp_out[pcap_index] != NULL)
             {
                sem_wait(&pcap_write_sem);
-               if (DSWritePcap(fp_out[pcap_index], DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, pkt_buffer, packet_length, NULL, NULL, NULL, &termInfo_link) < 0) {
+
+               if (DSWritePcap(fp_out[pcap_index], DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, pkt_buffer, packet_length, NULL, NULL, NULL
+                               #if 0  /* remove pTermInfo param, JHB Jul 2024 */
+                               , &termInfo_link
+                               #endif
+                              ) < 0) {
+
                   sem_post(&pcap_write_sem);
                   fprintf(stderr, "Multithread test thread id = %d, problem with DSWritePcap()\n", threadid);
                   continue;
@@ -5847,7 +5858,7 @@ multithread_cleanup:
    return (void*)0;
 }
 
-#endif  /* ENABLE_MULTITHREAD_OPERATION && !__LIBRARYMODE__ */
+#endif  /* OLD_MULTITHREAD_OPERATION && !__LIBRARYMODE__ */
 
 
 #ifdef OVERWRITE_INPUT_DATA

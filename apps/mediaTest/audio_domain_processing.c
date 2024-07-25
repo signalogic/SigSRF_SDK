@@ -35,7 +35,7 @@
   Modified Nov 2023 JHB, comments and formatting only
   Modified Jun 2024 JHB, rename DSWritePcapRecord() to DSWritePcap()
   Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, add uFlags param and move pkt buffer length to fourth param in DSWritePcap()
-  Modified Jul 2024 JHB, in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, remove timestamp* param (the packet record header param now supplies a timestamp, if needed). See pktlib.h comments
+  Modified Jul 2024 JHB, in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See pktlib.h comments
 */
 
 
@@ -407,8 +407,8 @@ HASRDECODER hASRDecoder;
 
                #if 0
                if (DSWritePcap(fp_out_pcap_merge, uFlags, group_audio_packet, packet_length, &pcap_pkt_hdr, NULL, &output_term, fAcceleratedTime ? &ts : NULL) < 0) {
-               #else
-               if (DSWritePcap(fp_out_pcap_merge, uFlags, group_audio_packet, packet_length, &pcap_pkt_hdr, NULL, NULL, &output_term) < 0) {
+               #else  /* remove struct timespec* param (timestamp in pcap_pkt_hdr is used instead), and remove TERMINATION_INFO* (IP type in group_audio_packet is used instead), JHB Jul 2024 */
+               if (DSWritePcap(fp_out_pcap_merge, uFlags, group_audio_packet, packet_length, &pcap_pkt_hdr, NULL, NULL) < 0) {
                #endif
 
                   sem_post(&pcap_write_sem);
