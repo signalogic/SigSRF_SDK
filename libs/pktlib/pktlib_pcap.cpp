@@ -21,9 +21,8 @@ License
   Github SigSRF License, Version 1.1, https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
 
 Revision History
-  
-  Created Jul 2024, split out from pktlib.c
-  Modified Jul 2017 JHB, modified DSOpenPcap() so it can be used for read or write (takes a DS_READ or DS_WRITE uFlags option, defined in filelib.h, also see DS_OPEN_PCAP_xxx defines).  Added DSReadRecord() and DSWritePcapRecord() APIs
+  Created Mar 2017, Chris Johnson
+  Modified Jul 2017 JHB, modified DSOpenPcap() so it can be used for read or write (takes a DS_READ or DS_WRITE uFlags option, defined in filelib.h, also see DS_OPEN_PCAP_xxx defines). Added DSReadRecord() and DSWritePcapRecord() APIs
   Modified Sep 2018 CJK, added special case error message to DSOpenPcap() regarding Snoop file format magic number
   Modified Sep 2018 JHB, add VLAN header handling to DSReadPcapRecord()
   Modified Oct 2020 JHB, add pcapng format capability to DSOpenPcap() and DSReadPcapRecord(). This was done initially to support TraceWrangler output (pcap anonymizer tool) but we expect to fully support customer pcapng files
@@ -38,9 +37,10 @@ Revision History
                         -now uses the file header param struct link_type field as-is if already initialized (non-zero)
                         -now uses packet record struct param length fields as-is if already initialized
                         -writes ethernet header struct to each packet record only if link_type == LINKTYPE_ETHERNET
-  Modified Jul 2024 JHB, DSOpenPcap() DS_WRITE changes including:
+  Modified Jul 2024 JHB, changes in DSOpenPcap() with DS_OPEN_PCAP_WRITE flag (write mode) including:
                         -use pcap_hdr_t* (pcap file header) param struct fields as-is if already initialized
                         -implement DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT flag to cause file header data to be returned in pcap (libpcap) format instead of pcapng
+  Modified Jul 2024 JHB, split out from pktlib.c, relevant revision history moved here
   Modified Jul 2024 JHB, correctly return total number of bytes written in DSWritePcap()
 */
 
