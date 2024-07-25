@@ -251,7 +251,7 @@ int DSReadPcap(FILE*           fp_pcap,
 <a name="DSWritePcap"></a>
 ## DSWritePcap
 
-DSWritePcap() writes packet data in pkt_buf to one or more pcap records at the current file position of fp_pcap, based on pcap record structs pointed to by pcap_pkt_hdr (see [Pcap Record Structs](#user-content-pcaprechdrt) below). DSWritePcap() writes ethernet header information based on link layer type in pcap_file_hdr, and p_eth_hdr, if supplied.
+DSWritePcap() writes packet data in pkt_buf to one or more pcap records and ethernet headers at the current file position of fp_pcap, based on pcap record structs pointed to by pcap_pkt_hdr (see [Pcap Record Structs](#user-content-pcaprechdrt) below), ethernet header pointed to by p_eth_hdr, and pcap file header struct pointed to by pcap_file_hdr, if supplied.
 
 ```c++  
 int DSReadPcap(FILE*           fp_pcap,
