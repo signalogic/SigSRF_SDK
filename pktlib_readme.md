@@ -272,6 +272,21 @@ int DSWritePcap(FILE*           fp_pcap,
 
   * return value is the length of the amount of data written (in bytes) or < 0 for an error condition
 
+<a name="DSClosePcap"></a>
+## DSClosePcap
+
+DSClosePcap() close a pcap file opened previously for reading or writing.
+
+```c++  
+int DSClosePcap(FILE*         fp_pcap,
+                unsigned int  uFlags);
+
+  * fp_pcap is the file handle of the pcap file to close
+  * uFlags may be one or more DS_CLOSE_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
+
+  * return value is the return value of fclose() called internally in pktlib
+```
+
 <a name="PcapAPIFlags"></a>
 # Pcap API Definitions & Flags
 
@@ -309,6 +324,8 @@ Following are definitions and flags used by pktlib pcap APIs
 #define DS_READ_PCAP_COPY                      /* copy pcap record(s) only, don't advance file pointer */
 
 #define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK  /* use the wall clock to set packet record header timestamp (arrival timestamp in Wireshark) */
+
+#define DS_CLOSE_PCAP_QUIET DS_OPEN_PCAP_QUIET /* suppress status and progress messages */
 ```
 <a name="MininumAPIInterface"></a>
 # Minimum Push/Pull API Interface
