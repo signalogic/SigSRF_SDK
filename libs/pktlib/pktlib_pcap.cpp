@@ -971,7 +971,7 @@ int ret_val = 0;
 
    if (error_cond && (!fp_pcap || ret_val < 0)) *error_cond = -1;  /* indicate error condition */
 
-   if (fp_pcap) DSClosePcap(fp_pcap, DS_OPEN_PCAP_QUIET);
+   if (fp_pcap) DSClosePcap(fp_pcap, DS_CLOSE_PCAP_QUIET);
    
    return packet_time;
 }
@@ -980,7 +980,9 @@ int ret_val = 0;
 
 int DSClosePcap(FILE* fp_pcap, unsigned int uFlags) {
 
-   int ret_val = fclose(fp_pcap);
+int ret_val = -1;
+
+   if (fp_pcap) ret_val = fclose(fp_pcap);
 
    if (!(uFlags & DS_CLOSE_PCAP_QUIET)) Log_RT(4, "INFO: DSClosePcap() closed pcap file, ret val = %d \n", ret_val);
 
