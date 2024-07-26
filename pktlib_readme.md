@@ -234,7 +234,7 @@ int DSReadPcap(FILE*           fp_pcap,
                uint8_t*        pkt_buf,
                pcaprec_hdr_t*  pcap_pkt_hdr,
                int             link_layer_info,
-               uint16_t*       eth_hdr_type,
+               uint16_t*       p_eth_hdr_type,
                pcap_hdr_t*     pcap_file_hdr);
 ```
 
@@ -243,7 +243,7 @@ int DSReadPcap(FILE*           fp_pcap,
   * pkt_buf should point to a sufficiently large buffer to contain returned packet data
   * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, including arrival timestamp. NULL indicates not supplied
   * link_layer_info should be supplied from a prior DSOpenPcap() call return value. See DSOpenPcap() comments above
-  * eth_hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
+  * p_eth_hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call. NULL indicates not supplied
 
   * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
