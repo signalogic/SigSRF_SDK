@@ -3,7 +3,7 @@ $Header: /root/Signalogic/DirectCore/lib/pktlib/pktlib_pcap.cpp
  
 Description
 
-  APIs managing pcap, pcapng, and rtp/rtpdump files
+  APIs for managing pcap, pcapng, and rtp/rtpdump files
 
 Notes
 
@@ -971,14 +971,18 @@ int ret_val = 0;
 
    if (error_cond && (!fp_pcap || ret_val < 0)) *error_cond = -1;  /* indicate error condition */
 
-   if (fp_pcap) DSClosePcap(fp_pcap);
+   if (fp_pcap) DSClosePcap(fp_pcap, DS_OPEN_PCAP_QUIET);
    
    return packet_time;
 }
 
-/*close pcap file */
+/* close pcap file */
 
-int DSClosePcap(FILE* fp_pcap) {
+int DSClosePcap(FILE* fp_pcap, unsigned int uFlags) {
 
-   return fclose(fp_pcap);
+   int ret_val = fclose(fp_pcap);
+
+   if (!(uFlags & DS_CLOSE_PCAP_QUIET)) Log_RT(4, "INFO: DSClosePcap() closed pcap file, ret val = %d \n", ret_val);
+
+   return ret_val;
 }

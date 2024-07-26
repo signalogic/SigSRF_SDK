@@ -984,7 +984,9 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
   #define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK  0x0100     /* use wall clock to set packet record header timestamp (this is the arrival timestamp in Wireshark) */
 
-  int DSClosePcap(FILE* fp_pcap);
+  int DSClosePcap(FILE* fp_pcap, unsigned uFlags);
+
+  #define DS_CLOSE_PCAP_QUIET                    DS_OPEN_PCAP_QUIET  /* suppress status and progress messages */
 
 /* DSFilterPacket() returns the next packet from a pcap matching given filter specs */
 

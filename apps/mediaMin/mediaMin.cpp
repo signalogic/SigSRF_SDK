@@ -274,6 +274,8 @@ static int last_rtp_pyld_len[10] = { 0 };
 
 bool fFirstConsoleMediaOutput = false;  /* set on first media-related console output; used to help manage console output about non-RTP related protocols and messages, JHB Jun 2024 */
 
+int nH26x_packets = 0;
+
 
 /* per application thread info */
 
@@ -834,7 +836,7 @@ cleanup:
 
          if (thread_info[thread_index].pcap_file_hdr[i]) free(thread_info[thread_index].pcap_file_hdr[i]);  /* free file header space, JHB May 2024 */
 
-         DSClosePcap(thread_info[thread_index].pcap_in[i]);
+         DSClosePcap(thread_info[thread_index].pcap_in[i], DS_CLOSE_PCAP_QUIET);
          thread_info[thread_index].pcap_in[i] = NULL;
       }
 
@@ -850,7 +852,7 @@ cleanup:
 
    for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) {
 
-      if (thread_info[thread_index].fp_pcap_jb[i]) { DSClosePcap(thread_info[thread_index].fp_pcap_jb[i]); thread_info[thread_index].fp_pcap_jb[i] = NULL; }
+      if (thread_info[thread_index].fp_pcap_jb[i]) { DSClosePcap(thread_info[thread_index].fp_pcap_jb[i], DS_CLOSE_PCAP_QUIET); thread_info[thread_index].fp_pcap_jb[i] = NULL; }
 
    /* reset arrival timing stats */
 
@@ -893,7 +895,7 @@ cleanup:
 
 /* close transcoded output file descriptors (there may not be any if no -o arguments on command line) */
 
-   for (i=0; i<thread_info[thread_index].nOutPcapFiles; i++) if (thread_info[thread_index].pcap_out[i]) { DSClosePcap(thread_info[thread_index].pcap_out[i]); thread_info[thread_index].pcap_out[i] = NULL; }
+   for (i=0; i<thread_info[thread_index].nOutPcapFiles; i++) if (thread_info[thread_index].pcap_out[i]) { DSClosePcap(thread_info[thread_index].pcap_out[i], DS_CLOSE_PCAP_QUIET); thread_info[thread_index].pcap_out[i] = NULL; }
 
 /* close stream group output file descriptors and other items */
 
@@ -901,7 +903,7 @@ cleanup:
 
       if (thread_info[thread_index].fp_pcap_group[i]) {
 
-         DSClosePcap(thread_info[thread_index].fp_pcap_group[i]);
+         DSClosePcap(thread_info[thread_index].fp_pcap_group[i], DS_CLOSE_PCAP_QUIET);
 
          if (!fGroupOutputNoCopy) {  /* copy pcap from group output path to local subfolder. This is for documentation compatibility and convenience, can be overridden by using --group_pcap_nocopy instead of --group_pcap on command line */
 
@@ -1022,6 +1024,9 @@ cleanup:
 
       sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sRTP = ", tabstr, tabstr);
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_rtp_packets[i]);
+
+      sprintf(&tmpstr[strlen(tmpstr)], ", H.26x = ");
+      sprintf(&tmpstr[strlen(tmpstr)], "%u", nH26x_packets);
 
       sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sRedundant discards TCP = ", tabstr, tabstr);
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].tcp_redundant_discards[i]);  /* display/log number of redundant TCP retransmissions discarded, if any */
@@ -1317,14 +1322,17 @@ enum {
    -as of Oct 2023 tested on over 150 pcaps with a wide range of codec types and bitrates, no known failures. If you have a pcap not detected correctly please anonymize (you can use TraceWrangler) and submit on the Github page or privately by e-mail
 */
 
-int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsigned uFlags, uint8_t payload_type, int codec_type, uint32_t* bitrate, uint32_t* ptime, uint8_t* cat) {
+int temp_nInput;
+int temp_thread_index;
+
+int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsigned uFlags, uint8_t payload_type, int codec_type, uint32_t* bitrate, uint32_t* ptime, uint8_t* category) {
 
 /* use local vars for any unsupplied pointers */
 
    uint32_t bitrate_local = 0;
    if (!bitrate) bitrate = &bitrate_local;
-   uint8_t cat_local;
-   if (!cat) cat = &cat_local;
+   uint8_t category_local;
+   if (!category) category = &category_local;
 
  static int count = 0;
  count++;
@@ -1367,17 +1375,57 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
 
 /* scan for H.26x video, JHB Jun 2024 */
 
-   if (!(uFlags & RTP_DETECT_EXCLUDE_VIDEO) && rtp_pyld_len > 10) {  /* omit small payloads (which for audio typically contain SID frames */
+   if (!(uFlags & RTP_DETECT_EXCLUDE_VIDEO)) {
 
-      if ((((rtp_pkt[0] << 8) | rtp_pkt[1]) & 0x81f8) == 0 && (rtp_pkt[1] & 7) != 0) {  /* assume NAL unit header, see if F bit and LayerId are zero and TID is not */
+      uint16_t pyld_hdr = (rtp_pkt[0] << 8) | rtp_pkt[1];
+      #if 0  /* not currently used */
+      uint8_t Type = pyld_hdr >> 9;
+      uint16_t min_HEVC_size = (rtp_pkt[4] << 8) | rtp_pkt[5];  /* for aggregation packets, payload size must be > NALU sizes */
+      #else
+      uint16_t min_HEVC_size = 10;
+      #endif
 
+      if (rtp_pyld_len > min_HEVC_size && (pyld_hdr & 0x81f8) == 0 && (rtp_pkt[1] & 7) != 0) {  /* create possible NAL unit header, see if F bit and LayerId are zero and TID is non-zero (per RFC 7798) */
+
+         #if 0
          char code_seq_3byte[3] = { '\0', '\0', '\1' };
          char code_seq_4byte[4] = { '\0', '\0', '\0', '\1' };
+         #else
+         char code_seq_emu1[3] = { '\0', '\0', '\0' };  /* illegal byte sequences should not appear (encoder escapes them to 000003xx */
+         char code_seq_emu2[3] = { '\0', '\0', '\1' };
+         char code_seq_emu3[3] = { '\0', '\0', '\2' };
+         #endif
 
-         if (!memmem(&rtp_pkt[2], rtp_pyld_len-2, code_seq_3byte, sizeof(code_seq_3byte)) && !memmem(&rtp_pkt[2], rtp_pyld_len-2, code_seq_4byte, sizeof(code_seq_4byte))) {  /* look for false positives: if forbidden bitstream code sequences found it's not H.26x */
+      /* look for forbidden bitstream code sequences, if found it's not H.26x */
 
-            *bitrate = 320000;  /* temp */
-            return H265;
+         #if 0  
+         if ((!memmem(&rtp_pkt[2], rtp_pyld_len-2, code_seq_3byte, sizeof(code_seq_3byte))) &&
+             (!memmem(&rtp_pkt[2], rtp_pyld_len-2, code_seq_4byte, sizeof(code_seq_4byte)))
+            ) {
+         #else
+         if (
+             (!memmem(&rtp_pkt[2], rtp_pyld_len-2, code_seq_emu1, sizeof(code_seq_emu1))) &&
+             (!memmem(&rtp_pkt[2], rtp_pyld_len-2, code_seq_emu2, sizeof(code_seq_emu2))) &&
+             (!memmem(&rtp_pkt[2], rtp_pyld_len-2, code_seq_emu3, sizeof(code_seq_emu3)))
+            ) {
+         #endif
+
+            uint32_t audio_bitrate = 0;
+            uint8_t audio_category = 0;
+
+            int audio_codec_type = detect_codec_type_and_bitrate(rtp_pkt, rtp_pyld_len, uFlags | RTP_DETECT_EXCLUDE_VIDEO, payload_type, codec_type, &audio_bitrate, ptime, &audio_category);  /* final check: exclude video and call recursively - signature and payload size can't match a known audio codec */
+
+            if (audio_codec_type < 0) {
+
+               *bitrate = 320000;  /* temporary */
+               return H265;
+            }
+            else {  /* audio codec found, no need to run detection algorithm again */
+
+               *bitrate = audio_bitrate;
+               *category = audio_category | 8;  /* set debug flag indicating partial video codec detection */
+               return audio_codec_type;
+            }
          }
       }
    }
@@ -1392,7 +1440,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
        (!codec_type && (((rtp_pkt[0] == 0xf1 || rtp_pkt[0] == 0x21) && !(rtp_pkt[1] & 0x80)) || ((rtp_pkt[0] == 0xf4 || rtp_pkt[0] == 0x24) && (rtp_pkt[1] & 0xc0))))  /* auto-detect: look for AMR first, check CMR byte and first bit of ToC byte. Changed 0x80 to 0xc0 mask to detect AMR-NB SID, JHB Nov 2018 */
       )
    {
-      *cat = 1;  /* category 1 */
+      *category = 1;  /* category 1 */
 
       bool fBitrateSet = false;
 
@@ -1444,7 +1492,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
        (!codec_type && (rtp_pkt[0] == 0xf0 && !(rtp_pkt[1] & 0x80)))  /* check for AMR-xx octet-aligned with CMR byte 15 (no specific mode requested) */
        ) {
    
-      *cat |= 2;  /* category 1 */
+      *category |= 2;  /* category 2 */
 
       if (rtp_pyld_len == 33 && rtp_pkt[1] == 0x3c) {  /* AMR 12200 octet aligned - add FT field and padding check, JHB Jul 2024 */
          *bitrate = 12200;
@@ -1458,7 +1506,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
 
 cat4:
 
-   *cat |= 4;  /* category 4 */
+   *category |= 4;  /* category 4 */
 
 /* mostly likely EVS, but could still be some AMR NB/WB bitrates depending on payload length. Added checks for codec_type already set, to support SDP file input, JHB Jan 2021 */
 
@@ -2743,7 +2791,7 @@ next_packet:  /* next packet input */
 
             if (!(Mode & CREATE_DELETE_TEST_PCAP) && !(Mode & REPEAT_INPUTS)) {  /* check for input repeat */
 
-               if (thread_info[thread_index].pcap_in[j]) DSClosePcap(thread_info[thread_index].pcap_in[j]);  /* close the input file and set file handle to NULL so it's no longer operated on */
+               if (thread_info[thread_index].pcap_in[j]) DSClosePcap(thread_info[thread_index].pcap_in[j], DS_CLOSE_PCAP_QUIET);  /* close the input file and set file handle to NULL so it's no longer operated on */
                thread_info[thread_index].pcap_in[j] = NULL;
 
                if (thread_info[thread_index].initial_push_time[j]) thread_info[thread_index].total_push_time[j] += cur_time - thread_info[thread_index].initial_push_time[j];  /* set total push time (if at least one push has happened, JHB Dec 2021) */
@@ -3352,6 +3400,7 @@ push:
 
                   #if 1  /* temporary during test and development: not pushing video packets */
                   if (session_data[i].term1.codec_type > DS_VOICE_NCODECS && session_data[i].term1.codec_type < DS_CODEC_TYPE_INVALID) {
+                     nH26x_packets++;
                      // printf("\n *** not pushing H.26x packet, len = %d \n", pkt_len);
                      continue;
                   }

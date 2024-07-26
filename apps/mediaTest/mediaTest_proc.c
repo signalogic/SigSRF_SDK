@@ -1450,7 +1450,7 @@ char tmpstr[1024] = "";
       while (pm_run) {
 loop:
          key = toupper(getkey());
-         if (key == 'Q') {  /* break out of while(run) loop */
+         if (key == 'Q') {  /* on quit key break out of while(run) loop */
             pm_run = 0;
             break;
          }
@@ -1518,9 +1518,9 @@ PollBuffer:
                   for (i = ret_val; i < input_framesize*numChan; i++) in_buf[i] = 0;  /* fill in last frame with zeros, if needed (if partial frame) */
                }
                else {
-                  segmenter(SEGMENTER_CLEANUP, frame_count, codec_frame_duration, uStripFrame, 0, 0, &fp_out_segment, &MediaInfoSegment, &fp_out_concat, &MediaInfoConcat, &fp_out_stripped, &MediaInfoStripped);  /* clean up segmentation, if active. Note - segmenter() will return immediately if input segmentation is not active, JHB Apr2021 */
+                  segmenter(SEGMENTER_CLEANUP, frame_count, codec_frame_duration, uStripFrame, 0, 0, &fp_out_segment, &MediaInfoSegment, &fp_out_concat, &MediaInfoConcat, &fp_out_stripped, &MediaInfoStripped);  /* clean up segmentation, if active. Note - segmenter() will return immediately if input segmentation is not active, JHB Apr 2021 */
 
-                  if (fRepeatIndefinitely || --nRepeat >= 0) {  /* if repeat active, wrap waveform file, JHB Feb2022 */
+                  if (fRepeatIndefinitely || --nRepeat >= 0) {  /* if repeat active, wrap waveform file, JHB Feb 2022 */
 
                      int64_t fpos = 0;
 
@@ -2146,7 +2146,7 @@ PollBuffer:
 
    /* check if loop exit condition was an error */
 
-      if (!USBAudioInput && pm_run && !feof(fp_in))
+      if (!USBAudioInput && pm_run && fp_in && !feof(fp_in))
       {
          printf("Error -- did not reach input file EOF, last fread() read %d bytes\n", ret_val);
       }
@@ -2168,7 +2168,7 @@ codec_test_cleanup:
       }
 
       if (fp_out) {
-         if (outFileType == PCAP) fclose(fp_out);
+         if (outFileType == PCAP) DSClosePcap(fp_out, 0);
          else DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)NULL, 0, DS_CLOSE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);
       }
 
@@ -2658,15 +2658,21 @@ codec_test_cleanup:
 
       while (pm_run) {
 
-      /* read next pcap packet */
+         char key = toupper(getkey());
+         if (key == 'Q') {  /* on quit key break out of while(run) loop */
+            pm_run = 0;
+            break;
+         }
+
+      /* read next input pcap or pcapng packet */
 
          uint16_t eth_hdr_type;
 
-         if (!(packet_length = DSReadPcap(fp_in, 0, pkt_buffer, &pcap_pkt_hdr, link_layer_info, &eth_hdr_type, NULL))) break;  /* read pcap, save packet header in pcap_pkt_hdr in case needed for DSPcapWrite(), JHB Jul 2024 */
+         if (!(packet_length = DSReadPcap(fp_in, 0, pkt_buffer, &pcap_pkt_hdr, link_layer_info, &eth_hdr_type, NULL))) break;  /* read pcap, save packet header in pcap_pkt_hdr in case needed for DSPcapWrite(). On end of file, break out of main while loop, JHB Jul 2024 */
 
          frame_count++;
-         if (outFileType == ENCODED) printf("\rExtracting frame %d", frame_count);
-         else if (outFileType == PCAP) printf("\rOperating on pcap record %d", frame_count);
+         if (outFileType == ENCODED) printf("\rExtracting pcap payload %d", frame_count);
+         else if (outFileType == PCAP) printf("\rOperating on pcap payload %d", frame_count);
 
          #ifdef STRIP_SID  /* typically not defined unless for debug purposes */
          pyld_datatype = DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDDATATYPE, pkt_buffer, packet_length, NULL, NULL);
@@ -2684,8 +2690,11 @@ codec_test_cleanup:
 
          uint32_t bitrate = 0;
          uint8_t cat = 0;
-         int codec_type = detect_codec_type_and_bitrate(rtp_pyld_ptr, rtp_pyld_len, RTP_DETECT_EXCLUDE_VIDEO, rtp_pyld_type, 0, &bitrate, NULL, &cat);
-         if (codec_type == -1 && rtp_pyld_len == 2) codec_type = DS_VOICE_CODEC_TYPE_EVS;  /* not sure is DSGetPayloadXXX APIs can handle AMR NO_DATA payloads, they can for EVS */
+         int codec_type = detect_codec_type_and_bitrate(rtp_pyld_ptr, rtp_pyld_len, 0, rtp_pyld_type, 0, &bitrate, NULL, &cat);
+         #if 0  /* debug with evs_interop.sh */
+         if (codec_type != DS_VOICE_CODEC_TYPE_EVS && codec_type != -1) printf("\n *** found non-EVS codec type = %d \n", codec_type);
+         #endif
+         if (codec_type == -1 && rtp_pyld_len == 2) codec_type = DS_VOICE_CODEC_TYPE_EVS;  /* not sure if DSGetPayloadXXX APIs can handle AMR NO_DATA payloads, they can for EVS */
 
          //#define CODEC_TYPE_DEBUG
          #ifdef CODEC_TYPE_DEBUG
@@ -2818,11 +2827,15 @@ pcap_out:
          }
       }
 
+      if (pm_run && fp_in && !feof(fp_in)) fprintf(stderr, "Error while reading input pcap file \n");
+
+pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB Jun 2017 */
+
       #ifdef STRIP_SID
       frame_count = max(0, frame_count - SID_drop_count);
       #endif
-      if (outFileType == ENCODED) printf("\nExtracted %d frames", frame_count);
-      else if (outFileType == PCAP)  printf("\nOperated on %d pcap records", frame_count);
+      if (outFileType == ENCODED) printf("\nExtracted %d pcap payloads", frame_count);
+      else if (outFileType == PCAP)  printf("\nOperated on %d pcap payloads", frame_count);
       #ifdef STRIP_SID
       if (SID_drop_count > 0) printf(", not including %d SID frames (which are not supported in .cod file MIME format)", SID_drop_count);
       #endif
@@ -2835,15 +2848,11 @@ pcap_out:
       #endif
       printf("RTCP packets found: %d \n", rtcp_packet_count);
 
-      if (!feof(fp_in)) fprintf(stderr, "Error while reading input pcap file \n");
-
-pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB Jun 2017 */
-
       if (fp_in) fclose(fp_in);
 
       if (fp_out) {
          if (outFileType == ENCODED) DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)NULL, 0, DS_CLOSE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);
-         else if (outFileType == PCAP) DSClosePcap(fp_out);
+         else if (outFileType == PCAP) DSClosePcap(fp_out, 0);
       }
 
       printf("pcap extract end\n");
