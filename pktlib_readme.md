@@ -275,7 +275,7 @@ int DSWritePcap(FILE*           fp_pcap,
 <a name="DSClosePcap"></a>
 ## DSClosePcap
 
-DSClosePcap() close a pcap file opened previously for reading or writing.
+DSClosePcap() closes a pcap file opened previously for reading or writing.
 
 ```c++  
 int DSClosePcap(FILE*         fp_pcap,
