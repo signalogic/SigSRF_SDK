@@ -280,12 +280,12 @@ DSClosePcap() closes a pcap file opened previously for reading or writing.
 ```c++  
 int DSClosePcap(FILE*         fp_pcap,
                 unsigned int  uFlags);
+```
 
   * fp_pcap is the file handle of the pcap file to close
   * uFlags may be one or more DS_CLOSE_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
 
   * return value is the return value of fclose() (as defined in stdio.h Linux header file) called internally in pktlib
-```
 
 <a name="PcapAPIFlags"></a>
 # Pcap API Definitions & Flags
