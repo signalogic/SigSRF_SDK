@@ -75,7 +75,7 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 * Satcom and HF Radio Speech Compression
 * R&D Labs and Workstations
 
-<sup>1</sup> For more information on EVS see the [documentation page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) or product page <a href="https://www.signalogic.com/evs_codec.html" target=_blank> product page</a></br>
+<sup>1</sup> For more information on EVS see the [codecs documentation page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) or product page <a href="https://www.signalogic.com/evs_codec.html" target=_blank> product page</a></br>
 <sup>2</sup> ASR = Automatic Speech Recognition</br>
 <sup>3</sup> For more information see the <a href="https://www.signalogic.com/RobotHPC" target=_blank> RobotHPC™ combined hardware and software product page</a></br>
 
@@ -84,7 +84,7 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 
 EdgeStream and SigSRF software are designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Reference SDK applications have low resource and footprint profiles and are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
 
-EdgeStream and SigSRF support media delivery, transcoding, deep learning <sup>1</sup>, OpenCV, speech recognition, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
+EdgeStream and SigSRF support media delivery, transcoding, deep learning <sup>1</sup>, OpenCV and image analytics, speech recognition, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
 For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture, for an overview see <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/WhenSoftwareOnlyIsNotEnough.md">When Software Only Is Not Enough</a>.
 
@@ -607,7 +607,7 @@ mediaMin is a production reference application, using a minimum set of APIs (cre
   * "EVS Player", play an EVS pcap
   * transcode multistream pcaps and merge all streams together into one output audio (for voice pcaps, this generates a "unified conversation")
   * Kaldi speech recognition on pcaps or audio files (ASR, 200k word vocabulary)
-  * test codecs and compare output vs. 3GPP or ITU reference files <sup>1</sup>
+  * test codecs and compare output vs. 3GPP or ITU reference files <sup>1</sup>. The [codecs documentation](https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) page includes API interface and definitions
   * insert user-defined signal processing or inference into the real-time data flow
   * input and output .wav file and other audio format files
   * input and output USB audio
@@ -669,7 +669,22 @@ The EdgeStream and SigSRF SDK and demos have been tested on the following platfo
 
 ## SigSRF Software Documentation
 
-SigSRF documentation, including Quick Start command line examples, High Capacity Operation, API Usage, and other sections is located at:
+[mediaTest and mediaMin reference applications and source code](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md), including:
+
+  * numerous command line examples included in the Rar packages and Docker containers
+  * use case examples (pcap players, OpenLI, ASR, conversation stream merging, dynamic session creation, etc)
+  * command line options quick reference
+
+[codecs documentation](https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md), including:
+
+  * API interface and definitions for voplib (voice/video over packet library)
+
+[pktlib documentation](https://github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md), including:
+
+  * API interface and definitions for pktlib (packet library) packet information extract, jitter buffer, statistics, and more
+  * Pcap, pcapng, and rtp/rtpdump file management, editing, search, and filtering
+
+Legacy SigSRF documentation, including Quick Start command line examples, High Capacity Operation, API Usage, and other sections is located at:
 
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Documentation</a>
  
