@@ -183,7 +183,6 @@ Revision History
  Modified Jul 2024 JHB, set DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM packet logging flag in WritePktLog() if dormant session detection is disabled (see diaglib.h for flag info)
  Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSGetTermChan(), in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, and remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See comments in pktlib.h
  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSWritePacketStatsHistoryLog() and in all diaglib calls (e.g. DSPktStatsAddEntries, DSGetBacktrace)
- Modified Jul 2024 JHB, add NULL for pToC param in DSGetPayloadInfo()
 */
 
 #ifndef _GNU_SOURCE
@@ -3166,6 +3165,11 @@ pull:
   
                   for (j=0; j<num_pkts; j++) {
 
+                     #if 0  /* packet integrity sanity check */
+                     int pktlen_hdr = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN, pkt_ptr, -1, NULL, NULL);
+                     if (pktlen_hdr != packet_len[j]) printf("\n *** inside post-packet loop #1 pkt header len = %d mismatches pkt len %d, j = %d, num_pkts = %d \n", pktlen_hdr, packet_len[j], j, num_pkts);
+                     #endif
+
                      int packet_type = MEDIA_PACKET;  /* default */
 
                   /* find the channel number matching the buffer output packet (could be parent or child), and error check */
@@ -3237,7 +3241,7 @@ pull:
 
                            if (fMediaThread) {
 
-                              DSSendPackets((HSESSION*)&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_JITTER_BUFFER | DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG, pkt_ptr, &packet_len[j], 1);  /* send jitter buffer output packet */
+                              DSSendPackets((HSESSION*)&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_JITTER_BUFFER | DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG, pkt_ptr, &packet_len[j], 1);  /* send jitter buffer output packet to application thread (write to outgoing packet queue). While working on video, which can have many large packets for each timestamp, wondering if it's not a good idea to suppress queue full messages, JHB Jul 2024 */
 
                               rtp_timestamp[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_TIMESTAMP, pkt_ptr, packet_len[j], NULL, NULL);  /* save packet timestamp and ssrc */
                               rtp_ssrc[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_SSRC, pkt_ptr, packet_len[j], NULL, NULL);
@@ -3300,7 +3304,7 @@ pull:
                               nStatsDisplayPause = 50;  /* pause real-time stats display for some arbitrary duration of DTMF event group, JHB May 2023 */
                            }
 
-                           sprintf(&tmpstr[strlen(tmpstr)], "DTMF Event packet %u received @ pkt %d", uDisplayDTMFEventMsg[hSession][term], pkt_pulled_cnt);
+                           sprintf(&tmpstr[strlen(tmpstr)], "DTMF Event packet %u received @ pkt %d ssrc 0x%x", uDisplayDTMFEventMsg[hSession][term], pkt_pulled_cnt, rtp_ssrc[j]);
 
                            if (packet_type == DTMF_PACKET) strcat(tmpstr, ", will be forwarded to output");
                            if (uDisplayDTMFEventMsg[hSession][term] == dtmf_display_msg_limit) strcat(tmpstr, " (check packet log for all further events)");
@@ -3353,7 +3357,7 @@ pull:
                            -for pass-thru case, DSCodecDecode() simply copies data from in to out buffer
                         */
 
-   #if 0 /* use this debug with test case 5280.ws.0 to document issue where first ~2.5 frames of decoded EVS stream are zeros, JHB Apr2020
+   #if 0 /* use this debug with test case 5280.ws.0 to document issue where first ~2.5 frames of decoded EVS stream are zeros, JHB Apr 2020
 
             -session 0/ch 0 is AMR-WB, then the sender switches audio "in mid-stream" to an EVS session (we see it as session 1/ch 2)
             -the problem appears as a 60 msec section of zeros in stream group merged output after end of session 0. It does look like a gap; i.e. audio would "fit together" if zeros were not there
@@ -3380,6 +3384,8 @@ pull:
       nOnce++;
    }
    #endif
+
+              if (isVideoCodec(termInfo.codec_type)) goto pkt_post_proc_inc_pkt_ptr;  /* temporary */
 
                            media_data_len = DSCodecDecode(&hCodec, 0, rtp_pyld_ptr, media_data_buffer, pyld_len, 1, NULL, &OutArgs);  /* call voplib decoder */
 
@@ -3498,6 +3504,8 @@ pull:
 
                      num_thread_decode_packets++;
 
+pkt_post_proc_inc_pkt_ptr:
+
                      prev_chnum = chnum;
 
                      pkt_ptr += packet_len[j];  /* advance DSGetOrderedPackets() output pointer to next packet. Placing this here is the bug fix referred to in revision history, JHB Apr 2020 */
@@ -3505,7 +3513,7 @@ pull:
                   /* error out if we can't fit the next packet, JHB Apr2020 */
 
                      if (j+1 < num_pkts && pkt_ptr + packet_len[j+1] > recv_jb_buffer + sizeof(recv_jb_buffer)) {
-                        Log_RT(2, "ERROR: p/m thread %d says exceeding length of buffer returned by jitter buffer, %d packets remaining in buffer, dropping packet %d \n", thread_index, num_pkts-j-1, j+1);
+                        Log_RT(2, "ERROR: p/m thread %d says exceeding length of packet buffer for packets returned by DSGetOrderedPackets(), %d packets remaining in buffer, dropping packet %d \n", thread_index, num_pkts-j-1, j+1);
                         break;
                      }
 
@@ -4011,7 +4019,8 @@ static int log_pkt_index = 0;
                      end_profile_time = get_time(USE_CLOCK_GETTIME);
                      stream_group_time += end_profile_time - start_profile_time;
                   }
-               }
+
+               }  /* end of group channel */
 
                #endif  /* ENABLE_STREAM_GROUPS */
 
@@ -4474,7 +4483,7 @@ char errstr[50];
 
 int CheckForSSRCChange(HSESSION hSession, int chnum[], uint8_t* pkt_in_buf, int packet_len[], int num_pkts, unsigned int uFlags_info, unsigned int uFlags_session, unsigned int pkt_counters[], int thread_index) {
 
-int j, k, rtp_SSRC, term;
+int j, k, rtp_ssrc, term;
 unsigned int offset = 0;
 bool nSSRC_change = 0;  /* return value */
 int pkt_input_cnt, pkt_read_cnt, pkt_add_to_jb_cnt;
@@ -4493,22 +4502,22 @@ char szSSRCStatus[200];
 
    /* look for an SSRC change, if so set a flag that can be acted on when pulling packets, for example to "get all deliverable" packets for the previous SSRC stream before the new stream starts */
 
-      rtp_SSRC = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_SSRC, pkt_in_buf + offset, packet_len[j], NULL, NULL);
+      rtp_ssrc = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_SSRC, pkt_in_buf + offset, packet_len[j], NULL, NULL);
 
       offset += packet_len[j];
 
-      int ssrc_change_index = max(session_info_thread[hSession].num_SSRC_changes[term]-1, 0);
+      int ssrc_change_index = max(session_info_thread[hSession].num_ssrc_changes[term]-1, 0);
 
-      if (rtp_SSRC != session_info_thread[hSession].last_rtp_SSRC[term][ssrc_change_index]) {  /* SSRC change found */
+      if (rtp_ssrc != session_info_thread[hSession].last_rtp_ssrc[term][ssrc_change_index]) {  /* SSRC change found */
 
-         if (session_info_thread[hSession].last_rtp_SSRC[term][ssrc_change_index]) {
+         if (session_info_thread[hSession].last_rtp_ssrc[term][ssrc_change_index]) {
 
             char reportstr[100];
             bool fPrevSSRC = false;
 
-            for (k=0; k<session_info_thread[hSession].num_SSRC_changes[term]-1; k++) {
+            for (k=0; k<session_info_thread[hSession].num_ssrc_changes[term]-1; k++) {
 
-               if (rtp_SSRC == session_info_thread[hSession].last_rtp_SSRC[term][k]) {
+               if (rtp_ssrc == session_info_thread[hSession].last_rtp_ssrc[term][k]) {
 
                   fPrevSSRC = true;
                   break;
@@ -4534,25 +4543,25 @@ char szSSRCStatus[200];
             pkt_read_cnt = pkt_counters[1];
             pkt_add_to_jb_cnt = pkt_counters[2];
 
-            if (packet_media_thread_info[thread_index].fMediaThread) sprintf(szSSRCStatus, "stream change #%d", session_info_thread[hSession].num_SSRC_changes[term]);  /* not sure why the terminology is any different, JHB Nov2019 */
-            else sprintf(szSSRCStatus, "stream transition #%d detected", session_info_thread[hSession].num_SSRC_changes[term]);
+            if (packet_media_thread_info[thread_index].fMediaThread) sprintf(szSSRCStatus, "stream change #%d", session_info_thread[hSession].num_ssrc_changes[term]);  /* not sure why the terminology is any different, JHB Nov2019 */
+            else sprintf(szSSRCStatus, "stream transition #%d detected", session_info_thread[hSession].num_ssrc_changes[term]);
 
             int new_ch = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CUR_ACTIVE_CHANNEL, 0, NULL);
             int old_ch = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_LAST_ACTIVE_CHANNEL, 0, NULL);
 
-            sprintf(&szSSRCStatus[strlen(szSSRCStatus)], " for hSession %d ch %d SSRC 0x%x, %s RTP stream ch %d SSRC 0x%x @ pkt %d", hSession, nSSRC_change == 1 ? chnum[j] : old_ch, session_info_thread[hSession].last_rtp_SSRC[term][ssrc_change_index], reportstr, new_ch, rtp_SSRC, pkt_add_to_jb_cnt ? pkt_add_to_jb_cnt : pkt_read_cnt + pkt_input_cnt);
+            sprintf(&szSSRCStatus[strlen(szSSRCStatus)], " for hSession %d ch %d SSRC 0x%x, %s RTP stream ch %d SSRC 0x%x @ pkt %d", hSession, nSSRC_change == 1 ? chnum[j] : old_ch, session_info_thread[hSession].last_rtp_ssrc[term][ssrc_change_index], reportstr, new_ch, rtp_ssrc, pkt_add_to_jb_cnt ? pkt_add_to_jb_cnt : pkt_read_cnt + pkt_input_cnt);
             Log_RT(4, "INFO: %s \n", szSSRCStatus);
 
             #if 0
             static bool fOnce[8] = { false };
-            if (!fOnce[session_info_thread[hSession].num_SSRC_changes[term]]) { printf("########## ssrc change inside term = %d, str = %s\n", term, szSSRCStatus); fOnce[session_info_thread[hSession].num_SSRC_changes[term]] = true; }
+            if (!fOnce[session_info_thread[hSession].num_ssrc_changes[term]]) { printf("########## ssrc change inside term = %d, str = %s\n", term, szSSRCStatus); fOnce[session_info_thread[hSession].num_ssrc_changes[term]] = true; }
             #endif
          }
 
-         if (session_info_thread[hSession].num_SSRC_changes[term] == MAX_SSRC_TRANSITIONS-1) session_info_thread[hSession].num_SSRC_changes[term] = 0;  /* start over if we are array limit. MAX_SSRC_TRANSITIONS is defined in shared_include/session.h */
+         if (session_info_thread[hSession].num_ssrc_changes[term] == MAX_SSRC_TRANSITIONS-1) session_info_thread[hSession].num_ssrc_changes[term] = 0;  /* start over if we are array limit. MAX_SSRC_TRANSITIONS is defined in shared_include/session.h */
 
-         session_info_thread[hSession].last_rtp_SSRC[term][session_info_thread[hSession].num_SSRC_changes[term]] = rtp_SSRC;  /* store current SSRC. Note this handles all situations: (i) initialization (first SSRC), (ii) SSRC change, and (iii) wrap-around to start */
-         session_info_thread[hSession].num_SSRC_changes[term] = min(session_info_thread[hSession].num_SSRC_changes[term]+1, MAX_SSRC_TRANSITIONS-1);  /* increment but don't exceed array limits */
+         session_info_thread[hSession].last_rtp_ssrc[term][session_info_thread[hSession].num_ssrc_changes[term]] = rtp_ssrc;  /* store current SSRC. Note this handles all situations: (i) initialization (first SSRC), (ii) SSRC change, and (iii) wrap-around to start */
+         session_info_thread[hSession].num_ssrc_changes[term] = min(session_info_thread[hSession].num_ssrc_changes[term]+1, MAX_SSRC_TRANSITIONS-1);  /* increment but don't exceed array limits */
       }
    }
 
@@ -4572,8 +4581,8 @@ bool fChanFound = false;
 
       if ((unsigned int)DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, i+1, NULL) & TERM_DISABLE_DORMANT_SESSION_DETECTION) continue;  /* go no further, hSession's channel doesn't want to be considered dormant and flushed, JHB Sep 2022 */
 
-      int ssrc_change_index = max(session_info_thread[hSession].num_SSRC_changes[i]-1, 0);
-      unsigned int stream_ssrc = session_info_thread[hSession].last_rtp_SSRC[i][ssrc_change_index];  /* num_SSRC_changes[] and last_rtp_SSRC[] contain per-channel SSRC history */
+      int ssrc_change_index = max(session_info_thread[hSession].num_ssrc_changes[i]-1, 0);
+      unsigned int stream_ssrc = session_info_thread[hSession].last_rtp_ssrc[i][ssrc_change_index];  /* num_ssrc_changes[] and last_rtp_ssrc[] contain per-channel SSRC history */
 
   /* skip stream if it's not yet active or if dormant session detection is disabled by termination endpoint contributor flags */
   
@@ -4587,8 +4596,8 @@ bool fChanFound = false;
 
          if (hSession2 >= 0 && hSession2 != hSession) for (i2=0; i2<MAX_TERMS; i2++) {
 
-            int ssrc_change_index2 = max(session_info_thread[hSession2].num_SSRC_changes[i2]-1, 0);
-            unsigned int stream_ssrc2 = session_info_thread[hSession2].last_rtp_SSRC[i2][ssrc_change_index2];
+            int ssrc_change_index2 = max(session_info_thread[hSession2].num_ssrc_changes[i2]-1, 0);
+            unsigned int stream_ssrc2 = session_info_thread[hSession2].last_rtp_ssrc[i2][ssrc_change_index2];
 
             if (stream_ssrc2 == stream_ssrc && session_info_thread[hSession].ssrc_state[i] == SSRC_LIVE && session_info_thread[hSession2].ssrc_state[i2] == SSRC_LIVE) {  /* two streams with same SSRC, and both are live ? */
 
@@ -5001,8 +5010,8 @@ int session_state, j;
 
       session_info_thread[hSession].num_streams_active = 0;
 
-      memset(&session_info_thread[hSession].last_rtp_SSRC, 0, sizeof(session_info_thread[0].last_rtp_SSRC));
-      memset(&session_info_thread[hSession].num_SSRC_changes, 0, sizeof(session_info_thread[0].num_SSRC_changes));
+      memset(&session_info_thread[hSession].last_rtp_ssrc, 0, sizeof(session_info_thread[0].last_rtp_ssrc));
+      memset(&session_info_thread[hSession].num_ssrc_changes, 0, sizeof(session_info_thread[0].num_ssrc_changes));
       memset(&session_info_thread[hSession].fSSRC_change_active, 0, sizeof(session_info_thread[0].fSSRC_change_active));
       memset(&session_info_thread[hSession].ssrc_state, 0, sizeof(session_info_thread[0].ssrc_state));
 

@@ -54,6 +54,7 @@
   Modified Aug 2023 JHB, add DSProcessStreamGroupContributorsTSM() and DSCloseStreamGroupsTSM() prototypes, TIMESTAMP_MATCH_XXX flags
   Modified Feb 2024 JHB, add DS_STREAMGROUP_INFO_MERGE_FILENAME and DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME flag options for DSGetStreamGroupInfo()
   Modified Mar 2024 JHB, deprecate DS_CS_GLOBALCONFIG and DS_CS_DEBUGCONFIG flags; see comments
+  Modified Jul 2024 JHB, add TIMESTAMP_MATCH_WAV_OUTPUT flag. See usage example in mediaMin.cpp
 */
 
 #ifndef _STREAMLIB_H_
@@ -504,11 +505,12 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
 
 /* flags for DSProcessStreamGroupContributorsTSM(). In packet_flow_media_proc.c and mediaMin.cpp, look for uTimestampMatchMode to see flag usage, JHB Aug 2023 */
 
-  #define TIMESTAMP_MATCH_MODE_ENABLE           1     /* enable timestamp-matched wav output mode */
-  #define TIMESTAMP_MATCH_DISABLE_FLUSH         2     /* disable all jitter buffer packet flush (loss, level, etc) */
-  #define TIMESTAMP_MATCH_DISABLE_RESYNCS       4     /* disable jitter buffer resync */
-  #define TIMESTAMP_MATCH_INCLUDE_INPUT_PAUSES  8     /* include input stream pauses in timestamp-matched wav output */
-  #define TIMESTAMP_MATCH_LIVE_MERGE_OUTPUT     0x10  /* enable live timestamp-matched wav merge output */
+  #define TIMESTAMP_MATCH_MODE_ENABLE           1     /* enable timestamp-match output mode */
+  #define TIMESTAMP_MATCH_WAV_OUTPUT            2     /* enable wav output in timestamp-match mode */
+  #define TIMESTAMP_MATCH_DISABLE_FLUSH         4     /* disable all jitter buffer packet flush (loss, level, etc) */
+  #define TIMESTAMP_MATCH_DISABLE_RESYNCS       8     /* disable jitter buffer resync */
+  #define TIMESTAMP_MATCH_INCLUDE_INPUT_PAUSES  0x10  /* include input stream pauses in timestamp-match wav output */
+  #define TIMESTAMP_MATCH_LIVE_MERGE_OUTPUT     0x20  /* enable live timestamp-match wav merge output */
 
 /* DSProcessAudio() performs audio domain processing, with options for sampling rate conversion, ASR, user-defined signal processing, and packet output
 

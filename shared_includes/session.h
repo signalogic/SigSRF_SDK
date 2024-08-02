@@ -105,7 +105,7 @@
       -define TERM_IGNORE_ARRIVAL_PACKET_TIMING flag for situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc
 
     Jan 2021 JHB
-      -re-define merge_audio_chunk_size to stream_group_buffer_time in SESSION_THREAD_INFO struct. See comments
+      -re-define merge_audio_chunk_size to stream_group_buffer_time in SESSION_INFO_THREAD struct. See comments
 
     Sep 2022 JHB
       -add TERM_DISABLE_DORMANT_SESSION_DETECTION flag and dormant_SSRC_wait_time item to TERMINATION_INFO struct. See comments
@@ -126,6 +126,9 @@
     May 2024 JHB
       -update comment that referenced x86_mediaTest.c to mediaTest_proc.c
       -change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
+
+    Jul 2024 JHB
+      -rename SSRC fields in SESSION_INFO_THREAD struct to ssrc. Maintain consistency with other header file structs
 */
 
 #ifndef _SESSION_H_
@@ -492,8 +495,8 @@ typedef struct {
 
 /* SSRC tracking and transition detection items */
 
-  int last_rtp_SSRC[MAX_TERMS][MAX_SSRC_TRANSITIONS];
-  uint8_t num_SSRC_changes[MAX_TERMS];
+  int last_rtp_ssrc[MAX_TERMS][MAX_SSRC_TRANSITIONS];
+  uint8_t num_ssrc_changes[MAX_TERMS];
   bool fSSRC_change_active[MAX_TERMS];
   uint8_t ssrc_state[MAX_TERMS];
 
@@ -510,6 +513,6 @@ typedef struct {
   #undef bool
 #endif
 
-#endif
+#endif  /* _X86 or _ARM */
 
 #endif /* _SESSION_H_ */

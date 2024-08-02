@@ -33,6 +33,7 @@
    Modified Aug 2023 JHB, add ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag
    Modified May 2024 JHB, update comments
    Modified Jun 2024 JHB, add DISABLE_PORT_IGNORE_MESSAGES and DISABLE_SIP_INFO_REQUEST_OK_MESSAGES flags
+   Modified Jul 2024 JHB, clarification of ENABLE_TIMESTAMP_MATCH_MODE and ENABLE_WAV_OUTPUT flags
 */
 
 #ifndef _CMDLINEOPTIONSFLAGS_H_
@@ -68,7 +69,7 @@
 /* operating mode options */
 
 #define ENABLE_STREAM_GROUPS                 0x400  /* m| enable stream groups, currently only valid with dynamic session modes. If set the first session created from each multistream pcap will contain a stream group. Currently the default stream group processing is merging and time alignment of all audio */
-#define ENABLE_WAV_OUTPUT                    0x800  /* m| enable wav file output for stream group processing, such as audio stream merging */
+#define ENABLE_WAV_OUTPUT                    0x800  /* m| enable wav file output for stream group or timestamp match mode processing. Typically required by applications that need to merge audio streams, such as lawful intelligence, call recording, etc */
 #define ROUND_ROBIN_SESSION_ALLOCATION       0x4000  /* m| allocate sessions to packet/media threads in round-robin manner. The idea is to keep p/m thread load balanced. This flag should be specified for high capacity situations */
 #define WHOLE_GROUP_THREAD_ALLOCATE          0x8000  /* m| do not split stream group sessions across packet/media threads. This avoids use of locks (semaphores) inside streamlib and gives higher performance */
 #define ANALYTICS_MODE                       0x40000  /* m| analytics mode is used when (i) no reference should be made to wall clocks, (ii) input packets do not have wall clock timing, or they might but their values are unreliable (lawful interception is one example) */
@@ -119,7 +120,7 @@
 #define SLOW_DORMANT_SESSION_DETECTION       0x40000000000000LL  /* mm| extend dormant session detection time. See usage in CreateDynamicSession() in mediaMin.cpp */ 
 #define INCLUDE_PAUSES_IN_WAV_OUTPUT         0x80000000000000LL  /* m| include input pauses as silence in stream group and individual (mono) wav outputs. This applies when one or more streams in the group pause input, for example call-on-hold, pause in packet push, etc. Note that pauses are always accurately reflected in stream group RTP streaming output, but for wav outputs it's an option as pauses can become very large and increase file storage requirements */
 
-#define ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH    0x100000000000000LL /* m| generate timestamp-matched wav output, which depends only on input stream arrival and RTP timestamps, with no reference to a wall clock. This is useful for repeatability reasons, especially in accelerated processing modes. However, any timestamp inaccuracies -- such as clock drift, post-gap restart, wrong packet rates -- will cause incorrect wav timing and lack of synchronization between streams */ 
+#define ENABLE_TIMESTAMP_MATCH_MODE          0x100000000000000LL /* m| generate timestamp-matched wav output, which depends only on input stream arrival and RTP timestamps, with no reference to a wall clock. This is useful for repeatability reasons, especially in accelerated processing modes. However, any timestamp inaccuracies -- such as clock drift, post-gap restart, wrong packet rates -- will cause incorrect wav timing and lack of synchronization between streams. Recommend to not enable concurrently with ENABLE_STREAM_GROUPS flag */ 
 #define ENABLE_TIMESTAMP_MATCH_LIVE_MERGE    0x200000000000000LL /* m| generate live timestamp-matched wav output. This is experimental and should not be used yet */ 
 
 #define SHOW_PACKET_ARRIVAL_STATS            0x400000000000000LL /* m| show packet arrival stats in mediaMin summary stats display, including average interval between packets and average packet jitter vs stream ptime. These stats differ somewhat from Wireshark, as they apply only to media packets and exclude SID and DTMF packets */ 

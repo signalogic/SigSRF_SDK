@@ -108,7 +108,7 @@
  Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap() and DSWritePcapRecord() to DSWritePcap(), per change in pktlib.h
  Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap(), add uFlags param and move pkt buffer len to fourth param in DSWritePcap()
  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, move uFlags to second param in calls to DSGetBackTrace()
- Modified Jul 2024 JHB, update pcap_extract mode to support payload and/or packet operations (e.g. insert impairments, filter/remove packets by matching criteria (e.g. SSRC), etc). Initially it supports the --random_bit_error N command line argument, with --filter_packet_ssrc N,N,N ... planned, and others to follow
+ Modified Jul 2024 JHB, update pcap_extract mode to support payload and/or packet operations (e.g. insert impairments, filter/remove packets by matching criteria (e.g. SSRC), etc). Initial support for --random_bit_error N command line argument, with --filter_packet_ssrc N,N,N ... planned, and others to follow
  Modified Jul 2024 JHB, modify calls to DSWritePcap() to add pcap_hdr_t* param, remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See pktlib.h comments
 */
 
@@ -2565,7 +2565,7 @@ codec_test_cleanup:
       int i, num_tocs = 0, sav_tocs[MAX_TOCS];
       #endif
 
-      printf("pcap extract start\n");
+      printf("pcap extract start \n");
 
       memset(sav_tocs, 0xff, sizeof(sav_tocs));  /* set all sav_toc[] to 0xff */
 
@@ -2689,8 +2689,8 @@ codec_test_cleanup:
          rtp_pyld_type = DSGetPacketInfo(-1, uFlags | DS_PKT_INFO_RTP_PYLDTYPE, pkt_buffer, -1, NULL, NULL);  /* payload type used to filter RTCP packets, JHB Jul 2024 */
 
          uint32_t bitrate = 0;
-         uint8_t cat = 0;
-         int codec_type = detect_codec_type_and_bitrate(rtp_pyld_ptr, rtp_pyld_len, 0, rtp_pyld_type, 0, &bitrate, NULL, &cat);
+         uint8_t category = 0;
+         int codec_type = detect_codec_type_and_bitrate(rtp_pyld_ptr, rtp_pyld_len, 0, rtp_pyld_type, 0, &bitrate, NULL, &category);
          #if 0  /* debug with evs_interop.sh */
          if (codec_type != DS_VOICE_CODEC_TYPE_EVS && codec_type != -1) printf("\n *** found non-EVS codec type = %d \n", codec_type);
          #endif
@@ -2717,22 +2717,27 @@ codec_test_cleanup:
 
       /* determine header format */
 
+         #if 0
          bool fAMRWB_IO_Mode, fSID;  /* currently not used, but available if needed */
          uint8_t CMR, ToC;           /* payload header CMR and ToC (table of contents) */
+         #else
+         PAYLOAD_INFO PayloadInfo;
+         #endif
          bool fTocInPyld;
 
          fTocInPyld = true;  /* default until found otherwise */
+         memset(&PayloadInfo, 0, sizeof(PayloadInfo));
 
-         if (!DSGetPayloadInfo(codec_type, DS_CODEC_INFO_TYPE, rtp_pyld_ptr, rtp_pyld_len, &fAMRWB_IO_Mode, &fSID, &CMR, &ToC)) {  /* returns zero if compact header or bandwidth efficient format; fills in AMR-WB IO mode, SID, CMR, and ToC */
+         if (!DSGetPayloadInfo(codec_type, DS_CODEC_INFO_TYPE, rtp_pyld_ptr, rtp_pyld_len, &PayloadInfo)) {  /* returns zero if compact header or bandwidth efficient format; fills in AMR-WB IO mode, SID, CMR, and ToC */
 
             if (codec_type == DS_VOICE_CODEC_TYPE_EVS) {
 
-               ToC = DSGetPayloadHeaderToC(codec_type, rtp_pyld_len);  /* generate a ToC byte based on payload size (convert to FH format) */
+               PayloadInfo.ToC = DSGetPayloadHeaderToC(codec_type, rtp_pyld_len);  /* generate a ToC byte based on payload size (convert to FH format) */
                fTocInPyld = false;
 
                if (outFileType == ENCODED) {
 
-                  ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)&ToC, 1, DS_WRITE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);  /* write ToC byte (DSSaveDataFile returns bytes written) */
+                  ret_val = DSSaveDataFile(DS_GM_HOST_MEM, &fp_out, NULL, (uintptr_t)&PayloadInfo.ToC, 1, DS_WRITE | DS_DATAFILE_USE_SEMAPHORE, &MediaInfo);  /* write ToC byte (DSSaveDataFile returns bytes written) */
 
                   if (ret_val != 1) {
                      printf("Error writing ToC byte for frame %d, return val = %d \n", frame_count, ret_val);
@@ -2746,7 +2751,7 @@ codec_test_cleanup:
             #if 0
             if (rtp_pyld_ptr[0] & 0x80)  /* check for CMR byte */
             #else  /* make use of CMR returned from DSGetPayloadInfo(), JHB Jul 2024 */
-            if (outFileType == ENCODED && CMR)  /* if CMR byte present, don't include in MIME output coded bitstream frame write to file. ToC is included */
+            if (outFileType == ENCODED && PayloadInfo.CMR)  /* if CMR byte present, don't include in MIME output coded bitstream frame write to file. ToC is included */
             #endif
             {
                rtp_pyld_ptr++;
@@ -2759,12 +2764,12 @@ codec_test_cleanup:
             bool found = false;
             for (i=0; i<num_tocs; i++) {
 
-               if (ToC == sav_tocs[i]) {
+               if (PayloadInfo.ToC == sav_tocs[i]) {
                   found = true;
                   break;
                }
             }
-            if (!found) { sav_tocs[min(num_tocs, MAX_TOCS-1)] = ToC; num_tocs++; }  /* if not found then add this ToC value to saved list */
+            if (!found) { sav_tocs[min(num_tocs, MAX_TOCS-1)] = PayloadInfo.ToC; num_tocs++; }  /* if not found then add this ToC value to saved list */
          }
          #endif
 
@@ -2774,13 +2779,13 @@ codec_test_cleanup:
       
          if (nRandomBitErrorPercentage > 0) {  /* if random bit error percentage specified on command line, insert random bit errors in the payload */
 
-            int pyld_hdr_ofs = (CMR ? 1 : 0) + (fTocInPyld ? 1 : 0);  /* not quite right for AMR bandwidth efficient, but won't matter */
+            int pyld_hdr_ofs = (PayloadInfo.CMR ? 1 : 0) + (fTocInPyld ? 1 : 0);  /* not quite right for AMR bandwidth efficient, but won't matter */
             float num_bit_errors = 1.0*(rtp_pyld_len-pyld_hdr_ofs)*8*nRandomBitErrorPercentage/100;
 
             #ifdef CODEC_TYPE_DEBUG
             char tocstr[20];
             sprintf(tocstr, "0x%x", ToC);
-            if (codec_type != DS_VOICE_CODEC_TYPE_EVS) { count++; printf("\n *** codec type = %d, bitrate = %d, count = %d, rtp_pyld_len = %d, CMR = %d, rtp pyld[0] = 0x%x, cat = %d, ToC = %s, num_bit_errors = %2.4f \n", codec_type, bitrate, count, rtp_pyld_len, CMR, rtp_pyld_ptr[0], cat, fTocInPyld ? tocstr : "none", num_bit_errors); }
+            if (codec_type != DS_VOICE_CODEC_TYPE_EVS) { count++; printf("\n *** codec type = %d, bitrate = %d, count = %d, rtp_pyld_len = %d, CMR = %d, rtp pyld[0] = 0x%x, cat = %d, ToC = %s, num_bit_errors = %2.4f \n", codec_type, bitrate, count, rtp_pyld_len, PayloadInfo.CMR, rtp_pyld_ptr[0], category, fTocInPyld ? tocstr : "none", num_bit_errors); }
             #endif
 
             #ifdef ERROR_DISTRIBUTION_DEBUG
@@ -2855,7 +2860,7 @@ pcap_extract_cleanup:  /* added single exit point for success + most errors, JHB
          else if (outFileType == PCAP) DSClosePcap(fp_out, 0);
       }
 
-      printf("pcap extract end\n");
+      printf("pcap extract end \n");
 
 #endif  /* ifndef _NO_PKTLIB_ */
    }

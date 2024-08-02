@@ -52,7 +52,7 @@
   Modified Apr 2024 JHB, clarify documentation for CMR handling in CODEC_OUTARGS and CODEC_INARGS structs
   Modified May 2024 JHB, change comments that reference x86_mediaTest.c to mediaTest_proc.c
   Modified Jun 2024 JHB, rename DS_CODEC_DECODE_GET_NUMFRAMES to DS_CODEC_GET_NUMFRAMES
-  Modified Jul 2024 JHB, add pToC param to DSGetPayloadInfo(), update comments for DSGetPayloadHeaderToC()
+  Modified Jul 2024 JHB, define PAYLOAD_INFO struct, DSGetPayloadInfo() now uses a PAYLOAD_INFO* param to return items extracted from payloads
 */
  
 #ifndef _VOPLIB_H_
@@ -378,12 +378,32 @@ extern "C" {
      -codec can be either a codec type (int) or a codec handle (an HCODEC returned by a pevious call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec as one of the types specified in shared_include/codec.h. If neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given, the default is DS_CODEC_INFO_TYPE
      -payload should point to a codec RTP payload
      -payload_len should give the size (in bytes) of the RTP payload pointed to by payload
-     -return value is (i) for EVS 0 for CH (compact header) format, 1 for FH (full header) format, (ii) for AMR 0 for bandwidth-efficient format, 1 for octet-align format, (iii) for other codecs 0, and (iv) for error conditions -1
-     -only for EVS, if fAMRWB_IOMode is non-NULL then the value it points to is set true for an AMR-WB IO mode payload, or false for a primary mode payload
-     -if fSID is non-NULL then the value it points to is set true if the packet is a SID, or false if not
-     -if CMR is non-NULL then the value it points to is set to the payload CMR if present, or zero if not
+     -if payload_info is non-NULL then:
+       -payload_info->CMR is set to the payload CMR if present, or zero if not
+       -payload_info->Header_Format is a copy of the return value, excluding error conditions
+       -payload_info->fSID is set true if the packet is a SID, or false if not
+       -only for EVS, payload_info->fAMRWB_IO_MOde is set true for an AMR-WB IO mode payload, or false for a primary mode payload (and set false for all other codecs)
+
+     -return value is (i) 0 for EVS CH (compact header) format or AMR bandwidth-efficient format, (ii) 1 for EVS FH (full header) format or AMR octet-align format, (iii) 0 for other codecs, and (iv) -1 for error conditions
 */
-  int DSGetPayloadInfo(int codec, unsigned int uFlags, uint8_t* payload, unsigned int payload_len, bool* fAMRWB_IOMode, bool* fSID, uint8_t* pCMR, uint8_t* pToc);
+
+  typedef struct {  /* items extracted or derived from a combination of codec type, payload header, and payload size */
+
+  /* payload header items */
+
+     uint8_t   CMR;             /* change mode request value */
+     uint16_t  ToC;             /* payload header ToC (table of contents) */
+     uint16_t  NALU_Hdr;        /* H.26x NALU header */
+
+  /* payload types or operating modes */
+
+     uint8_t   Header_Format;   /* 0 for compact header / bandwidth efficient, 1 for header full / octet aligned */
+     bool      fSID;            /* true for a SID packet, false otherwise */
+     bool      fAMRWB_IO_Mode;  /* true for EVS AMR-WB IO compatibility mode, false otherwise */
+
+  } PAYLOAD_INFO;
+
+  int DSGetPayloadInfo(int codec, unsigned int uFlags, uint8_t* payload, unsigned int payload_len, PAYLOAD_INFO* payload_info);
 
 /* DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with compact header mode and non-collision payload sizes. The ToC is normally one byte, so it's returned in the low byte of the return value, but could be larger for future codecs. See the AMR and EVS specs for ToC bit fields definitions */
 
@@ -429,7 +449,7 @@ extern "C" {
 /* DSGetCodecInfo() flags */
 
 #define DS_CODEC_INFO_HANDLE                   0x100  /* specifies the "codec" param (first param) is interpreted as an hCodec (i.e. handle created by prior call to DSCodecCreate(). This is the default if neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given */ 
-#define DS_CODEC_INFO_TYPE                     0x200  /* specifies the "codec" param (first param) is interpreted as a codec_type */ 
+#define DS_CODEC_INFO_TYPE                     0x200  /* specifies the "codec" param (first param) is interpreted as a codec_type. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE are given the return value is codec type */ 
 
 /* DSGetCodecInfo() item flags. If no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo is expected to point to a CODEC_PARAMS struct. Some item flags must be combined with the DS_CODEC_INFO_HANDLE flag (see per-flag comments) */
 

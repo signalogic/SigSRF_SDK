@@ -179,7 +179,7 @@ extern "C" {
     uint16_t  BitFields;       /* Bit fields = Vers:2, pad:1 xind:1 Cc:4 marker:1 pyldtype:7 */
     #else
 
- /* Implemented as bit fields JHB Jan2021, Notes:
+ /* Implemented as bit fields JHB Jan 2021, Notes:
 
     -this makes all RTP header fields defined in RFC 3550 directly accessible from C/C++ application code and avoids host vs. network byte ordering issues for first 2 bytes of the RTP header
     -bit fields are in lsb order due to gcc limitations, so ordering within each byte is reversed from msb-first layout defined in RFC 3550
@@ -969,14 +969,14 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
    -pkt_buf should point to a sufficiently large memory area to contain returned packet data
    -link_layer_info should be supplied from a prior DSOpenPcap() call. See comments above
-   -if an optional eth_hdr_type pointer is supplied, one or more ETH_P_XXX flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
+   -if an optional p_eth_hdr_type pointer is supplied, one or more ETH_P_XXX flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
    -if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition)
    -uFlags are given in DS_READ_PCAP_XXX definitions below
 
    -return value is the length of the packet, zero if file end has been reached, or < 0 for an error condition
 */
 
-  int DSReadPcap(FILE* fp_pcap, unsigned int uFlags, uint8_t* pkt_buf, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* eth_hdr_type, pcap_hdr_t* pcap_file_hdr);
+  int DSReadPcap(FILE* fp_pcap, unsigned int uFlags, uint8_t* pkt_buf, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* p_eth_hdr_type, pcap_hdr_t* pcap_file_hdr);
 
   #define DS_READ_PCAP_COPY                      0x0100     /* copy pcap record(s) only, don't advance file pointer */
 
@@ -1158,6 +1158,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_BUFFER_PKT_ENABLE_RFC7198_DEDUP    0x8000         /* legacy method of handling RFC7198 temporal de-duplication, should not be used unless needed in a specific case. New method is to apply the DS_RECV_PKT_ENABLE_RFC7198_DEDUP flag to packets being received from a per session queue */
 #define DS_BUFFER_PKT_ENABLE_DYNAMIC_ADJUST   0x10000        /* enable dynamic jitter buffer; i.e. target delay is adjusted dynamically based on measured incoming packet delays */
 
+#define DS_BUFFER_PKT_INFO_RTP_ITEM_MASK          0xff000
+
 #define DS_GETORD_PKT_SESSION                 0x100
 #define DS_GETORD_PKT_CHNUM                   0x200
 #define DS_GETORD_PKT_CHNUM_PARENT_ONLY       0x400
@@ -1276,9 +1278,9 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_PKT_INFO_SRC_ADDR                  0x9000         /* requires pInfo to point to array of sufficient size, returns IP version */
 #define DS_PKT_INFO_DST_ADDR                  0xa000
 
-#define DS_PKT_INFO_ITEM_MASK                 0xff00         /* mask value to isolate above DS_PKT_INFO_xxx item flags */
-
 #define DS_PKT_INFO_PKTINFO                   0xf000         /* stores a PKTINFO struct in pInfo (if specified) with a return value of 1 on success, 2 if a fully re-assembled packet is available, and -1 on error condition. This API is intended to minimize packet processing overhead if several packet items are needed. See PKTINFO struct definition above, containing TCP, UDP, and RTP items */
+
+#define DS_PKT_INFO_ITEM_MASK                 0xff00         /* mask value to isolate above DS_PKT_INFO_xxx item flags */
 
 #define DS_PKT_INFO_PKTINFO_EXCLUDE_RTP      0x10000
 #define DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR  0x20000

@@ -10,7 +10,7 @@
  Revision History
    Created Sep 2015 CKJ
    Modified Dec 2023 JHB, include transcoding.h
-   Modified Jun 2024 JHB, change DS_VOICE_CODEC_TYPE_INVALID to DS_CODEC_TYPE_INVALID
+   Modified Jun 2024 JHB, use DS_VOICE_NUM_CODECS instead of DS_VOICE_CODEC_TYPE_INVALID, implement H.26x codecs
 */
 
 #include <arpa/inet.h>
@@ -221,7 +221,7 @@ static const char* getCodecName(uint8_t codecType)
       "INVALID" 
    };
 
-   if (codecType < DS_CODEC_TYPE_INVALID)
+   if (codecType < DS_VOICE_NUM_CODECS)
       return codecName[codecType];
    else
       return "INVALID";

@@ -30,7 +30,8 @@
    Modified Feb 2023 JHB, one-time set stdout to non-buffered in ProcessKeys(). See comments
    Modified Feb 2024 JHB, update usage of DSGetLogTimeStamp() per changes in diaglib.h
    Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG and DS_LOG_LEVEL_UPTIME_TIMESTAMP flags, which are now deprecated (for the latter uptime timestamps are the default). See comments in pktlib.h and diaglib.h
-   Modified Jun 2024 JHB, include '\r' in updating isCursorMidLine and uLineCursorPos 
+   Modified Jun 2024 JHB, include '\r' in updating isCursorMidLine and uLineCursorPos
+   Modified Jul 2024 JHB, update reference to isMasterThread()
 */
 
 #include <stdio.h>
@@ -104,7 +105,7 @@ static uint64_t last_time = 0;
 static uint8_t save_uPrintfLevel = 0;
 static bool fSetStdoutNonBuffered = false;
 
-   if (isMasterThread) {  /* master application thread (thread_index = 0) handles interactive keyboard commands */
+   if (isMasterThread(thread_index)) {  /* master application thread (thread_index = 0) handles interactive keyboard commands */
 
    /* One-time set stdout to non-buffered, JHB Feb 2023:
    

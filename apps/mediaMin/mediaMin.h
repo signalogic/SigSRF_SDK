@@ -44,6 +44,7 @@
    Modified Jun 2024 JHB, add SDP info and SIP Invite message media descriptions, look for media_descriptions[]
    Modified Jun 2024 JHB, add per-stream source and destination ports, which are set for most recent (i) non-fragmented packet or (ii) first segment of a fragmented packet
    Modified Jun 2024 JHB, add isPortAllowed() return definitions, sip_info_checksum (use to help find SDP info duplicates)
+   Modified Jul 2024 JHB, update isMasterThread() macro
 */
 
 #ifndef _MEDIAMIN_H_
@@ -177,7 +178,7 @@ typedef struct {
   DYNAMICSESSIONSTATS DynamicSessionStats[MAX_DYNAMIC_SESSION_STATS];
   int16_t             dynamic_session_stats_index;
 
-  uint32_t     pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_xcode_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_xcode_ctr, prev_pkt_pull_streamgroup_ctr;
+  uint32_t     pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_xcode_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_xcode_ctr, prev_pkt_pull_streamgroup_ctr;  /* referenced in UpdateCounters() console update in user_io.cpp */
 
   int8_t       flush_state[MAX_SESSIONS];
   uint32_t     flush_count;
@@ -233,11 +234,11 @@ typedef struct {
 
 /* helper definitions */
 
-#define isMasterThread        (thread_index == 0)  /* in multithread operation, only thread 0 (the "master thread") does certain init and cleanup things, and other threads sync with the master thread and cannot proceed until those things are done */
-#define MasterThread          0
-#define NUM_PKTMEDIA_THREADS  3  /* typically mediaMin starts one packet/media thread. Given enough cmd line input specs it may start up to NUM_PKTMEDIA_THREADS packet/media threads */
+#define isMasterThread(thread_index)  (thread_index == 0)  /* in multithread operation, only thread 0 (the "master thread") does certain init and cleanup things, and other threads sync with the master thread and cannot proceed until those things are done */
+#define MasterThread                  0
+#define NUM_PKTMEDIA_THREADS          3  /* typically mediaMin starts one packet/media thread. Given enough cmd line input specs it may start up to NUM_PKTMEDIA_THREADS packet/media threads */
 
-#define isAFAPMode            (RealTimeInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
-#define isFTRTMode            (RealTimeInterval[0] > 0 && RealTimeInterval[0] < 1)  /* macro for "faster than real-time" processing mode, evaluates as true for -rN cmd line entry where 0 < N < 1, JHB May 2023 */
+#define isAFAPMode                    (RealTimeInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
+#define isFTRTMode                    (RealTimeInterval[0] > 0 && RealTimeInterval[0] < 1)  /* macro for "faster than real-time" processing mode, evaluates as true for -rN cmd line entry where 0 < N < 1, JHB May 2023 */
 
 #endif  /* _MEDIAMIN_H_ */

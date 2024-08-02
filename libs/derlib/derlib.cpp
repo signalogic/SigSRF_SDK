@@ -35,7 +35,7 @@
   Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
   Modified Apr 2023 JHB, add calloc buffer overflow check, improve error handling in DSDecodeDerFields()
   Modified Jun 2023 JHB, add local buffer in DSDecodeDerStream() to make it non-destructive on input pkt_in_buf. Also add buffer size checks and warning messages, and error check on UDP length calculation in IPv6 candidate checksum
-  Modified Jul 2024 JHB, per change in pktlib.h, edit DSGetPacketInfo() calls to make uFlags last param
+  Modified Jul 2024 JHB, per change in pktlib.h, edit DSGetPacketInfo() calls to make uFlags second param
 */
 
 /* Linux includes */

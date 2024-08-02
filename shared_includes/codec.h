@@ -25,7 +25,8 @@
     Modified Dec 2023 JHB, comments only
     Modified Feb 2024 JHB, add DS_VOICE_CODEC_TYPE_L16 definition (linear PCM 16-bit)
     Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
-    Modified Jun 2024 JHB, make video codec enums sequential with voice codec enums, define generic DS_CODEC_TYPE_INVALID
+    Modified Jun 2024 JHB, make video codec enums sequential with voice codec enums, define generic DS_VOICE_NUM_CODECS and DS_VIDEO_NUM_CODECS
+    Modified Jul 2024 JHB, define isVoiceCodec() and isVideoCodec() macros
 */
 
 #ifndef _CODEC_H_
@@ -40,6 +41,7 @@ enum media_type {
 enum voice_codec_type {
 
   DS_CODEC_TYPE_NONE,                /* 0, pass-thru */
+
   DS_VOICE_CODEC_TYPE_G711_ULAW,     /* 1 */
   DS_VOICE_CODEC_TYPE_G711_ALAW,     /* 2 */
   DS_VOICE_CODEC_TYPE_G711_WB_ULAW,  /* 3, G711.1 */ 
@@ -65,22 +67,25 @@ enum voice_codec_type {
   DS_VOICE_CODEC_TYPE_AMR_WB_PLUS,   /* 23 */
   DS_VOICE_CODEC_TYPE_L16,           /* 24 */
 
-  DS_VOICE_NCODECS                   /* 25 */
+  DS_VOICE_NUM_CODECS                /* 25 */
 };
 
 enum video_codec_type {
 
-  DS_VIDEO_CODEC_TYPE_MPEG2 = DS_VOICE_NCODECS,
+  DS_VIDEO_CODEC_TYPE_MPEG2 = DS_VOICE_NUM_CODECS,
   DS_VIDEO_CODEC_TYPE_H263,
   DS_VIDEO_CODEC_TYPE_H264,
   DS_VIDEO_CODEC_TYPE_H265,
   DS_VIDEO_CODEC_TYPE_VP8,
   DS_VIDEO_CODEC_TYPE_VP9,
 
-  DS_CODEC_TYPE_INVALID,            /* use this for range-checking upper limit of codec types */
+  DS_TOTAL_NUM_CODECS,               /* use this for range-checking upper limit of codec types */
 
-  DS_VIDEO_NCODECS = DS_CODEC_TYPE_INVALID - DS_VOICE_NCODECS  /* add DS_VOICE_NCODECS and DS_VIDEO_NCODECS to get total codec enums */
+  DS_VIDEO_NUM_CODECS = (DS_TOTAL_NUM_CODECS - DS_VOICE_NUM_CODECS)
 };
+
+#define isVoiceCodec(codec_type) (codec_type > DS_CODEC_TYPE_NONE && codec_type < DS_VOICE_NUM_CODECS)
+#define isVideoCodec(codec_type) (codec_type >= DS_VOICE_NUM_CODECS && codec_type < DS_TOTAL_NUM_CODECS)
 
 /* default value 0, no dtmf detection or transcoding needed. */
 enum dtmf_processing {

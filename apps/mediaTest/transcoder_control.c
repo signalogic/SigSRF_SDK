@@ -38,7 +38,8 @@ Description:
   Modified Dec 2023 JHB, look for input_sample_rate field in parse_codec_params(), this field can be used to supply an sampling rate for input raw audio files with no header
   Modified Apr 2024 JHB, comments and notes only
   Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
-  Modified Jun 2024 JHB, change DS_VOICE_CODEC_TYPE_INVALID to DS_CODEC_TYPE_INVALID, implement H.26x codecs
+  Modified Jun 2024 JHB, use DS_VOICE_NUM_CODECS instead of DS_VOICE_CODEC_TYPE_INVALID, implement H.26x codecs
+  Modified Jul 2024 JHB, use strcasestr in codec_type(), dtmf_type(), and ec_type()
 */
 
 #include <arpa/inet.h>
@@ -95,110 +96,89 @@ char tmpstr[256];
    else return -1;
 }
 
-static int codec_type(char *value) {
+static int codec_type(const char* codecstr) {
 
-char tmpstr[256];
-
-   strcpy(tmpstr, value);
-   strupr(tmpstr);
-
-   if (strstr(tmpstr,"NONE"))
+   if (strcasestr(codecstr,"NONE"))
       return DS_CODEC_TYPE_NONE;
-   else if (strstr(tmpstr,"G711_ULAW"))
+   else if (strcasestr(codecstr,"G711_ULAW"))
       return DS_VOICE_CODEC_TYPE_G711_ULAW;
-   else if (strstr(tmpstr,"G711_ALAW"))
+   else if (strcasestr(codecstr,"G711_ALAW"))
       return DS_VOICE_CODEC_TYPE_G711_ALAW;
-   else if (strstr(tmpstr,"G711_ULAW"))
+   else if (strcasestr(codecstr,"G711_ULAW"))
       return DS_VOICE_CODEC_TYPE_G711_ULAW;
-   else if (strstr(tmpstr,"G711_WB_ULAW"))
+   else if (strcasestr(codecstr,"G711_WB_ULAW"))
       return DS_VOICE_CODEC_TYPE_G711_WB_ULAW;
-   else if (strstr(tmpstr,"G711_WB_ALAW"))
+   else if (strcasestr(codecstr,"G711_WB_ALAW"))
       return DS_VOICE_CODEC_TYPE_G711_WB_ALAW;
-   else if (strstr(tmpstr,"G726"))
+   else if (strcasestr(codecstr,"G726"))
       return DS_VOICE_CODEC_TYPE_G726;
-   else if (strstr(tmpstr,"G729AB"))
+   else if (strcasestr(codecstr,"G729AB"))
       return DS_VOICE_CODEC_TYPE_G729AB;
-   else if (strstr(tmpstr,"G723"))
+   else if (strcasestr(codecstr,"G723"))
       return DS_VOICE_CODEC_TYPE_G723;
-   else if (strstr(tmpstr,"G722"))
+   else if (strcasestr(codecstr,"G722"))
       return DS_VOICE_CODEC_TYPE_G722;
-   else if (strstr(tmpstr,"AMR_NB"))
+   else if (strcasestr(codecstr,"AMR_NB"))
       return DS_VOICE_CODEC_TYPE_AMR_NB;
-   else if (strstr(tmpstr, "AMR_WB+"))
+   else if (strcasestr(codecstr, "AMR_WB+"))
       return DS_VOICE_CODEC_TYPE_AMR_WB_PLUS;
-   else if (strstr(tmpstr,"AMR_WB"))
+   else if (strcasestr(codecstr,"AMR_WB"))
       return DS_VOICE_CODEC_TYPE_AMR_WB;
-   else if (strstr(tmpstr,"EVRCA"))
+   else if (strcasestr(codecstr,"EVRCA"))
       return DS_VOICE_CODEC_TYPE_EVRC;
-   else if (strstr(tmpstr,"ILBC"))
+   else if (strcasestr(codecstr,"ILBC"))
       return DS_VOICE_CODEC_TYPE_ILBC;
-   else if (strstr(tmpstr,"ISAC"))
+   else if (strcasestr(codecstr,"ISAC"))
       return DS_VOICE_CODEC_TYPE_ISAC;
-   else if (strstr(tmpstr,"OPUS"))
+   else if (strcasestr(codecstr,"OPUS"))
       return DS_VOICE_CODEC_TYPE_OPUS;
-   else if (strstr(tmpstr,"EVRCB"))
+   else if (strcasestr(codecstr,"EVRCB"))
       return DS_VOICE_CODEC_TYPE_EVRCB;
-   else if (strstr(tmpstr,"GSMFR"))
+   else if (strcasestr(codecstr,"GSMFR"))
       return DS_VOICE_CODEC_TYPE_GSMFR;
-   else if (strstr(tmpstr,"GSMEFR"))
+   else if (strcasestr(codecstr,"GSMEFR"))
       return DS_VOICE_CODEC_TYPE_GSMEFR;
-   else if (strstr(tmpstr,"EVRCNW"))
+   else if (strcasestr(codecstr,"EVRCNW"))
       return DS_VOICE_CODEC_TYPE_EVRC_NW;
-   else if (strstr(tmpstr,"CLEARMODE"))
+   else if (strcasestr(codecstr,"CLEARMODE"))
       return DS_VOICE_CODEC_TYPE_CLEARMODE;
-   else if (strstr(tmpstr,"EVS"))
+   else if (strcasestr(codecstr,"EVS"))
       return DS_VOICE_CODEC_TYPE_EVS;
-   else if (strstr(tmpstr,"MELPE"))  /* added Apr 2018, JHB */
+   else if (strcasestr(codecstr,"MELPE"))  /* added Apr 2018, JHB */
       return DS_VOICE_CODEC_TYPE_MELPE;
-   else if (strstr(tmpstr,"H.263"))
+   else if (strcasestr(codecstr,"H.263"))
       return DS_VIDEO_CODEC_TYPE_H263;
-   else if (strstr(tmpstr,"H.264"))
+   else if (strcasestr(codecstr,"H.264"))
       return DS_VIDEO_CODEC_TYPE_H264;
-   else if (strstr(tmpstr,"H.265"))
+   else if (strcasestr(codecstr,"H.265"))
       return DS_VIDEO_CODEC_TYPE_H265;
-   else if (strstr(tmpstr,"INVALID"))
-      return DS_CODEC_TYPE_INVALID;
 
    else return DS_CODEC_TYPE_NONE;
 }
 
 /* modified to handle dsp_tester format entries, JHB Jun 2016 */
 
-static int dtmf_type(char* value) {
+static int dtmf_type(const char* dtmfstr) {
 
-char tmpstr[256];
-
-   strcpy(tmpstr, value);
-   strupr(tmpstr);
- 
-   if (strstr(tmpstr, "NONE") || strstr(tmpstr, "0")) return DS_DTMF_NONE;
-
-   else if (strstr(tmpstr, "RTP") || strstr(tmpstr, "1")) return DS_DTMF_RTP;
-
-   else if (strstr(tmpstr, "TONE") || strstr(tmpstr, "2")) return DS_DTMF_TONE;
-
-   else if (strstr(tmpstr, "STRIP") || strstr(tmpstr, "4")) return DS_DTMF_SIP_INFO;
-
-   else if (strstr(tmpstr, "SIP_INFO") || strstr(tmpstr, "8")) return DS_DTMF_SIP_INFO;
-
-   else if (strstr(tmpstr, "RTP+SIP_INFO") || strstr(tmpstr, "RTP|SIP_INFO") || strstr(tmpstr, "9")) return DS_DTMF_RTP | DS_DTMF_SIP_INFO;  /* note -- whitespace has already been removed.  See usage of str_remove_whitespace() below */
+   if (strcasestr(dtmfstr, "NONE") || strcasestr(dtmfstr, "0")) return DS_DTMF_NONE;
+   else if (strcasestr(dtmfstr, "RTP") || strcasestr(dtmfstr, "1")) return DS_DTMF_RTP;
+   else if (strcasestr(dtmfstr, "TONE") || strcasestr(dtmfstr, "2")) return DS_DTMF_TONE;
+   else if (strcasestr(dtmfstr, "STRIP") || strcasestr(dtmfstr, "4")) return DS_DTMF_SIP_INFO;
+   else if (strcasestr(dtmfstr, "SIP_INFO") || strcasestr(dtmfstr, "8")) return DS_DTMF_SIP_INFO;
+   else if (strcasestr(dtmfstr, "RTP+SIP_INFO") || strcasestr(dtmfstr, "RTP|SIP_INFO") || strcasestr(dtmfstr, "9")) return DS_DTMF_RTP | DS_DTMF_SIP_INFO;  /* note -- whitespace has already been removed. See usage of str_remove_whitespace() below */
 
    else return DS_DTMF_NONE;  /* default */
 }
 
-int ec_type(char *value) {
+int ec_type(const char* ecstr) {
 
-char tmpstr[256];
-
-   strcpy(tmpstr, value);
-   strupr(tmpstr);
-
-   if (strstr(tmpstr,"NONE"))
+   if (strcasestr(ecstr,"NONE"))
       return DS_EC_NONE;
-   else if (strstr(tmpstr,"TI_LECc"))
+   else if (strcasestr(ecstr,"TI_LECc"))
       return DS_EC_TI_LEC;
-   else if (strstr(tmpstr,"TI_LEC_ACOUSTIC"))
+   else if (strcasestr(ecstr,"TI_LEC_ACOUSTIC"))
       return DS_EC_TI_LEC_ACOUSTIC;
+
    else return DS_EC_NONE;
 }
 

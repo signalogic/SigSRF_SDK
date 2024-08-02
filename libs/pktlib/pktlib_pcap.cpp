@@ -41,7 +41,7 @@ Revision History
                         -use pcap_hdr_t* (pcap file header) param struct fields as-is if already initialized
                         -implement DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT flag to cause file header data to be returned in pcap (libpcap) format instead of pcapng
   Modified Jul 2024 JHB, split out from pktlib.c, relevant revision history moved here
-  Modified Jul 2024 JHB, correctly return total number of bytes written in DSWritePcap()
+  Modified Jul 2024 JHB, more error handling in DSOpenPcap(), correctly return total number of bytes written in DSWritePcap()
 */
 
 /* Linux and/or other OS includes */
@@ -84,17 +84,37 @@ pcapng_idb_t file_idb_ng;
 char estr[MAX_INPUT_LEN] = "";
 char tmpstr[2*MAX_INPUT_LEN];
 
+   if (!pcap_file || !strlen(pcap_file) || !fp_pcap) {  /* look for NULL path/filename, empty string, or NULL file pointer, JHB Jul 2024 */
+
+      char iostr[20] = "";
+      if (uFlags & DS_READ) strcpy(iostr, " input");
+      else if (uFlags & DS_WRITE) strcpy(iostr, " output");
+
+      if (!pcap_file) Log_RT(2, "ERROR: DSOpenPcap() says%s path and/or filename is NULL \n", iostr);
+      if (!strlen(pcap_file)) Log_RT(2, "ERROR: DSOpenPcap() says%s path and/or filename is empty string \n", iostr);
+      if (!fp_pcap) Log_RT(2, "ERROR: DSOpenPcap() says%s file pointer is NULL \n", iostr);
+
+      return ret_val;
+   }
+
    int estrlen = errstr ? min(strlen(errstr), sizeof(estr)) : 0;  /* may have been a bug waiting to happen here; add min(strlen), JHB Jul 2024 */
    if (errstr) strncpy(estr, errstr, estrlen);
    if (estrlen > 0) estr[estrlen-1] = 0;
 
+   char extstr[20] = "";
+   if (strcasestr(pcap_file, ".pcapng")) strcpy(extstr, " pcapng");
+   else if (strcasestr(pcap_file, ".pcap")) strcpy(extstr, " pcap");
+   else if (strcasestr(pcap_file, ".rtp")) strcpy(extstr, " rtp");
+
    if (uFlags & DS_WRITE) {
+
+   /* open file for writing */
 
       *fp_pcap = fopen(pcap_file, "wb");
 
       if (!*fp_pcap) {
    
-         sprintf(tmpstr, "ERROR: DSOpenPcap() unable to open output %spcap file %s, errno = %d \n", estr, pcap_file, errno);
+         sprintf(tmpstr, "ERROR: DSOpenPcap() unable to open output%s%s file %s, errno = %d \n", extstr, estr, pcap_file, errno);
          Log_RT(2, tmpstr);
 
          goto wr_ret;
@@ -104,7 +124,8 @@ char tmpstr[2*MAX_INPUT_LEN];
          ret_val = 1;
 
          if (!(uFlags & DS_OPEN_PCAP_QUIET)) {
-            sprintf(tmpstr, "INFO: DSOpenPcap() opened %spcap output file: %s \n", estr, pcap_file);
+
+            sprintf(tmpstr, "INFO: DSOpenPcap() opened output%s file: %s \n", extstr, pcap_file);
             Log_RT(4, tmpstr);
          }
       }
@@ -117,7 +138,7 @@ char tmpstr[2*MAX_INPUT_LEN];
          }
          else p_file_hdr = pcap_file_hdr;  /* use caller supplied file header */
 
-      /* fill out pcap file header for output pcap */
+      /* fill out file header for output pcap. Don't touch any items already initialized, JHB Jul 2024 */
 
          if (!p_file_hdr->magic_number) p_file_hdr->magic_number = 0xa1b2c3d4;  /* basic libpcap format */
          if (!p_file_hdr->version_major && !p_file_hdr->version_minor) { p_file_hdr->version_major = 2; p_file_hdr->version_minor = 4; }
@@ -126,7 +147,7 @@ char tmpstr[2*MAX_INPUT_LEN];
          if (!p_file_hdr->snaplen) p_file_hdr->snaplen = 65535;
          if (!p_file_hdr->link_type) p_file_hdr->link_type = LINKTYPE_ETHERNET;  /* default link type for all records is standard 14-byte ethernet header */
 
-      /* write output pcap file header */
+      /* write output file header */
 
          fwrite(p_file_hdr, SIZEOF_PCAP_HDR_T, 1, *fp_pcap);  /* SIZEOF_PCAP_HDR_T macro defined in pktlib.h */
       }
@@ -134,9 +155,9 @@ char tmpstr[2*MAX_INPUT_LEN];
 wr_ret:
       return ret_val;
    }
-   else {  /* DS_READ is the default if no flag is given */
+   else {  /* DS_READ is default if no flag given */
 
-   /* open pcap file */
+   /* open file for reading */
 
       if (!(uFlags & DS_OPEN_PCAP_RESET)) {
       
@@ -145,7 +166,7 @@ wr_ret:
          if (!*fp_pcap) {
 
             int temp_errno = errno;
-            sprintf(tmpstr, "ERROR: DSOpenPcap() %s %spcap file: %s, errno = %d \n", temp_errno == 2 ? "unable to find" : "failed to open", estr, pcap_file, temp_errno);
+            sprintf(tmpstr, "ERROR: DSOpenPcap() %s input%s%s file: %s, errno = %d \n", temp_errno == 2 ? "unable to find" : "failed to open", extstr, estr, pcap_file, temp_errno);
             Log_RT(2, tmpstr);
             goto rd_ret;
          }
@@ -154,7 +175,8 @@ wr_ret:
             ret_val = 1;
 
             if (!(uFlags & DS_OPEN_PCAP_QUIET)) {
-               sprintf(tmpstr, "INFO: DSOpenPcap() opened %spcap input file: %s \n", estr, pcap_file);
+
+               sprintf(tmpstr, "INFO: DSOpenPcap() opened input%s file: %s \n", extstr, pcap_file);
                Log_RT(4, tmpstr);
             }
          }
@@ -173,12 +195,10 @@ wr_ret:
 
       if (!(uFlags & DS_OPEN_PCAP_DONT_READ_HEADER)) {  /* user can specify to not read file header (for whatever reason), JHB Jul 2024 */
 
-      /* read pcap file header and check for magic numbers */
+      /* read file header and check for magic numbers */
 
          if (!pcap_file_hdr) p_file_hdr = &pcap_file_hdr_local;
          else p_file_hdr = pcap_file_hdr;
-
-// printf("\n *** reading %d bytes \n", SIZEOF_PCAP_HDR_T);
 
          #if 0
          if (fread(p_file_hdr, sizeof(pcap_hdr_t), 1, *fp_pcap) != 1) {
@@ -186,7 +206,7 @@ wr_ret:
          if (fread(p_file_hdr, SIZEOF_PCAP_HDR_T, 1, *fp_pcap) != 1) {  /* SIZEOF_PCAP_HDR_T macro defined in pktlib.h */
          #endif
 
-            sprintf(tmpstr, "WARNING: failed to read %spcap file header in file: %s", estr, pcap_file ? pcap_file : "");
+            sprintf(tmpstr, "WARNING: failed to read%s%s file header in file: %s", estr, extstr, pcap_file ? pcap_file : "");
             Log_RT(3, tmpstr);
 
             fclose(*fp_pcap);
@@ -410,12 +430,12 @@ pcaprec_hdr_t* p_pkt_hdr;
 pcapng_epb_t pcapng_epb = { 0 };
 int packet_length;
 uint64_t usec = 0, fp_save = 0;
-uint8_t pkt_buffer_local[4096];
+uint8_t pkt_buffer_local[MAX_TCP_PACKET_LEN];  /* overly large but at least no chance of error */
 uint8_t* pkt_ptr;
 struct ethhdr eth_hdr;  /* defined in netinet/if_ether.h */
 vlan_hdr_t vlan_hdr;  /* defined in pktlib.h */
 uint16_t eth_hdr_type = 0, file_type, link_len, link_type, padding = 0;
-uint16_t rtp_len = 0, record_len = 0;  /* rtp format items */
+uint16_t rtp_len = 0, record_len = 0;  /* rtp file format items */
 
 /*
 a few useful constants from if_ether.h (one copy here https://github.com/spotify/linux/blob/master/include/linux/if_ether.h):

@@ -57,6 +57,7 @@
   Modified May 2024 JHB, update documentation for DSPktStatsAddEntries()
   Modified Jul 2024 JHB, add DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to support SSRCs shared across streams. mediaMin sets this flag when dormant session detection is disabled on its command line
   Modified Jul 2024 JHB, due to documentation review, uFlags moved to second param in all relevant APIs
+  Modified Jul 2024 JHB, rename SSRC fields in PKT_STATS struct to ssrc. Maintain consistency with other header file structs
 */
 
 #ifndef _DIAGLIB_H_
@@ -141,7 +142,7 @@ typedef struct __attribute__((packed)) {
 
    uint16_t rtp_seqnum;
    uint32_t rtp_timestamp;
-   uint32_t rtp_SSRC;
+   uint32_t rtp_ssrc;
    uint16_t rtp_pyldlen;
    uint32_t content_flags;  /* one of the DS_PKT_PYLD_CONTENT_xxx (payload content) flags */
    int16_t  chnum;          /* optional channel (session) info, set by pktlib p/m threads. Set to -1 if not used */
