@@ -5,7 +5,7 @@
  
    Functions for encoding or decoding pre-configured files as a separate thread
  
- Copyright (C) Signalogic Inc. 2017-2023
+ Copyright (C) Signalogic Inc. 2017-2024
  
  Revision History
  
@@ -18,6 +18,7 @@
   Modified Nov 2023 JHB, removed size value from extern char*[] and extern int[] items
   Modified Nov 2023 JHB, add pInArgs param to DSCodecDecode() call
   Modified Dec 2023 JHB, include voplib.h
+  Modified Jul 2024 JHB, DSGetCodecType() is deprecated, call DSGetCodecInfo() instead
 */
 
 #include <stdio.h>
@@ -33,9 +34,9 @@ extern int decoded_frame_cnt[];
 
 extern char thread_status[];
 
-void *encode_thread_task(void *arg)
+void *encode_thread_task(void* arg)
 {
-   HCODEC hCodec = *(HCODEC *)arg;
+   HCODEC hCodec = *(HCODEC*)arg;
    FILE *in_fp, *out_fp;
    char out_filename[50];
    uint8_t in_buf[MAX_RAW_FRAME];
@@ -51,7 +52,12 @@ void *encode_thread_task(void *arg)
       return 0;
    }
    
-   switch (DSGetCodecType(hCodec)) {
+   #if 0  /* DSGetCodecType() is deprecated, DSGetCodecInfo() now returns a codec type if both DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE flags are given, JHB Jul 2024 */
+   switch (DSGetCodecType(hCodec))
+   #else
+   switch (DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_TYPE, 0, 0, NULL))
+   #endif
+   {
       case DS_VOICE_CODEC_TYPE_G711_ULAW:
          sprintf(out_filename, "test_files/codec_%d_encoded.ul", hCodec);
          break;
