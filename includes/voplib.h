@@ -379,7 +379,8 @@ extern "C" {
      -payload should point to a codec RTP payload
      -payload_len should give the size (in bytes) of the RTP payload pointed to by payload
      -if payload_info is non-NULL then:
-       -payload_info->CMR is set to the payload CMR if present, or zero if not
+       -payload_info->CMR is set to the payload change mode request value if present, or zero if not
+       -payload_info->ToC is set to the payload header "table of contents" byte if present, or zero if not 
        -payload_info->Header_Format is a copy of the return value, excluding error conditions
        -payload_info->fSID is set true if the packet is a SID, or false if not
        -only for EVS, payload_info->fAMRWB_IO_MOde is set true for an AMR-WB IO mode payload, or false for a primary mode payload (and set false for all other codec types)
