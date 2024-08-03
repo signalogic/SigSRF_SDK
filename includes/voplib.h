@@ -356,7 +356,7 @@ extern "C" {
 
 /* DSGetCodecInfo() returns information for the specified codec and uFlags (see below for uFlags definitions). Notes:
 
-   -codec can be either a codec handle (HCODEC) or a codec type (int), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_HANDLE to interpret codec as an hCodec, returned by a previous call to DSCodecCreate(). If neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE is given, the default is DS_CODEC_INFO_HANDLE
+   -codec can be either a codec handle (HCODEC) or a codec type (int), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_HANDLE to interpret codec as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given codec is interpreted as an hCodec and the return value is a codec type. If neither are given, the default is assumed to be a DS_CODEC_INFO_TYPE flag
    -if uFlags specifies DS_CODEC_INFO_TYPE, codec should be one of the types specified in shared_include/codec.h, and uFlags can also contain DS_CODEC_INFO_NAME, DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, or DS_CODEC_INFO_PARAMS
    -nInput1 and nInput2 are required for uFlags DS_CODEC_INFO_BITRATE_TO_INDEX, DS_CODEC_INFO_INDEX_TO_BITRATE, and DS_CODEC_INFO_CODED_FRAMESIZE
    -nInput1 is required for the DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE flag
@@ -369,7 +369,7 @@ extern "C" {
 
 /* DSGetPayloadInfo() returns header format and other info for codec RTP payloads. Notes, JHB Oct 2022:
 
-     -codec can be either a codec type (int) or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec as one of the codec types specified in shared_include/codec.h. If neither DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE flags are given the default is DS_CODEC_INFO_TYPE. If neither are given the return value is a codec type
+     -codec can be either a codec type (int) or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec as one of the codec types specified in shared_include/codec.h. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given codec is interpreted as an hCodec and the return value is a codec type. If neither are given the default is assumed to be a DS_CODEC_INFO_TYPE flag
      -payload should point to a codec RTP payload
      -payload_len should give the size (in bytes) of the RTP payload pointed to by payload
      -if payload_info is non-NULL then:
