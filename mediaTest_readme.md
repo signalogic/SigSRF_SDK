@@ -1042,12 +1042,12 @@ Below is a list of system compatibility exceptions in the Makefiles.
 <a name="Reproducibility"><a/>
 ## Reproducibility
 
-To maintain bit-exact output reproducibility, for example call recording records for legal purposes, mediaMin supports a "timestamp matching mode". In this mode only arrival timestamps are used to determine stream alignment in generated wav and pcap outputs, with no wall clock references. This is in contrast to the default "media domain mode", in which the amount of generated media serves as a baseline, or guardrail, for stream alignment. Media domain alignment, although resilient against timestamp errors, too-fast or too-slow packet transmission rates (e.g. announcement and media servers), incorrect codec info, and other errors -- and being suitable for real-time, live streaming output -- always contains a very small amount of jitter due to external wall clock references.
+To maintain bit-exact output reproducibility, for example call recording wav files for legal purposes, mediaMin supports a "timestamp matching mode". In this mode only arrival timestamps are used to determine stream alignment in generated wav and pcap outputs, with no wall clock references. This is in contrast to the default "media domain mode", in which the amount of generated media serves as a baseline, or guardrail, for stream alignment. Media domain alignment, although resilient against timestamp errors, too-fast or too-slow packet transmission rates (e.g. announcement and media servers), incorrect codec info, and other errors -- and being suitable for real-time, live streaming output -- always contains a slight amount of jitter due to external wall clock references.
 
-Here are command line examples with the ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag applied, one at real-time rate, one at 40x faster-than-real-time (FTRT) rate:
+Here are command line examples with the ENABLE_TIMESTAMP_MATCH_MODE and ENABLE_WAV_OUTPUT flags applied, one at real-time rate, one at 40x faster-than-real-time (FTRT) rate:
 
-    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r20 --md5sum
-    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040011 -r0.5 --md5sum
+    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040811 -r20 --md5sum
+    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040811 -r0.5 --md5sum
 
 Note that both print identical MD5 sums in mediaMin summary stats:
 
@@ -1067,7 +1067,7 @@ Note that both print identical MD5 sums in mediaMin summary stats:
         [1] hSession 1, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0x6057c1d6
 </console></pre>
 
-Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and avoid wall clock references.
+Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and thus avoid wall clock references.
 
 <i><b>
 ```diff
