@@ -382,7 +382,7 @@ extern "C" {
        -payload_info->CMR is set to the payload CMR if present, or zero if not
        -payload_info->Header_Format is a copy of the return value, excluding error conditions
        -payload_info->fSID is set true if the packet is a SID, or false if not
-       -only for EVS, payload_info->fAMRWB_IO_MOde is set true for an AMR-WB IO mode payload, or false for a primary mode payload (and set false for all other codecs)
+       -only for EVS, payload_info->fAMRWB_IO_MOde is set true for an AMR-WB IO mode payload, or false for a primary mode payload (and set false for all other codec types)
 
      -return value is (i) 0 for EVS CH (compact header) format or AMR bandwidth-efficient format, (ii) 1 for EVS FH (full header) format or AMR octet-align format, (iii) 0 for other codecs, and (iv) -1 for error conditions
 */
@@ -391,13 +391,13 @@ extern "C" {
 
   /* payload header items */
 
-     uint8_t   CMR;             /* change mode request value */
-     uint16_t  ToC;             /* payload header ToC (table of contents) */
+     uint8_t   CMR;             /* change mode request value, if applicable to codec type. Zero otherwise */
+     uint16_t  ToC;             /* payload header ToC (table of contents) if applicable to codec type. Zero otherwise */
      uint16_t  NALU_Hdr;        /* H.26x NALU header */
 
   /* payload types or operating modes */
 
-     uint8_t   Header_Format;   /* 0 for compact header / bandwidth efficient, 1 for header full / octet aligned */
+     uint8_t   Header_Format;   /* 0 for compact header / bandwidth efficient, 1 for header full / octet aligned, 0 otherwise */
      bool      fSID;            /* true for a SID packet, false otherwise */
      bool      fAMRWB_IO_Mode;  /* true for EVS AMR-WB IO compatibility mode, false otherwise */
 
