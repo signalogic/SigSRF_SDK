@@ -356,30 +356,30 @@ extern "C" {
 
 /* DSGetCodecInfo() returns information for the specified codec and uFlags (see below for uFlags definitions). Notes:
 
-   -codec can be either a codec handle (HCODEC) or a codec type (int), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_HANDLE to interpret codec as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given codec is interpreted as an hCodec and the return value is a codec type. If neither are given, the default is assumed to be a DS_CODEC_INFO_TYPE flag
+   -codec can be either a codec handle (HCODEC) or a codec type (int), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_HANDLE to interpret codec as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec is interpreted as an hCodec and the return value is a codec type. If neither are given, the DS_CODEC_INFO_TYPE flag is assumed as the default
    -if uFlags specifies DS_CODEC_INFO_TYPE, codec should be one of the types specified in shared_include/codec.h, and uFlags can also contain DS_CODEC_INFO_NAME, DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, or DS_CODEC_INFO_PARAMS
    -nInput1 and nInput2 are required for uFlags DS_CODEC_INFO_BITRATE_TO_INDEX, DS_CODEC_INFO_INDEX_TO_BITRATE, and DS_CODEC_INFO_CODED_FRAMESIZE
    -nInput1 is required for the DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE flag
-   -retrieved info is copied into pInfo if uFlags contains DS_CODEC_INFO_NAME or DS_CODEC_INFO_PARAMS
+   -retrieved info is copied to pInfo if uFlags contains DS_CODEC_INFO_NAME or DS_CODEC_INFO_PARAMS
    
    -return value is > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions
 */
   
   int DSGetCodecInfo(int codec, unsigned int uFlags, int nInput1, int nInput2, void* pInfo);
 
-/* DSGetPayloadInfo() returns header format and other info for codec RTP payloads. Notes, JHB Oct 2022:
+/* DSGetPayloadInfo() returns header format and other info for codec RTP payloads. Notes:
 
-     -codec can be either a codec type (int) or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec as one of the codec types specified in shared_include/codec.h. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given codec is interpreted as an hCodec and the return value is a codec type. If neither are given the default is assumed to be a DS_CODEC_INFO_TYPE flag
+     -codec can be either a codec type (int) or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec as one of the codec types defined in shared_include/codec.h. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec is interpreted as an hCodec and the return value is a codec type. If neither are given, the DS_CODEC_INFO_TYPE flag is assumed as the default
      -payload should point to a codec RTP payload
      -payload_len should give the size (in bytes) of the RTP payload pointed to by payload
      -if payload_info is non-NULL then:
-       -payload_info->CMR is set to the payload change mode request value if present, or zero if not
-       -payload_info->ToC is set to the payload header "table of contents" value if present, or zero if not 
+       -payload_info->CMR is set to the payload change mode request value if present and applicable to the codec type, or zero if not
+       -payload_info->ToC is set to the payload header "table of contents" value if present and applicable to the codec type, or zero if not 
        -payload_info->Header_Format is a copy of the return value, excluding error conditions
-       -payload_info->fSID is set true if the packet is a SID, or false if not
-       -only for EVS, payload_info->fAMRWB_IO_MOde is set true for an AMR-WB IO mode payload, or false for a primary mode payload (and set false for all other codec types)
+       -payload_info->fSID is set true if the packet is a SID (silence identifier), or false if not
+       -only applicable to EVS, payload_info->fAMRWB_IO_MOde is set true for an AMR-WB IO mode payload, or false for a primary mode payload. Set false for all other codec types
 
-     -return value is (i) 0 for EVS CH (compact header) format or AMR bandwidth-efficient format, (ii) 1 for EVS FH (full header) format or AMR octet-align format, (iii) 0 for other codecs, (iv) a codec type if both DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE flags are given, and (v) < 0 for error conditions
+     -return value is (i) 0 for EVS CH (compact header) format or AMR bandwidth-efficient format, (ii) 1 for EVS FH (full header) format or AMR octet-align format, (iii) 0 for other codec types, (iv) a codec type if both DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE flags are given, and (v) < 0 for error conditions
 */
 
   typedef struct {  /* items extracted or derived from a combination of codec type, payload header, and payload size */
