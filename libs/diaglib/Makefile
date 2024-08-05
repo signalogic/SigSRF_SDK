@@ -25,7 +25,6 @@
 #  Modified Feb 2024 JHB, if standalone=1 given on command line define STANDALONE, NO_HWLIB, and NO_PKTLIB, and build dialglib_standalone.so
 #  Modified Feb 2024 JHB, apply soname only to default libdiaglib.so to avoid ldconfig conflicts, rename CC_FLAGS to CFLAGS and LIB_FLAGS to LDFLAGS (Linux convention)
 #  Modified May 2024 JHB, change from gcc to g++, change CFLAGS TO CPPFLAGS
-#  Modified May 2024 JHB, experimental: add -march=native compiler flag
 #  Modified May 2024 JHB, remove standalone=1 handling. In lib_logging.cpp DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib
 #  Modified Jul 2024 JHB, change CC to CXX and CPPFLAGS to CXXFLAGS, per https://stackoverflow.com/questions/495598/difference-between-cppflags-and-cxxflags-in-gnu-make
 
@@ -70,8 +69,12 @@ CXXFLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 
 
 CXXFLAGS += -Wextra -Wno-missing-field-initializers
 
-# experimental in preparation for Arm support: let compiler figure out CPU type
-CXXFLAGS += -march=native
+# experimental in preparation for Arm support, notes May-Jul 2024:
+#  -objective is let compiler figure out CPU type
+#  -but this fails during Docker container testing, for example libs built on Xeon and tested on Atom
+#  -possible to-do: implement a Makefile method to determine x86 vs Arm, then use -target=aarch64 or similar for Arm
+#
+# CXXFLAGS += -march=native
 
 # link flags. Apply -soname only for primary lib to avoid ldconfig conflicts
 LDFLAGS = -pthread -shared -flto -Wl,-soname,libdiaglib.so.1.5.0
