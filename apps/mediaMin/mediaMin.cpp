@@ -4836,7 +4836,9 @@ char version_info[500], lib_info[500], banner_info[2048];
 
    GetCommandLine((char*)szAppFullCmdLine, MAX_CMDLINE_STR_LEN);  /* save full command in szAppFullCmdLine global var, for use as needed, JHB Jan 2023 */
 
-   sprintf(version_info, "%s %s \n%s \n", prog_str, version_str, copyright_str);
+   bool fDemo = strstr(PKTLIB_VERSION, "DEMO") || strstr(VOPLIB_VERSION, "DEMO") || strstr(STREAMLIB_VERSION, "DEMO");
+ 
+   sprintf(version_info, "%s %s \n%s%s \n", prog_str, version_str, copyright_str, fDemo ? " \nUsing demo-only library versions" : "");
 
    sprintf(lib_info, "  SigSRF libraries in use: DirectCore v%s, pktlib v%s, streamlib v%s, voplib v%s, derlib v%s, alglib v%s, diaglib v%s, cimlib v%s", HWLIB_VERSION, PKTLIB_VERSION, STREAMLIB_VERSION, VOPLIB_VERSION, DERLIB_VERSION, ALGLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
 

@@ -19,7 +19,7 @@
   Modified Apr 2024 JHB, deprecate DS_LOG_LEVEL_UPTIME_TIMESTAMP flag (diaglib.h) and DS_EVENT_LOG_UPTIME_TIMESTAMPS flag (shared_include/config.h), the default (no flag) is now uptime timestamps. DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp
   Modified Apr 2024 JHB, DSGetLogTimestamp() now returns length of timestamp string
   Modified May 2024 JHB, add DSGetBacktrace() API
-  Created May 2024 JHB, DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs moved here from lib_logging.cpp
+  Created May 2024 JHB, DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs moved here from event_logging.cpp
   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSGetLogTimeStamp() and DSGetBacktrace() 
 */
 
@@ -48,10 +48,10 @@ using namespace std;
   #define MAX_INPUT_LEN 256  /* MAX_INPUT_LEN is defined in shared_include/userInfo.h as equivalent to CMDOPT_MAX_INPUT_LEN (defined in apps/common/cmdLineOpt.h). But we'd like to avoid those includes for diaglib, so we define here if needed */
 #endif
 
-extern uint64_t usec_base;  /* declared in lib_logging.cpp */
+extern uint64_t usec_base;  /* declared in event_logging.cpp */
 extern uint8_t usec_init_lock;
 
-/* retrieve and format a timestamp, can be absolute (wall-clock) time, relative to start, or both. Log_RT() (lib_logging.cpp) depends on this */
+/* retrieve and format a timestamp, can be absolute (wall-clock) time, relative to start, or both. Log_RT() (event_logging.cpp) depends on this */
 
 int DSGetLogTimeStamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval) {
 
@@ -66,7 +66,7 @@ bool fUptimeTimestamp = (uFlags & DS_EVENT_LOG_UPTIME_TIMESTAMPS) != 0;
 bool fUptimeTimestamp = true;
 #endif
 
-/* set a memory barrier, prevent multiple uncoordinated threads from initializing usec_base more than once. Note the same lock protects usec_base initialization in Log_RT() (in lib_logging.cpp), JHB May 2024 */
+/* set a memory barrier, prevent multiple uncoordinated threads from initializing usec_base more than once. Note the same lock protects usec_base initialization in Log_RT() (in event_logging.cpp), JHB May 2024 */
 
    while (__sync_lock_test_and_set(&usec_init_lock, 1) != 0);  /* wait until the lock is zero then write 1 to it. While waiting keep writing a 1 */
 

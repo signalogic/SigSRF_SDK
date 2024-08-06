@@ -68,12 +68,12 @@
   Modified Nov 2023 JHB, in analysis_and_stats() (analysis of input vs output packets) implement input vs. output sequence number range check. This solves some cases of transmissions that incorrectly increment sequence numbers after a SID (i.e. increment sequence number without sending a packet), in which case pktlib sees missing packets as loss and fills them in with SID reuse. See comments for more detail
   Modified Nov 2023 JHB, in analysis_and_stats() correct what appears to be a mistake in overwriting search_offset
   Modified Feb 2024 JHB, Makefile now defines NO_PKTLIB, NO_HWLIB, and STANDALONE if standalone=1 given on command line. Delete DIAGLIB_STANDALONE references
-  Modified Feb 2024 JHB, increase version minor number due to changes in lib_logging.c
-  Modified Mar 2024 JHB, move version string to lib_logging.c
+  Modified Feb 2024 JHB, increase version minor number due to changes in event_logging.c
+  Modified Mar 2024 JHB, move version string to event_logging.c
   Modified Apr 2024 JHB, implement DS_PKT_PYLD_CONTENT_MEDIA_REUSE, rename sid_reuse_offset to search_offset
   Modified Apr 2024 JHB, add "long SID timestamp mismatch" case handling in analysis_and_stats()
   Modified May 2024 JHB, convert to cpp
-  Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() in lib_logging.cpp now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile cmd line no longer recognizes standalone=1
+  Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() in event_logging.cpp now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile cmd line no longer recognizes standalone=1
   Modified May 2024 JHB, update DSPktStatsAddEntries() documentation, param naming, and error handling. Make pkt_length[] param an int to allow -1 values (i.e. packet length unknown)
   Modified Jul 2024 JHB, to support SSRCs shared across streams, implement DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag, create in_chnum[] and out_chnum[], and add to chnum[] param to DSFindSSRCGroups() and DSPktStatsLogSeqnums()
   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to be second param in all relevant APIs. Also in non-published API analysis_and_stats() 
@@ -98,12 +98,12 @@ using namespace std;
 #define GET_TIME_TYPEDEF_ONLY  /* specify get_time() typedef only (no prototype) in hwlib.h */
 #include "hwlib.h"  /* DirectCore header file, only constants and definitions used here */
 
-extern DEBUG_CONFIG lib_dbg_cfg;  /* in lib_logging.cpp */
+extern DEBUG_CONFIG lib_dbg_cfg;  /* in event_logging.cpp */
 
-extern sem_t diaglib_sem;  /* in lib_logging.cpp */
+extern sem_t diaglib_sem;  /* in event_logging.cpp */
 extern int diaglib_sem_init;
 
-/* function pointers set in DSInitLogging() in lib_logging.cpp with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused at link-time with their SigSRF library function counterparts if they both exist, JHB May 2024 */
+/* function pointers set in DSInitLogging() in event_logging.cpp with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused at link-time with their SigSRF library function counterparts if they both exist, JHB May 2024 */
 
 extern __attribute__((visibility("hidden"))) DSGetPacketInfo_t* DSGetPacketInfo;  /* DSGetPacketInfo_t typedef in pktlib.h */
 extern __attribute__((visibility("hidden"))) get_time_t* get_time;  /* get_time_t typedef in hwlib.h */
@@ -121,7 +121,7 @@ int DSPktStatsAddEntries(PKT_STATS* pkt_stats, unsigned int uFlags, int num_pkts
 int j, len;
 unsigned int offset = 0;
 
-   if (!DSGetPacketInfo) return -2;  /* return error condition if DSGetPacketInfo() not in run-time build; see DSInitLogging() in lib_logging.cpp, JHB May 2024 */
+   if (!DSGetPacketInfo) return -2;  /* return error condition if DSGetPacketInfo() not in run-time build; see DSInitLogging() in event_logging.cpp, JHB May 2024 */
 
    if (!pkt_stats || !pkt_buffer) return -1;
 
@@ -169,7 +169,7 @@ int        sorted_point;
 PKT_STATS  temp_pkts;
 int        seq_wrap[MAX_SSRC_TRANSITIONS] = { 0 };  /* MAX_SSRC_TRANSITIONS defined in shared_include/session.h, currently 128 */
 int        ssrc_idx, num_ssrcs;
-bool       fDebug = lib_dbg_cfg.uLogLevel > 8;  /* lib_dbg_cfg is in lib_logging.cpp */
+bool       fDebug = lib_dbg_cfg.uLogLevel > 8;  /* lib_dbg_cfg is in event_logging.cpp */
 
 #define SEARCH_WINDOW        30
 #define MAX_MISSING_SEQ_GAP  20000  /* max missing seq number gap we can tolerate */

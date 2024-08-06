@@ -1168,7 +1168,7 @@ exit:
 
 static char prog_str[] = "mediaTest";
 static char banner_str[] = "SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms";
-static char ver_str[] = "v2.9.12";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
+static char version_str[] = "v2.9.12";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
 static char copyright_str[] = "Copyright (C) Signalogic 2015-2024";
 
 int main(int argc, char **argv) {
@@ -1206,13 +1206,13 @@ char              version_info[500], lib_info[500], banner_info[2048];
 
    #ifndef _NO_PKTLIB_  /* demo_build only used in packt_flow_media_proc.c */
    if (strstr(PKTLIB_VERSION, "DEMO") || strstr(VOPLIB_VERSION, "DEMO")) demo_build = true;
-   if (demo_build) printf("Using demo-only library versions\n");
    #endif
 
    GetCommandLine((char*)szAppFullCmdLine, MAX_CMDLINE_STR_LEN);  /* save full command in szAppFullCmdLine global var, for use as needed, JHB Jan 2023 */
 
-   sprintf(version_info, "%s %s \n%s \n", prog_str, ver_str, copyright_str);
-   sprintf(banner_info, "%s: %s %s \n%s \n%s \ncmd line: %s \n", prog_str, banner_str, ver_str, copyright_str, lib_info, szAppFullCmdLine);  /* include command line here in case mediaTest is invoked from a shell script, JHB Jul 2024 */
+   sprintf(version_info, "%s %s \n%s%s \n", prog_str, version_str, copyright_str, demo_build ? " \nUsing demo-only library versions" : "");
+
+   sprintf(banner_info, "%s: %s %s \n%s \n%s \ncmd line: %s \n", prog_str, banner_str, version_str, copyright_str, lib_info, szAppFullCmdLine);  /* include command line here in case mediaTest is invoked from a shell script, JHB Jul 2024 */
 
    if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS | CLI_MEDIA_APPS_MEDIATEST, version_info, banner_info)) exit(EXIT_FAILURE);
    {

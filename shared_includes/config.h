@@ -71,7 +71,7 @@
     -add uStreamGroupOutputWavFileSeekTimeAlarmThreshold in DEBUG_CONFIG struct (no change in struct size, uses uReserved1)
 
    Modified Feb 2024 JHB
-    -add DS_EVENT_LOG_USER_TIMEVAL and DS_EVENT_LOG_TIMEVAL_PRECISE flags. See DSGetLogTimestamp() function in lib_logging.c (diaglib)
+    -add DS_EVENT_LOG_USER_TIMEVAL and DS_EVENT_LOG_TIMEVAL_PRECISE flags. See DSGetLogTimestamp() function in event_logging.c (diaglib)
 
    Modified Mar 2024 JHB
     -add DS_LOG_LEVEL_DISPLAY_FILE_BOTH and DS_LOG_LEVEL_USE_STDERR flags, re-assign value of DS_LOG_LEVEL_SUBSITUTE_WEC flag
@@ -81,6 +81,9 @@
 
    Modified May 2024 JHB
     -change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
+
+   Modified Jul 2024 JHB
+    -change comment reference lib_logging.cpp to event_logging.cpp
 */
 
 #ifndef _CONFIG_H_

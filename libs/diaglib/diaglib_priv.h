@@ -1,11 +1,11 @@
 /*
   $Header: /root/Signalogic/DirectCore/lib/diaglib/diaglib_priv.h
  
-  Description: private functions called by diaglib.c and lib_logging.c
+  Description: private functions called by diaglib.c and event_logging.c
  
   Projects: SigSRF, SigMRF, DirectCore
  
-  Copyright Signalogic Inc. 2017-2023
+  Copyright Signalogic Inc. 2017-2024
 
   Revision History:
   
@@ -13,6 +13,7 @@
    Modified Oct 2018 JHB, moved DNUM definition to shared_include/std_rtaf.h
    Modified Jan 2023 JHB, remove reference to set_api_status()
    Modified Jan 2023 JHB, add items to support DSConfigPktLogging() API
+   Modified Jul 2024 JHB, change comment reference lib_logging.cpp to event_logging.cpp
 */
  
 #ifndef _DIAGLIB_PRIV_H_

@@ -1,5 +1,5 @@
 /*
- $Header: /root/Signalogic/DirectCore/lib/diaglib/lib_logging.cpp
+ $Header: /root/Signalogic/DirectCore/lib/diaglib/event_logging.cpp
  
  Description: SigSRF and EdgeStream event logging APIs
  
@@ -77,7 +77,7 @@ using namespace std;
 #include "diaglib_priv.h"
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.9.2";
+const char DIAGLIB_VERSION[256] = "1.9.3";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 
@@ -401,7 +401,7 @@ static uint8_t lock = 0;
    return ret_val;
 }
 
-/* DSConfigLogging - set/get Logging_Thread_Info[] items. We use the thread based indexes set by DSInitLogging() in lib_logging.cpp */
+/* DSConfigLogging - set/get Logging_Thread_Info[] items. We use the thread based indexes set by DSInitLogging() */
 
 unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, DEBUG_CONFIG* pDebugConfig) {
 

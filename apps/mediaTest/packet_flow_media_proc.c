@@ -6482,7 +6482,7 @@ bool fNewLine = false, fNextLine = false;
 
    __sync_or_and_fetch(&pm_thread_printf, 1 << thread_index);  /* set pm_thread_printf bit */
 
-   if (!(level & PRN_SAME_LINE) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) fNextLine = true;  /* fNextLine reflects leading \n decision. For description of the semaphore logic, see comments in lib_logging.c in diaglib subfolder. Note that user_io.cpp also uses the semaphore (they all have basically same logic) */
+   if (!(level & PRN_SAME_LINE) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) fNextLine = true;  /* fNextLine reflects leading \n decision. For description of the semaphore logic, see comments in event_logging.c in diaglib subfolder. Note that user_io.cpp also uses the semaphore (they all have basically same logic) */
    else if (prnstr[slen-1] != '\n') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);
 
    if (lib_dbg_cfg.uPrintfControl == 0) printf("%s%s", fNextLine ? "\n" : "", prnstr);  /* 0 = fully buffered (default), 1 = stdout (line buffered), 2 = stderr (no buffering; e.g. per character), 3 = none */
