@@ -362,11 +362,11 @@ wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages
 ```
 Ubuntu and Debian .rar
 ```
-wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_27Apr24.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_27Apr24.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_31Jul24.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_31Jul24.rar
 ```
 CentOS .rar
 ```
-wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_CentOS6-8_27Apr24.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_CentOS6-8_27Apr24.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_CentOS6-8_31Jul24.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_CentOS6-8_31Jul24.rar
 ```
 For the ASR version of the SDK, the following multi-line command can be used:
 ```
