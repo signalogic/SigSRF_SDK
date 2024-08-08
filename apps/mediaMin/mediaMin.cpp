@@ -3081,7 +3081,16 @@ protocol_based_processing:
                   thread_info[thread_index].fReseek[j] = true;
                }
 
-               continue;  /* move on to next input */
+            /* arrival timestamp not yet expired. Notes:
+
+               -we continue, moving on to next input, allowing wall clock time to elapse before we check again
+               -if this input is last iteration in input stream loop (or if only one input) then a quit key or other program interruption may occur (i.e. detected in ProcessKeys()) before arrival timestamps are checked again for this input
+               -one outward indicator of this is that RTP packet count in summary stats might be one less than expected (for example, UDP packet counter has already incremented)
+               -an alternative is to stay in a tight loop here and continue waiting for arrival timestamp expiration, but that's not a good idea due to timestamp unpredictability
+               -one possible idea is to check the expiration time remaining and if very small, for example less than a few hundred nsec, immediately check again rather than moving to the next loop input
+            */
+
+               continue;
             }
 
          /* reassemble fragmented packet if needed */
@@ -3285,8 +3294,6 @@ rtp_packet_processing:
 
          bool fShowWarnings = (Mode & ENABLE_DEBUG_STATS) != 0;
 
-         thread_info[thread_index].num_rtp_packets[j]++;  /* increment per stream RTP packet count */
-
          rtp_pyld_type = PktInfo.rtp_pyld_type;
 
          if (rtp_pyld_type < 0 && fShowWarnings) {
@@ -3294,6 +3301,8 @@ rtp_packet_processing:
             goto next_packet;
          }
          #endif  /* FILTER_UDP_PACKETS */
+
+         thread_info[thread_index].num_rtp_packets[j]++;  /* increment per stream RTP packet count */
 
          #define FILTER_RTCP_PACKETS_IF_rN_TIMING
          #ifdef FILTER_RTCP_PACKETS_IF_rN_TIMING

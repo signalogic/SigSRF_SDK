@@ -1158,8 +1158,6 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_BUFFER_PKT_ENABLE_RFC7198_DEDUP    0x8000         /* legacy method of handling RFC7198 temporal de-duplication, should not be used unless needed in a specific case. New method is to apply the DS_RECV_PKT_ENABLE_RFC7198_DEDUP flag to packets being received from a per session queue */
 #define DS_BUFFER_PKT_ENABLE_DYNAMIC_ADJUST   0x10000        /* enable dynamic jitter buffer; i.e. target delay is adjusted dynamically based on measured incoming packet delays */
 
-#define DS_BUFFER_PKT_INFO_RTP_ITEM_MASK          0xff000
-
 #define DS_GETORD_PKT_SESSION                 0x100
 #define DS_GETORD_PKT_CHNUM                   0x200
 #define DS_GETORD_PKT_CHNUM_PARENT_ONLY       0x400
