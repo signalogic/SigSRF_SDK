@@ -75,8 +75,10 @@
   Modified May 2024 JHB, convert to cpp
   Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() in event_logging.cpp now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile cmd line no longer recognizes standalone=1
   Modified May 2024 JHB, update DSPktStatsAddEntries() documentation, param naming, and error handling. Make pkt_length[] param an int to allow -1 values (i.e. packet length unknown)
-  Modified Jul 2024 JHB, to support SSRCs shared across streams, implement DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag, create in_chnum[] and out_chnum[], and add to chnum[] param to DSFindSSRCGroups() and DSPktStatsLogSeqnums()
+  Modified Jul 2024 JHB, to support SSRCs shared across streams, implement DS_PKTSTATS_MATCH_CHNUM flag, create in_chnum[] and out_chnum[], and add to chnum[] param to DSFindSSRCGroups() and DSPktStatsLogSeqnums()
   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to be second param in all relevant APIs. Also in non-published API analysis_and_stats() 
+  Modified Aug 2024 JHB, implement diaglib.h rename of DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to DS_PKTSTATS_MATCH_CHNUM. Minor optimizations (look for fChannelMatch)
+  Modified Aug 2024 JHB, overall packet logging time improved by 38%, significant for very long inputs. Added profiling (look for ENABLE_PROFILING) ... helpful in optimizing packet logging time
 */
 
 /* Linux includes */
@@ -156,7 +158,11 @@ unsigned int offset = 0;
    return j;  /* return number of entries added */
 }
 
-/* #define SIMULATE_SLOW_TIME 1  // turn this on to simulate time-consuming packet logging, for example if app debug is needed when aborting during packet logging, JHB Jan 2023 */
+// #define SIMULATE_SLOW_TIME 1  /* turn this on to simulate time-consuming packet logging, for example if app debug is needed when aborting during packet logging, JHB Jan 2023 */
+
+//#define ENABLE_PROFILING  /* enable profiling of processing intensive areas */
+#define USE_MEMMOVE  /* improves collation time in DSFindSSRCGroups() by around 2.3x, JHB Aug 2024 */
+#define OMIT_REDUNDANT_SEARCH  /* experimental mod that reduces total search iterations by more than 1/2 but total time by only 17% or so. Still not sure whether to use this, JHB Aug 2024 */
 
 /* group data by unique SSRCs */
 
@@ -176,18 +182,29 @@ bool       fDebug = lib_dbg_cfg.uLogLevel > 8;  /* lib_dbg_cfg is in event_loggi
 
    int nThreadIndex = GetThreadIndex(true);
 
+/* SSRC and channel number discovery and indexing */
+
 group_ssrcs:
 
-/* SSRC discovery stage */
+   #ifdef ENABLE_PROFILING
+   uint64_t t1;
+   if (get_time) t1 = get_time(USE_CLOCK_GETTIME);
+   else {
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      t1 = tv.tv_sec * 1000000L + tv.tv_usec;
+   }
+   #endif
 
    num_ssrcs = 0;
+   bool fChannelMatch = (uFlags & DS_PKTSTATS_MATCH_CHNUM) != 0;  /* if channel number matching requested, JHB Jul 2024 */
 
    for (j=0; j<num_pkts; j++) {
 
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
       #endif
-      if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+      if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
    /* first check if we've already seen this SSRC and chnum (channel number) combination */
 
@@ -195,7 +212,7 @@ group_ssrcs:
 
       if (num_ssrcs > 0) for (i=0; i<num_ssrcs; i++) {
 
-         if (pkts[j].rtp_ssrc == ssrcs[i] && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || pkts[j].chnum == chnum[i])) {  /* add chnum comparison, JHB Jul 2024 */
+         if (pkts[j].rtp_ssrc == ssrcs[i] && (!fChannelMatch || pkts[j].chnum == chnum[i])) {  /* add chnum comparison, JHB Jul 2024 */
 
          /* this can't actually happen unless there is corruption in the ssrcs[] array */
             if (fDebug && fExistingSSRC && ssrc_idx != i) Log_RT(8, "INFO: DSFindSSRCGroups (diaglib packet logging) says SSRC 0x%x chan %d appears more than once, ssrc_idx = %d, i = %d, num_ssrcs = %d \n", pkts[j].rtp_ssrc, pkts[j].chnum, ssrc_idx, i, num_ssrcs);
@@ -218,21 +235,23 @@ group_ssrcs:
          last_pkt_idx[ssrc_idx] = j;
          seq_wrap[ssrc_idx] = 0;
 
-         if (!fCollated) {  /* only search for start/end sequence numbers on first pass, JHB Jan2020 */
+         if (!fCollated) {  /* only search for start/end sequence numbers on first pass, JHB Jan 2020 */
 
-         /* choose first sequence number carefully, otherwise all further comparisons can be off by one or two.  So we look SEARCH_WINDOW packets ahead in case there is any ooo happening, JHB Jul2017 */
+         /* choose first sequence number carefully, otherwise all further comparisons can be off by one or two.  So we look SEARCH_WINDOW packets ahead in case there is any ooo happening, JHB Jul 2017 */
 
             first_seqnum = pkts[j].rtp_seqnum;
             last_seqnum = pkts[j].rtp_seqnum;  /* for last seq num this is an initial value only, will get updated by further packets with this SSRC */
 
             bool fWrap = false;
+            int ch = chnum[ssrc_idx];
+
             for (k=1; k<SEARCH_WINDOW; k++) {  /* search a few packets ahead, in case of ooo right at the start */
 
                int nWrap = 0;
 
                if (j+k < num_pkts) {
 
-                  if (pkts[j+k].rtp_ssrc == ssrcs[ssrc_idx] && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || pkts[j+k].chnum == chnum[ssrc_idx])) {  /* add chnum comparison, JHB Jul 2024 */
+                  if (pkts[j+k].rtp_ssrc == ssrcs[ssrc_idx] && (!fChannelMatch || pkts[j+k].chnum == ch)) {  /* add chnum comparison, JHB Jul 2024 */
 
 #define NEW_SEQ_CALC
                      if (!nWrap && !seq_wrap[ssrc_idx]) first_seqnum = min(first_seqnum, (unsigned int)pkts[j+k].rtp_seqnum);  /* if wrap has occurred at any point for this SSRC, no longer look for first seq number */
@@ -273,18 +292,19 @@ group_ssrcs:
 #else
             last_seqnum = pkts[j].rtp_seqnum + 65536L*seq_wrap[ssrc_idx];
 
-         /* wraps may occur "early" due to ooo, so we don't update the end seqnum if there is too big a jump from the previous one, JHB Jan2020
+         /* wraps may occur "early" due to ooo, so we don't update the end seqnum if there is too big a jump from the previous one, JHB Jan 2020
 
-            -21995.0 is a test case for this, SSRC 0x83f34914 has ooo near and around seq number 65535
+            -21995.0.pcap is a test case for this, SSRC 0x83f34914 has ooo near and around seq number 65535
             -"too big" would be 60000+ i.e. a wrong wrap
-            -the abs() is operating on unsigned ints, hopefully that's ok
+            -abs() is operating on unsigned ints, hopefully that's ok
+            -another general seq num wrap test case is tmpwpP7am.pcap: 1:45 hr call with 2 streams with 214746 and 95416 input packets and 312628 and 315199 output packets. Multiple seq num wraps 
           */
   
             if (abs((int32_t)(last_seqnum - last_rtp_seqnum[ssrc_idx])) < MAX_MISSING_SEQ_GAP) last_rtp_seqnum[ssrc_idx] = max(last_seqnum, last_rtp_seqnum[ssrc_idx]);
 
             if (pkts[j].rtp_seqnum == 65535L) seq_wrap[ssrc_idx]++;  /* check for seq number wrap */
 #endif
-       
+
             #if 0  /* debug output for RTP seq num wrap */
             if (last_rtp_seqnum[ssrc_idx-1] == 65535L) printf(" $$$ rtp seq num = 65535, ssrc = 0x%x, pkt index = %d, seq wrap = %d \n", ssrcs[ssrc_idx-1], j, seq_wrap[ssrc_idx-1]);
             #endif
@@ -292,63 +312,109 @@ group_ssrcs:
       }
    }
 
+   #ifdef ENABLE_PROFILING
+   uint64_t t2;
+   if (get_time) t2 = get_time(USE_CLOCK_GETTIME);
+   else {
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      t2 = tv.tv_sec * 1000000L + tv.tv_usec;
+   }
+   printf("\n *** SSRC %s elapsed time %2.1f usec \n", !fCollated ? "discovery and indexing" : "re-indexing", 1.0*(t2-t1));
+   #endif
+
    #if 0  /* debug output */
    printf("inside ssrc find groups, num ssrcs found = %d, num_pkts = %d \n", num_ssrcs, num_pkts);
    for (k=0; k<num_ssrcs; k++) printf("num_ssrcs[%d] = 0x%x \n", k, num_ssrcs[k]);
    #endif
 
-/* if collate streams flag is active we collate streams (i.e. group SSRCs together) */
+/* if collate streams flag is active we collate streams (i.e. group SSRCs and/or channels together) */
 
-   if ((uFlags & DS_PKTSTATS_LOG_COLLATE_STREAMS) && !fCollated) {  /* use discovered first-pass SSRC groups to perform stream collation */
+   if ((uFlags & DS_PKTSTATS_LOG_COLLATE_STREAMS) && !fCollated) {  /* use discovered SSRC groups to perform stream collation */
 
-   /* with number of unique SSRCs known, collate streams.  NB -- took a while to get exactly right combination of j, i, and sorted_point.  Adjusting any of these by +/- 1 will break things, for example it might cause resorting of already sorted entries, which can make it hard to see what happened.  So debug carefully and use the #if 0 debug helpers if needed ... JHB Sep 2017 */
+   /* with number of unique SSRCs known, collate streams.  NB -- took a while to get exactly right combination of j, i, and sorted_point. Adjusting any of these by +/- 1 will break things, for example it might cause resorting of already sorted entries, which can make it hard to see what happened. So debug carefully and use the #if 0 debug helpers if needed ... JHB Sep 2017 */
 
       sorted_point = 0;
 
+      #if 0  /* debug helper */
+      int fOnce[10] = {0}, xcount[10] = {0}, nonmatch[10] = {0};
+      #endif
+
       for (k=0; k<num_ssrcs-1; k++) {  /* collate N-1 unique SSRCs, last one ends up collated by default (if there is only one, no collation is needed) */
 
-//  if (fOnce[k] < 10) { printf("before sort, sorted_point = %d, num_pkts = %d, ssrc = 0x%x\n", sorted_point, num_pkts, unique_ssrcs[k]); fOnce[k]++; }
+         #if 0
+         if (fOnce[k] < 10) { printf("before sort, sorted_point = %d, num_pkts = %d, ssrc = 0x%x\n", sorted_point, num_pkts, unique_ssrcs[k]); fOnce[k]++; }
+         #endif
 
 find_transition:
 
          i = 0;
+         int ch = chnum[k];
 
          for (j=sorted_point+1; j<num_pkts; j++) {
 
             #ifdef SIMULATE_SLOW_TIME
             usleep(SIMULATE_SLOW_TIME);
             #endif
-            if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+            if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
-            if (pkts[j].rtp_ssrc != ssrcs[k] || ((uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) && pkts[j].chnum != chnum[k])) {  /* add chnum comparison, JHB Jul 2024 */
+            if (pkts[j].rtp_ssrc != ssrcs[k] || (fChannelMatch && pkts[j].chnum != ch)) {  /* add chnum comparison, JHB Jul 2024 */
 
                if (!i) {
 
                   i = j;  /* find first non-matching SSRC or chnum */
                   sorted_point = i-1;  /* adjust sorted point.  Note -- added this to fix the "orphan SSRC" number of SSRC groups problem, see comments below near in_ssrc_start and out_ssrc_start.  This also makes the sort faster, avoids unnecessary moving of already sorted enrties, JHB Feb 2019 */
 
-//  printf("non-matching SSRC = 0x%x, current ssrc = 0x%x, i = %d\n", pkts[j].rtp_ssrc, unique_ssrcs[k], i);
+                  #if 0
+                  nonmatch[k]++;
+                  printf("non-matching SSRC = 0x%x, current ssrc = 0x%x, i = %d\n", pkts[j].rtp_ssrc, unique_ssrcs[k], i);
+                  #endif
                }
             }
-            else if (i > sorted_point) {  /* found a match, move it up to just after its last match, and move anything in between down */
+            else if (i > sorted_point) {  /* found a match, move it up to just after last match, and move anything in between down */
 
-//  printf("moving pkts[%d] %u up to pkts[%d] %u\n", j, pkts[j].rtp_ssrc, i, pkts[i].rtp_ssrc);
+               #if 0
+               printf("moving pkts[%d] %u up to pkts[%d] %u\n", j, pkts[j].rtp_ssrc, i, pkts[i].rtp_ssrc);
+               #endif
 
                sorted_point = i;  /* save point of progress to prevent repeat sorting */
 
-               memcpy(&temp_pkts, &pkts[j], sizeof(PKT_STATS));
+               if (j > i) {
 
-               int l;
-               for (l=j; l>i; l--) memcpy(&pkts[l], &pkts[l-1], sizeof(PKT_STATS));
+                  memcpy(&temp_pkts, &pkts[j], sizeof(PKT_STATS));
 
-               memcpy(&pkts[i], &temp_pkts, sizeof(PKT_STATS));
+                  #ifdef USE_MEMMOVE  /* single memmove() faster by around 2.3x than multiple memcpy(), JHB Aug 2024 */
+                  memmove(&pkts[i+1], &pkts[i], (j-i)*sizeof(PKT_STATS));
+                  #else
+                  int l;
+                  for (l=j; l>i; l--) memcpy(&pkts[l], &pkts[l-1], sizeof(PKT_STATS));
+                  #endif
+
+                  memcpy(&pkts[i], &temp_pkts, sizeof(PKT_STATS));
+               }
 
                goto find_transition;  /* restart the search, continue looking for non-matching SSRCs */
             }
          }
       }
 
+      #ifdef ENABLE_PROFILING
+      uint64_t t3;
+      if (get_time) t3 = get_time(USE_CLOCK_GETTIME);
+      else {
+         struct timeval tv;
+         gettimeofday(&tv, NULL);
+         t3 = tv.tv_sec * 1000000L + tv.tv_usec;
+      }
+      printf("\n *** collation elapsed time %2.1f sec \n", 1.0*(t3-t2)/1000000L);
+      #endif
+
       fCollated = true;
+
+      #if 0
+      printf("inside ssrc find groups, before goto, xcount[0] = %d, xcount[1] = %d, xcount[2] = %d, nonmatch[0] = %d, nonmatch[1] = %d, nonmatch[2] = %d\n", xcount[0], xcount[1], xcount[2], nonmatch[0], nonmatch[1], nonmatch[2]);
+      #endif
+
       goto group_ssrcs;  /* re-do packet indexing after collation */
    }
 
@@ -397,7 +463,7 @@ char          szLastSeq[100];
    #ifdef SIMULATE_SLOW_TIME
    usleep(SIMULATE_SLOW_TIME);
    #endif
-   if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+   if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
    #if 0  /* debug -- see if sort looks ok */
    fprintf(fp_log, "%s sorted by SSRC (no analysis), numpkts = %d\n", label, num_pkts);
@@ -422,7 +488,7 @@ char          szLastSeq[100];
  
       strcpy(tmpstr, "");
       for (k=i-1; k >= 0; k--) {
-         if (ssrcs[i] == ssrcs[k] && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || chnum[i] == chnum[k])) {  /* add chnum comparison, JHB Jul 2024 */
+         if (ssrcs[i] == ssrcs[k] && (!(uFlags & DS_PKTSTATS_MATCH_CHNUM) || chnum[i] == chnum[k])) {  /* add chnum comparison, JHB Jul 2024 */
             strcpy(tmpstr, " (cont)");  /* annotate if this SSRC and chnum combination have appeared before */
             break;
          }
@@ -446,7 +512,7 @@ char          szLastSeq[100];
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
-         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
          if (StreamStats[i].chnum[max(StreamStats[i].num_chnum - 1, 0)] != pkts[j].chnum) {  /* handle "dormant SSRCs" that are taken over by another channel, JHB Jan 2020 */
 
@@ -762,7 +828,8 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       -DTX expansion (aka SID reuse packets) are not matched, instead they increment a search offset (search_offset)
    */
 
-      {
+      {  /* increase scope level to avoid " crosses initialization of ..." compiler errors */
+
       drop_cnt = 0;
       drop_consec_cnt = 0;
       dup_cnt = 0;
@@ -791,12 +858,18 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       printf("\n *** in_seqnum_range = %d, out_seqnum_range = %d \n", in_seqnum_range, out_seqnum_range);
       #endif
 
+      #ifdef OMIT_REDUNDANT_SEARCH
+      uint32_t max_seq_num = 0, last_search_offset = 0;
+      int last_k = -1, last_wrap = 0;
+      uint32_t total_iters = 0;
+      #endif
+
       for (j=in_first_pkt_idx[i+in_ssrc_start]; j<=in_last_pkt_idx[i+in_ssrc_start]; j++) {
 
          #ifdef SIMULATE_SLOW_TIME
          usleep(SIMULATE_SLOW_TIME);
          #endif
-         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
          rtp_seqnum_chk = input_pkts[j].rtp_seqnum + in_seq_wrap[i]*65536L;  /* input seq number */
 
@@ -812,7 +885,28 @@ int nGroupIndex, stream_count, nNumGroups = 0;
          search_offset = 0;
          #endif
 
-         for (k=out_first_pkt_idx[i_out+out_ssrc_start]; k<=out_last_pkt_idx[i_out+out_ssrc_start]; k++) {
+         #ifdef OMIT_REDUNDANT_SEARCH
+
+         if (rtp_seqnum > max_seq_num && last_k != -1) {
+            k = last_k;
+            search_offset = last_search_offset;
+            out_seq_wrap[i_out] = last_wrap;
+         }
+         else {
+            last_k = -1;
+            k = out_first_pkt_idx[i_out+out_ssrc_start]-1;
+            max_seq_num = 0;
+         }
+
+         while (++k <= out_last_pkt_idx[i_out+out_ssrc_start]) 
+         #else
+         for (k=out_first_pkt_idx[i_out+out_ssrc_start]; k<=out_last_pkt_idx[i_out+out_ssrc_start]; k++)
+         #endif
+         {
+
+            #ifdef OMIT_REDUNDANT_SEARCH
+            total_iters++;
+            #endif
 
             bool fTryRepairAsReuse = false;
 
@@ -890,6 +984,15 @@ check_for_reuse:
             }
 
             if (output_pkts[k].rtp_seqnum == 65535L) out_seq_wrap[i_out]++;
+
+            #ifdef OMIT_REDUNDANT_SEARCH
+            if (rtp_seqnum > max_seq_num) {
+               max_seq_num = rtp_seqnum;
+               last_k = k;
+               last_search_offset = search_offset;
+               last_wrap = out_seq_wrap[i_out];
+            }
+            #endif
          }
 
 #if 0  /* debug */
@@ -987,13 +1090,18 @@ check_for_reuse:
          if ((rtp_seqnum & 0xffff) == 65535L) in_seq_wrap[i]++;
 
       }  /* end of j loop */
-      }
+      
+      #if defined(ENABLE_PROFILING) && defined(OMIT_REDUNDANT_SEARCH)
+      printf("\n *** analysis total iters = %u \n", total_iters);
+      #endif
+
+      }  /* scope level */
 
       total_search_offset[i_out] = search_offset;
 
-      for (k=i_out+1; k<num_ssrcs; k++) {  /* update total search offset for any subsequent output SSRC stream that has same SSRC number as the SSRC stream just processed; i.e. if they are a resumption of the current stream, JHB Sep2017 */
+      for (k=i_out+1; k<num_ssrcs; k++) {  /* update total search offset for any subsequent output SSRC stream that has same SSRC number as the SSRC stream just processed; i.e. if they are a resumption of the current stream, JHB Sep 2017 */
 
-         if (out_ssrcs[k+out_ssrc_start] == out_ssrcs[i_out+out_ssrc_start] && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || out_chnum[k+out_ssrc_start] == out_chnum[i_out+out_ssrc_start])) {
+         if (out_ssrcs[k+out_ssrc_start] == out_ssrcs[i_out+out_ssrc_start] && (!(uFlags & DS_PKTSTATS_MATCH_CHNUM) || out_chnum[k+out_ssrc_start] == out_chnum[i_out+out_ssrc_start])) {
 
             total_search_offset[k] = total_search_offset[i_out];
 //            printf("i_out = %u, updating total_search_offset[%d] = %u\n", i_out, k, total_search_offset[k]);
@@ -1040,11 +1148,11 @@ exit:
 }
 
 
-int DSPktStatsWriteLogFile(const char* szLogfile, unsigned int uFlags, PKT_STATS* input_pkts, PKT_STATS* output_pkts, PKT_COUNTERS* pkt_counters) {
+int DSPktStatsWriteLogFile(const char* szLogFile, unsigned int uFlags, PKT_STATS* input_pkts, PKT_STATS* output_pkts, PKT_COUNTERS* pkt_counters) {
 
 FILE*         fp_log = NULL;
 int           input_idx = 0, output_idx = 0;
-int           ret_code = 0;
+int           ret_code = -1;
 int           i, j, k, num_ssrcs;
 
 int           in_ssrc_groups = 0;
@@ -1095,13 +1203,44 @@ STREAM_STATS*  OutputStreamStats = NULL;
 uint64_t       t1, t2;
 int            nThreadIndex;
 
-   if (uFlags & DS_PKTSTATS_LOG_APPEND) fp_log = fopen(szLogfile, "ab");
-   else fp_log = fopen(szLogfile, "wb");
+/* error condition checks */
 
-   if (!fp_log) {
-      ret_code = 0;
+   if (!pkt_counters) {
+      Log_RT(2, "ERROR: DSPktStatsWriteLogFile() says input PKT_COUNTERS* param is NULL \n");
       goto cleanup;
    }
+
+   if (!szLogFile) {
+      Log_RT(2, "ERROR: DSPktStatsWriteLogFile() says log path / file is NULL \n");
+      goto cleanup;
+   }
+
+   if (!strlen(szLogFile)) {
+      Log_RT(2, "ERROR: DSPktStatsWriteLogFile() says log path / file is empty string \n");
+      goto cleanup;
+   }
+
+   if (pkt_counters->num_input_pkts && !input_pkts) {
+      Log_RT(2, "ERROR: DSPktStatsWriteLogFile() says PKT_COUNTERS* num_input_pkts is > 0 but input packet PKT_STATS* ptr is NULL \n");
+      goto cleanup;
+   }
+
+   if (pkt_counters->num_pulled_pkts && !output_pkts) {
+      Log_RT(2, "ERROR: DSPktStatsWriteLogFile() says PKT_COUNTERS* num_pulled_pkts is > 0 but output packet PKT_STATS* ptr is NULL \n");
+      goto cleanup;
+   }
+
+/* open log file */
+
+   if (uFlags & DS_PKTSTATS_LOG_APPEND) fp_log = fopen(szLogFile, "ab");
+   else fp_log = fopen(szLogFile, "wb");
+
+   if (!fp_log) {
+      Log_RT(2, "ERROR: DSPktStatsWriteLogFile() says error opening log path / file %s, errno = %d \n", szLogFile, errno);
+      goto cleanup;
+   }
+
+/* initialize vars and allocate mem */
 
    nThreadIndex = GetThreadIndex(true);
 
@@ -1194,20 +1333,24 @@ int            nThreadIndex;
 
    /* log ingress packet info -- group by SSRC values, including ooo and missing seq numbers */
 
+      #ifdef ENABLE_PROFILING
+      printf("\n *** before input pkts DSPktStatsLogSeqnums() \n");
+      #endif
+
       in_ssrc_groups = DSPktStatsLogSeqnums(fp_log, uFlags, input_pkts, input_idx, "Ingress", in_ssrcs, in_chnum, in_first_pkt_idx, in_last_pkt_idx, in_first_rtp_seqnum, in_last_rtp_seqnum, InputStreamStats);
 
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
       #endif
 
-      if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+      if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
    }
 
 /* log jitter buffer stats */
 
    if (!fp_log) {
    
-      fp_log = fopen(szLogfile, "wb");
+      fp_log = fopen(szLogFile, "wb");
 
       if (!fp_log) {
          ret_code = -1;
@@ -1243,13 +1386,17 @@ int            nThreadIndex;
 
    /* log jitter buffer output packet info -- grouped by SSRC values, including ooo and missing seq numbers */
 
+      #ifdef ENABLE_PROFILING
+      printf("\n *** before output pkts DSPktStatsLogSeqnums() \n");
+      #endif
+
       out_ssrc_groups = DSPktStatsLogSeqnums(fp_log, uFlags, output_pkts, output_idx, "Jitter Buffer", out_ssrcs, out_chnum, out_first_pkt_idx, out_last_pkt_idx, out_first_rtp_seqnum, out_last_rtp_seqnum, OutputStreamStats);
 
       #ifdef SIMULATE_SLOW_TIME
       usleep(SIMULATE_SLOW_TIME);
       #endif
 
-      if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+      if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
 
       if (get_time) t2 = get_time(USE_CLOCK_GETTIME);
       else {
@@ -1267,8 +1414,6 @@ int            nThreadIndex;
       t1 = t2;
 
       Log_RT(4, "INFO: DSPktStatsWriteLogFile() says %d input SSRC %s with %d total packets and %d output SSRC %s with %d total packets logged in %2.1f %s, now analyzing...\n", in_ssrc_groups, instr, input_idx, out_ssrc_groups, outstr, output_idx, ltime, tstr);
-
-// printf("after log seqnums\n");
 
       fprintf(fp_log, "\n** Packet Stats and Analysis **\n");
 
@@ -1321,7 +1466,7 @@ int            nThreadIndex;
 
          for (j=0; j<num_ssrcs; j++) {
 
-            if ((io_map_ssrcs[i] == -1) && (used_map_ssrcs[j] == -1) && (in_ssrcs[i+in_ssrc_start] == out_ssrcs[j+out_ssrc_start]) && (!(uFlags & DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM) || (in_chnum[i+in_ssrc_start] == out_chnum[j+out_ssrc_start]))) {
+            if ((io_map_ssrcs[i] == -1) && (used_map_ssrcs[j] == -1) && (in_ssrcs[i+in_ssrc_start] == out_ssrcs[j+out_ssrc_start]) && (!(uFlags & DS_PKTSTATS_MATCH_CHNUM) || (in_chnum[i+in_ssrc_start] == out_chnum[j+out_ssrc_start]))) {
 
                io_map_ssrcs[i] = j;
                used_map_ssrcs[j] = i;  /* we set both sides of the mapping, as it has to be 1:1 relationship, no entry on one side or the other mapped twice */
@@ -1348,7 +1493,7 @@ int            nThreadIndex;
          usleep(SIMULATE_SLOW_TIME);
          #endif
 
-         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
 
       if (ret_val > 0 && (uFlags & DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP)) {
@@ -1360,7 +1505,7 @@ int            nThreadIndex;
          usleep(SIMULATE_SLOW_TIME);
          #endif
 
-         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
 
       if (ret_val > 0 && (uFlags & DS_PKTSTATS_ORGANIZE_BY_CHNUM)) {
@@ -1372,11 +1517,11 @@ int            nThreadIndex;
          usleep(SIMULATE_SLOW_TIME);
          #endif
 
-         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
+         if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto cleanup;  /* see if abort flag set, JHB Jan 2023 */
       }
    }
 
-   if (!fp_log) fp_log = fopen(szLogfile, "wb");
+   if (!fp_log) fp_log = fopen(szLogFile, "wb");
    else fprintf(fp_log, "\n");
 
    fprintf(fp_log, "** Packet Egress Stats **\n\n");
@@ -1397,7 +1542,7 @@ int            nThreadIndex;
       float ltime = (t2-t1)/1000.0;
       if (ltime > 100) { ltime = (t2-t1)/1000000.0; strcpy(tstr, "sec"); }
 
-      Log_RT(4, "INFO: DSPktStatsWriteLogFile() says packet log analysis completed in %2.1f %s, packet log file = %s\n", ltime, tstr, szLogfile);
+      Log_RT(4, "INFO: DSPktStatsWriteLogFile() says packet log analysis completed in %2.1f %s, packet log file = %s\n", ltime, tstr, szLogFile);
    }
 
    ret_code = 1;

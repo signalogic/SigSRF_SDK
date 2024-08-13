@@ -88,14 +88,14 @@ Revision History
  Modified Nov 2018 JHB, add CheckForDormantSSRC() to detect and flush channels with dormant SSRCs that are "taken over" by another channel, for example due to call-waiting or on-hold situations
  Modified Dec 2018 JHB, add packet/media thread energy saver mode (see fThreadInputActive and fThreadOutputActive flags and comments below about CPU usage)
  Modified Dec 2018 JHB, improve ThreadDebugOutput() to show group info for any thread sessions attached to a group.  Notes:
-                        -this is needed to see exact effects of the STREAM_GROUP_WHOLE_THREAD_ALLOCATE and DS_CONFIG_MEDIASERVICE_ROUND_ROBIN flags (streamlib.h and pktlib.h)
-                        -correct whole group allocation requires STREAM_GROUP_WHOLE_THREAD_ALLOCATE to be added to the term1 group mode field at session creation time, and DS_CONFIG_MEDIASERVICE_ROUND_ROBIN flag to be set when creating a packet/media thread. Without the round robin flag there can still be some groups split across threads
+                        -this is needed to see exact effects of the STREAM_GROUP_WHOLE_THREAD_ALLOCATE and DS_MEDIASERVICE_ROUND_ROBIN flags (streamlib.h and pktlib.h)
+                        -correct whole group allocation requires STREAM_GROUP_WHOLE_THREAD_ALLOCATE to be added to the term1 group mode field at session creation time, and DS_MEDIASERVICE_ROUND_ROBIN flag to be set when creating a packet/media thread. Without the round robin flag there can still be some groups split across threads
                         -see the nomenclature comments in ThreadDebugOutput() to interpret the screen output
  Modified Dec 2018 JHB, more info printed in ThreadDebugOutput(), including some system wide stats
  Modified Feb 2019 JHB, add DS_GETORD_PKT_ENABLE_SID_REPAIR usage. Applying this flag enables "CNG fill-in" when damage to long silence durations is detected (audio that contains long SID periods can be significantly shortened/mis-aligned by packet loss.  Test with 13572.0 pcap)
  Modified Feb 2019 JHB, add RecordPacketTimeStats() to keep track of packet timestamp and RTP timestamp duration (both before and after jitter buffer)
  Modified Feb 2019 JHB, add CheckForPacketLossFlush() for packet loss mitigation (monitors jitter buffer levels for parent and child channels).  See max_loss_ptimes in TERMINATION_INFO struct (shared_include/session.h)
- Modified Mar 2019 JHB, add packet time and loss stats. See PACKET_TIME_STATS define, see also fPacketTimeStatsEnabled and fPacketLossStatsEnabled in PACKETMEDIATHREADINFO struct and DS_CONFIG_MEDIASERVICE_EN/DISABLE_THREAD_PACKET_TIME/LOSS_STATS flags (pktlib.h)
+ Modified Mar 2019 JHB, add packet time and loss stats. See PACKET_TIME_STATS define, see also fPacketTimeStatsEnabled and fPacketLossStatsEnabled in PACKETMEDIATHREADINFO struct and DS_MEDIASERVICE_EN/DISABLE_THREAD_PACKET_TIME/LOSS_STATS flags (pktlib.h)
  Modified Mar 2019 JHB, improve profiling, give each category its own independent running sum index and increase running sum length to 16 (THREAD_STATS_TIME_MOVING_AVG defined in pktlib.h)
  Modified May 2019 JHB, when acting on payload content type returned by DSGetOrderedPackets(), check for both DS_PKT_PYLD_CONTENT_DTMF_SESSION (indicating a match to a session-defined DTMF payload type), and for generic DS_PKT_PYLD_CONTENT_DTMF content type
  Modified Aug 2019 JHB, add extern C to definition of functions used externally (sig_printf, ResetPktStats), limit number of channels that can be tracked in profiling (see MAX_CHAN_TRACKED below), add an error string param to ThreadAbort()
@@ -180,7 +180,7 @@ Revision History
  Modified May 2024 JHB, add NULL param to DSReadPcapRecord() calls for unused pcap_file_hdr param, required by pktlib API update
  Modified May 2024 JHB, check for error condition returned by DSPktStatsAddEntries()
  Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap() and DSWritePcapRecord() to DSWritePcap(), per change in pktlib.h
- Modified Jul 2024 JHB, set DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM packet logging flag in WritePktLog() if dormant session detection is disabled (see diaglib.h for flag info)
+ Modified Jul 2024 JHB, set DS_PKTSTATS_MATCH_CHNUM packet logging flag in WritePktLog() if dormant session detection is disabled (see diaglib.h for flag info)
  Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSGetTermChan(), in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, and remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See comments in pktlib.h
  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSWritePacketStatsHistoryLog() and in all diaglib calls (e.g. DSPktStatsAddEntries, DSGetBacktrace)
 */
@@ -5495,9 +5495,7 @@ int i;
          sprintf(reportstr, "session %d", hSession);
       }
 
-      if (numStreams > 1) uFlags_log |= DS_PKTSTATS_LOG_COLLATE_STREAMS;  /* Collate streams in the log printout for multiple input streams.  This is not recommended for testing SSRC changes within one input stream; in that case, collating
-                                                                             streams could mask interleaving or other issues occurring around the SSRC transition points.  When using log printout to test/verify SSRC changes (dynamic channel
-                                                                             creation), suggest using one input stream and not enabling the DS_PKTSTATS_LOG_COLLATE_STREAMS flag */
+      if (numStreams > 1) uFlags_log |= DS_PKTSTATS_LOG_COLLATE_STREAMS;  /* Collate streams in the log printout for multiple input streams.  Turing collate off can be used to analyze or debug interleaving or other issues occurring around SSRC transition points */
 
    /* set organize-by-group flag if any streams were stream group members */
 
@@ -5509,11 +5507,11 @@ int i;
 
    /* if dormant SSRC detection is disabled, then combine SSRC and channel number to uniquely define streams, JHB Jul 2024 */
 
-      if (hSession >= 0) uFlags_log |= ((unsigned int)DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, 1, NULL) & TERM_DISABLE_DORMANT_SESSION_DETECTION) ? DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM : 0;  /* Term1 flags for pecific hSession */
+      if (hSession >= 0) uFlags_log |= ((unsigned int)DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_UFLAGS, 1, NULL) & TERM_DISABLE_DORMANT_SESSION_DETECTION) ? DS_PKTSTATS_MATCH_CHNUM : 0;  /* Term1 flags for specific hSession */
       else for (i=0; i<packet_media_thread_info[thread_index].numSessionsMax; i++) {  /* term_uFlags[] and packet_media_thread_info[thread_index].numSessionsMax are persistent after thread clean up */
       
-         if ((term_uFlags[i][0] & TERM_DISABLE_DORMANT_SESSION_DETECTION) || (term_uFlags[i][0] & TERM_DISABLE_DORMANT_SESSION_DETECTION)) {  /* any session with dormant session detection disabled will set the combined ssrc + chnum logging flag, JHB Jul 2024 */
-            uFlags_log |= DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM;
+         if ((term_uFlags[i][0] & TERM_DISABLE_DORMANT_SESSION_DETECTION) || (term_uFlags[i][1] & TERM_DISABLE_DORMANT_SESSION_DETECTION)) {  /* any session with dormant session detection disabled will set the combined ssrc + chnum logging flag, JHB Jul 2024 */
+            uFlags_log |= DS_PKTSTATS_MATCH_CHNUM;
             break;
          }
       }
@@ -5529,8 +5527,7 @@ int i;
 
       2) DSPktStatsAddEntries() records one or more packet entries in PKT_STATS structs, and DSPktStatsWriteLogFile() (below) writes packet stats to a log file.  For applicable flags, see diaglib.h
 
-      3) The DS_PKTSTATS_LOG_COLLATE_STREAMS flag is active for multiple input streams.  The flag is not recommended for streams with SSRC transitions, as the stream collation algorithm in Diaglib currently
-         cannot differentiate dynamically created streams (see "Collate streams" notes above)
+      3) The DS_PKTSTATS_LOG_COLLATE_STREAMS flag should be applied for multiple input streams
    */
 
       if (isMasterThread) {
@@ -5559,18 +5556,18 @@ int DSWritePacketStatsHistoryLog(HSESSION hSession, unsigned int uFlags, const c
 int thread_index;
 char* szLocalLogFilename = NULL;
 
-   if (uFlags & DS_WRITE_PKT_STATS_HISTORY_LOG_THREAD_INDEX) thread_index = (int)hSession;
+   if (uFlags & DS_PKT_STATS_HISTORY_LOG_THREAD_INDEX) thread_index = (int)hSession;
    else thread_index = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_THREAD | DS_SESSION_INFO_SUPPRESS_ERROR_MSG, 0, NULL);
 
    if (thread_index < 0 || thread_index >= nPktMediaThreads) {
    
-      Log_RT(3, "WARNING: DSWritePacketHistoryLogStats() says invalid %s %d \n", uFlags & DS_WRITE_PKT_STATS_HISTORY_LOG_THREAD_INDEX ? "thread index" : "hSession", thread_index);
+      Log_RT(3, "WARNING: DSWritePacketHistoryLogStats() says invalid %s %d \n", uFlags & DS_PKT_STATS_HISTORY_LOG_THREAD_INDEX ? "thread index" : "hSession", thread_index);
       return -1;  /* thread index limited to currently active packet/media threads */
    }
 
    if (!szLogFilename) {
    
-      if (uFlags & DS_WRITE_PKT_STATS_HISTORY_LOG_RESET_STATS) {  /* combination of NULL log filename and reset stats flag just does a reset */
+      if (uFlags & DS_PKT_STATS_HISTORY_LOG_RESET_STATS) {  /* combination of NULL log filename and reset stats flag just does a reset */
 
          memset(&pkt_counters[thread_index], 0, sizeof(PKT_COUNTERS));
          return 1;
@@ -5599,7 +5596,7 @@ char* szLocalLogFilename = NULL;
 
 /* reset stats after logging is complete, if requested */
 
-   if (uFlags & DS_WRITE_PKT_STATS_HISTORY_LOG_RESET_STATS) memset(&pkt_counters[thread_index], 0, sizeof(PKT_COUNTERS));
+   if (uFlags & DS_PKT_STATS_HISTORY_LOG_RESET_STATS) memset(&pkt_counters[thread_index], 0, sizeof(PKT_COUNTERS));
    
    return ret_val;
 }

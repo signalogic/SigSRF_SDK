@@ -36,7 +36,7 @@
    Modified Aug 2022 JHB, adjust declaration of a few global vars to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
    Modified Dec 2022 JHB, add char szStreamGroupWavOutputPath[CMDOPT_MAX_INPUT_LEN]
    Modified Dec 2022 JHB, move sig_lib_event_log_filename here from packet_flow_media_proc.c
-   Modified Jan 2023 JHB, in ctrl-c event handler call DSConfigLogging() with DS_PKTLOG_ABORT flag and set fCtrl_C_pressed. Don't set run = 0 for mediaMin
+   Modified Jan 2023 JHB, in ctrl-c event handler call DSConfigLogging() with DS_CONFIG_LOGGING_PKTLOG_ABORT flag and set fCtrl_C_pressed. Don't set run = 0 for mediaMin
    Modified Jan 2023 JHB, add szAppFullCmdLine var and GetCommandLine()
    Modified May 2023 JHB, suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail
    Modified May 2023 JHB, add timeScale and convert RealTimeInterval[] to float to support FTRT and AFAP modes, add uPortList[], add uLoopbackDepth
@@ -147,7 +147,7 @@ void intHandler(int sig) {
    
    fCtrl_C_pressed = true;
 
-   DSConfigLogging(DS_CONFIG_LOGGING_ACTION_SET_FLAG, DS_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS, NULL);  /* tell possibly time-consuming packet logging functions to abort. Currently we combine with "ALL_THREADS" flag which will terminate packet logging for any apps running. See additional comments in mediaMin.cpp JHB Jan 2023 */
+   DSConfigLogging(DS_CONFIG_LOGGING_ACTION_SET_FLAG, DS_CONFIG_LOGGING_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS, NULL);  /* tell possibly time-consuming packet logging functions to abort. Currently we combine with "ALL_THREADS" flag which will terminate packet logging for any apps running. See additional comments in mediaMin.cpp JHB Jan 2023 */
 }
 
 /* global vars used by other files in the build */

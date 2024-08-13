@@ -102,8 +102,8 @@ endif
 .PHONY:	clean
 clean:
 	rm -rf *.o
-#	rm -rf *.so  # don't remove .so or .a files, we now have different possible configurations now so need to leave them, JHB Feb 2024
-#	rm -rf *.a
+	rm -rf *.so
+	rm -rf *.a
 	rm -rf *.map
 	rm -rf *.scc
 ifeq ($(wildcard $(WRLPATH)),$(WRLPATH))
@@ -111,5 +111,5 @@ ifeq ($(wildcard $(WRLPATH)),$(WRLPATH))
 	rm -rf /opt/WindRiver/wrlinux-4/sysroots/adsp2-glibc_small/sysroot/te500v2/usr/lib/libdiaglib*
 else
 	# x86 clean
-#	rm -rf /usr/lib/libdiaglib*
+	rm -rf /usr/lib/libdiaglib*
 endif

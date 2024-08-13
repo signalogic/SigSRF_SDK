@@ -126,7 +126,7 @@
    Modified Sep 2022 JHB, add ReadCodecConfig() to handle special case codec debug/test (for both static and dynamic sessions). See comments
    Modified Dec 2022 JHB, add DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag and wav output seek time alarm, see comments near ENABLE_WAV_OUT_SEEK_TIME_ALARM 
    Modified Dec 2022 JHB, replace ancient event log config with new diaglib APIs DSInitLogging() and DSCloseLogging(). Also see example of using DSUpdateLogConfig()
-   Modified Dec 2022 JHB, call DSConfigMediaService() with DS_CONFIG_MEDIASERVICE_EXIT flag at in cleanup/exit
+   Modified Dec 2022 JHB, call DSConfigMediaService() with DS_MEDIASERVICE_EXIT flag at in cleanup/exit
    Modified Jan 2023 JHB, improve codec auto-detection for ocet-aligned AMR-NB and AMR-WB
    Modified Jan 2023 JHB, filter non-dynamic UDP ports and media port allow list. See NON_DYNAMIC_UDP_PORT_RANGE, UDP_Port_Media_Allow_List[], and FILTER_UDP_PACKETS
    Modified Jan 2023 JHB, fix issue where 'q' key during post-processing (e.g. packet log collate and analysis) caused a hang. See call to DSConfigLogging()
@@ -813,7 +813,7 @@ cleanup:
 
                   if (use_log_file) {
                      fprintf(stderr, "Quit key pressed, aborting packet log analysis ... \n");
-                     DSConfigLogging(DS_CONFIG_LOGGING_ACTION_SET_FLAG, DS_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS, NULL);  /* tell all packet/media threads to abort packet logging. Note the "ALL_THREADS" flag will terminate packet logging for any other apps running also (to-do: a flag or a pointer to a thread list that specifies to diaglib to match threads with those created by pktlib), JHB Jan 2023 */
+                     DSConfigLogging(DS_CONFIG_LOGGING_ACTION_SET_FLAG, DS_CONFIG_LOGGING_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS, NULL);  /* tell all packet/media threads to abort packet logging. Note the "ALL_THREADS" flag will terminate packet logging for any other apps running also (to-do: a flag or a pointer to a thread list that specifies to diaglib to match threads with those created by pktlib), JHB Jan 2023 */
                   }
                   else fprintf(stderr, "Quit key pressed ... \n");
 
@@ -966,13 +966,13 @@ cleanup:
       thread_info[thread_index].nSessionsCreated = 0;
       nRemainingToDelete = 0;
 
-   /* reset packet stats history before repeating, JHB Jan2020:
+   /* reset packet stats history before repeating, JHB Jan 2020:
 
       -we could write out packet log to filename with some type of "repeatN" suffix so a log is saved for each repeat, instead of writing once at end of the test run
       -but writing out packet stats history and analyzing input vs. jitter buffer output takes time, and if we do it on every repeat cycle it will cause a delay in the mediaMin application thread
    */
 
-      if (isMasterThread(thread_index)) DSWritePacketStatsHistoryLog(0, DS_WRITE_PKT_STATS_HISTORY_LOG_THREAD_INDEX | DS_WRITE_PKT_STATS_HISTORY_LOG_RESET_STATS | ((Mode & DISABLE_DORMANT_SESSION_DETECTION) ? DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM : 0), NULL);
+      if (isMasterThread(thread_index)) DSWritePacketStatsHistoryLog(0, DS_PKT_STATS_HISTORY_LOG_THREAD_INDEX | DS_PKT_STATS_HISTORY_LOG_RESET_STATS | ((Mode & DISABLE_DORMANT_SESSION_DETECTION) ? DS_PKTSTATS_MATCH_CHNUM : 0), NULL);
 
       sprintf(tmpstr, "Cmd line completed, repeating");
       if (!fRepeatIndefinitely) sprintf(&tmpstr[strlen(tmpstr)], ", number of repeats remaining %d", nRepeatsRemaining[thread_index]+1);
@@ -1102,7 +1102,7 @@ cleanup:
 
    if (isMasterThread(thread_index)) {
 
-      DSConfigMediaService(NULL, DS_CONFIG_MEDIASERVICE_EXIT | DS_CONFIG_MEDIASERVICE_THREAD, 0, NULL, NULL);  /* close packet/media thread(s), JHB Dec 2022 */
+      DSConfigMediaService(NULL, DS_MEDIASERVICE_EXIT | DS_MEDIASERVICE_THREAD, 0, NULL, NULL);  /* close packet/media thread(s), JHB Dec 2022 */
 
       if (hPlatform != -1) DSFreePlatform((intptr_t)hPlatform);  /* free DirectCore platform handle. See DSAssignPlatform() comments above */
 
@@ -3083,11 +3083,11 @@ protocol_based_processing:
 
             /* arrival timestamp not yet expired. Notes:
 
-               -we continue, moving on to next input, allowing wall clock time to elapse before we check again
-               -if this input is last iteration in input stream loop (or if only one input) then a quit key or other program interruption may occur (i.e. detected in ProcessKeys()) before arrival timestamps are checked again for this input
-               -one outward indicator of this is that RTP packet count in summary stats might be one less than expected (for example, UDP packet counter has already incremented)
-               -an alternative is to stay in a tight loop here and continue waiting for arrival timestamp expiration, but that's not a good idea due to timestamp unpredictability
-               -one possible idea is to check the expiration time remaining and if very small, for example less than a few hundred nsec, immediately check again rather than moving to the next loop input
+               -each application thread has an input stream loop in PushPackets(), processing one or more pcap or UDP port inputs
+               -we are if we've encountered an arrival timestamp that has not yet "expired", in which case we cut the input stream loop short (using continue statement) and move on to next input, allowing a small amount of wall clock time to elapse before we check again
+               -if this input is last iteration (or if only one input) then PushPackets() will return and a quit key or other program interruption may occur (i.e. detected in ProcessKeys()) before this arrival timestamp is checked again. One outward indicator of this is RTP packet count in summary stats appearing one less than expected (for example, one less than UDP packet counter which has already incremented above)
+               -an alternative is to stay in the loop here and continue waiting for arrival timestamp expiration, but that's not a good idea due to timestamp unpredictability
+               -one possible idea is to check the expiration time remaining and if very small, for example less than a few hundred nsec, immediately check again rather than moving to the next loop input. But other input timestamps may also have very small time left to expiration, so who gets priority ? The current method averages things out with multiple inputs
             */
 
                continue;
@@ -4172,7 +4172,7 @@ int StartPacketMediaThreads(int num_pm_threads, int thread_index) {  /* should o
 
 unsigned int uFlags;
 
-   if (nReuseInputs) num_pm_threads = num_app_threads * nReuseInputs * 3 / 30;  /* note:  without DS_CONFIG_MEDIASERVICE_ROUND_ROBIN sessions are assigned to each p/m thread until it fills up. Some p/m threads may end up unused */
+   if (nReuseInputs) num_pm_threads = num_app_threads * nReuseInputs * 3 / 30;  /* note:  without DS_MEDIASERVICE_ROUND_ROBIN sessions are assigned to each p/m thread until it fills up. Some p/m threads may end up unused */
 
    num_pm_threads = max(min(num_pm_threads, 10), 1);  /* from 1 to 10 */
 
@@ -4182,10 +4182,10 @@ unsigned int uFlags;
 
    app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, 0, "Starting %d packet and media processing threads", num_pktmed_threads);
 
-   uFlags = DS_CONFIG_MEDIASERVICE_START | DS_CONFIG_MEDIASERVICE_THREAD | DS_CONFIG_MEDIASERVICE_PIN_THREADS | DS_CONFIG_MEDIASERVICE_SET_NICENESS;
-   if (Mode & ROUND_ROBIN_SESSION_ALLOCATION) uFlags |= DS_CONFIG_MEDIASERVICE_ROUND_ROBIN;
+   uFlags = DS_MEDIASERVICE_START | DS_MEDIASERVICE_THREAD | DS_MEDIASERVICE_PIN_THREADS | DS_MEDIASERVICE_SET_NICENESS;
+   if (Mode & ROUND_ROBIN_SESSION_ALLOCATION) uFlags |= DS_MEDIASERVICE_ROUND_ROBIN;
 
-   uFlags |= DS_CONFIG_MEDIASERVICE_ENABLE_THREAD_PROFILING;  /* slight impact on performance, but useful.  Turn off for highest possible performance */
+   uFlags |= DS_MEDIASERVICE_ENABLE_THREAD_PROFILING;  /* slight impact on performance, but useful.  Turn off for highest possible performance */
 
    if (DSConfigMediaService(NULL, uFlags, num_pktmed_threads, packet_flow_media_proc, NULL) < 0) {  /* start packet/media thread(s) */
 

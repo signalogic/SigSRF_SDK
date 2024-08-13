@@ -37,6 +37,7 @@
   Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile no longer recognizes standalone=1
   Modified Jun 2024 JHB, change last param in in DSConfigLogging() from void* to DEBUG_CONFIG*
   Modified Jun 2024 JHB, some var and struct renaming and comment updates to improve readability
+  Modified Aug 2024 JHB, bump version number due to mods in diaglib.h and diaglib.cpp
 */
 
 /* Linux and/or other OS includes */
@@ -77,7 +78,7 @@ using namespace std;
 #include "diaglib_priv.h"
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.9.3";
+const char DIAGLIB_VERSION[256] = "1.9.4";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 
@@ -319,7 +320,7 @@ int nIndex = GetThreadIndex(false);
 #endif
 }
 
-FILE* DSGetLogFileHandle(unsigned int uFlags) {
+FILE* DSGetEventLogFileHandle(unsigned int uFlags) {
 
    (void)uFlags;
 
