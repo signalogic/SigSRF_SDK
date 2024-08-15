@@ -59,6 +59,7 @@
    Modified Jul 2024 JHB, add  fGroupOutputNoCopy to support --group_pcap_nocopy cmd line option, integrate CmdLineFlags_t changes in userInfo.h
    Modified Jul 2024 JHB, set mediaTest pcap_extract when both input and output files are pcaps, to support pcap modification operations (insert bit errors, filter, etc)
    Modified Jul 2024 JHB, add nRandomBitErrorPercentage to support --random_bit_error cmd line option
+   Modified Aug 2024 JHB, add fShow_sha1sum and fShow_sha512sum to support --sha1sum and --sha512sum command line options
 */
 
 
@@ -129,6 +130,8 @@ bool             fShow_md5sum = false;
 bool             fShow_audio_classification = false;
 bool             fGroupOutputNoCopy = false;
 int              nRandomBitErrorPercentage = 0;
+bool             fShow_sha1sum = false;
+bool             fShow_sha512sum = false;
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 
@@ -310,6 +313,8 @@ int i;
    }
 
    if (userIfs.CmdLineFlags.md5sum) fShow_md5sum = true;  /* check for default value, which indicates --md5sum was entered on the cmd line, JHB Feb 2024 */
+   if (userIfs.CmdLineFlags.sha1sum) fShow_sha1sum = true;  /* add sha sums, JHB Aug 2024 */
+   if (userIfs.CmdLineFlags.sha512sum) fShow_sha512sum = true;
 
    if (userIfs.CmdLineFlags.show_audio_classification) fShow_audio_classification = true;
 

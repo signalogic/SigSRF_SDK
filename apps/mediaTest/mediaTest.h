@@ -54,6 +54,7 @@
    Modified May 2024 JHB, change x86_mediaTest.c references to mediaTest_proc.c
    Modified Jul 2024 JHB, add fGroupOutputNoCopy to support --group_pcap_nocopy cmd line option
    Modified Jul 2024 JHB, add nRandomBitErrorPercentage to support --random_bit_error cmd line option
+   Modified Aug 2024 JHB, add fShow_sha1sum and fShow_sha512sum to support --sha1sum and --sha512sum command line options
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -251,6 +252,8 @@ extern bool              fShow_md5sum;  /* command line --md5sum */
 extern bool              fShow_audio_classification;  /* command line --show_aud_clas */
 extern bool              fGroupOutputNoCopy;  /* command line --group_pcap_nocopy */
 extern int               nRandomBitErrorPercentage;  /* command line --random_bit_error */
+extern bool              fShow_sha1sum;  /* command line --sha1sum */
+extern bool              fShow_sha512sum;  /* command line --sha512sum */
 
 #define szAppFullCmdLine (((const char*)full_cmd_line))  /* szAppFullCmdLine is what apps should use. full_cmd_line should not be modified so this is a half-attempt to remind user apps that it should be treated as const char* */
 

@@ -20,7 +20,8 @@
   Modified Apr 2024 JHB, DSGetLogTimestamp() now returns length of timestamp string
   Modified May 2024 JHB, add DSGetBacktrace() API
   Created May 2024 JHB, DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs moved here from event_logging.cpp
-  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSGetLogTimeStamp() and DSGetBacktrace() 
+  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSGetLogTimeStamp() and DSGetBacktrace()
+  Modified Aug 2024 JHB, rename DSGetMD5Sum() to DSConsoleCommand() and make into generic console command execution API. See comments
 */
 
 /* Linux and/or other OS includes */
@@ -127,25 +128,47 @@ bool fUptimeTimestamp = true;
    return strlen(timestamp);
 }
 
-/* get md5sum of path+file in szFilename, max_str_len should specify maximum string length of md5str. Return value of 1 indicates success, negative values an error condition, JHB Feb 2024 */
+/* use popen() to execute console command and return result. First implemented as DSGetMD5Sum() JHB Feb 2024, modified to be generic JHB Aug 2024. See documentation in diaglib.h */
 
-int DSGetMD5Sum(const char* szFilename, char* md5str, int max_str_len) {
+int DSConsoleCommand(const char* szCmd, const char* szArgs, char* szResult, int max_result_len) {
 
-char cmdstr[2*MAX_INPUT_LEN] = "md5sum";  /* command string to format and give to popen() */
+char cmdstr[2*MAX_INPUT_LEN] = "";  /* command string to format and give to popen() */
 int ret_val = -1;
 
-   sprintf(&cmdstr[strlen(cmdstr)], " %s", szFilename);
+/* error checks */
 
-   if (md5str && max_str_len > 0) {
+   if (!szCmd) {
+      Log_RT(2, "ERROR: DSConsoleCommand() says szCmd is NULL \n");
+      return -1;
+   }
+   if (!strlen(szCmd)) {
+      Log_RT(2, "ERROR: DSConsoleCommand() says szCmd is an empty string \n");
+      return -1;
+   }
+   if (!szArgs) {
+      Log_RT(2, "ERROR: DSConsoleCommand() says szFilename is NULL \n");
+      return -1;
+   }
+   if (!strlen(szArgs)) {
+      Log_RT(2, "ERROR: DSConsoleCommand() says szFilename is an empty string \n");
+      return -1;
+   }
 
-      FILE *fp = popen(cmdstr, "r");  /* use popen() to execute md5sum cmd line and fscanf() to retrieve cmd line output */
+/* format command */
+
+   strcpy(cmdstr, szCmd);
+   sprintf(&cmdstr[strlen(cmdstr)], " %s", szArgs);
+
+   if (szResult && max_result_len > 0) {
+
+      FILE *fp = popen(cmdstr, "r");  /* use popen() to execute cmd line and fscanf() to retrieve cmd line output */
 
       if (fp) {
 
-         char formatstr[50];
-         sprintf(formatstr, "%%%ds", max_str_len);  /* create format string with limit on buffer read, for example "%200s" */
+         char formatstr[2*MAX_INPUT_LEN];
+         sprintf(formatstr, "%%%ds", max_result_len);  /* create format string with limit on buffer read, for example "%200s" */
 
-         ret_val = fscanf(fp, formatstr, md5str);  /* if it runs correctly, md5sum will output 2 values: (i) md5 hash result (ii) filename. We are scanning only for first one, so we expect ret_val of 1 on success */
+         ret_val = fscanf(fp, formatstr, szResult);  /* typical command will output N values (assuming it runs correctly); currently we are scanning only for first (main) result, so we expect ret_val of 1 on success */
          pclose(fp);
       }
    }

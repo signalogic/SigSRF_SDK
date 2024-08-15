@@ -59,6 +59,7 @@
   Modified Jul 2024 JHB, due to documentation review, uFlags moved to second param in all relevant APIs
   Modified Jul 2024 JHB, rename SSRC fields in PKT_STATS struct to ssrc. Maintain consistency with other header file structs
   Modified Aug 2024 JHB, rename DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to DS_PKTSTATS_MATCH_CHNUM
+  Modified Aug 2024 JHB, rename DSGetMD5Sum() to DSConsoleCommand() and make into generic console command execution API. See comments
 */
 
 #ifndef _DIAGLIB_H_
@@ -324,18 +325,37 @@ int DSPktStatsWriteLogFile(const char* szLogFilename, unsigned int uFlags, PKT_S
 #define DS_PKTSTATS_MATCH_CHNUM                0x40000000  /* note - value should not overlap DS_PKT_STATS_HISTORY_LOG_xxx flags in pktlib.h */
 
 
-/* utility APIs */
+/* diaglib utility APIs */
 
 int DSGetLogTimeStamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval);
 
 int DSGetAPIStatus(unsigned int uFlags);  /* get per-thread API status */
 
-int DSGetMD5Sum(const char* szFilename, char* md5str, int max_str_len);  /* return md5 sum of szFilename in md5str. max_str_len should specify maximum string length of md5str. Return value of 1 indicates success, negative values on error condition */
+/* DSConsoleCommand() calls glibc popen() to execute console command and return result:
 
-int DSGetBacktrace(int nLevels, unsigned int uFlags, char* szBacktrace);  /* calls glibc backtrace() to get nLevels of call stack, cleans that up, removes repeats if any, and formats into szBacktrace. Returns negative values on error condition */
+   -szCmd should point to command
+   -szArgs should point to command arguments, for example a pathname and options
+   -szResult should point to buffer that will contain command result
+   -max_result_len should specify maximum buffer length for szResult
+
+   -returns 1 on success, negative values on error conditions
+*/
+
+int DSConsoleCommand(const char* szCmd, const char* szArgs, char* szResult, int max_result_len);
+
+/* DSGetBacktrace() calls glibc backtrace() to retrieve and format current call stack:
+
+  -nLevels specifies number of call stack levels
+  -uFlags options are given below
+  -szBacktrace should point to buffer containing call stack info. backtrace() output is formatted and cleaned into one long string; repeats if any are removed
+  
+  -returns negative values on error conditions
+*/
+  
+int DSGetBacktrace(int nLevels, unsigned int uFlags, char* szBacktrace);
 
 #define DS_GETBACKTRACE_INSERT_MARKER                   1  /* insert "backtrace: " marker at start of return string */
-#define DS_GETBACKTRACE_INCLUDE_GLIBC_FUNCS             2  /* include glibc functions (e.g. lib.so.N, libpthread.so, etc). Default is these are omitted */
+#define DS_GETBACKTRACE_INCLUDE_GLIBC_FUNCS             2  /* include "self" glibc functions (e.g. lib.so.N, libpthread.so, etc). Default is these are omitted */
 
 #ifdef __cplusplus
 }

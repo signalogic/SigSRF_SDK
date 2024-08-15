@@ -110,6 +110,7 @@
  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, move uFlags to second param in calls to DSGetBackTrace()
  Modified Jul 2024 JHB, update pcap_extract mode to support payload and/or packet operations (e.g. insert impairments, filter/remove packets by matching criteria (e.g. SSRC), etc). Initial support for --random_bit_error N command line argument, with --filter_packet_ssrc N,N,N ... planned, and others to follow
  Modified Jul 2024 JHB, modify calls to DSWritePcap() to add pcap_hdr_t* param, remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See pktlib.h comments
+ Modified Aug 2024 JHB, add display of output media file sha1sum and sha512sum if specified on command line (--md5sum, --sha1sum, --sha512sum cmd line options)
 */
 
 /* Linux header files */
@@ -2181,11 +2182,25 @@ codec_test_cleanup:
       if (usb_device_playback) DSCloseAvioDevice(usb_device_playback, pcm_callback_playback);
 #endif
 
-      if (fShow_md5sum) {  /* display md5 stats if --md5sum entered on cmd line (fShow_md5sum is in cmd_line_interface.c), JHB Feb 2024 */
+   /* display md5, sha1, and/or sha512 sums if specified on cmd line. fShow_md5sum, fShow_sha1sum, and fShow_sha512sum are in cmd_line_interface.c, DSConsoleCommand() is in diaglib.h, JHB Feb 2024 */
+  
+      if (fShow_md5sum) {
 
-         char md5str[2*CMDOPT_MAX_INPUT_LEN] = "";
+         char szCmdResult[2*CMDOPT_MAX_INPUT_LEN] = "";
 
-         if (fp_out && DSGetMD5Sum(MediaInfo.szFilename, md5str, sizeof(md5str)-1) == 1 && strlen(md5str) > 0) printf("md5sum %s %s \n", md5str, MediaInfo.szFilename);  /* get MD5 sum from diaglib API */
+         if (fp_out && DSConsoleCommand("md5sum", MediaInfo.szFilename, szCmdResult, sizeof(szCmdResult)-1) == 1 && strlen(szCmdResult) > 0) printf("md5sum %s %s \n", szCmdResult, MediaInfo.szFilename);  /* get md5 sum */
+      }
+      if (fShow_sha1sum) {
+
+         char szCmdResult[2*CMDOPT_MAX_INPUT_LEN] = "";
+
+         if (fp_out && DSConsoleCommand("sha1sum", MediaInfo.szFilename, szCmdResult, sizeof(szCmdResult)-1) == 1 && strlen(szCmdResult) > 0) printf("sha1sum %s %s \n", szCmdResult, MediaInfo.szFilename);  /* get sha1 sum, JHB Aug 2024 */
+      }
+      if (fShow_sha512sum) {
+
+         char szCmdResult[2*CMDOPT_MAX_INPUT_LEN] = "";
+
+         if (fp_out && DSConsoleCommand("sha512sum", MediaInfo.szFilename, szCmdResult, sizeof(szCmdResult)-1) == 1 && strlen(szCmdResult) > 0) printf("sha512sum %s %s \n", szCmdResult, MediaInfo.szFilename);  /* get sha512 sum, JHB Aug 2024 */
       }
 
       __sync_fetch_and_add(&nProcessClose, 1);

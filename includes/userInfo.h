@@ -36,6 +36,7 @@
    Modified Feb 2024 JHB, add md5sum and show_audio_classification #defines to support --md5sum and --show_aud_clas cmd line options for mediaMin and mediaTest apps
    Modified Jul 2024 JHB, add CmdLineFlags_t struct with 1-bit flags to support continued command-line options expansion
    Modified Jul 2024 JHB, add nRandomBitErrorPercentage define to support mediaTest payload / packet impairment operations
+   Modified Aug 2024 JHB, add sha1sum and sha512sum flags to CmdLineFlags_t
 */
 
 #ifndef _USERINFO_H_
@@ -69,9 +70,12 @@ extern "C" {
 typedef struct CmdLineFlags_t {  /* 1-bit flags used inside UserInterface_t, JHB Jul 2024 */
 
   uint64_t  md5sum: 1;
+  uint64_t  sha1sum: 1;
+  uint64_t  sha512sum: 1;
   uint64_t  show_audio_classification : 1;
   uint64_t  group_output_no_copy : 1;
-  uint64_t  Reserved : 61;
+
+  uint64_t  Reserved : 59;
 
 } CmdLineFlags_t;
 

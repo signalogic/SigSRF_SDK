@@ -32,6 +32,7 @@
    Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG and DS_LOG_LEVEL_UPTIME_TIMESTAMP flags, which are now deprecated (for the latter uptime timestamps are the default). See comments in pktlib.h and diaglib.h
    Modified Jun 2024 JHB, include '\r' in updating isCursorMidLine and uLineCursorPos
    Modified Jul 2024 JHB, update reference to isMasterThread()
+   Modified Aug 2024 JHB, slight mod to quit key console display
 */
 
 #include <stdio.h>
@@ -130,7 +131,15 @@ static bool fSetStdoutNonBuffered = false;
       if (key == 'q' || pm_run <= 0 || fCtrl_C_pressed) {  /* quit key, Ctrl-C, or p/m thread error condition */
 
          strcpy(tmpstr, "#### ");
+         #if 0
          if (key == 'q') sprintf(&tmpstr[strlen(tmpstr)], "q key entered");
+         #else  /* q shows immediately on the console if pressed, maybe not repeating it and placing "####" after looks more readable and still noticeable, JHB Aug 2024 */
+         if (key == 'q') {
+            if (isCursorMidLine) strcpy(tmpstr, "q");
+            else strcpy(tmpstr, "");
+            sprintf(&tmpstr[strlen(tmpstr)], " key entered ####");
+         }
+         #endif
          else if (pm_run == 0) sprintf(&tmpstr[strlen(tmpstr)], "p/m run abort (run = 0)"); 
          else if (pm_run < 0) sprintf(&tmpstr[strlen(tmpstr)], "p/m thread error and abort condition"); 
          else if (fCtrl_C_pressed) sprintf(&tmpstr[strlen(tmpstr)], "Ctrl-C entered");

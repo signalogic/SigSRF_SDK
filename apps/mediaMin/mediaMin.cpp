@@ -327,6 +327,7 @@ int PushPackets(uint8_t* pkt_in_buf, HSESSION hSessions[], SESSION_DATA session_
 int PullPackets(uint8_t* pkt_out_buf, HSESSION hSessions[], SESSION_DATA session_data[], unsigned int uFlags, unsigned int pkt_buf_len, int thread_index);
 void FlushCheck(HSESSION hSessions[], uint64_t cur_time, uint64_t (*queue_check_time)[MAX_SESSIONS], int thread_index);
 int isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, unsigned int* pPktNumber);
+int isPacketFragment(uint8_t* pkt_buf, PKTINFO* PktInfo, int pkt_len, int nInput, int _thread_index);
 
 /* create and manage packet/media threads */
 
@@ -339,7 +340,7 @@ int CreateDynamicSession(uint8_t *pkt, int pkt_len, HSESSION hSessions[], SESSIO
 
 /* stress test helper functions */
 
-int TestActions(HSESSION hSessions[], int thread_index);
+int TestActions(HSESSION hSessions[], uint64_t cur_time, int thread_index);
 void handler(int signo);
 void TimerSetup();
 
@@ -349,8 +350,7 @@ int packet_actions(uint8_t* pyld_data, uint8_t* pkt_buf, uint8_t protocol, int* 
 int isPortAllowed(uint16_t port, uint8_t* pkt_buf, int pkt_len, int nInput, int thread_index);
 bool isReservedUDP(uint16_t port);
 void cmdLine(int argc, char** argv, char* tmpstr);
-void GetMD5Sum(char* tmpstr, int thread_index);
-int isPacketFragment(uint8_t* pkt_buf, PKTINFO* PktInfo, int pkt_len, int nInput, int _thread_index);
+void ConsoleCommand(const char* szCmd, char* szResult, unsigned int uFlags, int thread_index);
 
 /* mediaMin application entry point. Program and multithreading notes:
 
@@ -649,7 +649,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
       if (fPause) continue;  /* if keyboard interactive pause is in effect */
 
-      cur_time = get_time(USE_CLOCK_GETTIME); if (!base_time) base_time = cur_time;
+      cur_time = get_time(USE_CLOCK_GETTIME); if (!base_time) base_time = cur_time;  /* in usec */
 
       if (Mode & USE_PACKET_ARRIVAL_TIMES) PushPackets(pkt_in_buf, hSessions, session_data, thread_info[thread_index].nSessionsCreated, cur_time, thread_index);  /* in this mode packets are pushed when elapsed time equals or exceeds their arrival timestamp */
 
@@ -682,7 +682,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    /* update test conditions as needed. Note that repeating tests exit the push/pull loop here, after each thread detects end of input and flushes sessions. Also auto-quit exits here (if repeat not enabled) */
 
-      if (!TestActions(hSessions, thread_index)) break;
+      if (!TestActions(hSessions, cur_time, thread_index)) break;
 
    } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* process interactive keyboard commands, see user_io.cpp */
 
@@ -812,10 +812,10 @@ cleanup:
                if ((char)tolower(getkey()) == 'q') {  /* check for quit key */
 
                   if (use_log_file) {
-                     fprintf(stderr, "Quit key pressed, aborting packet log analysis ... \n");
+                     fprintf(stderr, " Quit key pressed, aborting packet log analysis ... \n");
                      DSConfigLogging(DS_CONFIG_LOGGING_ACTION_SET_FLAG, DS_CONFIG_LOGGING_PKTLOG_ABORT | DS_CONFIG_LOGGING_ALL_THREADS, NULL);  /* tell all packet/media threads to abort packet logging. Note the "ALL_THREADS" flag will terminate packet logging for any other apps running also (to-do: a flag or a pointer to a thread list that specifies to diaglib to match threads with those created by pktlib), JHB Jan 2023 */
                   }
-                  else fprintf(stderr, "Quit key pressed ... \n");
+                  else fprintf(stderr, " Quit key pressed ... \n");
 
                   fQKey = true;
                }
@@ -1033,9 +1033,11 @@ cleanup:
 
       strcat(tmpstr, "\n");
 
-   /* if cmd line has --md5sum, display md5sum info, JHB Sep 2023 */
+   /* if cmd line has --md5sum, --sha1sum, or --sha512sum options display this info. Note that multiple is allowed, JHB Sep 2023 */
 
-      if (fShow_md5sum) GetMD5Sum(tmpstr, thread_index);
+      if (fShow_md5sum) ConsoleCommand("md5sum", tmpstr, STR_APPEND, thread_index);
+      if (fShow_sha1sum) ConsoleCommand("sha1sum", tmpstr, STR_APPEND, thread_index);
+      if (fShow_sha512sum) ConsoleCommand("sha512sum", tmpstr, STR_APPEND, thread_index);
 
    /* if specified, display packet arrival stats, JHB Aug 2023 */
 
@@ -4619,7 +4621,7 @@ static bool fFirstWait = false;
 
 /* update stress test vars and states, if active. Also "auto quit" looks for all sessions flushed, indicating the app should exit */
 
-int TestActions(HSESSION hSessions[], int thread_index) {
+int TestActions(HSESSION hSessions[], uint64_t cur_time, int thread_index) {
 
 int i, ret_val = 1;
 
@@ -4667,6 +4669,16 @@ int i, ret_val = 1;
 
          fStop = true;  /* set fStop (graceful per-thread stop, same as 's' key). Note this is ok for any thread to set, as all threads wait and synchronize before proceeding with exit processing (look for if (fExit) { ... AppThreadSync() ...), JHB Apr 2023 */
          ret_val = 0;  /* cause thread to exit continuous push/pull loop */
+      }
+      else if (thread_info[thread_index].uOneTimeConsoleQuitMessage != 0x80000000L) {  /* display one-time console message if AutoQuit is disabled. Otherwise user may be wondering if there was a hang */
+
+         if (!thread_info[thread_index].uOneTimeConsoleQuitMessage) thread_info[thread_index].uOneTimeConsoleQuitMessage = cur_time;
+
+         if (cur_time - thread_info[thread_index].uOneTimeConsoleQuitMessage > 1000000L) {  /* wait 1 second for p/m worker threads to finish with console messages and summary stats */
+
+            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "All sessions flushed and/or terminated, but DISABLE_AUTOQUIT -dN option is active. Press 'q' to quit ");
+            thread_info[thread_index].uOneTimeConsoleQuitMessage = 0x80000000L;
+         }
       }
    }
 
@@ -4857,29 +4869,29 @@ char version_info[500], lib_info[500], banner_info[2048];
 }
 #endif
 
-/* GetMD5Sum() returns md5 hash for a command line output media files. DSGetMD5Sum() is defined in diaglib.h */
+/* ConsoleCommand() executes console commands and returns result. Currently it operates on output media files. We might expand this in the future */
 
-void GetMD5Sum(char* tmpstr, int thread_index) {
+void ConsoleCommand(const char* szCmd, char* szResult, unsigned int uFlags, int thread_index) {
 
-char szMergeFilename[2*CMDOPT_MAX_INPUT_LEN] = "", md5str[2*CMDOPT_MAX_INPUT_LEN];
+char szMediaFilename[2*CMDOPT_MAX_INPUT_LEN] = "", hashstr[2*CMDOPT_MAX_INPUT_LEN];
 
-/* currently we are using the first stream group. We need a way to specify for which (or all) stream group output pcap(s) md5 stats are shown */
+/* currently we are using the first stream group. We need a way to specify for which (or all) stream group output pcap(s) stats are being shown */
 
-   if (Mode & ENABLE_TIMESTAMP_MATCH_MODE) DSGetStreamGroupInfo(0, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME, NULL, NULL, szMergeFilename);
+   if (Mode & ENABLE_TIMESTAMP_MATCH_MODE) DSGetStreamGroupInfo(0, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME, NULL, NULL, szMediaFilename);
    else if (Mode & ENABLE_STREAM_GROUPS) {
 
-      if (Mode & ENABLE_WAV_OUTPUT) DSGetStreamGroupInfo(0, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_MERGE_FILENAME, NULL, NULL, szMergeFilename);  /* stream group output wav filename to-do: specify group number */
-      else strcpy(szMergeFilename, thread_info[thread_index].szGroupPcap[0]);  /* stream group output pcap filename to-do: specify group number */ 
+      if (Mode & ENABLE_WAV_OUTPUT) DSGetStreamGroupInfo(0, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_MERGE_FILENAME, NULL, NULL, szMediaFilename);  /* stream group output wav filename to-do: specify group number */
+      else strcpy(szMediaFilename, thread_info[thread_index].szGroupPcap[0]);  /* stream group output pcap filename to-do: specify group number */ 
    }
 
-   if (strlen(szMergeFilename) > 0 && DSGetMD5Sum(szMergeFilename, md5str, sizeof(md5str)-1) == 1) {  /* get MD5 sum of output wav or pcap filename from diaglib API */
+   if (strlen(szMediaFilename) > 0 && DSConsoleCommand(szCmd, szMediaFilename, hashstr, sizeof(hashstr)-1) == 1) {  /* execute console command on output wav or pcap file. DSConsoleCommand() is defined in diaglib.h  */
 
-      sprintf(&tmpstr[strlen(tmpstr)], "%smd5sum\n", tabstr);
+      sprintf(&szResult[(uFlags & STR_APPEND) ? strlen(szResult) : 0], "%s%s\n", tabstr, szCmd);  /* initial output either copied or appended. Remaining output is appended */
  
-      if (Mode & ENABLE_TIMESTAMP_MATCH_MODE) sprintf(&tmpstr[strlen(tmpstr)], "%s%stimestamp-match mode", tabstr, tabstr);
-      else sprintf(&tmpstr[strlen(tmpstr)], "%s%s%s mode", tabstr, tabstr, isFTRTMode ? "FTRT" : (isAFAPMode ? "AFAP" : "real-time"));
-      sprintf(&tmpstr[strlen(tmpstr)], " %s %s", md5str, szMergeFilename);
-      strcat(tmpstr, "\n");
+      if (Mode & ENABLE_TIMESTAMP_MATCH_MODE) sprintf(&szResult[strlen(szResult)], "%s%stimestamp-match mode", tabstr, tabstr);
+      else sprintf(&szResult[strlen(szResult)], "%s%s%s mode", tabstr, tabstr, isFTRTMode ? "FTRT" : (isAFAPMode ? "AFAP" : "real-time"));
+      sprintf(&szResult[strlen(szResult)], " %s %s", hashstr, szMediaFilename);
+      strcat(szResult, "\n");
    }
 }
 

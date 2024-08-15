@@ -21,30 +21,31 @@
 
    Created Nov 2018 JHB, moved struct typedefs and other items out of mediaMin.c
    Modified Oct 2019 JHB, index fGroupTermCreated by number of input specs to allow multiple multistream pcaps per cmd line, index fp_pcap_jb by number of sessions to allow jitter buffer output per session
-   Modified Jan 2020 JHB, add nSessions, hSessions, and fDuplicatedHeaders for increased flexibility in handling multiple inputs / stream group cmd line inputs
+   Modified Jan 2020 JHB, add nSessions, hSessions, and fDuplicatedHeaders for increased flexibility in handling multiple inputs / stream group cmd line inputs to APP_THREAD_INFO struct
    Modified Jan 2020 JHB, flush_state per-session (see comments about per-session flush in mediaThread_test_app.c), increase size of flushstr
    Modified Mar 2020 JHB, index fFirstGroupPull[], add first_packet_push_time[]
    Modified Apr 2020 JHB, add hSession to DYNAMICSESSIONSTATS struct, increase max number of dynamic session stats to allow for repeating tests with multiple cmd line inputs
    Modified Oct 2020 JHB, expand link_layer_len to int32_t to handle mods to DSOpenPcap() and DSReadPcap() (pktlib) made to support pcapng format. Note - still needs to be an int (not unint) because DSOpenPcap() returns values < 0 for error conditions
-   Modified Jan 2021 JHB, for SDP info and SIP Invite message support, add rtpmaps records (a vector of rtpmaps) and a few other items (see comments)
-   Modified Mar 2021 JHB, add hDerStreams[] to support DER encoded encapsulated streams
-   Modified Mar 2021 JHB, add SIP invite items
+   Modified Jan 2021 JHB, for SDP info and SIP Invite message support, add rtpmaps records (a vector of rtpmaps) and a few other items (see comments) to APP_THREAD_INFO struct
+   Modified Mar 2021 JHB, add hDerStreams[] to APP_THREAD_INFO struct to support DER encoded encapsulated streams
+   Modified Mar 2021 JHB, add SIP invite items to APP_THREAD_INFO struct
    Modified Apr 2021 JHB, add include for derlib.h
    Modified Jan 2022 JHB, move ENABLE_xxx definitions to separate cmd_line_options_flags.h include file
    Modified Jan 2023 JHB, add Origin records (a vector of Origins) to SDP info in order to keep track of unique SDP session IDs
    Modified Jan 2023 JHB, add STREAM_TERMINATE_xxx flags
    Modified Jan 2023 JHB, add PORT_INFO_LIST struct definition
-   Modified Apr 2023 JHB, add fReseek, PktInfo, and tcp_redundant_discard. For usage see comments in mediaMin.cpp
-   Modified May 2023 JHB, add isFTRTMode and isAFAPMode macros, accel_time_ts[] to support "faster than real-time" and "as fast as possible" modes
+   Modified Apr 2023 JHB, add fReseek, PktInfo, and tcp_redundant_discard to APP_THREAD_INFO struct. For usage see comments in mediaMin.cpp
+   Modified May 2023 JHB, add isFTRTMode and isAFAPMode macros, accel_time_ts[] to APP_THREAD_INFO struct to support "faster than real-time" and "as fast as possible" modes
    Modified Sep 2023 JHB, change PKTINFO_ITEMS reference to PKTINFO (due to change in pktlib.h)
-   Modified Dec 2023 JHB, add szGroupPcap[MAX_STREAM_GROUPS] to support --group_pcap cmd line option
+   Modified Dec 2023 JHB, add szGroupPcap[MAX_STREAM_GROUPS] to APP_THREAD_INFO struct to support --group_pcap cmd line option
    Modified Dec 2023 JHB, include voplib.h
-   Modified May 2024 JHB, add pcap_file_hdr[] to support .rtp format files (needed for use with modified DSReadPcapRecord() in pktlib)
+   Modified May 2024 JHB, add pcap_file_hdr[] to APP_THREAD_INFO struct to support .rtp format files (needed for use with modified DSReadPcapRecord() in pktlib)
    Modified Jun 2024 JHB, separate counters for UDP and RTP packet stats, fragmented packet counter, encapsulated packet counter
-   Modified Jun 2024 JHB, add SDP info and SIP Invite message media descriptions, look for media_descriptions[]
-   Modified Jun 2024 JHB, add per-stream source and destination ports, which are set for most recent (i) non-fragmented packet or (ii) first segment of a fragmented packet
+   Modified Jun 2024 JHB, add SDP info and SIP Invite message media descriptions to APP_THREAD_INFO struct (look for media_descriptions[])
+   Modified Jun 2024 JHB, add per-stream source and destination ports to APP_THREAD_INFO struct, which are set for most recent (i) non-fragmented packet or (ii) first segment of a fragmented packet
    Modified Jun 2024 JHB, add isPortAllowed() return definitions, sip_info_checksum (use to help find SDP info duplicates)
    Modified Jul 2024 JHB, update isMasterThread() macro
+   Modified Aug 2024 JHB, add uOneTimeConsoleQuitMessage item to APP_THREAD_INFO struct, add STR_APPEND definition
 */
 
 #ifndef _MEDIAMIN_H_
@@ -60,6 +61,7 @@
 #include "derlib.h"  /* bring in definition for HDERSTREAM (handle to a DER encapsulated stream) */
 
 #define MAX_APP_STR_LEN               2000
+#define STR_APPEND                    1
 
 #define SESSION_MARKED_AS_DELETED     0x80000000  /* private mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
 
@@ -229,6 +231,10 @@ typedef struct {
 /* AFAP and FTRT mode support */
 
   struct timespec  accel_time_ts[MAX_STREAM_GROUPS];  /* added to support FTRT and AFAP modes, JHB May 2023 */
+
+/* console output (auto quit, etc) */
+
+  uint64_t uOneTimeConsoleQuitMessage;
 
 } APP_THREAD_INFO;
 
