@@ -179,6 +179,7 @@
  Modified Jul 2024 JHB, improve detection for EVS AMR IO modes 23.05 and 23.85
  Modified Jul 2024 JHB, clarify usage of ENABLE_WAV_OUTPUT and ENABLE_TIMESTAMP_MATCH_MODE flag
  Modified Jul 2024 JHB, adding TCP SDP info packets to SDP database now controlled by ENABLE_STREAM_SDP_INFO -dN cmd line flag (UDP was already)
+ Modified Aug 2024 JHB, convert GetMD5Sum() to generic ConsoleCommand() and use to support --md5sum, --sha1sum, and --sha512sum command line options
 */
 
 /* Linux header files */
@@ -760,13 +761,6 @@ cleanup:
             -packet history logging + analysis can take a while if 100k+ packets were pushed/pulled. Max packets for packet logging is somewhere around 300k (can be changed in packet_flow_media_proc.c, look for MAX_PKT_STATS)
          */
 
-  #if 0
-  if (fShow_md5sum) {
-     char md5str[200] = "";
-     GetMD5Sum(md5str, thread_index);
-     printf(" \n*** MD5 sum = %s \n", md5str);
-  }
-  #endif
             while (!fPMMasterThreadExit) {
 
                if (fPMThreadsClosing && !uQuitMessage) {
@@ -1033,9 +1027,9 @@ cleanup:
 
       strcat(tmpstr, "\n");
 
-   /* if cmd line has --md5sum, --sha1sum, or --sha512sum options display this info. Note that multiple is allowed, JHB Sep 2023 */
+   /* display media output file md5 sum if --md5sum cmd line option is present, JHB Sep 2023. Expand to include --sha1sum and --sha512sum cmd line options, Aug 2024 */
 
-      if (fShow_md5sum) ConsoleCommand("md5sum", tmpstr, STR_APPEND, thread_index);
+      if (fShow_md5sum) ConsoleCommand("md5sum", tmpstr, STR_APPEND, thread_index);  /* STR_APPEND specifies appending command output to szResult (tmpstr) */
       if (fShow_sha1sum) ConsoleCommand("sha1sum", tmpstr, STR_APPEND, thread_index);
       if (fShow_sha512sum) ConsoleCommand("sha512sum", tmpstr, STR_APPEND, thread_index);
 
