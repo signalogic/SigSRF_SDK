@@ -43,6 +43,7 @@
    Modified Feb 2024 JHB, add --md5sum and --show_aud_clas cmd line options, used by mediaMin and mediaTest apps
    Modified Feb 2024 JHB, add static to options[]. Reference apps (mediaTest, mediaMin) and cimlib.so both pull in getUserInterface.cpp and depending on gcc and ld version, without static options[] may appear twice and cause warning message such as "/usr/bin/ld: warning: size of symbol `options' changed from 30080 in getUserInterface.o (symbol from plugin) to 30720 in /tmp/ccqwricj.ltrans2.ltrans.o"
    Modified Jul 2024 JHB, add --group_pcap_nocopy and --random_bit_error cmd line options, integrate userInfo.h CmdLineFlags_t struct with 1-bit flags. Look for CmdLineFlags.xxx
+   Modified Aug 2024 JHB, add --sha1sum and --sha512sum cmd line options, used by mediaMin and mediaTest apps
 */
 
 #include <stdlib.h>
@@ -183,10 +184,14 @@ static CmdLineOpt::Record options[] = {
    {(char)131, CmdLineOpt::STRING, NOTMANDATORY,
           (char *)"stream group pcap output path, no copy", {{(void*)0}} },  /* --group_pcap_nocopy <path>, JHB Jul 2024 */
    {(char)132, CmdLineOpt::BOOLEAN, NOTMANDATORY,
-          (char *)"display md5sum for output wav file", {{(void*)0}} },  /* --md5sum, JHB Feb 2024 */
+          (char *)"display md5sum for output media file", {{(void*)0}} },  /* --md5sum, JHB Feb 2024 */
    {(char)133, CmdLineOpt::BOOLEAN, NOTMANDATORY,
+          (char *)"display sha1sum for output media file", {{(void*)0}} },  /* --sha1sum, JHB Aug 2024 */
+   {(char)134, CmdLineOpt::BOOLEAN, NOTMANDATORY,
+          (char *)"display sha512sum for output media file", {{(void*)0}} },  /* --sha512sum, JHB Aug 2024 */
+   {(char)135, CmdLineOpt::BOOLEAN, NOTMANDATORY,
           (char *)"show per-channel audio classification", {{(void*)0}} },  /* --show_aud_clas, JHB Feb 2024 */
-   {(char)134, CmdLineOpt::INTEGER, NOTMANDATORY,
+   {(char)136, CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"insert N% random bit errors per frame", {{(void*)0}} }  /* --random_bit_error, JHB Jul 2024 */
 };
 
@@ -411,9 +416,13 @@ char clkstr[100];
 
          userIfs->CmdLineFlags.md5sum = (cmdOpts.nInstances((char)132) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --md5sum cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Feb 2024 */
 
-         userIfs->CmdLineFlags.show_audio_classification = (cmdOpts.nInstances((char)133) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --show_aud_clas cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Feb 2024 */
+         userIfs->CmdLineFlags.sha1sum = (cmdOpts.nInstances((char)133) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --sha1sum cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Aug 2024 */
 
-         if (cmdOpts.nInstances((char)134) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST))) userIfs->nRandomBitErrorPercentage = cmdOpts.getInt((char)134, 0, 0);  /* look for --random_bit_error cmd line option. Added for mediaTest payload/packet impairment operations, JHB Jul 2024 */
+         userIfs->CmdLineFlags.sha512sum = (cmdOpts.nInstances((char)134) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --sha512sum cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Aug 2024 */
+
+         userIfs->CmdLineFlags.show_audio_classification = (cmdOpts.nInstances((char)135) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --show_aud_clas cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Feb 2024 */
+
+         if (cmdOpts.nInstances((char)136) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST))) userIfs->nRandomBitErrorPercentage = cmdOpts.getInt((char)134, 0, 0);  /* look for --random_bit_error cmd line option. Added for mediaTest payload/packet impairment operations, JHB Jul 2024 */
 
          if (userIfs->programMode >= 0) {
 

@@ -336,12 +336,13 @@ int DSGetAPIStatus(unsigned int uFlags);  /* get per-thread API status */
    -szCmd should point to command
    -szArgs should point to command arguments, for example a pathname and options
    -szResult should point to buffer that will contain command result
-   -max_result_len should specify maximum buffer length for szResult
+   -num_results specifies the number of command results to return. For example if the command prints 2 results and num_results is 1, only the first result is returned. Results are separated by a space in szResult
+   -max_result_len should specify maximum buffer length for szResult. max_result_len is divided equally by num_results
 
-   -returns 1 on success, negative values on error conditions
+   -returns number of command results on success, 0 if a parameter is not an error but causes nothing to happen (e.g. num_results or max_str_len is zero, command returns no results), and negative values on error conditions
 */
 
-int DSConsoleCommand(const char* szCmd, const char* szArgs, char* szResult, int max_result_len);
+int DSConsoleCommand(const char* szCmd, const char* szArgs, char* szResult, int num_results, int max_result_len);
 
 /* DSGetBacktrace() calls glibc backtrace() to retrieve and format current call stack:
 

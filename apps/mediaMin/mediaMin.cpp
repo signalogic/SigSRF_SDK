@@ -322,11 +322,13 @@ void ThreadWait(int when, int thread_index);
 void AppThreadSync(unsigned int, bool* fThreadSync, int thread_index);
 void PmThreadSync(int thread_index);
 
-/* wrapper functions for pktlib DSPushPackets() and DSPullPackets(), including pcap read/write, queue full check, etc */
+/* wrapper functions for pktlib DSPushPackets() and DSPullPackets(), including pcap read/write, session create, etc */
   
 int PushPackets(uint8_t* pkt_in_buf, HSESSION hSessions[], SESSION_DATA session_data[], int nSessions, uint64_t cur_time, int thread_index);
 int PullPackets(uint8_t* pkt_out_buf, HSESSION hSessions[], SESSION_DATA session_data[], unsigned int uFlags, unsigned int pkt_buf_len, int thread_index);
-void FlushCheck(HSESSION hSessions[], uint64_t cur_time, uint64_t (*queue_check_time)[MAX_SESSIONS], int thread_index);
+
+/* packet helper functions */
+
 int isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, unsigned int* pPktNumber);
 int isPacketFragment(uint8_t* pkt_buf, PKTINFO* PktInfo, int pkt_len, int nInput, int _thread_index);
 
@@ -338,6 +340,7 @@ int StartPacketMediaThreads(int num_pm_threads, int thread_index);
 
 void ResetDynamicSession_info(int);
 int CreateDynamicSession(uint8_t *pkt, int pkt_len, HSESSION hSessions[], SESSION_DATA session_data[], int thread_index, int nInput, int nReuse);
+void FlushCheck(HSESSION hSessions[], uint64_t cur_time, uint64_t (*queue_check_time)[MAX_SESSIONS], int thread_index);
 
 /* stress test helper functions */
 
@@ -4878,11 +4881,13 @@ char szMediaFilename[2*CMDOPT_MAX_INPUT_LEN] = "", hashstr[2*CMDOPT_MAX_INPUT_LE
       else strcpy(szMediaFilename, thread_info[thread_index].szGroupPcap[0]);  /* stream group output pcap filename to-do: specify group number */ 
    }
 
-   if (strlen(szMediaFilename) > 0 && DSConsoleCommand(szCmd, szMediaFilename, hashstr, sizeof(hashstr)-1) == 1) {  /* execute console command on output wav or pcap file. DSConsoleCommand() is defined in diaglib.h  */
+/* execute console command on output wav or pcap file. DSConsoleCommand() is defined in diaglib.h  */
+  
+   if (strlen(szMediaFilename) > 0 && DSConsoleCommand(szCmd, szMediaFilename, hashstr, 1, sizeof(hashstr)) == 1) {  /* ask for one (first) result */
 
-      sprintf(&szResult[(uFlags & STR_APPEND) ? strlen(szResult) : 0], "%s%s\n", tabstr, szCmd);  /* initial output either copied or appended. Remaining output is appended */
+      sprintf(&szResult[(uFlags & STR_APPEND) ? strlen(szResult) : 0], "%s%s\n", tabstr, szCmd);  /* initial output either copied or appended */
  
-      if (Mode & ENABLE_TIMESTAMP_MATCH_MODE) sprintf(&szResult[strlen(szResult)], "%s%stimestamp-match mode", tabstr, tabstr);
+      if (Mode & ENABLE_TIMESTAMP_MATCH_MODE) sprintf(&szResult[strlen(szResult)], "%s%stimestamp-match mode", tabstr, tabstr);  /* remaining output appended */
       else sprintf(&szResult[strlen(szResult)], "%s%s%s mode", tabstr, tabstr, isFTRTMode ? "FTRT" : (isAFAPMode ? "AFAP" : "real-time"));
       sprintf(&szResult[strlen(szResult)], " %s %s", hashstr, szMediaFilename);
       strcat(szResult, "\n");

@@ -2182,25 +2182,20 @@ codec_test_cleanup:
       if (usb_device_playback) DSCloseAvioDevice(usb_device_playback, pcm_callback_playback);
 #endif
 
-   /* display md5, sha1, and/or sha512 sums if specified on cmd line. fShow_md5sum, fShow_sha1sum, and fShow_sha512sum are in cmd_line_interface.c, DSConsoleCommand() is in diaglib.h, JHB Feb 2024 */
+   /* display md5, sha1, and/or sha512 sums of output media file, if specified on cmd line, JHB Feb 2024 */
   
-      if (fShow_md5sum) {
+      if (fp_out) {
 
-         char szCmdResult[2*CMDOPT_MAX_INPUT_LEN] = "";
+         char szCmd[3][20] = { "md5sum", "sha1sum", "sha512sum" };
+         char szCmdResult[2*CMDOPT_MAX_INPUT_LEN];
 
-         if (fp_out && DSConsoleCommand("md5sum", MediaInfo.szFilename, szCmdResult, sizeof(szCmdResult)-1) == 1 && strlen(szCmdResult) > 0) printf("md5sum %s %s \n", szCmdResult, MediaInfo.szFilename);  /* get md5 sum */
-      }
-      if (fShow_sha1sum) {
+         for (int i=0; i<3; i++) {
 
-         char szCmdResult[2*CMDOPT_MAX_INPUT_LEN] = "";
+            if ((i==0 && fShow_md5sum) || (i==1 && fShow_sha1sum) || (i==2 && fShow_sha512sum)) {  /* fShow_md5sum, fShow_sha1sum, and fShow_sha512sum are in cmd_line_interface.c */
 
-         if (fp_out && DSConsoleCommand("sha1sum", MediaInfo.szFilename, szCmdResult, sizeof(szCmdResult)-1) == 1 && strlen(szCmdResult) > 0) printf("sha1sum %s %s \n", szCmdResult, MediaInfo.szFilename);  /* get sha1 sum, JHB Aug 2024 */
-      }
-      if (fShow_sha512sum) {
-
-         char szCmdResult[2*CMDOPT_MAX_INPUT_LEN] = "";
-
-         if (fp_out && DSConsoleCommand("sha512sum", MediaInfo.szFilename, szCmdResult, sizeof(szCmdResult)-1) == 1 && strlen(szCmdResult) > 0) printf("sha512sum %s %s \n", szCmdResult, MediaInfo.szFilename);  /* get sha512 sum, JHB Aug 2024 */
+               if (DSConsoleCommand(szCmd[i], MediaInfo.szFilename, szCmdResult, 1, sizeof(szCmdResult)) == 1 && strlen(szCmdResult) > 0) printf("%s %s %s \n", szCmd[i], szCmdResult, MediaInfo.szFilename);  /* get command result, display. DSConsoleCommand() is in diaglib.h, JHB Aug 2024 */
+            }
+         }
       }
 
       __sync_fetch_and_add(&nProcessClose, 1);

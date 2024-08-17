@@ -24,7 +24,7 @@
 #  Modified Mar 2021 JHB, add INSTALLPATH to allow builds on relative folder structure, remove unnecessary defines
 #  Modified Feb 2024 JHB, if standalone=1 given on command line define STANDALONE, NO_HWLIB, and NO_PKTLIB, and build dialglib_standalone.so
 #  Modified Feb 2024 JHB, apply soname only to default libdiaglib.so to avoid ldconfig conflicts, rename CC_FLAGS to CFLAGS and LIB_FLAGS to LDFLAGS (Linux convention)
-#  Modified May 2024 JHB, change from gcc to g++, change CFLAGS TO CPPFLAGS
+#  Modified May 2024 JHB, change from gcc to g++ and C11 and C++11 standards, change CFLAGS TO CPPFLAGS
 #  Modified May 2024 JHB, remove standalone=1 handling. In event_logging.cpp DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib
 #  Modified Jul 2024 JHB, change CC to CXX and CPPFLAGS to CXXFLAGS, per https://stackoverflow.com/questions/495598/difference-between-cppflags-and-cxxflags-in-gnu-make
 #  Modified Jul 2024 JHB, change filename from lib_logging.cpp to event_logging.cpp (install script sees "lib*" and copies the file to shared object folder, so don't want that)
@@ -66,7 +66,7 @@ DEFINES += -D_LINUX_ -D_SIGRT
 # compiler flags
 CXXFLAGS = $(INCLUDE)
 CXXFLAGS += $(DBGFLAGS)
-CXXFLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 $(DEFINES)
+CXXFLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 $(DEFINES) -std=gnu++11
 
 CXXFLAGS += -Wextra -Wno-missing-field-initializers
 

@@ -26,8 +26,17 @@
 
 /* Linux and/or other OS includes */
 
+#ifndef _GNU_SOURCE
+  #define _GNU_SOURCE  /* needed by dlfcn.h and spawn.h if used */
+#endif
+
+#ifdef __STDC_LIB_EXT1__
+  #define __STDC_WANT_LIB_EXT1__ 1
+  #include <string.h>  /* strncpy_s() */
+#else
+  #include "dsstring.h"  /* sigsrf version of strncpy_s() */
+#endif
 #include <ctype.h>     /* isalnum() */
-#include <string.h>
 #include <stdlib.h>
 #include <time.h>      /* struct tm, time(), localtime_r() */
 #include <sys/time.h>  /* gettimeofday() */
@@ -130,54 +139,47 @@ bool fUptimeTimestamp = true;
 
 /* use popen() to execute console command and return result. First implemented as DSGetMD5Sum() JHB Feb 2024, modified to be generic JHB Aug 2024. See documentation in diaglib.h */
 
-int DSConsoleCommand(const char* szCmd, const char* szArgs, char* szResult, int max_result_len) {
+int DSConsoleCommand(const char* szCmd, const char* szArgs, char* szResult, int num_results, int max_result_len) {
 
 char cmdstr[2*MAX_INPUT_LEN] = "";  /* command string to format and give to popen() */
 int ret_val = -1;
 
 /* error checks */
 
-   if (!szCmd) {
-      Log_RT(2, "ERROR: DSConsoleCommand() says szCmd is NULL \n");
-      return -1;
-   }
-   if (!strlen(szCmd)) {
-      Log_RT(2, "ERROR: DSConsoleCommand() says szCmd is an empty string \n");
-      return -1;
-   }
-   if (!szArgs) {
-      Log_RT(2, "ERROR: DSConsoleCommand() says szFilename is NULL \n");
-      return -1;
-   }
-   if (!strlen(szArgs)) {
-      Log_RT(2, "ERROR: DSConsoleCommand() says szFilename is an empty string \n");
-      return -1;
-   }
+   if (!szCmd) { Log_RT(2, "ERROR: DSConsoleCommand() says szCmd is NULL \n"); return -1; }
+   if (!strlen(szCmd)) { Log_RT(2, "ERROR: DSConsoleCommand() says szCmd is an empty string \n"); return -1; }
+   if (!szArgs) { Log_RT(2, "ERROR: DSConsoleCommand() says szFilename is NULL \n"); return -1; }
+   if (!strlen(szArgs)) { Log_RT(2, "ERROR: DSConsoleCommand() says szFilename is an empty string \n"); return -1; }
 
 /* format command */
 
-   strcpy(cmdstr, szCmd);
+   strncpy_s(cmdstr, sizeof(cmdstr), szCmd, sizeof(cmdstr)-1);  /* safe copy to local string */
    sprintf(&cmdstr[strlen(cmdstr)], " %s", szArgs);
 
-   if (szResult && max_result_len > 0) {
+   int avail_string_space = max_result_len - num_results;  /* for total string size assume (i) each result has a leading space (except for first) and (ii) one overall terminating NULL */
 
-      FILE *fp = popen(cmdstr, "r");  /* use popen() to execute cmd line and fscanf() to retrieve cmd line output */
+   if (!szResult || !num_results || avail_string_space <= 0) return 0;  /* not errors, just no results returned */
 
-      if (fp) {
+   FILE *fp = popen(cmdstr, "r");  /* use popen() to execute cmd line and fscanf() to retrieve cmd line output */
 
-         char formatstr[2*MAX_INPUT_LEN];
-         sprintf(formatstr, "%%%ds", max_result_len);  /* create format string with limit on buffer read, for example "%200s" */
+   if (fp) {
 
-         ret_val = fscanf(fp, formatstr, szResult);  /* typical command will output N values (assuming it runs correctly); currently we are scanning only for first (main) result, so we expect ret_val of 1 on success */
-         pclose(fp);
+      char formatstr[2*MAX_INPUT_LEN] = "";
+
+      for (int i=1; i<=num_results; i++) {
+
+         sprintf(&formatstr[strlen(formatstr)], "%s%%%ds", i == 1 ? "" : " ", avail_string_space / num_results);  /* create format string with limit on buffer read, for example "%200s". Add leading space for results except for first */
       }
+
+      ret_val = fscanf(fp, formatstr, szResult);  /* typical command will output N values (assuming it runs correctly); currently we are scanning only for first (main) result, so we expect ret_val of 1 on success */
+      pclose(fp);
    }
    
    return ret_val;
 }
 
 
-/* use glibc backtrace() to get nLevels of call stack, clean that up, remove repeats, and format in szBacktrace (return string) */
+/* use glibc backtrace() to get nLevels of call stack, clean that up, remove repeats, and format in szBacktrace (return string). See documentation in diaglib.h */
 
 int DSGetBacktrace(int nLevels, unsigned int uFlags, char* szBacktrace) {
 

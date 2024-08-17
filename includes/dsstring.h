@@ -30,6 +30,7 @@
    Modified Apr 2022 JHB, add error checking to strrstr(), str_remove_whitespace(), and str_remove_linebreaks()
    Modified Jul 2023 JHB, add strncpy_s(), safe version of strncpy(), in case gcc version in use doesn't support it
    Modified May 2024 JHB, change comment that references x86_mediaTest.c to mediaTest_proc.c
+   Modified Aug 2024 JHB, improvement to strncpy_s()
 */
 
 #ifndef _DSSTRING_H_
@@ -163,13 +164,18 @@ static inline char* strncpy_s(char* dst, size_t max_dst_len, const char* src, si
 
    if (!dst || !src || (int)max_dst_len <= 0 || (int)count <= 0) return NULL;
 
+   #if 0
    unsigned int len = min(strlen(src), max_dst_len-1);
-
    if (count >= len) {
       memcpy(dst, src, len);  /* copy the string */
       dst[len] = 0;  /* add terminating NULL */
    }
    else memcpy(dst, src, count);  /* if count is the min, then no null termination, per gcc strncpy_s operation */
+   #else  /* simpler way, JHB Aug 2024 */
+   unsigned int len = min(min(strlen(src), max_dst_len-1), count);
+   memcpy(dst, src, len);  /* copy string, either (i) its length, (ii) max allowable space, or (iii) as specified by count */
+   dst[len] = 0;  /* add terminating NULL if not already there */
+   #endif
 
    return dst;
 }
