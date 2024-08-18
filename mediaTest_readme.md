@@ -1077,7 +1077,7 @@ Note that both print identical MD5 sums in mediaMin summary stats:
 
 Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and thus avoid wall clock references.
 
-Both mediaMin and mediaTest support additional hash sum options SHA1 and SHA512 command line options; see [Hash Sums](#usercontent-hashsums) below.
+mediaMin and mediaTest support MD5, SHA1 and SHA512 hash sum command line options; see [Hash Sums](#usercontent-hashsums) below.
 
 <i><b>
 ```diff
@@ -1085,7 +1085,7 @@ Both mediaMin and mediaTest support additional hash sum options SHA1 and SHA512 
 - of media codecs. CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and other factors all make a
 - difference.
 - 
-- In the above command line examples you will almost definitely see different md5sum values on your system.
+- In the above command line examples you will almost definitely see different MD5 values on your system.
 ```
 </b></i>
 
@@ -1112,7 +1112,7 @@ The mediaMin and mediaTest command lines accept the following hash sum options:
     --sha1sum
     --sha512sum
 
-which will show output file output media file hash sum values in console display summary stats.  The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
+which will show output file output media file hash sum values in console display summary stats. Multiple hash sum options may be entered. The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
 
 <i><b>
 ```diff
