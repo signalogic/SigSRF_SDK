@@ -1078,6 +1078,7 @@ Both mediaMin and mediaTest support additional hash sum options SHA1 and SHA512 
 - Note - for any operation involving RTP packet decode, media output hash sums are system-dependent due to use
 - of media codecs. CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and other factors all make a
 - difference.
+- 
 - In the above command line examples you will almost definitely see different md5sum values on your system.
 ```
 </b></i>
@@ -1109,7 +1110,7 @@ which will show output file output media file hash sum values in the console dis
 
 <i><b>
 ```diff
-- Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs.
+- Note - for any operation involving RTP packet decode, hash sum values are system-dependent due to use of media codecs.
 - Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference.
 ```
 </b></i>
