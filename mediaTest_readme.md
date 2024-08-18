@@ -173,7 +173,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**Reproducibility**](#user-content-reproducibility)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Bulk Processing Mode Considersations](#user-content-bulkprocessingmodeconsiderations)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MD5 Sums](#user-content-md5sums)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Hash Sums](#user-content-hashsums)<br/>
 
 &nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
 
@@ -1071,10 +1071,13 @@ Note that both print identical MD5 sums in mediaMin summary stats:
 
 Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and thus avoid wall clock references.
 
+Both mediaMin and mediaTest support additional hash sum options SHA1 and SHA512 command line options; see [Hash Sums](#usercontent-hashsums) below.
+
 <i><b>
 ```diff
-- Note - for any operation involving RTP packet decode, md5sum values are system-dependent due to use of media codecs.
-- Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference.
+- Note - for any operation involving RTP packet decode, media output hash sums are system-dependent due to use
+- of media codecs. CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and other factors all make a
+- difference.
 - In the above command line examples you will almost definitely see different md5sum values on your system.
 ```
 </b></i>
@@ -1093,14 +1096,16 @@ Timestamp matching mode goes hand-in-hand with bulk pcap processing. The idea is
 
 See section [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) above for more information about avoiding worker thread pre-emption and warning messages that appear when it happens.
 
-<a name="MD5Sums"><a/>
-### MD5 Sums
+<a name="HashSums"><a/>
+### Hash Sums
 
-The mediaMin and mediaTest command lines accept an MD5 sum entry:
+The mediaMin and mediaTest command lines accept the following hash sum options:
 
     --md5sum
+    --sha1sum
+    --sha512sum
 
-which will show output file MD5 sum in the console display summary stats.  The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
+which will show output file output media file hash sum values in the console display summary stats.  The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
 
 <i><b>
 ```diff
