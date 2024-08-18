@@ -13,6 +13,12 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+<i><b>3Q 2024</b></i>
+
+Use case driven improvements
+
+ - H.265 dynamic codec detection and session creation, bitstream extraction
+
 <i><b>1Q-2Q 2024</b></i>
 
 [Codecs documentation](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) is on Github
@@ -1106,7 +1112,7 @@ The mediaMin and mediaTest command lines accept the following hash sum options:
     --sha1sum
     --sha512sum
 
-which will show output file output media file hash sum values in the console display summary stats.  The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
+which will show output file output media file hash sum values in console display summary stats.  The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
 
 <i><b>
 ```diff
