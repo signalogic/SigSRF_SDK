@@ -453,7 +453,7 @@ Here is a description of the above examples:
 
 Note that .rtp file format seems to only support one stream, with IPv4 addresses. Also .rtp file headers may contain zero values for source or destination IP address or port values; in that case the DSReadPcapRecord() API in pktlib will use generic local IP values instead of zero. If you have an .rtp format file with multiple streams and/or IPv6 addresses, please send to Signalogic and we can take a look at expanding .rtp support.
 
-For .rtp files with incorrect or zero packet timestamp values, you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see section [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
+For .rtp files with incorrect or zero packet timestamp values, you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
 <a name="Sessions"></a>
 ## Sessions
@@ -495,7 +495,7 @@ Below are more command line examples, taken from pcaps found in the [the Brno Un
 
 ![stream termination on BYE message](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_termination_bye_stream.png?raw=true "mediaMin stream termination on BYE message")
 
-For .pcap or .pcapng files with incorrect or zero packet timestamp values (sometimes referred to as "arrival timestamps"), you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see section [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
+For .pcap or .pcapng files with incorrect or zero packet timestamp values (sometimes referred to as "arrival timestamps"), you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
 <a name="CodecAutoDetection"></a>
 #### Codec Auto-Detection
@@ -939,7 +939,7 @@ Here is a summary of important points in achieving and sustaining real-time perf
 <a name="BulkPcapPerformanceConsiderations"><a/>
 ### Bulk Pcap Performance Considerations
 
-mediaMin supports bulk pcap processing with "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, as explained in detail in [Packet Push Rate Control](#user-content-packetpushratecontrol) and [Bulk Pcap Handling](#user-content-bulkpcaphandling) sections above.
+mediaMin supports bulk pcap processing with "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, as explained in detail in [Packet Push Rate Control](#user-content-packetpushratecontrol) and [Bulk Pcap Handling](#user-content-bulkpcaphandling) above.
 
 If only packet processing is required, and stream group processing (including wav and pcap file media output) is not required, then AFAP mode may be a better option than FTRT mode. In AFAP mode packets will be re-ordered, repaired, and decoded as fast as the host system allows, and command line settings will affect processing speed but not packet output correctness.
 	
@@ -1101,7 +1101,7 @@ Timestamp matching mode goes hand-in-hand with bulk pcap processing. The idea is
     - disabling packet logging and post-analysis, which takes extra processing time. If needed these can be turned on temporarily without FTRT enabled
     - minimizing or pausing threads for other applications, non-related networking, and Linux housekeeping / background
 
-See section [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) above for more information about avoiding worker thread pre-emption and warning messages that appear when it happens.
+See [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) above for more information about avoiding worker thread pre-emption and warning messages that appear when it happens.
 
 <a name="HashSums"><a/>
 ### Hash Sums
@@ -1112,7 +1112,7 @@ The mediaMin and mediaTest command lines accept the following hash sum options:
     --sha1sum
     --sha512sum
 
-which will show output file output media file hash sum values in console display summary stats. Multiple hash sum options may be entered. The examples in section [Reproducibility](#user-content-reproducibility) above demonstrate this option.
+which will show output media file hash sum values in console display summary stats. Multiple hash sum options may be entered. The examples in [Reproducibility](#user-content-reproducibility) above demonstrate this option.
 
 <i><b>
 ```diff
@@ -1627,7 +1627,7 @@ mediaTest -M4 -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps
 
 Simple mediaTest command lines can be used to convert pcaps containing one RTP stream to wav file, playout over USB audio, or both. This functionality is intended for testing codec functionality, audio quality, etc.
 
-To convert pcaps containing multiple RTP streams with different codecs to wav files, see the mediaMin section above [Dynamic Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation). mediaMin generates wav files for each stream and also a "merged" stream wav file that combines all input streams. mediaMin uses pktlib packet processing APIs that handle jitter, packet loss/repair, child channels (RFC8108), etc, including very high amounts of packet ooo (out of order). Also mediaMin allows .sdp file input to override codec auto-detection and/or give specific streams to decode while ignoring others.
+To convert pcaps containing multiple RTP streams with different codecs to wav files, see [Dynamic Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation) above, which includes mediaMin examples of dynamic session creation.  mediaMin generates wav files for each stream and also a "merged" stream wav file that combines all input streams. mediaMin uses pktlib packet processing APIs that handle jitter, packet loss/repair, child channels (RFC8108), etc, including very high amounts of packet ooo (out of order). Also mediaMin allows .sdp file input to override codec auto-detection and/or give specific streams to decode while ignoring others.
 
 ### .rtp and .rtpdump File Support
 <a name="RTPFileSupportMediaTest"></a>
@@ -1764,7 +1764,7 @@ mediaTest -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/amrwb_16k
 
 mediaTest can perform transcoding by encoding from an audio input (see list above in "Codec + Audio Mode") to a compressed bitstream file, and decoding the bitstream file to an audio output. Two command lines are required, and framesize (e.g. 20 msec, 25 msec, etc) must match between codecs.
 
-The [mediaMin](#user-content-mediamin) section above describes real-time transcoding between input and output packet streams (either socket or pcap I/O).
+[mediaMin](#user-content-mediamin) above describes real-time transcoding between input and output packet streams (either socket or pcap I/O).
 
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
