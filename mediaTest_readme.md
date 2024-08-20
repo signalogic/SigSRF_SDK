@@ -19,6 +19,10 @@ Use case driven improvements
 
  - H.265 dynamic codec detection and session creation, bitstream extraction
 
+Bug fixes
+
+ - packet tracing and logging time improved by 40%. Helpful for very long inputs (calls or pcaps)
+
 <i><b>1Q-2Q 2024</b></i>
 
 [Codecs documentation](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) is on Github
