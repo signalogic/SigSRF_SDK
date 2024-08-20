@@ -21,7 +21,7 @@ Use case driven improvements
 
 Bug fixes
 
- - packet tracing and logging time improved by 40%. Helpful for very long inputs (calls or pcaps)
+ - packet tracing and logging time improved around 50%. Helpful for very long inputs (calls or pcaps)
 
 <i><b>1Q-2Q 2024</b></i>
 
