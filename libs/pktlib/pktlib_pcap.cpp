@@ -86,14 +86,7 @@ char tmpstr[2*MAX_INPUT_LEN];
 
    if (!pcap_file || !strlen(pcap_file) || !fp_pcap) {  /* look for NULL path/filename, empty string, or NULL file pointer, JHB Jul 2024 */
 
-      char iostr[20] = "";
-      if (uFlags & DS_READ) strcpy(iostr, " input");
-      else if (uFlags & DS_WRITE) strcpy(iostr, " output");
-
-      if (!pcap_file) Log_RT(2, "ERROR: DSOpenPcap() says%s path and/or filename is NULL \n", iostr);
-      if (!strlen(pcap_file)) Log_RT(2, "ERROR: DSOpenPcap() says%s path and/or filename is empty string \n", iostr);
-      if (!fp_pcap) Log_RT(2, "ERROR: DSOpenPcap() says%s file pointer is NULL \n", iostr);
-
+      Log_RT(2, "ERROR: DSOpenPcap() says %s %s is %s \n", uFlags & DS_READ ? "input" : "output", !pcap_file || !strlen(pcap_file) ? "path and/or filename" : "file pointer", pcap_file && !strlen(pcap_file) ? "empty string" : "NULL");
       return ret_val;
    }
 

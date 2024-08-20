@@ -146,10 +146,7 @@ int ret_val = -1;
 
 /* error checks */
 
-   if (!szCmd) { Log_RT(2, "ERROR: DSConsoleCommand() says szCmd is NULL \n"); return -1; }
-   if (!strlen(szCmd)) { Log_RT(2, "ERROR: DSConsoleCommand() says szCmd is an empty string \n"); return -1; }
-   if (!szArgs) { Log_RT(2, "ERROR: DSConsoleCommand() says szFilename is NULL \n"); return -1; }
-   if (!strlen(szArgs)) { Log_RT(2, "ERROR: DSConsoleCommand() says szFilename is an empty string \n"); return -1; }
+   if (!szCmd || !strlen(szCmd) || !szArgs || !strlen(szArgs)) { Log_RT(2, "ERROR: DSConsoleCommand() says %s is %s \n", !szCmd || !strlen(szCmd) ? "szCmd" : "szArgs", !szCmd || !szArgs ? "NULL" : "empty string"); return -1; }
 
 /* format command */
 
@@ -160,7 +157,9 @@ int ret_val = -1;
 
    if (!szResult || !num_results || avail_string_space <= 0) return 0;  /* not errors, just no results returned */
 
-   FILE *fp = popen(cmdstr, "r");  /* use popen() to execute cmd line and fscanf() to retrieve cmd line output */
+/* use popen() to execute cmd line and fscanf() to retrieve cmd line output */
+
+   FILE *fp = popen(cmdstr, "r");
 
    if (fp) {
 

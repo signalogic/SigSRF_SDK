@@ -28,6 +28,7 @@
 #  Modified May 2024 JHB, remove standalone=1 handling. In event_logging.cpp DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib
 #  Modified Jul 2024 JHB, change CC to CXX and CPPFLAGS to CXXFLAGS, per https://stackoverflow.com/questions/495598/difference-between-cppflags-and-cxxflags-in-gnu-make
 #  Modified Jul 2024 JHB, change filename from lib_logging.cpp to event_logging.cpp (install script sees "lib*" and copies the file to shared object folder, so don't want that)
+#  Modified Aug 2024 JHB, add -std=gnu++11 to compiler flags
 
 # set install path var, from lib/diaglib folder SigSRF software install path is 3 levels up
 INSTALLPATH=../../..
@@ -46,7 +47,7 @@ else
 endif
 
 # include paths
-INCLUDE = -I$(INSTALLPATH) -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/lib
+INCLUDES = -I$(INSTALLPATH) -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/lib
 
 cpp_objects = diaglib.o event_logging.o diaglib_util.o
 c_objects = 
@@ -64,9 +65,8 @@ endif
 DEFINES += -D_LINUX_ -D_SIGRT
 
 # compiler flags
-CXXFLAGS = $(INCLUDE)
-CXXFLAGS += $(DBGFLAGS)
-CXXFLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 $(DEFINES) -std=gnu++11
+CXXFLAGS = $(INCLUDES) $(DBGFLAGS) $(DEFINES)
+CXXFLAGS += -Wall -c -fPIC -flto -pthread -falign-functions=16 -falign-jumps=16 -falign-loops=16 -std=gnu++11
 
 CXXFLAGS += -Wextra -Wno-missing-field-initializers
 

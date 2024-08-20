@@ -183,6 +183,7 @@ Revision History
  Modified Jul 2024 JHB, set DS_PKTSTATS_MATCH_CHNUM packet logging flag in WritePktLog() if dormant session detection is disabled (see diaglib.h for flag info)
  Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSGetTermChan(), in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, and remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See comments in pktlib.h
  Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSWritePacketStatsHistoryLog() and in all diaglib calls (e.g. DSPktStatsAddEntries, DSGetBacktrace)
+ Modified Aug 2024 JHB, align input_pkts[] and pulled_pkts[] (PKT_STATS) arrays, part of effort to optimize packet logging
 */
 
 #ifndef _GNU_SOURCE
@@ -489,7 +490,7 @@ static int ReuseInputs(uint8_t*, unsigned int, uint32_t, SESSION_DATA*);
   #else
 
   #define MAX_PKT_STATS  1200000L  /* increased from 300K, PKT_STATS struct in diaglib.h compacted, JHB Dec2019 */
-  static PKT_STATS input_pkts[MAX_PKT_STATS+100], pulled_pkts[MAX_PKT_STATS+100];
+  static PKT_STATS __attribute((aligned(64))) input_pkts[MAX_PKT_STATS+100], pulled_pkts[MAX_PKT_STATS+100];
 
   #endif
 

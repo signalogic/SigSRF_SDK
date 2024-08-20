@@ -78,7 +78,7 @@
   Modified Jul 2024 JHB, to support SSRCs shared across streams, implement DS_PKTSTATS_MATCH_CHNUM flag, create in_chnum[] and out_chnum[], and add to chnum[] param to DSFindSSRCGroups() and DSPktStatsLogSeqnums()
   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to be second param in all relevant APIs. Also in non-published API analysis_and_stats() 
   Modified Aug 2024 JHB, implement diaglib.h rename of DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to DS_PKTSTATS_MATCH_CHNUM. Minor optimizations (look for fChannelMatch)
-  Modified Aug 2024 JHB, overall packet logging time improved by 38%, significant for very long inputs. Added profiling (look for ENABLE_PROFILING) ... helpful in optimizing packet logging time
+  Modified Aug 2024 JHB, overall packet logging time improved by slightly over 50%, significant for very long inputs. Added profiling (look for ENABLE_PROFILING) ... helpful in optimizing packet logging time
 */
 
 /* Linux includes */
@@ -161,8 +161,9 @@ unsigned int offset = 0;
 // #define SIMULATE_SLOW_TIME 1  /* turn this on to simulate time-consuming packet logging, for example if app debug is needed when aborting during packet logging, JHB Jan 2023 */
 
 //#define ENABLE_PROFILING  /* enable profiling of processing intensive areas */
-#define USE_MEMMOVE  /* improves collation time in DSFindSSRCGroups() by around 2.3x, JHB Aug 2024 */
-#define OMIT_REDUNDANT_SEARCH  /* experimental mod that reduces total search iterations by more than 1/2 but total time by only 17% or so. Still not sure whether to use this, JHB Aug 2024 */
+#define USE_MEMMOVE  /* reduces sort and collation time in DSFindSSRCGroups() by around 60%, JHB Aug 2024 */
+#define OMIT_REDUNDANT_SEARCH  /* experimental mod that reduces total search iterations by more than 1/2 but total time by only 17% or so. Still not sure whether to keep this, JHB Aug 2024 */
+//#define USE_EXPECT_BUILTIN  /* __builtin_expect() can be used deep inside inner loops to optimize if-conditions where one path is much less probable. But, seems with x86 branch-prediction technology and/or g++ 4.8 and higher it's not helping (it should be noted that I tested it by flipping the path priority which substantially reduced performance). This can be enabled with other CPU types and compilers to see if it makes a difference, JHB Aug 2024 */
 
 /* group data by unique SSRCs */
 
@@ -172,9 +173,9 @@ int        i, j, k;
 uint32_t   first_seqnum, last_seqnum;
 bool       fCollated = false;
 int        sorted_point;
-PKT_STATS  temp_pkts;
+PKT_STATS __attribute((aligned(64))) temp_pkts;
 int        seq_wrap[MAX_SSRC_TRANSITIONS] = { 0 };  /* MAX_SSRC_TRANSITIONS defined in shared_include/session.h, currently 128 */
-int        ssrc_idx, num_ssrcs;
+int        ssrc_idx = 0, num_ssrcs;
 bool       fDebug = lib_dbg_cfg.uLogLevel > 8;  /* lib_dbg_cfg is in event_logging.cpp */
 
 #define SEARCH_WINDOW        30
@@ -209,13 +210,14 @@ group_ssrcs:
    /* first check if we've already seen this SSRC and chnum (channel number) combination */
 
       bool fExistingSSRC = false;
+      uint32_t rtp_ssrc = pkts[j].rtp_ssrc;
 
-      if (num_ssrcs > 0) for (i=0; i<num_ssrcs; i++) {
+      for (i=0; i<num_ssrcs; i++) {
 
-         if (pkts[j].rtp_ssrc == ssrcs[i] && (!fChannelMatch || pkts[j].chnum == chnum[i])) {  /* add chnum comparison, JHB Jul 2024 */
+         if (rtp_ssrc == ssrcs[i] && (!fChannelMatch || pkts[j].chnum == chnum[i])) {  /* add chnum comparison, JHB Jul 2024 */
 
          /* this can't actually happen unless there is corruption in the ssrcs[] array */
-            if (fDebug && fExistingSSRC && ssrc_idx != i) Log_RT(8, "INFO: DSFindSSRCGroups (diaglib packet logging) says SSRC 0x%x chan %d appears more than once, ssrc_idx = %d, i = %d, num_ssrcs = %d \n", pkts[j].rtp_ssrc, pkts[j].chnum, ssrc_idx, i, num_ssrcs);
+            if (fDebug && fExistingSSRC && ssrc_idx != i) Log_RT(8, "INFO: DSFindSSRCGroups (diaglib packet logging) says SSRC 0x%x chan %d appears more than once, ssrc_idx = %d, i = %d, num_ssrcs = %d \n", rtp_ssrc, pkts[j].chnum, ssrc_idx, i, num_ssrcs);
 
             ssrc_idx = i;
             fExistingSSRC = true;
@@ -229,7 +231,7 @@ group_ssrcs:
 
          ssrc_idx = num_ssrcs;
 
-         ssrcs[ssrc_idx] = pkts[j].rtp_ssrc;
+         ssrcs[ssrc_idx] = rtp_ssrc;
          chnum[ssrc_idx] = pkts[j].chnum;  /* note we save chnum regardless of flags, so they can be printed in log summaries, JHB Jul 2024 */
          first_pkt_idx[ssrc_idx] = j;
          last_pkt_idx[ssrc_idx] = j;
@@ -281,7 +283,7 @@ group_ssrcs:
 
          last_pkt_idx[ssrc_idx] = j;
 
-         if (!fCollated) {  /* only search for start/end sequence numbers on first pass, JHB Jan2020 */
+         if (!fCollated) {  /* only search for start/end sequence numbers on first pass, JHB Jan 2020 */
 
 #ifndef NEW_SEQ_CALC
             if (pkts[j].rtp_seqnum + 65536L*seq_wrap[ssrc_idx] > last_rtp_seqnum[ssrc_idx]) {
@@ -346,10 +348,12 @@ group_ssrcs:
          if (fOnce[k] < 10) { printf("before sort, sorted_point = %d, num_pkts = %d, ssrc = 0x%x\n", sorted_point, num_pkts, unique_ssrcs[k]); fOnce[k]++; }
          #endif
 
+         int ch = chnum[k];
+         uint32_t ssrc = ssrcs[k];
+
 find_transition:
 
          i = 0;
-         int ch = chnum[k];
 
          for (j=sorted_point+1; j<num_pkts; j++) {
 
@@ -358,12 +362,12 @@ find_transition:
             #endif
             if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
-            if (pkts[j].rtp_ssrc != ssrcs[k] || (fChannelMatch && pkts[j].chnum != ch)) {  /* add chnum comparison, JHB Jul 2024 */
+            if (pkts[j].rtp_ssrc != ssrc || (fChannelMatch && pkts[j].chnum != ch)) {  /* add chnum comparison, JHB Jul 2024 */
 
-               if (!i) {
+               if (!i) {  /* find first non-matching SSRC or chnum, mark sorted point */
 
-                  i = j;  /* find first non-matching SSRC or chnum */
-                  sorted_point = i-1;  /* adjust sorted point.  Note -- added this to fix the "orphan SSRC" number of SSRC groups problem, see comments below near in_ssrc_start and out_ssrc_start.  This also makes the sort faster, avoids unnecessary moving of already sorted enrties, JHB Feb 2019 */
+                  i = j;
+                  sorted_point = i-1;  /* adjust sorted point.  Note -- added this to fix the "orphan SSRC" number of SSRC groups problem, see comments below near in_ssrc_start and out_ssrc_start. Also makes the sort faster, avoids unnecessary moving of already sorted enrties, JHB Feb 2019 */
 
                   #if 0
                   nonmatch[k]++;
@@ -371,7 +375,11 @@ find_transition:
                   #endif
                }
             }
-            else if (i > sorted_point) {  /* found a match, move it up to just after last match, and move anything in between down */
+            #ifdef USE_EXPECT_BUILTIN
+            else if (__builtin_expect(i > sorted_point, 1)) {  /* found a not-yet-sorted match, move it up to just after last match, and move anything in between down */
+            #else
+            else if (i > sorted_point) {  /* found a not-yet-sorted match, move it up to just after last match, and move anything in between down */
+            #endif
 
                #if 0
                printf("moving pkts[%d] %u up to pkts[%d] %u\n", j, pkts[j].rtp_ssrc, i, pkts[i].rtp_ssrc);
@@ -379,11 +387,16 @@ find_transition:
 
                sorted_point = i;  /* save point of progress to prevent repeat sorting */
 
-               if (j > i) {
+               //#define SORT_SANITY_CHECKS
+
+               #ifdef SORT_SANITY_CHECKS
+               if (j > i)
+               #endif
+               {
 
                   memcpy(&temp_pkts, &pkts[j], sizeof(PKT_STATS));
 
-                  #ifdef USE_MEMMOVE  /* single memmove() faster by around 2.3x than multiple memcpy(), JHB Aug 2024 */
+                  #ifdef USE_MEMMOVE  /* on average, for a very long input with 2 streams, single memmove() is faster by around 2.3x than multiple memcpy(). For multiple streams, performance gain would be higher, JHB Aug 2024 */
                   memmove(&pkts[i+1], &pkts[i], (j-i)*sizeof(PKT_STATS));
                   #else
                   int l;
@@ -392,9 +405,15 @@ find_transition:
 
                   memcpy(&pkts[i], &temp_pkts, sizeof(PKT_STATS));
                }
+               #ifdef SORT_SANITY_CHECKS
+               else printf("\n *** j (%d) <= i (%d) \n", j, i);
+               #endif
 
                goto find_transition;  /* restart the search, continue looking for non-matching SSRCs */
             }
+            #ifdef SORT_SANITY_CHECKS
+            else printf("\n *** i (%d) <= sorted_point (%d) \n", i, sorted_point);
+            #endif
          }
       }
 
@@ -686,7 +705,7 @@ typedef struct {
    uint32_t input_rtp_seqnum;
 } found_history_t;
 
-#define MAX_GROUPS 256  /* max number of stream groups is 256 and max streams per group is 8, defined in session.h and streamlib.h, but diaglib is supposed to be a generic tool, with no dependencies on pktlib or streamlib, JHB Dec2019 */
+#define MAX_GROUPS 256  /* max number of stream groups is 256 and max streams per group is 8, defined in session.h and streamlib.h, but diaglib is supposed to be a generic tool, with no dependencies on pktlib or streamlib, JHB Dec 2019 */
 
 typedef struct {
   int num_streams;
@@ -854,6 +873,10 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       unsigned int out_seqnum_range = out_last_rtp_seqnum[i_out+out_ssrc_start] - out_first_rtp_seqnum[i_out+out_ssrc_start] + 1;
       bool fEnableReuse = out_seqnum_range > in_seqnum_range;  /* enable reuse calculation based on sequence number range check: if output contains no additional (i.e. SID reuse) sequence numbers then disable the search offset, otherwise SID reuse packets inserted by pktlib as repairs for what it sees as packet loss will be wrongly interpreted here. Incorrectly incrementing sequence numbers is actually a transmission error, but we can handle it in this way. Note to Signalogic testers: this can be tested with test_files/reference_code_output_xxx pcaps in Nov 2023 time-frame, JHB Nov 2023 */
 
+      unsigned int uFlag_sid_reuse = DS_PKT_PYLD_CONTENT_SID_REUSE, uFlag_media_reuse = DS_PKT_PYLD_CONTENT_MEDIA_REUSE;
+      if (!fEnableReuse) uFlag_sid_reuse = 0xffffffff;
+      if (!fEnableReuse) uFlag_media_reuse = 0xffffffff;
+
       #if 0
       printf("\n *** in_seqnum_range = %d, out_seqnum_range = %d \n", in_seqnum_range, out_seqnum_range);
       #endif
@@ -861,7 +884,9 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       #ifdef OMIT_REDUNDANT_SEARCH
       uint32_t max_seq_num = 0, last_search_offset = 0;
       int last_k = -1, last_wrap = 0;
+      #ifdef ENABLE_PROFILING
       uint32_t total_iters = 0;
+      #endif
       #endif
 
       for (j=in_first_pkt_idx[i+in_ssrc_start]; j<=in_last_pkt_idx[i+in_ssrc_start]; j++) {
@@ -899,12 +924,13 @@ int nGroupIndex, stream_count, nNumGroups = 0;
          }
 
          while (++k <= out_last_pkt_idx[i_out+out_ssrc_start]) 
+
          #else
          for (k=out_first_pkt_idx[i_out+out_ssrc_start]; k<=out_last_pkt_idx[i_out+out_ssrc_start]; k++)
          #endif
          {
 
-            #ifdef OMIT_REDUNDANT_SEARCH
+            #if defined(ENABLE_PROFILING) && defined(OMIT_REDUNDANT_SEARCH)
             total_iters++;
             #endif
 
@@ -912,23 +938,45 @@ int nGroupIndex, stream_count, nNumGroups = 0;
 
 check_for_reuse:
 
-            if (fEnableReuse &&  /* increment search_offset if SID / media reuse is enabled, see sequence number range check above, JHB Nov 2023 */
-                (output_pkts[k].content_flags == DS_PKT_PYLD_CONTENT_SID_REUSE || output_pkts[k].content_flags == DS_PKT_PYLD_CONTENT_MEDIA_REUSE)) {  /* note that because repaired packets fill in for missing seq nums, they do not contribute to the search offset so we don't & with item mask to remove repair flags, JHB Feb 2020 */
+            #ifdef USE_EXPECT_BUILTIN
+            if (__builtin_expect(  /* to optimize the inner loop pipline as we search through 1000s of packets, we assume for long inputs there will a high amount of silence, so we tell the compiler we expect reuse packets. This can easily be not true (music for example), this is based only on customer experience, JHB Aug 2024 */
+            #else
+            if (
+            #endif
+               /*fEnableReuse &&*/  /* increment search_offset if SID / media reuse is enabled, see sequence number range check above, JHB Nov 2023 */
+               output_pkts[k].content_flags == uFlag_sid_reuse || output_pkts[k].content_flags == uFlag_media_reuse  /* note that because repaired packets fill in for missing seq nums, they do not contribute to the search offset so we don't & with item mask to remove repair flags, JHB Feb 2020 */
+            #ifdef USE_EXPECT_BUILTIN
+               , 0)) {
+            #else
+               ) {
+            #endif
 
                search_offset++;
             }
             else {
 
-               if (rtp_seqnum == output_pkts[k].rtp_seqnum + out_seq_wrap[i_out]*65536L - search_offset) {
+               #ifdef USE_EXPECT_BUILTIN  /* to optimize the inner loop pipline, tell the compiler we don't expect a sequence number match (most likely outcome as we search through potentially 1000s of packets), JHB Aug 2024 */
+               if (__builtin_expect(rtp_seqnum == output_pkts[k].rtp_seqnum + out_seq_wrap[i_out]*65536L - search_offset, 0))
+               #else
+               if (rtp_seqnum == output_pkts[k].rtp_seqnum + out_seq_wrap[i_out]*65536L - search_offset)
+               #endif
+               {
 
                   pkt_cnt++;  /* sequence number match found */
 
-                  if ((diff = input_pkts[j].rtp_timestamp  /* now check for timestamp match */
+                  #ifdef USE_EXPECT_BUILTIN  /* to optimize the inner loop pipeline, tell the compiler we expect a timestamp match (most likely outcome having already found a sequence number match), JHB Aug 2024 */
+                  if (__builtin_expect(input_pkts[j].rtp_timestamp != output_pkts[k].rtp_timestamp, 0))
+                  #else
+                  if ((diff = input_pkts[j].rtp_timestamp  /* check for timestamp match */
                      #if 0
                      + timestamp_adjust
                      #endif
-                     - output_pkts[k].rtp_timestamp) != 0) {
+                     - output_pkts[k].rtp_timestamp) != 0)
+                  #endif
+                  {
 
+                  /* we're here if timestamp mismatch */
+ 
                      #if 0  /* have not been able to get this to work. Evidently once timestamps no longer match, the amount of mismatch varies constantly. That makes it hard to print a couple of lines of output and then "get back on track".  Ends up being 100s of lines of meaningless output, JHB Feb 2020 */
 
                      timestamp_adjust = output_pkts[k].rtp_timestamp - input_pkts[j].rtp_timestamp;  /* update adjustment once difference stabilizes */
@@ -941,10 +989,10 @@ check_for_reuse:
 
                   /* handle case of "long SID" timestamp mismatch, where the log generator (e.g. pktlib) has repaired a long SID gap using a repeating SID length shorter than the gap. Notes JHB Apr 2024:
 
+                     -pktlib uses a max SID length of 8, authors indicate no plans to increase (too infrequent)
                      -we change the repair to a reuse, then recalculate search_offset
                      -we change output_pkts[] flag value to ensure search_offset is calculated the same for subsequent passes through the inner loop. This assumes the log has already been written to file, so we're not altering actual log output. To-do: we may need to restore the original flag; for example if analysis_and_stats() gets called again it may or may not be a problem
                      -try only once - no further effort if a timestamp mismatch still exists
-                     -pktlib uses a max SID length of 8
                      -Signalogic testers: use tmpwpP7am.pcap in analytics mode, which without this will show timestamp mismatches in ssrc 0x73fc8880 starting at 3956254610
                   */
 
@@ -993,7 +1041,8 @@ check_for_reuse:
                last_wrap = out_seq_wrap[i_out];
             }
             #endif
-         }
+
+         }  /* end of inner (k) loop */
 
 #if 0  /* debug */
          static bool fOnce = false;
@@ -1210,13 +1259,8 @@ int            nThreadIndex;
       goto cleanup;
    }
 
-   if (!szLogFile) {
-      Log_RT(2, "ERROR: DSPktStatsWriteLogFile() says log path / file is NULL \n");
-      goto cleanup;
-   }
-
-   if (!strlen(szLogFile)) {
-      Log_RT(2, "ERROR: DSPktStatsWriteLogFile() says log path / file is empty string \n");
+   if (!szLogFile || !strlen(szLogFile)) {
+      Log_RT(2, "ERROR: DSPktStatsWriteLogFile() says log path / file is %s \n", !szLogFile ? "NULL" : "empty string");
       goto cleanup;
    }
 
@@ -1477,7 +1521,6 @@ int            nThreadIndex;
       }
 
       for (i=0; i<num_ssrcs; i++) if (io_map_ssrcs[i] == -1) fprintf(fp_log, "\nCorresponding output SSRC group not found for input SSRC 0x%x chnum %d, group %u\n", in_ssrcs[i+in_ssrc_start], in_chnum[i+in_ssrc_start], i);
-
 
    /* call analysis_and_stats() as needed, depending on uFlags */
 
