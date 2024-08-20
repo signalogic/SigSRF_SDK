@@ -78,7 +78,7 @@
   Modified Jul 2024 JHB, to support SSRCs shared across streams, implement DS_PKTSTATS_MATCH_CHNUM flag, create in_chnum[] and out_chnum[], and add to chnum[] param to DSFindSSRCGroups() and DSPktStatsLogSeqnums()
   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to be second param in all relevant APIs. Also in non-published API analysis_and_stats() 
   Modified Aug 2024 JHB, implement diaglib.h rename of DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to DS_PKTSTATS_MATCH_CHNUM. Minor optimizations (look for fChannelMatch)
-  Modified Aug 2024 JHB, overall packet logging time improved by slightly over 50%, significant for very long inputs. Added profiling (look for ENABLE_PROFILING) ... helpful in optimizing packet logging time
+  Modified Aug 2024 JHB, overall packet logging time improved by around 50%, significant for very long inputs. Added profiling (look for ENABLE_PROFILING) ... helpful in optimizing packet logging time
 */
 
 /* Linux includes */
@@ -873,6 +873,8 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       unsigned int out_seqnum_range = out_last_rtp_seqnum[i_out+out_ssrc_start] - out_first_rtp_seqnum[i_out+out_ssrc_start] + 1;
       bool fEnableReuse = out_seqnum_range > in_seqnum_range;  /* enable reuse calculation based on sequence number range check: if output contains no additional (i.e. SID reuse) sequence numbers then disable the search offset, otherwise SID reuse packets inserted by pktlib as repairs for what it sees as packet loss will be wrongly interpreted here. Incorrectly incrementing sequence numbers is actually a transmission error, but we can handle it in this way. Note to Signalogic testers: this can be tested with test_files/reference_code_output_xxx pcaps in Nov 2023 time-frame, JHB Nov 2023 */
 
+   /* to optimize inner loop, if reuse is disabled create always-false flags, JHB Aug 2024 */
+
       unsigned int uFlag_sid_reuse = DS_PKT_PYLD_CONTENT_SID_REUSE, uFlag_media_reuse = DS_PKT_PYLD_CONTENT_MEDIA_REUSE;
       if (!fEnableReuse) uFlag_sid_reuse = 0xffffffff;
       if (!fEnableReuse) uFlag_media_reuse = 0xffffffff;
@@ -943,7 +945,6 @@ check_for_reuse:
             #else
             if (
             #endif
-               /*fEnableReuse &&*/  /* increment search_offset if SID / media reuse is enabled, see sequence number range check above, JHB Nov 2023 */
                output_pkts[k].content_flags == uFlag_sid_reuse || output_pkts[k].content_flags == uFlag_media_reuse  /* note that because repaired packets fill in for missing seq nums, they do not contribute to the search offset so we don't & with item mask to remove repair flags, JHB Feb 2020 */
             #ifdef USE_EXPECT_BUILTIN
                , 0)) {
