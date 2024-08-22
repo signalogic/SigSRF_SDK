@@ -329,8 +329,10 @@ int PullPackets(uint8_t* pkt_out_buf, HSESSION hSessions[], SESSION_DATA session
 
 /* packet helper functions */
 
-int isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, unsigned int* pPktNumber);
-int isPacketFragment(uint8_t* pkt_buf, PKTINFO* PktInfo, int pkt_len, int nInput, int _thread_index);
+int isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, unsigned int pPktNumber);
+int isPortAllowed(uint16_t port, uint8_t* pkt_buf, int pkt_len, int nInput, int thread_index);
+bool isReservedUDP(uint16_t port);
+int PacketActions(uint8_t* pyld_data, uint8_t* pkt_buf, uint8_t protocol, int* pkt_len, unsigned int uFlags);
 
 /* create and manage packet/media threads */
 
@@ -350,9 +352,6 @@ void TimerSetup();
 
 /* misc helpers */
 
-int packet_actions(uint8_t* pyld_data, uint8_t* pkt_buf, uint8_t protocol, int* pkt_len, unsigned int uFlags);
-int isPortAllowed(uint16_t port, uint8_t* pkt_buf, int pkt_len, int nInput, int thread_index);
-bool isReservedUDP(uint16_t port);
 void cmdLine(int argc, char** argv, char* tmpstr);
 void ConsoleCommand(const char* szCmd, char* szResult, unsigned int uFlags, int thread_index);
 
@@ -2702,7 +2701,7 @@ next_packet:  /* next packet input */
 
             /* check for duplicated packets */
 
-               if (isDuplicatePacket(&PktInfo, &thread_info[thread_index].PktInfo[j], &thread_info[thread_index].packet_number[j])) {
+               if (isDuplicatePacket(&PktInfo, &thread_info[thread_index].PktInfo[j], thread_info[thread_index].packet_number[j])) {
 
                   if (PktInfo.protocol == TCP) thread_info[thread_index].tcp_redundant_discards[j]++;  /* increment number of redundant TCP transmissions discarded for input stream */
                   else thread_info[thread_index].udp_redundant_discards[j]++;  /* increment number of redundant UDP packets discarded for input stream */
@@ -2817,7 +2816,7 @@ next_packet:  /* next packet input */
 
             if (pkt_len > 0 && (Mode & ENABLE_INTERMEDIATE_PCAP)) {  /* format BER data into TCP/IP packet and generate pcap output if specified in cmd line flags, JHB Dec 2021*/
 
-               packet_actions(ber_data, pkt_buf, (PktInfo.protocol = TCP), &pkt_len, PCAP_TYPE_BER);
+               PacketActions(ber_data, pkt_buf, (PktInfo.protocol = TCP), &pkt_len, PCAP_TYPE_BER);
                pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO, pkt_buf, -1, &PktInfo, NULL);  /* update PktInfo */
             }
 
@@ -2984,7 +2983,7 @@ protocol_based_processing:
                   else thread_info[thread_index].num_packets_encapsulated[j]++;
                }
 
-               if ((Mode & ENABLE_INTERMEDIATE_PCAP) && fFoundEncapsulatedCCPkt) packet_actions(NULL, pkt_buf, PktInfo.protocol, &pkt_len, PCAP_TYPE_HI3);  /* write out decoded DER stream to intermediate pcap; note this currently only includes decoded UDP packets, JHB Dec 2021 */
+               if ((Mode & ENABLE_INTERMEDIATE_PCAP) && fFoundEncapsulatedCCPkt) PacketActions(NULL, pkt_buf, PktInfo.protocol, &pkt_len, PCAP_TYPE_HI3);  /* write out decoded DER stream to intermediate pcap; note this currently only includes decoded UDP packets, JHB Dec 2021 */
             }
          }  /* end of DER encapsulation processing (includes HI2/HI3) */
 
@@ -3593,8 +3592,8 @@ push_ctrl:  /* upon entry PushPackets() jumps here if current average push rate 
    }  /* end of input stream loop */
 
    return push_cnt;
-}
 
+}  /* end of PushPackets() */
 
 /* pull packets from packet / media per-session queue.  Packets are pulled by category:  jitter buffer output, transcoded, and stream group */
 
@@ -4694,7 +4693,7 @@ int i, ret_val = 1;
   -to-do: error conditions, way to specify output file on cmd line, close files on prog exit (i.e. not every time something is written)
 */
 
-int packet_actions(uint8_t* pyld_data, uint8_t* pkt_in_buf, uint8_t protocol, int* pkt_len, unsigned int uFlags) {
+int PacketActions(uint8_t* pyld_data, uint8_t* pkt_in_buf, uint8_t protocol, int* pkt_len, unsigned int uFlags) {
 
 uint8_t pcap_type;
 
@@ -4898,13 +4897,13 @@ char szMediaFilename[2*CMDOPT_MAX_INPUT_LEN] = "", hashstr[2*CMDOPT_MAX_INPUT_LE
 
    -PktInfo should point to PKTINFO struct from current packet
    -PktInfo2 should point to PKTINFO struct from earlier packet
-   -pPktNumber is optional param, can be used in debug printout
+   -pPktNumber is optional param, can be used in debug printout. Not used if zero
    -returns true or false as an int; this may change if further return values are needed
 
    -UDP duplicates are substantially more complex to detect; see comments
 */
 
-int isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, unsigned int* pPktNumber) {
+int isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, unsigned int pPktNumber) {
 
    if (PktInfo->protocol != PktInfo2->protocol) return false;  /* immediate return if protocols not the same */
    
@@ -4940,10 +4939,10 @@ int isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, unsigned int* pPktNum
 
    #if 0  /* debug print out */
    char szPktNumber[20] = "";
-   if (pPktNumber) sprintf(szPktNumber, "%d", *pPktNumber);
+   if (pPktNumber) sprintf(szPktNumber, "%d", pPktNumber);
    
    char tmpstr[400];
-   sprintf(tmpstr, "\n *** inside isDuplicatePacket pkt number %d, len = %d, len prev = %d, flags = 0x%x flags prev = 0x%x, offset = %d offset prev = %d, ip hdr checksum = 0x%x, ip hdr checksum prev = 0x%x", pkt_number ? szPktNumber : "", PktInfo->pkt_len, PktInfo2->pkt_len, PktInfo->flags, PktInfo2->flags, PktInfo->fragment_offset, PktInfo2->fragment_offset, PktInfo->ip_hdr_checksum, PktInfo2->ip_hdr_checksum);
+   sprintf(tmpstr, "\n *** inside isDuplicatePacket pkt number %d, len = %d, len prev = %d, flags = 0x%x flags prev = 0x%x, offset = %d offset prev = %d, ip hdr checksum = 0x%x, ip hdr checksum prev = 0x%x", szPktNumber, PktInfo->pkt_len, PktInfo2->pkt_len, PktInfo->flags, PktInfo2->flags, PktInfo->fragment_offset, PktInfo2->fragment_offset, PktInfo->ip_hdr_checksum, PktInfo2->ip_hdr_checksum);
    if (PktInfo->fragment_offset == 0) sprintf(&tmpstr[strlen(tmpstr)], " udp checksum = 0x%x, udp checksum prev = 0x%x", PktInfo->udp_checksum, PktInfo2->udp_checksum);
    printf("%s \n", tmpstr);
    #endif
