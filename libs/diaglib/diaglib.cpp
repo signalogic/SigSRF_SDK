@@ -873,11 +873,10 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       unsigned int out_seqnum_range = out_last_rtp_seqnum[i_out+out_ssrc_start] - out_first_rtp_seqnum[i_out+out_ssrc_start] + 1;
       bool fEnableReuse = out_seqnum_range > in_seqnum_range;  /* enable reuse calculation based on sequence number range check: if output contains no additional (i.e. SID reuse) sequence numbers then disable the search offset, otherwise SID reuse packets inserted by pktlib as repairs for what it sees as packet loss will be wrongly interpreted here. Incorrectly incrementing sequence numbers is actually a transmission error, but we can handle it in this way. Note to Signalogic testers: this can be tested with test_files/reference_code_output_xxx pcaps in Nov 2023 time-frame, JHB Nov 2023 */
 
-   /* to optimize inner loop, if reuse is disabled create always-false flags, JHB Aug 2024 */
+   /* to optimize inner loop, if reuse is disabled create always-false flags and reduce number of if-conditions. DS_PKT_PYLD_CONTENT_XXX flags are in pktlib.h, JHB Aug 2024 */
 
-      unsigned int uFlag_sid_reuse = DS_PKT_PYLD_CONTENT_SID_REUSE, uFlag_media_reuse = DS_PKT_PYLD_CONTENT_MEDIA_REUSE;
-      if (!fEnableReuse) uFlag_sid_reuse = 0xffffffff;
-      if (!fEnableReuse) uFlag_media_reuse = 0xffffffff;
+      unsigned int uFlag_sid_reuse = fEnableReuse ? DS_PKT_PYLD_CONTENT_SID_REUSE : 0xffffffff,
+                   uFlag_media_reuse = fEnableReuse ? DS_PKT_PYLD_CONTENT_MEDIA_REUSE : 0xffffffff;
 
       #if 0
       printf("\n *** in_seqnum_range = %d, out_seqnum_range = %d \n", in_seqnum_range, out_seqnum_range);
@@ -990,11 +989,11 @@ check_for_reuse:
 
                   /* handle case of "long SID" timestamp mismatch, where the log generator (e.g. pktlib) has repaired a long SID gap using a repeating SID length shorter than the gap. Notes JHB Apr 2024:
 
-                     -pktlib uses a max SID length of 8, authors indicate no plans to increase (too infrequent)
+                     -pktlib uses a max SID length of 8, authors indicate no plans to increase (happens infrequently), so we deal with it here
                      -we change the repair to a reuse, then recalculate search_offset
                      -we change output_pkts[] flag value to ensure search_offset is calculated the same for subsequent passes through the inner loop. This assumes the log has already been written to file, so we're not altering actual log output. To-do: we may need to restore the original flag; for example if analysis_and_stats() gets called again it may or may not be a problem
                      -try only once - no further effort if a timestamp mismatch still exists
-                     -Signalogic testers: use tmpwpP7am.pcap in analytics mode, which without this will show timestamp mismatches in ssrc 0x73fc8880 starting at 3956254610
+                     -Signalogic testers: use tmpwpP7am.pcap in analytics mode, which without this will show timestamp mismatches in ssrc 0x73fc8880 starting at 3956254610. Another test is crash1.pcap, which has 19 streams, 2 have one long SID attempt, 2 have 2 attempts (result is clean log)
                   */
 
                      if (!fTryRepairAsReuse && output_pkts[k].content_flags == (DS_PKT_PYLD_CONTENT_SID | DS_PKT_PYLD_CONTENT_REPAIR)) {
