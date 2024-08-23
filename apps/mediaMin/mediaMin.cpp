@@ -179,7 +179,8 @@
  Modified Jul 2024 JHB, improve detection for EVS AMR IO modes 23.05 and 23.85
  Modified Jul 2024 JHB, clarify usage of ENABLE_WAV_OUTPUT and ENABLE_TIMESTAMP_MATCH_MODE flag
  Modified Jul 2024 JHB, adding TCP SDP info packets to SDP database now controlled by ENABLE_STREAM_SDP_INFO -dN cmd line flag (UDP was already)
- Modified Aug 2024 JHB, convert GetMD5Sum() to generic ConsoleCommand() and use to support --md5sum, --sha1sum, and --sha512sum command line options
+ Modified Aug 2024 JHB, convert GetMD5Sum() to generic ConsoleCommand() to support --md5sum, --sha1sum, and --sha512sum command line options
+ Modified Aug 2024 JHB, move isPacketDuplicate() and isReservedUDP() to pktlib as DSIsPacketDuplicate() and DSIsReservedUDP(), see pktlib_RFC791_fragmentation.cpp for source code
 */
 
 /* Linux header files */
@@ -329,9 +330,7 @@ int PullPackets(uint8_t* pkt_out_buf, HSESSION hSessions[], SESSION_DATA session
 
 /* packet helper functions */
 
-int isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, unsigned int pPktNumber);
 int isPortAllowed(uint16_t port, uint8_t* pkt_buf, int pkt_len, int nInput, int thread_index);
-bool isReservedUDP(uint16_t port);
 int PacketActions(uint8_t* pyld_data, uint8_t* pkt_buf, uint8_t protocol, int* pkt_len, unsigned int uFlags);
 
 /* create and manage packet/media threads */
@@ -347,7 +346,7 @@ void FlushCheck(HSESSION hSessions[], uint64_t cur_time, uint64_t (*queue_check_
 /* stress test helper functions */
 
 int TestActions(HSESSION hSessions[], uint64_t cur_time, int thread_index);
-void handler(int signo);
+void handler(int signo);  /* signal handler */
 void TimerSetup();
 
 /* misc helpers */
@@ -2701,7 +2700,7 @@ next_packet:  /* next packet input */
 
             /* check for duplicated packets */
 
-               if (isDuplicatePacket(&PktInfo, &thread_info[thread_index].PktInfo[j], thread_info[thread_index].packet_number[j])) {
+               if (DSIsPacketDuplicate((unsigned int)0, &PktInfo, &thread_info[thread_index].PktInfo[j], &thread_info[thread_index].packet_number[j])) {
 
                   if (PktInfo.protocol == TCP) thread_info[thread_index].tcp_redundant_discards[j]++;  /* increment number of redundant TCP transmissions discarded for input stream */
                   else thread_info[thread_index].udp_redundant_discards[j]++;  /* increment number of redundant UDP packets discarded for input stream */
@@ -3161,7 +3160,7 @@ protocol_based_processing:
 
          if (nPortAllowedStatus == PORT_ALLOW_ON_MEDIA_ALLOW_LIST || nPortAllowedStatus == PORT_ALLOW_SDP_MEDIA_DISCOVERED) goto rtp_packet_processing;
 
-         if (dst_port < NON_DYNAMIC_UDP_PORT_RANGE || isReservedUDP(dst_port)) {  /* ignore non-dynamic and reserved UDP ports */
+         if (dst_port < NON_DYNAMIC_UDP_PORT_RANGE || DSIsReservedUDP(dst_port)) {  /* ignore non-dynamic and reserved UDP ports */
 
             nShowPorts = 3;
 
@@ -4822,27 +4821,6 @@ static unsigned num_GPRS = 0;
    return PORT_ALLOW_UNKNOWN;
 }
 
-bool isReservedUDP(uint16_t port) {
-
-   switch (port) {
-
-      case 137:
-      case 138:   /* NetBIOS */
-         return true;
-
-      case 9009:  /* pichat */
-         return true;
-
-      case 547:   /* DHCPv6 */
-         return true;
-
-      case GTP_PORT:
-         return true;
-   }
-   
-   return false;
-}
-
 #ifdef _MEDIAMIN_
 
 /* process command line input, show version and copyright info */
@@ -4891,80 +4869,4 @@ char szMediaFilename[2*CMDOPT_MAX_INPUT_LEN] = "", hashstr[2*CMDOPT_MAX_INPUT_LE
       sprintf(&szResult[strlen(szResult)], " %s %s", hashstr, szMediaFilename);
       strcat(szResult, "\n");
    }
-}
-
-/* isDuplicatePacket() compares packets for exact copies:
-
-   -PktInfo should point to PKTINFO struct from current packet
-   -PktInfo2 should point to PKTINFO struct from earlier packet
-   -pPktNumber is optional param, can be used in debug printout. Not used if zero
-   -returns true or false as an int; this may change if further return values are needed
-
-   -UDP duplicates are substantially more complex to detect; see comments
-*/
-
-int isDuplicatePacket(PKTINFO* PktInfo, PKTINFO* PktInfo2, unsigned int pPktNumber) {
-
-   if (PktInfo->protocol != PktInfo2->protocol) return false;  /* immediate return if protocols not the same */
-   
-   if (PktInfo->protocol == TCP) {
-
-      /* remove redundant TCP retransmissions. Notes, JHB Apr 2023:
-
-         -streams may contain redundant TCP retransmission of some or all packets. Normally this may be due to transmission errors, but appears there are other cases also, such as for FEC purposes like F5 does, or some HI2/HI3 streams where every packet is duplicated
-         -we detect and strip these out. Sequence numbers, length, and ports must be an exact copy
-         -currently this is a rudimentary implementation, not likely to work with multiple/mixed TCP sessions
-         -to-do: implement TCP session management, separate but similar to existing UDP sessions handled by pktlib
-      */
-
-      if (PktInfo->seqnum == PktInfo2->seqnum && PktInfo->ack_seqnum == PktInfo2->ack_seqnum && PktInfo->pkt_len == PktInfo2->pkt_len && PktInfo->dst_port == PktInfo2->dst_port && PktInfo->src_port == PktInfo2->src_port) {
-
-         return true;
-      }
-   }
-   else if (PktInfo->protocol == UDP) {
-
-   /* UDP/RTP packets are not typically duplicated with exception of RFC 7198, which applies to RTP media and is handled in pktlib. However, in general (not RTP) fragmented UDP packets (for example long SIP messages and SDP info descriptions) and certain ports may be duplicated because senders are worried about dropping the packet, making reassembly impossible or losing key network control info (e.g. DHCP). PushPackets() calls isDuplicatePacket() to look for such UDP packets and if found strips them out. Notes, JHB Jun 2024:
-
-      -UDP checksums are ignored -- unreliable due to Wireshark warning about "UDP checksum offload". There is a lot of online discussion about this
-
-      -certain packets sent to certain ports are looked at, including GTP, DHCP, and NetBIOS. This likely needs refinement for RTP over GTP, in which case we need to let same-SSRC detection and RFC 7198 make duplication decisions
-
-      -UDP duplicates appearing 2 or more packets later are not currently detected. This may be the case if you see a console message like:
-
-        ignoring UDP SIP fragment packet (2), pkt len = 653, frag flags = 0x2, last keyword search = "application"
-
-      -pktlib's RFC 7198 implementation will "look back" up to 8 packets. mediaMin allows control over this with the -lN command line option where N is the number of lookback packets
-   */
-
-   #if 0  /* debug print out */
-   char szPktNumber[20] = "";
-   if (pPktNumber) sprintf(szPktNumber, "%d", pPktNumber);
-   
-   char tmpstr[400];
-   sprintf(tmpstr, "\n *** inside isDuplicatePacket pkt number %d, len = %d, len prev = %d, flags = 0x%x flags prev = 0x%x, offset = %d offset prev = %d, ip hdr checksum = 0x%x, ip hdr checksum prev = 0x%x", szPktNumber, PktInfo->pkt_len, PktInfo2->pkt_len, PktInfo->flags, PktInfo2->flags, PktInfo->fragment_offset, PktInfo2->fragment_offset, PktInfo->ip_hdr_checksum, PktInfo2->ip_hdr_checksum);
-   if (PktInfo->fragment_offset == 0) sprintf(&tmpstr[strlen(tmpstr)], " udp checksum = 0x%x, udp checksum prev = 0x%x", PktInfo->udp_checksum, PktInfo2->udp_checksum);
-   printf("%s \n", tmpstr);
-   #endif
-
-      bool fFragmentCompare = (PktInfo->flags & DS_PKT_FRAGMENT_ITEM_MASK) && (PktInfo->flags & DS_PKT_FRAGMENT_ITEM_MASK) == (PktInfo2->flags & DS_PKT_FRAGMENT_ITEM_MASK);  /* both current and previous packet contain identical non-zero fragment flags ? */
-      bool fPortCompare = isReservedUDP(PktInfo->dst_port) && PktInfo->dst_port == PktInfo2->dst_port;  /* both current and previous packet are sent to specific dst ports ? Test with codecs-amr-12.pcap, codecs3-amr-wb.pcap, VIDEOCALL_EVS_H265.pcapng, JHB Jul 2024 */
-
-      if (
-          (fFragmentCompare || fPortCompare) &&
-          (
-           #if 0  /* UDP checksum ignored, as noted above. Maybe there is some way to know when / when not */
-           (PktInfo->udp_checksum == PktInfo2->udp_checksum) &&
-           #endif
-           (PktInfo->fragment_offset != 0 || PktInfo2->fragment_offset != 0 || PktInfo->pyld_len == PktInfo2->pyld_len) &&  /* compare UDP payload lengths if both fragment offsets are zero */
-           PktInfo->pkt_len == PktInfo2->pkt_len &&  /* compare packet lengths */
-           PktInfo->ip_hdr_checksum == PktInfo2->ip_hdr_checksum  /* compare IP header checksums, which implicitly compares IP header lengths */
-          )
-         ) {
-
-         return true;
-      }
-   }
-
-   return false;
 }

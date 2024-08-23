@@ -760,6 +760,13 @@ typedef struct PKT_FRAGMENT {
   #define DS_PKT_FRAGMENT_OFS        2            /* set in PKTINFO "flags" if packet fragment offset is non-zero */
   #define DS_PKT_FRAGMENT_ITEM_MASK  7            /* mask for fragment related flags */
 
+int DSIsPacketDuplicate(unsigned int uFlags, PKTINFO* PktInfo1, PKTINFO* PktInfo2, void* pInfo);
+
+#define DS_PKT_DUPLICATE_PRINT_PKTNUMBER                 0x100  /* debug info printed; pInfo is interpreted as a packet number */
+#define DS_PKT_DUPLICATE_INCLUDE_UDP_CHECKSUM            0x200  /* include UDP checksum in duplicate comparison; default is UDP checksum ignored (see comments in pktlib_RFC791_fragmentation.cpp) */
+
+int DSIsReservedUDP(uint16_t port);
+
 int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max_list_fragments);  /* Reserved API: currently undocumented */
 
 /* media processing related APIs:
