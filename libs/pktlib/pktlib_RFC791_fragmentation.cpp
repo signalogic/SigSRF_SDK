@@ -467,9 +467,9 @@ int DSIsReservedUDP(uint16_t port) {
 
 /* DSIsPacketDuplicate() compares packets for exact copies:
 
-   -PktInfo should point to PKTINFO struct from current packet
+   -PktInfo1 should point to PKTINFO struct from current packet
    -PktInfo2 should point to PKTINFO struct from earlier packet
-   -pPktNumber is optional param, can be used in debug printout. Not used if zero
+   -pInfo is optional param, can be used in debug printout or other purposes based on DS_PKT_DUPLICATE_XXX uFlags options. Not used if zero
    -returns true or false as an int; this may change if further return values are needed
 
    -UDP duplicates are substantially more complex to detect; see comments
@@ -496,7 +496,7 @@ int DSIsPacketDuplicate(unsigned int uFlags, PKTINFO* PktInfo1, PKTINFO* PktInfo
    }
    else if (PktInfo1->protocol == UDP) {
 
-   /* UDP/RTP packets are not typically duplicated with exception of RFC 7198, which applies to RTP media and is handled in pktlib. However, in general (not RTP) fragmented UDP packets (for example long SIP messages and SDP info descriptions) and certain ports may be duplicated because senders are worried about dropping the packet, making reassembly impossible or losing key network control info (e.g. DHCP). PushPackets() calls isDuplicatePacket() to look for such UDP packets and if found strips them out. Notes, JHB Jun 2024:
+   /* UDP/RTP packets are not typically duplicated with exception of RFC 7198, which applies to RTP media and is handled in pktlib. However, in general (not RTP) fragmented UDP packets (for example long SIP messages and SDP info descriptions) and certain ports may be duplicated because senders are worried about dropping the packet, making reassembly impossible or losing key network control info (e.g. DHCP). PushPackets() in mediaMin.cpp calls DSIsPacketDuplicate() to look for such UDP packets and if found strips them out. Notes, JHB Jun 2024:
 
       -UDP checksums are ignored -- unreliable due to Wireshark warning about "UDP checksum offload". There is a lot of online discussion about this
 
@@ -515,7 +515,7 @@ int DSIsPacketDuplicate(unsigned int uFlags, PKTINFO* PktInfo1, PKTINFO* PktInfo
          if (pInfo) sprintf(szPktNumber, "%d", *((int*)pInfo));
    
          char tmpstr[400];
-         sprintf(tmpstr, "\n *** inside isDuplicatePacket pkt number %s, len = %d, len prev = %d, flags = 0x%x flags prev = 0x%x, offset = %d offset prev = %d, ip hdr checksum = 0x%x, ip hdr checksum prev = 0x%x", szPktNumber, PktInfo1->pkt_len, PktInfo2->pkt_len, PktInfo1->flags, PktInfo2->flags, PktInfo1->fragment_offset, PktInfo2->fragment_offset, PktInfo1->ip_hdr_checksum, PktInfo2->ip_hdr_checksum);
+         sprintf(tmpstr, "\n *** inside DSIsPacketDuplicate() pkt number %s, len = %d, len prev = %d, flags = 0x%x flags prev = 0x%x, offset = %d offset prev = %d, ip hdr checksum = 0x%x, ip hdr checksum prev = 0x%x", szPktNumber, PktInfo1->pkt_len, PktInfo2->pkt_len, PktInfo1->flags, PktInfo2->flags, PktInfo1->fragment_offset, PktInfo2->fragment_offset, PktInfo1->ip_hdr_checksum, PktInfo2->ip_hdr_checksum);
          if (PktInfo1->fragment_offset == 0) sprintf(&tmpstr[strlen(tmpstr)], " udp checksum = 0x%x, udp checksum prev = 0x%x", PktInfo1->udp_checksum, PktInfo2->udp_checksum);
          printf("%s \n", tmpstr);
       }
