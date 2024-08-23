@@ -48,6 +48,8 @@ Revision History
 
 #include <stdio.h>
 
+using namespace std;
+
 /* SigSRF includes */
 
 #include "pktlib.h"   /* pktlib API definitions, includes arpa/inet.h, netinet/if_ether.h */

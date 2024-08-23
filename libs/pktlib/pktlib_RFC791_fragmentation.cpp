@@ -22,7 +22,7 @@ License
 
 Usage and Documentation
  
-  1) functions here are called by DSGetPacketInfo(), a pktlib API called by user apps. All fragmentation related API definitions and flags are well documented on Github (https://github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md) and in pktlib.h
+  1) Functions here are called by DSGetPacketInfo(), a pktlib API called by user apps. All fragmentation related API definitions and flags are well documented on Github (https://github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md) and in pktlib.h
 
   2) If you modify, then place resulting .o before libpktlib.so in your app link order, then your mods will take precedence over internal pktlib version
 
@@ -43,6 +43,8 @@ Revision History
 /* Linux and/or other OS includes */
 
 #include <stdio.h>
+
+using namespace std;
 
 /* SigSRF includes */
 
