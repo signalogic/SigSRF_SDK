@@ -20,6 +20,12 @@ License
 
   Github SigSRF License, Version 1.1, https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
 
+Usage and Documentation
+ 
+  1) functions here are called by DSGetPacketInfo(), a pktlib API called by user apps. All fragmentation related API definitions and flags are well documented on Github (https://github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md) and in pktlib.h
+
+  2) If you modify, then place resulting .o before libpktlib.so in your app link order, then your mods will take precedence over internal pktlib version
+
 Revision History
 
   Created Aug 2024, JHB, separated and moved here from pktlib source
@@ -43,7 +49,7 @@ Revision History
 #include "pktlib.h"   /* pktlib API definitions, includes arpa/inet.h, netinet/if_ether.h */
 #include "diaglib.h"  /* packet logging and diagnostics, including Log_RT() definition */
 
-/* internal fragmentation APIs and stats. Notes, JHB Jun 2024:
+/* internal fragmentation functions and stats. Notes, JHB Jun 2024:
 
    -fragments are managed as per app thread linked lists; a simple mem barrier lock coordinates critical section thread access and modification of App_Thread_Info[]. The method works as long as the caller has a unique thread Id; for example, p/m threads could also call DSGetPacketInfo() with fragmented packets
    -each linked list fragment entry includes 3-way tuple info (protocol, IP src addr, IP dst addr), IP header identifier (Identification field), and fragment offset. See PKT_FRAGMENT struct in pktlib.h
@@ -56,7 +62,7 @@ Revision History
 */
 
 #ifdef __cplusplus
-extern "C" {  /* make accessible to pktlib C/C++ sources */
+extern "C" {  /* make functions both visible and accessible to other pktlib C/C++ sources */
 #endif
 
 int PktAddFragment(uint8_t* pkt, unsigned int uFlags);
