@@ -53,7 +53,7 @@ Bug fixes
 
 Use case driven improvements
 
- - call recording "time stamp matching" mode for reproducible, bit-exact media output files
+ - call recording "time stamp match" mode for reproducible, bit-exact media output files
  - .rtp and .rtpdump file format support
  - improvements in low bit rate handling (e.g. EVS codec VBR mode)
  - further improvements in RTP media type auto-detection
@@ -1054,7 +1054,7 @@ Below is a list of system compatibility exceptions in the Makefiles.
 <a name="Reproducibility"><a/>
 ## Reproducibility
 
-To maintain bit-exact output reproducibility, for example call recording wav files for legal purposes, mediaMin supports a "timestamp matching mode". In this mode only arrival timestamps are used to determine stream alignment in generated wav and pcap outputs, with no wall clock references. This is in contrast to the default "media domain mode", in which the amount of generated media serves as a baseline, or guardrail, for stream alignment. Media domain alignment, although resilient against timestamp errors, too-fast or too-slow packet transmission rates (e.g. announcement and media servers), incorrect codec info, and other errors -- and being suitable for real-time, live streaming output -- always contains a slight amount of jitter due to external wall clock references.
+To maintain bit-exact output reproducibility, for example call recording wav files for legal purposes, mediaMin supports a "timestamp match mode". In this mode only arrival timestamps are used to determine stream alignment in generated wav and pcap outputs, with no wall clock references. This is in contrast to the default "media domain mode", in which the amount of generated media serves as a baseline, or guardrail, for stream alignment. Media domain alignment, although resilient against timestamp errors, too-fast or too-slow packet transmission rates (e.g. announcement and media servers), incorrect codec info, and other errors -- and being suitable for real-time, live streaming output -- always contains a slight amount of jitter due to external wall clock references.
 
 Here are command line examples with the ENABLE_TIMESTAMP_MATCH_MODE and ENABLE_WAV_OUTPUT flags applied, one at real-time rate, one at 40x faster-than-real-time (FTRT) rate:
 
@@ -1096,7 +1096,7 @@ mediaMin and mediaTest support MD5, SHA1 and SHA512 hash sum command line option
 <a name="BulkProcessingModeConsidersations"><a/>
 ### Bulk Processing Mode Considerations
 
-Timestamp matching mode goes hand-in-hand with bulk pcap processing. The idea is that if pcaps are being processed "after the fact" then two things are crucially important: (i) faster-than-real-time (FTRT) processing rates, and (ii) bit-exact reproducibility. However, when processing in bulk mode, these two benefits are not free, and there are key considerations to keep in mind:
+Timestamp match mode goes hand-in-hand with bulk pcap processing. The idea is that if pcaps are being processed "after the fact" then two things are crucially important: (i) faster-than-real-time (FTRT) processing rates, and (ii) bit-exact reproducibility. However, when processing in bulk mode, these two benefits are not free, and there are key considerations to keep in mind:
 
   * processing needs must stay within per-core CPU performance limits. mediaMin uses separate application threads to push packets to a packet queue, and "worker" threads to pull packets from this queue and perform packet and media processing (e.g. packet repair, audio decode, noise and other artifact reduction, etc). If a real-time interval (-rN) entry is given on the command line that is too small then application threads will push packets at a rate that exceeds what worker threads can handle. Of course the minimum real-time interval at which this happens is largely determined by the CPU type, clock rate [1], and workload on your host, VM, or container platform
 
@@ -2741,17 +2741,19 @@ The mediaMin command line does need to contain an output option.
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
 
-The -dN command line argument specifies options and flags. Here are some of the key flags, including command line value, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> flag name given in (). Flags may be combined together (but not in all cases):
+The -dN command line argument specifies options and flags. Here are some of the key flags, including command line value, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> flag name given in (). Many use cases require flags to be combined together:
 
 > 0x01 (DYNAMIC_SESSIONS) - enable dynamic sessions<br/>
 > 0x08 (ENABLE_STREAM_GROUP_ASR) - apply ASR to stream group output<br/>
 > 0x10 (USE_PACKET_ARRIVAL_TIMES) - use packet arrival timestamps. Omit if input packets (e.g. pcap file) have incorrect (or no) arrival timestamps<br/>
 > 0x400 (ENABLE_STREAM_GROUPS) - enable stream groups<br/>
-> 0x800 (ENABLE_WAV_OUTPUT) - enable wav output<br/>
+> 0x800 (ENABLE_WAV_OUTPUT) - enable wav output when either ENABLE_STREAM_GROUPS or ENABLE_TIMESTAMP_MATCH_MODE is active<br/>
 > 0x1000 (ENABLE_DER_STREAM_DECODE) - enable DER stream decode. Enables decoding of [encapsulated streams](#user-content-encapsulatedstreams) (e.g. UDP/RTP encapsulated in TCP/IP)<br/>
 > 0x40000 (ANALYTICS_MODE) - operate in analytics mode. Telecom mode is the default<br/>
 > 0x80000 (ENABLE_AUTO_ADJUST_PUSH_RATE) - use a queue balancing algorithm for packet push rate. Typically applied when packet arrival timestamps can't be used<br/>
-> 0x100000000000000 (ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH) - generate timestamp-matched wav output, which depends only on input stream arrival and RTP timestamps, with no wall clock reference. This is useful for reprocibility / repeatability reasons, for example in bulk pcap processing modes. Note however that any timestamp inaccuracies -- such as clock drift, post-gap restart, wrong packet rates -- may cause incorrect wav timing and lack of synchronization between streams</br>
+> 0x4000000 (DISABLE_DORMANT_SESSION_DETECTION) - without this flag (default) mediaMin will detect sessions containing stream SSRCs that "take over", or re-use, another other stream SSRC, then flush the earlier stream's jitter buffer, considering it to be dormant. However in some cases it's expected that different streams will have the same SSRC, in which case this flag should be applied to prevent unwanted flushing. Examples include interception or call recording of the same stream at different points during its transmission<br/>
+> 0x8000000 (DISABLE_JITTER_BUFFER_OUTPUT_PCAPS) - this flag can be used disable xxx_jb.pcap files generated by mediaMin if they are not used or they are contributing to extra file space usage<br/>
+> 0x100000000000000 (ENABLE_TIMESTAMP_MATCH_MODE) - generate timestamp-match mode, which depends only on input stream arrival and RTP timestamps, with no wall clock reference. This is useful for reprocibility / repeatability reasons, for example in bulk pcap processing modes. Note however that any timestamp inaccuracies -- such as clock drift, post-gap restart, wrong packet rates -- may cause incorrect output timing and lack of synchronization between streams</br>
 > 0x400000000000000 (SHOW_PACKET_ARRIVAL_STATS) - show packet arrival stats in mediaMin summary stats display, including average interval between packets and average packet jitter vs stream ptime. These stats differ somewhat from Wireshark, as they apply only to media packets and exclude SID and DTMF packets</br>
 
 #### Packet Log
@@ -2817,7 +2819,7 @@ The -dN cmd line options INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a href="
 
 ### Reproducibility
 
-Applying the ENABLE_WAV_OUTPUT_TIMESTAMP_MATCH flag enables a timestamp matching mode designed for reproducible wav and pcap output results from run-to-run, regardless of Real-Time Interval. This mode relies wholly on arrival timestamps, regardless of amount of wav audio data generated, and with no wall clock references.
+Applying the ENABLE_TIMESTAMP_MATCH_MODE flag enables a timestamp match mode designed for reproducible wav and pcap output results from run-to-run, regardless of Real-Time Interval. This mode relies wholly on arrival timestamps, regardless of amount of wav audio data generated, and with no wall clock references.
 
 Adding --md5sum command line entry will include output file md5 sum in mediaMin stats.
 
