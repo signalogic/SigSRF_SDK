@@ -64,7 +64,7 @@ using namespace std;
 */
 
 #ifdef __cplusplus
-extern "C" {  /* make functions both visible and accessible to other pktlib C/C++ sources */
+extern "C" {  /* make functions accessible to other pktlib C/C++ sources */
 #endif
 
 int PktAddFragment(uint8_t* pkt, unsigned int uFlags);
@@ -82,8 +82,11 @@ int PktReassemble(uint8_t* pkt, unsigned int uFlags);
 
 typedef struct {
 
-   pthread_t     ThreadId;          /* unique thread Id */
-   PKT_FRAGMENT* pPktFragmentList;  /* per thread packet fragment list */
+   pthread_t      ThreadId;               /* unique thread Id */
+   PKT_FRAGMENT*  pPktFragmentList;       /* per thread packet fragment list */
+   int            total_fragment_count;   /* total fragments handled by the app thread */
+   int            active_fragment_count;  /* fragments currently active at any one time. DSPktRemoveFragment() can be called by an app thread during cleanup to get number of "orphan" fragments remaining on the thread's linked list */
+   int            max_fragment_count;     /* max active fragments on the thread's link list */
 
 } APP_THREAD_INFO;
 
@@ -134,7 +137,7 @@ __attribute__ ((unused)) static int DeleteThreadIndex(void) {  /* delete thread 
    return GetThreadIndex(true);
 }
 
-/* inline helper functions for PktXXXFragment() functions */
+/* inline helper functions for PktXxxFragment() functions */
 
 static inline void get_3way_tuple(uint8_t* pkt, uint8_t* protocol, unsigned __int128* ip_src_addr, unsigned __int128* ip_dst_addr, unsigned int uFlags) {
 
@@ -166,10 +169,6 @@ static inline void get_identifier_and_offset(uint8_t* pkt, uint16_t* identifier,
 
   if (pkt && fragment_offset) *fragment_offset = (uFlags & DS_PKTLIB_HOST_BYTE_ORDER) ? ((pkt[7] & 0x1f) << 8) | pkt[6] : ((pkt[6] & 0x1f) << 8) | pkt[7];
 }
-
-static int total_fragment_count = 0;  /* total fragments handled by the app thread */
-static int active_fragment_count = 0; /* fragments currently active at any one time. DSPktRemoveFragment() can be called by an app thread during cleanup to get number of "orphan" fragments remaining on the thread's linked list */
-static int max_fragment_count = 0;  /* max active fragments on the thread's link list */
 
 /* private fragment management APIs */
 
@@ -215,13 +214,13 @@ int PktAddFragment(uint8_t* pkt, unsigned int uFlags) {
    pPktFrag->len = pkt_len - ip_hdr_len;
    memcpy(pPktFrag->pkt_buf, &pkt[ip_hdr_len], pPktFrag->len);
 
-   #ifdef FRAGMENTATION_DEBUG
-   printf("\n *** inside pkt_frag_add, active fragments = %d, flags = 0x%x, identifier = %d, offset = %d, pkt len = %d \n", active_fragment_count, pPktFrag->flags, pPktFrag->identifier, pPktFrag->offset, pPktFrag->len);
-   #endif
-
 /* get App_Thread_Info[] index for current thread. If not existing GetThreadIndex() will create a new one */
 
    int thread_index = GetThreadIndex(false), list_count = 1;
+
+   #ifdef FRAGMENTATION_DEBUG
+   printf("\n *** inside pkt_frag_add, active fragments = %d, flags = 0x%x, identifier = %d, offset = %d, pkt len = %d \n", App_Thread_Info[thread_index].active_fragment_count, pPktFrag->flags, pPktFrag->identifier, pPktFrag->offset, pPktFrag->len);
+   #endif
 
    if (!App_Thread_Info[thread_index].pPktFragmentList) App_Thread_Info[thread_index].pPktFragmentList = pPktFrag;  /* empty list: add as first fragment */
    else {
@@ -233,16 +232,10 @@ int PktAddFragment(uint8_t* pkt, unsigned int uFlags) {
       pList->next = pPktFrag;  /* add to end of list */
    }
 
-   __sync_fetch_and_add(&active_fragment_count, 1);  /* atomic increments */
-   __sync_fetch_and_add(&total_fragment_count, 1);
+   App_Thread_Info[thread_index].active_fragment_count++;  /* increment fragment counts */
+   App_Thread_Info[thread_index].total_fragment_count++;
 
-/* update max_fragment_count inside a critical section. Maybe there is a __sync_xxx built-in way or other atomic max(a,b), but I didn't find it yet */
-
-   while (__sync_lock_test_and_set(&app_thread_lock, 1) != 0);  /* wait until the lock is zero then write 1 to it. While waiting keep writing 1 */
-
-   if (list_count > max_fragment_count) max_fragment_count = list_count;
-
-   __sync_lock_release(&app_thread_lock);  /* clear the mem barrier (write 0 to the lock) */
+   if (list_count > App_Thread_Info[thread_index].max_fragment_count) App_Thread_Info[thread_index].max_fragment_count = list_count;  /* update max_fragment_count */
 
    return DS_PKT_INFO_RETURN_FRAGMENT | DS_PKT_INFO_RETURN_FRAGMENT_SAVED;  /* To-do: error checking, is there anything that can go wrong here */
 }
@@ -303,7 +296,7 @@ uint16_t identifier = 0, fragment_offset = 0;
 
          nRemoved++;
 
-         __sync_fetch_and_sub(&active_fragment_count, 1);  /* atomic decrement */
+         App_Thread_Info[thread_index].active_fragment_count--;  /* decrement fragment count */
       }
       else pListPrev = pList;  /* update last non-matching fragment */
 
@@ -311,10 +304,10 @@ uint16_t identifier = 0, fragment_offset = 0;
    }
 
    #ifdef FRAGMENTATION_DEBUG
-   printf("\n *** inside pkt removed %d fragments, active fragments = %d, identifier = %d, offset = %d \n", nRemoved, active_fragment_count, identifier, fragment_offset);
+   printf("\n *** inside pkt removed %d fragments, active fragments = %d, identifier = %d, offset = %d \n", nRemoved, App_Thread_Info[thread_index].active_fragment_count, identifier, fragment_offset);
    #endif
 
-   if (max_list_fragments) *max_list_fragments = max_fragment_count;  /* return max list fragments stat if requested */
+   if (max_list_fragments) *max_list_fragments = App_Thread_Info[thread_index].max_fragment_count;  /* return max list fragments stat if requested */
 
    return pkt ? (nRemoved ? DS_PKT_INFO_RETURN_FRAGMENT_REMOVED : 0) : nRemoved;  /* if pkt NULL return number removed, otherwise return status flag */ 
 }
@@ -441,10 +434,10 @@ uint16_t identifier = 0;
       pkt[2] = (uFlags & DS_PKTLIB_HOST_BYTE_ORDER) ? pkt_len & 0xff : pkt_len >> 8;  /* update length */
       pkt[3] = (uFlags & DS_PKTLIB_HOST_BYTE_ORDER) ? pkt_len >> 8 : pkt_len & 0xff;
 
-      __sync_fetch_and_sub(&active_fragment_count, matching_fragments);  /* atomic subtract */
+      App_Thread_Info[thread_index].active_fragment_count -= matching_fragments;  /* reduce active count by number of reassembly fragments */
 
       #ifdef FRAGMENTATION_DEBUG
-      printf("\n *** reassembled packet returned, identifier = %d, total fragments = %d, active fragments = %d, pkt len = %d, pFragmentList = %p \n", identifier, total_fragment_count, active_fragment_count, pkt_len, App_Thread_Info[thread_index].pPktFragmentList);
+      printf("\n *** reassembled packet returned, identifier = %d, total fragments = %d, active fragments = %d, pkt len = %d, pFragmentList = %p \n", identifier, App_Thread_Info[thread_index].total_fragment_count, App_Thread_Info[thread_index].active_fragment_count, pkt_len, App_Thread_Info[thread_index].pPktFragmentList);
       #endif
    }
 
