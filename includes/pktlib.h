@@ -107,9 +107,10 @@
   Modified Jun 2024 JHB, implement DS_PKT_INFO_PKTINFO_EXCLUDE_RTP flag to allow DSGetPacketInfo() with DS_PKT_INFO_PKTINFO flag to exclude RTP items. Saves time and possibly avoids errors if items needed are non-RTP 
   Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap() and DSWritePcapRecord() to DSWritePcap()
   Modified Jun 2024 JHB, define range for SIP ports of 5060 thru 5090 (before it was only 5060 and 5061)
-  Modified Jun 2024 JHB, implement packet fragmentation and reassembly. See DS_INFO_PKT_FRAGMENT_xxx, DS_INFO_PKT_REASSEMBLY_xxx, and DS_INFO_PKT_RETURN_xxx DSGetPacketInfo() uFlags definitions; usage example is in mediaMin.cpp
+  Modified Jun 2024 JHB, implement packet fragmentation and reassembly. See DS_PKT_INFO_FRAGMENT_xxx, DS_PKT_INFO_REASSEMBLY_xxx, and DS_PKT_INFO_RETURN_xxx DSGetPacketInfo() uFlags definitions; usage example is in mediaMin.cpp
   Modified Jul 2024 JHB, changes required per documentation review: DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap(), DSGetTermChan(), and DSConfigMediaService(), move pkt_buf_len to fourth param and add uFlags param in DSWritePcap()
   Modified Jul 2024 JHB, modify DSWritePcap() to remove (i) struct timespec* param and instead use the packet record header param timestamp and uFlags definition DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, and (ii) TERMINATION_INFO* param and instead use IP type in pkt_buf
+  Modified Aug 2024 JHB, add DSIsPacketDuplicate() and DS_PKT_DUPLICATE_XXX uFlags, add DSIsReservedUDP(). Both moved here after being initially developed and tested in mediaMin.cpp. Source is in pktlib_RFC791_fragmentation.cpp
 */
 
 #ifndef _PKTLIB_H_

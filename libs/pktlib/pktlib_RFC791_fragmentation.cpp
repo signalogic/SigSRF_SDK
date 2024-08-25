@@ -34,7 +34,7 @@ Revision History
                            (i) 3-way tuple info (IP src addr, dst addr), IP header identifier (Identification field), and fragment offset
                            (ii) packet info including flags, identifier, fragment offset, and saved IP header and packet data. See PKT_FRAGMENT struct in pktlib.h
                         -App_Thread_Info[] contains per app thread fragment linked list head; GetThreadIndex() uses a simple mem barrier lock to coordinate multithread access
-                        -DS_INFO_PKT_FRAGMENT_xxx and DS_INFO_PKT_REASSEMBLY_xxx uFlags, and also DS_INFO_PKT_RETURN_xxx return flags, added to DSGetPacketInfo() definitions in pktlib.h 
+                        -DS_PKT_INFO_FRAGMENT_xxx and DS_PKT_INFO_REASSEMBLY_xxx uFlags, and also DS_PKT_INFO_RETURN_xxx return flags, added to DSGetPacketInfo() definitions in pktlib.h 
                         -PktXxx() functions are internal APIs, not exposed yet
                         -To-do: IPv6
    Modified Aug 2024 JHB, fix g++ warnings

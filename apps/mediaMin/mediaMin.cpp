@@ -169,7 +169,7 @@
    Modified Jun 2024 JHB, handle SDP info media descriptions, including port discovery and exceptions
    Modified Jun 2024 JHB, improved codec auto-detection for AMR low-end bitrates (4750, 5150, 5900 bps)
    Modified Jun 2024 JHB, add H.265 codec detection and dynamic session creation
-   Modified Jun 2024 JHB, implement packet fragmentation and reassembly as pktlib DSGetPacketInfo() now API supports this. Look for DS_INFO_PKT_FRAGMENT_xxx, DS_INFO_PKT_REASSEMBLY_xxx, and DS_INFO_PKT_RETURN_xxx uFlags
+   Modified Jun 2024 JHB, implement packet fragmentation and reassembly as pktlib DSGetPacketInfo() now API supports this. Look for DS_PKT_INFO_FRAGMENT_xxx, DS_PKT_INFO_REASSEMBLY_xxx, and DS_PKT_INFO_RETURN_xxx uFlags
    Modified Jun 2024 JHB, fix problems with SIP port range handling, update isPortAllowed(). Look for PORT_ALLOW_xxx definitions
    Modified Jul 2024 JHB, set DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM packet logging flag in DSWritePacketStatsHistoryLog() uFlags if DISABLE_DORMANT_SESSION_DETECTION cmd line option is set (see diaglib.h for flag info)
    Modified Jul 2024 JHB, mods to isDuplicatePacket() and isReservedUDP() after regression test
