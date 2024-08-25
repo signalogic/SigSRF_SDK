@@ -20,11 +20,13 @@ License
 
   Github SigSRF License, Version 1.1, https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
 
-Usage and Documentation
- 
-  1) Functions here are called by DSGetPacketInfo(), a pktlib API called by user apps. All fragmentation related API definitions and flags are well documented on Github (https://github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md) and in pktlib.h
+Documentation and Usage
 
-  2) If you modify, then place resulting .o before libpktlib.so in your app link order, then your mods will take precedence over internal pktlib version
+  1) All fragmentation related API definitions and flags are documented on Github (https://github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md) and in pktlib.h
+ 
+  2) Functions here are called by DSGetPacketInfo(), a pktlib API. pktlib is a SigSRF shared object library linked by mediaMin and mediaTest reference apps and user apps
+
+  3) If you modify PktXxx() or DSXxx() functions, then place the resulting .o before libpktlib.so in your app link order, then your mods will take precedence over pktlib function names
 
 Revision History
 
@@ -35,7 +37,7 @@ Revision History
                            (ii) packet info including flags, identifier, fragment offset, and saved IP header and packet data. See PKT_FRAGMENT struct in pktlib.h
                         -App_Thread_Info[] contains per app thread fragment linked list head; GetThreadIndex() uses a simple mem barrier lock to coordinate multithread access
                         -DS_PKT_INFO_FRAGMENT_xxx and DS_PKT_INFO_REASSEMBLY_xxx uFlags, and also DS_PKT_INFO_RETURN_xxx return flags, added to DSGetPacketInfo() definitions in pktlib.h 
-                        -PktXxx() functions are internal APIs, not exposed yet
+                        -PktXxx() functions are internal APIs, expected to be called by DSGetPacketInfo() in pktlib
                         -To-do: IPv6
    Modified Aug 2024 JHB, fix g++ warnings
 */
@@ -57,7 +59,7 @@ using namespace std;
    -each linked list fragment entry includes 3-way tuple info (protocol, IP src addr, IP dst addr), IP header identifier (Identification field), and fragment offset. See PKT_FRAGMENT struct in pktlib.h
    -each linked list entry also includes packet info: flags, identifier, fragment offset, and saved IP header and packet data
    -performance wise, the worst case is an app thread with a high number of streams each with large packets of size 4500 to 6000 bytes, in which case the thread's linked list length could grow to around N*3 or N*4, where N is number of streams
-   -theoretically performance could be improved by adding a per stream linked list (as a sub list under the thread list) based on the 3-way tuple, but that involves creating a unique key or hash for each tuple. That step is time-consuming, involving memcmp's of 33 bytes, so potential performance gain is unclear at the expense of increase in coding complexity and maintenance resources **
+   -theoretically performance could be improved by adding a per stream linked list (as a sub list under the thread list) based on the 3-way tuple, but that involves creating a unique key or hash for each tuple. That step is time-consuming, involving memcmp's of 30+ bytes, so potential performance gain is unclear at the expense of increase in coding complexity and maintenance resources **
    -we maintain a "highest used location" (max_search_limit) to reduce search time for existing thread Ids. The search loop isn't doing much, just comparing 64-bit thread Id values
    
 ** I actually tried this in pktlib_new_frag_list.c ... I didn't get it completely working, some debug needed. But after seeing the amount of critical section code for the sub linked list, I put the effort on hold

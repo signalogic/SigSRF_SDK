@@ -20,7 +20,16 @@ License
 
   Github SigSRF License, Version 1.1, https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md
 
+Documentation and Usage
+
+  1) All pcap, pacapng, and rtp/rtpdump API definitions and flags are documented on Github (https://github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md) and in pktlib.h
+ 
+  2) Functions here are included in pktlib, a SigSRF shared object library linked by mediaMin and mediaTest reference apps and user apps.
+
+  3) If you modify DSXxx() functions, then place the resulting .o before libpktlib.so in your app link order, then your mods will take precedence over pktlib function names
+
 Revision History
+
   Created Mar 2017, Chris Johnson
   Modified Jul 2017 JHB, modified DSOpenPcap() so it can be used for read or write (takes a DS_READ or DS_WRITE uFlags option, defined in filelib.h, also see DS_OPEN_PCAP_xxx defines). Added DSReadRecord() and DSWritePcapRecord() APIs
   Modified Sep 2018 CJK, added special case error message to DSOpenPcap() regarding Snoop file format magic number
@@ -56,7 +65,7 @@ using namespace std;
 #include "diaglib.h"  /* packet logging and diagnostics, including Log_RT() definition */
 
 
-int get_link_layer_len(uint16_t link_type) {  /* added JHB Sep 2022 */
+static int get_link_layer_len(uint16_t link_type) {  /* added JHB Sep 2022 */
 
 int link_layer_length = -1;
 
