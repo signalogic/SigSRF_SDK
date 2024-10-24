@@ -18,10 +18,13 @@ Input and output options include network I/O, pcap file, and audio file format f
 Use case driven improvements
 
  - H.265 dynamic codec detection and session creation, bitstream extraction
+ - input data caching to improve mediaMin application thread performance
+ - EVS hf-only format supported
 
 Bug fixes
 
  - packet tracing and logging time improved around 50%. Helpful for very long inputs (calls or pcaps)
+ - -fixes to EVS multi-frame payloads and codec collision avoidance handling, for example mixing AMR-WB IO mode 23.05 and 23.85 kbps payloads
 
 <i><b>1Q-2Q 2024</b></i>
 
