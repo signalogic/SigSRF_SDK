@@ -254,7 +254,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 ## [**_RFCs_**](#user-content-supportedrfcs)<br/>
 ## [**_User-Defined Signal Processing Insertion Points_**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
 ## [**_API Usage_**](#user-content-apiusage)<br/>
-## [**_Notes_**]
+## [**_Notes_**](#user-content-notes)<br/>
 &nbsp;&nbsp;&nbsp;[**_SigSRF Codecs_**](#user-content-codecnotes)<br/>
 &nbsp;&nbsp;&nbsp;[**_3GPP Reference Codes_**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
@@ -2548,6 +2548,9 @@ do {
 
    } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* handle user input or other loop control */
 ```
+<a name="Notes"></a>
+## Notes
+
 <a name="CodecNotes"></a>
 ## SigSRF Codec Notes
 
