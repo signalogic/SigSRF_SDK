@@ -1217,6 +1217,7 @@ Codec + audio mode supports the following functionality:
 
 * sampling rate conversion is applied whenever input sampling rate does not match the specified codec (or pass-thru) rate
 
+<a name="mediaTest_codecs"></a>
 <a name="CodecTestMeasurement"></a>
 ### Codec Test & Measurement
 
@@ -1227,6 +1228,7 @@ For encoding, if the audio input rate differs from the rate specified in the cod
 > 1) For raw audio input files, mediaTest doesn't know the sampling rate as raw files don't have a waveform header. For other cases, such as .wav, .au, and USB audio, mediaTest knows the sampling rate
 > 2) Advanced codecs such as EVS accept multiple sampling rates, so depending on what rate you enter in the codec config file given on the command line, mediaTest sampling rate conversion is often not needed and the codec itself performs sampling rate conversion to some intermediate "normalized" rate internal to the codec algorithm
 
+<a name="mediaTest_EVS"></a>
 <a name="CodecEVS"></a>
 #### EVS
 
@@ -1265,7 +1267,7 @@ The following command line EVS encodes and then decodes a 3GPP reference bitstre
 ```C
 mediaTest -cx86 -itest_files/stv32c.INP -otest_files/stv32c_13200_32kHz_mime.wav -Csession_config/evs_32kHz_13200bps_config
 ```
-
+<a name="mediaTest_AMR"></a>
 <a name="CodecAMR"></a>
 #### AMR
 
@@ -1308,6 +1310,7 @@ Audio output can be raw audio file, .wav, .au, or USB audio.
 
 For AMR coded data, it's recommended to stick with file extensions .amr and .awb. Other extensions, such as .cod (used with EVS codecs) might work for AMR command lines, as mediaTest knows the codec type due to the codec configuration file, but are not supported at this time. Theoretically .wav files can support coded data types also, although not widely used. There is some functionality supporting coded data .wav files in mediaTest; if you need that and find it's not working correctly, please create an issue on the SigSRF_SDK repository.
 
+<a name="mediaTest_melpe"></a>
 <a name="CodecMELPe"></a>
 #### MELPe
 
