@@ -483,10 +483,12 @@ Following is the basic test procedure:
 2) Copy all console output to an editor; for example in Putty this is under main menu "Copy All to Clipboard". Note that your console window should be set to hold at least 12,000 lines of scroll back (in Putty this is under main menu "Change Settings", "Window", "Lines of scrollback")
 3) Search console output for the following keywords:
 
-&nbsp;&nbsp;&nbsp;error<br/>
-&nbsp;&nbsp;&nbsp;warning<br/>
-&nbsp;&nbsp;&nbsp;critical<br/>
-&nbsp;&nbsp;&nbsp;fail<br/>
+      error
+      warning
+   
+      critical<br/>
+      fail<br/>
+
 &nbsp;&nbsp;&nbsp;invalid<br/>
 &nbsp;&nbsp;&nbsp;exceed<br/>
 &nbsp;&nbsp;&nbsp;bad<br/>
