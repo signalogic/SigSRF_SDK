@@ -34,6 +34,8 @@
 
 [**_Test, Measurement, and Interoperation_**](#user-content-testmeasurementandinteroperation)<br/>
 
+[**_Codec Regression Test Scripts_**](#user-content-codecregressiontestscripts)<br/>
+
 <a name="Overview"></a>
 # Overview
 
@@ -461,22 +463,25 @@ This section gives a step-by-step description of hello_codec source code use of 
 <a name="TestMeasurementandInteroperation"></a>
 # Test, Measurement, and Interoperation
 
-The following tools and reference apps are used for codec regression test, debugging customer issues, and verifying interoperation with network and telecom endpoints
+The following tools and reference apps are used for codec regression test, debugging customer issues, and verifying interoperation with network and telecom endpoint codecs:
 
     mediaTest
       encode only
       decode only
       back-to-back encode/decode
-      pcap and wav outpit
+      pcap and wav output
       
     mediaMin
-      pcap and UDP RTP stream handling and decode
+      pcap and UDP RTP stream handling, buffering, and decoding
+      further audio domain processing if enabled (stream merging, speech recognition, etc)
 
-Below are regression test scripts used in Signalogic labs for testing EVS and AMR codecs. The basic test procedure is as follows:
+Below are regression test scripts used in Signalogic labs for testing EVS and AMR codecs.
 
-1) run the script (see "usage" notes in the script). Even with accelerated (bulk) pcap handling enabled, this can take several minutes
-2) copy all console output to an editor (your console window should be set to hold at least 10,000 lines of scroll back)
-3) search console output for the following keywords:
+Following is the basic test procedure:
+
+1) Run the script (see "usage" notes in the script comments). Even with accelerated (bulk) pcap handling enabled, this can take several minutes
+2) Copy all console output to an editor; for example in Putty this is under main menu "Copy All to Clipboard". Note that your console window should be set to hold at least 12,000 lines of scroll back (in Putty this is under main menu "Change Settings", "Window", "Lines of scrollback")
+3) Search console output for the following keywords:
 
    error
    warning
@@ -488,6 +493,15 @@ Below are regression test scripts used in Signalogic labs for testing EVS and AM
    seg
 
 There should be no occurrences.
+
+Notes on more advanced test procedures:
+
+1) In Signalogic labs we compare output md5 sums with reference test outputs. As these figures vary from system to system (and from compiler to compiler), please contact Signalogic to discuss if you're interested in such test procedures
+
+2) Some of the script command lines below include the --md5sum option, in most cases these should be repeatable. For any "time stamp match" mode command lines, they should be absolutely repeatable
+
+<a name="CodecRegressionTestScripts"></a>
+# Codec Regression Test Scripts
 
 ```bash
 #!/bin/bash
