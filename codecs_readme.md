@@ -34,7 +34,7 @@
 
 [**_Test, Measurement, and Interoperation_**](#user-content-testmeasurementandinteroperation)<br/>
 
-[**_Codec Regression Test Scripts_**](#user-content-codecregressiontestscripts)<br/>
+## [**_Codec Regression Test Scripts_**](#user-content-codecregressiontestscripts)<br/>
 
 <a name="Overview"></a>
 # Overview
@@ -483,14 +483,14 @@ Following is the basic test procedure:
 2) Copy all console output to an editor; for example in Putty this is under main menu "Copy All to Clipboard". Note that your console window should be set to hold at least 12,000 lines of scroll back (in Putty this is under main menu "Change Settings", "Window", "Lines of scrollback")
 3) Search console output for the following keywords:
 
-   error
-   warning
-   critical
-   fail
-   invalid
-   exceed
-   bad
-   seg
+&nbsp;&nbsp;&nbsp;error<br/>
+&nbsp;&nbsp;&nbsp;warning<br/>
+&nbsp;&nbsp;&nbsp;critical<br/>
+&nbsp;&nbsp;&nbsp;fail<br/>
+&nbsp;&nbsp;&nbsp;invalid<br/>
+&nbsp;&nbsp;&nbsp;exceed<br/>
+&nbsp;&nbsp;&nbsp;bad<br/>
+&nbsp;&nbsp;&nbsp;seg<br/>
 
 There should be no occurrences.
 
