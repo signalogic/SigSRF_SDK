@@ -35,6 +35,8 @@
 [**_Test, Measurement, and Interoperation_**](#user-content-testmeasurementandinteroperation)<br/>
 <sub><sup>
 [**_Codec Regression Test Scripts_**](#user-content-codecregressiontestscripts)<br/>
+[**_EVS Regression Test Script_**](#user-content-evsregressiontestscript)<br/>
+[**_AMR NB / WB Script_**](#user-content-amrregressiontestscript)<br/>
 </sup></sub>
 
 <a name="Overview"></a>
@@ -476,6 +478,15 @@ The following tools and reference apps are used for codec regression test, debug
       pcap and UDP RTP stream handling, buffering, and decoding
       further audio domain processing if enabled (stream merging, speech recognition, etc)
 
+Codec Regression Test Scripts below gives instructions and notes for running regression test scripts. Here are some notes on more advanced test procedures:
+
+1) In Signalogic labs we compare output md5 sums with reference test outputs. As these figures vary from system to system (and from compiler to compiler), please contact Signalogic to discuss if you're interested in such test procedures
+
+2) Some of the script command lines below include the --md5sum option, in most cases the final md5 sum shown for mediaTest or mediaMin output should be repeatable. For any "time stamp match" mode command lines, they should absolutely be repeatable
+
+<a name="CodecRegressionTestScripts"></a>
+# Codec Regression Test Scripts
+
 Below are regression test scripts used in Signalogic labs for testing EVS and AMR codecs.
 
 Following is the basic test procedure:
@@ -495,14 +506,8 @@ Following is the basic test procedure:
 
 There should be no occurrences.
 
-Notes on more advanced test procedures:
-
-1) In Signalogic labs we compare output md5 sums with reference test outputs. As these figures vary from system to system (and from compiler to compiler), please contact Signalogic to discuss if you're interested in such test procedures
-
-2) Some of the script command lines below include the --md5sum option, in most cases the final md5 sum shown for mediaTest or mediaMin output should be repeatable. For any "time stamp match" mode command lines, they should absolutely be repeatable
-
-<a name="CodecRegressionTestScripts"></a>
-# Codec Regression Test Scripts
+<a name="EVSRegressionTestScript"></a>
+# EVS Codec Regression Test Script
 
 ```bash
 #!/bin/bash
@@ -669,6 +674,8 @@ mediaMin -cx86 -i../pcaps/evs_long_rate_alignment.pcap -L -d0x08000c11 -r0.9 "${
 # return to mediaTest folder starting point
 cd ..
 ```
+<a name="AMRRegressionTestScript"></a>
+# AMR NB / WB Codec Regression Test Script
 
 ```bash
 #!/bin/bash
