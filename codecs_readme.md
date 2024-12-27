@@ -36,7 +36,7 @@
 <sub><sup>
 [**_Codec Regression Test Scripts_**](#user-content-codecregressiontestscripts)<br/>
 [**_EVS Regression Test Script_**](#user-content-evsregressiontestscript)<br/>
-[**_AMR NB / WB Script_**](#user-content-amrregressiontestscript)<br/>
+[**_AMR NB / WB Test Script_**](#user-content-amrregressiontestscript)<br/>
 </sup></sub>
 
 <a name="Overview"></a>
