@@ -34,7 +34,7 @@
 
 [**_Test, Measurement, and Interoperation_**](#user-content-testmeasurementandinteroperation)<br/>
 
-## [**_Codec Regression Test Scripts_**](#user-content-codecregressiontestscripts)<br/>
+[**_Codec Regression Test Scripts_**](#user-content-codecregressiontestscripts)<br/>
 
 <a name="Overview"></a>
 # Overview
@@ -483,16 +483,14 @@ Following is the basic test procedure:
 2) Copy all console output to an editor; for example in Putty this is under main menu "Copy All to Clipboard". Note that your console window should be set to hold at least 12,000 lines of scroll back (in Putty this is under main menu "Change Settings", "Window", "Lines of scrollback")
 3) Search console output for the following keywords:
 
-      error
-      warning
-   
+      error<br/>
+      warning<br/>
       critical<br/>
       fail<br/>
-
-&nbsp;&nbsp;&nbsp;invalid<br/>
-&nbsp;&nbsp;&nbsp;exceed<br/>
-&nbsp;&nbsp;&nbsp;bad<br/>
-&nbsp;&nbsp;&nbsp;seg<br/>
+      invalid<br/>
+      exceed<br/>
+      bad<br/>
+      seg<br/>
 
 There should be no occurrences.
 
@@ -500,7 +498,7 @@ Notes on more advanced test procedures:
 
 1) In Signalogic labs we compare output md5 sums with reference test outputs. As these figures vary from system to system (and from compiler to compiler), please contact Signalogic to discuss if you're interested in such test procedures
 
-2) Some of the script command lines below include the --md5sum option, in most cases these should be repeatable. For any "time stamp match" mode command lines, they should be absolutely repeatable
+2) Some of the script command lines below include the --md5sum option, in most cases the final md5 sum shown for mediaTest or mediaMin output should be repeatable. For any "time stamp match" mode command lines, they should absolutely be repeatable
 
 <a name="CodecRegressionTestScripts"></a>
 # Codec Regression Test Scripts
