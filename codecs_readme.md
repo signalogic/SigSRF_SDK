@@ -232,16 +232,25 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 ## DSGetPayloadInfo
 
   * returns information about an RTP payload
-  * return value is > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions
+  * return value is (i) a DS_PYLD_HDR_FMT_XXX payload header format definition for applicable codecs (e.g. AMR, EVS), (ii) 0 for other codec types, or (iii) < 0 for error conditions
 
-DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also used by reference apps mediaTest and mediaMin. A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported
+DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin. A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported
 
 ```c++
     int DSGetPayloadInfo(int codec_param,             /* codec_param can be either a codec instance handle (HCODEC) or a codec type (int), depending on uFlags.  If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec type. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default. For examples of both DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and media_proc.c */
                          unsigned int uFlags,         /* if uFlags specifies DS_CODEC_INFO_TYPE, codec_param should be a DS_CODEC_XXX enum defined in shared_include/codec.h */
                          uint8_t* payload,            /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet */
                          int payload_size,            /* size of the RTP payload, in bytes */
-                         PAYLOAD_INFO* payload_info   /* payload_info should point to a PAYLOAD_INFO struct or be NULL if not used */
+                         PAYLOAD_INFO* payload_info   /* payload_info should point to a PAYLOAD_INFO struct or be NULL if not used. If payload_info is non-NULL then the following payload_info items are set or cleared:
+
+                                                         -CMR is set to the payload change mode request value if present and applicable to the codec type, or set to zero if not
+                                                         -ToC[] is set to the payload header "table of contents" value for each frame in the payload if applicable to the codec type, or set to zero if not 
+                                                         -FrameSize[] is set to the size of each frame in the payload if applicable to the codec type, or set to zero if not 
+                                                         -BitRate[] is set to the codec bitrate corresponding to the frame size
+                                                         -Header_Format is a copy of the return value, excluding error conditions
+                                                         -fSID is set if the payload is a SID (silence identifier), or cleared if not
+                                                         -fDTMF is set if the payload is a DTMF event, or cleared if not
+                                                         -only applicable to EVS, fAMRWB_IO_MOde is set true for an AMR-WB IO mode payload, false for a primary mode payload, and false for all other codec types */
                         );
 ```
 
