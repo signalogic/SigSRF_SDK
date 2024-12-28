@@ -265,7 +265,7 @@ uFlags definitions
 
     #define DS_PAYLOAD_INFO_SUPPRESS_WARNING_MSG      /* suppress DSGetPayloadInfo() warning messages. Examples of this usage are in mediaMin.cpp */
 
-/* DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with compact header mode and non-collision ("protected") payload sizes. The ToC is normally one byte, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions */
+/* DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. The ToC is normally one byte, including a 4-bit FT field within the ToC, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions */
 
   int DSGetPayloadHeaderToC(int codec_type, uint8_t* payload, int payload_len);
 
@@ -274,7 +274,7 @@ uFlags definitions
 <a name="DSGetPayloadHeaderToC"></a>
 ## DSGetPayloadHeaderToC
 
-  * returns a nominal AMR or EVS payload header ToC based on payload size, including a FT (frame type) field inside the ToC. For EVS, this API should be called *only* with compact header mode and non-collision ("protected") payload sizes. A ToC is normally one byte, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions
+  * returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. A ToC is normally one byte, including a 4-bit FT (frame type) field, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions
   * return value is < 0 for error conditions
   
 ```c++
