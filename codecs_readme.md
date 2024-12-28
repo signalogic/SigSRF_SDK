@@ -19,6 +19,7 @@
 &nbsp;&nbsp;&nbsp;[**DSCodecEncode**](#user-content-dscodecencode)<br/>
 &nbsp;&nbsp;&nbsp;[**DSGetCodecInfo**](#user-content-dsgetcodecinfo)<br/>
 &nbsp;&nbsp;&nbsp;[**DSGetPayloadInfo**](#user-content-dsgetpayloadinfo)<br/>
+&nbsp;&nbsp;&nbsp;[**DSGetPayloadHeaderToC**](#user-content-dsgetpayloadheadertoc)<br/>
 &nbsp;&nbsp;&nbsp;[**DSCodecDelete**](#user-content-dscodecdelete)<br/>
 </sup></sub>
 
@@ -264,11 +265,6 @@ uFlags definitions
     #define DS_PAYLOAD_INFO_IGNORE_DTMF               /* DSGetPayloadInfo() default behavior is to recognize payload_size == 4 as a DTMF event (RFC 4733), set NumFrames to 1 and set fDTMF in payload_info, and immediately return 0 without reference to codec_param and payload. To override this behavior DS_PAYLOAD_INFO_IGNORE_DTMF can be given in uFlags */ 
 
     #define DS_PAYLOAD_INFO_SUPPRESS_WARNING_MSG      /* suppress DSGetPayloadInfo() warning messages. Examples of this usage are in mediaMin.cpp */
-
-/* DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. The ToC is normally one byte, including a 4-bit FT field within the ToC, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions */
-
-  int DSGetPayloadHeaderToC(int codec_type, uint8_t* payload, int payload_len);
-
 ```
 
 <a name="DSGetPayloadHeaderToC"></a>
@@ -279,10 +275,10 @@ uFlags definitions
   
 ```c++
 
-    int DSGetPayloadInfo(int codec_type,              /* a DS_CODEC_xxx enum defined in shared_include/codec.h */
-                         uint8_t* payload,            /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet. payload is only needed for EVS "special case" payloads (see spec section A.2.1.3, Special case for 56 bit payload size (EVS Primary or EVS AMR-WB IO SID), otherwise it can be given as NULL */
-                         int payload_size,            /* size of the RTP payload, in bytes */
-                        );
+    int DSGetPayloadHeaderToC(int codec_type,         /* a DS_CODEC_xxx enum defined in shared_include/codec.h */
+                              uint8_t* payload,       /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet. payload is only needed for EVS "special case" payloads (see spec section A.2.1.3, Special case for 56 bit payload size (EVS Primary or EVS AMR-WB IO SID), otherwise it can be given as NULL */
+                              int payload_size,       /* size of the RTP payload, in bytes */
+                             );
 ```
 
 <a name="DSCodecDelete"></a>
