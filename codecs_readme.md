@@ -28,6 +28,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_ENC_PARAMS**](#user-content-codecencparams)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_OUTARGS**](#user-content-codecoutargs)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_INARGS**](#user-content-codecinargs)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**PAYLOAD_INFO**](#user-content-payloadinfo)<br/>
 </sup></sub>
 
 [**_hello_codec Example App_**](#user-content-hellocodecexampleapp)<br/>
@@ -455,6 +456,39 @@ Definitions for uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS
   #define DEBUG_TEST_ABORT_EXIT_INTERCEPTION                          /* test abort() and exit() function interception at encoder or decoder lib level. Interception prevents abort() or exit() from terminating the libary and calling application, and allows code flow to continue. The test will simulate one abort() and one exit() interception, and display an example event log error message. Note that this only applies to codecs with embedded abort() and exit() functions that cannot -- or are not allowed to -- be removed, for example due to (i) binary implementation, (ii) possible license violation if source code is modified */
 
   #define DEBUG_OUTPUT_ADD_TO_EVENT_LOG                               /* add debug output to event log */
+```
+<a name="PayloadInfo"></a>
+### PAYLOAD_INFO
+
+A PAYLOAD_INFO struct is returned by DSGetPayloadInfo().
+
+```c++
+  typedef struct {  /* codec RTP payload items extracted or derived from a combination of codec type, payload header, and payload size */
+
+  /* payload header items */
+
+     uint8_t   CMR;                            /* change mode request value, if found in payload and applicable to codec type, zero otherwise. Not shifted or otherwise modified */
+     int16_t   NumFrames;                      /* number of frames in payload. On error set to number of valid payload frames processed before the error occurred */
+     uint8_t   ToC[MAX_PAYLOAD_FRAMES];        /* payload header ToC (table of contents) if applicable to codec type, including EVS and AMR, which can have multiple frames per payload (e.g. variable ptime), or multiple channels per payload (e.g. stereo or independent mono channels), or a mix. Zero otherwise */
+     int16_t   FrameSize[MAX_PAYLOAD_FRAMES];  /* frame size in bytes for all codec types except AMR. For AMR (NB, WB, WB+) codecs this is frame size in bits (i.e. number of data bits in the frame, as shown at https://www.ietf.org/proceedings/50/slides/avt-8/sld009.htm). -1 indicates an error condition in payload ToC */
+     int32_t   BitRate[MAX_PAYLOAD_FRAMES];    /* bitrate */
+     uint16_t  NALU_Hdr;                       /* H.26x NALU header */
+
+  /* payload types or operating modes */
+
+     uint8_t   Header_Format;                  /* set to a DS_PYLD_HDR_FMT_XXX payload header format definition for applicable codecs (e.g. AMR, EVS), 0 otherwise */
+     bool      fSID;                           /* true for a SID payload, false otherwise */
+     bool      fAMRWB_IO_Mode;                 /* true for an EVS AMR-WB IO compatibility mode packet, false otherwise */
+     bool      fDTMF;                          /* true for a DTMF event payload, false otherwise */
+
+     int       start_of_payload_data;          /* index into payload[] of start of payload data. If DSGetPayloadInfo() returns an error condition, this is the payload header byte on which the error occurred */
+
+     int       amr_decoder_bit_pos;            /* reserved */
+
+     int       Reserved[16];
+
+  } PAYLOAD_INFO;
+
 ```
 
 <a name="hellocodecExampleApp"></a>
