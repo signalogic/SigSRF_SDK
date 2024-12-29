@@ -261,7 +261,7 @@ uFlags definitions
 ```c++
     #define DS_PAYLOAD_INFO_SID_ONLY                  /* if DS_PAYLOAD_INFO_SID_ONLY is given in uFlags DSGetPayloadInfo() will make a quick check for a SID payload. codec_param should be a valid DS_CODEC_xxx enum (defined in shared_include/codec.h), uFlags should include DS_CODEC_INFO_TYPE, no error checking is performed, and fSID in payload_info will be set or cleared. If the payload contains multiple frames only the first frame is considered. Return values are a DS_PYLD_FMT_XXX value for a SID payload and -1 for not a SID payload */
 
-    #define DS_PAYLOAD_INFO_NO_CODEC                  /* if DS_PAYLOAD_INFO_NO_CODEC is given in uFlags DSGetPayloadInfo() will ignore codec_param and payload and set fDTMF (DTMF event) in payload_info if payload_size = 4 or set fSID (SID payload) in payload_info if payload_size <= 8. This is reliable for most codecs for single-frame payloads; however, for multiple frames (e.g. variable ptime, multiple channels, etc) this flag should not be used. In that case -- or any other situation where detailed payload information is needed (e.g. payload format or operating mode) -- valid codec_param and payload params should be given without this flag. fDTMF and fSID in payload_info are set or cleared. Return values are 0 for a SID payload and -1 for not a SID payload */
+    #define DS_PAYLOAD_INFO_NO_CODEC                  /* if DS_PAYLOAD_INFO_NO_CODEC is given in uFlags DSGetPayloadInfo() will ignore codec_param and payload and set fDTMF (DTMF event) in payload_info if payload_size = 4 or set fSID (SID payload) in payload_info if payload_size <= 8. This is reliable for most codecs for single-frame payloads; however, for multiple frames (e.g. variable ptime, multiple channels, etc) -- or any situation where detailed payload information is needed -- this flag should not be used. fDTMF and fSID in payload_info are set or cleared. Return values are 0 for a SID payload and -1 for not a SID payload */
 
     #define DS_PAYLOAD_INFO_IGNORE_DTMF               /* DSGetPayloadInfo() default behavior is to recognize payload_size == 4 as a DTMF event (RFC 4733), set NumFrames to 1 and set fDTMF in payload_info, and immediately return 0 without reference to codec_param and payload. To override this behavior DS_PAYLOAD_INFO_IGNORE_DTMF can be given in uFlags */ 
 
@@ -587,6 +587,12 @@ Codec Regression Test Scripts below gives instructions and notes for running reg
 1) In Signalogic labs we compare output md5 sums with reference test outputs. As these figures vary from system to system (and from compiler to compiler), please contact Signalogic to discuss if you're interested in such test procedures
 
 2) Some of the script command lines below include the --md5sum option, in most cases the final md5 sum shown for mediaTest or mediaMin output should be repeatable. For any "time stamp match" mode command lines, they should absolutely be repeatable
+
+3) "In the wild" pcaps are from two (2) sources:
+
+* Publicly available pcaps, for example [AMR pcaps here](https://github.com/nesfit/Codecs/tree/master/PCAPs)
+
+* Signalogic customer pcaps which have been fully anonymized (using [TraceWrangler[(https://www.tracewrangler.com/)) and with audio replaced by generic content or with artificial noise to make speech and speakers unintelligble. These have been selected for their challenging RTP streams, including pauses or gaps, inserted DTMF events, combinations of codec formats and bitrates, etc.
 
 <a name="CodecRegressionTestScripts"></a>
 ## Codec Regression Test Scripts
