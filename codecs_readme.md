@@ -589,7 +589,7 @@ Codec Regression Test Scripts below gives instructions and notes for running reg
 2) Some of the script command lines below include the --md5sum option, in most cases the final md5 sum shown for mediaTest or mediaMin output should be repeatable. For any "time stamp match" mode command lines, they should absolutely be repeatable
 
 <a name="CodecRegressionTestScripts"></a>
-# Codec Regression Test Scripts
+## Codec Regression Test Scripts
 
 Below are regression test scripts used in Signalogic labs for testing EVS and AMR codecs.
 
@@ -611,7 +611,7 @@ Following is the basic test procedure:
 There should be no occurrences.
 
 <a name="EVSRegressionTestScript"></a>
-# EVS Codec Regression Test Script
+### EVS Codec Regression Test Script
 
 ```bash
 #!/bin/bash
@@ -779,7 +779,7 @@ mediaMin -cx86 -i../pcaps/evs_long_rate_alignment.pcap -L -d0x08000c11 -r0.9 "${
 cd ..
 ```
 <a name="AMRRegressionTestScript"></a>
-# AMR NB / WB Codec Regression Test Script
+### AMR NB / WB Codec Regression Test Script
 
 ```bash
 #!/bin/bash
