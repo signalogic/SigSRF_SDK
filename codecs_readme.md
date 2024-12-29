@@ -596,8 +596,8 @@ Below are regression test scripts used in Signalogic labs for testing EVS and AM
 Following is the basic test procedure:
 
 1) Run the script (see "usage" notes in the script comments). Even with accelerated (bulk) pcap handling enabled, this can take several minutes
-2) Copy all console output to an editor; for example in Putty this is under main menu "Copy All to Clipboard". Note that your console window should be set to hold at least 12,000 lines of scroll back (in Putty this is under main menu "Change Settings", "Window", "Lines of scrollback")
-3) Search console output for the following keywords:
+2) Copy all console output to an editor; for example in Putty this is under main menu "Copy All to Clipboard". The console window should be set to hold at least 12,000 lines of scrollback (in Putty this is under main menu "Change Settings", "Window", "Lines of scrollback")
+3) Search event log and console output for the following keywords:
 
       error<br/>
       warning<br/>
