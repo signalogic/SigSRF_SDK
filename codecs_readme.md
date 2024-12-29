@@ -270,13 +270,12 @@ uFlags definitions
 <a name="DSGetPayloadHeaderToC"></a>
 ## DSGetPayloadHeaderToC
 
-  * returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. A ToC is normally one byte, including a 4-bit FT (frame type) field, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions
+  * returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. The returned ToC is normally one byte, including a 4-bit FT (frame type) field, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions
   * return value is < 0 for error conditions
-  
-```c++
 
+```c++
     int DSGetPayloadHeaderToC(int codec_type,         /* a DS_CODEC_xxx enum defined in shared_include/codec.h */
-                              uint8_t* payload,       /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet. payload is only needed for EVS "special case" payloads (see spec section A.2.1.3, Special case for 56 bit payload size (EVS Primary or EVS AMR-WB IO SID), otherwise it can be given as NULL */
+                              uint8_t* payload,       /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet. For EVS payloads payload is only needed for "special case" payloads (see spec section A.2.1.3, Special case for 56 bit payload size (EVS Primary or EVS AMR-WB IO SID), otherwise it can be given as NULL. For AMR payloads, DSGetPayloadHeaderToC() calls DSGetPayloadInfo() internally as information in the payload is required to determine its format (bandwidth-efficient vs octet-aligned), and in turn its ToC */
                               int payload_size,       /* size of the RTP payload, in bytes */
                              );
 ```
