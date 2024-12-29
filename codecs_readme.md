@@ -592,7 +592,7 @@ Codec Regression Test Scripts below gives instructions and notes for running reg
 
 * Publicly available pcaps, for example [AMR pcaps here](https://github.com/nesfit/Codecs/tree/master/PCAPs)
 
-* Signalogic customer pcaps which have been fully anonymized (using [TraceWrangler](https://www.tracewrangler.com/)) and with audio replaced by generic content or with artificial noise to make speech and speakers unintelligble. These have been selected for their challenging RTP streams, including pauses or gaps, inserted DTMF events, combinations of codec formats and bitrates, etc.
+* Signalogic customer pcaps which have been fully anonymized (using [TraceWrangler](https://www.tracewrangler.com/)) and with audio replaced by generic content or with artificial noise to make speech and speakers unintelligble. These have been selected for their complex RTP streams, including pauses or gaps, inserted DTMF events, combinations of codec formats and bitrates, lack of reliable packet arrival timestamps. etc.
 
 <a name="CodecRegressionTestScripts"></a>
 ## Codec Regression Test Scripts
