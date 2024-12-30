@@ -152,7 +152,7 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
     int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec instance handles, as specified by numChan */
                       unsigned int     uFlags,        /* see DS_CODEC_DECODE_xxx flags below */
                       uint8_t*         inData,        /* pointer to input coded bitstream data. Input may include a payload header and CMR value, if supported by the codec type and header/payload */
-                      uint8_t*         outData,       /* pointer to output audio frame data */
+                      uint8_t*         outData,       /* pointer to output media frame data */
                       uint32_t         in_frameSize,  /* size of coded bitstream data, in bytes */
                       int              numChan,       /* number of channels to be decoded. Multichannel data must be interleaved */
                       CODEC_INARGS*    pInArgs,       /* optional parameters for decoding RTP payloads; see CODEC_INARGS struct notes below. If not used this param should be NULL */
@@ -174,9 +174,9 @@ uFlags definitions
 ```c++
     int DSCodecEncode(HCODEC*          hCodec,        /* pointer to one or more codec instance handles, as specified by numChan */
                       unsigned int     uFlags,        /* see DS_CODEC_ENCODE_xxx flags below */
-                      uint8_t*         inData,        /* pointer to input audio frame data */
+                      uint8_t*         inData,        /* pointer to input media frame data */
                       uint8_t*         outData,       /* pointer to output coded bitstream data. Output may include a payload header and CMR value, if supported by the codec type and header/payload */
-                      uint32_t         in_frameSize,  /* size of input audio frame data, in bytes */
+                      uint32_t         in_frameSize,  /* size of input media frame data, in bytes */
                       int              numChan,       /* number of channels to be encoded. Multichannel data must be interleaved */
                       CODEC_INARGS*    pInArgs,       /* optional parameters for encoding audio data; see CODEC_INARGS struct notes below. If not used this param should be NULL */
                       CODEC_OUTARGS*   pOutArgs       /* optional encoder output info; see CODEC_OUTARGS struct notes below. If not used this param should be NULL */
@@ -194,7 +194,7 @@ uFlags definitions
 * return value is > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions
   
 ```c++
-    int DSGetCodecInfo(int codec_param,               /* codec_param can be either a codec instance handle (HCODEC) or a codec type (a DS_CODEC_xxx enum defined in shared_include/codec.h), depending on uFlags.  If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec type. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default and codec_param is interpreted as a codec type. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
+    int DSGetCodecInfo(int codec_param,               /* codec_param can be either a codec instance handle (HCODEC) or a codec_type enum (a DS_CODEC_xxx enum defined in shared_include/codec.h), depending on uFlags.  If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default and codec_param is interpreted as a codec type. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
                        unsigned int uFlags,           /* if uFlags specifies DS_CODEC_INFO_TYPE, codec_param should be a DS_CODEC_XXX enum defined in shared_include/codec.h, and uFlags can also contain DS_CODEC_INFO_NAME, DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, or DS_CODEC_INFO_PARAMS. If uFlags specifies DS_CODEC_INFO_TYPE_FROM_NAME, pInfo should contain a standard codec name string. Standardized SigSRF codec names are given in shared_include/codec.h
  */
                        int nInput1,                   /* nInput1 is required for uFlags DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, DS_CODEC_INFO_CMR_BITRATE, or DS_CODEC_INFO_LIST_TO_CLASSIFICATION. Both nInput1 and nInput2 are required for uFlags DS_CODEC_INFO_BITRATE_TO_INDEX, DS_CODEC_INFO_INDEX_TO_BITRATE, or DS_CODEC_INFO_CODED_FRAMESIZE */
@@ -205,7 +205,7 @@ uFlags definitions
 uFlags definitions
 
 ```c++
-    #define DS_CODEC_INFO_TYPE                        /* codec_param is interpreted as a codec type enum (see codec type enums defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE is given. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE are given a codec type is returned */ 
+    #define DS_CODEC_INFO_TYPE                        /* codec_param is interpreted as a codec_type enum (see codec type enums defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE are given. If both are given a codec_type enum is returned cast as an int */ 
     #define DS_CODEC_INFO_HANDLE                      /* codec_param is interpreted as an hCodec; i.e. codec instance handle created by prior call to DSCodecCreate() */ 
 ```
 uFlags item flags, if used one flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE
@@ -225,7 +225,7 @@ uFlags item flags, if used one flag should be combined with either DS_CODEC_INFO
     #define DS_CODEC_INFO_PAYLOAD_SHIFT               /* returns payload shift specified in CODEC_PARAMS or TERMINATION_INFO structs at codec creation time, if any. Requires DS_CODEC_INFO_HANDLE flag. Default value is zero */
     #define DS_CODEC_INFO_LIST_TO_CLASSIFICATION      /* converts a codec audio classification list item (nInput1) to 0-3 letter classification string (currently EVS and AMR codecs supported) */
     #define DS_CODEC_INFO_NAME                        /* returns codec name in text string pointed to by pInfo. A typical string length is 5-10 char, and always less than CODEC_NAME_MAXLEN */
-    #define DS_CODEC_INFO_TYPE_FROM_NAME              /* returns a codec type enum if pInfo contains a standard codec name. codec_param is ignored. Standardized codec types and names used in all SigSRF libs and applications are defined in shared_include/codec.h (names are defined in get_codec_type_from_name()). Returns -1 if pInfo is NULL or codec name is not found */
+    #define DS_CODEC_INFO_TYPE_FROM_NAME              /* returns a codec_type enum if pInfo contains a standard codec name. codec_param is ignored. Standardized codec_type enums and names used in all SigSRF libs and applications are defined in shared_include/codec.h (names are defined in get_codec_type_from_name()). Returns -1 if pInfo is NULL or codec name is not found */
     #define DS_CODEC_INFO_CMR_BITRATE                 /* returns requested bitrate from CMR (Change Mode Request) value given in nInput1. Applicable only to codecs that use CMR */
 
     #define DS_CODEC_INFO_BITRATE_CODE                /* when combined with DS_CODEC_INFO_CODED_FRAMESIZE, indicates nInput1 should be treated as a "bitrate code" instead of a bitrate. A bitrate code is typically found in the RTP payload header, for example a 4 bit field specifying 16 possible bitrates. Currently only EVS and AMR codecs support this flag, according to Table A.4 and A.5 in section A.2.2.1.2, "ToC byte" of EVS spec TS 26.445. See mediaTest source code for usage examples */
@@ -249,7 +249,7 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin. A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported
 
 ```c++
-    int DSGetPayloadInfo(int codec_param,             /* codec_param can be either a codec instance handle (HCODEC) or a codec type (a DS_CODEC_xxx enum defined in shared_include/codec.h), depending on uFlags. If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec type. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default and codec_param is interpreted as a codec type. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
+    int DSGetPayloadInfo(int codec_param,             /* codec_param can be either a codec instance handle (HCODEC) or a codec_type enum (a DS_CODEC_xxx enum defined in shared_include/codec.h), depending on uFlags. If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type enum cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default and codec_param is interpreted as a codec_type enum. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
                          unsigned int uFlags,         /* if uFlags specifies DS_CODEC_INFO_TYPE, codec_param should be a DS_CODEC_XXX enum defined in shared_include/codec.h */
                          uint8_t* payload,            /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet */
                          int payload_size,            /* size of the RTP payload, in bytes */
@@ -268,7 +268,7 @@ DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodec
 uFlags definitions
 
 ```c++
-    #define DS_CODEC_INFO_TYPE                        /* codec_param is interpreted as a codec type enum (defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE is given. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE are given a codec type is returned */ 
+    #define DS_CODEC_INFO_TYPE                        /* codec_param is interpreted as a codec_type enum (defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE are given. If both are given a codec_type enum is returned cast as an int */ 
     #define DS_CODEC_INFO_HANDLE                      /* codec_param is interpreted as an hCodec; i.e. codec instance handle created by prior call to DSCodecCreate() */ 
 ```
 additional uFlags, if used one or more flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE
@@ -293,7 +293,7 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
   * return value is < 0 for error conditions
 
 ```c++
-    int DSGetPayloadHeaderToC(int codec_type,         /* a DS_CODEC_xxx enum defined in shared_include/codec.h */
+    int DSGetPayloadHeaderToC(codec_types codec_type, /* a DS_CODEC_xxx enum defined in shared_include/codec.h */
                               uint8_t* payload,       /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet. For EVS payloads payload is only needed for "special case" payloads (see spec section A.2.1.3, Special case for 56 bit payload size (EVS Primary or EVS AMR-WB IO SID), otherwise it can be given as NULL. For AMR payloads, DSGetPayloadHeaderToC() calls DSGetPayloadInfo() internally as information in the payload is required to determine its (bandwidth-efficient vs octet-aligned), and in turn its ToC */
                               int payload_size,       /* size of the RTP payload, in bytes */
                              );
@@ -314,7 +314,7 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 <a name="PayloadFormatDefinitions"></a>
 ## Payload Definitions
 
-Payload definitions are currently applicable only to EVS and AMR codecs. These definitions can be used in the CODEC_ENC_PARAMS struct payload_format or oct_align fields; also they are returned by DSGetPayloadInfo() when given an EVS or AMR codec instance handle or codec type enum.
+Payload definitions are currently applicable only to EVS and AMR codecs. These definitions can be used in the CODEC_ENC_PARAMS struct payload_format or oct_align fields; also they are returned by DSGetPayloadInfo() when given an EVS or AMR codec instance handle or codec_type enum.
 
 ```c++
     #define DS_PYLD_FMT_COMPACT                       /* compact format (coded media frame has no payload header) */
@@ -345,7 +345,7 @@ Struct used in DSCodecCreate() and DSGetCodecInfo()
 ```c++
   typedef struct {
 
-     int codec_type;                      /* specifies codec type -- see "voice_codecs", "audio_codecs", and "video_codecs" enums in shared_include/codec.h */
+     int codec_type;                      /* should specify a codec_types enum (defined in shared_include/codec.h) */
      char codec_name[CODEC_NAME_MAXLEN];  /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecInfo() with DS_CODEC_INFO_NAME flag */
      uint16_t raw_frame_size;             /* filled in by DSCodecCreate() and DSGetCodecInfo() */
      uint16_t coded_frame_size;           /*   "    "    " */
@@ -560,9 +560,9 @@ A PAYLOAD_INFO struct is returned by DSGetPayloadInfo().
 
   /* payload header items */
 
-     uint8_t   CMR;                            /* change mode request value, if found in payload and applicable to codec type, zero otherwise. Not shifted or otherwise modified */
+     uint8_t   CMR;                            /* change mode request value, if found in payload and applicable to the codec type, zero otherwise. Not shifted or otherwise modified */
      int16_t   NumFrames;                      /* number of frames in payload. On error set to number of valid payload frames processed before the error occurred */
-     uint8_t   ToC[MAX_PAYLOAD_FRAMES];        /* payload header ToC (table of contents) if applicable to codec type, including EVS and AMR, which can have multiple frames per payload (e.g. variable ptime), or multiple channels per payload (e.g. stereo or independent mono channels), or a mix. Zero otherwise */
+     uint8_t   ToC[MAX_PAYLOAD_FRAMES];        /* payload header ToC (table of contents) if applicable to the codec type, including EVS and AMR, which can have multiple frames per payload (e.g. variable ptime), or multiple channels per payload (e.g. stereo or independent mono channels), or a mix. Zero otherwise */
      int16_t   FrameSize[MAX_PAYLOAD_FRAMES];  /* frame size in bytes for all codec types except AMR. For AMR (NB, WB, WB+) codecs this is frame size in bits (i.e. number of data bits in the frame, as shown at https://www.ietf.org/proceedings/50/slides/avt-8/sld009.htm). -1 indicates an error condition in payload ToC */
      int32_t   BitRate[MAX_PAYLOAD_FRAMES];    /* bitrate */
      uint16_t  NALU_Hdr;                       /* H.26x NALU header */
