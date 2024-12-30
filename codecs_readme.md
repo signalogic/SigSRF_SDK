@@ -463,13 +463,13 @@ Audio classification frame types returned in CODEC_OUTARGS frameType
     FRAMETYPE_AUDIO,               /* sounds and other audio for codecs that support audio classification */
     FRAMETYPE_MUSIC,               /* music for codecs that support audio classification */
 
-/* flags that may be combined with above type items */
+/* attribute flags that may be combined with above classification type items */
 
-    FRAMETYPE_TRANSITION = 0x100,  /* transition between types */
-    FRAMETYPE_MELP = 0x200,        /* low bitrate voiced (mixed excited linear prediction) */
-    FRAMETYPE_NELP = 0x400,        /* low bitrate voiced (noise excited linear prediction) */
+    FRAMETYPE_TRANSITION,          /* transition between types */
+    FRAMETYPE_MELP,                /* low bitrate voiced (mixed excited linear prediction) */
+    FRAMETYPE_NELP,                /* low bitrate voiced (noise excited linear prediction) */
 
-    FRAMETYPE_ITEM_MASK = 0xff     /* mask to separate type items from flags */
+    FRAMETYPE_ITEM_MASK            /* mask to separate attributes from classification types */
   };
  ```
 
