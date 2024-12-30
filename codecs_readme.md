@@ -205,7 +205,7 @@ uFlags definitions
 uFlags definitions
 
 ```c++
-    #define DS_CODEC_INFO_TYPE                        /* codec_param is interpreted as a codec_type. This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE is given. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE are given a codec type is returned */ 
+    #define DS_CODEC_INFO_TYPE                        /* codec_param is interpreted as a codec type enum (see codec type enums defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE is given. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE are given a codec type is returned */ 
     #define DS_CODEC_INFO_HANDLE                      /* codec_param is interpreted as an hCodec; i.e. codec instance handle created by prior call to DSCodecCreate() */ 
 ```
 uFlags item flags, if used one flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE
@@ -219,13 +219,13 @@ uFlags item flags, if used one flag should be combined with either DS_CODEC_INFO
     #define DS_CODEC_INFO_BITRATE                     /* returns codec bitrate in bps. Requires DS_CODEC_INFO_HANDLE flag */
     #define DS_CODEC_INFO_SAMPLERATE                  /* returns codec sampling rate in Hz. If DS_CODEC_INFO_HANDLE is not given, returns default sample rate for the specified codec. For EVS, nInput1 can specify one of the four (4) EVS sampling rates with values 0-3 */
     #define DS_CODEC_INFO_PTIME                       /* returns ptime in msec. Default value is raw framesize / sampling rate at codec creation-time, then is dynamically adjusted as packet streams are processed. Requires DS_CODEC_INFO_HANDLE flag */
-    #define DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE       /* given an nInput1 sample rate in Hz, returns sample rate code specified in "xxx_codec_flags" enums in shared_include/codec.h, where xxx is the codec abbreviation (e.g. evs_codec_flags or melpe_codec_flags) */
+    #define DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE       /* given an nInput1 sample rate in Hz, returns sample rate code specified in "xxx_codec_flags" enums in shared_include/codec.h, where xxx is a codec abbreviation (e.g. evs_codec_flags or melpe_codec_flags) */
     #define DS_CODEC_INFO_BITRATE_TO_INDEX            /* converts a codec bitrate (nInput1) to an index 0-31 (currently only EVS and AMR codecs supported) */
     #define DS_CODEC_INFO_INDEX_TO_BITRATE            /* inverse */
     #define DS_CODEC_INFO_PAYLOAD_SHIFT               /* returns payload shift specified in CODEC_PARAMS or TERMINATION_INFO structs at codec creation time, if any. Requires DS_CODEC_INFO_HANDLE flag. Default value is zero */
     #define DS_CODEC_INFO_LIST_TO_CLASSIFICATION      /* converts a codec audio classification list item (nInput1) to 0-3 letter classification string (currently EVS and AMR codecs supported) */
     #define DS_CODEC_INFO_NAME                        /* returns codec name in text string pointed to by pInfo. A typical string length is 5-10 char, and always less than CODEC_NAME_MAXLEN */
-    #define DS_CODEC_INFO_TYPE_FROM_NAME              /* returns a codec_type if pInfo contains a standard codec name. codec_param is ignored. Standardized codec names used in all SigSRF libs and applications are in get_codec_type_from_name() in shared_include/codec.h. Returns -1 if pInfo is NULL or codec name is not found */
+    #define DS_CODEC_INFO_TYPE_FROM_NAME              /* returns a codec type enum if pInfo contains a standard codec name. codec_param is ignored. Standardized codec types and names used in all SigSRF libs and applications are defined in shared_include/codec.h (names are defined in get_codec_type_from_name()). Returns -1 if pInfo is NULL or codec name is not found */
     #define DS_CODEC_INFO_CMR_BITRATE                 /* returns requested bitrate from CMR (Change Mode Request) value given in nInput1. Applicable only to codecs that use CMR */
 
     #define DS_CODEC_INFO_BITRATE_CODE                /* when combined with DS_CODEC_INFO_CODED_FRAMESIZE, indicates nInput1 should be treated as a "bitrate code" instead of a bitrate. A bitrate code is typically found in the RTP payload header, for example a 4 bit field specifying 16 possible bitrates. Currently only EVS and AMR codecs support this flag, according to Table A.4 and A.5 in section A.2.2.1.2, "ToC byte" of EVS spec TS 26.445. See mediaTest source code for usage examples */
@@ -268,7 +268,7 @@ DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodec
 uFlags definitions
 
 ```c++
-    #define DS_CODEC_INFO_TYPE                        /* codec_param is interpreted as a codec_type. This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE is given. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE are given a codec type is returned */ 
+    #define DS_CODEC_INFO_TYPE                        /* codec_param is interpreted as a codec type enum (defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE is given. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE are given a codec type is returned */ 
     #define DS_CODEC_INFO_HANDLE                      /* codec_param is interpreted as an hCodec; i.e. codec instance handle created by prior call to DSCodecCreate() */ 
 ```
 additional uFlags, if used one or more flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE
@@ -345,7 +345,7 @@ Struct used in DSCodecCreate() and DSGetCodecInfo()
 ```c++
   typedef struct {
 
-     int codec_type;                      /* specifies codec type -- see "voice_codec_type" and "video_codec_type" enums in shared_include/codec.h */
+     int codec_type;                      /* specifies codec type -- see "voice_codecs", "audio_codecs", and "video_codecs" enums in shared_include/codec.h */
      char codec_name[CODEC_NAME_MAXLEN];  /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecInfo() with DS_CODEC_INFO_NAME flag */
      uint16_t raw_frame_size;             /* filled in by DSCodecCreate() and DSGetCodecInfo() */
      uint16_t coded_frame_size;           /*   "    "    " */
