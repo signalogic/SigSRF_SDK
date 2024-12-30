@@ -178,7 +178,7 @@ uFlags definitions
                       uint8_t*         outData,       /* pointer to output coded bitstream data. Output may include a payload header and CMR value, if supported by the codec type and header/payload */
                       uint32_t         in_frameSize,  /* size of input media frame data, in bytes */
                       int              numChan,       /* number of channels to be encoded. Multichannel data must be interleaved */
-                      CODEC_INARGS*    pInArgs,       /* optional parameters for encoding audio data; see CODEC_INARGS struct notes below. If not used this param should be NULL */
+                      CODEC_INARGS*    pInArgs,       /* optional parameters for encoding media data; see CODEC_INARGS struct notes below. If not used this param should be NULL */
                       CODEC_OUTARGS*   pOutArgs       /* optional encoder output info; see CODEC_OUTARGS struct notes below. If not used this param should be NULL */
                      );
 ```
@@ -603,7 +603,7 @@ The following tools and reference apps are used for codec regression test, debug
       
     mediaMin
       pcap and UDP RTP stream handling, buffering, and decoding
-      further audio domain processing if enabled (stream merging, speech recognition, etc)
+      further media domain processing if enabled (stream merging, speech recognition, etc)
 
 Codec Regression Test Scripts below gives instructions and notes for running regression test scripts. Here are some notes on more advanced test procedures:
 
