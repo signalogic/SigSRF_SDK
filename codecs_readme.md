@@ -314,11 +314,11 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 <a name="PayloadFormatDefinitions"></a>
 ## Payload Format Definitions
 
-Payload format definitions (currently applicable only to EVS and AMR codec formats). These definitions can be used in the CODEC_ENC_PARAMS struct format or oct_align fields, and DSGetPayloadInfo() returns a payload format definition.
+Payload format definitions are currently applicable only to EVS and AMR codecs. These definitions can be used in the CODEC_ENC_PARAMS struct format or oct_align fields; also they are returned by DSGetPayloadInfo() when given an EVS or AMR codec instance handle or codec type enum.
 
 ```c++
     #define DS_PYLD_FMT_COMPACT                       /* compact format (coded media frame has no payload header) */
-    #define DS_PYLD_HDR_FULL                          /* header-full format (coded media frames may or may not have a payload header, differentiated by collision avoidance padding */
+    #define DS_PYLD_FMT_FULL                          /* header-full format (coded media frames may or may not have a payload header, differentiated by collision avoidance padding */
     #define DS_PYLD_FMT_HF_ONLY                       /* header-full only (coded media frames always have a payload header, with no collision avoidance padding */
     #define DS_PYLD_FMT_BANDWIDTHEFFICIENT            /* bandwidth-efficient format */
     #define DS_PYLD_FMT_OCTETALIGN                    /* octet-aligned format */
