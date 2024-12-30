@@ -58,7 +58,7 @@ Codecs are an essential component in streaming media use cases, necessary to dec
   * API interface [:link:](#user-content-apiinterface)
   * "hello codec" example user application [:link:](#user-content-hellocodecexampleapp)
 
-SigSRF codecs are available in demo format as [Docker containers](https://www.github.com/signalogic/SigSRF_SDK/tree/master?tab=readme-ov-file#user-content-dockercontainers) and [installable Rar packages](https://www.github.com/signalogic/SigSRF_SDK/tree/master?tab=readme-ov-file#user-content-rarpackages), and in production / deployment format as a codec license, or included in mediaMin and mediaTest licenses. Demo licenses are limited in total time and frame duration; after some point they continue to operate normally but produce "noisy media".
+SigSRF codecs are available in demo as [Docker containers](https://www.github.com/signalogic/SigSRF_SDK/tree/master?tab=readme-ov-file#user-content-dockercontainers) and [installable Rar packages](https://www.github.com/signalogic/SigSRF_SDK/tree/master?tab=readme-ov-file#user-content-rarpackages), and in production / deployment as a codec license, or included in mediaMin and mediaTest licenses. Demo licenses are limited in total time and frame duration; after some point they continue to operate normally but produce "noisy media".
 
 Below is a software architecture diagram showing the relationship between user applications, voplib, and codec libraries. 
 
@@ -98,13 +98,13 @@ The following RTP input types are supported:
 | pcapng | Y | Y | Y |
 | rtp | Y | Y | Y | same as .rtpdump |
 
-The following media format file types are supported:
+The following media file types are supported:
 
 | Input | mediaMin | mediaTest | Demo Versions | Comments |
 |-----|-----|-----|-----|-----|
 | wav | N | Y | Y |
 | au | N | Y | Y |
-| tim | N | Y | Y | Hypersignal waveform file format |
+| tim | N | Y | Y | Hypersignal waveform file |
 | raw | N | Y | Y | no header, a codec configuration file can be used instead |
 
 The following coded file types are supported:
@@ -151,7 +151,7 @@ For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS stru
 ```c++
     int DSCodecDecode(HCODEC*          hCodec,        /* pointer to one or more codec instance handles, as specified by numChan */
                       unsigned int     uFlags,        /* see DS_CODEC_DECODE_xxx flags below */
-                      uint8_t*         inData,        /* pointer to input coded bitstream data. Input may include a payload header and CMR value, if supported by the codec type and header/payload format */
+                      uint8_t*         inData,        /* pointer to input coded bitstream data. Input may include a payload header and CMR value, if supported by the codec type and header/payload */
                       uint8_t*         outData,       /* pointer to output audio frame data */
                       uint32_t         in_frameSize,  /* size of coded bitstream data, in bytes */
                       int              numChan,       /* number of channels to be decoded. Multichannel data must be interleaved */
@@ -175,7 +175,7 @@ uFlags definitions
     int DSCodecEncode(HCODEC*          hCodec,        /* pointer to one or more codec instance handles, as specified by numChan */
                       unsigned int     uFlags,        /* see DS_CODEC_ENCODE_xxx flags below */
                       uint8_t*         inData,        /* pointer to input audio frame data */
-                      uint8_t*         outData,       /* pointer to output coded bitstream data. Output may include a payload header and CMR value, if supported by the codec type and header/payload format */
+                      uint8_t*         outData,       /* pointer to output coded bitstream data. Output may include a payload header and CMR value, if supported by the codec type and header/payload */
                       uint32_t         in_frameSize,  /* size of input audio frame data, in bytes */
                       int              numChan,       /* number of channels to be encoded. Multichannel data must be interleaved */
                       CODEC_INARGS*    pInArgs,       /* optional parameters for encoding audio data; see CODEC_INARGS struct notes below. If not used this param should be NULL */
@@ -215,7 +215,7 @@ uFlags item flags, if used one flag should be combined with either DS_CODEC_INFO
 
 ```c++
     #define DS_CODEC_INFO_MEDIA_FRAMESIZE             /* returns codec media frame size (i.e. prior to encode, after decode), in bytes. If DS_CODEC_INFO_HANDLE is not given, returns default media frame size for one ptime. For EVS, nInput1 should specify one of the four (4) EVS sampling rates (in Hz) */
-    #define DS_CODEC_INFO_CODED_FRAMESIZE             /* returns codec compressed frame size (i.e. after encode, prior to decode), in bytes. If uFlags specifies DS_CODEC_INFO_TYPE then nInput1 should give a bitrate and nInput2 should give payload format (see DS_PYLD_FMT_XXX definitions below) */
+    #define DS_CODEC_INFO_CODED_FRAMESIZE             /* returns codec compressed frame size (i.e. after encode, prior to decode), in bytes. If uFlags specifies DS_CODEC_INFO_TYPE then nInput1 should give a bitrate and nInput2 should give payload (see DS_PYLD_FMT_XXX definitions below) */
     #define DS_CODEC_INFO_BITRATE                     /* returns codec bitrate in bps. Requires DS_CODEC_INFO_HANDLE flag */
     #define DS_CODEC_INFO_SAMPLERATE                  /* returns codec sampling rate in Hz. If DS_CODEC_INFO_HANDLE is not given, returns default sample rate for the specified codec. For EVS, nInput1 can specify one of the four (4) EVS sampling rates with values 0-3 */
     #define DS_CODEC_INFO_PTIME                       /* returns ptime in msec. Default value is raw framesize / sampling rate at codec creation-time, then is dynamically adjusted as packet streams are processed. Requires DS_CODEC_INFO_HANDLE flag */
@@ -244,7 +244,7 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 ## DSGetPayloadInfo
 
 * returns information about an RTP payload
-* return value is (i) a DS_PYLD_FMT_XXX payload format definition for applicable codecs (e.g. AMR, EVS), (ii) 0 for other codec types, or (iii) < 0 for error conditions. See [Payload Format Definitions](#user-content-payloadformatdefinitions) below
+* return value is (i) a DS_PYLD_FMT_XXX payload definition for applicable codecs (e.g. AMR, EVS), (ii) 0 for other codec types, or (iii) < 0 for error conditions. See [Payload Definitions](#user-content-payloadformatdefinitions) below
 
 DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin. A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported
 
@@ -294,7 +294,7 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 
 ```c++
     int DSGetPayloadHeaderToC(int codec_type,         /* a DS_CODEC_xxx enum defined in shared_include/codec.h */
-                              uint8_t* payload,       /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet. For EVS payloads payload is only needed for "special case" payloads (see spec section A.2.1.3, Special case for 56 bit payload size (EVS Primary or EVS AMR-WB IO SID), otherwise it can be given as NULL. For AMR payloads, DSGetPayloadHeaderToC() calls DSGetPayloadInfo() internally as information in the payload is required to determine its format (bandwidth-efficient vs octet-aligned), and in turn its ToC */
+                              uint8_t* payload,       /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet. For EVS payloads payload is only needed for "special case" payloads (see spec section A.2.1.3, Special case for 56 bit payload size (EVS Primary or EVS AMR-WB IO SID), otherwise it can be given as NULL. For AMR payloads, DSGetPayloadHeaderToC() calls DSGetPayloadInfo() internally as information in the payload is required to determine its (bandwidth-efficient vs octet-aligned), and in turn its ToC */
                               int payload_size,       /* size of the RTP payload, in bytes */
                              );
 ```
@@ -312,13 +312,13 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 ```
 
 <a name="PayloadFormatDefinitions"></a>
-## Payload Format Definitions
+## Payload Definitions
 
-Payload format definitions are currently applicable only to EVS and AMR codecs. These definitions can be used in the CODEC_ENC_PARAMS struct format or oct_align fields; also they are returned by DSGetPayloadInfo() when given an EVS or AMR codec instance handle or codec type enum.
+Payload definitions are currently applicable only to EVS and AMR codecs. These definitions can be used in the CODEC_ENC_PARAMS struct payload_format or oct_align fields; also they are returned by DSGetPayloadInfo() when given an EVS or AMR codec instance handle or codec type enum.
 
 ```c++
     #define DS_PYLD_FMT_COMPACT                       /* compact format (coded media frame has no payload header) */
-    #define DS_PYLD_FMT_FULL                          /* header-full format (coded media frames may or may not have a payload header, differentiated by collision avoidance padding */
+    #define DS_PYLD_FMT_FULL                          /* headerfull format (coded media frames may or may not have a payload header, differentiated by collision avoidance padding */
     #define DS_PYLD_FMT_HF_ONLY                       /* header-full only (coded media frames always have a payload header, with no collision avoidance padding */
     #define DS_PYLD_FMT_BANDWIDTHEFFICIENT            /* bandwidth-efficient format */
     #define DS_PYLD_FMT_OCTETALIGN                    /* octet-aligned format */
@@ -543,7 +543,7 @@ Definitions for uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS
 
   #define DEBUG_OUTPUT_VOPLIB_PADDING_BYTE_APPEND                     /* show encoder padding bytes when appended */
   #define DEBUG_OUTPUT_VOPLIB_SHOW_BITSTREAM_BYTES                    /* show input bitstream bytes on entry to DSCodecDecode(), or output bitstream bytes on exit from DSCodecEncode(). Displayed values are compressed bitstream bytes in hex format */
-  #define DEBUG_OUTPUT_VOPLIB_SHOW_INTERNAL_INFO                      /* show decoder or encoder internal info, once for each framesize. Internal info includes CMR, I/O mode, header and/or payload format, framesize, and first payload byte */
+  #define DEBUG_OUTPUT_VOPLIB_SHOW_INTERNAL_INFO                      /* show decoder or encoder internal info, once for each framesize. Internal info includes CMR, I/O mode, payload format, framesize, and first payload byte */
   #define DEBUG_OUTPUT_SHOW_INIT_PARAMS                               /* show encoder and/or decoder init params when instance is created. Note this flag is only active during DSCodecCreate() */
 
   #define DEBUG_TEST_ABORT_EXIT_INTERCEPTION                          /* test abort() and exit() function interception at encoder or decoder lib level. Interception prevents abort() or exit() from terminating the libary and calling application, and allows code flow to continue. The test will simulate one abort() and one exit() interception, and display an example event log error message. Note that this only applies to codecs with embedded abort() and exit() functions that cannot -- or are not allowed to -- be removed, for example due to (i) binary implementation, (ii) possible license violation if source code is modified */
@@ -607,9 +607,9 @@ The following tools and reference apps are used for codec regression test, debug
 
 Codec Regression Test Scripts below gives instructions and notes for running regression test scripts. Here are some notes on more advanced test procedures:
 
-1) In Signalogic labs we compare output md5 sums with reference test outputs. As these figures vary from system to system (and from compiler to compiler), please contact Signalogic to discuss if you're interested in such test procedures
+1) Some of the script command lines below include the --md5sum option, in most cases the final md5 sum shown for mediaTest or mediaMin output should be repeatable. For any "time stamp match" mode command lines, they should absolutely be repeatable
 
-2) Some of the script command lines below include the --md5sum option, in most cases the final md5 sum shown for mediaTest or mediaMin output should be repeatable. For any "time stamp match" mode command lines, they should absolutely be repeatable
+2) To verify bit-exact outputs, output md5 sums can be compared with reference test outputs. As these figures vary from system to system (and from compiler to compiler), please contact Signalogic to discuss if you're interested in such test procedures
 
 3) "In the wild" pcaps are from two (2) sources:
 
@@ -637,7 +637,7 @@ Following is the basic test procedure:
       bad<br/>
       seg<br/>
 
-There should be no occurrences.
+There should be no occurrences (note - "bad" may occur rarely due to hex values in the output).
 
 <a name="EVSRegressionTestScript"></a>
 ### EVS Codec Regression Test Script
@@ -988,7 +988,7 @@ mediaMin -cx86 -C../session_config/merge_testing_config_amr -i../pcaps/AMR_Musix
 mediaMin -cx86 -C ../session_config/amrwb_packet_test_config_AMRWB_SID -i../pcaps/AMRWB_SID.pcap -r0.5 -L -d0x08040800 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 12650 md5 sum ending in cb27d5
-mediaMin -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0x080c0c01 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0x080c0c01 -r0.9 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-NB 12200 bandwidth-efficient md5 sum ending in 629aff
 mediaMin -cx86 -i../test_files/crash1.pcap -L -d0x580000008040811 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }" -l2 --md5sum
