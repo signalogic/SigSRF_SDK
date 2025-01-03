@@ -243,7 +243,7 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 ## DSGetPayloadInfo
 
 * returns information about an RTP payload
-* return value is (i) a DS_PYLD_FMT_XXX payload definition for applicable codecs (e.g. AMR, EVS), (ii) 0 for other codec types, or (iii) < 0 for error conditions. See [Payload Definitions](#user-content-payloadformatdefinitions) below
+* return value is (i) a DS_PYLD_FMT_XXX payload definition for applicable codecs (e.g. AMR, EVS), (ii) 0 for other codec types, or (iii) < 0 for error conditions. See [Payload Format Definitions](#user-content-payloadformatdefinitions) below
 
 DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin. A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported
 
@@ -311,14 +311,14 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 ```
 
 <a name="PayloadFormatDefinitions"></a>
-## Payload Definitions
+## Payload Format Definitions
 
-Payload definitions are currently applicable only to EVS and AMR codecs. These definitions can be used in the CODEC_ENC_PARAMS struct payload_format or oct_align fields; also they are returned by DSGetPayloadInfo() when given an EVS or AMR codec instance handle or codec_type enum.
+Payload format definitions are currently applicable only to EVS and AMR codecs. These definitions can be used in the CODEC_ENC_PARAMS struct payload_format or oct_align fields; also they are returned by DSGetPayloadInfo() in the uFormat field of a [PAYLOAD_INFO struct](#user-content-payloadinfo) when given an EVS or AMR codec instance handle or codec_type enum.
 
 ```c++
     #define DS_PYLD_FMT_COMPACT                       /* compact format (coded media frame has no payload header) */
     #define DS_PYLD_FMT_FULL                          /* headerfull format (coded media frames may or may not have a payload header, differentiated by collision avoidance padding */
-    #define DS_PYLD_FMT_HF_ONLY                       /* header-full only (coded media frames always have a payload header, with no collision avoidance padding */
+    #define DS_PYLD_FMT_HF_ONLY                       /* headerfull-only format (coded media frames always have a payload header, with no collision avoidance padding */
     #define DS_PYLD_FMT_BANDWIDTHEFFICIENT            /* bandwidth-efficient format */
     #define DS_PYLD_FMT_OCTETALIGN                    /* octet-aligned format */
 ```
