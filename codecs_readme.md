@@ -237,6 +237,8 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 ```c++
     #define DS_CODEC_INFO_SIZE_BITS                   /* indicates DS_CODEC_INFO_CODED_FRAMESIZE return value should be in size of bits (instead of bytes) */
 
+    #define DS_CODEC_INFO_NAME_VERBOSE                /* if DS_CODEC_INFO_NAME_VERBOSE is combined with the DS_CODEC_INFO_NAME flag, additional information will be included in some codec names, for example "L16" becomes "L16 (linear 16-bit PCM)". When this flag is used the resulting codec name should not be used with the DS_CODEC_TYPE_FROM_NAME flag */
+
     #define DS_CODEC_INFO_SUPPRESS_WARNING_MSG        /* suppress DSGetCodecInfo() warning messages */
 ```
 <a name="DSGetPayloadInfo"></a>
