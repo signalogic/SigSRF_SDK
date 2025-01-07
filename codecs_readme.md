@@ -636,9 +636,10 @@ Following is the basic test procedure:
       invalid<br/>
       exceed<br/>
       bad<br/>
-      seg<br/>
+      wrong<br/>
+      incorrect<br/>
 
-There should be no occurrences (note - "bad" may occur rarely due to hex values in the output).
+There should be no occurrences (note - "bad" may occur rarely due to hex numbers in the output, for instance an RTP SSRC value).
 
 <a name="EVSRegressionTestScript"></a>
 ### EVS Codec Regression Test Script
