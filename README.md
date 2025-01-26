@@ -72,7 +72,7 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 * Security - detect RTP malware including RTP header and codec bitstream steganography
 * Network Analyzers
 
-### Edge Use Cases
+### Edge Computing and Edge AI Use Cases
 * Robotics - implement ASR <sup>2</sup> voice commands for hands-free, urgent, or safety related requirements without cloud dependency <sup>3</sup>
 * Factory, construction, warehouse equipment - implement accident avoidance for remotely controlled and automated equipment
 * Vehicle automation - implement small server add-on / after-market products such as small form-factor Lidar
@@ -366,11 +366,11 @@ wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages
 ```
 Ubuntu and Debian .rar
 ```
-wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_31Jul24.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_31Jul24.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_21Jan25.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_21Jan25.rar
 ```
 CentOS .rar
 ```
-wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_CentOS6-8_31Jul24.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_CentOS6-8_31Jul24.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_CentOS6-8_21Jan25.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_CentOS6-8_21Jan25.rar
 ```
 For the ASR version of the SDK, the following multi-line command can be used:
 ```
