@@ -596,7 +596,7 @@ Reference applications limits are listed below.  The iaTest and paTest apps do n
 
    1) Data limit.  Processing is limited to 100,000 frames / payloads of data.  There is no limit on data sources, which include various file types (audio, encoded, pcap), network sockets, and USB audio.
 
-   2) Concurrency limit.  Maximum number of concurrent instances is two and maximum number of channels per instance is 2 (total of 4 concurrent channels).
+   2) Concurrency limit.  Maximum number of concurrent streams is four (4) and maximum number of channels including RFC8108 is 8 (total of 8 concurrent channels). An additional four (4) video streams are included.
 
 If you would prefer an evaluation version with increased data and concurrency limits for a trial period, [contact us](#DocumentationSupport). This requires a business case and possibly an NDA.
 
