@@ -21,6 +21,7 @@ Use case driven improvements
  - input data caching to improve mediaMin application thread performance
  - EVS hf-only format supported
  - updated voplib documentation, including API and interop and regression test scripts for EVS and AMR
+ - upgrade DSGetPayloadInfo() API in voplib to support detailed, fast, and generic RTP payload inspection modes
 
 Bug fixes
 
