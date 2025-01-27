@@ -1,12 +1,15 @@
 /* hello_codec.h
 
- Copyright (C) Signalogic 2022-2024
+Copyright (C) Signalogic 2022-2025
 
- Revision History
-   Created Aug 2022
-   Modified Dec 2022, misc items not relevant to understanding how to use codecs moved here
-   Modified Jan 2023 JHB, new naming for profile_setup() and profile_results()
-   Modified Feb 2024 JHB, omit hwlib references if NO_HWLIB defined
+Revision History
+
+  Created Aug 2022
+  Modified Dec 2022, misc items not relevant to understanding how to use codecs moved here
+  Modified Jan 2023 JHB, new naming for profile_setup() and profile_results()
+  Modified Feb 2024 JHB, omit hwlib references if NO_HWLIB defined
+  Modified Dec 2024 JHB, remove MAX_FSCONV_UP_DOWN_FACTOR duplicated definition (use voplib.h definition)
+  Modified Jan 2025 JHB, add typecast for codec_types typedef usage (codec_types is defined in shared_include/codec.h)
 */
 
 #ifndef _HELLO_CODEC_H_
@@ -58,15 +61,14 @@ codec_test_params_t    codec_test_params = { 0 };  /* codec parameters read from
 HCODEC               encoder_handles[MAX_CODEC_INSTANCES] = { 0 },  /* number of codec handles is an arbitrary value, whatever the application needs. Currently the max possible number of codec handles is used; another option is MAX_AUDIO_CHAN, defined in voplib.h */
                      decoder_handles[MAX_CODEC_INSTANCES] = { 0 };
 
-CODEC_PARAMS         CodecParams = { 0 };  /* CODEC_PARAMS and CODEC_OUTARGS defined in voplib.h */
+CODEC_PARAMS         CodecParams = { (codec_types)0, 0 };  /* CODEC_PARAMS and CODEC_OUTARGS are defined in voplib.h. Init both structs to zero (first item is codec_types typedef (shared_include/codec.h) and needs a typecast, https://stackoverflow.com/questions/39328677/initialize-struct-to-zero-except-one-field), JHB Jan 2025 */
 CODEC_OUTARGS        encOutArgs = { 0 };   /* currently only used by AMR-WB+, see comments below */
 
 int                  numChan = 1;  /* number of audio channels per codec stream (e.g. stereo, or N-channel wav file), one codec handle per channel. Note this is separate from concurrent codec streams (multithread) */
 
 /* note - we keep some sampling rate conversion related definitions in place as a reminder for storage requirements, even though Fs conversion functionality is not supported in hello_codec as it is in mediaTest */
 
-#define MAX_FS_CONVERT_MEDIATEST  160  /* mediaTest sampling rate conversion worst case:  44100 to/from 48000 kHz (was 24 for 8 to/from 192 kHz) */
-#define MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE  (MAX_FS_CONVERT_MEDIATEST*4)  /* to limit stack usage, we define a "tradeoff size" between number of audio channels and worst-case Fs conversion, for example 4 channels at 44.1 <--> 48 kHz, or 100 channels at 8 <--> 48 kHz, etc */
+#define MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE  (MAX_FSCONV_UP_DOWN_FACTOR*4)  /* to limit stack usage, we define a "tradeoff size" between number of audio channels and worst-case Fs conversion, for example 4 channels at 44.1 <--> 48 kHz, or 100 channels at 8 <--> 48 kHz, etc. MAX_FSCONV_UP_DOWN_FACTOR is defined in voplib.h for sampling rate conversion worst case of 44100 to/from 48000 kHz */
 
 uint8_t in_buf[MAX_RAW_FRAME*MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE*AUDIO_SAMPLE_SIZE];  /* raw audio input buffer, prior to encoding */
 uint8_t out_buf[MAX_RAW_FRAME*MAX_CHAN_FS_CONVERT_TRADEOFF_SIZE*AUDIO_SAMPLE_SIZE] = { 0 };  /* decoded audio output buffer */

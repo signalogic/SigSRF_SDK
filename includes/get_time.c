@@ -9,7 +9,7 @@
 
  Description
 
-  source for get_time() function in hwlib.h
+  source for get_time() function in directcore.h
 
  Projects
 
@@ -17,7 +17,7 @@
 
  Revision History
 
-  Created May 2024 JHB, moved here from hwlib.h
+  Created May 2024 JHB, moved here from directcore.h
 */
 
   uint64_t ret_val;

@@ -16,6 +16,12 @@
    Modified Dec 2023 JHB, include transcoding.h
 */
 
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
+
+#include "directcore.h"
 #include "mediaTest.h"
 #include "shared_include/transcoding.h"
 #include "mailBoxLoc.h"

@@ -1,11 +1,11 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/mediaMin.cpp
 
- Copyright (C) Signalogic Inc. 2018-2024
+ Copyright (C) Signalogic Inc. 2018-2025
 
  License
 
-  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited in data sets or other training data for large language models or programming models used by AI applications. Intended for human collaboration and teamwork only
 
  Description
 
@@ -13,18 +13,20 @@
 
    -telecom and analytics applications, e.g. SBC, lawful interception, ASR and transcription, call recording
 
-   -standard operating mode
+   -application modes include
 
      -basic API interface to SigSRF pktlib, including packet push/pull queues, session create/delete and session get/set info
      -SigSRF pktlib packet/media thread usage, including multiple threads
      -static session creation based on session config files
      -dynamic session creation based on packet contents, supporting multistream pcaps and UDP flow ("dynamic sessions" mode)
-     -support for pcaps with/without packet timestamps (wall clock packet arrival times)
+     -an "analytics mode" that supports pcaps without packet timestamps (no packet arrival times)
+     -merging media streams, both with live output and with a non-live that generates reproducible output (no jitter)
+     -accelerated timing for bulk pcap processing
      -SigSRF lib event logging, packet logging, packet time and loss stats
 
-   -capacity measurement and test modes
+   -capacity measurement / test modes include
 
-     -multiple application threads, including all above SOP functionality per thread 
+     -multiple application threads, including above functionality per thread 
      -functional test
      -stress test
 
@@ -47,7 +49,7 @@
 
    Created Jul 2018 JHB, see also revision history in mediaTest_proc.c and packet_flow_media_proc.c
    Modified Jul 2018 CKJ, add pcap file I/O for testing
-   Modified Jul 2018 JHB, fix problem with screen counters, pause before exiting to allow packet/media thread time to clean up and generate packet stats log
+   Modified Jul 2018 JHB, fix problem with console output counters, pause before exiting to allow packet/media thread time to clean up and generate packet stats log
    Modified Jul 2018 JHB, enable user managed sessions and stream merging
    Modified Aug 2018 JHB, add reference to debugMode ("Mode") to allow new testing options (start packet/media thread before/after creating sessions, delete sessions while thread continues to run, etc)
    Modified Aug 2018 JHB, correctly push/pulls packets for multiple session test cases
@@ -55,35 +57,35 @@
    Modified Sep 2018 JHB, change FlushSession() to reflect new usage of DS_SESSION_INFO_STATE in DSSetSessionInfo()
    Modified Sep 2018 JHB, add support for multiple stream groups, see StreamGroupOutputSetup() and GetNextGroupSessionIndex()
    Modified Sep 2018 CKJ, add dynamic sessions mode
-   Modified Sep 2018 JHB, organize cmd line entry used for operational modes, stress tests, and options/flags.  Include RTP payload type in key used for dynamic session detection.  Additional checks for codec type estimation in dynamic session detection
-   Modified Sep 2018 JHB, add multiple mediaMin thread support.  A typical command line is ./mediaTest -M0 -cx86 -itest_files/file.pcap -L -dN -r0 -Et -t6, where -Et invokes mediaMin, -tN specifies number of concurrent threads, and -dN specifies operating mode and media flags depending on input type, sessions mode, etc (see flag definitions)
+   Modified Sep 2018 JHB, organize cmd line entry used for operational modes, stress tests, and options/flags. Include RTP payload type in key used for dynamic session detection. Additional checks for codec type estimation in dynamic session detection
+   Modified Sep 2018 JHB, add multiple mediaMin thread support. A typical command line is ./mediaTest -M0 -cx86 -itest_files/file.pcap -L -dN -r0 -Et -t6, where -Et invokes mediaMin, -tN specifies number of concurrent threads, and -dN specifies operating mode and media flags depending on input type, sessions mode, etc (see flag definitions)
    Modified Oct 2019 JHB, add stop key, for clean exit in multithread tests
-   Modified Oct 2018 JHB, add ANALYTICS_MODE flag, which enables pktlib analytics mode and modifies operation of PushPackets() and PullPackets() to push/pull packets at ptime intervals (e.g. 20 msec for EVS and AMR NB/WB).  The objective is output packets, including signal processing outputs such as merged audio, at regular 20 msec intervals that can be verified with Wireshark wall clock stats
+   Modified Oct 2018 JHB, add ANALYTICS_MODE flag, which enables pktlib analytics mode and modifies operation of PushPackets() and PullPackets() to push/pull packets at ptime intervals (e.g. 20 msec for EVS and AMR NB/WB). The objective is output packets, including signal processing outputs such as merged audio, at regular 20 msec intervals that can be verified with Wireshark wall clock stats
    Modified Oct 2018 JHB, make use of numPkts parameter added to DSPullPackets()
    Modified Oct 2018 JHB, fix bug in PullPackets() where packet output to jitter buffer and transcoded output pcap files was mixed together
    Modified Oct 2018 JHB, disable retry-wait in PushPackets() if push queue is full, replace with stderr notice if log level >= 8
-   Modified Oct 2018 JHB, added variable rate push algorithm in PushPackets(), based on transcoded output queue levels.  Look for "average_push_rate"
+   Modified Oct 2018 JHB, added variable rate push algorithm in PushPackets(), based on transcoded output queue levels. Look for "average_push_rate"
    Modified Oct 2018 JHB, additional -dN cmd line entry flags
    Modified Nov 2018 JHB, implement simulated live UDP port packet input, using packet arrival times (timestamps) in pcap file (see -dN cmd line flag USE_PACKET_ARRIVAL_TIMES)
    Modified Nov 2018 JHB, add support for termN output_buffer_interval
    Modified Nov 2018 JHB, fix detection of AMR-NB SID packet in detect_codec_type_and_bitrate()
-   Modified Nov 2018 JHB, add retry for stream group queue packet pull, if a packet is not available on strict 20 msec interval timing, then wait 1 msec and retry a few times.  Only active if USE_PACKET_ARRIVAL_TIMES mode is in effect.  See USE_GROUP_PULL_RETRY definition
+   Modified Nov 2018 JHB, add retry for stream group queue packet pull, if a packet is not available on strict 20 msec interval timing, then wait 1 msec and retry a few times. Only active if USE_PACKET_ARRIVAL_TIMES mode is in effect. See USE_GROUP_PULL_RETRY definition
    Modified Jan 2019 JHB, add -n cmd line entry for input reuse, to increase number of sessions for stress and capacity testing
-   Modified Feb 2019 JHB, set EVS decode output Fs to 8 kHz instead of 16 kHz if stream group merging is active.  This reduces decode time and eliminates sampling rate conversion for narrowband merging, increasing session capacity
+   Modified Feb 2019 JHB, set EVS decode output Fs to 8 kHz instead of 16 kHz if stream group merging is active. This reduces decode time and eliminates sampling rate conversion for narrowband merging, increasing session capacity
    Modified Sep 2019 JHB, modify codec detection algorithm in detect_codec_type_and_bitrate() to handle additional EVS bitrates, AMR octet-aligned cases, and improve best guess for cases when different codecs have identical RTP payload lengths
    Modified Oct 2019 JHB, add auto-quit (active when all inputs are files), wait for p/m threads to close before exit, and apply STREAM_GROUP_DEBUG_STATS flag to termination endpoints to enable stats for overrun compensation (for per channel overrun, silence frame detection and compression is enabled by default; see shared_include/streamlib.h)
-   Modified Oct 2019 JHB, add multiple stream groups in dynamic sessions mode, treating each cmd line input spec ("-ixx") as a multistream group.  For example, for two pcaps on the cmd line each would (i) be considered a multistream group and (ii) have its own stream group
+   Modified Oct 2019 JHB, add multiple stream groups in dynamic sessions mode, treating each cmd line input spec ("-ixx") as a multistream group. For example, for two pcaps on the cmd line each would (i) be considered a multistream group and (ii) have its own stream group
    Modified Oct 2019 JHB, add COMBINE_INPUT_SPECS cmd line flag, which is similar to DYNAMIC_SESSIONS, but combines all cmd line input specs into one multistream group (and one stream group if applicable)
    Modified Nov 2019 JHB, added option to inject 1 sec timing markers in stream group audio output
-   Modified Dec 2019 JHB, add -jN cmd line option for jitter buffer target and max delay values.  These can be set in session config files, but for dynamic sessions there was not previously a way to control this
-   Modified Jan 2020 JHB, add -RN cmd line option for repeat operation. N = number of times to repeat the cmd line, -R0 repeats indefinitely, no entry doesn't repeat.  See nRepeatsRemaining and fRepeatIndefinitely vars.  The ENABLE_REPEAT Mode flag is no longer used
+   Modified Dec 2019 JHB, add -jN cmd line option for jitter buffer target and max delay values. These can be set in session config files, but for dynamic sessions there was not previously a way to control this
+   Modified Jan 2020 JHB, add -RN cmd line option for repeat operation. N = number of times to repeat the cmd line, -R0 repeats indefinitely, no entry doesn't repeat. See nRepeatsRemaining and fRepeatIndefinitely vars. The ENABLE_REPEAT Mode flag is no longer used
    Modified Jan 2020 JHB, implement per-session flush, session delete in last flush state (for dynamic sessions mode only). Upon deletion hSession[] handles are marked as deleted (set to -1), allowing their stats to stay available but preventing any further pktlib API usage
-   Modified Jan 2020 JHB, PushPackets() now takes cur_time as a param instead of calling get_time().  This is a little faster but more importantly all input packet flows use the same reference when calculating packet timestamps vs. elapsed time. This fixes a slight variability seen in multiple input flow handling (for example with repeat enabled, stream group output FLCs might vary between repeats)
+   Modified Jan 2020 JHB, PushPackets() now takes cur_time as a param instead of calling get_time(). This is a little faster but more importantly all input packet flows use the same reference when calculating packet timestamps vs. elapsed time. This fixes a slight variability seen in multiple input flow handling (for example with repeat enabled, stream group output FLCs might vary between repeats)
    Modified Jan 2020 JHB, add TERM_PKT_REPAIR_ENABLE and TERM_OVERRUN_SYNC_ENABLE flags to termN.uFlags during dynamic session creation
    Modified Feb 2020 JHB, make sure all sessions are fully deleted before exit or repeat. This is more efficient than sleeping some arbitary amount of time, and is also more reliable in the case of very long output wav files
-   Modified Feb 2020 JHB, for real-time packet input (e.g. pcaps with packet timestamps, UDP input), move session flush to be immediately after input flow ends.  Session delete continues to take place after all queues are empty
+   Modified Feb 2020 JHB, for real-time packet input (e.g. pcaps with packet timestamps, UDP input), move session flush to be immediately after input flow ends. Session delete continues to take place after all queues are empty
    Modified Mar 2020 JHB, change DISABLE_SID_REPAIR flag to DISABLE_PACKET_REPAIR -- the flag, if included in -dN cmd line entry, now applies to both SID and media packet repair
-   Modified Mar 2020 JHB, rework auto-adjust push rate algorithm and fix a problem it had when nReuseInputs is active. See comments in PushPackets() near AUTO_ADJUST_PUSH_RATE
+   Modified Mar 2020 JHB, rework auto-adjust push rate algorithm and fix a problem it had when nReuseInputs is active. See comments in PushPackets() near AUTO_ADJUST_PUSH_TIMING
    Modified Mar 2020 JHB, fix problem with "missed stream group interval" stats that were still accumulating after session flush
    Modified Mar 2020 JHB, add REPEAT_INPUTS flag to repeat input flows when applicable, for example wrapping pcap files back to start
    Modified Mar 2020 JHB, improve AppThreadSync() function to handle (i) waiting for master application thread and (ii) waiting for all threads
@@ -127,10 +129,10 @@
    Modified Dec 2022 JHB, add DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag and wav output seek time alarm, see comments near ENABLE_WAV_OUT_SEEK_TIME_ALARM 
    Modified Dec 2022 JHB, replace ancient event log config with new diaglib APIs DSInitLogging() and DSCloseLogging(). Also see example of using DSUpdateLogConfig()
    Modified Dec 2022 JHB, call DSConfigMediaService() with DS_MEDIASERVICE_EXIT flag at in cleanup/exit
-   Modified Jan 2023 JHB, improve codec auto-detection for ocet-aligned AMR-NB and AMR-WB
+   Modified Jan 2023 JHB, improve codec auto-detection for octet-aligned AMR-NB and AMR-WB
    Modified Jan 2023 JHB, filter non-dynamic UDP ports and media port allow list. See NON_DYNAMIC_UDP_PORT_RANGE, UDP_Port_Media_Allow_List[], and FILTER_UDP_PACKETS
    Modified Jan 2023 JHB, fix issue where 'q' key during post-processing (e.g. packet log collate and analysis) caused a hang. See call to DSConfigLogging()
-   Modified Jan 2023 JHB, in PushPackets() use DS_PKT_INFO_PKTINFO flag in DSGetPacketInfo() to minimize packet handling overhead
+   Modified Jan 2023 JHB, in PushPackets() use DS_PKT_INFO_PKTINFO flag and PKTINFO struct in DSGetPacketInfo() to minimize packet handling overhead
    Modified Jan 2023 JHB, add support for SAP/SDP protocol
    Modified Jan 2023 JHB, add rudimentary support for SIP message session control. Look for SESSION_CONTROL_FOUND_SIP_xxx flags. The SIP BYE message will terminate a stream (this can be disabled by the DISABLE_TERMINATE_STREAM_ON_BYE flag in -dN cmd line options)
    Modified Mar 2023 JHB, handle SIP messages when source port is 5060 (show but not parse)
@@ -152,7 +154,7 @@
    Modified Nov 2023 JHB, implement PCAP_TYPE_RTP to handle .rtpdump (and .rtp) format inputs. Heavy lifting is done in pktlib DSOpenPcap() and DSReadPcap(). See the modified pcap_hdr_t struct in pktlib.h
    Modified Nov 2023 JHB, fix 16 kHz output option for stream group output wav files (look for FORCE_EVS_16KHZ_OUTPUT). Note this does not affect ASR
    Modified Dec 2023 JHB, implement --group_pcap cmd line option for user-specified stream group pcap output path
-   Modified Feb 2024 JHB, use DS_VOICE_CODEC_TYPE_L16 (linear PCM 16-bit) for term 2 codec type in timestamp matching mode. This makes transcoded output sent from packet/media threads more useful for Wireshark and other debug
+   Modified Feb 2024 JHB, use DS_CODEC_AUDIO_L16 (linear PCM 16-bit) for term 2 codec type in timestamp matching mode. This makes transcoded output sent from packet/media threads more useful for Wireshark and other debug
    Modified Feb 2024 JHB, fix bug in calculation of stream group sampling rate when FORCE_EVS_16KHZ_OUTPUT is not defined
    Modified Feb 2024 JHB, modify media and processing time output to use hours:min:sec format, show both processing and media time in FTRT mode
    Modified Mar 2024 JHB, use fabsf() instead of abs() for float-point average jitter calculation. During tools/system regression test only gcc 5.x has a complaint about this, but doesn't matter for output results, so we can leave it this way
@@ -174,21 +176,35 @@
    Modified Jul 2024 JHB, set DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM packet logging flag in DSWritePacketStatsHistoryLog() uFlags if DISABLE_DORMANT_SESSION_DETECTION cmd line option is set (see diaglib.h for flag info)
    Modified Jul 2024 JHB, mods to isDuplicatePacket() and isReservedUDP() after regression test
    Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap() and DSConfigMediaService(), add uFlags param and move pkt buffer len to fourth param in DSWritePcap()
- Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, move uFlags to second param in calls to DSGetLogTimeStamp() and DSWritePacketStatsHistoryLog(), support --group_ccap_nocopy command line option
+ Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, move uFlags to second param in calls to DSGetLogTimestamp() and DSWritePacketStatsHistoryLog(), support --group_ccap_nocopy command line option
  Modified Jul 2024 JHB, modify calls to DSWritePcap() to add pcap_hdr_t*, remove timestamp (struct timespec*) and TERMINFO_INFO* params (the packet record header param now supplies a timestamp, if any, and IP type is read from packet data in pkt_buf). See pktlib.h comments
- Modified Jul 2024 JHB, improve detection for EVS AMR IO modes 23.05 and 23.85
+ Modified Jul 2024 JHB, improve detection for EVS AMR IO modes 23.05 and 23.85 kbps
  Modified Jul 2024 JHB, clarify usage of ENABLE_WAV_OUTPUT and ENABLE_TIMESTAMP_MATCH_MODE flag
  Modified Jul 2024 JHB, adding TCP SDP info packets to SDP database now controlled by ENABLE_STREAM_SDP_INFO -dN cmd line flag (UDP was already)
  Modified Aug 2024 JHB, convert GetMD5Sum() to generic ConsoleCommand() to support --md5sum, --sha1sum, and --sha512sum command line options
  Modified Aug 2024 JHB, move isPacketDuplicate() and isReservedUDP() to pktlib as DSIsPacketDuplicate() and DSIsReservedUDP(), see pktlib_RFC791_fragmentation.cpp for source code
+ Modified Sep 2024 JHB, in CreateDynamicSession() apply TERM_DISABLE_OUTPUT_QUEUE_PACKETS flag if no transcode or bitstream outputs specified on cmd line. This reduces packet/media worker processing time in many cases
+ Modified Sep 2024 JHB, rename TranscodeOutputSetup() to OutputSetup(). Add video bitstream output handling in OutputSetup() and PullPackets()
+ Modified Sep 2024 JHB, in CreateDynamicSession() if no outputs specified on cmd line, apply TERM_DISABLE_OUTPUT_QUEUE_PACKETS flag (increase efficiency of both apps and packet/media threads when possible)
+ Modified Sep 2024 JHB, restructure OutputSetup(), JitterBufferOutputSetup(), and StreamGroupOutputSetup(), which now operate per-session. Modify CreateDynamicSession() and PullPackets() accordingly
+ Modified Sep 2024 JHB, improvements in repeat test mode handling (-RN cmd line spec). Look for nRepeatsCompleted
+ Modified Oct 2024 JHB, implement input data read cache to avoid unnecessary input source reads and increase app thread performance. Look for input_data_cache and GetInputData()
+ Modified Oct 2024 JHB, index arrival timestamp wait logic and console messages by input stream. Look for last_wait_check_time[] and wait_pause[]
+ Modified Nov 2024 JHB, add suppress warning messages flag to DSGetPayloadInfo() calls in detect_codec_type_and_bitrate()
+ Modified Nov 2024 JHB, update session summary stats and enable for static sessions (see comments in CreateStaticSessions() in session_app.cpp)
+ Modified Nov 2024 JHB, modify FindSession() to use correct IPv6 header length
+ Modified Nov 2024 JHB, in CreateDynamicSession() use PktInfo, remove redundant DSGetPacketInfo() calls
+ Modified Dec 2024 JHB, use _xx_CODEC_FS constants defined in voplib.h
+ Modified Dec 2024 JHB, fix auto-detection for several less-often used AMR rates; necessary to pass AMR regression test in amr_interop_test.sh
+ Modified Jan 2025 JHB, add run-time stats for RTCP packets and unhandled RTP packets (if any). Look for num_rtcp_packets[] and num_unhandled_rtp_packets[]
+ Modified Jan 2025 JHB, in detect_codec_type_and_bitrate() add #pragma GCC diagnostic ignored "-Wimplicit-fallthrough" to avoid switch statement fall-through warnings in gcc 7.x and higher
 */
 
 /* Linux header files */
 
 #include <stdio.h>
 #include <pthread.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
+
 #include <signal.h>
 #include <assert.h>
 
@@ -197,11 +213,15 @@
 
 using namespace std;
 
+/* DirectCore APIs */
+  
+#include "directcore.h"
+
 /* mediaTest header file */
 
 #include "mediaTest.h"  /* bring in vars declared in cmd_line_interface.c, including MediaParams[], PlatformParams, RealTimeInterval[], and debugMode (defined as Mode in mediaMin.h) */
 
-/* lib header files */
+/* SigSRF lib header files */
 
 #include "pktlib.h"     /* packet push/pull and session management APIs. Pktlib includes packet/media threads, packet handling and formatting, jitter buffers, session handling */
 #include "voplib.h"     /* voplib provides an API interface to all codecs. Normally this is used by pktlib but can be accessed directly if needed */
@@ -225,21 +245,21 @@ using namespace std;
 /* number of possible input streams, including streams that are re-used for multithread and high capacity testing */
 //#define MAX_INPUT_STREAMS MAX_SESSIONS  /* MAX_SESSIONS is defined in transcoding.h, which is included in mediaTest.h */
 
-//#define LOG_OUTPUT  LOG_SCREEN_ONLY  /* screen output only */
-//#define LOG_OUTPUT  LOG_FILE_ONLY    /* file output only */
-#define LOG_OUTPUT  LOG_SCREEN_FILE    /* screen + file output (LOG_SCREEN_FILE defined in diaglib.h) */
+//#define LOG_OUTPUT  LOG_CONSOLE     /* console output */
+//#define LOG_OUTPUT  LOG_FILE        /* event log file output */
+#define LOG_OUTPUT  LOG_CONSOLE_FILE  /* console + event log file output (LOG_CONSOLE_FILE is defined in diaglib.h) */
 
 #define USE_GROUP_PULL_RETRY
 
 #define NON_DYNAMIC_UDP_PORT_RANGE  4096  /* non-dynamic UDP port range. Change this if less or more UDP ports should be ignored. See FILTER_UDP_PACKETS below, JHB Jan 2023 */
 
-PORT_INFO_LIST UDP_Port_Media_Allow_List[] = { 1234, 3078, 3079 };  /* add exceptions here for UDP ports that should be allowed for RTP media (and are not expressed in input stream SDP info). Currently the list has some arbitrary ports found in a few legacy test pcaps used in mediaMin regression test. Ports can also be added at run-time using -p cmd line entry */
+PORT_INFO_LIST UDP_Port_Media_Allow_List[] = { 1234, 3078, 3079 };  /* add exceptions here for UDP ports that should be allowed for RTP media (and are not expressed by in-stream SDP info). Currently the list has some arbitrary ports found in a few legacy test pcaps used in mediaMin regression test. Port exceptions can also be added at run-time using -p cmd line entry */
 
 static char prog_str[] = "mediaMin";
 #ifdef _MEDIAMIN_
 static char banner_str[] = "packet media streaming for analytics and telecom applications on x86 and coCPU platforms";
 #endif
-static char version_str[] = "v3.6.2";
+static char version_str[] = "v3.7.1";
 static char copyright_str[] = "Copyright (C) Signalogic 2018-2024";
 
 //#define VALGRIND_DEBUG  /* enable when using Valgrind for debug */
@@ -247,43 +267,49 @@ static char copyright_str[] = "Copyright (C) Signalogic 2018-2024";
 #define VALGRIND_DELAY 100  /* usleep delay value in usec for allowing valgrind to run multithreaded apps on the same core */
 #endif
 
+//#define INPUT_CACHE_DEBUG  /* uncomment to enable input data cache debug output, JHB Oct 2024 */
+#ifdef INPUT_CACHE_DEBUG
+static uint64_t read_count = 0, cache_read_count = 0, cache_pkt_copy_count = 0;
+static int max_pkt_len = 0;
+#endif
+
 /* vars shared between app threads */
 
-HPLATFORM     hPlatform = -1;           /* initialized by DSAssignPlatform() API in DirectCore lib */
+HPLATFORM     hPlatform = -1;               /* initialized by DSAssignPlatform() API in DirectCore lib */
 static int    debug_test_state;
-static bool   fThreadSync1 = false;     /* flag used to coordinate app threads during first stage of initialization */
-static bool   fThreadSync2 = false;     /* same, for second stage of initialization */
-bool          fQuit = false;            /* set if 'q' (quit) key is pressed */
-bool          fPause = false;           /* "" 'p' (pause).  Pauses operation, another 'p' resumes.  Can be combined with 'd' (display) key to read out internal p/m thread debug, capacity, stats, and other info */ 
-bool          fStop = false;            /* "" 's' (stop).  Stop prior to next repeat (only applies if -RN is entered on cmd line.  Intended for clean stop to repeating test, avoiding partial output files, especially when ENABLE_RANDOM_WAIT is active */
-unsigned int  num_app_threads = 1;      /* set to more than one if multiple mediaMin app threads are active. This is controlled by a mediaTest cmd line that includes "-Et -tn" options, where n is the number of app threads (see SigSRF documentation) */
-int           num_pktmed_threads = 0;   /* number of packet/media threads running */
-static int    log_level = 0;            /* set in LoggingSetup() */
-bool          fStressTest;              /* determined from cmd line options, number of app threads, and session re-use */
+static bool   fThreadSync1 = false;         /* flag used to coordinate app threads during first stage of initialization */
+static bool   fThreadSync2 = false;         /* same, for second stage of initialization */
+bool          fQuit = false;                /* set if 'q' (quit) key is pressed */
+bool          fPause = false;               /* "" 'p' (pause). Pauses operation, another 'p' resumes. Can be combined with 'd' (display) key to read out internal p/m thread debug, capacity, stats, and other info */ 
+bool          fStop = false;                /* "" 's' (stop). Stop prior to next repeat (only applies if -RN is entered on cmd line. Intended for clean stop to repeating test, avoiding partial output files, especially when ENABLE_RANDOM_WAIT is active */
+unsigned int  num_app_threads = 1;          /* set to more than one if multiple mediaMin app threads are active. mediaTest supports a multiple app thread test mode option (cmd line "-Et -tn" options, where n is the number of app threads; see SigSRF Github documentation) */
+int           num_pktmed_threads = 0;       /* number of packet/media threads running */
+static int    log_level = 0;                /* set in LoggingSetup() */
+bool          fStressTest;                  /* determined from cmd line options, number of app threads, and session re-use */
 static char   szSessionName[MAX_INPUT_STREAMS][384] = {{ "" }};  /* set in LoggingSetup() which should always be called */
-static bool   fInputsAllFinite = true;  /* set to false if inputs include UDP port or USB audio.  Default is true if all inputs are pcap or other file */
-static bool   fAutoQuit = false;        /* fAutoQuit determines whether program stops automatically. This is the default for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests */
+static bool   fInputsAllFinite = true;      /* set to false if inputs include UDP port or USB audio. Default is true if all inputs are pcap or other file */
+static bool   fAutoQuit = false;            /* fAutoQuit determines whether program stops automatically. This is the default for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests */
 bool          fRepeatIndefinitely = false;  /* true if -R0 is given on the cmd line */
-bool          fNChannelWavOutput = false;  /* true if stream group N-channel wav output enabled; N-channel means a wav file with 2 or more channels (i.e. as many as needed for the stream group */
-bool          fUntimedMode = false;     /* true if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is the case with some old test scripts with -r0 push-pull rate (as fast as possible). Without analytics or telecom mode specified we call it "untimed mode" and leave it available for legacy testing, but it's not recommended for normal use */
-const char tabstr[] = "    ";           /* used for stats formatting */
+bool          fNChannelWavOutput = false;   /* true if stream group N-channel wav output enabled; N-channel means a wav file with 2 or more channels (i.e. as many as needed for the stream group */
+bool          fUntimedMode = false;         /* true if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is the case with some old test scripts with -r0 push-pull rate (as fast as possible). Without analytics or telecom mode specified we call it "untimed mode" and leave it available for legacy testing, but it's not recommended for normal use */
+const char tabstr[] = "    ";               /* used for stats formatting */
 
 codec_test_params_t codec_config_params = { 0 };  /* added to support non-standard codec configurations. Notes: use -C cmd line option to specify a codec config file name, (ii) works for both dynamic and static sessions, (iii) not sure yet if this should be made per-thread or per-session; currently it's a test/debug option that applies to all mediaMin threads, JHB Sep 2022 */
 
-/* arrival timing stats. To-do: add these to THREAD_INFO struct definition in mediaMin.h */
+/* arrival timing stats. To-do: add these to APP_THREAD_INFO struct definition in mediaMin.h */
 
-static float arrival_avg_delta[10] = { 0 }, arrival_avg_jitter[10] = { 0 }, arrival_max_delta[10] = { 0 }, arrival_max_jitter[10] = { 0 }, last_msec_timestamp[10] = { 0 };
-static uint32_t num_arrival_stats_pkts[10] = { 0 };
-static int last_rtp_pyld_len[10] = { 0 };
+static float arrival_avg_delta[MAX_SESSIONS] = { 0 }, arrival_avg_jitter[MAX_SESSIONS] = { 0 }, arrival_max_delta[MAX_SESSIONS] = { 0 }, arrival_max_jitter[MAX_SESSIONS] = { 0 }, last_msec_timestamp[10] = { 0 };
+static uint32_t num_arrival_stats_pkts[MAX_SESSIONS] = { 0 };
+static int last_rtp_pyld_len[MAX_SESSIONS] = { 0 };
 
-bool fFirstConsoleMediaOutput = false;  /* set on first media-related console output; used to help manage console output about non-RTP related protocols and messages, JHB Jun 2024 */
-
+bool fFirstConsoleMediaOutput = false;      /* set on first media-related console output; used to help manage console output about non-RTP related protocols and messages, JHB Jun 2024 */
 
 /* per application thread info */
 
-APP_THREAD_INFO thread_info[MAX_APP_THREADS] = {{ 0 }};  /* THREAD_INFO struct defined in mediaMin.h, MAX_APP_THREADS defined in mediaTest.h */
+APP_THREAD_INFO thread_info[MAX_APP_THREADS] = {{ 0 }};  /* APP_THREAD_INFO struct is defined in mediaMin.h, MAX_APP_THREADS is defined in mediaTest.h */
 static int average_push_rate[MAX_APP_THREADS] = { 0 };
 int nRepeatsRemaining[MAX_APP_THREADS] = { 0 };
+int nRepeatsCompleted[MAX_APP_THREADS] = { 0 };  /* nRepeatsCompleted increments when "start" or "session_create" labels are used. This happens if -RN cmd line entry is given or certain stress tests are specified. nRepeats is the cmd line value */
 
 /* misc local definitions (most definitions are in mediaTest.h and mediaMin.h) */
 
@@ -296,7 +322,7 @@ int nRepeatsRemaining[MAX_APP_THREADS] = { 0 };
 /* logging and configuration setup */
 
 #if 0  /* these are now in cmd_line_interface.c, JHB Dec 2022 */
-#if (LOG_OUTPUT != LOG_SCREEN_ONLY)
+#if (LOG_OUTPUT != LOG_CONSOLE)
 FILE* fp_sig_lib_event_log = NULL;
 char sig_lib_event_log_filename[] = { "sig_lib_event_log.txt" };  /* default event log filename */
 #endif
@@ -312,10 +338,10 @@ void DebugSetup(DEBUG_CONFIG* dbg_cfg);            /* lib debug config */
 /* I/O setup */
 
 void InputSetup(int thread_index);
-void JitterBufferOutputSetup(int thread_index);
-void TranscodedOutputSetup(int thread_index);
-void StreamGroupOutputSetup(HSESSION hSessions[], int nInput, int thread_index);
-void MiscOutputSetup(int thread_index);
+void JitterBufferOutputSetup(HSESSION hSession, int thread_index);
+int OutputSetup(HSESSION hSession, int thread_index);
+void StreamGroupOutputSetup(HSESSION hSession, int nInput, int thread_index);
+void PathConfig(int thread_index);
 
 /* application thread helper functions */
 
@@ -327,6 +353,10 @@ void PmThreadSync(int thread_index);
   
 int PushPackets(uint8_t* pkt_in_buf, HSESSION hSessions[], SESSION_DATA session_data[], int nSessions, uint64_t cur_time, int thread_index);
 int PullPackets(uint8_t* pkt_out_buf, HSESSION hSessions[], SESSION_DATA session_data[], unsigned int uFlags, unsigned int pkt_buf_len, int thread_index);
+
+/* I/O functions */
+
+int GetInputData(uint8_t* pkt_buf, int tId, int nInput, pcaprec_hdr_t* p_pcap_rec_hdr, uint16_t* p_hdr_type);
 
 /* packet helper functions */
 
@@ -340,8 +370,10 @@ int StartPacketMediaThreads(int num_pm_threads, int thread_index);
 /* helper functions for creating and managing sessions. See also functions in session_app.cpp */
 
 void ResetDynamicSession_info(int);
-int CreateDynamicSession(uint8_t *pkt, int pkt_len, HSESSION hSessions[], SESSION_DATA session_data[], int thread_index, int nInput, int nReuse);
+
+int CreateDynamicSession(uint8_t *pkt, PKTINFO PktInfo, int network_pkt_len, HSESSION hSessions[], SESSION_DATA session_data[], int thread_index, int nInput, int nReuse);
 void FlushCheck(HSESSION hSessions[], uint64_t cur_time, uint64_t (*queue_check_time)[MAX_SESSIONS], int thread_index);
+void DeleteSession(HSESSION hSessions[], int nSessionIndex, int thread_index);
 
 /* stress test helper functions */
 
@@ -351,7 +383,7 @@ void TimerSetup();
 
 /* misc helpers */
 
-void cmdLine(int argc, char** argv, char* tmpstr);
+void cmdLine(int argc, char** argv);
 void ConsoleCommand(const char* szCmd, char* szResult, unsigned int uFlags, int thread_index);
 
 /* mediaMin application entry point. Program and multithreading notes:
@@ -373,7 +405,7 @@ void ConsoleCommand(const char* szCmd, char* szResult, unsigned int uFlags, int 
 #ifdef _MEDIAMIN_  /* _MEDIAMIN_ is defined in the mediaMin Makefile. This is true when mediaMin is run from the command line, in which case only one mediaMin application thread is active */
 int main(int argc, char **argv) {
 #else  /* _MEDIAMIN_ is not defined when mediaTest is run from the command line with the -Et and -tN options, in which case (i) mediaTest is the process, (ii) the entry point here is mediaMin_thread() instead of main(), and (iii) mediaTest starts one or more mediaMin application threads with mediaMin_thread() as the callable function entry point */
-void* mediaMin_thread(void* thread_arg) {  /* see the "executionMode[0]" switch statement in mediaTest_proc.c.  In that switch statement, the 't' case arrives here. See also console message " ... start sequence = ..." when mediaMin runs, which shows the call stack for packet/media worker threads */
+void* mediaMin_thread(void* thread_arg) {  /* see the "executionMode[0]" switch statement in mediaTest_proc.c. In that switch statement, the 't' case arrives here. See also console message " ... start sequence = ..." when mediaMin runs, which shows the call stack for packet/media worker threads */
 #endif
 
 HSESSION       hSessions[MAX_SESSIONS] = { 0 };
@@ -381,19 +413,19 @@ SESSION_DATA   session_data[MAX_SESSIONS] = {{ 0 }};
 
 unsigned char  pkt_in_buf[32*MAX_RTP_PACKET_LEN] = { 0 }, pkt_out_buf[32*MAX_RTP_PACKET_LEN] = { 0 };
 
-DEBUG_CONFIG dbg_cfg = { 0 };  /* structs used for lib debug configuration; see shared_include/config.h */
-GLOBAL_CONFIG gbl_cfg = { 0 };
+DEBUG_CONFIG   dbg_cfg = { 0 };  /* structs used for lib debug configuration; see shared_include/config.h */
+GLOBAL_CONFIG  gbl_cfg = { 0 };
 
 int i, j, nStaticSessionsConfigured = 0, nRemainingToDelete = 0, thread_index = 0;  /* mediaMin application thread index (normally zero, except for high capacity and stress test situations, see definitions and comments in cmd_line_options_flags.h) */
 
 unsigned long long cur_time = 0, base_time = 0;
 uint64_t interval_count = 0, queue_check_time[MAX_SESSIONS] = { 0 };
-bool fExitErrorCond, fRepeatFromStart = false;  /* fRepeatFromStart is set true "start" or "session_create" labels are used. This happens if -RN cmd line entry is given (look for "nRepeat") or certain stress test types are specified */
+bool fExitErrorCond = false;  /* set true on error conditions */
 char tmpstr[MAX_APP_STR_LEN];  /* large temporary string used for various purposes */
 
    #ifdef _MEDIAMIN_  /* main() runs as a process from a mediaMin command line */
 
-   cmdLine(argc, argv, tmpstr);  /* handle command line, version info, etc */
+   cmdLine(argc, argv);  /* handle command line, version info, etc */
 
    printf("mediaMin start, cmd line execution\n");
 
@@ -417,8 +449,8 @@ char tmpstr[MAX_APP_STR_LEN];  /* large temporary string used for various purpos
 
    if (Mode == -1) Mode = 0;  /* default value if no cmd line entry given is -1 (Mode is defined from "debugMode" in mediaTest.h. debugMode is set in cmd_line_interface.c from the command line by -d argument) */
 
-   if (nRepeat == 0) fRepeatIndefinitely = true;  /* nRepeat is initialized in cmd_line_interface.c from -RN cmd line entry (if no entry nRepeat = -1). Note that some stress tests already have repeat built in, so -RN entry may be ignored or treated differently in those cases */
-   nRepeatsRemaining[thread_index] = nRepeat;  /* each app thread keeps an independent repeat count, as they may repeat at different times (for example if ENABLE_RANDOM_WAIT is set) */
+   if (nRepeats == 0) fRepeatIndefinitely = true;  /* nRepeats is initialized in cmd_line_interface.c from -RN cmd line entry (if no entry nRepeats = -1). Note that some stress tests already have repeat built in, so -RN entry may be ignored or treated differently in those cases */
+   nRepeatsRemaining[thread_index] = nRepeats;  /* each app thread keeps an independent repeat count, as they may repeat at different times (for example if ENABLE_RANDOM_WAIT is set) */
 
    if (isMasterThread(thread_index)) {  /* isMasterThread() defined in mediaMin.h */
 
@@ -435,32 +467,39 @@ char tmpstr[MAX_APP_STR_LEN];  /* large temporary string used for various purpos
       if (Mode & CREATE_DELETE_TEST) { printf("  test mode, create, delete, and recreate sessions. Automatically repeats\n"); fTestModePrinted = true; }
       if (Mode & CREATE_DELETE_TEST_PCAP) { printf("  test mode, dynamically create sessions from pcap with initial static session. Automatically repeats\n"); fTestModePrinted = true; }
       char repeatstr[20];
-      sprintf(repeatstr, "%d times", nRepeat);
-      if (nRepeat >= 0) { printf("  repeat %s\n", nRepeat == 0 ? "indefinitely" : repeatstr); fTestModePrinted = true; }
+      sprintf(repeatstr, "%d times", nRepeats);
+      if (nRepeats >= 0) { printf("  repeat %s\n", nRepeats == 0 ? "indefinitely" : repeatstr); fTestModePrinted = true; }
       if (Mode & ENABLE_RANDOM_WAIT) { printf("  random wait at start and between repeats enabled\n"); fTestModePrinted = true; }
       if (Mode & START_THREADS_FIRST) { printf("  start packet / media threads first\n"); fTestModePrinted = true; }
       if (Mode & ENERGY_SAVER_TEST) { printf("  initial 30+ sec delay enabled to test packet/media thread energy saver mode\n"); fTestModePrinted = true; }
       if (!fTestModePrinted) printf("  none\n");
 
       printf(" Options\n");
-      if (Mode & ENABLE_STREAM_GROUPS) printf("  stream group(s)%s enabled\n", (Mode & ENABLE_WAV_OUTPUT) ? "with wav output" : "");
+      if (Mode & ENABLE_STREAM_GROUPS) printf("  stream group(s)%s enabled\n", (Mode & ENABLE_WAV_OUTPUT) ? " with wav output" : "");
 
-      if (Mode & ANALYTICS_MODE) printf("  Analytics mode with -rN nominal rate enabled\n");
-      else if (Mode & USE_PACKET_ARRIVAL_TIMES) printf("  Telecom mode with -rN nominal rate enabled\n");
-      else { printf("  Untimed mode with -rN nominal rate enabled\n"); fUntimedMode = true; } /* added this for legacy test command lines with no -dN options and -r0 push-pull rate (0 = as fast as possible). Not recommended for normal operation, JHB Jan 2023 */
+   /* timing mode */
 
-      if (Mode & AUTO_ADJUST_PUSH_RATE)  printf("  auto-adjust packet push rate\n");  /* note - both auto-adjust and use-packet-arrival-times flags set is undefined behavior */
-      else if (Mode & USE_PACKET_ARRIVAL_TIMES) printf("  packet arrival times control packet push rate\n");
-      else                                      printf("  packet push rate method not defined\n");
+      char modestr[20];
+      if (Mode & ANALYTICS_MODE) sprintf(modestr, "Analytics");
+      else if (Mode & USE_PACKET_ARRIVAL_TIMES) sprintf(modestr, "Telecom");
+      else { sprintf(modestr, "Untimed"); fUntimedMode = true; } /* added this for legacy test command lines with no -dN options and -r0 push-pull rate (0 = as fast as possible). Not recommended for normal operation, JHB Jan 2023 */
+      printf("  %s mode%s with -r%4.2f packet rate\n", modestr, !fUntimedMode ? " enabled" : "", RealTimeInterval[0]);
+
+   /* packet arrival and push rate timing */
+
+      if (Mode & AUTO_ADJUST_PUSH_TIMING)       printf("  auto-adjust packet push timing\n");  /* note - both auto-adjust and use-packet-arrival-times flags set is undefined behavior */
+      else if (Mode & USE_PACKET_ARRIVAL_TIMES) printf("  packet arrival timestamps control packet push timing\n");
+      else                                      printf("  packet push timing not defined\n");
+
+   /* various options, cont. */
 
       if (Mode & DISABLE_DTX_HANDLING) printf("  DTX handling disabled\n");
       if (Mode & DISABLE_FLC) printf("  FLC (frame loss concealment) on stream group output disabled\n");
       if (Mode & ENABLE_FLC_HOLDOFFS) printf("  FLC Holdoffs for stream group output enabled\n");
-//         if (Mode & DISABLE_OUTPUT_BUF_INTERVAL) printf("  output buffer interval field in termN definitions is disabled\n");
       if (Mode & ENABLE_ONHOLD_FLUSH_DETECT) printf("  on-hold flush detection for audio merge contributors enabled (this is deprecated)\n");
       if (Mode & ENABLE_TIMING_MARKERS) printf("  timing markers injected every 1 sec into stream group audio output\n");
-      if (Mode & ENABLE_PACKET_INPUT_ALARM) printf("  alarm for input packet enabled, if DSPushPackets() is not called for the alarm time limit a wàrning will show in the event log\n");
-      if (Mode & ENABLE_WAV_OUT_SEEK_TIME_ALARM) printf("  alarm for wav output file seek time enabled, streamlib will show wàrnings if wav output file writes exceed time threshold\n");
+      if (Mode & ENABLE_PACKET_INPUT_ALARM) printf("  alarm for input packets enabled, if DSPushPackets() is not called for the alarm time limit a wàrning will show in the event log\n");
+      if (Mode & ENABLE_WAV_OUT_SEEK_TIME_ALARM) printf("  alarm for wav output file seek time enabled, streamlib will show wàrnings if wav output file writes take longer than time threshold\n");
 
       if (Mode & DISABLE_AUTOQUIT) printf("  auto-quit disabled\n");
       if (Mode & DISABLE_DORMANT_SESSION_DETECTION) printf("  dormant session detection disabled\n");
@@ -519,7 +558,7 @@ char tmpstr[MAX_APP_STR_LEN];  /* large temporary string used for various purpos
 
    /* make an initial event log entry */
 
-      Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, "%s, %s, %s \n", prog_str, version_str, copyright_str);  /* include (i) program info in event log (we already printed it above onscreen) and (ii) full command line */
+      Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE, "%s, %s, %s \n", prog_str, version_str, copyright_str);  /* include (i) program info in event log (we already printed it above to console output) and (ii) full command line */
       {
          char tmpstr[MAX_CMDLINE_STR_LEN];
          if (strlen(szAppFullCmdLine)) strcpy(tmpstr, szAppFullCmdLine);  /* full command line, saved by cmdLineInterface() (which calls GetCommandLine()) */
@@ -584,7 +623,7 @@ start:  /* note - label used only if test mode repeats are enabled */
       if (!nStaticSessionsConfigured) goto cleanup;
    }
 
-/* codec config info regardless of sessions mode.  Notes:
+/* codec config info regardless of sessions mode. Notes:
 
    -codec config files are normally used by mediaTest
    -this is intended only for items not session-specific or needed as an override, for example enabling/disabling a codec option for testing purposes
@@ -595,13 +634,11 @@ start:  /* note - label used only if test mode repeats are enabled */
    printf(" codec_config_params.payload_shift = %d \n", codec_config_params.payload_shift);
    #endif
 
-/* set up inputs and transcoded outputs */
+/* set up inputs */
    
    InputSetup(thread_index);
 
-   TranscodedOutputSetup(thread_index);
-
-   MiscOutputSetup(thread_index);
+   PathConfig(thread_index);
 
 /* set up SDP info from command line .sdp entry, if any */
 
@@ -612,7 +649,7 @@ start:  /* note - label used only if test mode repeats are enabled */
    if (thread_info[thread_index].init_err && !fThreadSync2) goto cleanup;  /* setup error occurred. If this is first time through we clean up and exit, if not, then the user can see which threads / repeat runs have the error and quit as needed */
 
    #if 0
-   printf("hPlatform = 0x%x, nStaticSessionsConfigured = %d, nInPcapFiles = %d, nOutPcapFiles = %d\n", hPlatform, nStaticSessionsConfigured, thread_info[thread_index].nInPcapFiles, thread_info[thread_index].nOutPcapFiles);
+   printf("hPlatform = 0x%x, nStaticSessionsConfigured = %d, nInPcapFiles = %d \n", hPlatform, nStaticSessionsConfigured, thread_info[thread_index].nInPcapFiles);
    #endif
 
 /* second stage initialization complete */
@@ -643,7 +680,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    if ((num_app_threads > 1 && (Mode & ENABLE_RANDOM_WAIT)) || (Mode & ENERGY_SAVER_TEST)) ThreadWait(0, thread_index);  /* staggered start for threads */
 
-   if (!fRepeatFromStart) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "Starting packet push-pull loop, press 'q' to exit, 'd' for real-time debug output, and other keys as described in online documentation");
+   if (!nRepeatsCompleted[thread_index]) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "Starting packet push-pull loop, press 'q' to exit, 'd' for real-time debug output, and other keys as described in online documentation");
 
 /* all initialization complete, begin continuous packet push-pull loop */
 
@@ -671,14 +708,14 @@ session_create:  /* note - label used only if test mode repeats are enabled */
    /* pull available packets from packet/media threads, write to output packet flows */
 
       PullPackets(pkt_out_buf, hSessions, session_data, DS_PULLPACKETS_JITTER_BUFFER, sizeof(pkt_out_buf), thread_index);
-      PullPackets(pkt_out_buf, hSessions, session_data, DS_PULLPACKETS_TRANSCODED, sizeof(pkt_out_buf), thread_index);
+      PullPackets(pkt_out_buf, hSessions, session_data, DS_PULLPACKETS_OUTPUT, sizeof(pkt_out_buf), thread_index);
       PullPackets(pkt_out_buf, hSessions, session_data, DS_PULLPACKETS_STREAM_GROUP, sizeof(pkt_out_buf), thread_index);
 
    /* check for end of packet input flows, check for end of packet output flows sent by packet/media threads, flush sessions if needed */
 
       FlushCheck(hSessions, cur_time, &queue_check_time, thread_index);
 
-   /* update screen counters */
+   /* update console output counters */
 
       UpdateCounters(cur_time, thread_index);  /* in user_io.cpp */
 
@@ -688,21 +725,20 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
    } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* process interactive keyboard commands, see user_io.cpp */
 
- 
-/* session deletion */
+/* remaining session deletion */
 
-   for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) if (!(hSessions[i] & SESSION_MARKED_AS_DELETED)) nRemainingToDelete++;  /* see if any sessions remain to be deleted, depending on operational mode. In dynamic sessions mode all sessions may already be deleted */
+   for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) if (!(hSessions[i] & SESSION_MARKED_AS_DELETED)) nRemainingToDelete++;  /* see if any sessions remain to be deleted, depending on operating mode. In dynamic sessions mode all sessions may already be deleted, for example if they were terminated due to SIP BYE messages */
 
    if (nRemainingToDelete) {
    
       sprintf(tmpstr, "Deleting %d session%s [index] hSession/flush state", nRemainingToDelete, nRemainingToDelete > 1 ? "s" : "");
       for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) if (!(hSessions[i] & SESSION_MARKED_AS_DELETED)) sprintf(&tmpstr[strlen(tmpstr)], "%s [%d] %d/%d", i > 0 ? "," : "", i, hSessions[i], thread_info[thread_index].flush_state[i]);
 
-      app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, tmpstr);  /* show session delete info onscreen */
-      Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, "mediaMin INFO: %s ", tmpstr);  /* include session delete info in event log */
+      app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, tmpstr);  /* show session delete info in console output */
+      Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE, "mediaMin INFO: %s ", tmpstr);  /* include session delete info in event log */
 
       for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) if (!(hSessions[i] & SESSION_MARKED_AS_DELETED)) {  /* delete sessions */
-         DSDeleteSession(hSessions[i]);  /* pktlib API */
+         DeleteSession(hSessions, i, thread_index);  /* local function, calls pktlib API DSDeleteSession() */
          thread_info[thread_index].nSessionsDeleted++;
       }
    }
@@ -714,7 +750,7 @@ session_create:  /* note - label used only if test mode repeats are enabled */
 
 cleanup:
 
-/* make sure all sessions are fully deleted before exit or repeat.  Notes:
+/* make sure all sessions are fully deleted before exit or repeat. Notes:
 
    -there could be some wait time if (i) wav file output has been specified for stream groups (especially N-channel wav file generation) or (ii) a lot of sessions are open
    -for dynamic sessions operation, if the cmd line had multiple groups, sessions for already completed groups should aleady be deleted, but some groups might still be in the process of deletion 
@@ -734,7 +770,7 @@ cleanup:
    } while (!fAllSessionsDeleted);
 
 
-/* we either 1) exit on quit, stop, or error condition, or 2) repeat depending on test condition */
+/* we either 1) exit on quit, stop, or error condition, or 2) repeat depending on test condition (for the latter, look for "nRepeatsRemaining") */
 
    fExitErrorCond = thread_info[thread_index].init_err && (num_app_threads == 1 || thread_index > 0 || !fThreadSync2);
 
@@ -754,11 +790,11 @@ cleanup:
             unsigned long long check_time = 0;
             uint8_t uQuitMessage = 0, fQKey = false;
 
-         /* wait for packet/media worker threads to exit, notes:
+         /* wait for packet/media worker threads to exit and perform packet log analysis and stats reporting if specified on cmd line. Notes:
 
             -this includes stream group post-processing (e.g. N-channel wav files) if stream groups are enabled, and collating, analyzing, and writing out packet log if packet history stats are enabled
-            -for stream group processing, applies to any worker thread handling sessions with stream groups enabled
-            -for packet history stats and analysis, applies to only the master p/m worker thread
+            -stream group processing applies to any worker thread handling sessions with stream groups enabled
+            -packet history stats and analysis applies to only the master p/m worker thread
             -packet history logging + analysis can take a while if 100k+ packets were pushed/pulled. Max packets for packet logging is somewhere around 300k (can be changed in packet_flow_media_proc.c, look for MAX_PKT_STATS)
          */
 
@@ -797,7 +833,7 @@ cleanup:
                   uQuitMessage = 2;
                }
 
-               if (cur_time - check_time > 5*1000000L) {  /* print a dot every 5 sec -- let user know we're alive if packet logging is taking time due to very long streams */
+               if (cur_time - check_time > 5*1000000L) {  /* print a progress dot every 5 sec -- let user know we're alive if packet logging is taking time due to very long streams */
                   printf(".");
                   check_time = cur_time;
                }
@@ -815,7 +851,7 @@ cleanup:
                   fQKey = true;
                }
                else if (fCtrl_C_pressed) {
-                  fprintf(stderr, "Ctrl-C key pressed ... \n");  /* Ctrl-C handler is in cmd_line_interface.c. It aborts logging so we don't do it here */
+                  fprintf(stderr, "Ctrl-C key pressed ... \n");  /* Ctrl-C handler is in cmd_line_interface.c. It aborts packet logging so we don't do it here */
                   fQKey = true;
                }
             }
@@ -823,24 +859,33 @@ cleanup:
       }
    }
 
-/* close input file descriptors and encapsulated stream decoding, if any*/
+/* close input source handles, file descriptors, heap mem, etc. Same for encapsulated stream decoding, if any */
 
-   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) {
+   for (j=0; j<thread_info[thread_index].nInPcapFiles; j++) {
    
-      if (thread_info[thread_index].pcap_in[i]) {
+      if (thread_info[thread_index].pcap_in[j]) {
 
-         if (thread_info[thread_index].pcap_file_hdr[i]) free(thread_info[thread_index].pcap_file_hdr[i]);  /* free file header space, JHB May 2024 */
+         if (thread_info[thread_index].pcap_file_hdr[j]) {
+            free(thread_info[thread_index].pcap_file_hdr[j]);  /* free file header mem, JHB May 2024 */
+            thread_info[thread_index].pcap_file_hdr[j] = NULL;
+         }
 
-         DSClosePcap(thread_info[thread_index].pcap_in[i], DS_CLOSE_PCAP_QUIET);
-         thread_info[thread_index].pcap_in[i] = NULL;
+         if (thread_info[thread_index].input_data_cache[j]) {
+            free(thread_info[thread_index].input_data_cache[j]);  /* free input data cache mem, JHB Oct 2024 */
+            thread_info[thread_index].input_data_cache[j] = NULL;
+         }
+
+         DSClosePcap(thread_info[thread_index].pcap_in[j], DS_CLOSE_PCAP_QUIET);
+         thread_info[thread_index].pcap_in[j] = NULL;
+         thread_info[thread_index].uCacheFlags[j] = CACHE_INVALID;
       }
 
       #if 0
-      if ((Mode & ENABLE_DER_STREAM_DECODE) && thread_info[thread_index].hDerStreams[i]) DSDeleteDerStream(thread_info[thread_index].hDerStreams[i]);
+      if ((Mode & ENABLE_DER_STREAM_DECODE) && thread_info[thread_index].hDerStreams[j]) DSDeleteDerStream(thread_info[thread_index].hDerStreams[j]);
       #else
-      if (thread_info[thread_index].hDerStreams[i]) DSDeleteDerStream(thread_info[thread_index].hDerStreams[i]);
+      if (thread_info[thread_index].hDerStreams[j]) DSDeleteDerStream(thread_info[thread_index].hDerStreams[j]);
       #endif
-      if (thread_info[thread_index].hFile_ASN_XML[i]) fclose(thread_info[thread_index].hFile_ASN_XML[i]);
+      if (thread_info[thread_index].hFile_ASN_XML[j]) fclose(thread_info[thread_index].hFile_ASN_XML[j]);
    }
 
 /* close jitter buffer output file descriptors (there may not be any if DISABLE_JITTER_BUFFER_OUTPUT_PCAPS is set on cmd line) */
@@ -858,7 +903,7 @@ cleanup:
 
 /* close timestamp-matched wav outputs, if active. This includes post-processing merge, if live merge is not specified (see flags for uTimestampMatchMode in shared_include/streamlib.h), JHB Aug 2023 */
 
-   if (uTimestampMatchMode & TIMESTAMP_MATCH_MODE_ENABLE) DSCloseStreamGroupsTSM(&hSessions[0], thread_info[thread_index].nSessionsCreated, uTimestampMatchMode);  /* pass first session handle, number of sessions, and timestamp matching mode. Note that in repeat mode (-Rn entry) session handles are always unique and do not repeat */
+   if (uTimestampMatchMode & TIMESTAMP_MATCH_MODE_ENABLE) DSCloseStreamGroupsTSM(hSessions, thread_info[thread_index].nSessionsCreated, uTimestampMatchMode);  /* pass first session handle, number of sessions, and timestamp matching mode. Note that in repeat mode (-Rn entry) session handles are always unique and do not repeat */
 
    if (!fExit && (Mode & CREATE_DELETE_TEST)) {
 
@@ -875,7 +920,7 @@ cleanup:
       for (i=0; i<MAX_STREAM_GROUPS; i++) {
 
          thread_info[thread_index].fFirstGroupPull[i] = false;
-         for (j=0; j<MAX_INPUT_REUSE; j++) thread_info[thread_index].fGroupTermCreated[i][j] = false;
+         for (j=0; j<MAX_INPUT_REUSE; j++) thread_info[thread_index].fGroupOwnerCreated[i][j] = false;
          memset(&thread_info[thread_index].accel_time_ts[i], 0, sizeof(struct timespec));
       }
 
@@ -884,13 +929,24 @@ cleanup:
 
       InputSetup(thread_index);
 
-      fRepeatFromStart = true;
+      nRepeatsCompleted[thread_index]++;
       goto session_create;
    }
 
-/* close transcoded output file descriptors (there may not be any if no -o arguments on command line) */
+/* close output file descriptors */
 
-   for (i=0; i<thread_info[thread_index].nOutPcapFiles; i++) if (thread_info[thread_index].pcap_out[i]) { DSClosePcap(thread_info[thread_index].pcap_out[i], DS_CLOSE_PCAP_QUIET); thread_info[thread_index].pcap_out[i] = NULL; }
+   for (i=0; i<thread_info[thread_index].nOutFiles; i++) if (thread_info[thread_index].pcap_out[i]) { /* there may not be any if no -o arguments on command line */
+
+      #define ALLOW_TEMP_FILE_MARKER
+      #ifdef ALLOW_TEMP_FILE_MARKER
+      if (thread_info[thread_index].pcap_out[i] != (FILE*)1)  /* temp file marker */
+      #endif
+      DSClosePcap(thread_info[thread_index].pcap_out[i], DS_CLOSE_PCAP_QUIET);
+      thread_info[thread_index].pcap_out[i] = NULL;
+      thread_info[thread_index].uOutputType[i] = 0;
+   }
+
+   thread_info[thread_index].nOutFiles = 0;
 
 /* close stream group output file descriptors and other items */
 
@@ -921,7 +977,7 @@ cleanup:
 
       strcpy(thread_info[thread_index].szGroupName[i], "");
       thread_info[thread_index].fFirstGroupPull[i] = false;
-      for (j=0; j<MAX_INPUT_REUSE; j++) thread_info[thread_index].fGroupTermCreated[i][j] = false;
+      for (j=0; j<MAX_INPUT_REUSE; j++) thread_info[thread_index].fGroupOwnerCreated[i][j] = false;
       memset(&thread_info[thread_index].accel_time_ts[i], 0, sizeof(struct timespec));
    }
 
@@ -934,6 +990,7 @@ cleanup:
       for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) {
          thread_info[thread_index].flush_state[i] = 0;
          queue_check_time[i] = 0;
+         thread_info[thread_index].nSessionOutputIndex[hSessions[i] & ~SESSION_MARKED_AS_DELETED] = 0;  /* reset session output indexes (avoiding deletion flag in case it's there). Note that hSessions[] is cleared after jumping to start: (look for memset(hSessions, ...), JHB Sep 2024 */
       }
 
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) {
@@ -947,8 +1004,8 @@ cleanup:
       #if 0  /* allow stream group interval/pull stats for repeating tests */
       thread_info[thread_index].group_interval_stats_index = 0;
       thread_info[thread_index].group_pull_stats_index = 0;
-      memset(thread_info[thread_index].GroupIntervalStats, 0, sizeof(GROUPINTERVALSTATS)*MAX_GROUP_STATS);
-      memset(thread_info[thread_index].GroupPullStats, 0, sizeof(GROUPPULLSTATS)*MAX_GROUP_STATS);
+      memset(thread_info[thread_index].GroupIntervalStats, 0, sizeof(GROUP_INTERVAL_STATS)*MAX_GROUP_STATS);
+      memset(thread_info[thread_index].GroupPullStats, 0, sizeof(GROUP_PULL_STATS)*MAX_GROUP_STATS);
       #endif
 
       base_time = 0;
@@ -967,14 +1024,14 @@ cleanup:
       -but writing out packet stats history and analyzing input vs. jitter buffer output takes time, and if we do it on every repeat cycle it will cause a delay in the mediaMin application thread
    */
 
-      if (isMasterThread(thread_index)) DSWritePacketStatsHistoryLog(0, DS_PKT_STATS_HISTORY_LOG_THREAD_INDEX | DS_PKT_STATS_HISTORY_LOG_RESET_STATS | ((Mode & DISABLE_DORMANT_SESSION_DETECTION) ? DS_PKTSTATS_MATCH_CHNUM : 0), NULL);
+      if (isMasterThread(thread_index)) DSWritePacketStatsHistoryLog(0, DS_PKT_STATS_HISTORY_LOG_THREAD_INDEX | DS_PKT_STATS_HISTORY_LOG_RESET_STATS, NULL);  /* apply reset stats flag (no actual file write here) */
 
       sprintf(tmpstr, "Cmd line completed, repeating");
-      if (!fRepeatIndefinitely) sprintf(&tmpstr[strlen(tmpstr)], ", number of repeats remaining %d", nRepeatsRemaining[thread_index]+1);
+      if (!fRepeatIndefinitely) sprintf(&tmpstr[strlen(tmpstr)], ", number of repeats remaining %d, cumulative wàrnings = %u, èrrors = %u, crìtical èrrors = %u", nRepeatsRemaining[thread_index]+1, __sync_fetch_and_add(&event_log_warnings, 0), __sync_fetch_and_add(&event_log_errors, 0), __sync_fetch_and_add(&event_log_critical_errors, 0));
       else sprintf(&tmpstr[strlen(tmpstr)], " ...");
       app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, tmpstr);
 
-      fRepeatFromStart = true;
+      nRepeatsCompleted[thread_index]++;
       goto start;
    }
 
@@ -993,7 +1050,7 @@ cleanup:
 
       sprintf(&tmpstr[strlen(tmpstr)], "\n%spackets [input]", tabstr);
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%stotal in stream ", tabstr, tabstr);
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%stotal%s ", tabstr, tabstr, thread_info[thread_index].nInPcapFiles > 1 ? "s" : "");
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].packet_number[i]);
 
       sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sFragments = ", tabstr, tabstr);
@@ -1020,6 +1077,12 @@ cleanup:
       sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sRTP = ", tabstr, tabstr);
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_rtp_packets[i]);
 
+      sprintf(&tmpstr[strlen(tmpstr)], ", RTCP = ");
+      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_rtcp_packets[i]);
+
+      sprintf(&tmpstr[strlen(tmpstr)], ", Unhandled = ");
+      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_unhandled_rtp_packets[i]);
+
       sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sRedundant discards TCP = ", tabstr, tabstr);
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].tcp_redundant_discards[i]);  /* display/log number of redundant TCP retransmissions discarded, if any */
 
@@ -1038,7 +1101,7 @@ cleanup:
 
       if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & SHOW_PACKET_ARRIVAL_STATS)) {
 
-         sprintf(&tmpstr[strlen(tmpstr)], "%sarrival timing [session]", tabstr);
+         sprintf(&tmpstr[strlen(tmpstr)], "%sarrival timing [stream]", tabstr);
 
          sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sdelta avg/max (msec) = ", tabstr, tabstr);
          for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%4.2f/%4.2f", i != 0 ? " " : "", i, arrival_avg_delta[i], arrival_max_delta[i]);
@@ -1051,22 +1114,22 @@ cleanup:
 
       bool fLogTimeStampPrinted = false;  /* make sure only one event log timestamp is printed in the case of multiple strings */
 
-      if (thread_info[thread_index].fDynamicSessions) {
+      sprintf(&tmpstr[strlen(tmpstr)], "%ssession [stream]\n", tabstr);
 
-         sprintf(&tmpstr[strlen(tmpstr)], "%srun-time [session]\n", tabstr);
+      for (i=0; i<thread_info[thread_index].stream_stats_index; i++) {
 
-         for (i=0; i<thread_info[thread_index].dynamic_session_stats_index; i++) {
+         char szSessInfo[200], szTimestamp[200];
 
-            char szSessInfo[200];
-            sprintf(szSessInfo, "%s%s[%d] hSession %d, codec = %s, bitrate = %d, payload type = %d, ssrc = 0x%x \n", tabstr, tabstr, i, thread_info[thread_index].DynamicSessionStats[i].hSession, thread_info[thread_index].DynamicSessionStats[i].codecstr, thread_info[thread_index].DynamicSessionStats[i].bitrate, thread_info[thread_index].DynamicSessionStats[i].payload_type, thread_info[thread_index].DynamicSessionStats[i].ssrc);
+         DSGetLogTimestamp(szTimestamp, DS_EVENT_LOG_USER_TIMEVAL | DS_EVENT_LOG_UPTIME_TIMESTAMPS | DS_EVENT_LOG_TIMEVAL_PRECISE, sizeof(szTimestamp), timeScale*thread_info[thread_index].StreamStats[i].first_pkt_usec);  /* convert usec to timestamp string */
 
-            if (strlen(tmpstr) + strlen(szSessInfo) < sizeof(tmpstr)) sprintf(&tmpstr[strlen(tmpstr)], "%s", szSessInfo);  /* if enough sessions and/or repeats we need to split up printouts, JHB Jun2020 */
-            else {
-               app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_SAME_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), thread_index, tmpstr);
-               app_printf(APP_PRINTF_EVENT_LOG | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, szSessInfo);  /* added a second app_printf() and fLogTimeStampPrinted to fix a bug in reporting multi-hundred count session summary stats that appeared during 2+ hr stress tests. Combining all summary stats per thread into one string would be optimal for multi-thread app operation, but they could potentially be really huge strings needing std::string (or malloc + realloc, whichever is faster). Also would need to deal with Log_RT() (called inside app_printf) which truncates around 4k. Not something to worry about for the time being, JHB Jan 2023 */
-               fLogTimeStampPrinted = true;
-               tmpstr[0] = (char)0;  /* start the string over */
-            }
+         sprintf(szSessInfo, "%s%s[%d] hSession %d %s, term %d, ch %d, codec %s, bitrate %d, payload type %d, ssrc 0x%x, first packet %s \n", tabstr, tabstr, i, thread_info[thread_index].StreamStats[i].hSession, thread_info[thread_index].StreamStats[i].uFlags & DYNAMIC_SESSION ? "dynamic" : "static", thread_info[thread_index].StreamStats[i].term, thread_info[thread_index].StreamStats[i].chnum, thread_info[thread_index].StreamStats[i].codec_name, thread_info[thread_index].StreamStats[i].bitrate, thread_info[thread_index].StreamStats[i].payload_type, thread_info[thread_index].StreamStats[i].first_pkt_ssrc, szTimestamp);
+
+         if (strlen(tmpstr) + strlen(szSessInfo) < sizeof(tmpstr)) sprintf(&tmpstr[strlen(tmpstr)], "%s", szSessInfo);  /* if enough sessions and/or repeats we need to split up printouts, JHB Jun 2020 */
+         else {
+            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_SAME_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), thread_index, tmpstr);
+            app_printf(APP_PRINTF_EVENT_LOG | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, szSessInfo);  /* added a second app_printf() and fLogTimeStampPrinted to fix a bug in reporting multi-hundred count session summary stats that appeared during 2+ hr stress tests. Combining all summary stats per thread into one string would be optimal for multi-thread app operation, but they could potentially be really huge strings needing std::string (or malloc + realloc, whichever is faster). Also would need to deal with Log_RT() (called inside app_printf) which truncates around 4k. Not something to worry about for the time being, JHB Jan 2023 */
+            fLogTimeStampPrinted = true;
+            tmpstr[0] = (char)0;  /* start the string over */
          }
       }
 
@@ -1074,7 +1137,7 @@ cleanup:
   
    /* display stream group output stats */
 
-      if ((Mode & ENABLE_STREAM_GROUPS) && !isAFAPMode && !isFTRTMode) {  /* in "as fast as possible" and "faster than real-time" modes (-r0 cmd line entry) we are currently not showing stream group output stats. This may change after extensive AFAP and FTRT mode testing, JHB May 2023 */
+      if ((Mode & ENABLE_STREAM_GROUPS) && !isAFAPMode && !isFTRTMode) {  /* in "as fast as possible" (-r0 cmd line entry) and "faster than real-time" modes (-r0.N cmd line entry where 0 < 0.N < 1) we are currently not showing stream group output stats. This may change after extensive AFAP and FTRT mode testing, JHB May 2023 */
   
          app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, thread_index, "\tMissed stream group intervals = %d", thread_info[thread_index].group_interval_stats_index);
 
@@ -1095,6 +1158,16 @@ cleanup:
       }
    }
 
+/* show summary of repeat info if applicable, JHB Sep 2024 */
+
+   if (nRepeats > 0 || fRepeatIndefinitely) {
+
+      char szNumCmdLineRepeats[20] = "";
+      if (nRepeats > 0) sprintf(szNumCmdLineRepeats, "/%d", nRepeats);
+      sprintf(tmpstr, "   %d%s repeat%s completed, cumulative wàrnings = %u, èrrors = %u, crìtical èrrors = %u", nRepeatsCompleted[thread_index], szNumCmdLineRepeats, nRepeats > 0 ? "s" : (nRepeatsCompleted[thread_index] != 1 ? "s" : ""), __sync_fetch_and_add(&event_log_warnings, 0), __sync_fetch_and_add(&event_log_errors, 0), __sync_fetch_and_add(&event_log_critical_errors, 0));
+      app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, tmpstr);  /* note warning and error have slight "homoglyph" spelling differences to allow automated searches of event logs and console output for warnings and errors */ 
+   }
+
 /* clean up and exit */
 
    if (isMasterThread(thread_index)) {
@@ -1105,6 +1178,10 @@ cleanup:
 
       DSCloseLogging(0);  /* close event logging. See diaglib.h */
    }
+
+   #ifdef INPUT_CACHE_DEBUG
+   printf("\n *** read count = %llu, cache read count = %llu, cache pkt copy count = %llu, max pkt len = %d \n", (unsigned long long)read_count, (unsigned long long)cache_read_count, (unsigned long long)cache_pkt_copy_count, max_pkt_len);
+   #endif
 
    sprintf(tmpstr, "mediaMin app end");
    if (num_app_threads > 1) sprintf(&tmpstr[strlen(tmpstr)], " (%d)", thread_index);
@@ -1164,6 +1241,8 @@ void PmThreadSync(int thread_index) {
 
 uint8_t before_sync, after_sync;
 
+   (void)thread_index;  /* currently not used */
+
    do {
 
       before_sync = __sync_fetch_and_add(&pm_sync[0], 0);
@@ -1186,65 +1265,30 @@ uint8_t before_sync, after_sync;
 #define KEY_LENGTH 36   /* each key is up to 36 bytes (ipv6 address size (2*16) + udp port size (2*2)) */
 #endif
 
-uint8_t keys[MAX_APP_THREADS][MAX_KEYS][KEY_LENGTH] = {{ 0 }};
+uint8_t keys[MAX_APP_THREADS][MAX_KEYS][KEY_LENGTH] = {{{ 0 }}};
 uint32_t nKeys[MAX_APP_THREADS] = { 0 };
 
-/* FindSession() looks for new streams in the specified packet and returns 1 if found.  Notes:
+/* FindSession() looks for new streams in the specified packet and returns 1 if found. Notes:
 
   -finding a new stream means a new session should be created "on the fly" (i.e. dynamic session creation). A new stream is determined by (i) new IP addr:port header and/or (ii) new RTP payload type
   -this info is combined into a "key" that defines the session and is saved to compare with existing sessions
   -SSRC is not included in the key, in order to maintain RFC8108 compliance (multiple RTP streams within the same session)
   -DTMF packets must match an existing session excluding payload type; i.e. they will not cause a new session to be created
   -each application thread has its own set of keys to avoid semaphores / locks. It doesn't help with duplicated streams in multiple pcaps (however, note that that PushPackets() looks for this and deals with it by slightly altering duplicated inputs to make them unique)
+  -return value is zero for existing session, or total dynamic sessions found so far for new session
 */
 
-int FindSession(uint8_t *pkt, int pkt_len, uint8_t rtp_pyld_type, int pyld_size, int thread_index) {
+int FindSession(uint8_t* pkt, int ip_hdr_len, uint8_t rtp_pyld_type, int pyld_size, int thread_index) {
 
-int version = pkt[0] >> 4;
+int len, version = pkt[0] >> 4;
 uint8_t key[KEY_LENGTH] = { 0 };
 bool fFoundMatch = false;
-#if 0
-uint8_t fInitKeys = 0;
-#endif
-unsigned int len = 0;
-struct udphdr *udphdr;
 
-   if (version == IPv4)
-   {  
-      struct iphdr *iphdr = (struct iphdr *)pkt;
-      udphdr = (struct udphdr *)&pkt[iphdr->ihl*4];
+/* form key from IP addresses and ports */
 
-   /* copy IPv4 src/dst addr info to key. Note we don't care about byte order here for internal key purposes */
-
-      memcpy(key, &iphdr->saddr, sizeof(iphdr->saddr));
-      len += sizeof(iphdr->saddr);
-      memcpy(&key[len], &iphdr->daddr, sizeof(iphdr->daddr));
-      len += sizeof(iphdr->daddr);
-   }
-   else if (version == IPv6)
-   {
-      struct ipv6hdr *ipv6hdr = (struct ipv6hdr *)pkt;
-      udphdr = (struct udphdr *)&pkt[sizeof(struct ipv6hdr)];
-
-   /* copy IPv6 src/dst addr info to key */
-
-      memcpy(key, &ipv6hdr->saddr.s6_addr, sizeof(ipv6hdr->saddr));
-      len += sizeof(ipv6hdr->saddr);
-      memcpy(&key[len], &ipv6hdr->daddr.s6_addr, sizeof(ipv6hdr->daddr));
-      len += sizeof(ipv6hdr->daddr);
-   }
-   else
-   {
-      fprintf(stderr, "FindSession() says invalid IP version field in packet: %d\n", version);
-      return -1;  /* error condition */
-   }
-
-/* copy UDP port info to key */
-
-   memcpy(&key[len], &udphdr->source, sizeof(udphdr->source));
-   len += sizeof(udphdr->source);
-   memcpy(&key[len], &udphdr->dest, sizeof(udphdr->dest));
-   len += sizeof(udphdr->dest);
+   memcpy(key, &pkt[version == IPv4 ? IPV4_ADDR_OFS : IPV6_ADDR_OFS], (len = 2*(version == IPv4 ? IPV4_ADDR_LEN : IPV6_ADDR_LEN)));  /* copy both IP addresses to key */
+   memcpy(&key[len], &pkt[ip_hdr_len], 2*sizeof(unsigned short int));  /* copy both UDP ports to key */
+   len += 2*sizeof(unsigned short int);
 
    #ifdef INCLUDE_PYLDTYPE_IN_KEY
 
@@ -1255,30 +1299,25 @@ struct udphdr *udphdr;
 
 /* see if we already know about this stream */
    
-   for (unsigned int i=0; i<nKeys[thread_index]; i++) {
-
-      if (!memcmp(keys[thread_index][i], key, len)) { fFoundMatch = true; break; }
-   }
+   for (unsigned int i=0; i<nKeys[thread_index]; i++) if (!memcmp(keys[thread_index][i], key, len)) { fFoundMatch = true; break; }
 
    if (!fFoundMatch) {  /* new stream */
 
       memcpy(keys[thread_index][nKeys[thread_index]], key, len);
-      #if 0
-      if (nKeys[thread_index] == 0) fInitKeys = 1;
-      #endif
       if (nKeys[thread_index] >= MAX_KEYS) return -1;  /* error condition */
       else nKeys[thread_index]++;
    }
 
-   /*static int cnt = 0;printf("check_for_new_sesion: cnt = %d, found_match = %d, nKeys = %d, fInitKeys = %d, len = %d\n", cnt++, found_match, nKeys[thread_index], fInitKeys, len);
-   printf("key value: "); for(i = 0; i < KEY_LENGTH; i++) printf("%02x ", key[thread_index][i]); printf("\n");*/
-
    #if 0
-   if ((!fInitKeys || thread_info[thread_index].fDynamicSessions) && !found_match) return 1;  /* new session */
-   else return 0;  /* existing session */
-   #else
-   return !fFoundMatch ? nKeys[thread_index] : 0;
+   static int cnt = 0;
+   printf("check_for_new_sesion: cnt = %d, found_match = %d, nKeys = %d, fInitKeys = %d, len = %d\n", cnt++, found_match, nKeys[thread_index], fInitKeys, len);
+   printf("key value: ");
+   for (i = 0; i < KEY_LENGTH; i++) printf("%02x ", key[thread_index][i]);
+   printf("\n");
    #endif
+
+   if (!fFoundMatch) return nKeys[thread_index];  /* new session: return number of sessions found so far */
+   else return 0;  /* existing session: return 0 */
 }
 
 void ResetDynamicSession_info(int thread_index) {
@@ -1287,20 +1326,21 @@ void ResetDynamicSession_info(int thread_index) {
    memset(keys[thread_index], 0, MAX_KEYS*KEY_LENGTH);
 }
 
-/* codec types currently supported in codec estimation algorithm (used by dynamic session creation). Add codec types as needed. We use shorthand enums equivalent to SigSRF enum definitions in shared_include/codec.h */
+/* codec types currently supported in codec estimation algorithm (used by dynamic session creation). We use shorthand enums equivalent to SigSRF enum definitions in shared_include/codec.h. When modifying mediaMin source, add codec types as needed but always maintain consistency with codec.h */
 
 enum {
-  G711U = DS_VOICE_CODEC_TYPE_G711_ULAW,
-  G711A = DS_VOICE_CODEC_TYPE_G711_ALAW,
-  G726 = DS_VOICE_CODEC_TYPE_G726,
-  G722 = DS_VOICE_CODEC_TYPE_G722,
-  G729AB = DS_VOICE_CODEC_TYPE_G729AB,
-  AMR = DS_VOICE_CODEC_TYPE_AMR_NB,
-  AMR_WB = DS_VOICE_CODEC_TYPE_AMR_WB,
-  EVS = DS_VOICE_CODEC_TYPE_EVS,
-  H263 = DS_VIDEO_CODEC_TYPE_H263,
-  H264 = DS_VIDEO_CODEC_TYPE_H264,
-  H265 = DS_VIDEO_CODEC_TYPE_H265
+  G711U = DS_CODEC_VOICE_G711_ULAW,
+  G711A = DS_CODEC_VOICE_G711_ALAW,
+  G726 = DS_CODEC_VOICE_G726,
+  G722 = DS_CODEC_VOICE_G722,
+  G723 = DS_CODEC_VOICE_G723,
+  G729AB = DS_CODEC_VOICE_G729AB,
+  AMR_NB = DS_CODEC_VOICE_AMR_NB,
+  AMR_WB = DS_CODEC_VOICE_AMR_WB,
+  EVS = DS_CODEC_VOICE_EVS,
+  H263 = DS_CODEC_VIDEO_H263,
+  H264 = DS_CODEC_VIDEO_H264,
+  H265 = DS_CODEC_VIDEO_H265
 };
 
 /* detect_codec_type_and_bitrate() uses a heuristic algorithm to estimate codec type and bitrate from RTP media packets. Notes:
@@ -1313,23 +1353,22 @@ enum {
       -codec_type zero specifies full auto-detection
       -codec_type already set to one of above enums (for example after SDPInput() processing) specifies partial detection (currently limited to bitrate)
    -output params are codec type (if full auto-detection specified), bitrate, ptime, and cat (category) which is a debug helper showing the decision path taken by the algorithm
-   -as of Oct 2023 tested on over 150 pcaps with a wide range of codec types and bitrates, no known failures. If you have a pcap not detected correctly please anonymize (you can use TraceWrangler) and submit on the Github page or privately by e-mail
+   -as of mid-2024 tested on over 150 pcaps with a wide range of codec types and bitrates, no known failures. If you have a pcap not detected correctly please anonymize (you can use TraceWrangler) and submit on the Github page or privately by e-mail
 */
 
 int temp_nInput;
 int temp_thread_index;
 
-int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsigned uFlags, uint8_t payload_type, int codec_type, uint32_t* bitrate, uint32_t* ptime, uint8_t* category) {
+int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsigned uFlags, uint8_t payload_type, int codec_type, uint32_t* bitrate, uint32_t* ptime, int8_t* category) {
 
 /* use local vars for any unsupplied pointers */
 
    uint32_t bitrate_local = 0;
    if (!bitrate) bitrate = &bitrate_local;
-   uint8_t category_local;
+   int8_t category_local;
    if (!category) category = &category_local;
 
- static int count = 0;
- count++;
+   *category = 0;  /* initialize */
 
 /* handle static / pre-defined payload types */
 
@@ -1340,6 +1379,10 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
    else if (payload_type == 8) {
       *bitrate = 64000;
       return G711A;
+   }
+   else if (payload_type == 4) {
+      *bitrate = 6300;
+      return G723;
    }
    else if (payload_type == 2) {
 
@@ -1405,7 +1448,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
          #endif
 
             uint32_t audio_bitrate = 0;
-            uint8_t audio_category = 0;
+            int8_t audio_category = 0;
 
             int audio_codec_type = detect_codec_type_and_bitrate(rtp_pkt, rtp_pyld_len, uFlags | RTP_DETECT_EXCLUDE_VIDEO, payload_type, codec_type, &audio_bitrate, ptime, &audio_category);  /* final check: exclude video and call recursively - signature and payload size can't match a known audio codec */
 
@@ -1430,7 +1473,12 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
 /* added 0x21 check to pick up AMR-WB in 13041.0 pcap, JHB Feb 2019 */
 /* added 0x24 check to pick up AMR-WB for AMR-WB 12.65 7-byte SID, JHB Dec 2020 */
 
-   if ((codec_type == AMR || codec_type == AMR_WB) ||  /* add non-auto-detect: AMR-xx codec type already set (e.g. SDP file input), JHB Jan 2021 */
+   #if (_GCC_VERSION >= 70000)  // gcc 7.0 or higher
+   #pragma GCC diagnostic push
+   #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+   #endif
+
+   if ((codec_type == AMR_NB || codec_type == AMR_WB) ||  /* add non-auto-detect: AMR-xx codec type already set (e.g. SDP file input), JHB Jan 2021 */
        (!codec_type && (((rtp_pkt[0] == 0xf1 || rtp_pkt[0] == 0x21) && !(rtp_pkt[1] & 0x80)) || ((rtp_pkt[0] == 0xf4 || rtp_pkt[0] == 0x24) && (rtp_pkt[1] & 0xc0))))  /* auto-detect: look for AMR first, check CMR byte and first bit of ToC byte. Changed 0x80 to 0xc0 mask to detect AMR-NB SID, JHB Nov 2018 */
       )
    {
@@ -1438,22 +1486,20 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
 
       bool fBitrateSet = false;
 
-// AMR-WB 12.65 kbps SID: 24e4e77e584c80
-
       switch (rtp_pyld_len) {
 
          case 6:  /* SID frames = AMR-WB */
          case 7:
-            if (codec_type == AMR || (!codec_type && (rtp_pkt[1] & 0x80) == 0)) {  /* added to detect AMR-NB SID, JHB Nov 2018.  Note, modified this slightly to deal with 13041.0 pcap which has AMR-WB 23850 SIDs.  AMR-NB SID pcaps include AMR_MusixFile, 3838.ws, 6537.0, JHB Feb 2019 */
+            if (codec_type == AMR_NB || (!codec_type && (rtp_pkt[1] & 0x80) == 0)) {  /* added to detect AMR-NB SID, JHB Nov 2018. Note, modified this slightly to deal with 13041.0 pcap which has AMR-WB 23850 SIDs. AMR-NB SID pcaps include AMR_MusixFile, 3838.ws, 6537.0, JHB Feb 2019 // AMR-WB 12.65 kbps SID: 24e4e77e584c80 */
                *bitrate = 12200;
-               return AMR;
+               return AMR_NB;
             }
 
          case 33:
             if (rtp_pyld_len == 33 && rtp_pkt[0] == 0xf4) {  /* check possible exception to cat 1 entry: 13200 EVS compact header, JHB Jul 2024 */
 
                PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-               DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+               DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
 
                if (!PayloadInfo_EVS.CMR && !PayloadInfo_EVS.fAMRWB_IO_Mode) goto cat4;
             } 
@@ -1474,17 +1520,17 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
          case 32:
 
             PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            if (rtp_pyld_len == 32) DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+            if (rtp_pyld_len == 32) DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
 
-            if ((!PayloadInfo_EVS.fAMRWB_IO_Mode || PayloadInfo_EVS.CMR) && (rtp_pkt[0] & 0xf) == 3 && (rtp_pkt[1] & 0xc0) == 0xc0 && (rtp_pkt[rtp_pyld_len-1] & 3) == 0 && (!codec_type || codec_type == AMR)) {  /* additional checks for bandwidth efficient mode, JHB Jul 2024 */
+            if ((!PayloadInfo_EVS.fAMRWB_IO_Mode || PayloadInfo_EVS.CMR) && (rtp_pkt[0] & 0xf) == 3 && (rtp_pkt[1] & 0xc0) == 0xc0 && (rtp_pkt[rtp_pyld_len-1] & 3) == 0 && (!codec_type || codec_type == AMR_NB)) {  /* additional checks for bandwidth efficient mode, JHB Jul 2024 */
                *bitrate = 12200;
-               return AMR;
+               return AMR_NB;
             }
       }
    }
 
    if (
-       (codec_type == AMR || codec_type == AMR_WB) ||
+       (codec_type == AMR_NB || codec_type == AMR_WB) ||
        (!codec_type && (rtp_pkt[0] == 0xf0 && !(rtp_pkt[1] & 0x80)))  /* check for AMR-xx octet-aligned with CMR byte 15 (no specific mode requested) */
        ) {
    
@@ -1492,7 +1538,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
 
       if (rtp_pyld_len == 33 && rtp_pkt[1] == 0x3c) {  /* AMR 12200 octet aligned - add FT field and padding check, JHB Jul 2024 */
          *bitrate = 12200;
-         return AMR;
+         return AMR_NB;
       }
       else if (rtp_pyld_len == 62) {  /* AMR 23850 octet-aligned */
          *bitrate = 23850;
@@ -1506,10 +1552,6 @@ cat4:
 
 /* mostly likely EVS, but could still be some AMR NB/WB bitrates depending on payload length. Added checks for codec_type already set, to support SDP file input, JHB Jan 2021 */
 
-   #if 0
-   bool fSID_EVS = false, fSID_AMR_NB = false, fSID_AMR_WB = false, fAMRWB_IOMode = false;
-   #endif
-
    switch (rtp_pyld_len) {
 
       case 6:  /* EVS or AMR SID frames, compact format (or bandwidth efficient), header full (or octet aligned), or header full with CMR byte */
@@ -1518,7 +1560,7 @@ cat4:
          /* check for valid EVS and AMR SIDs by calling DSGetPayloadInfo() API in voplib, which does an exact and thorough check, including EVS AMR-WB IO mode. If not found, then we fall through to non-SID detection case statements, JHB Jun 2023 */
 
             PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+            DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
 
             if (PayloadInfo_EVS.fSID || codec_type == EVS) {
                *bitrate = 13200;  /* we don't know actual bitrate yet, so we guess 13.2 kbps which is typical. Not a problem as EVS decoder will figure it out */
@@ -1526,19 +1568,16 @@ cat4:
             }
 
             PAYLOAD_INFO PayloadInfo_AMRNB = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_AMR_NB, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMRNB);
+            DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMRNB);
 
-            if (PayloadInfo_AMRNB.fSID || codec_type == AMR) {
+            if (PayloadInfo_AMRNB.fSID || codec_type == AMR_NB) {
 
                *bitrate = 12200;  /* we don't know actual bitrate yet, so we guess 12.2 kbps which is typical. Not a problem as AMR decoder will figure it out */
-               return AMR;
+               return AMR_NB;
             }
 
             #if 0
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &fAMRWB_IOMode, &fSID_EVS, NULL, NULL);
-            #endif
-
-            #if 0
+            DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &fAMRWB_IOMode, &fSID_EVS, NULL, NULL);
             printf("before EVS check, fSID AMRWB = %d, fAMRWB_IOMode = %d, fSID EVS = %d, rtp_pkt[0] = 0x%x \n", fSID_AMR_WB, fAMRWB_IOMode, fSID_EVS, rtp_pkt[0]);
             #endif
 
@@ -1548,21 +1587,21 @@ cat4:
             }
 
             PAYLOAD_INFO PayloadInfo_AMRWB = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_AMR_WB, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMRWB);
+            DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMRWB);
 
             if (PayloadInfo_AMRWB.fSID || codec_type == AMR_WB) {
                *bitrate = 23850;  /* we don't know actual bitrate yet, so we guess 23.85 kbps which is typical. Not a problem as AMR-WB decoder will figure it out */
                return AMR_WB;
             }
 
-            goto ret;  /* don't fall through to 8 */
+            break;  /* don't fall through to 8 */
          }
 
       case 8:
          if (!codec_type || codec_type == EVS) {
 
             PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+            DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
 
             if (!PayloadInfo_EVS.fAMRWB_IO_Mode && PayloadInfo_EVS.fSID) {
                *bitrate = 13200;  /* EVS CMR + ToC + SID */
@@ -1575,13 +1614,13 @@ cat4:
             }
          }
 
-         goto ret;  /* don't fall through to 9 */
+         break;  /* don't fall through to 9 */
 
       case 9:
          if (!codec_type || codec_type == EVS) {
 
             PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+            DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
 
             if (!PayloadInfo_EVS.fAMRWB_IO_Mode && !PayloadInfo_EVS.fSID && (rtp_pkt[0] & 0x80) && rtp_pkt[1] == 0) {
                *bitrate = 5900;  /* EVS primary 2800 bps, ToC (header-full format), with CMR. See notes in case 7 about 5900 bps */
@@ -1589,121 +1628,202 @@ cat4:
             }
          }
 
-         goto ret;  /* don't fall through to 14+ */
+         break;  /* don't fall through to 14+ */
 
       case 14:
-         if (
-             ((rtp_pkt[0] & 0x0f) == 0 && (rtp_pkt[1] & 0x80) == 0 && !(rtp_pkt[rtp_pyld_len-1] & 0x7f)) ||  /* bandwidth efficient (95 + 10 bits, 1-bit partial trailing byte). Test with 81786.4289256.478164.pcap */
-             ((rtp_pkt[0] & 0x0f) == 0 && (rtp_pkt[1] & 0xfb) == 0 && !(rtp_pkt[rtp_pyld_len-1] & 0x01))     /* octet-aligned */
-            ) {
+         {
+         /* look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            *bitrate = 4750;  /* AMR 4750 bps, JHB Jun 2024 */
-            return AMR;
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
+
+               if ((rtp_pyld_len == 14 && PayloadInfo_AMR.BitRate[0] == 4750) || codec_type == AMR_NB) {
+                  *bitrate = 4750;  /* AMR 4750 bps, bandwidth efficient test with 81786.4289256.478164.pcap) or octet-aligned (both have same payload size), JHB Jun 2024 */
+                  return AMR_NB;
+               }
+            }
          }
 
-         goto ret;
+         break;  /* no fall-thru */
 
       case 15:  /* the EVS part of cases 15 and 16 is here because Fraunhofer .rtp files have some EVS stereo 5900 bps examples (mediaTest/pcaps/evs_5900_2_hf0.rtpdump, mediaTest/pcaps/evs_5900_2_hf1.rtpdump), JHB Aug 2023. Notes, May 2024: (i) how to handle stereo EVS in the general case is still being considered, (ii) for the time being even if a mistake is made, as long as auto-detect comes up with EVS (e.g. from a SID packet) then media output should still mostly be corrrect (at least for channel 0), (iii) writing separate channel pcap files would need to be implemented and wav output would need to be modified */
       case 16:
 
          {
             PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+            DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
 
             if ((!PayloadInfo_EVS.fAMRWB_IO_Mode && rtp_pkt[0] == 0x40) || codec_type == EVS) {
                *bitrate = 5900;  /* stereo EVS primary 2800 bps, ToC F bit is set (full header format), no CMR, JHB Aug 2023 */
                return EVS; 
             }
 
-            if (rtp_pyld_len == 15 &&
-                (
-                 ((rtp_pkt[0] & 0x0f) == 0 && (rtp_pkt[1] & 0x80) == 1 && !(rtp_pkt[rtp_pyld_len-1] & 0x7f)) ||  /* bandwidth efficient (103 + 10 bits, 1-bit partial trailing byte) */
-                 ((rtp_pkt[0] & 0x0f) == 0 && (rtp_pkt[1] & 0xfb) == 8 && !(rtp_pkt[rtp_pyld_len-1] & 0x01))     /* octet-aligned */
-                )
-               )
-               {
+         /* next look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-               *bitrate = 5150;  /* AMR 5150 bps, JHB Jun 2024 */
-               return AMR;
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
+
+               if ((rtp_pyld_len == 15 && PayloadInfo_AMR.BitRate[0] == 5150) || codec_type == AMR_NB) {
+                  *bitrate = 5150;  /* AMR 5150 bps, JHB Jun 2024 */
+                  return AMR_NB;
+               }
+
+               if ((rtp_pyld_len == 16 && PayloadInfo_AMR.BitRate[0] == 5900) || codec_type == AMR_NB) {
+                  *bitrate = 5900;  /* AMR 5900 bps, JHB Jun 2024 */
+                  return AMR_NB;
+               }
             }
 
-            if (rtp_pyld_len == 16 &&
-                (
-                  rtp_pkt[0] & 0x0f) == 1 && (rtp_pkt[1] & 0x80) == 0  /* bandwidth efficient (118 + 10 bits, no partial-bit trailing byte). Test with 85236.4284266.158664.pcap */
-                )
-               {
-
-               *bitrate = 5900;  /* AMR 5900 bps, JHB May 2024 */
-               return AMR;
-            }
-
-            goto ret;  /* don't fall through to 17+ */
+            break;  /* don't fall through to 17+ */
          }
 
       case 17:  /* EVS AMR-WB IO 6600 bps compact header, full header, collision case (+1 padding byte), JHB Oct 2023 */
       case 18:  /* either 17 or 18 EVS primary 7200 kbps, added JHB Dec 2020 */
+         {
+            if ((rtp_pyld_len == 18 && (rtp_pkt[0] & 0xf0) == 0x20) || codec_type == AMR_WB) {
+               *bitrate = 6600;  /* AMR-WB (either bandwidth efficient or octet-aligned), JHB May 2024 */
+               return AMR_WB;
+            }
 
-         if ((rtp_pyld_len == 18 && (rtp_pkt[0] & 0xf0) == 0x20) || codec_type == AMR_WB) {
-            *bitrate = 6600;  /* AMR-WB (either bandwidth efficient or octet-aligned), JHB May 2024 */
-            return AMR_WB;
-         }
+         /* next look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-         if (rtp_pyld_len == 17 &&
-             (
-              (rtp_pkt[0] & 0x0f) == 0 && (rtp_pkt[1] & 0xfb) == 0x10 && !(rtp_pkt[rtp_pyld_len-1] & 0x03)  /* octet-aligned, 6-bit partial trailing byte */
-             )
-            )
-            {
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
 
-            *bitrate = 5900;  /* AMR 5900 bps, JHB Jun 2024 */
-            return AMR;
+               if ((rtp_pyld_len == 17 && PayloadInfo_AMR.BitRate[0] == 5900) || codec_type == AMR_NB) {
+                  *bitrate = 5900;  /* AMR 5900 bps, JHB Jun 2024 */
+                  return AMR_NB;
+               }
+
+               if ((rtp_pyld_len == 18 && PayloadInfo_AMR.BitRate[0] == 6700) || codec_type == AMR_NB) {
+                  *bitrate = 6700;  /* AMR 6700 bps, JHB Dec 2024 */
+                  return AMR_NB;
+               }
+            }
          }
 
       case 19:
-         if (!codec_type || codec_type == EVS) {
+         {
+         /* first look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
 
-            if (PayloadInfo_EVS.fAMRWB_IO_Mode) {
-               *bitrate = 6600;  /* with or without TOC and padding byte, assumes no CMR */
-               return EVS;
+               if (((rtp_pyld_len == 18 || rtp_pyld_len == 19) && PayloadInfo_AMR.BitRate[0] == 6600) || codec_type == AMR_WB) {
+                  *bitrate = 6600;
+                  return AMR_WB;
+               }
             }
-            if (rtp_pyld_len == 18 || rtp_pkt[0] == 1) {
-               *bitrate = 7200;  /* EVS primary 7200 bps with or without ToC, no CMR */
-               return EVS; 
+
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
+
+               if ((rtp_pyld_len == 19 && PayloadInfo_AMR.BitRate[0] == 6700) || codec_type == AMR_NB) {
+                  *bitrate = 6700;  /* AMR 6700 bps, JHB Dec 2024 */
+                  return AMR_NB;
+               }
+            }
+
+            if (!codec_type || codec_type == EVS) {
+
+               PAYLOAD_INFO PayloadInfo_EVS = { 0 };
+               DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+
+               if (PayloadInfo_EVS.fAMRWB_IO_Mode) {
+                  *bitrate = 6600;  /* with or without TOC and padding byte, assumes no CMR */
+                  return EVS;
+               }
+
+               if (rtp_pyld_len == 18 || rtp_pkt[0] == 1) {
+                  *bitrate = 7200;  /* EVS primary 7200 bps with or without ToC, no CMR */
+                  return EVS; 
+               }
             }
          }
-      case 20:  /* EVS primary 8 kbps, JHB Oct 2023 */
+      case 20:  /* AMR-NB 7400 bps or EVS primary 8 kbps, JHB Oct 2023 */
       case 21:
+         {
+         /* first look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
+
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
+
+               if (((rtp_pyld_len == 20 || rtp_pyld_len == 21) && PayloadInfo_AMR.BitRate[0] == 7400) || codec_type == AMR_NB) {
+                  *bitrate = 7400;
+                  return AMR_NB;
+               }
+            }
+         }
+
          if (!codec_type || codec_type == EVS) {
             *bitrate = 8000;  /* with or without TOC, assumes no CMR */
             return EVS;
          }
-      case 23:
-      case 24:
-      case 25:
-         if (!codec_type || codec_type == EVS) {
+      case 22:
+         {
+         /* look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
 
-            if (PayloadInfo_EVS.fAMRWB_IO_Mode) {
-               *bitrate = 8850;  /* with or without TOC and padding byte, assumes no CMR */
-               return EVS;
-            }
-            if (rtp_pyld_len == 24 || rtp_pkt[0] == 3) {
-               *bitrate = 9600;  /* EVS primary 9600 bps with or without ToC, assumes no CMR */
-               return EVS; 
+               if ((rtp_pyld_len == 22 && PayloadInfo_AMR.BitRate[0] == 7950) || codec_type == AMR_NB) {
+                  *bitrate = 7950;
+                  return AMR_NB;
+               }
             }
          }
 
+      case 23:
+      case 24:
+      case 25:
+         {
+         /* first look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
+
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
+
+               if (((rtp_pyld_len == 24 || rtp_pyld_len == 25) && PayloadInfo_AMR.BitRate[0] == 8850) || codec_type == AMR_WB) {
+                  *bitrate = 8850;
+                  return AMR_WB;
+               }
+            }
+
+            if (!codec_type || codec_type == EVS) {
+
+               PAYLOAD_INFO PayloadInfo_EVS = { 0 };
+               DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+
+               if (PayloadInfo_EVS.fAMRWB_IO_Mode) {
+                  *bitrate = 8850;  /* with or without TOC and padding byte, assumes no CMR */
+                  return EVS;
+               }
+               if (rtp_pyld_len == 24 || rtp_pkt[0] == 3) {
+                  *bitrate = 9600;  /* EVS primary 9600 bps with or without ToC, assumes no CMR */
+                  return EVS; 
+               }
+            }
+         }
+
+      case 27:
+      case 28:
+         {
+         /* first look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
+
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
+
+               if (((rtp_pyld_len == 27 || rtp_pyld_len == 28) && PayloadInfo_AMR.BitRate[0] == 10200) || codec_type == AMR_NB) {
+                  *bitrate = 10200;
+                  return AMR_NB;
+               }
+            }
+         }
+         break;  /* no fall-thru */
+
       case 31:
       case 32:
-
          {
             PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+            DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
 
             if (rtp_pyld_len == 32 && !PayloadInfo_EVS.CMR && ((rtp_pkt[0] & 0xf) != 3 || (rtp_pkt[1] & 0xc0) != 0xc0 || (rtp_pkt[rtp_pyld_len-1] & 3) != 0) && (!codec_type || codec_type == EVS)) {  /* check for AMR 12200 bandwidth efficient mode carefully, including FT field in ToC and padding bits. If mis-identified as EVS 12650 this line is the reason why. Test with evs_mixed_mode_mixed_rate.pcap, announcementplayout_metronometones1sec_2xAMR.pcapng, stv16c_16kHz_12650_compact_header.pcap */
 
@@ -1712,53 +1832,126 @@ cat4:
                   return EVS;
                }
             }
-            if (!codec_type || codec_type == AMR) {
+            if (!codec_type || codec_type == AMR_NB) {
                *bitrate = 12200;
-               return AMR;
+               return AMR_NB;
             }
          }
 
       case 33:  /* EVS 13200 bps, 33 for compact header format, 34 for full header format, 35 for full header with CMR byte */
 
-         if ((!codec_type || codec_type == AMR) && !(rtp_pkt[0] & 0x80) && !(rtp_pkt[0] & 0x0f) && rtp_pyld_len > 6) {  /* look for AMR 12200 octet-aligned with CMR byte, last 4 bits of first byte must be zero. Note for octet-aligned AMR SID RTP payload size must be > 6, JHB Jan 2023 */
+         if ((!codec_type || codec_type == AMR_NB) && !(rtp_pkt[0] & 0x80) && !(rtp_pkt[0] & 0x0f) && rtp_pyld_len > 6) {  /* look for AMR 12200 octet-aligned with CMR byte, last 4 bits of first byte must be zero. Note for octet-aligned AMR SID RTP payload size must be > 6, JHB Jan 2023 */
             *bitrate = 12200;
-            return AMR;
+            return AMR_NB;
          }
       case 34:
-         if (!codec_type || codec_type == EVS) {
+         {
+         /* first look for AMR octet-aligned, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);  /* resolve framesize collision between EVS primary mode compact header format 13.2 kbps and EVS AMR-WB IO mode header-full format 12.65 kbps, JHB Oct 2023 */
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
 
-            if (PayloadInfo_EVS.fAMRWB_IO_Mode) *bitrate = 12650;  /* AMR-WB IO mode, header-full, one padding byte appended */
-            else *bitrate = 13200;  /* primary mode, header-full */
-            return EVS; 
+               if ((rtp_pyld_len == 34 && PayloadInfo_AMR.BitRate[0] == 12650) || codec_type == AMR_WB) {
+                  *bitrate = 12650;
+                  return AMR_WB;
+               }
+            }
+
+            if (!codec_type || codec_type == EVS) {
+
+               PAYLOAD_INFO PayloadInfo_EVS = { 0 };
+               DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);  /* resolve framesize collision between EVS primary mode compact header format 13.2 kbps and EVS AMR-WB IO mode header-full format 12.65 kbps, JHB Oct 2023 */
+
+               if (PayloadInfo_EVS.fAMRWB_IO_Mode) *bitrate = 12650;  /* AMR-WB IO mode, header-full, one padding byte appended */
+               else *bitrate = 13200;  /* primary mode, header-full */
+               return EVS;
+            }
          }
       case 35:
          if (!codec_type || codec_type == EVS) return EVS;  /* add non-auto-detect: EVS codec type already set (e.g. SDP file input), JHB Jan 2021 */
       case 37:
-         if ((!codec_type || codec_type == AMR_WB) && rtp_pyld_len == 37) {  /* added JHB Jun 2023 */
-            *bitrate = 14250;
-            return AMR_WB;
+      case 38:
+         {
+         /* look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
+
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
+
+               if (((rtp_pyld_len == 37 || rtp_pyld_len == 38) && PayloadInfo_AMR.BitRate[0] == 14250) || codec_type == AMR_WB) {
+                  *bitrate = 14250;
+                  return AMR_WB;
+               }
+            }
          }
-      case 41:  /* EVS 16400 bps, 41 for compact header format, 42 for full header format */
+         break;  /* no fall-thru */
+
+      case 41:  /* either (i) AMR-WB 15850 bps or (ii) EVS 16400 bps, 41 for compact header format, 42 for full header format */
       case 42:
-         if (!codec_type || codec_type == EVS) {
+         {
+         /* first look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);  /* resolve framesize collision between EVS primary mode compact header format 16.4 kbps and EVS AMR-WB IO mode header-full format 15.85 kbps, JHB Oct 2023 */
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
 
-            if (PayloadInfo_EVS.fAMRWB_IO_Mode) *bitrate = 15850;  /* AMR-WB IO mode, header-full, one padding byte appended */
-            else *bitrate = 16400;  /* primary mode, header-full */
-            return EVS;
+               if (((rtp_pyld_len == 41 || rtp_pyld_len == 42) && PayloadInfo_AMR.BitRate[0] == 15850) || codec_type == AMR_WB) {
+                  *bitrate = 15850;
+                  return AMR_WB;
+               }
+            }
+
+            if (!codec_type || codec_type == EVS) {
+
+               PAYLOAD_INFO PayloadInfo_EVS = { 0 };
+               DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);  /* resolve framesize collision between EVS primary mode compact header format 16.4 kbps and EVS AMR-WB IO mode header-full format 15.85 kbps, JHB Oct 2023 */
+
+               if (PayloadInfo_EVS.fAMRWB_IO_Mode) *bitrate = 15850;  /* AMR-WB IO mode, header-full, one padding byte appended */
+               else *bitrate = 16400;  /* primary mode, header-full */
+               return EVS;
+            }
          }
+         break;  /* no fall-thru */
+
+      case 47:
+      case 48:
+      case 51:
+      case 52:
+         {
+         /* look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
+
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
+
+               if (((rtp_pyld_len == 47 || rtp_pyld_len == 48) && PayloadInfo_AMR.BitRate[0] == 18250) || codec_type == AMR_WB) {
+                  *bitrate = 18250;
+                  return AMR_WB;
+               }
+
+               if (((rtp_pyld_len == 51 || rtp_pyld_len == 52) && PayloadInfo_AMR.BitRate[0] == 19850) || codec_type == AMR_WB) {
+                  *bitrate = 19850;
+                  return AMR_WB;
+               }
+            }
+         }
+         break;  /* no fall-thru */
+
       case 58:
       case 59:
       case 60:
          if (!codec_type || codec_type == EVS) {  /* improve detection for EVS AMR IO mode 23.05 and 23.85, JHB Jul 2024 */
 
+         /* look for AMR first as it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
+
+            PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+            if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR) >= 0) {
+
+               if (((rtp_pyld_len == 59 || rtp_pyld_len == 60) && PayloadInfo_AMR.BitRate[0] == 23050) || codec_type == AMR_WB) {
+                  *bitrate = 23050;
+                  return AMR_WB;
+               }
+            }
+
             PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
+            DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);
 
             if (PayloadInfo_EVS.fAMRWB_IO_Mode) {
 
@@ -1774,7 +1967,7 @@ cat4:
                }
             }
          }
-         goto ret;  /* no fall-through */
+         break;  /* no fall-thru */
 
       case 61:
          if (codec_type == AMR_WB || (!codec_type && (rtp_pkt[0] & 0xf8) == 0xf0)) {
@@ -1792,7 +1985,7 @@ cat4:
          else if (!codec_type || codec_type == EVS) {
 
             PAYLOAD_INFO PayloadInfo_EVS = { 0 };
-            DSGetPayloadInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);  /* resolve framesize collision between EVS primary mode compact header format 24.4 kbps and EVS AMR-WB IO mode header-full format 23.85 kbps, JHB Oct 2023 */
+            DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS);  /* resolve framesize collision between EVS primary mode compact header format 24.4 kbps and EVS AMR-WB IO mode header-full format 23.85 kbps, JHB Oct 2023 */
 
             if (PayloadInfo_EVS.fAMRWB_IO_Mode) *bitrate = 23850;  /* AMR-WB IO mode, header-full, one padding byte appended */
             else *bitrate = 24400;  /* primary mode, header-full */
@@ -1803,140 +1996,102 @@ cat4:
             *bitrate = 24400;
             return EVS;
          }
-      #if 0
-      case 31:
-      case 32:
-         if (!codec_type || codec_type == AMR) {
-            *bitrate = 12200;
-            return AMR;
-         }
-      #endif
       case 186:
       case 187:
          if (!codec_type || codec_type == EVS) {
             *bitrate = 24400;
 #if 0
-            if (ptime) *ptime = 60;  /* EVS uses variable ptime, with ToC byte indicating number of frames in the RTP payload.  For EVS we use ptime of 20 msec in session creation, and let pktlib handle variable ptime on the fly, JHB Oct 2019 */
+            if (ptime) *ptime = 60;  /* EVS uses variable ptime, with ToC byte indicating number of frames in the RTP payload. For EVS we use ptime of 20 msec in session creation, and let pktlib handle variable ptime on the fly, JHB Oct 2019 */
 #endif
             return EVS;
          }
-
-      #if 0
-      default:
-         if (!codec_type) return -1;
-      #endif
    }
 
-ret:
+   #if (_GCC_VERSION >= 70000)  // gcc 7.0 or higher
+   #pragma GCC diagnostic pop
+   #endif
 
    return codec_type ? codec_type : -1;  /* return codec_type or error condition if still no codec type determined */
 }
 
 /* create a new session on-the-fly when dynamic sessions mode is in effect, or during stress tests that create sessions from pcaps. Returns 1 for successful create, 0 if not a codec payload (for example, RTCP packets), and -1 for error condition */
- 
-int CreateDynamicSession(uint8_t* pkt, int pkt_len, HSESSION hSessions[], SESSION_DATA session_data[], int thread_index, int nInput, int nReuse) {
 
-int i, ip_version, codec_type = 0, ip_hdr_len;
+int CreateDynamicSession(uint8_t* pkt, PKTINFO PktInfo, int network_pkt_len, HSESSION hSessions[], SESSION_DATA session_data[], int thread_index, int nInput, int nReuse) {
+
+int i, codec_type = 0;
 HSESSION hSession;
 SESSION_DATA* session;
-char codecstr[20];
-uint32_t bitrate = 0, ptime = 20;
-int rtp_version, rtp_pyld_type, pkt_len_lib, rtp_hdr_len, rtp_pyld_ofs, rtp_pyld_len, rtp_padding_size;
-uint32_t rtp_ssrc;
-short unsigned int rtp_seqnum;
+char codec_name[CODEC_NAME_MAXLEN];
+uint32_t bitrate = 0, ptime = 20;  /* default ptime, packet/media worker threads determine actual ptime upon receiving packets */
+
 char group_id[MAX_SESSION_NAME_LEN] = "";
-uint8_t cat = 0;  /* init auto-detection category type */
-char errstr[300] = "", tmpstr[300], tmpstr2[300];
+int8_t cat = -1;  /* init auto-detection category type */
+char errstr[300] = "", tmpstr[300], tmpstr2[400];
 int target_delay = 0,  max_delay = 0;
 bool fShowErrDebugInfo = false;
 static bool fPrevErr = false;
+bool fStreamGroupMember;
 
 /* add SDP related items, JHB Jan 2021 */
 bool fSDPPyldTypeFound = false;
 uint32_t clock_rate = 0;
 
+int sanity_size_check_len, pkt_len;  /* packet validation / sanity check items */
+bool fNetworkLen;
+char szOutOfSpecRTPPadding[100] = "";
+
 /* perform thorough packet validation before creating a session. Notes:
 
-   -we could use DSGetPacketInfo() with the DS_PKT_INFO_PKTINFO flag, which would retrieve all of the items below in a PktInfo struct (see pktlib.h)
-   -but we want fine-grained error messages so we use individual DS_PKT_INFO_xxx flags
-   -PushPackets() uses the DS_PKT_INFO_PKTINFO flag for higher performance (minimize packet handling overhead)
+   -RTP packet validation and sanity checks are in addition to pktlib error checking in DSGetPacketInfo() with the DS_PKT_INFO_PKTINFO flag (i.e when extracting packet fields into a PKTINFO struct; see pktlib.h)
+   -we want additional RTP granularity so we make several individual error checks here. These are fast and done once at session creation time, so no significant impact on performance
+   -the PKTINFO struct passed here is from PushPackets(), which uses the DS_PKT_INFO_PKTINFO flag to minimize packet handling overhead and increase performance
 */
 
    bool fShowWarnings = (Mode & ENABLE_DEBUG_STATS) != 0;
 
-   ip_version = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_IP_VERSION | (fShowWarnings ? 0 : DS_PKTLIB_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
-
-   if (ip_version != IPv4 && ip_version != IPv6) {  /* must be IPv4 or IPv6 */
-      sprintf(errstr, "invalid IP version = %d, pkt_len = %d", ip_version, pkt_len);
-      goto non_rtp_packet;
+   if (PktInfo.rtp_version != 2) {  /* must be RTP v2 */
+      sprintf(errstr, "invalid RTP version = %d, pkt_len = %d", PktInfo.rtp_version, PktInfo.pkt_len);
+      goto rtp_packet_format_error;
    }
 
-   ip_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN | (fShowWarnings ? 0 : DS_PKTLIB_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
-
-   if (ip_hdr_len < 0) {
-      sprintf(errstr, "invalid IP header len = %d, pkt_len = %d", ip_hdr_len, pkt_len);
-      goto non_rtp_packet;
+   if (PktInfo.rtp_hdr_len <= 0) {
+      sprintf(errstr, "invalid RTP header len %d, IP hdr len = %d, pkt len = %d", PktInfo.ip_hdr_len, PktInfo.rtp_hdr_len, PktInfo.pkt_len);
+      goto rtp_packet_format_error;
    }
 
-   rtp_version = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_VERSION | (fShowWarnings ? 0 : DS_PKTLIB_SUPPRESS_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG), pkt, pkt_len, NULL, NULL);
-
-   if (rtp_version != 2) {  /* must be RTP v2 */
-      sprintf(errstr, "invalid RTP version = %d, pkt_len = %d", rtp_version, pkt_len);
-      goto non_rtp_packet;
+   if (PktInfo.rtp_pyld_len <= 0) {
+      sprintf(errstr, "invalid RTP payload len %d, IP hdr len = %d, pkt len = %d", PktInfo.ip_hdr_len, PktInfo.rtp_pyld_len, PktInfo.pkt_len);
+      goto rtp_packet_format_error;
    }
 
-   rtp_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_HDRLEN | (fShowWarnings ? 0 : DS_PKTLIB_SUPPRESS_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG), pkt, pkt_len, NULL, NULL);
-
-   if (rtp_hdr_len <= 0) {
-      sprintf(errstr, "invalid RTP header len %d, IP hdr len = %d, pkt len = %d", ip_hdr_len, rtp_hdr_len, pkt_len);
-      goto non_rtp_packet;
-   }
-
-   rtp_pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDLEN | (fShowWarnings ? 0 : DS_PKTLIB_SUPPRESS_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG), pkt, pkt_len, NULL, NULL);
-
-   if (rtp_pyld_len <= 0) {
-      #if 0
-      sprintf(errstr, "invalid RTP payload len %d, pkt len = %d, pkt_len_lib = %d, rtp hdr len = %d", rtp_pyld_len, pkt_len, pkt_len_lib, rtp_hdr_len);
-      #else
-      sprintf(errstr, "invalid RTP payload len %d, IP hdr len = %d, pkt len = %d", ip_hdr_len, rtp_pyld_len, pkt_len);
-      #endif
-      goto non_rtp_packet;
-   }
-
-   rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE | (fShowWarnings ? 0 : DS_PKTLIB_SUPPRESS_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG), pkt, pkt_len, NULL, NULL);
-
-   if (rtp_pyld_type < 0) {
-      sprintf(errstr, "invalid RTP payload type = %d, pkt len = %d", rtp_pyld_type, pkt_len);
+   if ((int8_t)PktInfo.rtp_pyld_type < 0) {
+      sprintf(errstr, "invalid RTP payload type = %d, pkt len = %d", PktInfo.rtp_pyld_type, PktInfo.pkt_len);
       fShowWarnings = true;
-      goto non_rtp_packet;
+      goto rtp_packet_format_error;
    }
 
-   rtp_padding_size = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PADDING_SIZE | (fShowWarnings ? 0 : DS_PKTLIB_SUPPRESS_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG), pkt, pkt_len, NULL, NULL);
+/* packet vs UDP + RTP size sanity checks */
 
-/* UDP + RTP sanity check */
+   pkt_len = network_pkt_len;
+   fNetworkLen = true;
 
-   int tlen;
-   if ((tlen = ip_hdr_len + UDP_HEADER_LEN + rtp_hdr_len + rtp_pyld_len + rtp_padding_size - pkt_len) != 0) {
+   if ((sanity_size_check_len = PktInfo.ip_hdr_len + UDP_HEADER_LEN + PktInfo.rtp_hdr_len + PktInfo.rtp_pyld_len + PktInfo.rtp_padding_len - pkt_len) != 0) {  /* packet size sanity check using pktlib calculated values. sanity_size_check_len will be < 0 for extra bytes at end of payload, and > 0 if short of expected bytes */
 
-      if (tlen > 0 || (tlen < 0 && !(Mode & ALLOW_OUTOFSPEC_RTP_PADDING))) {  /* as we've seen some pcaps with a few extra bytes at end of each RTP payload, but without RTP padding specified in the RTP header, the cmd line -dN ALLOW_OUTOFSPEC_RTP_PADDING flag can be used avoid the error message, JHB Jan 2023 */
+      if (sanity_size_check_len < 0 && (Mode & ALLOW_OUTOFSPEC_RTP_PADDING)) {  /* we've seen some pcaps with packets including trailing info not accounted for by header sizes and RTP padding, one example is the trailing 4-byte FCS (frame check sequence) in AMRWB-23.85kbps-20ms_bw.pcap. The ALLOW_OUTOFSPEC_RTP_PADDING flag in cmd line -dN entry can be used to allow this and avoid warning messages, JHB Jan 2023 */
 
-         sprintf(errstr, "malformed UDP/RTP packet, IP hdr len = %d, rtp pyld len = %d, rtp padding size = %d, pkt len = %d, rtp pyld type = %d. Possibly try ALLOW_OUTOFSPEC_RTP_PADDING flag in cmd line -dN argument", ip_hdr_len, rtp_pyld_len, rtp_padding_size, pkt_len, rtp_pyld_type);
+         sprintf(szOutOfSpecRTPPadding, ", %d out-of-spec RTP padding bytes (RTP padding len = %d)", -sanity_size_check_len, PktInfo.rtp_padding_len);  /* proceed, include info in event log session creation messages, JHB Dec 2024 */
+      }
+      else {  /* malformed packet error condition, session not created */
+
+         sprintf(errstr, "malformed UDP/RTP packet, IP hdr len = %d, rtp pyld size = %d, rtp padding size = %d, %s = %d, rtp pyld type = %d. Possibly try ALLOW_OUTOFSPEC_RTP_PADDING flag in cmd line -dN argument", PktInfo.ip_hdr_len, PktInfo.rtp_pyld_len, PktInfo.rtp_padding_len, fNetworkLen ? "pcap or network packet size" : "calculated packet size", pkt_len, PktInfo.rtp_pyld_type);
          fShowWarnings = true;
-         goto non_rtp_packet;
+         goto rtp_packet_format_error;
       }
    }
 
-   #if 0
-   else {
-      static int count = 0;
-      if (count < 20) { printf(" ***** pkt ok, pkt_len = %d, rtp_pyld_len = %d \n", pkt_len, rtp_pyld_len); count ++; }
-   }
-   #endif
-
 /* ignore RTCP packets */
-  
-   if (rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && rtp_pyld_type <= RTCP_PYLD_TYPE_MAX) return 0;
 
+   if (isRTCPPacket(PktInfo.rtp_pyld_type)) return 0;  /* no error condition, session not created. isRTCPPacket() macro is defined in pktlib.h */
 
 /* SDP info check: num_rtpmaps will be > 0 if (i) valid cmd line SDP file was given, (ii) added from SIP invite / SDP info packets */
 
@@ -1948,7 +2103,7 @@ uint32_t clock_rate = 0;
 
          sdp::AttributeRTP* rtpmap = (sdp::AttributeRTP*)thread_info[thread_index].rtpmaps[nInput][i];
 
-         if (rtp_pyld_type == rtpmap->pyld_type) {  /* if found set codec type and sample rate */
+         if (PktInfo.rtp_pyld_type == rtpmap->pyld_type) {  /* if found set codec type and sample rate */
 
             int found_codec_type = 0;
 
@@ -1967,7 +2122,7 @@ uint32_t clock_rate = 0;
                   found_codec_type = G729AB;
                   break;
                case sdp::SDP_AMRNB:
-                  found_codec_type = AMR;
+                  found_codec_type = AMR_NB;
                   break;
                case sdp::SDP_AMRWB:
                   found_codec_type = AMR_WB;
@@ -1984,7 +2139,7 @@ uint32_t clock_rate = 0;
                case sdp::SDP_CN:  /* codec types in sdp/types.h that SDK version of mediaMin is currently not handling, JHB May 2021 */
 
                default:
-                  int rtp_pyld_type_index = min(max(rtp_pyld_type-96, 0), MAX_DYN_PYLD_TYPES-1);
+                  int rtp_pyld_type_index = min(max(PktInfo.rtp_pyld_type-96, 0), MAX_DYN_PYLD_TYPES-1);
                   if (!thread_info[thread_index].fUnmatchedPyldTypeMsg[rtp_pyld_type_index][nInput]) {
                      Log_RT(3, "mediaMin WARNING: CreateDynamicSession() says SDP codec type %d for input %d unmatched to supported codecs \n", nInput, rtpmap->codec_type);
                      thread_info[thread_index].fUnmatchedPyldTypeMsg[rtp_pyld_type_index][nInput] = true;
@@ -2007,12 +2162,12 @@ uint32_t clock_rate = 0;
 
       if (!fSDPPyldTypeFound) {
 
-         int rtp_pyld_type_index = min(max(rtp_pyld_type-96, 0), MAX_DYN_PYLD_TYPES-1);
+         int rtp_pyld_type_index = min(max(PktInfo.rtp_pyld_type-96, 0), MAX_DYN_PYLD_TYPES-1);
 
          if (!thread_info[thread_index].fDisallowedPyldTypeMsg[rtp_pyld_type_index][nInput]) {
             char fileinfo[256] = "";
             if (strlen(szSDPFile)) sprintf(fileinfo, "file %s or ", szSDPFile);
-            Log_RT(3, "mediaMin WARNING: CreateDynamicSession() says RTP packet with payload type %d found but not defined in SDP %spacket info for input %d, ignoring all RTP packets with this payload type, pkt len = %d, rtp pyld len = %d \n", rtp_pyld_type, fileinfo, nInput, pkt_len, rtp_pyld_len);
+            Log_RT(3, "mediaMin WARNING: CreateDynamicSession() says RTP packet with payload type %d found but not defined in SDP %spacket info for input %d, ignoring all RTP packets with this payload type, pkt len = %d, rtp pyld len = %d \n", PktInfo.rtp_pyld_type, fileinfo, nInput, PktInfo.pkt_len, PktInfo.rtp_pyld_len);
             thread_info[thread_index].fDisallowedPyldTypeMsg[rtp_pyld_type_index][nInput] = true;
          }
 
@@ -2022,42 +2177,66 @@ uint32_t clock_rate = 0;
 
 /* more packet validation ... */
 
-   pkt_len_lib = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN | (fShowWarnings ? 0 : DS_PKTLIB_SUPPRESS_ERROR_MSG), pkt, pkt_len, NULL, NULL);
+   if (PktInfo.rtp_pyld_ofs < MIN_IP_UDP_RTP_HEADER_LEN) {  /* XXX_HEADER_LEN definitions are in pktlib.h */
 
-   if (pkt_len_lib <= 0) {
-      sprintf(errstr, "invalid pkt len = %d, pkt_len param = %d, payload type = %d", pkt_len_lib, pkt_len, rtp_pyld_type);
+      sprintf(errstr, "invalid RTP payload offset %d, pkt len = %d, payload type = %d, rtp_pyld_len = %d", PktInfo.rtp_pyld_ofs, PktInfo.pkt_len, PktInfo.rtp_pyld_type, PktInfo.rtp_pyld_len);
       fShowWarnings = true;
-      goto non_rtp_packet;
+      goto rtp_packet_format_error;
    }
 
-   rtp_pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDOFS | (fShowWarnings ? 0 : DS_PKTLIB_SUPPRESS_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG), pkt, pkt_len, NULL, NULL);
+/* check for spurious packets - no-transmission, out-of-place DTMF, etc */
 
-   if (rtp_pyld_ofs <= 0) {
+   if (PktInfo.rtp_pyld_len < 6) {
 
-      sprintf(errstr, "invalid RTP payload offset %d, pkt len = %d, pkt_len_lib = %d, payload type = %d, rtp_pyld_len = %d", rtp_pyld_ofs, pkt_len, pkt_len_lib, rtp_pyld_type, rtp_pyld_len);
-      fShowWarnings = true;
-
-non_rtp_packet:
-
-      if (fShowWarnings) fprintf(stderr, "DSGetPacketInfo() returns error value for new session packet, no codec estimation performed, %s \n", errstr);
-      return -1;
-   }
-
-   rtp_ssrc = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SSRC | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG, pkt, pkt_len, NULL, NULL);
-   rtp_seqnum = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SEQNUM | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG, pkt, pkt_len, NULL, NULL);
-
-/* check for stub packets or out-of-place DTMF packet */
-
-   if (rtp_pyld_len < 6) {
-
-      if (rtp_pyld_len == 2 && (pkt[rtp_pyld_ofs] >= 7 && pkt[rtp_pyld_ofs] <= 39) && pkt[rtp_pyld_ofs+1] == 0xc0) {  /* ignore AMR-WB 2-byte "NO_DATA" packets */
-         sprintf(errstr, "packet appears to be AMR-WB NO_DATA with payload len = %d bytes", rtp_pyld_len);
+      #if 0  /* evidently has been here since early 2021, but now we have a general case inspection of 2-byte payloads, JHB Nov 2024 */
+      if (PktInfo.rtp_pyld_len == 2 && (pkt[PktInfo.rtp_pyld_ofs] >= 7 && pkt[PktInfo.rtp_pyld_ofs] <= 0x27) && pkt[PktInfo.rtp_pyld_ofs+1] == 0xc0) {  /* ignore AMR-WB 2-byte "NO_DATA" packets */
+         sprintf(errstr, "appears to be AMR-WB NO_DATA with payload len = %d bytes", PktInfo.rtp_pyld_len);
          fShowErrDebugInfo = true;
          goto err_msg;
       }
+      #endif
 
-      if (rtp_pyld_len != 4) {
-         sprintf(errstr, "packet has RTP payload size %d less than minimum 4 for DTMF and 5 for media", rtp_pyld_len);
+   /* for payload size 2, we can look for NO_DATA (EVS) or "no transmission" (AMR) packets, notes JHB Nov 2024:
+
+      -we can identify but not use for session creation for two reasons: (i) AMR-NB and AMR-WB no-tranmission frames can't be differentiated without data bits (i.e. without payload size > 2) and (ii) we'd be basing a decision on CMR requested values which might not happen
+      -if found we log an info message and return 0 (no error, no session created). Also, size 2 packets are counted in the "Unhandled RTP" run-time stat
+      -test with announcementplayout_metronometones1sec_2xAMR.pcapng (1 packet), 31_anon.pcapng (18 packets)
+   */
+
+      if (PktInfo.rtp_pyld_len == 2) {
+
+         PAYLOAD_INFO PayloadInfo_AMR = { 0 };
+         PAYLOAD_INFO PayloadInfo_EVS = { 0 };
+
+         DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, &pkt[PktInfo.rtp_pyld_ofs], PktInfo.rtp_pyld_len, &PayloadInfo_AMR);
+
+         bool fNoDataFrameEVS = false, fNoDataFrameAMR = (PayloadInfo_AMR.NumFrames == 1 && PayloadInfo_AMR.FrameSize[0] == 0 && ((PayloadInfo_AMR.ToC[0] >> 3) & 0x0f) == 0x0f);  /* no data bits in frame, FT field is "No Transmission" */
+
+         if (!fNoDataFrameAMR) {
+
+            DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, &pkt[PktInfo.rtp_pyld_ofs], PktInfo.rtp_pyld_len, &PayloadInfo_EVS);
+
+            fNoDataFrameEVS = (PayloadInfo_EVS.NumFrames == 1 && (PayloadInfo_EVS.uFormat == DS_PYLD_FMT_FULL || PayloadInfo_EVS.uFormat == DS_PYLD_FMT_HF_ONLY) && PayloadInfo_EVS.FrameSize[0] == 0 && (PayloadInfo_EVS.ToC[0] & 0x0f) == 0x0f);  /* ToC FT field must be NO_DATA */
+         }
+ 
+         if (fNoDataFrameAMR || fNoDataFrameEVS) {
+
+            char bitrate_str[50] = "";
+
+            if (fNoDataFrameAMR) sprintf(bitrate_str, "%d or %d bps", DSGetCodecInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CMR_BITRATE, PayloadInfo_AMR.CMR >> 4, 0, NULL), DSGetCodecInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CMR_BITRATE, PayloadInfo_AMR.CMR >> 4, 0, NULL));
+            else sprintf(bitrate_str, "%d bps", DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CMR_BITRATE, PayloadInfo_EVS.CMR & 0x7f, 0, NULL));
+
+            Log_RT(4, "mediaMin INFO: found %s stream %d packet #%d SSRC = 0x%x with requested bitrate %s, session not created yet but likely \n", fNoDataFrameAMR ? "AMR No-Transmission" : "EVS NO_DATA", nInput, thread_info[thread_index].packet_number[nInput], PktInfo.rtp_ssrc, bitrate_str);
+            return 0;  /* return "information only" (not an error) */
+         }
+      }
+
+      #if 0
+      printf("\n *** num frames = %d, header format = %s, ToC[0] = 0x%x, FT = 0x%x, frame size[0] = %d, CMR = 0x%x, fSID = %d \n", PayloadInfo_AMR.NumFrames, !PayloadInfo_AMR.uFormat ? "bandwidth-efficient" : "octet-aligned", PayloadInfo_AMR.ToC[0], (PayloadInfo_AMR.ToC[0] >> 3) & 0x0f, PayloadInfo_AMR.FrameSize[0], PayloadInfo_AMR.CMR,  PayloadInfo_AMR.fSID);
+      #endif
+
+      if (PktInfo.rtp_pyld_len != 4) {
+         sprintf(errstr, "RTP payload size %d less than minimum 4 for DTMF and 6 for media", PktInfo.rtp_pyld_len);
          fShowErrDebugInfo = true;
          goto err_msg;
       }
@@ -2066,18 +2245,25 @@ non_rtp_packet:
 err_msg:
       if (fShowErrDebugInfo) {
 
+         char pyldstr[200] = "";
+         for (int i=0; i<PktInfo.rtp_pyld_len; i++) sprintf(&pyldstr[strlen(pyldstr)], " 0x%x", pkt[PktInfo.rtp_pyld_ofs+i]);
+
          char logstr[512];
 
-         sprintf(logstr, "%s, IP ver %d, payload type %d, ssrc = 0x%x, seq num = %d, pkt len %d, RTP pyld offset = %d, RTP pyld size %d, cat %d, pyld[0..2] 0x%x 0x%x 0x%x \n", errstr, ip_version, rtp_pyld_type, rtp_ssrc, rtp_seqnum, pkt_len_lib, rtp_pyld_ofs, rtp_pyld_len, cat, pkt[rtp_pyld_ofs], pkt[rtp_pyld_ofs+1], pkt[rtp_pyld_ofs+2]);
+         sprintf(logstr, "invalid packet for session creation, %s, IP ver %d, payload type %d, ssrc = 0x%x, seq num = %d, pkt len %d, RTP pyld offset = %d, RTP pyld size %d, cat 0x%x, pyld[0..%d]%s \n", errstr, PktInfo.version, PktInfo.rtp_pyld_type, PktInfo.rtp_ssrc, PktInfo.rtp_seqnum, PktInfo.pkt_len, PktInfo.rtp_pyld_ofs, PktInfo.rtp_pyld_len, cat, PktInfo.rtp_pyld_len-1, pyldstr);
 
          if (fPrevErr) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, logstr);
+         #if 0
+         else Log_RT(3, "mediaMin WARNING: %s", logstr);  /* use warning when debugging 2-byte AMR and EVS payloads found at start of session. The cmd line mediaMin -c x86 -i ../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d 0x580000008040811 -r0.5 -g /tmp/shared --md5sum has one (AMR-NB), it's detected and generates "not created yet but likely" message above, JHB Dec 2024 */
+         #else
          else Log_RT(4, "mediaMin INFO: %s", logstr);  /* add first occurrence to event log, JHB Sep 2022 */
+         #endif
 
          fPrevErr = true;
       }
       else fprintf(stderr, "%s \n", errstr);
 
-      return -1;
+      return -1;  /* return error condition */
    }
 
    fPrevErr = false;
@@ -2089,7 +2275,7 @@ err_msg:
    -if codec_type already set to one of above enums, for example from SDP file input processing above, auto-detection is limited to bitrate (future: SDP file can also force bitrate settings)
 */
 
-   codec_type = detect_codec_type_and_bitrate(&pkt[rtp_pyld_ofs], rtp_pyld_len, 0, rtp_pyld_type, codec_type, &bitrate, &ptime, &cat);
+   codec_type = detect_codec_type_and_bitrate(&pkt[PktInfo.rtp_pyld_ofs], PktInfo.rtp_pyld_len, 0, PktInfo.rtp_pyld_type, codec_type, &bitrate, &ptime, &cat);
 
    if (codec_type < 0) {
       strcpy(errstr, "Codec type and/or bitrate detection failed");
@@ -2105,38 +2291,23 @@ err_msg:
 
 /* set termination endpoints to IPv4 or IPv6 */
 
-   if (ip_version == IPv4) {
+   session->term1.remote_ip.type = session->term1.local_ip.type = (ip_type)PktInfo.version;
 
-      struct iphdr* iphdr = (struct iphdr*)pkt;
+/* copy to ip.u, a union for both IPv4 and IPv6 addresses (see ip_addr struct in shared_include/session.h), JHB Nov 2024 */
+  
+   int addr_ofs, addr_len;
+   unsigned short int remote_port, local_port;
 
-      ip_hdr_len = iphdr->ihl*4;
+   memcpy(&session->term1.remote_ip.u, &pkt[(addr_ofs = PktInfo.version == IPv4 ? IPV4_ADDR_OFS : IPV6_ADDR_OFS)], (addr_len = PktInfo.version == IPv4 ? IPV4_ADDR_LEN : IPV6_ADDR_LEN));  /* source IP addr */
+   memcpy(&session->term1.local_ip.u, &pkt[addr_ofs+addr_len], addr_len);  /* dest IP addr */
 
-      session->term1.remote_ip.type = DS_IPV4;
-      session->term1.local_ip.type = DS_IPV4;
+   memcpy(&remote_port, &pkt[PktInfo.ip_hdr_len], sizeof(unsigned short int));  /* source UDP port */
+   memcpy(&local_port, &pkt[PktInfo.ip_hdr_len + sizeof(unsigned short int)], sizeof(unsigned short int));  /* dest UDP port */
+   session->term1.remote_port = remote_port;
+   session->term1.local_port = local_port;
 
-      session->term1.remote_ip.u.ipv4 = iphdr->saddr;
-      session->term1.local_ip.u.ipv4 = iphdr->daddr;
-   }
-   else if (ip_version == IPv6) {
-
-      struct ipv6hdr* ipv6hdr = (struct ipv6hdr*)pkt;
-
-      ip_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN, pkt, pkt_len, NULL, NULL);  /* IPv6 header len normally fixed at 40, but we call pktlib API as customary practice. Note that DSGetPacketInfo() can be called for basic packet info items without a session handle (i.e. using -1 for session handle param) */
-
-      session->term1.remote_ip.type = DS_IPV6;
-      session->term1.local_ip.type = DS_IPV6;
-
-      for (i = 0; i < DS_IPV6_ADDR_LEN; i++) {
-         session->term1.remote_ip.u.ipv6[i] = ipv6hdr->saddr.s6_addr[i];
-         session->term1.local_ip.u.ipv6[i] = ipv6hdr->daddr.s6_addr[i];
-      }
-   }
-
-   struct udphdr* udphdr = (struct udphdr*)&pkt[ip_hdr_len];
-   session->term1.remote_port = udphdr->source;
-   session->term1.local_port = udphdr->dest;
-   session->term1.attr.voice_attr.rtp_payload_type = rtp_pyld_type;
-   session->term1.attr.voice_attr.ptime = ptime;
+   session->term1.attr.voice.rtp_payload_type = PktInfo.rtp_pyld_type;
+   session->term1.attr.voice.ptime = ptime;
    session->term1.ptime = ptime;
 
    session->term1.max_loss_ptimes = 3;
@@ -2159,11 +2330,11 @@ err_msg:
    #endif
    if (codec_config_params.payload_shift) session->term1.payload_shift = codec_config_params.payload_shift;
 
-/* jitter buffer target and max delay notes, JHB May2020:
+/* jitter buffer target and max delay notes, JHB May 2020:
 
    -defaults for stream group processing, in both analytics and telecom modes, are 10 and 14. Stream groups require high accuracy of stream alignment
    -otherwise defaults are 5 and 12 (set in pktlib if not set here)
-   -use either 5/12 or 7/12 for "analytics compatibility mode" (this will obtain results prior to June 2020)
+   -use either 5/12 or 7/12 for "analytics compatibility mode" (this will obtain results prior to Jun 2020)
    -delay values are specified in "ptime periods" and represent an amount of time. For example a stream that starts with 1 SID packet and 2 media packets will reach the target delay at the same time as a stream that starts with 10 media packets
    -cmd line entry sets the nJitterBufferParams var and takes precedence if specified
 */
@@ -2190,10 +2361,13 @@ err_msg:
    if (Mode & ENABLE_STREAM_GROUPS) session->term1.uFlags |= TERM_OVERRUN_SYNC_ENABLE;
    if ((!(Mode & ANALYTICS_MODE) || fUntimedMode) || target_delay > 7) session->term1.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
    if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term1.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
+
    session->term1.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
    session->term1.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets() (see usage example in packet_flow_media_proc.c). Default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
 
-   if (Mode & ENABLE_STREAM_GROUPS) {
+   fStreamGroupMember = (Mode & ENABLE_STREAM_GROUPS) && !isVideoCodec(codec_type);  /* currently video streams are not handled by streamlib, JHB Sep 2024 */ 
+
+   if (fStreamGroupMember) {
 
       char szSessionNameTemp[MAX_SESSION_NAME_LEN] = "";
 
@@ -2211,13 +2385,13 @@ err_msg:
       }
       else {  /* no, determine a unique group name (see notes below) */
 
-         if (!fStressTest && !fCapacityTest && (Mode & DYNAMIC_SESSIONS) && strlen(szSessionNameTemp)) {  /* set group id as session name, which will be used by packet/media threads for output wav files.  Don't do this if (i) static session config or (ii) load/capacity or stress test options are active, JHB Jun 2019 */
+         if (!fStressTest && !fCapacityTest && (Mode & DYNAMIC_SESSIONS) && strlen(szSessionNameTemp)) {  /* set group id as session name, which will be used by packet/media threads for output wav files. Don't do this if (i) static session config or (ii) load/capacity or stress test options are active, JHB Jun 2019 */
 
             strcpy(group_id, szSessionNameTemp);
          }
          else {
 
-            strcpy(group_id, "stream_group");  /* Note the name "stream_group" matches names used in example static session config files.  We also use this as generic naming for stress and capacity tests */
+            strcpy(group_id, "stream_group");  /* Note the name "stream_group" matches names used in example static session config files. We also use this as generic naming for stress and capacity tests */
          }
 
      /*  Important -- if more than one stream group is created the group name ("group ID") must be unique, so we use input index, thread index, and/or re-use count to form unique group IDs */
@@ -2245,7 +2419,7 @@ err_msg:
          sprintf(session->szSessionName, "%s%s", szStreamGroupWavOutputPath, thread_info[thread_index].szGroupName[nInput]);  /* set session->szSessionName for wav outputs. Note we currently don't allow wav outputs during capacity test */
       }
 
-      if (nReuse) sprintf(&group_id[strlen(group_id)], "_n%d", nReuse);  /* add the re-use count, if applicable.  nReuse is typically non-zero only for capacity or stress tests */
+      if (nReuse) sprintf(&group_id[strlen(group_id)], "_n%d", nReuse);  /* add the re-use count, if applicable. nReuse is typically non-zero only for capacity or stress tests */
 
   /* add the application thread index, if applicable:
 
@@ -2254,12 +2428,13 @@ err_msg:
   */
       if (num_app_threads > 1) sprintf(&group_id[strlen(group_id)], "_t%d", thread_index);
 
-      session->term1.group_mode = DS_AUDIO_MERGE_ADD;
+      session->term1.group_mode = DS_AUDIO_MERGE_ADD;  /* make this session a stream group member */
       if (Mode & WHOLE_GROUP_THREAD_ALLOCATE) session->term1.group_mode |= STREAM_CONTRIBUTOR_WHOLE_GROUP_THREAD_ALLOCATE;
-      if ((Mode & DISABLE_CONTRIB_PACKET_FLUSH) || (!(Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & AUTO_ADJUST_PUSH_RATE))) session->term1.group_mode |= STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH;  /* auto-adjust push rate (i.e. not based on timestamp timing) disqualifies use of packet flush, JHB Dec2019 */
-      if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & ENABLE_ONHOLD_FLUSH_DETECT)) session->term1.group_mode |= STREAM_CONTRIBUTOR_ONHOLD_FLUSH_DETECTION_ENABLE;  /* on-hold flush detection usually makes sense for UDP input or pcaps with wall clock arrival times. One functional test with xxx_ingestion.1654.0.pcap and AUTO_ADJUST_PUSH_RATE will fail without this, JHB Jan2019 */
+      if ((Mode & DISABLE_CONTRIB_PACKET_FLUSH) || (!(Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & AUTO_ADJUST_PUSH_TIMING))) session->term1.group_mode |= STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH;  /* auto-adjust push rate (i.e. not based on timestamp timing) disqualifies use of packet flush, JHB Dec2019 */
+      if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & ENABLE_ONHOLD_FLUSH_DETECT)) session->term1.group_mode |= STREAM_CONTRIBUTOR_ONHOLD_FLUSH_DETECTION_ENABLE;  /* on-hold flush detection usually makes sense for UDP input or pcaps with wall clock arrival times. At least one functional test with xxx_ingestion.1654.0.pcap and AUTO_ADJUST_TIMING_RATE will fail without this, JHB Jan 2019 */
       strcpy(session->term1.group_id, group_id);
-   }
+
+   }  /* (Mode & ENABLE_STREAM_GROUPS) */
 
    session->term1.codec_type = codec_type;
 
@@ -2269,94 +2444,94 @@ err_msg:
 
          session->term1.sample_rate = 90000;
          session->term1.bitrate = (bitrate == 0) ? 320000 : bitrate;
-         strcpy(codecstr, "H.265");
+         strcpy(codec_name, "H.265");
  
          break;
 
       case EVS:
 
-//         printf("template term1 codec type = %d, flags = %d, sample_rate = %d, bitrate = %d\n", session->term1.codec_type, session->term1.attr.voice_attr.u.evs.codec_flags, session->term1.sample_rate, session->term1.bitrate);
+//         printf("template term1 codec type = %d, flags = %d, sample_rate = %d, bitrate = %d\n", session->term1.codec_type, session->term1.attr.voice.u.evs.codec_flags, session->term1.sample_rate, session->term1.bitrate);
 
 //#define FORCE_EVS_16KHZ_OUTPUT  /* define this if EVS decoder output should be 16 kHz for stream groups, JHB Mar 2019. Note this definition also affects stream group output sample rate (below), JHB Nov 2023 */
 #ifndef FORCE_EVS_16KHZ_OUTPUT
-         if (!(Mode & ENABLE_STREAM_GROUP_ASR) && (Mode & ENABLE_STREAM_GROUPS)) {  /* changed this to reduce processing time for EVS decode and improve session capacity with stream group enabled.  Stream group output is G711, so this also avoids Fs conversion prior to G711 encode, JHB Feb 2019 */
-            session->term1.attr.voice_attr.u.evs.codec_flags = DS_EVS_FS_8KHZ | (DS_EVS_BITRATE_13_2 << 2);  /* set decode (output) Fs to 8 kHz for improvement in session capacity with merging enabled; bitrate is ignored for decode as EVS decoder figures it out on the fly */
-            session->term1.sample_rate = 8000;
+         if (!(Mode & ENABLE_STREAM_GROUP_ASR) && (Mode & ENABLE_STREAM_GROUPS)) {  /* changed this to reduce processing time for EVS decode and improve session capacity with stream group enabled. Stream group output is G711, so this also avoids Fs conversion prior to G711 encode, JHB Feb 2019 */
+            session->term1.attr.voice.u.evs.codec_flags = DS_EVS_FS_8KHZ | (DS_EVS_BITRATE_13_2 << 2);  /* set decode (output) Fs to 8 kHz for improvement in session capacity with merging enabled; bitrate is ignored for decode as EVS decoder figures it out on the fly */
+            session->term1.sample_rate = NB_CODEC_FS;  /* defined as 8000 Hz in voplib.h */
          }
          else
 #endif
          {
          /* set decode (output) Fs. For static sessions termN.sample_rate may be read from session config file */
 
-            session->term1.attr.voice_attr.u.evs.codec_flags = DS_EVS_FS_16KHZ | (DS_EVS_BITRATE_13_2 << 2);  /* for EVS with ASR specified or without a stream group we set to 16 kHz and 13200 bps, no other flags set.  See "evs_codec_flags" in shared_include/codec.h */
-            session->term1.sample_rate = 16000;
+            session->term1.attr.voice.u.evs.codec_flags = DS_EVS_FS_16KHZ | (DS_EVS_BITRATE_13_2 << 2);  /* for EVS with ASR specified or without a stream group we set to 16 kHz and 13200 bps, no other flags set. See "evs_codec_flags" in shared_include/codec.h */
+            session->term1.sample_rate = WB_CODEC_FS;  /* defined as 16000 Hz in voplib.h */
          }
 
       /* for EVS also set incoming sample rate (i.e. rate used by remote end encoder), as it can be independent from decode output Fs. For static sessions termN.input_sample_rate may be read from session config file. Use SDP specified sample rate if found, JHB Jan 2021 */
   
-         session->term1.input_sample_rate = (fSDPPyldTypeFound && clock_rate != 0) ? clock_rate : 16000;
+         session->term1.input_sample_rate = (fSDPPyldTypeFound && clock_rate != 0) ? clock_rate : WB_CODEC_FS;
 
       /* set bitrate */
 
          session->term1.bitrate = (bitrate == 0) ? 13200 : bitrate;  /* for static sessions this is read from session config file, for dynamic sessions this is an estimate produced by the auto-detect algorithm. However in both cases this is eventually not used, as EVS derives actual bitrate from incoming bitstream */
-         strcpy(codecstr, "EVS");
+         strcpy(codec_name, "EVS");
          break;
 
       case AMR_WB:
 
-         session->term1.sample_rate = 16000;
+         session->term1.sample_rate = WB_CODEC_FS;  /* defined as 16000 Hz in voplib.h */
          session->term1.bitrate = (bitrate == 0) ? 23850 : bitrate;  /* same comment as above for EVS */
-         strcpy(codecstr, "AMR-WB");
+         strcpy(codec_name, "AMR-WB");
          break;
 
-      case AMR:
+      case AMR_NB:
 
-         session->term1.sample_rate = 8000;
+         session->term1.sample_rate = NB_CODEC_FS;  /* defined as 8000 Hz in voplib.h */
          session->term1.bitrate = (bitrate == 0) ? 12200 : bitrate;  /* same comment as above for AMR_WB */
-         strcpy(codecstr, "AMR-NB");
+         strcpy(codec_name, "AMR-NB");
          break;
 
       case G711U:
 
-         session->term1.sample_rate = 8000;
+         session->term1.sample_rate = NB_CODEC_FS;  /* defined as 8000 Hz in voplib.h */
          session->term1.bitrate = 64000;
-         strcpy(codecstr, "G711u");
+         strcpy(codec_name, "G711u");
          break;
 
       case G711A:
 
-         session->term1.sample_rate = 8000;
+         session->term1.sample_rate = NB_CODEC_FS;  /* defined as 8000 Hz in voplib.h */
          session->term1.bitrate = 64000;
-         strcpy(codecstr, "G711a");
+         strcpy(codec_name, "G711a");
          break;
 
       default:
-         strcpy(codecstr, "none");
+         strcpy(codec_name, "none");
          break;
    }
 
-/* dynamic sessions are unidirectional (i.e. for bidirectional streams discovered in input packet flow 2 sessions are created), so here we set arbitrary IP addr and UDP port values for term2. Note - for static sessions term2 values are read from session config file or set via user app, creating bidirectional sessions */
+/* dynamic sessions are unidirectional (i.e. for bidirectional streams discovered in input packet flow 2 sessions are created), so here we set arbitrary IP addr and UDP port values for term2. Note - for static sessions term2 values are read from session config file or set via user app, creating bidirectional sessions. Future to-do: define a way for streams to become associated with each other within same dynamic session, for example for SBC purposes */
 
-   session->term2.remote_ip.type = DS_IPV4;
-   session->term2.remote_ip.u.ipv4 = htonl(0x0A000001 + thread_info[thread_index].nSessionsCreated);
-   session->term2.local_ip.type = DS_IPV4;
-   session->term2.local_ip.u.ipv4 = htonl(0x0A000101 + thread_info[thread_index].nSessionsCreated);
+   session->term2.remote_ip.type = IPV4;
+   session->term2.remote_ip.u.ipv4_uint32 = htonl(0x0A000001 + thread_info[thread_index].nSessionsCreated);
+   session->term2.local_ip.type = IPV4;
+   session->term2.local_ip.u.ipv4_uint32 = htonl(0x0A000101 + thread_info[thread_index].nSessionsCreated);
 
-   session->term2.remote_port = udphdr->source + thread_info[thread_index].nSessionsCreated;
-   session->term2.local_port = udphdr->dest + thread_info[thread_index].nSessionsCreated;
+   session->term2.remote_port = session->term1.remote_port + thread_info[thread_index].nSessionsCreated;  /* add arbitrary port offsets */
+   session->term2.local_port = session->term1.local_port + thread_info[thread_index].nSessionsCreated;
 
    if (uTimestampMatchMode & TIMESTAMP_MATCH_MODE_ENABLE) {  /* for term2 transcoded audio we use codec type L16 (16-bit linear PCM) for timestamp-matched wav output. packet/media threads treat L16 as raw audio. Note this is not a CLEARMODE codec, JHB Aug 2023 */
-      session->term2.codec_type = DS_VOICE_CODEC_TYPE_L16;
-      session->term2.bitrate = 128000;  /* 8 kHz Fs output. For call recording applications this might need to be 16 kHz Fs */
+      session->term2.codec_type = DS_CODEC_AUDIO_L16;
+      session->term2.bitrate = 128000;  /* 8 kHz Fs, 16-bit output. For call recording applications this might need to be 16 kHz Fs */
    }
    else {  /* otherwise default is G711 uLaw */
-      session->term2.codec_type = DS_VOICE_CODEC_TYPE_G711_ULAW;
+      session->term2.codec_type = DS_CODEC_VOICE_G711_ULAW;
       session->term2.bitrate = 64000;
    }
 
-   session->term2.attr.voice_attr.rtp_payload_type = 0; /* 0 for G711 ulaw */
-   session->term2.sample_rate = 8000;
-   session->term2.attr.voice_attr.ptime = 20; /* assume 20ms ptime */
+   session->term2.attr.voice.rtp_payload_type = 0; /* 0 for G711 ulaw */
+   session->term2.sample_rate = NB_CODEC_FS;  /* defined as 8000 Hz in voplib.h */
+   session->term2.attr.voice.ptime = 20; /* assume 20ms ptime */
    session->term2.ptime = 20;
 
    session->term2.max_loss_ptimes = 3;
@@ -2373,24 +2548,29 @@ err_msg:
    if (Mode & ENABLE_STREAM_GROUPS) session->term2.uFlags |= TERM_OVERRUN_SYNC_ENABLE;
    if ((!(Mode & ANALYTICS_MODE) || fUntimedMode) || target_delay > 7) session->term2.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
    if (Mode & DISABLE_DORMANT_SESSION_DETECTION) session->term2.uFlags |= TERM_DISABLE_DORMANT_SESSION_DETECTION;
+
    session->term2.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
    session->term2.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets() (see packet_media_flow_proc.c for usage example). Default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
 
-/* group term setup */
+/* if stream groups are enabled, initialize group owner's group term if not done yet */
 
-   if ((Mode & ENABLE_STREAM_GROUPS) && thread_info[thread_index].fDynamicSessions && !thread_info[thread_index].fGroupTermCreated[!(Mode & COMBINE_INPUT_SPECS) ? nInput: 0][nReuse]) {
+   #if 0
+   if ((Mode & ENABLE_STREAM_GROUPS) && thread_info[thread_index].fDynamicSessions && !thread_info[thread_index].fGroupOwnerCreated[!(Mode & COMBINE_INPUT_SPECS) ? nInput: 0][nReuse]) {
+   #else
+   if (fStreamGroupMember && !thread_info[thread_index].fGroupOwnerCreated[!(Mode & COMBINE_INPUT_SPECS) ? nInput: 0][nReuse]) {
+   #endif
 
-      session->group_term.remote_ip.type = DS_IPV4;
-      session->group_term.remote_ip.u.ipv4 = htonl(0x0A010001);
-      session->group_term.local_ip.type = DS_IPV4;
-      session->group_term.local_ip.u.ipv4 = htonl(0x0A010101);
+      session->group_term.remote_ip.type = IPV4;
+      session->group_term.remote_ip.u.ipv4_uint32 = htonl(0x0A010001);
+      session->group_term.local_ip.type = IPV4;
+      session->group_term.local_ip.u.ipv4_uint32 = htonl(0x0A010101);
 
-      session->group_term.remote_port = udphdr->source + thread_info[thread_index].nSessionsCreated;
-      session->group_term.local_port = udphdr->dest + thread_info[thread_index].nSessionsCreated;
+      session->group_term.remote_port = session->term1.remote_port + thread_info[thread_index].nSessionsCreated;  /* add arbitrary port offsets */
+      session->group_term.local_port = session->term1.local_port + thread_info[thread_index].nSessionsCreated;
 
    /* specify stream group output codec and bitrate. Default is G711 but can be changed */
 
-      session->group_term.codec_type = DS_VOICE_CODEC_TYPE_G711_ULAW;
+      session->group_term.codec_type = DS_CODEC_VOICE_G711_ULAW;
       session->group_term.bitrate = 64000;
 
    /* specify stream group output sampling rate. Notes:
@@ -2399,15 +2579,15 @@ err_msg:
         -ASR requires wideband audio for accuracy reasons. Other types of processing of stream group output may also need wideband or higher bandwidth
    */
       #ifndef FORCE_EVS_16KHZ_OUTPUT  /* optionally defined above */
-      if (!(Mode & ENABLE_STREAM_GROUP_ASR)) session->group_term.sample_rate = 8000;  /* fix syntax bug, JHB Feb 2024 */
+      if (!(Mode & ENABLE_STREAM_GROUP_ASR)) session->group_term.sample_rate = NB_CODEC_FS;  /* defined as 8000 Hz in voplib.h */
       else
       #endif
       {
-         session->group_term.sample_rate = 16000;
+         session->group_term.sample_rate = WB_CODEC_FS;  /* defined as 16000 Hz in voplib.h */
       }
 
-      session->group_term.attr.voice_attr.rtp_payload_type = 0; /* 0 for G711 ulaw */
-      session->group_term.attr.voice_attr.ptime = 20; /* assume 20 msec ptime */
+      session->group_term.attr.voice.rtp_payload_type = 0; /* stream group output default is G711 ulaw */
+      session->group_term.attr.voice.ptime = 20; /* assume 20 msec ptime for voice and audio media */
       session->group_term.ptime = 20;
 
       session->group_term.group_mode = STREAM_GROUP_ENABLE_MERGING;  /* STREAM_GROUP_xxx flags are in shared_include/streamlib.h */
@@ -2416,9 +2596,9 @@ err_msg:
 
       if (Mode & ENABLE_WAV_OUTPUT) {
 
-         session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_MERGED | STREAM_GROUP_WAV_OUT_STREAM_MONO;  /* specify mono and group output wav files.  If merging is enabled, the group output wav file will contain all input streams merged (unified conversation) */
+         session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_MERGED | STREAM_GROUP_WAV_OUT_STREAM_MONO;  /* specify mono and group output wav files. If merging is enabled, the group output wav file will contain all input streams merged (unified conversation) */
 
-         if (!fStressTest && !fCapacityTest && nRepeatsRemaining[thread_index] == -1) {  /* specify N-channel wav output. Disable if load/capacity or stress test options are active.  Don't enable if repeat is active, otherwise thread preemption warnings will show up in the event log (because N-channel processing takes a while), JHB Jun 2019 */
+         if (!fStressTest && !fCapacityTest && nRepeatsRemaining[thread_index] == -1) {  /* specify N-channel wav output. Disable if load/capacity or stress test options are active. Don't enable if repeat is active, otherwise thread preemption warnings will show up in the event log (because N-channel processing takes a while). nRepeatsRemaining is -1 if there is no -RN cmd line entry (because cmd_line_interface.c sets default value of nRepeats to -1), JHB Jun 2019 */
 
             session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_STREAM_MULTICHANNEL;
             fNChannelWavOutput = true;
@@ -2440,15 +2620,15 @@ err_msg:
    sprintf(tmpstr,
            "Creating dynamic session %d, input #%d, %s codec type %s, auto-detected bitrate %d"
            "%s%s",  /* stream group, if applicable */
-           thread_info[thread_index].nSessionsCreated+1, nInput+1, fSDPPyldTypeFound ? "SDP specified" : "auto-detected", codecstr, session->term1.bitrate,
+           thread_info[thread_index].nSessionsCreated+1, nInput+1, fSDPPyldTypeFound ? "SDP specified" : "auto-detected", codec_name, session->term1.bitrate,
            strlen(group_id) ? ", stream group " : "", strlen(group_id) ? group_id : "");
    sprintf(tmpstr2,
-           "Creation packet info: pkt number = %d, IPv%d, ssrc = 0x%x, seq num = %d, payload type %d, pkt len %d, RTP payload size %d, cat %d, rtp_pkt[0..2] 0x%x 0x%x 0x%x, src port = %u, dst_port = %u",
-           thread_info[thread_index].packet_number[nInput], ip_version, rtp_ssrc, rtp_seqnum, rtp_pyld_type, pkt_len_lib, rtp_pyld_len, cat, pkt[rtp_pyld_ofs], pkt[rtp_pyld_ofs+1], pkt[rtp_pyld_ofs+2], thread_info[thread_index].src_port[nInput], thread_info[thread_index].dst_port[nInput]);
+           "Creation packet info: pkt number = %d, IPv%d, ssrc = 0x%x, seq num = %d, payload type %d, pkt len %d, RTP payload size %d%s, cat 0x%x, rtp_pkt[0..2] 0x%x 0x%x 0x%x, src port %u, dst_port %u, stream %d, packet #%d",
+           thread_info[thread_index].packet_number[nInput], PktInfo.version, PktInfo.rtp_ssrc, PktInfo.rtp_seqnum, PktInfo.rtp_pyld_type, PktInfo.pkt_len, PktInfo.rtp_pyld_len, szOutOfSpecRTPPadding, cat, pkt[PktInfo.rtp_pyld_ofs], pkt[PktInfo.rtp_pyld_ofs+1], pkt[PktInfo.rtp_pyld_ofs+2], thread_info[thread_index].src_port[nInput], thread_info[thread_index].dst_port[nInput], nInput, thread_info[thread_index].packet_number[nInput]);
 
    app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, "^^^^^^^ %s\n\t%s", tmpstr, tmpstr2);
    if (num_app_threads > 1) sprintf(&tmpstr2[strlen(tmpstr2)], " (%d)", thread_index);
-   Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, "mediaMin INFO: %s. %s", tmpstr, tmpstr2);
+   Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE, "mediaMin INFO: %s. %s", tmpstr, tmpstr2);
 
 /* set timing values, including termN.input_buffer_interval and termN.output_buffer_interval -- for user apps note it's very important this be done before creating the session */
 
@@ -2470,59 +2650,67 @@ err_msg:
    thread_info[thread_index].nDynamicSessions++;
    thread_info[thread_index].total_sessions_created++;  /* total_sessions_created never decrements */
 
-/* update dynamic session stats */
+/* update session stats */
 
-   if (thread_info[thread_index].dynamic_session_stats_index < MAX_DYNAMIC_SESSION_STATS) {
+   if (thread_info[thread_index].stream_stats_index < MAX_INPUT_STREAMS) {
 
-      thread_info[thread_index].DynamicSessionStats[thread_info[thread_index].dynamic_session_stats_index].hSession = hSession;
-      strcpy(thread_info[thread_index].DynamicSessionStats[thread_info[thread_index].dynamic_session_stats_index].codecstr, codecstr);
-      thread_info[thread_index].DynamicSessionStats[thread_info[thread_index].dynamic_session_stats_index].bitrate = session->term1.bitrate;
-      thread_info[thread_index].DynamicSessionStats[thread_info[thread_index].dynamic_session_stats_index].payload_type = rtp_pyld_type;
-      thread_info[thread_index].DynamicSessionStats[thread_info[thread_index].dynamic_session_stats_index].ssrc = rtp_ssrc;
-      thread_info[thread_index].dynamic_session_stats_index++;
+      thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].uFlags |= DYNAMIC_SESSION;
+
+      thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].hSession = hSession;
+      thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].term = 0;  /* currently not making an entry for bi-directional term in dynamic sessions */
+
+      int chnum = thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].chnum = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, 1, NULL);
+      thread_info[thread_index].uStreamStatsState[chnum] = thread_info[thread_index].stream_stats_index;
+
+      strcpy(thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].codec_name, codec_name);
+      thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].bitrate = session->term1.bitrate;
+      thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].payload_type = PktInfo.rtp_pyld_type;
+      thread_info[thread_index].stream_stats_index++;
    }
 
 /* set up jitter buffer output for this session */
   
-   JitterBufferOutputSetup(thread_index);
+   JitterBufferOutputSetup(hSession, thread_index);
 
-/* set up group output if this is a group owner session */
+   if (!OutputSetup(hSession, thread_index)) {  /* set up next matching output on cmd line, if any (e.g. transcoded audio, video bitstream), JHB Sep 2024 */
 
-   if ((Mode & ENABLE_STREAM_GROUPS) && thread_info[thread_index].fDynamicSessions && !thread_info[thread_index].fGroupTermCreated[!(Mode & COMBINE_INPUT_SPECS) ? nInput: 0][nReuse]) {
+  /* if OutputSetup() found no matching cmd line output spec for this session, then disable output queue packets for this session */
 
-      StreamGroupOutputSetup(hSessions, nInput, thread_index);
-
-      thread_info[thread_index].fGroupTermCreated[!(Mode & COMBINE_INPUT_SPECS) ? nInput: 0][nReuse] = true;
+      if (!(Mode & AUTO_ADJUST_PUSH_TIMING)) {   /* auto-adjust push timing requires transcoded packets for its queue balancing algorithm, so don't disable */
+ 
+         DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM_FLAGS, 1, (void*)TERM_DISABLE_OUTPUT_QUEUE_PACKETS);  /* positive value will OR with current flags, neg value will AND */
+         DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM_FLAGS, 2, (void*)TERM_DISABLE_OUTPUT_QUEUE_PACKETS);
+      }
    }
 
-   return 1;  /* return success */
+/* set up stream group output if this is a group owner session (by default first session in the group is assigned as owner). Set fGroupOwnerCreated[nInput] so this is done only once */
+
+   if (fStreamGroupMember && !thread_info[thread_index].fGroupOwnerCreated[!(Mode & COMBINE_INPUT_SPECS) ? nInput: 0][nReuse]) {
+
+      StreamGroupOutputSetup(hSession, nInput, thread_index);
+
+      thread_info[thread_index].fGroupOwnerCreated[!(Mode & COMBINE_INPUT_SPECS) ? nInput: 0][nReuse] = true;
+   }
+
+/* return success */
+
+   return 1;
+
+/* return RTP format error condition */
+
+rtp_packet_format_error:
+
+   if (fShowWarnings) fprintf(stderr, "RTP packet format error, %s, no session creation or codec estimation performed \n", errstr);
+   return -1;
 }
 
 
-/* helper functions for managing our hSessions[] array of session handles:
+/* helper functions for managing hSessions[] array of session handles:
 
-  -GetNextGroupSessionIndex() looks through active session handles and finds the next one that's a stream group owner
   -GetInputFromSessionIndex() finds the cmd line input spec associated with a session index (i.e. an index into hSessions[])
   -FlushSession() flushes a session
   -DeleteSession() deletes a session
 */
-
-int GetNextGroupSessionIndex(HSESSION hSessions[], int nSessionIndex, int thread_index) {
-
-int ret_val = -1;
-
-   while (nSessionIndex < thread_info[thread_index].nSessionsCreated) {
-  
-      if (!(hSessions[nSessionIndex] & SESSION_MARKED_AS_DELETED) && DSGetSessionInfo(hSessions[nSessionIndex], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_OWNER, 0, NULL) == hSessions[nSessionIndex]) {
-
-         ret_val = nSessionIndex;  /* note that we return an index into hSessions[], not a session handle */
-         break;
-      }
-      else nSessionIndex++;
-   }
-
-   return ret_val;
-}
 
 int GetInputFromSessionIndex(int nSessionIndex, int thread_index) {
 
@@ -2542,52 +2730,63 @@ void FlushSession(HSESSION hSessions[], int nSessionIndex) {
 
 void DeleteSession(HSESSION hSessions[], int nSessionIndex, int thread_index) {
 
-   DSDeleteSession(hSessions[nSessionIndex]);
+HSESSION hSession = hSessions[nSessionIndex];
+
+   DSDeleteSession(hSession);
+   thread_info[thread_index].nSessionOutputIndex[hSession] = 0;  /* this is probably extra since as SESSION_MARKED_AS_DELETED will prevent the output index from being used in PullPackets(), JHB Sep 2024 */
    thread_info[thread_index].nSessionsDeleted++;
-   hSessions[nSessionIndex] |= SESSION_MARKED_AS_DELETED;  /* mark the session as deleted in our session handles array -- we keep its stats available, but no longer call pktlib APIs using its session handle, JHB Jan2020 */
+
+   hSessions[nSessionIndex] |= SESSION_MARKED_AS_DELETED;  /* mark the session as deleted in our session handles array -- we keep its stats available, but no longer call pktlib APIs using its session handle. Note this disables hSessions[] usage in many places, JHB Jan 2020 */
 }
 
 
-/* push incoming packets to packet/media per-session queue:
+/* push incoming packets to packet/media per-session queues:
 
-   -in dynamic session mode -- using packet arrival timestamps
-     -create new sessions as they appear in input packet flow (see comments)
-     -packet/media threads handle duplicate packets
+   -packet push timing is determined by packet arrival timestamps or an auto-adjusting algorithm, as specified in -dN cmd line entry
+     -if packet arrival timestamps are not used (i.e. they are zero, or otherwise unreliable), then packets are pushed (i) at regular intervals (using -rN command line entry) or (ii) at intervals auto-adjusted by a rate-balancing algorithm
 
-   -in static sesssion mode -- using packet arrival timestamps
-     -packet/media threads handle duplicate packets
-
-   -in either dynamic or static session modes, if packet arrival timestamps are disabled then
-     -if packet arrival timestamps are disabled, then packets are pushed (i) at regular intervals (using -rN command line entry) or (ii) based auto-adjust push algorithm
-     -we ask DSPushPackets() to strip duplicate packets and let us know so we can immediately push another packet
+   -in dynamic session mode create new sessions as they appear in input packet flow. In static sesssion mode use cmd line -C session configuration file input
+ 
+   -packet/media worker threads pull packets fromn queues, buffer them (jitter buffer), decode with appropriate codec, and post-process in media domain as specified on the cmd line
 
    -in all cases:
-    -filter non-dynamic UDP ports, act on some UDP control plane messages (SAP/SDP protocol, some SIP messages)
-    -filter RTCP packets
+     -strip duplicated TCP and non-RTP UDP packets
+     -handle packet fragmentation and reassembly
+     -filter non-dynamic UDP ports, act on a subset of UDP control plane messages (SAP/SDP protocol, some SIP messages)
+     -filter RTCP packets
+     -packet/media worker threads handle duplicated RTP packets
 */
 
 int PushPackets(uint8_t* pkt_buf, HSESSION hSessions[], SESSION_DATA session_data[], int nSessions, uint64_t cur_time, int thread_index) {
 
-int i, j, n, pkt_len, pkt_info_ret_val = 0;
-unsigned int uFlags_push = !(Mode & DYNAMIC_SESSIONS) ? DS_PUSHPACKETS_IP_PACKET | DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP : DS_PUSHPACKETS_IP_PACKET;
-int chnum, rtp_pyld_type, rtp_pyld_len, push_cnt = 0;
+int i, j, n, pkt_info_ret_val = 0;
+unsigned int uFlags_push = DS_PUSHPACKETS_IP_PACKET
+                           #if 0
+                           | DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP  /* normally packet/media worker threads handle this using the -lN cmd line input (no entry is a lookback of 1 packet, otherwise N specifies the lookback) */
+                           #endif
+                           ;
+int chnum, push_cnt = 0;
 int session_push_cnt[128] = { 0 };
 static uint8_t queue_full_warning[MAX_SESSIONS] = { 0 };
-uint64_t fp_sav_pos, wait_time;
+
+uint64_t wait_time;
 int auto_adj_push_count = 0;
-uint16_t hdr_type;
 float msec_timestamp_fp = 0;
 
-static uint64_t last_cur_time = 0, last_wait_check_time = 0, wait_pause = 0;  /* only used by master app thread */
+static uint64_t last_cur_time = 0;
+
+static uint64_t last_wait_check_time[MAX_INPUT_STREAMS] = { 0 }, wait_pause[MAX_INPUT_STREAMS] = { 0 };  /* only used by master app thread */
 static int waiting_inputs = 0;
 
-pcaprec_hdr_t pcap_rec_hdr;
-pcaprec_hdr_t* p_pcap_rec_hdr = NULL;
-
+int pkt_len;
+uint16_t hdr_type;
 PKTINFO PktInfo;  /* struct in pktlib.h */
+pcaprec_hdr_t pcap_rec_hdr;
+
+#define tId thread_index  /* short hand */
 
 #if 0
-  #define RATE_FORCE 1  /* force packet push rate to fixed interval (in msec).  This is reserved for stress test and debug purposes */
+  #define RATE_FORCE 1  /* force packet push rate to fixed interval (in msec). This is reserved for stress test and debug purposes */
 #endif
 #ifdef RATE_FORCE
 static int num_pcap_packets = 0;
@@ -2597,30 +2796,26 @@ static int num_pcap_packets = 0;
 
       if (thread_info[thread_index].pcap_in[j] != NULL) {
 
-         if (Mode & AUTO_ADJUST_PUSH_RATE) {
+         if (Mode & AUTO_ADJUST_PUSH_TIMING) {
             auto_adj_push_count = 0;
             if (!average_push_rate[thread_index]) goto push_ctrl;  /* dynamically adjust average push rate (APR) if auto-adjust push rate is enabled */
          }
 
 next_packet:  /* next packet input */
 
-         fp_sav_pos = ftell(thread_info[thread_index].pcap_in[j]);
-
-         if (Mode & USE_PACKET_ARRIVAL_TIMES) p_pcap_rec_hdr = &pcap_rec_hdr;
-
          //#define STRESS_DEBUG
          #ifdef STRESS_DEBUG
-         if (nRepeatsRemaining[thread_index] >= 0 && thread_info[thread_index].num_rtp_packets[j] > 1000) pkt_len = 0;
+         if (nRepeatsRemaining[tId] >= 0 && thread_info[tId].num_rtp_packets[j] > 1000) pkt_len = 0;
          else
          #endif
 
-         uint16_t input_type = (thread_info[thread_index].link_layer_len[j] & PCAP_LINK_LAYER_FILE_TYPE_MASK) >> 16;
+         uint16_t input_type = (thread_info[tId].link_layer_len[j] & PCAP_LINK_LAYER_FILE_TYPE_MASK) >> 16;
 
          if (input_type == PCAP_TYPE_LIBPCAP || input_type == PCAP_TYPE_PCAPNG || input_type == PCAP_TYPE_RTP) {  /* handle pcap formats here, BER and other file formats below */
 
-         /* read next pcap record */
+         /* get next input */
 
-            pkt_len = DSReadPcap(thread_info[thread_index].pcap_in[j], 0, pkt_buf, p_pcap_rec_hdr, thread_info[thread_index].link_layer_len[j], &hdr_type, thread_info[thread_index].pcap_file_hdr[j]);
+            pkt_len = GetInputData(pkt_buf, tId, j, &pcap_rec_hdr, &hdr_type);
 
          /* process non-zero length packets */
   
@@ -2628,13 +2823,12 @@ next_packet:  /* next packet input */
 
             /* flags for DSGetPacketInfo() (see pktlib.h for detailed info) */
 
-               unsigned int uFlags = DS_BUFFER_PKT_IP_PACKET |          /* basic IP packet */
-                                     DS_PKT_INFO_PKTINFO |              /* fill PKTINFO struct */
-                                     DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG;  /* if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 and a warning message will be printed by DSGetPacketInfo(). We use the DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG flag to suppress RTP related warning messages as the packet type is unknown at this point */
+               unsigned int uFlags = DS_BUFFER_PKT_IP_PACKET |           /* basic IP packet */
+                                     DS_PKT_INFO_PKTINFO |               /* fill PKTINFO struct */
+                                     DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG |  /* if packet is malformed (invalid IP version, incorrect header, mismatching length, etc), we use the DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG flag to suppress RTP related warning messages as the packet type is unknown at this point. We check the DSGetPacketInfo() return value for error conditions below */
+                                     DS_PKTLIB_SUPPRESS_RTP_INFO_MSG;    /* also if RTP packets have infrequent attributes (RTP header extensions) we suppress those info messages also, JHB Dec 2024 */
 
-            /* check if pcap record is being re-read for some reason; examples include switching between input streams (ports or files) and arrival timestamps still ahead of the wall clock */
-
-               if (!thread_info[thread_index].fReseek[j]) {
+               if (thread_info[tId].uCacheFlags[j] & CACHE_NEW_DATA) {  /* new input data */
 
                /* increment packet number, notes:
 
@@ -2642,7 +2836,7 @@ next_packet:  /* next packet input */
                   -the final number displayed in mediaMin "total input packets" summary stat may be shorter than Wireshark if a SIP Bye message is found, or other reason the stream terminates before all packets are read
                */
 
-                  thread_info[thread_index].packet_number[j]++;
+                  thread_info[tId].packet_number[j]++;
 
                /* non-IP packet handling. Standard Ethernet Protocols are ETH_P_IP and ETH_P_IPV6 (defined in if_ether.h Linux header file) but a few others are common enough we look for them and ignore if found, JHB Dec 2021 */
 
@@ -2665,15 +2859,17 @@ next_packet:  /* next packet input */
 
             /* fill in PktInfo struct with IP items. UDP and RTP header items are also filled, depending on IP protocol(s) found in the packet. See the PKTINFO struct in pktlib.h */
  
-               pkt_info_ret_val = DSGetPacketInfo(-1, uFlags, pkt_buf, -1, &PktInfo, NULL);
+               pkt_info_ret_val = DSGetPacketInfo(-1, uFlags, pkt_buf, -1, &PktInfo, NULL);  /* if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 */
 
                #if 0  // debug
-               if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) printf("\n *** mediaMin packet fragment added, protocol = %d, pkt number = %d, pkt info ret val = 0x%x \n", PktInfo.protocol, thread_info[thread_index].packet_number[j], pkt_info_ret_val);
+               if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) printf("\n *** mediaMin packet fragment added, protocol = %d, pkt number = %d, pkt info ret val = 0x%x \n", PktInfo.protocol, thread_info[tId].packet_number[j], pkt_info_ret_val);
                #endif
 
-               if (thread_info[thread_index].fReseek[j]) {  /* avoid repeating in reseek case */
+            /* check if input packet is still in-processing and resume if so. Examples include switching between input streams (ports or files) and arrival timestamps still ahead of the wall clock */
 
-                  thread_info[thread_index].fReseek[j] = false;
+               if (thread_info[tId].uCacheFlags[j] & CACHE_ITEM_MASK) {
+
+                  thread_info[tId].uCacheFlags[j] = CACHE_INVALID;  /* mark input cache data as no longer valid (new input data needed). Processing may change this depending on what happens */
                   goto protocol_based_processing;
                }
 
@@ -2700,10 +2896,10 @@ next_packet:  /* next packet input */
 
             /* check for duplicated packets */
 
-               if (DSIsPacketDuplicate((unsigned int)0, &PktInfo, &thread_info[thread_index].PktInfo[j], &thread_info[thread_index].packet_number[j])) {
+               if (DSIsPacketDuplicate((unsigned int)0, &PktInfo, &thread_info[tId].PktInfo[j], &thread_info[tId].packet_number[j])) {
 
-                  if (PktInfo.protocol == TCP) thread_info[thread_index].tcp_redundant_discards[j]++;  /* increment number of redundant TCP transmissions discarded for input stream */
-                  else thread_info[thread_index].udp_redundant_discards[j]++;  /* increment number of redundant UDP packets discarded for input stream */
+                  if (PktInfo.protocol == TCP) thread_info[tId].tcp_redundant_discards[j]++;  /* increment number of redundant TCP transmissions discarded for input stream */
+                  else thread_info[tId].udp_redundant_discards[j]++;  /* increment number of redundant UDP packets discarded for input stream */
 
                /* remove any duplicate saved packet fragments */
 
@@ -2712,19 +2908,19 @@ next_packet:  /* next packet input */
                   goto next_packet;  /* discard duplicated / redundant packets */
                }
 
-               if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) thread_info[thread_index].num_packets_fragmented[j]++;
+               if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) thread_info[tId].num_packets_fragmented[j]++;
 
-               thread_info[thread_index].PktInfo[j] = PktInfo;  /* save packet info for duplicate packet comparison */
-
-               if (PktInfo.protocol == TCP) thread_info[thread_index].num_tcp_packets[j]++;  /* increment per stream TCP packet count */
-               else thread_info[thread_index].num_udp_packets[j]++;  /* increment per stream UDP packet count */
+               thread_info[tId].PktInfo[j] = PktInfo;  /* save packet info for duplicate packet comparison */
 
                if (nCut > 0) { nCut--; goto next_packet; }  /* handle --cut if entered on cmd line, JHB Nov 2023 */
 
+               if (PktInfo.protocol == TCP) thread_info[tId].num_tcp_packets[j]++;  /* increment per stream TCP packet count */
+               else thread_info[tId].num_udp_packets[j]++;  /* increment per stream UDP packet count */
+
                if (!(PktInfo.flags & DS_PKT_FRAGMENT_OFS)) {  /* save port info for non-fragmented packets and first fragment of fragmented packets */
 
-                  thread_info[thread_index].dst_port[j] = PktInfo.dst_port;  /* save UDP or TCP ports, they are not present in intermediate fragments */
-                  thread_info[thread_index].src_port[j] = PktInfo.src_port;
+                  thread_info[tId].dst_port[j] = PktInfo.dst_port;  /* save UDP or TCP ports, they are not present in intermediate fragments */
+                  thread_info[tId].src_port[j] = PktInfo.src_port;
                }
 
             /* check for packet fragments */
@@ -2735,7 +2931,7 @@ next_packet:  /* next packet input */
                PrintSIPInviteFragments(pkt_buf, &PktInfo, pkt_len);
                #endif
 
-#if 0  /* example showing how to find/filter packet(s) for debug / stream manipulation. This example isn't doing anything to separate out SIP or other non-RTP packets, so calls DSGetPacketInfo() for RTP items may cause "DEBUG" or warning messages */
+#if 0  /* example showing how to find/filter packet(s) for debug / stream manipulation */
    static int nCount = 0;
    if (nCount < 2) {
       if (PktInfo.src_port != 5060 && PktInfo.dst_port != 5060) {
@@ -2748,7 +2944,7 @@ next_packet:  /* next packet input */
 #if 0  /* another debug example showing how to find/filter packet(s) for stream manipulation  */
     __uint128_t src_ip_addr = 0;
    DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_SRC_ADDR, pkt_buf, -1, &src_ip_addr, NULL);
-   if (/*src_ip_addr == 0xc0a88615 || src_ip_addr == 0x0a0e0742 || */ rtp_ssrc == 0xBBF51B9C && (/*rtp_pyld_len == 63 || rtp_pyld_len == 35 || */ PktInfo.rtp_pyld_len == 8)) {  /* 0xc0a88615 -> 192.168.134.21 */
+   if (/*src_ip_addr == 0xc0a88615 || src_ip_addr == 0x0a0e0742 || */ rtp_ssrc == 0xbbf51b9c && (/*rtp_pyld_len == 63 || rtp_pyld_len == 35 || */ PktInfo.rtp_pyld_len == 8)) {  /* 0xc0a88615 -> 192.168.134.21 */
 
       printf(" filtering packet with src ip addr 0x%llx != 192.168.134.21 or rtp ssrc 0x%x \n", (long long unsigned int)src_ip_addr, PktInfo.rtp_ssrc);
       goto next_packet;
@@ -2757,7 +2953,7 @@ next_packet:  /* next packet input */
 
 #if 0  /* filter RTP packets example, using SSRC(s) only */
 
-   if (PktInfo.protocol == UDP && (PktInfo.dst_port < SIP_PORT_RANGE_LOWER || PktInfo.src_port > SIP_PORT_RANGE_UPPER) && pkt_len < 200) {  /* must be UDP, rough checks to avoid non-RTP packets */
+   if (PktInfo.protocol == UDP && PktInfo.src_port > SIP_PORT_RANGE_UPPER && PktInfo.dst_port > SIP_PORT_RANGE_UPPER && pkt_len < 200) {  /* must be UDP, rough checks to avoid non-RTP packets */
 
       uint32_t filt_rtp_ssrc[] = { 0xe38e9ffc, 0xc87c0d25 };  /* SSRCs to allow -- examples only */
       bool fFilter = false;
@@ -2778,7 +2974,7 @@ next_packet:  /* next packet input */
 
 #if 0  /* packet search example, after finding a specific packet force a session change by altering a session Id value (in this case payload type) */
 
-   if ((PktInfo.dst_port > SIP_PORT_RANGE_LOWER || PktInfo.src_port > SIP_PORT_RANGE_UPPER) && PktInfo.protocol == UDP) {  /* avoid SIP packets */
+   if (PktInfo.protocol == UDP && PktInfo.src_port > SIP_PORT_RANGE_UPPER && PktInfo.dst_port > SIP_PORT_RANGE_UPPER) {  /* avoid TCP and SIP packets */
    
       uint32_t filt_rtp_ssrc[] = { 0x2f42ae };
 
@@ -2811,7 +3007,7 @@ next_packet:  /* next packet input */
 
             uint8_t ber_data[1024];
 
-            pkt_len = fread(ber_data, sizeof(char), sizeof(ber_data), thread_info[thread_index].pcap_in[j]);
+            pkt_len = fread(ber_data, sizeof(char), sizeof(ber_data), thread_info[tId].pcap_in[j]);
 
             if (pkt_len > 0 && (Mode & ENABLE_INTERMEDIATE_PCAP)) {  /* format BER data into TCP/IP packet and generate pcap output if specified in cmd line flags, JHB Dec 2021*/
 
@@ -2821,16 +3017,16 @@ next_packet:  /* next packet input */
 
          }  /* end of input_type checks */
 
-         if (pkt_len == 0 || thread_info[thread_index].dynamic_terminate_stream[j]) {  /* packet stream ends (i) end of pcap file (ii) dynamic termination (e.g. SIP BYE message) (iii) UDP port closes. In the case of a pcap file we close it (or rewind if input repeat or certain types of stress tests are enabled) */
+         if (pkt_len == 0 || thread_info[tId].dynamic_terminate_stream[j]) {  /* packet stream ends (i) end of pcap file (ii) dynamic termination (e.g. SIP BYE message) (iii) UDP port closes. In the case of a pcap file we close it (or rewind if input repeat or certain types of stress tests are enabled) */
 
             bool fRepeat = false;
 
             if (!(Mode & CREATE_DELETE_TEST_PCAP) && !(Mode & REPEAT_INPUTS)) {  /* check for input repeat */
 
-               if (thread_info[thread_index].pcap_in[j]) DSClosePcap(thread_info[thread_index].pcap_in[j], DS_CLOSE_PCAP_QUIET);  /* close the input file and set file handle to NULL so it's no longer operated on */
-               thread_info[thread_index].pcap_in[j] = NULL;
+               if (thread_info[tId].pcap_in[j]) DSClosePcap(thread_info[tId].pcap_in[j], DS_CLOSE_PCAP_QUIET);  /* close the input file and set file handle to NULL so it's no longer operated on */
+               thread_info[tId].pcap_in[j] = NULL;
 
-               if (thread_info[thread_index].initial_push_time[j]) thread_info[thread_index].total_push_time[j] += cur_time - thread_info[thread_index].initial_push_time[j];  /* set total push time (if at least one push has happened, JHB Dec 2021) */
+               if (thread_info[tId].initial_push_time[j]) thread_info[tId].total_push_time[j] += cur_time - thread_info[tId].initial_push_time[j];  /* set total push time (if at least one push has happened, JHB Dec 2021) */
             }
             else {  /* in certain test modes or if input repeat is enabled, start the pcap over */
 
@@ -2838,24 +3034,24 @@ next_packet:  /* next packet input */
 
                if ((Mode & ENABLE_STREAM_GROUPS) && (Mode & DYNAMIC_SESSIONS)) {  /* for dynamic sessions we wait for all sessions associated with the current input */
 
-                  for (i=0; i<thread_info[thread_index].nSessions[j]; i++) if (!DSPullPackets(DS_PULLPACKETS_GET_QUEUE_STATUS | DS_PULLPACKETS_STREAM_GROUPS, NULL, NULL, hSessions[thread_info[thread_index].nSessionIndex[j][i]], NULL, 0, 0)) { fQueueEmpty = false; break; }
+                  for (i=0; i<thread_info[tId].nSessions[j]; i++) if (!DSPullPackets(DS_PULLPACKETS_GET_QUEUE_STATUS | DS_PULLPACKETS_STREAM_GROUPS, NULL, NULL, hSessions[thread_info[tId].nSessionIndex[j][i]], NULL, 0, 0)) { fQueueEmpty = false; break; }
                }
                else if (!DSPullPackets(DS_PULLPACKETS_GET_QUEUE_STATUS | DS_PULLPACKETS_STREAM_GROUPS, NULL, NULL, -1, NULL, 0, 0)) fQueueEmpty = false;  /* for static sessions or if stream groups are not enabled, we wait for all sessions */
 
                if (!fQueueEmpty) continue;  /* not empty yet, move on to next input */
 
-               if (thread_info[thread_index].initial_push_time[j]) thread_info[thread_index].total_push_time[j] += cur_time - thread_info[thread_index].initial_push_time[j];  /* set total push time (if at least one push has happened, JHB Dec 2021) */
+               if (thread_info[tId].initial_push_time[j]) thread_info[tId].total_push_time[j] += cur_time - thread_info[tId].initial_push_time[j];  /* set total push time (if at least one push has happened, JHB Dec 2021) */
 
             /* note that wrapping a pcap will typically cause warning messages about "large negative" timestamp and sequence number jumps, JHB Mar2020 */
 
-               DSOpenPcap(NULL, DS_READ | DS_OPEN_PCAP_RESET, &thread_info[thread_index].pcap_in[j], NULL, "");  /* seek to start of first pcap record */
+               DSOpenPcap(NULL, DS_READ | DS_OPEN_PCAP_RESET, &thread_info[tId].pcap_in[j], NULL, "");  /* seek to start of first pcap record */
 
-               app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "mediaMin INFO: pcap %s wraps", MediaParams[thread_info[thread_index].input_index[j]].Media.inputFilename);
+               app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "mediaMin INFO: pcap %s wraps", MediaParams[thread_info[tId].input_index[j]].Media.inputFilename);
 
-               if (thread_info[thread_index].num_rtp_packets[j]) fRepeat = true;  /* set repeat flag (note the check whether stream has produced at least one valid packet, we don't wanna end up in infinite pkt_len == 0 loop), JHB Dec 2021 */
+               if (thread_info[tId].num_rtp_packets[j]) fRepeat = true;  /* set repeat flag (note the check whether stream has produced at least one valid packet, we don't wanna end up in infinite pkt_len == 0 loop), JHB Dec 2021 */
             }
 
-            thread_info[thread_index].initial_push_time[j] = 0;  /* reset initial push time */
+            thread_info[tId].initial_push_time[j] = 0;  /* reset initial push time */
 
             #if 0  /* with extended AFAP and FTRT mode support in place, we now display and log media time or processing time in all cases, JHB May 2023 */
             if (((Mode & USE_PACKET_ARRIVAL_TIMES) || RealTimeInterval[0] > 1) && isMasterThread(thread_index)) {
@@ -2864,19 +3060,19 @@ next_packet:  /* next packet input */
             #endif
 
                char tmpstr[200], proctimestr[50], mediatimestr[50], descripstr[50] = "media";
-               uint64_t total_push_time = thread_info[thread_index].total_push_time[j];
+               uint64_t total_push_time = thread_info[tId].total_push_time[j];
 
                if (isAFAPMode || isFTRTMode) strcpy(descripstr, "processing");
-               DSGetLogTimeStamp(proctimestr, DS_EVENT_LOG_USER_TIMEVAL, sizeof(proctimestr), total_push_time);  /* use DSGetLogTimeStamp() user-specified time value feature to format as hours:min:sec (hours not shown if not > 0), JHB Feb 2024 */
+               DSGetLogTimestamp(proctimestr, DS_EVENT_LOG_USER_TIMEVAL, sizeof(proctimestr), total_push_time);  /* use DSGetLogTimestamp() user-specified time value feature to format as hours:min:sec (hours not shown if not > 0), JHB Feb 2024 */
                sprintf(tmpstr, "=== mediaMin INFO: %sinput pcap[%d] %s time %s", !(Mode & USE_PACKET_ARRIVAL_TIMES) ? "estimated " : "", j, descripstr, proctimestr);
 
                if (isFTRTMode) {  /* show both processing and media time in FTRT mode, JHB Feb 2024 */
-                  DSGetLogTimeStamp(mediatimestr, DS_EVENT_LOG_USER_TIMEVAL, sizeof(mediatimestr), total_push_time*timeScale);
+                  DSGetLogTimestamp(mediatimestr, DS_EVENT_LOG_USER_TIMEVAL, sizeof(mediatimestr), total_push_time*timeScale);
                   sprintf(&tmpstr[strlen(tmpstr)], ", media time %s", mediatimestr);
                }
 
                app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, tmpstr);
-               Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, tmpstr);
+               Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE, tmpstr);
             }
 
             if (fRepeat) goto next_packet;
@@ -2889,11 +3085,11 @@ next_packet:  /* next packet input */
          -note this disables the push packets elapsed time alarm, if enabled (DS_ENABLE_PUSHPACKETS_ELAPSED_TIME_ALARM flag in DEBUG_CONFIG struct item uDebugMode; see shared_include/config.h)
       */
   
-         if (pkt_len == 0 || thread_info[thread_index].dynamic_terminate_stream[j]) {
+         if (pkt_len == 0 || thread_info[tId].dynamic_terminate_stream[j]) {
 
             int nSessionIndex;
-            for (i=0; i<thread_info[thread_index].nSessions[j]; i++) if ((nSessionIndex = thread_info[thread_index].nSessionIndex[j][i]) >= 0) DSPushPackets(DS_PUSHPACKETS_PAUSE_INPUT, NULL, NULL, &hSessions[nSessionIndex], 1);
-            if (!thread_info[thread_index].total_sessions_created) thread_info[thread_index].dynamic_terminate_stream[j] |= STREAM_TERMINATE_INPUT_ENDS_NO_SESSIONS; /* stream terminates with no sessions created */
+            for (i=0; i<thread_info[tId].nSessions[j]; i++) if ((nSessionIndex = thread_info[tId].nSessionIndex[j][i]) >= 0) DSPushPackets(DS_PUSHPACKETS_PAUSE_INPUT, NULL, NULL, &hSessions[nSessionIndex], 1);
+            if (!thread_info[tId].total_sessions_created) thread_info[tId].dynamic_terminate_stream[j] |= STREAM_TERMINATE_INPUT_ENDS_NO_SESSIONS; /* stream terminates with no sessions created */
             continue;
          }
 
@@ -2908,7 +3104,7 @@ protocol_based_processing:
             string szInterceptPointId(256, (char)0), szId(256, (char)0);  /* create null C++ strings we can give to either C++ or C functions, JHB May 2021 */
             uint16_t der_dst_port_list[MAX_DER_DSTPORTS] = { 0 };
 
-            HDERSTREAM hDerStream = thread_info[thread_index].hDerStreams[j];
+            HDERSTREAM hDerStream = thread_info[tId].hDerStreams[j];
 
             if (hDerStream) DSGetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT_LIST, der_dst_port_list);  /* DER stream already exists, initialize dest port list */
 
@@ -2918,12 +3114,12 @@ protocol_based_processing:
             if (input_type == PCAP_TYPE_BER) printf("******** attempting to find intercept ID \n");
             #endif
 
-            if ((Mode & ENABLE_ASN_OUTPUT) && thread_info[thread_index].hFile_ASN_XML[j] == NULL) thread_info[thread_index].hFile_ASN_XML[j] = fopen("HI_ASN_output.xml", "w");  /* open as write-only text */
+            if ((Mode & ENABLE_ASN_OUTPUT) && thread_info[tId].hFile_ASN_XML[j] == NULL) thread_info[tId].hFile_ASN_XML[j] = fopen("HI_ASN_output.xml", "w");  /* open as write-only text */
 
             unsigned int uFlags = DS_DER_FIND_INTERCEPTPOINTID | DS_DER_FIND_DSTPORT | DS_DER_FIND_PORT_MUST_BE_EVEN;
             if (Mode & ENABLE_ASN_OUTPUT_DEBUG_INFO) uFlags |= DS_DECODE_DER_PRINT_ASN_DEBUG_INFO;
 
-            if (DSFindDerStream(pkt_buf, uFlags, &szInterceptPointId[0], der_dst_port_list, thread_info[thread_index].hFile_ASN_XML[j]) > 0) {
+            if (DSFindDerStream(pkt_buf, uFlags, &szInterceptPointId[0], der_dst_port_list, thread_info[tId].hFile_ASN_XML[j]) > 0) {
 
                #ifdef BER_DEBUG
                if (input_type == PCAP_TYPE_BER) printf("******** found intercept ID \n");
@@ -2932,7 +3128,7 @@ protocol_based_processing:
                if (!hDerStream) {  /* create DER stream if needed */
 
                   hDerStream = DSCreateDerStream(&szInterceptPointId[0], der_dst_port_list[0], 0);
-                  if (hDerStream > 0) thread_info[thread_index].hDerStreams[j] = hDerStream; else hDerStream = (intptr_t)NULL;  /* to-do: add error handling */
+                  if (hDerStream > 0) thread_info[tId].hDerStreams[j] = hDerStream; else hDerStream = (intptr_t)NULL;  /* to-do: add error handling */
                }
                else if (DSGetDerStreamInfo(hDerStream, DS_DER_INFO_INTERCEPTPOINTID, &szId[0]) > 0 &&  /* DER stream already exists, add port if interception point Ids match */
                         szInterceptPointId == szId) DSSetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT_LIST, der_dst_port_list);
@@ -2951,35 +3147,31 @@ protocol_based_processing:
 
                if (Mode & ENABLE_DER_DECODING_STATS) uFlags |= DS_DECODE_DER_PRINT_DEBUG_INFO;
 
-               if ((cc_pktlen = DSDecodeDerStream(hDerStream, pkt_buf, pkt_out_buf, uFlags, &der_decode, thread_info[thread_index].hFile_ASN_XML[j])) > 0) {  /* 0 means nothing found, < 0 is an error condition, > 0 is length of found packet */
+               if ((cc_pktlen = DSDecodeDerStream(hDerStream, pkt_buf, pkt_out_buf, uFlags, &der_decode, thread_info[tId].hFile_ASN_XML[j])) > 0) {  /* 0 means nothing found, < 0 is an error condition, > 0 is length of found packet */
 
                   pkt_len = cc_pktlen;  /* valid CC packet found, set new pkt_len and pkt_buf values for subsequent IP/UDP packet processing */
                   memcpy(pkt_buf, pkt_out_buf, pkt_len);
                   fFoundEncapsulatedCCPkt = true;
 
                   if ((Mode & USE_PACKET_ARRIVAL_TIMES) && (der_decode.uList & DS_DER_TIMESTAMP)) {  /* if valid timestamp found in decoded DER stream, use for packet arrival time */
-                     p_pcap_rec_hdr->ts_sec = der_decode.timeStamp_sec.value;
-                     p_pcap_rec_hdr->ts_usec = der_decode.timeStamp_usec.value;
+                     pcap_rec_hdr.ts_sec = der_decode.timeStamp_sec.value;
+                     pcap_rec_hdr.ts_usec = der_decode.timeStamp_usec.value;
                   }
 
-                  if (der_decode.asn_index != 0) {
-
-                    fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* retain TCP stream packet until its encapsulated stream is consumed */
-                    thread_info[thread_index].fReseek[j] = true;
-                  }
+                  if (der_decode.asn_index != 0) thread_info[tId].uCacheFlags[j] = CACHE_READ_PKTBUF;  /* indicate to GetInputData() that cache read data should include pktbuf (due to in-place processing in DSDecodeDerStream(), JHB Oct 2024 */
  
-//  uint64_t pkt_timestamp = (uint64_t)p_pcap_rec_hdr->ts_sec*1000000L + p_pcap_rec_hdr->ts_usec;
-//  if (pkt_index) printf("updating pkt index = %d, prev index = %d, timestamp = %llu \n", pkt_index, thread_info[thread_index].EncapsulatedStreamIndex[j], (unsigned long long)pkt_timestamp);
+//  uint64_t pkt_timestamp = (uint64_t)pcap_rec_hdr.ts_sec*1000000L + pcap_rec_hdr.ts_usec;
+//  if (pkt_index) printf("updating pkt index = %d, prev index = %d, timestamp = %llu \n", pkt_index, thread_info[tId].EncapsulatedStreamIndex[j], (unsigned long long)pkt_timestamp);
                }
 
                if (der_decode.uList && !fFoundEncapsulatedCCPkt) continue;  /* found one or more DER items but not a CC packet, move to next input (socket or pcap) */
 
                if (fFoundEncapsulatedCCPkt) {  /* CC UDP packet found, set protocol to UDP/RTP, update PktInfo */
 
-                  pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO, pkt_buf, -1, &PktInfo, NULL);  /* note we allow error messages here because we expect UDP/RTP and would like to know if that's not the case ... might need to change this, JHB Jan 2023*/
+                  pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO, pkt_buf, -1, &PktInfo, NULL);  /* note we allow error messages here because we expect UDP/RTP and would like to know if that's not the case ... might need to change this, JHB Jan 2023 */
 
                   if (PktInfo.protocol != UDP) Log_RT(3, "mediaMin WARNING: DER decoded packet not UDP format \n");
-                  else thread_info[thread_index].num_packets_encapsulated[j]++;
+                  else thread_info[tId].num_packets_encapsulated[j]++;
                }
 
                if ((Mode & ENABLE_INTERMEDIATE_PCAP) && fFoundEncapsulatedCCPkt) PacketActions(NULL, pkt_buf, PktInfo.protocol, &pkt_len, PCAP_TYPE_HI3);  /* write out decoded DER stream to intermediate pcap; note this currently only includes decoded UDP packets, JHB Dec 2021 */
@@ -3004,26 +3196,26 @@ protocol_based_processing:
                HDERSTREAM hDerStream;
                int i = 0;
 
-               if ((hDerStream = thread_info[thread_index].hDerStreams[j])) {
+               if ((hDerStream = thread_info[tId].hDerStreams[j])) {
 
                   DSGetDerStreamInfo(hDerStream, DS_DER_INFO_DSTPORT_LIST, der_dst_port_list);
-                  for (i=0; i<MAX_DER_DSTPORTS; i++) if (thread_info[thread_index].dst_port[j] > 0 && thread_info[thread_index].dst_port[j] == der_dst_port_list[i]) break;
+                  for (i=0; i<MAX_DER_DSTPORTS; i++) if (thread_info[tId].dst_port[j] > 0 && thread_info[tId].dst_port[j] == der_dst_port_list[i]) break;
                }
 
                if ((Mode & ENABLE_DER_DECODING_STATS) && (!hDerStream || i < MAX_DER_DSTPORTS)) {
 
                   char szDerStream[20] = "";
                   if (hDerStream) sprintf(szDerStream, "DER stream %d ", hDerStream);
-                  app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, " ==== %sTCP packet, not processed, pyld len = %d, dst port = %u \n", szDerStream, PktInfo.pyld_len, thread_info[thread_index].dst_port[j]);
+                  app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, " ==== %sTCP packet, not processed, pyld len = %d, dst port = %u \n", szDerStream, PktInfo.pyld_len, thread_info[tId].dst_port[j]);
                }
             }
 
             goto next_packet;  /* continue reading from this input, JHB Dec 2020 */
          }
 
-         if (!thread_info[thread_index].initial_push_time[j]) {
+         if (!thread_info[tId].initial_push_time[j]) {
 
-            thread_info[thread_index].initial_push_time[j] = cur_time;
+            thread_info[tId].initial_push_time[j] = cur_time;
             #ifdef RATE_FORCE
             num_pcap_packets = 0;
             #endif
@@ -3034,11 +3226,11 @@ protocol_based_processing:
             uint64_t pkt_timestamp, elapsed_time;  /* passed param cur_time, pkt_timestamp, and elapsed_time are in usec */
             uint32_t msec_timestamp, msec_elapsedtime;
 
-            pkt_timestamp = (uint64_t)p_pcap_rec_hdr->ts_sec*1000000L + p_pcap_rec_hdr->ts_usec;
+            pkt_timestamp = (uint64_t)pcap_rec_hdr.ts_sec*1000000L + pcap_rec_hdr.ts_usec;
 
-            if (!thread_info[thread_index].pkt_base_timestamp[j]) thread_info[thread_index].pkt_base_timestamp[j] = pkt_timestamp;  /* save initial "base" timestamp, which can be zero or some other value like the "epoch" (Jan 1 1970) */
+            if (!thread_info[tId].pkt_base_timestamp[j]) thread_info[tId].pkt_base_timestamp[j] = pkt_timestamp;  /* save initial "base" timestamp, which can be zero or some other value like the "epoch" (Jan 1 1970) */
 
-            pkt_timestamp -= thread_info[thread_index].pkt_base_timestamp[j];  /* subtract base timestamp */
+            pkt_timestamp -= thread_info[tId].pkt_base_timestamp[j];  /* subtract base timestamp */
 
             #ifndef RATE_FORCE
             msec_timestamp = (pkt_timestamp + 500)/1000;  /* calculate in msec, with rounding. This compensates for jitter in how long it takes the main loop to repeat and get back to this point to push another packet and helps provide repeatable results, JHB Jan2020 */
@@ -3047,7 +3239,7 @@ protocol_based_processing:
             msec_timestamp = (num_pcap_packets+1)*RATE_FORCE;  /* debug/stress testing:  push packet either at a specific interval or at random intervals */
             #endif
 
-            elapsed_time = timeScale * (cur_time - thread_info[thread_index].initial_push_time[j]);  /* subtract initial time to get elapsed_time, timeScale > 1 accelerates time in FTRT mode */
+            elapsed_time = timeScale * (cur_time - thread_info[tId].initial_push_time[j]);  /* subtract initial time to get elapsed_time, timeScale > 1 accelerates time in FTRT mode */
 
             msec_elapsedtime = (elapsed_time + 500)/1000;  /* calculate in msec, with rounding */
 
@@ -3057,26 +3249,24 @@ protocol_based_processing:
 
                if (isMasterThread(thread_index)) {
 
-                  if (((wait_time = msec_timestamp - msec_elapsedtime) > 2000 || last_wait_check_time) && msec_elapsedtime - last_wait_check_time > 1000) {
+                  if (((wait_time = msec_timestamp - msec_elapsedtime) > 1000 || last_wait_check_time[j]) && msec_elapsedtime - last_wait_check_time[j] > 1000) {  /* 1 sec threshold */
 
-                     if (PktInfo.protocol == UDP && (PktInfo.rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && PktInfo.rtp_pyld_type <= RTCP_PYLD_TYPE_MAX)) fReseek = false;  /* don't allow RTCP packets to restart a pause, verify with 6537.0 test-case. To-do: there are pauses in other payload type ranges also, we can add later, JHB Jun 2023 */
+                     if (PktInfo.protocol == UDP && isRTCPPacket(PktInfo.rtp_pyld_type)) fReseek = false;  /* don't allow RTCP packets to restart a pause, verify with 6537.0 test-case. To-do: there are pauses in other payload type ranges also, we can add later, JHB Jun 2023. isRTCPPacket() macro is defined in pktlib.h, JHB Jan 2025 */
                      else {
 
-                        if (!wait_pause) wait_pause = wait_time;
+                        if (!wait_pause[j]) wait_pause[j] = wait_time;
 
-                        if (++waiting_inputs >= thread_info[thread_index].nInPcapFiles) {  /* print waiting status only if all inputs are waiting */
-                           if (wait_time/1000 > 0) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%sWaiting %llu of %llu sec pause in packet arrival times ...", (isCursorMidLine && !last_wait_check_time) ? "\n" : "\r", (long long unsigned int)wait_time/1000, (long long unsigned int)wait_pause/1000);
-                           last_wait_check_time = msec_elapsedtime;  waiting_inputs = 0;
+                        if (++waiting_inputs >= thread_info[tId].nInPcapFiles) {  /* print waiting status only if all inputs are waiting */
+
+                           if (wait_time/1000 > 0) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%sWaiting %llu of %llu sec pause in packet arrival times at packet number %u%s%s...", (isCursorMidLine && !last_wait_check_time[j]) ? "\n" : "\r", (long long unsigned int)wait_time/1000, (long long unsigned int)wait_pause[j]/1000, thread_info[tId].packet_number[j], thread_info[tId].nInPcapFiles > 1 ? " in input" : "", thread_info[tId].nInPcapFiles > 1 ? MediaParams[thread_info[tId].input_index[j]].Media.inputFilename : "");  /* show packet number; for multiple cmd line inputs, show input name, JHB Oct 2024 */
+
+                           last_wait_check_time[j] = msec_elapsedtime;  waiting_inputs = 0;
                         }
                      }
                   }
                }
 
-               if (fReseek) {
-
-                  fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* packet arrival time not yet reached, restore file position */
-                  thread_info[thread_index].fReseek[j] = true;
-               }
+               if (fReseek) thread_info[tId].uCacheFlags[j] = CACHE_READ;  /* packet still waiting to be processed; indicate to GetInputData() to read packet data from cache */
 
             /* arrival timestamp not yet expired. Notes:
 
@@ -3094,12 +3284,12 @@ protocol_based_processing:
 
             if (pkt_info_ret_val & DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE) {  /* if a fully reassembled packet is available then read whole packet into pkt_buf and update pkt_len and PktInfo */
 
-               pkt_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKT_INFO_REASSEMBLY_GET_PACKET | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG, pkt_buf, -1, &PktInfo, NULL);  /* notes - (i) pkt_buf will be overwritten with reassembled packet data, (ii) PktInfo fields pkt len, UDP len, and RTP payload len will be updated */
+               pkt_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKT_INFO_REASSEMBLY_GET_PACKET | DS_PKTLIB_SUPPRESS_RTP_INFO_MSG, pkt_buf, -1, &PktInfo, NULL);  /* notes - (i) pkt_buf will be overwritten with reassembled packet data, (ii) PktInfo fields pkt len, UDP len, and RTP payload len will be updated */
 
-               if (pkt_len > 0) thread_info[thread_index].num_packets_reassembled[j]++;
+               if (pkt_len > 0) thread_info[tId].num_packets_reassembled[j]++;
 
                #if 0
-               printf("\n *** mediaMin reassembled packet number = %d length = %d, src port = %d, dst port = %d \n", thread_info[thread_index].packet_number[j], pkt_len, thread_info[thread_index].src_port[j], thread_info[thread_index].dst_port[j]);
+               printf("\n *** mediaMin reassembled packet number = %d length = %d, src port = %d, dst port = %d \n", thread_info[tId].packet_number[j], pkt_len, thread_info[tId].src_port[j], thread_info[tId].dst_port[j]);
                #endif
             }
 
@@ -3110,7 +3300,7 @@ protocol_based_processing:
             if (fcount < 10) { fcount++; printf("\n *** timeScale = %4.2f, elapsed time = %llu, pkt_timestamp = %llu, msec_elapsedtime = %lu, msec_timestamp = %lu \n", timeScale, (long long unsigned int)elapsed_time, (long long unsigned int)pkt_timestamp, (long unsigned int)msec_elapsedtime, (long unsigned int)msec_timestamp); }
             #endif
 
-            if (last_wait_check_time) { last_wait_check_time = 0; wait_pause = 0; waiting_inputs = 0; }  /* any input not waiting resets wait status */
+            if (last_wait_check_time[j]) { last_wait_check_time[j] = 0; wait_pause[j] = 0; waiting_inputs = 0; }  /* any input not waiting resets wait status (i.e. sets waiting_inputs to zero) */
 
             #ifdef RATE_FORCE
             num_pcap_packets++;
@@ -3141,13 +3331,13 @@ protocol_based_processing:
          static int pkt_ignore_nums[MAX_PKT_IGNORE_COUNT], pkt_ignore_lens[MAX_PKT_IGNORE_COUNT], pkt_ignore_flags[MAX_PKT_IGNORE_COUNT];
          bool fSIP = false;
          int nShowPorts = 0, nPortAllowedStatus;
-         uint16_t dst_port = thread_info[thread_index].dst_port[j];  /* get saved UDP dst and src ports */
-         uint16_t src_port = thread_info[thread_index].src_port[j];
+         uint16_t dst_port = thread_info[tId].dst_port[j];  /* get saved UDP dst and src ports */
+         uint16_t src_port = thread_info[tId].src_port[j];
 
          #if 0  /* example of printing a range of packet buffers to compare with Wireshark display */
-         if (thread_info[thread_index].packet_number[j] >= 648 && thread_info[thread_index].packet_number[j] <= 655) {
+         if (thread_info[tId].packet_number[j] >= 648 && thread_info[tId].packet_number[j] <= 655) {
             char tmpstr[300];
-            sprintf(tmpstr, "\n *** before UDP port checks, pkt number = %d, pkt len = %d, pyld ofs = %d, frag flags = 0x%x, dst port = %u, buf start[ \n", thread_info[thread_index].packet_number[j], pkt_len, PktInfo.pyld_ofs, PktInfo.flags, dst_port);
+            sprintf(tmpstr, "\n *** before UDP port checks, pkt number = %d, pkt len = %d, pyld ofs = %d, frag flags = 0x%x, dst port = %u, buf start[ \n", thread_info[tId].packet_number[j], pkt_len, PktInfo.pyld_ofs, PktInfo.flags, dst_port);
             PrintPacketBuffer(&pkt_buf[PktInfo.pyld_ofs], PktInfo.pyld_len, tmpstr, " *** buf end] \n");
          }
          #endif
@@ -3211,7 +3401,7 @@ sip_check:
 
                      if (!(Mode & DISABLE_TERMINATE_STREAM_ON_BYE)) {  /* default is to act on SIP BYE messages embedded in the stream, unless command line flag is set to disable */
 
-                        thread_info[thread_index].dynamic_terminate_stream[j] = STREAM_TERMINATE_BYE_MESSAGE;
+                        thread_info[tId].dynamic_terminate_stream[j] = STREAM_TERMINATE_BYE_MESSAGE;
                         Log_RT(4, "mediaMin INFO: terminating stream %d due to BYE message \n", j);
                      }
                   break;
@@ -3226,7 +3416,7 @@ ignore_udp_packet:
 
                if (!(Mode & DISABLE_PORT_IGNORE_MESSAGES) || !fFirstConsoleMediaOutput) {
 
-                  pkt_ignore_nums[pkt_ignore_count] = thread_info[thread_index].packet_number[j];  /* implement a limited packet history so we can see fragmented packet sequences for ignored / unrecognized UDP ports, JHB Jun 2024 */
+                  pkt_ignore_nums[pkt_ignore_count] = thread_info[tId].packet_number[j];  /* implement a limited packet history so we can see fragmented packet sequences for ignored / unrecognized UDP ports, JHB Jun 2024 */
                   pkt_ignore_lens[pkt_ignore_count] = pkt_len;
                   pkt_ignore_flags[pkt_ignore_count] = PktInfo.flags;
                   pkt_ignore_count++;
@@ -3252,7 +3442,7 @@ ignore_udp_packet:
 
                   if (fSIP && strlen(szKeyword)) sprintf(search_str, ", last keyword search = \"%s\"", szKeyword);
 
-                  sprintf(tmpstr, "%signoring %s%s packet%s%s, %s, %s, %s%s%s", (isCursorMidLine && !pkt_ignore_count) ? "\n" : "\r", (PktInfo.protocol == TCP) ? "TCP" : "UDP", fSIP ? " SIP" : "", pkt_ignore_count > 1 ? "s" : "", pkt_ignore_str, pkt_num_str, pkt_len_str, frag_flags_str, port_str, search_str);  /* note we use \r to avoid new lines and using up screen to report ignored UDP ports, also this makes sure the message and port number is visible, JHB Feb 2023. Show either destination port or fragmentation flags; port is not reliable in fragmented packets, JHB Jun 2024 */
+                  sprintf(tmpstr, "%signoring %s%s packet%s%s, %s, %s, %s%s%s", (isCursorMidLine && !pkt_ignore_count) ? "\n" : "\r", (PktInfo.protocol == TCP) ? "TCP" : "UDP", fSIP ? " SIP" : "", pkt_ignore_count > 1 ? "s" : "", pkt_ignore_str, pkt_num_str, pkt_len_str, frag_flags_str, port_str, search_str);  /* note we use \r to avoid new lines and using up console output to report ignored UDP ports, also this makes sure the message and port number is visible, JHB Feb 2023. Show either destination port or fragmentation flags; port is not reliable in fragmented packets, JHB Jun 2024 */
 
                   char tmpstr2[400];
                   sprintf(tmpstr2, !fSIP && (strlen(tmpstr) > last_ignore_str_len || (frac(log10(pkt_ignore_count)) == 0.0)) ? ". To allow port use -pN option or add to UDP_Port_Media_Allow_List[]" : (fSIP ? "    " : ""));
@@ -3282,24 +3472,34 @@ ignore_udp_packet:
             else goto ignore_udp_packet;
          }
 
+         #endif  /* FILTER_UDP_PACKETS */
+
 /* from this point we assume we're working with RTP media packets, although there may still be exceptions */
 
 rtp_packet_processing:
 
          pkt_ignore_count = 0;
          last_ignore_str_len = 0;
+         bool fPacketHandled = false;
 
          bool fShowWarnings = (Mode & ENABLE_DEBUG_STATS) != 0;
 
-         rtp_pyld_type = PktInfo.rtp_pyld_type;
+         //#define SHOW_UNHANDLED_RTP  /* debug */
 
-         if (rtp_pyld_type < 0 && fShowWarnings) {
-            Log_RT(4, "mediaMin INFO: PushPackets() says unknown UDP packet; DSGetPacketInfo() did not find valid RTP payload type, dst port = %u, pkt len = %d \n", thread_info[thread_index].dst_port[j], pkt_len);
+         if ((int8_t)PktInfo.rtp_pyld_type < 0) {
+
+            if (fShowWarnings) Log_RT(4, "mediaMin INFO: PushPackets() says unknown UDP packet; DSGetPacketInfo() found invalid RTP payload type %u, dst port = %u, pkt len = %d \n", PktInfo.rtp_pyld_type, thread_info[tId].dst_port[j], pkt_len);
+
+            #ifdef SHOW_UNHANDLED_RTP
+            printf("\n *** unhandled RTP packet, invalid rtp pyld len, stream %d packet number %d \n", j, thread_info[tId].packet_number[j]);
+            #endif
+            thread_info[tId].num_unhandled_rtp_packets[j]++;
             goto next_packet;
          }
-         #endif  /* FILTER_UDP_PACKETS */
 
-         thread_info[thread_index].num_rtp_packets[j]++;  /* increment per stream RTP packet count */
+         PAYLOAD_INFO PayloadInfo;
+
+         DSGetPayloadInfo(DS_CODEC_NONE, DS_PAYLOAD_INFO_NO_CODEC, NULL, PktInfo.rtp_pyld_len, &PayloadInfo);  /* call DSGetPayloadInfo() in generic form with no codec type. In this form both DTMF and SID are determined based only payload size, JHB Nov 2024 */
 
          #define FILTER_RTCP_PACKETS_IF_rN_TIMING
          #ifdef FILTER_RTCP_PACKETS_IF_rN_TIMING
@@ -3311,13 +3511,17 @@ rtp_packet_processing:
          -** packet_flow_media_proc() in packet_media_flow_proc.c applies the DS_RECV_PKT_FILTER_RTCP flag in DSRecvPackets()
          -as a side note, repetitive RTCP packets have been observed in multisession flows with long on-hold or call-waiting periods (one or more streams are not sending RTP)
       */
-         if ((rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && rtp_pyld_type <= RTCP_PYLD_TYPE_MAX) && RealTimeInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto next_packet;  /* move on to next packet */
+         if (isRTCPPacket(PktInfo.rtp_pyld_type) && RealTimeInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto next_packet;  /* move on to next packet. isRTCPPacket() macro is defined in pktlib.h */
          #endif
 
-         rtp_pyld_len = PktInfo.rtp_pyld_len;
+         if (PktInfo.rtp_pyld_len <= 0) {
 
-         if (rtp_pyld_len <= 0 && fShowWarnings) {
-            Log_RT(4, "mediaMin INFO: PushPackets() says unknown UDP packet; DSGetPacketInfo() says invalid RTP payload size %d, dst port = %u, pkt len = %d \n", rtp_pyld_len, thread_info[thread_index].dst_port[j], pkt_len);
+            if (fShowWarnings) Log_RT(4, "mediaMin INFO: PushPackets() says unknown UDP packet; DSGetPacketInfo() says invalid RTP payload size %d, dst port = %u, pkt len = %d \n", PktInfo.rtp_pyld_len, thread_info[tId].dst_port[j], pkt_len);
+
+            #ifdef SHOW_UNHANDLED_RTP
+            printf("\n *** unhandled RTP packet, invalid rtp pyld len, stream %d packet number %d \n", j, thread_info[tId].packet_number[j]);
+            #endif
+            thread_info[tId].num_unhandled_rtp_packets[j]++;
             goto next_packet;
          }
 
@@ -3327,17 +3531,18 @@ rtp_packet_processing:
          -look for DTMF, filter RTCP, etc
          -if session reuse is active, we modify headers to ensure they are unique (also this is done if we find duplicated inputs on the cmd line)
          -note we go through the n<nReuseInput loop once in normal operation (i.e. nReuseInputs == 0). Basically remaining PushPackets() is within the reuse loop, except for push rate auto-adjust. Yes it's a tad confusing
+         -this is just one way to handle duplicated IP streams. If an app keeps track of input streams and knows ahead of time that each input should be a different session then it can rely on DSCreateSession() as it includes the new session handle in the unique key it assigns to media channels
       */
-         
-         for (n=0; n<nReuseInputs+1; n++) {  /* default value of nReuseInputs is zero, unless entered on cmd line with -nN.  For nReuseInputs > 0 we reuse each input N times */
+ 
+         for (n=0; n < 1+nReuseInputs; n++) {  /* default value of nReuseInputs is zero, unless entered on cmd line with -nN. For nReuseInputs > 0 we reuse each input N times */
 
 check_for_duplicated_headers:
 
-            if (n > 0 || thread_info[thread_index].fDuplicatedHeaders[j]) {  /* modify packet header slightly for each reuse, so all packets in a reused stream look different than other streams.  Notes:
+            if (n > 0 || thread_info[tId].fDuplicatedHeaders[j]) {  /* modify packet header slightly for each reuse, so all packets in a reused stream look different than other streams. Notes:
 
-                                                                                1) increment the src UDP port and decrement the dst UDP port to reduce chances of inadvertently duplicating another session
-                                                                                2) also increment SSRC to avoid packet/media thread "dormant SSRC" detection (SSRC is not part of key that mediaMin uses to keep track of unique sessions)
-                                                                             */
+                                                                       1) increment the src UDP port and decrement the dst UDP port to reduce chances of inadvertently duplicating another session
+                                                                       2) also increment SSRC to avoid packet/media thread "dormant SSRC" detection (SSRC is not part of key that mediaMin uses to keep track of unique sessions)
+                                                                    */
 
                unsigned int src_udp_port, dst_udp_port, ip_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN, pkt_buf, pkt_len, NULL, NULL);
 
@@ -3356,42 +3561,41 @@ check_for_duplicated_headers:
 
             bool fNewSession = false, fInitialStaticSession = ((Mode & CREATE_DELETE_TEST_PCAP) && debug_test_state == CREATE);
 
-            if (thread_info[thread_index].fDynamicSessions || fInitialStaticSession) {
+            if (thread_info[tId].fDynamicSessions || fInitialStaticSession) {
 
-               int nSessionsFound = FindSession(pkt_buf, pkt_len, rtp_pyld_type, rtp_pyld_len, thread_index);  /* FindSession() returns > 0 if it finds a new session */
+               int nSessionsFound = FindSession(pkt_buf, PktInfo.ip_hdr_len, PktInfo.rtp_pyld_type, PktInfo.rtp_pyld_len, thread_index);  /* FindSession() looks at incoming streams and returns > 0 if it finds a new session, 0 for an existing session. Note we give PktInfo struct ip_hdr_len, already determined by initial call to DSGetPacketInfo() above (with DS_PKT_INFO_PKTINFO flag), to handle IPv6 variable header sizes, JHB Nov 2024 */
 
-               if (nSessionsFound > 0 && !(fInitialStaticSession && nSessionsFound == 1)) {  /* for a test mode with an initial static session we ignore the first new session found */
+               if (nSessionsFound > 0 && !(fInitialStaticSession && nSessionsFound == 1)) {  /* for test modes with an initial static session we ignore the first new session found */
 
-                  int ret_val = CreateDynamicSession(pkt_buf, pkt_len, hSessions, session_data, thread_index, j, n);
+                  int ret_val = CreateDynamicSession(pkt_buf, PktInfo, pkt_len, hSessions, session_data, thread_index, j, n);
 
-                  if (ret_val > 0) {
+                  if (ret_val > 0) {  /* ret_val < 0 is an error condition, error message already logged or displayed */
 
-                     app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, "+++++++++Created dynamic session #%d, total sessions created %d", thread_info[thread_index].nSessionsCreated, thread_info[thread_index].total_sessions_created);
+                     app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, "+++++++++Created dynamic session #%d, total sessions created %d", thread_info[tId].nSessionsCreated, thread_info[tId].total_sessions_created);
 
                      nSessions++;
                      fNewSession = true;
                      if (!fFirstConsoleMediaOutput) fFirstConsoleMediaOutput = true;
                   }
-                  else {  /* error or problem of some type in CreateDynamicSession(), remove the key created by FindSession() */
+                  else {  /* if CreateDynamiSession() returns information only (return value 0), or error or problem of some type (return value -1), remove the key created by FindSession() */
 
-                     nKeys[thread_index]--;
-                     memset(keys[thread_index][nKeys[thread_index]], 0, KEY_LENGTH);
+                     nKeys[tId]--;
+                     memset(keys[tId][nKeys[tId]], 0, KEY_LENGTH);
 
-                     if (ret_val == -2) { thread_info[thread_index].init_err = true; return -1; }
+                     if (ret_val == -2) { thread_info[tId].init_err = true; return -1; }
                   }
                }
                else {  /* already existing session */
 
-                  if (!(Mode & COMBINE_INPUT_SPECS) && !thread_info[thread_index].nSessions[j] && !thread_info[thread_index].fDuplicatedHeaders[j]) { /* if we find duplicated inputs on the cmd line, we slightly modify IP headers of each successive one so they create new sessions / stream groups (this is a hack for mult-input cmd line stress testing), JHB Jan2020 */
+                  if (!(Mode & COMBINE_INPUT_SPECS) && !thread_info[tId].nSessions[j] && !thread_info[tId].fDuplicatedHeaders[j]) { /* if we find duplicated inputs on the cmd line, we slightly modify IP headers of each successive one so they create new sessions / stream groups (this allows mult-input cmd line stress testing), JHB Jan 2020 */
 
-                     int l;
-                     for (l=0; l<thread_info[thread_index].nInPcapFiles; l++) {
+                     for (int l=0; l<thread_info[tId].nInPcapFiles; l++) {
 
-                        if (l != j && thread_info[thread_index].nSessions[l]) {
+                        if (l != j && thread_info[tId].nSessions[l]) {
 
                            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, thread_index, "++++++++ Cmd line input #%d IP headers are duplicates of cmd line input #%d, modifying headers for input #%d", j+1, l+1, j+1);
 
-                           thread_info[thread_index].fDuplicatedHeaders[j] = true;
+                           thread_info[tId].fDuplicatedHeaders[j] = true;
                            goto check_for_duplicated_headers;
                         }
                      }
@@ -3401,43 +3605,44 @@ check_for_duplicated_headers:
 
             int nFirstSession = -1;
 
+         /* session loop: our mode is user-managed sessions so we need to match session to packet */
+
             for (i=0; i<nSessions; i++) {
 
-               if (hSessions[i] & SESSION_MARKED_AS_DELETED) continue;  /* hSessions[] entry may be marked as already deleted */
+               if (hSessions[i] & SESSION_MARKED_AS_DELETED) continue;  /* hSessions[] entry may be marked as already deleted, if so ignore */
 
-               chnum = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_buf, pkt_len, NULL, NULL);  /* get the stream's parent chnum (ignore SSRC) */ 
+               #if 0
+               chnum = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_buf, pkt_len, NULL, NULL);  /* get the stream's parent chnum (ignore SSRC) */
+               #else
+               chnum = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_buf, PktInfo.ip_hdr_len | DS_PKT_INFO_USE_IP_HDR_LEN, NULL, NULL);  /* get the stream's parent chnum (SSRC is ignored when matching parent channels). We have a valid packet and we know its IP header len (from previous DSGetPacketInfo() call with DS_PKT_INFO_PKTINFO flag to fill in a PKTINFO struct) so we can use the DS_PKT_INFO_USE_IP_HDR_LEN flag and improve DSGetPacketInfo() performance and avoid packet validation and header parsing, JHB Dec 2024 */
+               #endif
 
                #define CHECK_RTP_PAYLOAD_TYPE
-               #ifdef CHECK_RTP_PAYLOAD_TYPE  /* this is a special case useful for checking duplicated sessions that differ only in RTP payload type.  It doesn't handle the general case of exactly duplicated sessions */
-               if (chnum >= 0 && rtp_pyld_len != 4) {  /* don't check DTMF packets */
+               #ifdef CHECK_RTP_PAYLOAD_TYPE  /* this is a special case useful for checking duplicated sessions that differ only in RTP payload type. It doesn't handle the general case of exactly duplicated sessions */
+               if (chnum >= 0 && !PayloadInfo.fDTMF) {  /* DTMF packets need to match a session, but we don't error check their payload type. Note also that CreateDynamicSession() doesn't allow session creation on DTMF packets */
 
                   int rtp_pyld_type_term = -1;
-                  rtp_pyld_type = PktInfo.rtp_pyld_type;
+
                   #if 0
                   rtp_pyld_type_term = DSGetSessionInfo(chnum, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_RTP_PAYLOAD_TYPE, DSGetSessionInfo(chnum, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM, 0, NULL), NULL);
                   #else  /* this way is faster and also demonstrates convenient use of SESSION_DATA structs after session creation */
                   int term = DSGetSessionInfo(chnum, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM, 0, NULL);
-                  if (term == 1) rtp_pyld_type_term = session_data[i].term1.attr.voice_attr.rtp_payload_type;
-                  else if (term == 2) rtp_pyld_type_term = session_data[i].term2.attr.voice_attr.rtp_payload_type;
+                  if (term == 1) rtp_pyld_type_term = session_data[i].term1.attr.voice.rtp_payload_type;
+                  else if (term == 2) rtp_pyld_type_term = session_data[i].term2.attr.voice.rtp_payload_type;
                   #endif
 
-                  if (rtp_pyld_type_term != rtp_pyld_type) chnum = -1;
+                  #if 0
+                  if (rtp_pyld_type_term != rtp_pyld_type) chnum = -1;  /* not a match if payload types are different */
+                  #else
+                  if (rtp_pyld_type_term != PktInfo.rtp_pyld_type) continue;  /* not a match if payload types are different */
+                  #endif
                }
                #endif
 
-               if (chnum >= 0) {  /* if packet matches a stream (i.e. a term defined for a session), push to correct session queue.  Note that SSRC is not included in the session match because DSGetPacketInfo() was called with DS_PKT_INFO_CHNUM_PARENT */
-
-                  #if 0
-                  if (rtp_pyld_len < 4 && fShowWarnings) {
-
-                     int chnum2 = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM | DS_PKTLIB_SUPPRESS_ERROR_MSG, pkt_buf, pkt_len, NULL, NULL);  /* get the stream's chnum (either parent or child) */ 
-                     Log_RT(4, "mediaMin INFO: PushPackets() says dropping RTP packet that matches session %d channel %d with payload size %d < 4, SSRC = 0x%x, seq num = %d \n", hSessions[i], chnum2, rtp_pyld_len, PktInfo.rtp_ssrc, PktInfo.rtp_seqnum);
-                     continue;  /* don't push this packet */
-                  }
-                  #endif
+               if (chnum >= 0) {  /* if packet matches a stream (i.e. a term defined for a session), push to correct session queue. Note that SSRC is not included in the session match because DSGetPacketInfo() was called with DS_PKT_INFO_CHNUM_PARENT */
 
                   if (nFirstSession == -1) nFirstSession = hSessions[i];
-                  else app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "######### Two pushes for same packet, nFirstSession = %d, hSession = %d, chnum = %d", nFirstSession, hSessions[i], chnum);  /* this should not happen, if it does call attention to it.  If it occurs, it means there are exactly duplicated sessions, including RTP payload type, and we need more information to differentiate */
+                  else app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "######### Two pushes for same packet, nFirstSession = %d, hSession = %d, chnum = %d", nFirstSession, hSessions[i], chnum);  /* this should not happen, if it does call attention to it. If it occurs, it means there are exactly duplicated sessions, including RTP payload type, and we need more information to differentiate */
 
                   int retry_count = 0;
 
@@ -3449,12 +3654,14 @@ check_for_duplicated_headers:
                   if (!fOnce) { printf("\n === time to first push %llu \n", (unsigned long long)((first_push_time = get_time(USE_CLOCK_GETTIME)) - base_time)); fOnce = true; }
                   #endif
 
-                  if (fNewSession) thread_info[thread_index].nSessionIndex[j][thread_info[thread_index].nSessions[j]++] = i;  /* increment total number of sessions, maintain an index into hSessions[] for each session in the input */
+                  if (fNewSession) thread_info[tId].nSessionIndex[j][thread_info[tId].nSessions[j]++] = i;  /* increment total number of sessions, maintain an index into hSessions[] for each session in the input */
+
+                  fPacketHandled = true;
 
 push:
                   int ret_val = DSPushPackets(uFlags_push, pkt_buf, &pkt_len, &hSessions[i], 1);  /* push packet to packet/media thread queue */
 
-                  if (!(Mode & DYNAMIC_SESSIONS) && (ret_val & DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP)) goto next_packet;  /* duplicate packet, move on to next packet */
+                  if ((uFlags_push & DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP) && (ret_val & DS_PUSHPACKETS_ENABLE_RFC7198_DEDUP)) goto next_packet;  /* if we ask DSPushPackets() to look for duplicate packets and it finds one, move on to next packet. Normally packet/media worker threads handle this using the -lN cmd line input (no entry is a lookback of 1 packet, otherwise N specifies the lookback) */
 
                   if (!ret_val) {  /* push queue is full, try waiting and pushing the packet again */
 
@@ -3464,16 +3671,17 @@ push:
                      if (retry_count++ < 3) goto push;  /* max retries */
                      else {
 
-                     /* not good if this is happening so we print to event log. But we don't want to overrun the log and/or screen with warnings, so we have a warning counter */
+                     /* not good if this is happening so we print to event log. But we don't want to overrun the log and/or console output with warnings, so we have a warning counter */
 
                         if (!queue_full_warning[hSessions[i]]) Log_RT(3, "mediaMin WARNING: says DSPushPackets() timeout, unable to push packet for %d msec \n", (retry_count-1)*uSleepTime/1000);
                         queue_full_warning[hSessions[i]]++;  /* will wrap every 255 */
                      }
 
-                     fseek(thread_info[thread_index].pcap_in[j], fp_sav_pos, SEEK_SET);  /* unable to push this packet, restore pcap file pointer and return 0 (no packets pushed) */
-                     return 0;
+                     thread_info[tId].uCacheFlags[j] = CACHE_READ;  /* unable to push this packet, try again later. Keep the packet in cache */
+
+                     continue;
                   }
-                  else if (ret_val == -1) {  /* error condition */
+                  else if (ret_val < 0) {  /* error condition */
 
                      fprintf(stderr, "Error condition returned by DSPushPackets, hSession = %d, pkt_len = %d\n", hSessions[i], pkt_len);
                      return -1;
@@ -3481,12 +3689,28 @@ push:
                   else {  /* packet was successfully pushed */
 
                      #if 0  /* move to before "push:" - session indexing does not depend on successful packet pushing. Once a session is created we need track it, JHB Jun 2024 */
-                     if (fNewSession) thread_info[thread_index].nSessionIndex[j][thread_info[thread_index].nSessions[j]++] = i;  /* maintain an index into hSessions[] for each session in the input */
+                     if (fNewSession) thread_info[tId].nSessionIndex[j][thread_info[tId].nSessions[j]++] = i;  /* maintain an index into hSessions[] for each session in the input */
                      #endif
 
                      session_push_cnt[i]++;
-                     thread_info[thread_index].pkt_push_ctr++;
+                     thread_info[tId].pkt_push_ctr++;
                      push_cnt++;
+
+                  /* update stream stats with first packet info */
+
+                     if (!(thread_info[tId].uStreamStatsState[chnum] & STREAM_STATE_FIRST_PKT)) {
+
+                        int stream_stats_index = thread_info[tId].uStreamStatsState[chnum] & ~STREAM_STATE_FLAG_MASK;
+
+                        thread_info[tId].StreamStats[stream_stats_index].first_pkt_ssrc = PktInfo.rtp_ssrc;  /* get first packet RTP SSRC */
+                        thread_info[tId].StreamStats[stream_stats_index].first_pkt_usec = DSGetLogTimestamp(NULL, DS_EVENT_LOG_UPTIME_TIMESTAMPS, 0, 0);  /* get usec since app thread start */
+
+                        #if 0  /* debug */
+                        printf("\n *** stream %d, updating ch %d, hSessions[%d] = %d, term = %d, ssrc = 0x%x, usec = %llu \n", stream_stats_index, chnum, i, hSessions[i], thread_info[tId].StreamStats[stream_stats_index].term, thread_info[tId].StreamStats[stream_stats_index].first_pkt_ssrc, (long long unsigned int)thread_info[tId].StreamStats[stream_stats_index].first_pkt_usec);
+                        #endif
+
+                        thread_info[tId].uStreamStatsState[chnum] |= STREAM_STATE_FIRST_PKT;  /* set first packet flag */
+                     }
 
                      if (queue_full_warning[hSessions[i]]) queue_full_warning[hSessions[i]] = 0;  /* reset queue full warning if needed */
 
@@ -3520,7 +3744,7 @@ push:
                         }
                      }
 
-                     last_rtp_pyld_len[i] = rtp_pyld_len;
+                     last_rtp_pyld_len[i] = PktInfo.rtp_pyld_len;
                      last_msec_timestamp[i] = msec_timestamp_fp;
 
                      break;  /* break out of nSessions loop, the packet should match no other sessions */
@@ -3528,20 +3752,32 @@ push:
                }
             }  /* nSessions loop (i) */
          }  /* packet reuse loop (n) */
-      }  /* input flow loop (end of file or UDP port; e.g. if fp[j] != NULL) */
 
-   /* Auto-adjust push rate algorithm:
+      /* count RTP, RTCP, and any unhandled packets, JHB Jan 2025 */
 
-      -enabled if AUTO_ADJUST_PUSH_RATE flag is included in cmd line -dN entry (see all flag definitions near start of this file)
-      -intended to be used in the absence of input packet flow timing, for example pcaps with no packet timestamps, UDP input flow from a source not using accurate wall clock timing, etc
-      -the push rate is adjusted dynamically by monitoring transcoded output (G711) queue levels, which after transcoding are independent of input packet types (media vs SID, multiframe packets, variable ptime, etc). The objective is to adapt the push rate to timing derived from media content, in the absence of input packet flow timing
-      -currently the average push rate (APR) is calculated per mediaMin thread, the idea being to treat all sessions equally. Adjustment is first initialized to push as many packets as there are sessions every -rN msec
+         if (fPacketHandled) thread_info[tId].num_rtp_packets[j]++;  /* increment per stream RTP packet count */
+         else if (isRTCPPacket(PktInfo.rtp_pyld_type)) thread_info[tId].num_rtcp_packets[j]++;  /* RTCP packets are handled either above or by packet/media worker threads. isRTCPPacket() macro is defined in pktlib.h */
+         else {  /* unhandled RTP; for example no-transmission or NO_DATA packets not accepted as the first packet in a new session (see comments in CreateDynamicSession() */
+            #ifdef SHOW_UNHANDLED_RTP
+            printf("\n *** unhandled RTP packet, session match, stream %d packet number = %d \n", j, thread_info[tId].packet_number[j]);
+            #endif
+            thread_info[tId].num_unhandled_rtp_packets[j]++;
+         }
+
+      }  /* input stream loop (end of file or UDP port; e.g. if fp[j] != NULL) */
+
+   /* Auto-adjust packet push timing algorithm
+
+      -enabled if AUTO_ADJUST_PUSH_TIMING flag is included in cmd line -dN entry (see all flag definitions near start of this file)
+      -intended to be used in the absence of input packet flow timing, for example pcaps with no packet arrival timestamps, UDP input flow from a source not using accurate wall clock timing, etc
+      -packet push timing is adjusted dynamically by monitoring transcoded output (G711) queue levels, which after transcoding are independent of input packet types (media vs SID, multiframe packets, variable ptime, etc). The objective is to adapt the push timing to match media content ("media domain timing"), in the absence of input packet flow timing
+      -currently an average push rate (APR) is calculated per mediaMin thread, the idea being to treat all sessions equally. Adjustment is first initialized to push as many packets as there are sessions every -rN msec
       -when stream group processing is enabled, further alignment of individual streams is possible; the STREAM_GROUP_ENABLE_DEDUPLICATION flag is one possible option
       -DSPullPackets() and DSPushPackets() xxx_QUEUE_LEVEL flags return "distance" (in bytes) between input and output queue pointers
-      -note that allowing the push rate to become too high will eventually overflow the push queue and a "queue full" status will be returned by DSPushPackets()
+      -note that allowing high push rates may eventually overflow the relevant per-session or per-thread push queue and a "queue full" status will be returned by DSPushPackets()
    */
 
-      if ((Mode & AUTO_ADJUST_PUSH_RATE) && thread_info[thread_index].pcap_in[j] && nSessions) {  /* make input stream is active and there are one or more existing sessions */
+      if ((Mode & AUTO_ADJUST_PUSH_TIMING) && thread_info[tId].pcap_in[j] && nSessions) {  /* make input stream is active and there are one or more existing sessions */
 
 push_ctrl:  /* upon entry PushPackets() jumps here if current average push rate (APR) is zero */
 
@@ -3556,7 +3792,7 @@ push_ctrl:  /* upon entry PushPackets() jumps here if current average push rate 
          nSessionsPushed /= (1 + nReuseInputs);  /* normalize totals if session reuse is active */
          nSessionsActive /= (1 + nReuseInputs);
 
-         if (++auto_adj_push_count < average_push_rate[thread_index] && nSessionsPushed < nSessionsActive) goto next_packet;  /* push the packet ! */
+         if (++auto_adj_push_count < average_push_rate[tId] && nSessionsPushed < nSessionsActive) goto next_packet;  /* push the packet ! */
 
       /* first push packets according to current APR value, then update APR */
   
@@ -3565,25 +3801,25 @@ push_ctrl:  /* upon entry PushPackets() jumps here if current average push rate 
 
          for (i=0; i<nSessions; i++) if (!(hSessions[i] & SESSION_MARKED_AS_DELETED)) {
 
-            int queue_level = DSPullPackets(DS_PULLPACKETS_TRANSCODED | DS_PULLPACKETS_GET_QUEUE_LEVEL, NULL, NULL, hSessions[i], NULL, 0, 0);
+            int queue_level = DSPullPackets(DS_PULLPACKETS_OUTPUT | DS_PULLPACKETS_GET_QUEUE_LEVEL, NULL, NULL, hSessions[i], NULL, 0, 0);
 
             if (queue_level < numpkts*g711_pktlen) fIncrease = true;
             if (queue_level > 6*numpkts*g711_pktlen) fReduce = true;
          }
 
-      /* update APR (note this is occurring either (i) every -rN msec per cmd line entry or (ii) or every ptime msec if ANALYTICS_MODE flag is set in -dN cmd line entry) */
+      /* update APR either (i) every -rN msec per cmd line entry or (ii) or every ptime msec if ANALYTICS_MODE flag is set in -dN cmd line entry */
   
          if (fReduce) {
 
-            if (average_push_rate[thread_index]) average_push_rate[thread_index] = 0;
+            if (average_push_rate[tId]) average_push_rate[tId] = 0;
          }
-         else average_push_rate[thread_index] = nSessionsActive;
+         else average_push_rate[tId] = nSessionsActive;
 
-         if (fIncrease) average_push_rate[thread_index]++;
+         if (fIncrease) average_push_rate[tId]++;
 
-         if (isMasterThread(thread_index) && cur_time - last_cur_time > 100*1000) {  /* update APR screen output no faster than 100 msec */
+         if (isMasterThread(thread_index) && cur_time - last_cur_time > 100*1000) {  /* update APR console output no faster than 100 msec */
 
-            app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "apr %d ", average_push_rate[thread_index]);
+            app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "apr %d ", average_push_rate[tId]);
             last_cur_time = cur_time;
          }
       }
@@ -3594,122 +3830,127 @@ push_ctrl:  /* upon entry PushPackets() jumps here if current average push rate 
 
 }  /* end of PushPackets() */
 
-/* pull packets from packet / media per-session queue.  Packets are pulled by category:  jitter buffer output, transcoded, and stream group */
+/* pull packets from packet / media session-organized queue. Packets are pulled by category:  jitter buffer output, transcoded, and stream group */
 
 int PullPackets(uint8_t* pkt_out_buf, HSESSION hSessions[], SESSION_DATA session_data[], unsigned int uFlags, unsigned int pkt_buf_len, int thread_index) {
 
-int j, num_pkts = 0, i = 0, num_pkts_total = 0, numPkts;
+int j, nPulledPackets = 0, i = 0, num_pkts_total = 0, numPkts;
 FILE* fp = NULL;
-int packet_out_len[1024];  /* These sizes should handle the maximum number of packets that fit into pkt_buf_len amount of space.  That will vary from app to app depending on codec types, max ptimes, etc.  MAXSPACEDEBUG can be used below to look at the worst case.  JHB Aug 2018 */
+int packet_out_len[1024];  /* These sizes should handle the maximum number of packets that fit into pkt_buf_len amount of space. That will vary from app to app depending on codec types, max ptimes, etc. MAXSPACEDEBUG can be used below to look at the worst case. JHB Aug 2018 */
 uint64_t packet_info[1024];
 uint8_t* pkt_out_ptr;
-char errstr[20];
+char errstr[20] = "";
 int nRetry[MAX_SESSIONS] = { 0 };
 int group_idx = -1;
 bool fRetry = false;
+uint8_t uOutputType = PCAP;  /* default output type. See io_data_type enums (mediaTest.h), JHB Sep 2024 */
 
    if (!thread_info[thread_index].nSessionsCreated) return 0;  /* nothing to do if no sessions created yet */
 
-entry:
+pull_setup:
 
-   if (uFlags == DS_PULLPACKETS_JITTER_BUFFER) {
+   do {  /* session loop */
 
-      fp = thread_info[thread_index].fp_pcap_jb[i];
-      strcpy(errstr, "jitter buffer");
-   }
-   else if (uFlags == DS_PULLPACKETS_TRANSCODED) {
+      fp = NULL;  /* fp controls file output; reset each time through loop */
 
-      fp = thread_info[thread_index].pcap_out[i];
-      strcpy(errstr, "transcoded");
-   }
-   else if ((Mode & ENABLE_STREAM_GROUPS) && uFlags == DS_PULLPACKETS_STREAM_GROUP) {
+      if ((hSessions[i] & SESSION_MARKED_AS_DELETED) || (nRetry[i] & 0x100)) continue;  /* make sure we have a valid session handle (we may have previously deleted the session), also if we're here due to a retry, check to see if this session already had a successful pull */
 
-      i = GetNextGroupSessionIndex(hSessions, i, thread_index);  /* for stream group packets, the session handle given to DSPullPackets() has to be a group session owner. To look for group session owners, we call GetNextGroupSessionIndex().  Note that it returns an index into hSessions[] not a handle */
+      if (uFlags == DS_PULLPACKETS_JITTER_BUFFER) {
 
-      if (i >= 0) {
-
-         group_idx = DSGetStreamGroupInfo(hSessions[i], DS_STREAMGROUP_INFO_CHECK_GROUPTERM, NULL, NULL, NULL);  /* note if hSessions[i] is marked for deletion it will have 0x80000000 flag and DSGetStreamGroupInfo() will return -1. This is not a problem since we check for the deletion flag at pull: */
-         if (group_idx < 0) return 0;
-
-         fp = thread_info[thread_index].fp_pcap_group[group_idx];
-         strcpy(errstr, "stream group");
+         if (!strlen(errstr)) strcpy(errstr, "jitter buffer");
+         fp = thread_info[thread_index].fp_pcap_jb[i];
       }
-      else return 0;  /* no group owner sessions found */
-   }
-   else return -1;  /* invalid uFlags or mode */
+      else if (uFlags == DS_PULLPACKETS_OUTPUT) {
 
-   if ((Mode & ANALYTICS_MODE) || session_data[i].term1.input_buffer_interval > 0) numPkts = 1;  /* pull one packet in timed situations */
-   else numPkts = -1;  /* numPkts set to -1 tells DSPullPackets() to pull all available packets. Note this applies in untimed mode with -r0 timing (look for fUntimedMode), JHB Jan 2023 */
+         int output_index = thread_info[thread_index].nSessionOutputIndex[hSessions[i]] - 1;  /* subtract +1 added by OutputSetup() */
 
-pull:
+         if (output_index >= 0) {
 
-   if (!(hSessions[i] & SESSION_MARKED_AS_DELETED) && !(nRetry[i] & 0x100)) {  /* make sure we have a valid session handle (we may have previously deleted the session), also check to see if we've already had a successful pull */
+            if (!strlen(errstr))  {
+               if (thread_info[thread_index].uOutputType[output_index] == PCAP) strcpy(errstr, "transcode");
+               else if (thread_info[thread_index].uOutputType[output_index] == ENCODED) { uOutputType = ENCODED; strcpy(errstr, "H.26x bitstream"); }
+            }
 
-      num_pkts = DSPullPackets(uFlags, pkt_out_buf, packet_out_len, hSessions[i], packet_info, pkt_buf_len, numPkts);  /* pull available output packets of type specified by uFlags from packet/media thread queue. If numPkts = -1, that indicates pull all that's available */
+            fp = thread_info[thread_index].pcap_out[output_index];
+         }
+         else {};  /* not an error condition, for sessions with no matching output we still need to check and pull any packets to guard against queue overflow */
+      }
+      else if ((Mode & ENABLE_STREAM_GROUPS) && uFlags == DS_PULLPACKETS_STREAM_GROUP) {
 
-      if (num_pkts < 0) {
-         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "Error in DSPullPackets() for %s output, return code = %d", errstr, num_pkts);
+         if (!strlen(errstr)) strcpy(errstr, "stream group");
+
+         if ((group_idx = DSGetSessionInfo(hSessions[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_IDX | DS_SESSION_INFO_SUPPRESS_ERROR_MSG, 0, NULL)) >= 0 && DSGetStreamGroupInfo(group_idx, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_OWNER_SESSION, NULL, NULL, NULL) == hSessions[i]) {  /* note if hSessions[i] is marked for deletion it will have 0x80000000 flag and DSGetSessionInfo() will return -1. This is not a problem as we check for the deletion flag at top of the pull loop (above), but worth mentioning */
+
+            fp = thread_info[thread_index].fp_pcap_group[group_idx];
+         }
+         else {};  /* not an error condition, for stream group non-owner sessions we still need to check and pull any packets to guard against queue overflow */
+      }
+      else return -1;  /* invalid uFlags or mode */
+
+      if ((Mode & ANALYTICS_MODE) || session_data[i].term1.input_buffer_interval > 0) numPkts = 1;  /* pull one packet in timed situations */
+      else numPkts = -1;  /* numPkts set to -1 tells DSPullPackets() to pull all available packets. Note this applies in untimed mode with -r0 timing (look for fUntimedMode), JHB Jan 2023 */
+
+      nPulledPackets = DSPullPackets(uFlags, pkt_out_buf, packet_out_len, hSessions[i], packet_info, pkt_buf_len, numPkts);  /* pull available output packets of type specified by uFlags from packet/media thread queues. numPkts = -1 indicates pull all available */
+
+      if (nPulledPackets < 0) {
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "Error in DSPullPackets() for %s output, return code = %d", errstr, nPulledPackets);
          goto exit;
       }
 
-      num_pkts_total += num_pkts;  /* change how we calculate return value, no longer depending on file output cmd line specs, JHB Aug 2023 */
-   }
-   else goto next_session;
+      num_pkts_total += nPulledPackets;  /* change how we calculate return value, no longer depending on file output cmd line specs, JHB Aug 2023 */
 
-   #ifdef MAXSPACEDEBUG
-   static int max_num_pkts = 0;
-   if (num_pkts > max_num_pkts) {
-      max_num_pkts = num_pkts;
-      printf("max num pkts = %d\n", max_num_pkts);
-   }
-   #endif
-
-   //#define SHOW_XCODED_STATS
-   #ifdef SHOW_XCODED_STATS
-   static int prev_num_xcoded[MAX_APP_THREADS][MAX_SESSIONS] = {{0}}, total_zero_xcoded[MAX_APP_THREADS][MAX_SESSIONS] = {{ 0 }};
-
-   if (uFlags == DS_PULLPACKETS_TRANSCODED) {
-
-      if (!num_pkts && !thread_info[thread_index].flush_state[i]) {
-
-         if (prev_num_xcoded[thread_index][i]) {
-
-            total_zero_xcoded[thread_index][i]++;
-
-            char tmpstr[100], xcodedstats_str[100];
-            strcpy(tmpstr, "xc zero output session = ");
-
-            sprintf(xcodedstats_str, "%s%d %d", j == 0 ? "" : ", ", hSessions[i], total_zero_xcoded[thread_index][i]);
-            strcat(tmpstr, xcodedstats_str);
-
-            strcat(tmpstr, " ");
-            fprintf(stderr, tmpstr);
-         }
+      #ifdef MAXSPACEDEBUG
+      static int max_num_pkts = 0;
+      if (nPulledPackets > max_num_pkts) {
+         max_num_pkts = nPulledPackets;
+         printf("max num pkts = %d\n", max_num_pkts);
       }
-      else prev_num_xcoded[thread_index][i] = num_pkts;
-   }
-   #endif
+      #endif
 
-   if (uFlags == DS_PULLPACKETS_JITTER_BUFFER) {
-   
-      thread_info[thread_index].pkt_pull_jb_ctr += num_pkts;  /* pull packets counters are used for console update in user_io.cpp */
-   }
-   else if (uFlags == DS_PULLPACKETS_TRANSCODED) {
-   
-      thread_info[thread_index].pkt_pull_xcode_ctr += num_pkts;
-   }
-   else if (uFlags == DS_PULLPACKETS_STREAM_GROUP) {
+      //#define SHOW_XCODED_STATS
+      #ifdef SHOW_XCODED_STATS
+      static int prev_num_xcoded[MAX_APP_THREADS][MAX_SESSIONS] = {{ 0 }}, total_zero_xcoded[MAX_APP_THREADS][MAX_SESSIONS] = {{ 0 }};
 
-      thread_info[thread_index].pkt_pull_streamgroup_ctr += num_pkts;
-   }
+      if (uFlags == DS_PULLPACKETS_OUTPUT) {
 
-   if (fp) {
+         if (!nPulledPackets && !thread_info[thread_index].flush_state[i]) {
 
-      if (uFlags == DS_PULLPACKETS_STREAM_GROUP) {
+            if (prev_num_xcoded[thread_index][i]) {
+
+               total_zero_xcoded[thread_index][i]++;
+
+               char tmpstr[100], xcodedstats_str[100];
+               strcpy(tmpstr, "xc zero output session = ");
+
+               sprintf(xcodedstats_str, "%s%d %d", i == 0 ? "" : ", ", hSessions[i], total_zero_xcoded[thread_index][i]);
+               strcat(tmpstr, xcodedstats_str);
+
+               strcat(tmpstr, " ");
+               fprintf(stderr, tmpstr);
+            }
+         }
+         else prev_num_xcoded[thread_index][i] = nPulledPackets;
+      }
+      #endif
+
+      if (uFlags == DS_PULLPACKETS_JITTER_BUFFER) {
+      
+         thread_info[thread_index].pkt_pull_jb_ctr += nPulledPackets;  /* pull packets counters are used for console update in user_io.cpp */
+      }
+      else if (uFlags == DS_PULLPACKETS_OUTPUT) {
+
+         thread_info[thread_index].pkt_pull_xcode_ctr += nPulledPackets;
+      }
+      else if (uFlags == DS_PULLPACKETS_STREAM_GROUP) {
+
+         thread_info[thread_index].pkt_pull_streamgroup_ctr += nPulledPackets;
+      }
+
+      if (uFlags == DS_PULLPACKETS_STREAM_GROUP && fp) {  /* for stats and possible retries, only check group owners */
 
          if (!fStressTest && !fCapacityTest && (Mode & (USE_PACKET_ARRIVAL_TIMES | ANALYTICS_MODE))) {  /* note we did not add fUntimedMode check here as stream group timing would be unpredictable and there is likely no point in attempting retries, JHB Jan 2023 */
 
-            if (!num_pkts) {
+            if (!nPulledPackets) {  /* no packets pulled, check for retries */
 
                if (thread_info[thread_index].fFirstGroupPull[group_idx] && !thread_info[thread_index].flush_state[i]) {
 
@@ -3725,9 +3966,9 @@ pull:
                      }
                   }
 
-#ifdef USE_GROUP_PULL_RETRY  
-               
-               /* For this combination of modes, consistent ptime output intervals is crucial, if we miss we wait some time and try again, up to some limit.  Notes:
+                  #ifdef USE_GROUP_PULL_RETRY  
+                  
+               /* for this combination of modes, consistent ptime output intervals is crucial, if we miss we wait some time and try again, up to some limit. Notes:
 
                   -the current sleep and max wait times are 1 msec and 8 msec
                   -this handles cases where app or p/m threads are temporarily a bit slow, maybe due to file I/O or other system timing delays
@@ -3736,17 +3977,17 @@ pull:
                */
 
                   nRetry[i]++;  /* mark session as needing a retry */
+                  #endif
                }
-#endif
             }
-            else {
+            else {  /* one or more packets pulled, update stats */
 
                if (!thread_info[thread_index].fFirstGroupPull[group_idx]) thread_info[thread_index].fFirstGroupPull[group_idx] = true;
 
                if (nRetry[i]) {
 
                   if (thread_info[thread_index].group_pull_stats_index < MAX_GROUP_STATS) {
-                     thread_info[thread_index].GroupPullStats[thread_info[thread_index].group_pull_stats_index].retry_interval = thread_info[thread_index].pkt_pull_streamgroup_ctr - num_pkts;
+                     thread_info[thread_index].GroupPullStats[thread_info[thread_index].group_pull_stats_index].retry_interval = thread_info[thread_index].pkt_pull_streamgroup_ctr - nPulledPackets;
                      thread_info[thread_index].GroupPullStats[thread_info[thread_index].group_pull_stats_index].num_retries = nRetry[i];
                      thread_info[thread_index].GroupPullStats[thread_info[thread_index].group_pull_stats_index].hSession = hSessions[i];
                      thread_info[thread_index].group_pull_stats_index++;
@@ -3758,85 +3999,79 @@ pull:
          }
       }
 
-      for (j=0, pkt_out_ptr=pkt_out_buf; j<num_pkts; j++) {
+   /* output processing: transcoded audio, video bitstream, etc. if fp not set then packets are pulled but not written to file or sent to UDP */
 
-         unsigned int uFlags_write = DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;  /* default is to tell DSWritePcap() to read wall clock to set packet arrival timestamps, JHB Jul 2024 */
-         pcaprec_hdr_t pcap_pkt_hdr = { 0 };
+      if (fp) for (j=0, pkt_out_ptr=pkt_out_buf; j<nPulledPackets; j++) {
 
-         if (group_idx >= 0) {  /* group_idx valid only when set in (uFlags == DS_PULLPACKETS_STREAM_GROUP) above */
+         if (uOutputType == PCAP) {
 
-            if (isAFAPMode) {  /* for stream group output in AFAP mode we advance packet timestamps at regular ptime intervals, JHB May 2023 */
+            unsigned int uFlags_write = DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;  /* default is to tell DSWritePcap() to read wall clock to set packet arrival timestamps, JHB Jul 2024 */
+            pcaprec_hdr_t pcap_pkt_hdr = { 0 };
 
-               if (!thread_info[thread_index].accel_time_ts[group_idx].tv_sec) clock_gettime(CLOCK_REALTIME, &thread_info[thread_index].accel_time_ts[group_idx]);  /* if sec is uninitialized we start with current time */
-               else {
+            if (group_idx >= 0) {  /* group_idx valid only when set in (uFlags == DS_PULLPACKETS_STREAM_GROUP) above */
 
-                  int ptime = DSGetSessionInfo(hSessions[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_PTIME, 0, NULL);
+               if (isAFAPMode) {  /* for stream group output in AFAP mode we advance packet timestamps at regular ptime intervals, JHB May 2023 */
 
-                  uint64_t t = 1000000ULL*(uint64_t)thread_info[thread_index].accel_time_ts[group_idx].tv_sec + (uint64_t)thread_info[thread_index].accel_time_ts[group_idx].tv_nsec/1000 + ptime*1000L;  /* calculate in usec */
+                  if (!thread_info[thread_index].accel_time_ts[group_idx].tv_sec) clock_gettime(CLOCK_REALTIME, &thread_info[thread_index].accel_time_ts[group_idx]);  /* if sec is uninitialized we start with current time */
+                  else {
 
-                  thread_info[thread_index].accel_time_ts[group_idx].tv_sec = t/1000000ULL;  /* update stream group's packet timestamp */
-                  thread_info[thread_index].accel_time_ts[group_idx].tv_nsec = (t - 1000000ULL*thread_info[thread_index].accel_time_ts[group_idx].tv_sec)*1000;
-               } 
+                     int ptime = DSGetSessionInfo(hSessions[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_PTIME, 0, NULL);
 
-               pcap_pkt_hdr.ts_sec = thread_info[thread_index].accel_time_ts[group_idx].tv_sec;  /* set timestamp in packet record header param we give to DSWritePcap() */
-               pcap_pkt_hdr.ts_usec = thread_info[thread_index].accel_time_ts[group_idx].tv_nsec/1000;
-               uFlags_write &= ~DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;  /* we are supplying a timestamp, so turn off wallclock flag to DSWritePcap() */
+                     uint64_t t = 1000000ULL*(uint64_t)thread_info[thread_index].accel_time_ts[group_idx].tv_sec + (uint64_t)thread_info[thread_index].accel_time_ts[group_idx].tv_nsec/1000 + ptime*1000L;  /* calculate in usec */
+
+                     thread_info[thread_index].accel_time_ts[group_idx].tv_sec = t/1000000ULL;  /* update stream group's packet timestamp */
+                     thread_info[thread_index].accel_time_ts[group_idx].tv_nsec = (t - 1000000ULL*thread_info[thread_index].accel_time_ts[group_idx].tv_sec)*1000;
+                  } 
+
+                  pcap_pkt_hdr.ts_sec = thread_info[thread_index].accel_time_ts[group_idx].tv_sec;  /* set timestamp in packet record header param we give to DSWritePcap() */
+                  pcap_pkt_hdr.ts_usec = thread_info[thread_index].accel_time_ts[group_idx].tv_nsec/1000;
+                  uFlags_write &= ~DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;  /* we are supplying a timestamp, so turn off wallclock flag to DSWritePcap() */
+               }
+               else if (isFTRTMode) {  /* for stream group output in FTRT mode we advance packet timestamps at accelerated time (based on timeScale value), JHB May 2023 */
+
+                  struct timespec ts;
+                  clock_gettime(CLOCK_REALTIME, &ts);
+
+                  uint64_t cur_time = ts.tv_sec * 1000000ULL + ts.tv_nsec/1000;  /* calculate in usec */
+
+                  if (!thread_info[thread_index].accel_time_ts[group_idx].tv_sec) { thread_info[thread_index].accel_time_ts[group_idx].tv_sec = cur_time/1000000ULL; thread_info[thread_index].accel_time_ts[group_idx].tv_nsec = (cur_time - 1000000ULL*thread_info[thread_index].accel_time_ts[group_idx].tv_sec)*1000; }  /* save one-time calculation of base time */
+
+                  uint64_t base_time = thread_info[thread_index].accel_time_ts[group_idx].tv_sec * 1000000ULL + thread_info[thread_index].accel_time_ts[group_idx].tv_nsec/1000; 
+
+                  uint64_t t = base_time + (cur_time - base_time) * timeScale;
+
+                  pcap_pkt_hdr.ts_sec = t/1000000ULL;  /* set stream group output packet timestamp in packet record header param we give to DSWritePcap() */
+                  pcap_pkt_hdr.ts_usec = (t - 1000000ULL*pcap_pkt_hdr.ts_sec);
+                  uFlags_write &= ~DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;  /* we are supplying a timestamp, so turn off wallclock flag to DSWritePcap() */
+               }
             }
-            else if (isFTRTMode) {  /* for stream group output in FTRT mode we advance packet timestamps at accelerated time (based on timeScale value), JHB May 2023 */
 
-               struct timespec ts;
-               clock_gettime(CLOCK_REALTIME, &ts);
+            if (DSWritePcap(fp, uFlags_write, pkt_out_ptr, packet_out_len[j], &pcap_pkt_hdr, NULL, NULL) < 0) { fprintf(stderr, "DSWritePcap() failed for %s output \n", errstr); return -1; }
+            else pkt_out_ptr += packet_out_len[j];
+         }
+         else if (uOutputType == ENCODED) {  /* handle encoded outputs, JHB Sep 2024 */
 
-               uint64_t cur_time = ts.tv_sec * 1000000ULL + ts.tv_nsec/1000;  /* calculate in usec */
+            if (isVideoCodec(DSGetSessionInfo(hSessions[i], DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC_TYPE, 1, NULL))) {  /* for encoded video data, extract UDP packet contents generated and formatted by parse_H26x_bitstream() in pktlib, write to bitstream file */
 
-               if (!thread_info[thread_index].accel_time_ts[group_idx].tv_sec) { thread_info[thread_index].accel_time_ts[group_idx].tv_sec = cur_time/1000000ULL; thread_info[thread_index].accel_time_ts[group_idx].tv_nsec = (cur_time - 1000000ULL*thread_info[thread_index].accel_time_ts[group_idx].tv_sec)*1000; }  /* save one-time calculation of base time */
-
-               uint64_t base_time = thread_info[thread_index].accel_time_ts[group_idx].tv_sec * 1000000ULL + thread_info[thread_index].accel_time_ts[group_idx].tv_nsec/1000; 
-
-               uint64_t t = base_time + (cur_time - base_time) * timeScale;
-
-               pcap_pkt_hdr.ts_sec = t/1000000ULL;  /* set stream group output packet timestamp in packet record header param we give to DSWritePcap() */
-               pcap_pkt_hdr.ts_usec = (t - 1000000ULL*pcap_pkt_hdr.ts_sec);
-               uFlags_write &= ~DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;  /* we are supplying a timestamp, so turn off wallclock flag to DSWritePcap() */
+     static bool fOnce = false;
+     if (!fOnce) { fOnce = true; printf("\n *** inside video bitstream file write, i = %d \n", i); }
             }
          }
-
-         if (DSWritePcap(fp, uFlags_write, pkt_out_ptr, packet_out_len[j], &pcap_pkt_hdr, NULL, NULL) < 0) { fprintf(stderr, "DSWritePcap() failed for %s output\n", errstr); return -1; }
-         else pkt_out_ptr += packet_out_len[j];
       }
-   }
 
-next_session:
-
-   if ((uFlags == DS_PULLPACKETS_TRANSCODED || uFlags == DS_PULLPACKETS_JITTER_BUFFER) && ++i < thread_info[thread_index].nSessionsCreated) {
-
-      if (uFlags == DS_PULLPACKETS_JITTER_BUFFER) fp = thread_info[thread_index].fp_pcap_jb[i];
-      else fp = thread_info[thread_index].pcap_out[i];
-      goto pull;
-   }
+   } while (++i < thread_info[thread_index].nSessionsCreated);  /* continue hSessions[] loop */
 
    if (uFlags == DS_PULLPACKETS_STREAM_GROUP) {
 
-      if (++i < thread_info[thread_index].nSessionsCreated) {
-
-         i = GetNextGroupSessionIndex(hSessions, i, thread_index);
-
-         if (i >= 0) {
-            group_idx = DSGetStreamGroupInfo(hSessions[i], DS_STREAMGROUP_INFO_CHECK_GROUPTERM, NULL, NULL, NULL);  /* note if hSessions[i] is marked for deletion it will have 0x80000000 flag and DSGetStreamGroupInfo() will return -1. This is not a problem since we check for the deletion flag at pull: */
-            fp = thread_info[thread_index].fp_pcap_group[group_idx];
-            goto pull;
-         }
-      }
-
-   /* check for stream groups that may need a retry. Notes JHB Mar2020:
+   /* check for stream groups that may need a retry. Notes JHB Mar 2020:
 
       -for a retry we sleep 1 msec, then call DSPullPackets() again. This includes all stream group owner sessions that didn't yet produce a packet (if any)
       -max number of retries is 8
       -currently retries apply only to stream group output when packet arrival times (packet timestamps) and ptime output timing are enabled. In this case regular output timing is required and we want to avoid any variation
    */
 
-      for (i=0, fRetry=false; i<thread_info[thread_index].nSessionsCreated && !fRetry; i++) if (nRetry[i] > 0 && nRetry [i] < 8) fRetry = true;
-   
+      for (j=0, fRetry=false; j<thread_info[thread_index].nSessionsCreated && !fRetry; j++) if (nRetry[j] > 0 && nRetry [j] < 8) fRetry = true;
+
       #if 0  /* debug */
       static int nOnce = 0;
       if (fRetry && nOnce < 100) { printf("\n ==== retry = true, nRetry[%d] = %d \n", i, nRetry[i]); nOnce++; }
@@ -3844,8 +4079,10 @@ next_session:
 
       if (!isAFAPMode && !isFTRTMode && fRetry) {
          usleep(1000);  /* sleep 1 msec */
-         i = 0;
-         goto entry;  /* retry one or more sessions */
+         i = 0;   /* reset session index */
+
+         goto pull_setup;  /* retry one or more sessions */
+
       }
    }
 
@@ -3853,6 +4090,80 @@ exit:
    return num_pkts_total;
 }
 
+
+/* GetInputData() gets next input data, notes JHB Oct 2024:
+
+   -called by PushPackets()
+
+   -currently reads from pcaps (.pcap, .pcapng, .rtpxx files). Reading from UDP ports and wav files to be added
+
+   -use per-thread input cache to return previously read input data and avoid re-reading. Examples include
+
+     -packets waiting to be processed due to arrival timestamps still in the future
+     -packets being consumed in segments
+
+   -cache objectives are (i) increase app thread performance and (ii) increase time granularity of packet push based on arrival timestamps
+*/
+
+int GetInputData(uint8_t* pkt_buf, int tId, int nInput, pcaprec_hdr_t* p_pcap_rec_hdr, uint16_t* p_hdr_type) {  /* tId is app thread index */
+
+static int last_input[MAX_APP_THREADS];
+
+int pkt_len;  /* return value */
+
+/* read new input data if input cache marked as invalid */
+
+   if ((thread_info[tId].uCacheFlags[nInput] & CACHE_ITEM_MASK) == CACHE_INVALID) {
+
+      #ifdef INPUT_CACHE_DEBUG  /* define INPUT_CACHE_DEBUG above to see cache stats when mediaMin completes */
+
+ //     printf("\n *** before read, last read pos = %llu, cache mode = %d, read count = %d, cache count = %d \n", (long long unsigned int)thread_info[tId].last_read_pos[nInput], thread_info[tId].uCacheFlags[nInput], read_count, cache_count);
+      #endif
+
+      pkt_len = DSReadPcap(thread_info[tId].pcap_in[nInput], 0, pkt_buf, (Mode & USE_PACKET_ARRIVAL_TIMES) ? p_pcap_rec_hdr : NULL, thread_info[tId].link_layer_len[nInput], p_hdr_type, thread_info[tId].pcap_file_hdr[nInput]);  /* DSReadPcap() handles pcap, pcapng, and .rtpdump format, source is in pktlib_pcap.cpp */
+
+   /* return new input data, update cache */
+
+      thread_info[tId].input_data_cache[nInput]->pkt_len = pkt_len;
+      thread_info[tId].input_data_cache[nInput]->hdr_type = *p_hdr_type;
+      thread_info[tId].input_data_cache[nInput]->pcap_rec_hdr = *p_pcap_rec_hdr;
+
+      memcpy(thread_info[tId].input_data_cache[nInput]->pkt_buf, pkt_buf, pkt_len);
+      last_input[tId] = nInput;
+
+      thread_info[tId].uCacheFlags[nInput] |= CACHE_NEW_DATA;  /* mark input cache as updated with new data */
+
+      #ifdef INPUT_CACHE_DEBUG
+
+  //    printf("\n *** file pos = %llu, pkt len = %d \n", (unsigned long long int)thread_info[tId].last_read_pos[nInput] , pkt_len);
+      if (pkt_len > 0) read_count++;  /* pkt_len zero indicates no packet was read */
+      max_pkt_len = max(pkt_len, max_pkt_len);
+     #endif
+   }
+   else {  /* return cached data */
+
+      thread_info[tId].uCacheFlags[nInput] &= ~CACHE_NEW_DATA;  /* remove new data flag */
+
+      pkt_len = thread_info[tId].input_data_cache[nInput]->pkt_len;
+      *p_hdr_type = thread_info[tId].input_data_cache[nInput]->hdr_type;
+      *p_pcap_rec_hdr = thread_info[tId].input_data_cache[nInput]->pcap_rec_hdr;
+
+      if (nInput != last_input[tId] || thread_info[tId].uCacheFlags[nInput] == CACHE_READ_PKTBUF) {  /* copy pktbuf from cache if either (i) input has changed or (ii) pktbuf has been modified due to in-place processing */
+
+         memcpy(pkt_buf, thread_info[tId].input_data_cache[nInput]->pkt_buf, pkt_len);
+         last_input[tId] = nInput;
+         #ifdef INPUT_CACHE_DEBUG
+         cache_pkt_copy_count++;
+         #endif
+      }
+
+      #ifdef INPUT_CACHE_DEBUG
+      cache_read_count++;  /* read_count and cache_count defined at top */
+      #endif
+   }
+
+   return pkt_len;
+}
 
 void InputSetup(int thread_index) {
 
@@ -3862,14 +4173,14 @@ unsigned int uFlags;
 
    if (thread_info[thread_index].init_err) return;
 
-   if (Mode & AUTO_ADJUST_PUSH_RATE) average_push_rate[thread_index] = 2;  /* initialize auto-adjust push rate algorithm */
+   if (Mode & AUTO_ADJUST_PUSH_TIMING) average_push_rate[thread_index] = 2;  /* initialize auto-adjust push rate algorithm state */
 
    thread_info[thread_index].nInPcapFiles = 0;
 
    uFlags = DS_READ;
    if (fCapacityTest) uFlags |= DS_OPEN_PCAP_QUIET;
 
-/* open input pcap files, advance file pointer to first packet.  Abort program on any input file failure */
+/* open input pcap files, advance file pointer to first packet. Abort program on any input file failure */
 
    #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
    #pragma GCC diagnostic ignored "-Waddress"
@@ -3920,10 +4231,28 @@ valid_input_spec:
          thread_info[thread_index].num_tcp_packets[j] = 0;
          thread_info[thread_index].num_udp_packets[j] = 0;
          thread_info[thread_index].num_rtp_packets[j] = 0;
+         thread_info[thread_index].num_rtcp_packets[j] = 0;
+         thread_info[thread_index].num_unhandled_rtp_packets[j] = 0;
          thread_info[thread_index].num_packets_encapsulated[j] = 0;
          thread_info[thread_index].num_packets_fragmented[j] = 0;
          thread_info[thread_index].num_packets_reassembled[j] = 0;
          thread_info[thread_index].input_index[j] = i;  /* save an index that maps to cmd line input specs */
+
+         thread_info[thread_index].input_data_cache[j] = (INPUT_DATA_CACHE*)calloc(1, sizeof(INPUT_DATA_CACHE));
+
+         if (!thread_info[thread_index].input_data_cache[j]) {
+
+            fprintf(stderr, "Failed to allocate memory (%d bytes) for input data cache, thread_index = %d \n", (int)sizeof(INPUT_DATA_CACHE), thread_index);
+
+            if (thread_info[thread_index].pcap_in[j]) {
+               fclose(thread_info[thread_index].pcap_in[j]);
+               thread_info[thread_index].pcap_in[j] = NULL;
+            }
+
+            thread_info[thread_index].init_err = true;  /* error condition for at least one input file, error message is already printed and/or logged */
+            break;
+         }
+
          thread_info[thread_index].nInPcapFiles = ++j;
       }
       else { fprintf(stderr, "Input file %s does not have .pcap, .pcapng, .rtp, .rtpdump, or .ber file extension \n", MediaParams[i].Media.inputFilename); break; }
@@ -3939,35 +4268,35 @@ valid_input_spec:
    if (thread_info[thread_index].init_err) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, " *************** inside input setup, init err true, thread_index = %d", thread_index);
 }
 
-/* set up transcoded outputs from -oXXX outupt specs entered on command line (if any) */
+/* set up transcoded or bitstream outputs from -oFilename.ext output specs entered on command line (if any) */
 
-void TranscodedOutputSetup(int thread_index) {
+int OutputSetup(HSESSION hSession, int thread_index) {
 
-int i = 0, ret_val;
-char tmpstr[1024];
-char filestr[1024];
+char tmpstr[1024], filestr[1024];
 unsigned int uFlags;
 
-   if (thread_info[thread_index].init_err) return;
+int nOutputIndex = thread_info[thread_index].nOutFiles;  /* start with first cmd line output spec and consume output specs sequentially, JHB Sep 2024 */
 
-   thread_info[thread_index].nOutPcapFiles = 0;
+   if (thread_info[thread_index].init_err) return 0;
 
    uFlags = DS_WRITE;
    if (fCapacityTest) uFlags |= DS_OPEN_PCAP_QUIET;
 
-/* open output pcap files, stop on first failure (but still allow program to run) */
+/* open output pcap or bitstream files, stop on first failure (but still allow program to run) */
 
    #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
    #pragma GCC diagnostic ignored "-Waddress"
-   while (MediaParams[i].Media.outputFilename != NULL && strlen(MediaParams[i].Media.outputFilename)) {
+   while (MediaParams[nOutputIndex].Media.outputFilename != NULL && strlen(MediaParams[nOutputIndex].Media.outputFilename) && !thread_info[thread_index].uOutputType[nOutputIndex]) {
    #pragma GCC diagnostic pop
 
-      if (strcasestr(MediaParams[i].Media.outputFilename, ".pcap")) {
+      int codec_type = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC_TYPE, 1, NULL);
 
-         char* p1 = strcasestr(MediaParams[i].Media.outputFilename, ".pcapng");
-         if (p1) fprintf(stderr, "Note - output file %s will be written in pcap format, not pcapng \n", MediaParams[i].Media.outputFilename);  /* print note, as currently pktlib supports pcapng read but not write, JHB Oct2020 */
+      if ((isVoiceCodec(codec_type) || isAudioCodec(codec_type)) && strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".pcap")) {  /* look for output .pcap or .pcapng files on cmd line */
 
-         strcpy(tmpstr, MediaParams[i].Media.outputFilename);
+         char* p1 = strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".pcapng");
+         if (p1) fprintf(stderr, "Note - output file %s will be written in pcap format, not pcapng \n", MediaParams[nOutputIndex].Media.outputFilename);  /* print note, as currently pktlib supports pcapng read but not write, JHB Oct 2020 */
+
+         strcpy(tmpstr, MediaParams[nOutputIndex].Media.outputFilename);
          char* p2 = strrchr(tmpstr, '.');
          if (p2) *p2 = 0;
 
@@ -3975,23 +4304,47 @@ unsigned int uFlags;
             if (p1) sprintf(filestr, "%s%d.pcapng", tmpstr, thread_index);
             else sprintf(filestr, "%s%d.pcap", tmpstr, thread_index);
          }
-         else strcpy(filestr, MediaParams[i].Media.outputFilename);
+         else strcpy(filestr, MediaParams[nOutputIndex].Media.outputFilename);
 
-         if (!thread_info[thread_index].pcap_out[thread_info[thread_index].nOutPcapFiles] && (ret_val = DSOpenPcap(filestr, uFlags, &thread_info[thread_index].pcap_out[thread_info[thread_index].nOutPcapFiles], NULL, "")) < 0) {
+         int ret_val;
 
-            fprintf(stderr, "Failed to open transcoded output pcap file: %s, index = %d, thread_index = %d, ret_val = %d \n", filestr, thread_info[thread_index].nOutPcapFiles, thread_index, ret_val);
-            thread_info[thread_index].pcap_out[thread_info[thread_index].nOutPcapFiles] = NULL;
-            break;
+         if (!thread_info[thread_index].pcap_out[thread_info[thread_index].nOutFiles] && (ret_val = DSOpenPcap(filestr, uFlags, &thread_info[thread_index].pcap_out[thread_info[thread_index].nOutFiles], NULL, "")) < 0) {
+
+            fprintf(stderr, "Failed to open output pcap file: %s, index = %d, thread_index = %d, ret_val = %d \n", filestr, thread_info[thread_index].nOutFiles, thread_index, ret_val);
+            thread_info[thread_index].pcap_out[thread_info[thread_index].nOutFiles] = NULL;
+            nOutputIndex++; continue;  /* look for next output spec on cmd line */
          }
 
-         thread_info[thread_index].nOutPcapFiles++;
+         thread_info[thread_index].uOutputType[thread_info[thread_index].nOutFiles] = PCAP;  /* set data type for use in PullPackets(). See io_data_type enums (mediaTest.h), JHB Sep 2024 */
+      }
+      else if (isVideoCodec(codec_type) &&
+               (strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h265") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".hevc"))) {  /* look for output video bitstream files on cmd line */
+
+         #ifdef ALLOW_TEMP_FILE_MARKER
+         thread_info[thread_index].pcap_out[thread_info[thread_index].nOutFiles] = (FILE*)1;  /* temp file marker */
+         #endif
+
+         thread_info[thread_index].uOutputType[thread_info[thread_index].nOutFiles] = ENCODED;  /* set data type for use in PullPackets(). See io_data_type enums (mediaTest.h), JHB Sep 2024 */
       }
 
-      i++;
+      if (thread_info[thread_index].uOutputType[thread_info[thread_index].nOutFiles]) {
+
+  static bool fOnce = false;
+  if (!fOnce) { fOnce = true; printf("\n *** inside encoded output file setup, hSession = %d, output file index = %d \n", hSession, nOutputIndex); }
+
+         thread_info[thread_index].nSessionOutputIndex[hSession] = nOutputIndex+1;  /* set output index to hSession (has to be non-zero so +1) */
+         thread_info[thread_index].nOutFiles++;
+
+         return 1;  /* output set up successfully */
+      }
+
+      nOutputIndex++;
    }
+
+   return 0;  /* no output set up */
 }
 
-void MiscOutputSetup(int thread_index) {
+void PathConfig(int thread_index) {
 
 /* if entered, apply -gStreamGroupOutputPath cmd line option to stream group and/or timestamp-matching mode output wav files. Notes:
 
@@ -4020,9 +4373,11 @@ void MiscOutputSetup(int thread_index) {
    -does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished)
 */
 
-   if (strlen(szStreamGroupWavOutputPath) > 0 && szStreamGroupWavOutputPath[strlen(szStreamGroupWavOutputPath)-1] != '/') strcat(szStreamGroupWavOutputPath, "/");  /* add / suffix, if not already there */
+   (void)thread_index;  /* currently not used */
 
-   if (strlen(szStreamGroupPcapOutputPath) > 0 && szStreamGroupPcapOutputPath[strlen(szStreamGroupPcapOutputPath)-1] != '/') strcat(szStreamGroupPcapOutputPath, "/");  /* add / suffix, if not already there */
+   if (strlen(szStreamGroupWavOutputPath) > 0 && szStreamGroupWavOutputPath[strlen(szStreamGroupWavOutputPath)-1] != '/') strcat(szStreamGroupWavOutputPath, "/");  /* szStreamGroupWavOutputPath is global declared in cmd_line_interface.c, add / suffix, if not already there */
+
+   if (strlen(szStreamGroupPcapOutputPath) > 0 && szStreamGroupPcapOutputPath[strlen(szStreamGroupPcapOutputPath)-1] != '/') strcat(szStreamGroupPcapOutputPath, "/");  /* szStreamGroupPcapOutputPath is global declared in cmd_line_interface.c, add / suffix, if not already there */
 }
 
 
@@ -4032,12 +4387,10 @@ void MiscOutputSetup(int thread_index) {
    -if no group owner sessions are found there will be no stream group pulled packets or output pcaps files
 */
 
-void StreamGroupOutputSetup(HSESSION hSessions[], int nInput, int thread_index) {
+void StreamGroupOutputSetup(HSESSION hSession, int nInput, int thread_index) {
 
-int ret_val, i = 0, i2, group_idx;
 char filestr[1024];
-char group_output_pcap_filename[1024] = "";
-char group_output_text_filename[1024] = "";
+char group_output_pcap_filename[1024] = "", group_output_text_filename[1024] = "";
 unsigned int uFlags;
 
    if (thread_info[thread_index].init_err) return;
@@ -4068,73 +4421,64 @@ unsigned int uFlags;
    uFlags = DS_WRITE;
    if (fCapacityTest) uFlags |= DS_OPEN_PCAP_QUIET;
 
-   while (i < thread_info[thread_index].nSessionsCreated) {
+   int group_idx = DSGetStreamGroupInfo(hSession, DS_STREAMGROUP_INFO_CHECK_GROUPTERM, NULL, NULL, NULL);
 
-      i2 = GetNextGroupSessionIndex(hSessions, i, thread_index);
+   if (group_idx >= 0 && !thread_info[thread_index].fp_pcap_group[group_idx]) {  /* group idx must be valid and a file handle available (initial stream group member is the owner), JHB Sep 2024 */
 
-      if (i2 >= 0) {
+      sprintf(filestr, "%s%s%d", szStreamGroupPcapOutputPath, group_output_pcap_filename, group_idx);  /* prefix with --group_pcap output path, if any, JHB Dec 2023 */
+      if (num_app_threads > 1) sprintf(&filestr[strlen(filestr)], "_%d", thread_index);
+      if (Mode & ANALYTICS_MODE) strcat(filestr, "_am");
+      else if (fUntimedMode) strcat(filestr, "_um");
+      strcat(filestr, ".pcap"); 
 
-         i = i2;
+      strcpy(thread_info[thread_index].szGroupPcap[group_idx], filestr);  /* save copy of group output pcap path, JHB Dec 2023 */
 
-         group_idx = DSGetStreamGroupInfo(hSessions[i], DS_STREAMGROUP_INFO_CHECK_GROUPTERM, NULL, NULL, NULL);
+      int ret_val = DSOpenPcap(filestr, uFlags, &thread_info[thread_index].fp_pcap_group[group_idx], NULL, "");
 
-         if (!thread_info[thread_index].fp_pcap_group[group_idx]) {
+      if (ret_val < 0) {
 
-            sprintf(filestr, "%s%s%d", szStreamGroupPcapOutputPath, group_output_pcap_filename, group_idx);  /* prefix with --group_pcap output path, if any, JHB Dec 2023 */
-            if (num_app_threads > 1) sprintf(&filestr[strlen(filestr)], "_%d", thread_index);
-            if (Mode & ANALYTICS_MODE) strcat(filestr, "_am");
-            else if (fUntimedMode) strcat(filestr, "_um");
-            strcat(filestr, ".pcap"); 
-
-            strcpy(thread_info[thread_index].szGroupPcap[group_idx], filestr);  /* save copy of group output pcap path, JHB Dec 2023 */
-
-            ret_val = DSOpenPcap(filestr, uFlags, &thread_info[thread_index].fp_pcap_group[group_idx], NULL, "");
-
-            if (ret_val < 0) {
-
-               fprintf(stderr, "Failed to open stream group output pcap file: %s, ret_val = %d \n", filestr, ret_val);
-               thread_info[thread_index].fp_pcap_group[group_idx] = NULL;
-            }
-         }
-
-         #if 0  /* not used, ASR output text is handled in pktlib and streamlib, JHB Jan 2021 */
-         if (Mode & ENABLE_STREAM_GROUP_ASR) {
-
-            if (!thread_info[thread_index].fp_text_group[group_idx]) {
-
-               sprintf(filestr, "%s%d", group_output_text_filename, group_idx);
-               if (num_app_threads > 1) sprintf(&filestr[strlen(filestr)], "_%d", thread_index);
-               if (Mode & ANALYTICS_MODE) strcat(filestr, "_am");
-               else if (fUntimedMode) strcat(filestr, "_um");
-               strcat(filestr, ".txt"); 
-
-               thread_info[thread_index].fp_text_group[group_idx] = fopen(filestr, "w");
-
-               if (!thread_info[thread_index].fp_text_group[group_idx]) {
-
-                  fprintf(stderr, "Failed to open stream group output text file: %s, errno = %d, errno description = %s \n", filestr, errno, strerror(errno));
-               }
-            }
-         }
-         #endif
+         fprintf(stderr, "Failed to open stream group output pcap file: %s, ret_val = %d \n", filestr, ret_val);
+         thread_info[thread_index].fp_pcap_group[group_idx] = NULL;
+         thread_info[thread_index].init_err = true;
       }
-
-      i++;
    }
+
+   #if 0  /* not used, ASR output text is handled in pktlib and streamlib, JHB Jan 2021 */
+   if (Mode & ENABLE_STREAM_GROUP_ASR) {
+
+      if (!thread_info[thread_index].fp_text_group[group_idx]) {
+
+         sprintf(filestr, "%s%d", group_output_text_filename, group_idx);
+         if (num_app_threads > 1) sprintf(&filestr[strlen(filestr)], "_%d", thread_index);
+         if (Mode & ANALYTICS_MODE) strcat(filestr, "_am");
+         else if (fUntimedMode) strcat(filestr, "_um");
+         strcat(filestr, ".txt"); 
+
+         thread_info[thread_index].fp_text_group[group_idx] = fopen(filestr, "w");
+
+         if (!thread_info[thread_index].fp_text_group[group_idx]) {
+
+            fprintf(stderr, "Failed to open stream group output text file: %s, errno = %d, errno description = %s \n", filestr, errno, strerror(errno));
+            thread_info[thread_index].fp_text_group[group_idx] = NULL;
+            thread_info[thread_index].init_err = true;
+         }
+      }
+   }
+   #endif
 }
 
 /* set up jitter buffer pcap outputs. This is done by default and does not require -oXXX command line arguments, but can be disabled by the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in -dN cmd line options */
 
-void JitterBufferOutputSetup(int thread_index) {
+void JitterBufferOutputSetup(HSESSION hSession, int thread_index) {
 
-int ret_val, i, nInput = 0;
+int ret_val, nInput = 0;
 char filestr[1024];
 char jb_output_pcap_filename[1024] = "";
 unsigned int uFlags;
 
    if (thread_info[thread_index].init_err || (Mode & DISABLE_JITTER_BUFFER_OUTPUT_PCAPS)) return;
 
-   if (strlen(szSessionName[nInput])) {
+   if (strlen(szSessionName[nInput])) {  /* currently first cmd line -i input argument is used for naming. To-do: take into account additional -i args */
       strcpy(jb_output_pcap_filename, szSessionName[nInput]);
       sprintf(&jb_output_pcap_filename[strlen(jb_output_pcap_filename)], "_jb");
    }
@@ -4147,27 +4491,26 @@ unsigned int uFlags;
    uFlags = DS_WRITE;
    if (fCapacityTest) uFlags |= DS_OPEN_PCAP_QUIET;
 
-   for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) {
+   if (!thread_info[thread_index].fp_pcap_jb[hSession]) {
 
-      if (!thread_info[thread_index].fp_pcap_jb[i]) {
+      sprintf(filestr, "%s%d", jb_output_pcap_filename, hSession);
+      if (num_app_threads > 1) sprintf(&filestr[strlen(filestr)], "_%d", thread_index);
+      sprintf(&filestr[strlen(filestr)], ".pcap"); 
 
-         sprintf(filestr, "%s%d", jb_output_pcap_filename, i);
-         if (num_app_threads > 1) sprintf(&filestr[strlen(filestr)], "_%d", thread_index);
-         sprintf(&filestr[strlen(filestr)], ".pcap"); 
+      ret_val = DSOpenPcap(filestr, uFlags, &thread_info[thread_index].fp_pcap_jb[hSession], NULL, "");
 
-         ret_val = DSOpenPcap(filestr, uFlags, &thread_info[thread_index].fp_pcap_jb[i], NULL, "");
-
-         if (ret_val < 0 || thread_info[thread_index].fp_pcap_jb[i] == NULL) { fprintf(stderr, "Failed to open jitter buffer output pcap file: %s ret_val = %d\n", filestr, ret_val); }
-      }
+      if (ret_val < 0 || thread_info[thread_index].fp_pcap_jb[hSession] == NULL) { fprintf(stderr, "Failed to open jitter buffer output pcap file: %s for session %d, ret_val = %d \n", filestr, hSession, ret_val); }
    }
 }
 
 
 /* start specified number of packet/media threads */
 
-int StartPacketMediaThreads(int num_pm_threads, int thread_index) {  /* should only be called by master thread.  See "thread sync points" above (thread_syncN: labels) */
+int StartPacketMediaThreads(int num_pm_threads, int thread_index) {  /* should only be called by master thread. See "thread sync points" above (thread_syncN: labels) */
 
 unsigned int uFlags;
+
+   (void)thread_index;  /* currently not used */
 
    if (nReuseInputs) num_pm_threads = num_app_threads * nReuseInputs * 3 / 30;  /* note:  without DS_MEDIASERVICE_ROUND_ROBIN sessions are assigned to each p/m thread until it fills up. Some p/m threads may end up unused */
 
@@ -4182,7 +4525,7 @@ unsigned int uFlags;
    uFlags = DS_MEDIASERVICE_START | DS_MEDIASERVICE_THREAD | DS_MEDIASERVICE_PIN_THREADS | DS_MEDIASERVICE_SET_NICENESS;
    if (Mode & ROUND_ROBIN_SESSION_ALLOCATION) uFlags |= DS_MEDIASERVICE_ROUND_ROBIN;
 
-   uFlags |= DS_MEDIASERVICE_ENABLE_THREAD_PROFILING;  /* slight impact on performance, but useful.  Turn off for highest possible performance */
+   uFlags |= DS_MEDIASERVICE_ENABLE_THREAD_PROFILING;  /* slight impact on performance, but useful. Turn off for highest possible performance */
 
    if (DSConfigMediaService(NULL, uFlags, num_pktmed_threads, packet_flow_media_proc, NULL) < 0) {  /* start packet/media thread(s) */
 
@@ -4194,7 +4537,7 @@ unsigned int uFlags;
 }
 
 
-/* check for session inactivity, including empty push and pull queues and end of inputs.  Flush inactive sessions to force all remaining packets out of jitter buffer and algorthim queues */
+/* check for session inactivity, including empty push and pull queues and end of inputs. Flush inactive sessions to force all remaining packets out of jitter buffer and algorthim queues */
 
 void FlushCheck(HSESSION hSessions[], uint64_t cur_time, uint64_t (*pQueueCheckTime)[MAX_SESSIONS], int thread_index) {
 
@@ -4242,7 +4585,7 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
                   thread_info[thread_index].flush_state[i]++;  /* only need to flush once */
                }
 
-               unsigned int queue_flags = DS_PULLPACKETS_TRANSCODED | DS_PULLPACKETS_JITTER_BUFFER | DS_PULLPACKETS_STREAM_GROUPS;  /* if stream groups are not enabled, the stream group queue status will show as empty, so this is ok */ 
+               unsigned int queue_flags = DS_PULLPACKETS_OUTPUT | DS_PULLPACKETS_JITTER_BUFFER | DS_PULLPACKETS_STREAM_GROUPS;  /* if stream groups are not enabled, the stream group queue status will show as empty, so this is ok */ 
 
                if (DSPullPackets(DS_PULLPACKETS_GET_QUEUE_STATUS | queue_flags, NULL, NULL, hSessions[i], NULL, 0, 0) == 0) queue_empty = false;  /* not empty yet */
             }
@@ -4273,7 +4616,7 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
          nDelayTime = fAutoQuit ? 60 : 3000;
          #endif
 
-         if (cur_time - queue_check_time[i] > 1000*(nDelayTime + 10*RealTimeInterval[0])*num_app_threads) {  /* arbitrary delay to wait after flushing.  We increase this if multiple mediaMin threads are running as packet/media threads will take longer to flush */
+         if (cur_time - queue_check_time[i] > 1000*(nDelayTime + 10*RealTimeInterval[0])*num_app_threads) {  /* arbitrary delay to wait after flushing. We increase this if multiple mediaMin threads are running as packet/media threads will take longer to flush */
 
             thread_info[thread_index].flush_state[i] = FINAL_FLUSH_STATE;  /* set session's flush state to final */
 
@@ -4303,8 +4646,8 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
 
                         if (num_app_threads > 1) sprintf(&deletestr[strlen(deletestr)], " (%d)", thread_index);
 
-                        app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%s", deletestr);  /* show session delete info onscreen */
-                        Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, "mediaMin INFO: %s ", deletestr);  /* include session delete info in event log */
+                        app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%s", deletestr);  /* show session delete info in console output */
+                        Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE, "mediaMin INFO: %s ", deletestr);  /* include session delete info in event log */
                      }
 
                      for (j=0; j<thread_info[thread_index].nSessions[nInput]; j++) DeleteSession(hSessions, thread_info[thread_index].nSessionIndex[nInput][j], thread_index);
@@ -4313,7 +4656,7 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
 
                #else  /* delete each sesssion independently as it reaches final flush state */
 
-               DSDeleteSession(hSessions, i, thread_index);
+               DeleteSession(hSessions, i, thread_index);
 
                #endif
             }
@@ -4330,8 +4673,8 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
 
       if (num_app_threads > 1) sprintf(&p[strlen(p)], " (%d)", thread_index);
 
-      app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%s", p);  /* show session flush info onscreen */
-      Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY, "mediaMin INFO: %s ", p);  /* include session flush info in event log */
+      app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, thread_index, "%s", p);  /* show session flush info in console output */
+      Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE, "mediaMin INFO: %s ", p);  /* include session flush info in event log */
    }
 }
 
@@ -4426,7 +4769,7 @@ char* p;
 
       log_level = dbg_cfg->uLogLevel;  /* set global var available to all local funcs and threads */
 
-      dbg_cfg->uEventLogMode = LOG_OUTPUT | DS_EVENT_LOG_UPTIME_TIMESTAMPS;  /* enable event log output and timestamps. See LOG_OUTPUT definition at top, which has default definition LOG_SCREEN_FILE, specifying output to both event log file and to screen. LOG_SCREEN_FILE, LOG_FILE_ONLY, and LOG_SCREEN_ONLY are defined in diaglib.h */
+      dbg_cfg->uEventLogMode = LOG_OUTPUT | DS_EVENT_LOG_UPTIME_TIMESTAMPS;  /* enable event log output and timestamps. See LOG_OUTPUT definition at top, which has default definition LOG_CONSOLE_FILE, specifying output to both event log file and to console. LOG_CONSOLE_FILE, LOG_FILE, and LOG_CONSOLE are defined in diaglib.h */
 
 #if 0  /* define to enable wall clock date/timestamps (i.e. system time). The default is relative, or "up time", timestamps; the DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp, JHB Apr 2024 */
       dbg_cfg->uEventLogMode |= DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS;
@@ -4455,14 +4798,14 @@ char* p;
          }
       }
 
-      #if (LOG_OUTPUT != LOG_SCREEN_ONLY)
+      #if (LOG_OUTPUT != LOG_CONSOLE)
       if (strlen(szInputFileNoExt)) {
          strcpy(szEventLogFile, szInputFileNoExt);
          sprintf(&szEventLogFile[strlen(szEventLogFile)], "_event_log%s.txt", (Mode & ANALYTICS_MODE) ? "_am" : (fUntimedMode ? "_um" : ""));
       }
       else strcpy(szEventLogFile, sig_lib_event_log_filename);  /* use default if necessary */
 
-#if 0  /* if the app should control event log file descriptor, use this way, which tells diaglib not to create the log file.  Note the app is responsible for appending and/or rewinding the file if needed, and closing it */
+#if 0  /* if the app should control event log file descriptor, use this way, which tells diaglib not to create the log file. Note the app is responsible for appending and/or rewinding the file if needed, and closing it */
       fp_sig_lib_event_log = fopen(szEventLogFile, "w");
       dbg_cfg->uLogEventFile = fp_sig_lib_event_log;
 #else
@@ -4504,12 +4847,12 @@ char* p;
             i++;
          }
 
-         if (strlen(szPacketLogFile)) strcpy((char*)pktStatsLogFile, szPacketLogFile);  /* pktStatsLogFile is a global var in pktlib.  If not an empty string, pktlib will use this to log all packets and do input vs. output analyis on pkt/media thread exit */
+         if (strlen(szPacketLogFile)) strcpy((char*)pktStatsLogFile, szPacketLogFile);  /* pktStatsLogFile is a global var in pktlib. If not an empty string, pktlib will use this to log all packets and do input vs. output analyis on pkt/media thread exit */
       }
 
-   /* enable packet stats history logging if -L[filename] given on the cmd line.  Notes:
+   /* enable packet stats history logging if -L[filename] given on the cmd line. Notes:
 
-      -packet stats history allows detailed packet log file output after all inputs complete.  Packet stats are collected at run-time and stored in mem with negligible impact on performance
+      -packet stats history allows detailed packet log file output after all inputs complete. Packet stats are collected at run-time and stored in mem with negligible impact on performance
       -detailed analysis takes time to process, depending on stream(s) length (number of packets) it can take from several sec to several minutes
       -see comments in config.h for packet_stats_logging enums and DEBUG_CONFIG struct
       -"use_log_file" is set in cmd_line_interface.c if any cmd line -L entry is present
@@ -4517,7 +4860,7 @@ char* p;
  
       if (use_log_file) dbg_cfg->uPktStatsLogging = DS_ENABLE_PACKET_STATS_HISTORY_LOGGING;  /* optional DS_LOG_BAD_PACKETS can be added here if packets rejected by the jitter buffer should be logged */
 
-   /* enable run-time packet time, loss, and ooo, SID repair, media repair, underrun and overrun, and other stats.  Notes:
+   /* enable run-time packet time, loss, and ooo, SID repair, media repair, underrun and overrun, and other stats. Notes:
 
       -run-time packet stats have negligible impact on run-time performance, and can be written to the event log at any time, on per-session or per-stream group basis
       -however, they are not as accurate as packet history stats
@@ -4622,7 +4965,7 @@ int i, ret_val = 1;
 
 /* actions for stress tests, if active (see Mode var comments in cmd_line_options_flags.h for possible tests that can be specified in the cmd line) */
 
-   if ((Mode & CREATE_DELETE_TEST_PCAP) && debug_test_state == DELETE)  /* delete dynamic sessions in the "create from pcap" stress test mode.  Note that debug_test_state is updated by a timer in the "handler" signal handler function */
+   if ((Mode & CREATE_DELETE_TEST_PCAP) && debug_test_state == DELETE)  /* delete dynamic sessions in the "create from pcap" stress test mode. Note that debug_test_state is updated by a timer in the "handler" signal handler function */
    {
 
       for (i = 0; i < thread_info[thread_index].nDynamicSessions; i++)  /* delete a dynamic session, but not the base session */
@@ -4724,8 +5067,8 @@ uint8_t pcap_type;
 
       if (!fOnce) {
 
-         DSOpenPcap(temp_filename, DS_WRITE, &fp_pcap_out, NULL, "");
-         fclose(fp_pcap_out);
+         DSOpenPcap(temp_filename, DS_WRITE, &fp_pcap_out, NULL, "");  /* open and write header, then close */
+         DSClosePcap(fp_pcap_out, DS_CLOSE_PCAP_QUIET);
          fOnce = true;
       }
 
@@ -4734,7 +5077,7 @@ uint8_t pcap_type;
          fp_pcap_out = fopen(temp_filename, "rb+");
          fseek(fp_pcap_out, 0, SEEK_END);
          DSWritePcap(fp_pcap_out, DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, pkt_in_buf, *pkt_len, NULL, NULL, NULL);
-         fclose(fp_pcap_out);
+         DSClosePcap(fp_pcap_out, DS_CLOSE_PCAP_QUIET);
       }
    }
 
@@ -4825,7 +5168,7 @@ static unsigned num_GPRS = 0;
 
 /* process command line input, show version and copyright info */
 
-void cmdLine(int argc, char** argv, char* tmpstr) {
+void cmdLine(int argc, char** argv) {
 
 char version_info[500], lib_info[500], banner_info[2048];
 

@@ -1,36 +1,36 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/hello_codec/hello_codec.c
 
- Copyright (C) Signalogic Inc. 2022-2024
+Copyright (C) Signalogic Inc. 2022-2025
  
- License
+License
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
- Description
+Description
  
   Minimum codec usage example
 
- Purposes
+Purposes
  
   1) Demonstrate minimum usage for SigSRF codecs
   2) Provide a simplified reference / starting point for customer integration
   3) Highlight where advanced functionality may be added (or has been implemented in mediaTest), for example sampling rate conversion, user-defined media processing, etc
 
- Notes
+Notes
  
-   -this example does not include audio file or USB I/O, intermediate coded output file I/O, sampling rate conversion, multichannel audio, etc. For a complete implementation, see mediaTest_proc() in mediaTest_proc.c
-   -notwithstanding the above note, a simple "write result to wav file" is included at the tail end of the test, to allow convenient verification of codec output
-   -HPLATFORM is a handle used for platform, VM, and concurrency management provided by DirectCore. A platform handle is not needed for licensed codec-only applications
-   -PLATFORMPARAMS, MEDIAPARAMS, and codec_test_params_t are struct definitions used for command line and codec config file handling. They are used here for convenience and not needed in application-specific programs
+  -this example does not include audio file or USB I/O, intermediate coded output file I/O, sampling rate conversion, multichannel audio, etc. For a complete implementation, see mediaTest_proc() in mediaTest_proc.c
+  -notwithstanding the above note, a simple "write result to wav file" is included at the tail end of the test, to allow convenient verification of codec output
+  -HPLATFORM is a handle used for platform, VM, and concurrency management provided by DirectCore. A platform handle is not needed for licensed codec-only applications
+  -PLATFORMPARAMS, MEDIAPARAMS, and codec_test_params_t are struct definitions used for command line and codec config file handling. They are used here for convenience and not needed in application-specific programs
 
- Example Usage
+Example Usage
 
-   ./hello_codec -cx86 -C../session_config/evs_16kHz_13200bps_config
+  ./hello_codec -cx86 -C../session_config/evs_16kHz_13200bps_config
 
-   see https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#hello-codec for more examples
+  see https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#hello-codec for more examples
  
- Revision History
+Revision History
 
   Created Aug 2022 JHB
   Modified Oct 2022 JHB, change DSGetCompressedFramesize() to DSGetCodecInfo() per updates in voplib.h
@@ -43,12 +43,25 @@
   Modified Nov 2023 JHB, add codec max instances test code (look for ENABLE_MAX_INSTANCES_TESTING)
   Modified Feb 2024 JHB, omit hwlib references if NO_HWLIB defined, omit cimlib references if NO_CIMLIB defined
   Modified May 2024 JHB, update comments that reference x86_mediaTest to mediaTest_proc
+  Modified Nov 2024 JHB, update DSCodecInfo() to use DS_PYLD_FMT_FULL definition instead of older HEADERFULL. See voplib.h for definitions and comments related to DSGetCodecInfo() and DSGetPayloadInfo()
+  Modified Dec 2024 JHB, use xx_CODEC_FS constants in voplib.h, change "header_format" to "payload_format" due to renaming in CODEC_ENC_PARAMS struct in voplib.h
+  Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max for C++
+  Modified Jan 2025 JHB, add typecast for codec_types typedef usage (codec_types is defined in shared_include/codec.h)
 */
 
 /* Linux header files */
 
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
+
 #include <stdio.h>
 #include <math.h>
+
+#ifndef NO_HWLIB
+  #include "directcore.h"   /* platform, VM, and concurrency management provided by DirectCore (not needed for licensed codec-only applications) */
+#endif
 
 /* app support header files */
 
@@ -57,10 +70,6 @@
 #include "cmd_line_options_flags.h"  /* bring in ENABLE_xxx definitions to support -dN cmd line flag (look for "debugMode"), JHB Jan2022 */
 
 /* SigSRF lib header files (all libs are .so format) */
-
-#ifndef NO_HWLIB
-  #include "hwlib.h"   /* platform, VM, and concurrency management provided by DirectCore (not needed for licensed codec-only applications) */
-#endif
 
 #include "voplib.h"  /* codec and other voice-over-packet related APIs */
 #include "diaglib.h"  /* event and error logging */
@@ -93,7 +102,7 @@ int main(int argc, char** argv) {
    bool fInitAdvancedLogging = false;
 
    dbg_cfg.uDisableMismatchLog = 1; dbg_cfg.uDisableConvertFsLog = 1; dbg_cfg.uLogLevel = 8;  /* 5 is default, set to 8 to see INFO messages, including jitter buffer */
-   dbg_cfg.uEventLogMode = LOG_SCREEN_FILE | DS_EVENT_LOG_UPTIME_TIMESTAMPS;  /* enable timestamps */
+   dbg_cfg.uEventLogMode = LOG_CONSOLE_FILE | DS_EVENT_LOG_UPTIME_TIMESTAMPS;  /* enable timestamps */
    dbg_cfg.uPrintfLevel = 5;
 
    strcpy(dbg_cfg.szEventLogFilePath, sig_lib_event_log_filename);  /* optional - set event log filename, otherwise a default name is used */
@@ -120,8 +129,8 @@ int main(int argc, char** argv) {
    if (set_codec_params(&codec_test_params, &CodecParams, &codec_frame_duration, &codec_sampleRate)) {
 
       CodecParams.enc_params.frameSize = CodecParams.dec_params.frameSize = codec_frame_duration;  /* in msec */
-      CodecParams.codec_type = codec_test_params.codec_type;
-      unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in cmd_line_options_flags.h, JHB Jan2023 */
+      CodecParams.codec_type = (codec_types)codec_test_params.codec_type;
+      unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_TRACK_MEM_USAGE : 0;  /* debugMode set with -dN on cmd line. ENABLE_MEM_STATS is defined in cmd_line_options_flags.h, JHB Jan2023 */
 
    /* create required number of encoder and decoder instances. Notes:
 
@@ -239,7 +248,7 @@ cleanup:
 
 /* codec tear down and program cleanup */
 
-   unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_CREATE_TRACK_MEM_USAGE : 0; 
+   unsigned int uFlags = (debugMode & ENABLE_MEM_STATS) ? DS_CODEC_TRACK_MEM_USAGE : 0; 
 
    for (int i=0; i<numChan; i++) {
       if (encoder_handles[i] > 0) DSCodecDelete(encoder_handles[i], uFlags);
@@ -275,7 +284,7 @@ bool fCreateCodec = true;
 
       switch (codec_test_params->codec_type) {
 
-         case DS_VOICE_CODEC_TYPE_EVS:
+         case DS_CODEC_VOICE_EVS:
          {
             CodecParams->enc_params.samplingRate = codec_test_params->sample_rate;       /* in Hz. Note that for fullband (FB, 48 kHz) sampling rate (Fs) with cutoff frequency (Fc) of 20 kHz, a minimum bitrate of 24.4 kbps is required. If you give 13.2 kbps bitrate, then the codec enforces an Fc of 14.4 kHz */
             CodecParams->enc_params.bitRate = codec_test_params->bitrate;                /* in bps. Note that bitrate determines whether Primary or AMR-WB IO mode payload format is used (see the EVS specification for valid rates for each mode) */
@@ -289,7 +298,7 @@ bool fCreateCodec = true;
             #else  /* change this to make encoder setup more clear, JHB Feb2022 */
             CodecParams->enc_params.bandwidth_limit = DS_EVS_BWL_FB;                    /* codec will set limit lower if required by specified sampling rate, JHB Feb2022 */
             #endif
-            CodecParams->enc_params.rtp_pyld_hdr_format.header_format = 1;              /* hard coded to 1 to match 3GPP encoder reference executable, which only writes header full format */
+            CodecParams->enc_params.rtp_pyld_format.payload_format = DS_PYLD_FMT_FULL;  /* match 3GPP encoder reference executable, which only writes header full format */
 
          /* EVS codec DTX notes:
 
@@ -306,48 +315,48 @@ bool fCreateCodec = true;
             break;
          }
 
-         case DS_VOICE_CODEC_TYPE_G711_ULAW:
-         case DS_VOICE_CODEC_TYPE_G711_ALAW:
+         case DS_CODEC_VOICE_G711_ULAW:
+         case DS_CODEC_VOICE_G711_ALAW:
             *codec_frame_duration = 20;  /* in msec */
             break;
 
 #ifdef _AMR_INSTALLED_
-         case DS_VOICE_CODEC_TYPE_AMR_NB:
+         case DS_CODEC_VOICE_AMR_NB:
          {
-            CodecParams->enc_params.samplingRate = 8000;                   /* in Hz */
+            CodecParams->enc_params.samplingRate = NB_CODEC_FS;            /* defined as 8000 Hz in voplib.h */
             CodecParams->enc_params.bitRate = codec_test_params->bitrate;  /* in bps */
             CodecParams->enc_params.dtx.vad = codec_test_params->vad;
 
-            CodecParams->dec_params.samplingRate = 8000;
+            CodecParams->dec_params.samplingRate = NB_CODEC_FS;
             CodecParams->dec_params.bitRate = codec_test_params->bitrate;  /* we set this to avoid param validation error in DSCodecCreate().  At run-time AMR-NB codec determines bitrate from compressed bitstream info */
 
             *codec_frame_duration = 20;  /* in msec */
-            *codec_sampleRate = 8000;
+            *codec_sampleRate = NB_CODEC_FS;
 
             break;
          }
 #endif
 
 #ifdef _AMRWB_INSTALLED_
-         case DS_VOICE_CODEC_TYPE_AMR_WB:
+         case DS_CODEC_VOICE_AMR_WB:
          {
-            CodecParams->enc_params.samplingRate = 16000;                  /* in Hz */
+            CodecParams->enc_params.samplingRate = WB_CODEC_FS;            /* defined as 16000 Hz in voplib.h */
             CodecParams->enc_params.bitRate = codec_test_params->bitrate;  /* in bps */
             CodecParams->enc_params.dtx.vad = codec_test_params->vad;
-            CodecParams->enc_params.rtp_pyld_hdr_format.oct_align = codec_test_params->header_format;
+            CodecParams->enc_params.rtp_pyld_format.oct_align = codec_test_params->payload_format;
 
-            CodecParams->dec_params.samplingRate = 16000;
+            CodecParams->dec_params.samplingRate = WB_CODEC_FS;
             CodecParams->dec_params.bitRate = codec_test_params->bitrate;  /* we set this to avoid param validation error in DSCodecCreate().  At run-time AMR-WB codec determines bitrate from compressed bitstream info */
 
             *codec_frame_duration = 20;  /* in msec */
-            *codec_sampleRate = 16000;
+            *codec_sampleRate = WB_CODEC_FS;
 
             break;
          }
 #endif
 
 #ifdef _AMRWBPLUS_INSTALLED_
-         case DS_VOICE_CODEC_TYPE_AMR_WB_PLUS:
+         case DS_CODEC_VOICE_AMR_WB_PLUS:
          {
             CodecParams->enc_params.samplingRate = codec_test_params->sample_rate;                                         /* in Hz */
             CodecParams->enc_params.bitRate = (int)codec_test_params->mode == -1 ? codec_test_params->bitrate_plus : 0.0;  /* in bps */
@@ -373,13 +382,13 @@ bool fCreateCodec = true;
 #endif
 
 #ifdef _G726_INSTALLED_
-         case DS_VOICE_CODEC_TYPE_G726:
+         case DS_CODEC_VOICE_G726:
          {
-            CodecParams->enc_params.samplingRate = 8000;                   /* in Hz */
+            CodecParams->enc_params.samplingRate = NB_CODEC_FS;            /* defined as 8000 Hz in voplib.h */
             CodecParams->enc_params.bitRate = codec_test_params->bitrate;  /* in bps */
             CodecParams->enc_params.uncompress = codec_test_params->uncompress;
 
-            CodecParams->dec_params.samplingRate = 8000;
+            CodecParams->dec_params.samplingRate = NB_CODEC_FS;
             CodecParams->dec_params.bitRate = codec_test_params->bitrate;
             CodecParams->dec_params.uncompress = codec_test_params->uncompress;
 
@@ -391,42 +400,42 @@ bool fCreateCodec = true;
          */
 
             *codec_frame_duration = 10;  /* in msec */
-            *codec_sampleRate = 8000;
+            *codec_sampleRate = NB_CODEC_FS;
 
             break;
          }
 #endif
 
 #ifdef _G729AB_INSTALLED_
-         case DS_VOICE_CODEC_TYPE_G729AB:
+         case DS_CODEC_VOICE_G729AB:
          {
-            CodecParams->enc_params.samplingRate = 8000;  /* in Hz */
-            CodecParams->enc_params.bitRate = 8000;       /* in bps  */
+            CodecParams->enc_params.samplingRate = NB_CODEC_FS;            /* defined as 8000 Hz in voplib.h */
+            CodecParams->enc_params.bitRate = 8000;                        /* in bps  */
             CodecParams->enc_params.dtx.vad = codec_test_params->vad;
             CodecParams->enc_params.uncompress = codec_test_params->uncompress;
 
-            CodecParams->dec_params.samplingRate = 8000;
+            CodecParams->dec_params.samplingRate = NB_CODEC_FS;
             CodecParams->dec_params.bitRate = 8000;
             CodecParams->dec_params.uncompress = codec_test_params->uncompress;
 
             *codec_frame_duration = 10;  /* in msec */
-            *codec_sampleRate = 8000;
+            *codec_sampleRate = NB_CODEC_FS;
 
             break;
          }
 #endif
 
 #ifdef _MELPE_INSTALLED_
-         case DS_VOICE_CODEC_TYPE_MELPE:
+         case DS_CODEC_VOICE_MELPE:
          {
             printf("  MELPe bit packing density = %d, NPP = %d, Post Filter = %d\n", codec_test_params->bitDensity, codec_test_params->Npp, codec_test_params->post);  /* print additional codec-specific info */
 
-            CodecParams->enc_params.samplingRate = 8000;                   /* in Hz */
+            CodecParams->enc_params.samplingRate = NB_CODEC_FS;            /* defined as 8000 Hz in voplib.h */
             CodecParams->enc_params.bitRate = codec_test_params->bitrate;  /* in bps */
             CodecParams->enc_params.bitDensity = codec_test_params->bitDensity;
             CodecParams->enc_params.Npp = codec_test_params->Npp;
 
-            CodecParams->dec_params.samplingRate = 8000;
+            CodecParams->dec_params.samplingRate = NB_CODEC_FS;
             CodecParams->dec_params.bitRate = codec_test_params->bitrate;
             CodecParams->dec_params.bitDensity = codec_test_params->bitDensity;
             CodecParams->dec_params.post = codec_test_params->post;
@@ -443,7 +452,7 @@ bool fCreateCodec = true;
                   break;
             }
 
-            *codec_sampleRate = 8000;
+            *codec_sampleRate = NB_CODEC_FS;
 
             break;
          }
@@ -478,36 +487,36 @@ int output_upFactor = 1, output_downFactor = 1;
 
    switch (codec_test_params->codec_type) {
 
-      case DS_VOICE_CODEC_TYPE_G726:
+      case DS_CODEC_VOICE_G726:
 
          *coded_framesize = DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params->bitrate, 0, NULL);
          break;
 
-      case DS_VOICE_CODEC_TYPE_G729AB:
+      case DS_CODEC_VOICE_G729AB:
 
          *coded_framesize = DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, 0, 0, NULL);
          break;
 
-      case DS_VOICE_CODEC_TYPE_EVS:
-      case DS_VOICE_CODEC_TYPE_AMR_NB:
-      case DS_VOICE_CODEC_TYPE_AMR_WB:
-      case DS_VOICE_CODEC_TYPE_AMR_WB_PLUS:
+      case DS_CODEC_VOICE_EVS:
+      case DS_CODEC_VOICE_AMR_NB:
+      case DS_CODEC_VOICE_AMR_WB:
+      case DS_CODEC_VOICE_AMR_WB_PLUS:
 
-         *coded_framesize = DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params->bitrate, HEADERFULL, NULL);
+         *coded_framesize = DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params->bitrate, DS_PYLD_FMT_FULL, NULL);
 //         printf("input_framesize = %d, coded_framesize = %d\n", input_framesize, *coded_framesize);
          break;
 
-      case DS_VOICE_CODEC_TYPE_MELPE:
+      case DS_CODEC_VOICE_MELPE:
 
          if (!codec_test_params->bitDensity) codec_test_params->bitDensity = 54;  /* default bit density handling should be moved to transcoder_control.c */
          *coded_framesize = DSGetCodecInfo(codec_test_params->codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, codec_test_params->bitrate, codec_test_params->bitDensity, NULL);
          break;
 
-      case DS_VOICE_CODEC_TYPE_NONE:
+      case DS_CODEC_NONE:
          break;
    }
 
-   if (codec_test_params->codec_type != DS_VOICE_CODEC_TYPE_NONE && !*coded_framesize) {
+   if (codec_test_params->codec_type != DS_CODEC_NONE && !*coded_framesize) {
 
       printf("Error: DSGetCodecInfo() with DS_CODEC_INFO_CODED_FRAMESIZE uFlag returns zero\n");
       return -1;
@@ -541,7 +550,7 @@ int write_wav_file(uint8_t* buffer, int input_sampleRate, int numChan, int len) 
 
 /* Notes:
 
-  -MEDIAINFO and DSSaveDataFile() definitions are in hwlib.h
+  -MEDIAINFO and DSSaveDataFile() definitions are in directcore.h
   -for file types that implement headers, MediaInfo should be filled in with header info
   -by not giving any uFlags (DS_CREATE, DS_OPEN, DS_CLOSE, etc), we invoke the "unified" open, write, close form of calling DSSaveDataFile() (like "batch mode" re. MATLAB and Nvidia, haha). To see frame-based usage of DSSaveDataFile() and DSLoadDataFile(), see mediaTest_proc() in mediaTest_proc.c
 */
@@ -606,9 +615,9 @@ char szCodecName[50] = "";
 
    if (!fp_cfg) {
 
-      codec_test_params->codec_type = DS_VOICE_CODEC_TYPE_NONE;
+      codec_test_params->codec_type = DS_CODEC_NONE;
 
-      if (*input_sampleRate == 0) *input_sampleRate = 8000;  /* if no codec specified set an arbitrary sampling rate value */
+      if (*input_sampleRate == 0) *input_sampleRate = NB_CODEC_FS;  /* if no codec specified set an arbitrary sampling rate value */
       *output_sampleRate = *input_sampleRate;
 
       printf("No config file specified, assuming default parameters: ");
@@ -634,11 +643,11 @@ char szCodecName[50] = "";
    }
 
    printf("codec = %s, ", szCodecName);
-   if (codec_test_params->codec_type != DS_VOICE_CODEC_TYPE_NONE) printf("%d bitrate, ", codec_test_params->bitrate);
+   if (codec_test_params->codec_type != DS_CODEC_NONE) printf("%d bitrate, ", codec_test_params->bitrate);
    printf("sample rate = %d Hz, ", *output_sampleRate);
    printf("num channels = %d\n", codec_test_params->num_chan);
 
-   if (codec_test_params->codec_type != DS_VOICE_CODEC_TYPE_NONE && (int)codec_test_params->bitrate <= 0) {
+   if (codec_test_params->codec_type != DS_CODEC_NONE && (int)codec_test_params->bitrate <= 0) {
 
       printf("Error: config file specifies a codec but not a bitrate\n");
       return -1;
@@ -692,7 +701,7 @@ char tmpstr[500], tmpstr2[500], szNumChan[30];
    sprintf(szNumChan, "%d channel", numChan);
    if (numChan > 1) strcat(szNumChan, "s");
 
-   if (codec_test_params.codec_type != DS_VOICE_CODEC_TYPE_NONE) { strcpy(tmpstr, "encoder"); sprintf(tmpstr2, "decoder framesize (bytes) = %d, ", coded_framesize); }
+   if (codec_test_params.codec_type != DS_CODEC_NONE) { strcpy(tmpstr, "encoder"); sprintf(tmpstr2, "decoder framesize (bytes) = %d, ", coded_framesize); }
    else { strcpy(tmpstr, "pass-thru"); strcpy(tmpstr2, ""); }
 
    printf("  input framesize (samples) = %d, %s framesize (samples) = %d, %sinput Fs = %d Hz, codec Fs = %d, output Fs = %d Hz, %s\n", input_framesize/AUDIO_SAMPLE_SIZE, tmpstr, inbuf_size/AUDIO_SAMPLE_SIZE, tmpstr2, input_sampleRate, codec_sampleRate, output_sampleRate, szNumChan);

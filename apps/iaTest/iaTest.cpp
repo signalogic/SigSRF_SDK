@@ -9,7 +9,7 @@
 
      Image analytics demo, test, and performance measurement program, using x86 and/or coCPU hardware
 
-   Copyright (C) Signalogic Inc. 2014-2017
+   Copyright (C) Signalogic Inc. 2014-2024
 
    Revision History
      Created Nov 2014 AKM
@@ -17,6 +17,7 @@
      Modified 2015 JHB, make consistent with vid_streaming_host_rt.c OpenMP test program
      Modified May-Jun 2017 AM & JHB, add x86 mode for purposes of (i) SigSRF image analytics demo and (ii) benchmark and comparison between x86 and coCPU
      Modified May 2024 JHB, convert to cpp; see also Makefile mods
+     Modified Nov 2024 JHB, include directcore.h (renamed from hwlib.h)
 */
 
 /*
@@ -57,7 +58,7 @@
 
 /* Signalogic header files */
 
-#include "hwlib.h"          /* DirectCore API header header file */
+#include "directcore.h"  /* DirectCore API header header file */
 #include "cimlib.h"
 
 /* following header files required depending on application type */

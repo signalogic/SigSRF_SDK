@@ -19,9 +19,24 @@
   Modified Nov 2023 JHB, add pInArgs param to DSCodecDecode() call
   Modified Dec 2023 JHB, include voplib.h
   Modified Jul 2024 JHB, DSGetCodecType() is deprecated, call DSGetCodecInfo() instead
+  Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
+  Modified Dec 2024 JHB, include <algorithm> and use std namespace if __cplusplus defined
 */
 
+/* Linux includes */
+
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
+
 #include <stdio.h>
+
+/* DirectCore APIs */
+
+#include "directcore.h"
+
+/* app support header files */
 
 #include "mediaTest.h"
 #include "voplib.h"
@@ -58,13 +73,13 @@ void *encode_thread_task(void* arg)
    switch (DSGetCodecInfo(hCodec, DS_CODEC_INFO_HANDLE | DS_CODEC_INFO_TYPE, 0, 0, NULL))
    #endif
    {
-      case DS_VOICE_CODEC_TYPE_G711_ULAW:
+      case DS_CODEC_VOICE_G711_ULAW:
          sprintf(out_filename, "test_files/codec_%d_encoded.ul", hCodec);
          break;
-      case DS_VOICE_CODEC_TYPE_G711_ALAW:
+      case DS_CODEC_VOICE_G711_ALAW:
          sprintf(out_filename, "test_files/codec_%d_encoded.al", hCodec);
          break;
-      case DS_VOICE_CODEC_TYPE_EVS:
+      case DS_CODEC_VOICE_EVS:
          sprintf(out_filename, "test_files/codec_%d_encoded.COD", hCodec);
          break;
       default:

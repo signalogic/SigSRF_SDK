@@ -18,15 +18,16 @@
 
    alglib.h Created Jun 2018 Chris Johnson
    Modified Jun 2018 CKJ, add DSAudioMerge() API
-   Modified Jun 2018 JHB, moved DSConvertFs() here from voplib
-   Modified Jul 2018 JHB, added DSAgc()
-   Modified Jul 2018 JHB, renamed DSAudioMerge() to DSMergeAudioStream() and added chnum param
+   Modified Jun 2018 JHB, move DSConvertFs() here from voplib
+   Modified Jul 2018 JHB, add DSAgc()
+   Modified Jul 2018 JHB, renam DSAudioMerge() to DSMergeAudioStream() and add chnum param
    Modified Jan 2019 CKJ, add DSConvertDataFormat() + DS_CONVERTDATA_xxx flags
    Modified Jul 2019 JHB, add defines for mediaTest segmentation and silence/sounds strip command line entry (-sN)
    Modified Oct 2019 JHB, add autoscaling in DSMergeStreamAudioEX() to avoid clipping, and DS_AUDIO_MERGE_NORESCALE flag to disable if needed
    Modified Feb 2022 JHB, add user-defined filter params (pFilt and filt_len), add uFlags param and DS_FSCONV_xxx flags, change DSConvertFs() pData and pDelay params to void* to lay groundwork for floating-point filters
    Modified Aug 2023 JHB, add memadd() prototype
-   Modified Feb 2024 JHB, add DS_FSCONV_SATURATE flag. If output of DSConvertFs() will wrap, saturate instead 
+   Modified Feb 2024 JHB, add DS_FSCONV_SATURATE flag. If any samples in output of DSConvertFs() will wrap min/max amplitude value, saturate instead
+   Modified Dec 2024 JHB, add 64-bit signed integer saturated addition, add DS_FSCONV_DEBUG_SHOW_SATURATION_OCCURRENCES flag
 */
 
 #ifndef _ALGLIB_H_
@@ -51,6 +52,25 @@ int c;
 
    return b;
 }
+
+#if (_GCC_VERSION >= 70000)  /* _GCC_VERSION macro defined in alias.h */
+
+/* 64-bit signed integer saturated addition from Peter Cordes https://stackoverflow.com/questions/17580118/signed-saturated-add-of-64-bit-ints/56531252#56531252 to optimize saturated 64-bit add */
+
+static inline int64_t signed_sat_add64_gnuc_v2(int64_t a, int64_t b) {
+
+long long res;
+bool overflow = __builtin_saddll_overflow(a, b, &res);  /* __builtin_saddll_overflow() available in gcc 7.0 or later */
+
+   if (overflow) {
+   // overflow is only possible in one direction depending on the sign bit
+      return ((uint64_t)b >> 63) + INT64_MAX;
+   // INT64_MIN = INT64_MAX + 1  wraparound, done with unsigned
+   }
+
+   return res;
+}
+#endif
 
 /* Following APIs can be applied to data independently of source (source can be UDP/RTP packet, file, USB audio, etc) */
 
@@ -84,6 +104,8 @@ int DSConvertFs(void* pData,         /* pointer to input and output data (proces
 #define DS_FSCONV_NO_FILTER           0x800  /* don't perform filtering */
 
 #define DS_FSCONV_SATURATE          0x10000  /* saturate result (avoid wrapping in output integer data) */
+
+#define DS_FSCONV_DEBUG_SHOW_SATURATION_OCCURRENCES  0x100000
 
 int DSAgc(float x[],     /* input/output array, single-precision float in, short int out */
           float mem[],   /* per channel memory values of size 2, init to [0,0] */

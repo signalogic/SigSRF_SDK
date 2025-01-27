@@ -29,18 +29,39 @@
    Modified Jan 2023 JHB, added reference to extern fUntimedMode, in case it should be needed in SetSessionTiming(). See comments in mediaMin.cpp
    Modified May 2023 JHB, set group_term.input_buffer_interval in SetSessionTiming(). This is needed in streamlib for "fast as possible" and "faster than real-time" modes (when 0 <= N < 1 is given for -rN entry on the mediaMin cmd line)
    Modified Jul 2024 JHB, per change in pktlib.h, move uFlags to second param in DSCreateSession()
+   Modified Sep 2024 JHB, change TERM_NO_PACKET_TIMING to TERM_NO_PACKET_ARRIVAL_TIMESTAMPS, per flag rename in shared_include/session.h
+   Modified Sep 2024 JHB, adjust placement of OutputSetup(), StreamGroupOutputSetup(), and JitterBufferOutputSetup(), which have been restructured and now operate per-session
+   Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
+   Modified Nov 2024 JHB, in CreateStaticSessions() add stream stats entries for created sessions (was already supported for dynamic sessions in mediaMin.cpp)
+   Modified Dec 2024 JHB, set some term2 items that were left out from previous updates. This fixes issues with static session regression test, for example this cmd line:
+
+                             mediaMin -cx86 -i../pcaps/AMRWB.pcap -i../pcaps/pcmutest.pcap -L -d0x08000c10 -r20 -g /tmp/shared -C../session_config/merge_testing_config_amrwb
+
+                           should now produce 3 jitter buffer underrun resyncs (on ch 1) and no stream group underruns, and this cmd line:
+
+                             mediaMin -cx86 -i../pcaps/AMRWB.pcap -i../pcaps/pcmutest.pcap -L -d0x08040c10 -r0.9 -g /tmp/shared -C../session_config/merge_testing_config_amrwb --md5sum
+
+                           should produce an md5 sum ending in d689c8 for -rN entries from 0.8 to 20
+
+   Modified Dec 2024 JHB, include <algorithm> and use std namespace
 */
+
+#include <algorithm>
+using namespace std;
 
 #include <stdio.h>
 
-using namespace std;
+/* SigSRF includes */
 
-#include "mediaTest.h"  /* bring in constants needed by mediaMin.h */
+#include "directcore.h"  /* DirectCore APIs */
+#include "pktlib.h"      /* DSGetPacketInfo() */
 
-#include "pktlib.h"     /* DSGetPacketInfo() */
+/* app support header files */
 
-#include "mediaMin.h"   /* bring in THREAD_INFO struct typedef */
-#include "user_io.h"    /* bring in app_printf() */
+#include "mediaTest.h"   /* bring in constants needed by mediaMin.h */
+
+#include "mediaMin.h"    /* bring in THREAD_INFO struct typedef */
+#include "user_io.h"     /* bring in app_printf() */
 
 extern HPLATFORM hPlatform;            /* initialized by DSAssignPlatform() API in DirectCore lib */
 extern APP_THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h */
@@ -50,8 +71,11 @@ extern bool fNChannelWavOutput;
 extern bool fUntimedMode;              /* set if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is true of some old test scripts with -r0 push-pull rate (as fast as possible), which is why we call it "untimed" */
 extern int nRepeatsRemaining[];
 
-void JitterBufferOutputSetup(int thread_index);  /* set up jitter buffer output for sessions created */
-void StreamGroupOutputSetup(HSESSION hSessions[], int nInput, int thread_index);  /* set up stream group output output for sessions created */
+/* functions currently in mediaMin.cpp */
+
+void JitterBufferOutputSetup(HSESSION hSession, int thread_index);  /* set up jitter buffer output */
+int OutputSetup(HSESSION hSession, int thread_index);  /* set up application packet/media packet output */
+void StreamGroupOutputSetup(HSESSION hSession, int nInput, int thread_index);  /* set up stream group output */
 
 #define ENABLE_MANAGED_SESSIONS  /* managed sessions are defined by default. See GetSessionFlags() below */
 
@@ -100,15 +124,15 @@ void SetSessionTiming(SESSION_DATA* session_data) {
    if (session_data->term1.input_buffer_interval == -1) session_data->term1.input_buffer_interval = session_data->term1.ptime;  /*  if buffer_interval values are not given in either programmatic session setup (dynamic sessions) or session config file, then set to ptime */
    if (session_data->term2.input_buffer_interval == -1) session_data->term2.input_buffer_interval = session_data->term2.ptime;
 
-   if (Mode & AUTO_ADJUST_PUSH_RATE) {  /* set in situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
+   if (Mode & AUTO_ADJUST_PUSH_TIMING) {  /* set in situations when packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
 
       session_data->term1.uFlags |= TERM_IGNORE_ARRIVAL_PACKET_TIMING;
       session_data->term2.uFlags |= TERM_IGNORE_ARRIVAL_PACKET_TIMING;
    }
    else if (!(Mode & USE_PACKET_ARRIVAL_TIMES)) {
 
-      session_data->term1.uFlags |= TERM_NO_PACKET_TIMING;
-      session_data->term2.uFlags |= TERM_NO_PACKET_TIMING;
+      session_data->term1.uFlags |= TERM_NO_PACKET_ARRIVAL_TIMESTAMPS;
+      session_data->term2.uFlags |= TERM_NO_PACKET_ARRIVAL_TIMESTAMPS;
    }
 
 /* set output buffer intervals:
@@ -186,6 +210,8 @@ unsigned int GetSessionFlags() {
 int check_config_file(char* config_file, int thread_index) {
 
 char tmpstr[1024] = "";
+
+   (void)thread_index;  /* not currently used */
 
    if (strlen(MediaParams[0].configFilename) == 0 || access(MediaParams[0].configFilename, F_OK) == -1) {
 
@@ -298,6 +324,7 @@ int CreateStaticSessions(HSESSION hSessions[], SESSION_DATA session_data[], int 
 
 int i, nSessionsCreated = 0;
 HSESSION hSession;
+bool fStreamGroup;
 
    for (i=0; i<nSessionsConfigured; i++) {
 
@@ -339,12 +366,25 @@ HSESSION hSession;
          max_delay = 14;
       }
 
-      if (target_delay) session_data[i].term1.jb_config.target_delay = target_delay;
-      if (max_delay) session_data[i].term1.jb_config.max_delay = max_delay;
+      if (target_delay) {
+         session_data[i].term1.jb_config.target_delay = target_delay;
+         session_data[i].term2.jb_config.target_delay = target_delay;  /* also set term2, JHB Dec 2024 */
+      }
+      if (max_delay) {
+         session_data[i].term1.jb_config.max_delay = max_delay;
+         session_data[i].term2.jb_config.max_delay = max_delay;  /* also set term2, JHB Dec 2024 */
+      }
 
-      if (!(Mode & ANALYTICS_MODE) || target_delay > 7) session_data[i].term1.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
+      if (!(Mode & ANALYTICS_MODE) || fUntimedMode || target_delay > 7) {
 
-      if ((Mode & ENABLE_STREAM_GROUPS) || session_data[i].group_term.group_mode > 0) {  /* adjust stream group_mode if needed, prior to creating session */
+         session_data[i].term1.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* jitter buffer holdoffs enabled except in analytics compatibility mode */
+         session_data[i].term2.uFlags |= TERM_OOO_HOLDOFF_ENABLE;  /* also set term2, JHB Dec 2024 */
+      }
+
+      session_data[i].term1.RFC7198_lookback = uLookbackDepth;
+      session_data[i].term2.RFC7198_lookback = uLookbackDepth;
+
+      if ((fStreamGroup = (Mode & ENABLE_STREAM_GROUPS) || session_data[i].group_term.group_mode > 0)) {  /* adjust stream group_mode if needed, prior to creating session */
 
          Mode |= ENABLE_STREAM_GROUPS;  /* in case stream groups were not enabled on cmd line, but they are for at least one session in the static session config file */
 
@@ -367,7 +407,7 @@ HSESSION hSession;
             session_data[i].term2.group_mode |= STREAM_CONTRIBUTOR_ONHOLD_FLUSH_DETECTION_ENABLE;
          }
 
-         if ((Mode & DISABLE_CONTRIB_PACKET_FLUSH) || (!(Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & AUTO_ADJUST_PUSH_RATE))) {
+         if ((Mode & DISABLE_CONTRIB_PACKET_FLUSH) || (!(Mode & USE_PACKET_ARRIVAL_TIMES) && (Mode & AUTO_ADJUST_PUSH_TIMING))) {
             session_data[i].term1.group_mode |= STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH;  /* auto-adjust push rate (i.e. not based on timestamp timing) disqualifies use of packet flush, JHB Dec2019 */
             session_data[i].term2.group_mode |= STREAM_CONTRIBUTOR_DISABLE_PACKET_FLUSH;
          }
@@ -381,7 +421,7 @@ HSESSION hSession;
 
       SetSessionTiming(&session_data[i]);  /* set termN.input_buffer_interval and termN.output_buffer_interval -- for user apps note it's important this be done */
 
-   /* call DSCreateSession() API (in pktlib .so) */
+   /* call DSCreateSession() API (in pktlib) */
 
       if ((hSession = DSCreateSession(hPlatform, GetSessionFlags(), NULL, &session_data[i])) >= 0) {
 
@@ -391,26 +431,66 @@ HSESSION hSession;
          DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_BUFFER_TIME, STREAM_GROUP_BUFFER_TIME, NULL);  /* if STREAM_GROUP_BUFFER_TIME defined above, set group buffer time to value other than 260 msec default */
          #endif
 
+         JitterBufferOutputSetup(hSession, thread_index);  /* set up jitter buffer output for this session */
+
+         if (!OutputSetup(hSession, thread_index)) {  /* set up next matching cmd line output for this session, if any (e.g. transcoded audio, video bitstream), JHB Sep 2024 */
+
+         /* if no matching cmd line output spec found, disable output queue packets for this session */
+
+            if (!(Mode & AUTO_ADJUST_PUSH_TIMING)) {  /* auto-adjust push rate requires transcoded packets for its queue balancing algorithm regardless of cmd line, so don't disable in that case */
+ 
+               DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM_FLAGS, 1, (void*)TERM_DISABLE_OUTPUT_QUEUE_PACKETS);  /* note - positive value will OR with current flags, neg value will AND */
+               DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_TERM_FLAGS, 2, (void*)TERM_DISABLE_OUTPUT_QUEUE_PACKETS);
+            }
+         }
+
+         if (fStreamGroup) {
+
+            int nInput = 0;  /* default is first cmd line input */
+            StreamGroupOutputSetup(hSession, nInput, thread_index);  /* set up stream group output if session is a group owner */
+           // thread_info[thread_index].fGroupOwnerCreated[!(Mode & COMBINE_INPUT_SPECS) ? nInput: 0][nReuse] = true;  /* done in CreateDynamicSession(), not sure yet if this is needed for static sessions */
+         }
+
          thread_info[thread_index].nSessionsCreated++;  /* update per app thread vars */
          thread_info[thread_index].total_sessions_created++;
+
+      /* update session stats, JHB Nov 2024 */
+
+         for (int j=0; j<MAX_TERMS; j++) {
+
+            if (thread_info[thread_index].stream_stats_index < MAX_INPUT_STREAMS) {
+
+               TERMINATION_INFO termInfo = !j ? session_data[i].term1 : session_data[i].term2;
+
+               if (termInfo.remote_ip.type && termInfo.local_ip.type) {  /* make sure term been initialized */
+
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].uFlags |= STATIC_SESSION;
+ 
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].hSession = hSession;
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].term = j;
+                  int chnum = thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].chnum = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, j+1, NULL);  /* channel number known after DSCreateSession() called */
+
+                   thread_info[thread_index].uStreamStatsState[chnum] = thread_info[thread_index].stream_stats_index;  /* map chnum to stream stats index */
+
+                  char codec_name[100] = "";
+                  if (DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_NAME, 0, 0, codec_name) >= 0) strcpy(thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].codec_name, codec_name);
+
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].bitrate = termInfo.bitrate;
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].payload_type = termInfo.attr.voice.rtp_payload_type;
+
+                  thread_info[thread_index].stream_stats_index++;
+               }
+            }
+         }
 
       /* for debug mode "create sessions from pcap", create 1 initial session, create all others dynamically, based on pcap contents */
 
          if (Mode & CREATE_DELETE_TEST_PCAP) break;
       }
-      else app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG, thread_index, "mediaMin INFO: Failed to create static session %d, continuing test with already created sessions \n", i);
+      else app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG, thread_index, "mediaMin INFO: Failed to create static session %d%s \n", i, i > 0 ? ", continuing test with already created sessions" : "");
    }
 
-   if (nSessionsCreated) {
-
-      JitterBufferOutputSetup(thread_index);  /* set up jitter buffer output for all static sessions created */
-
-      if (Mode & ENABLE_STREAM_GROUPS) {  /* stream group output depends on session creation results, so we do after all static sessions are created. In dynamic sessions mode, it's done when sessions are created after first appearing in the input stream */
-   
-         StreamGroupOutputSetup(hSessions, 0, thread_index);  /* if any sessions created have a group term, set up stream group output */
-      }
-   }
-   else if (nSessionsConfigured) {
+   if (nSessionsConfigured && !nSessionsCreated) {
 
       thread_info[thread_index].init_err = true;
       return -1;  /* return error -- static sessions were configured but none created */

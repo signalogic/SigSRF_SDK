@@ -36,12 +36,12 @@
   Modified Feb 2019 JHB, add LOG_SET_API_CODES flag, removed HSESSION param from DSPktStatsAddEntries()
   Modified Aug 2019 JHB, remove include for session.h
   Modified Oct 2019 JHB, add DS_PKTSTATS_LOG_EXTENDED_RTP_SEQNUMS flag
-  Modified Dec 2019 JHB, add STREAM_STATS struct, modify DSPktStatsLogSeqnums() to return stats info in a STREAM_STATS struct ptr
+  Modified Dec 2019 JHB, add PKT_STREAM_STATS struct, modify DSPktStatsLogSeqnums() to return stats info in a PKT_STREAM_STATS struct ptr
   Modified Dec 2019 JHB, add hSession and idx to PKT_STATS struct, see comments
   Modified Jan 2020 JHB, implement DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS flag
   Modified Feb 2020 JHB, add DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY flag
   Modified Apr 2020 JHB, add DSGetLogTimeStamp() API. Initially this is used in mediaMin interactive keyboard debug info printouts, to make it easy to see uptime of ongoing tests that are not printing onscreen log output
-  Modified May 2020 JHB, in STREAM_STATS struct, rename numRepair to numSIDRepair and add numMediaRepair
+  Modified May 2020 JHB, in PKT_STREAM_STATS struct, rename numRepair to numSIDRepair and add numMediaRepair
   Modified Jan 2021 JHB, change loglevel param in Log_RT() from uint16_t to uint32_t
   Modified Dec 2022 JHB, add DSInitLogging() and DSCloseLogging() APIs to simplify application and multithread interface to diaglib
   Modified Jan 2023 JHB, per-thread support for DSGetAPIStatus()
@@ -52,7 +52,7 @@
   Modified Mar 2024 JHB, remove alias.h include
   Modified Apr 2024 JHB, deprecate DS_LOG_LEVEL_UPTIME_TIMESTAMP flag and DS_EVENT_LOG_UPTIME_TIMESTAMPS (shared_include/config.h) flags, the default (no flag) is now uptime timestamps
   Modified Apr 2024 JHB, DSGetLogTimestamp() now returns length of timestamp string
-  Modified Apr 2024 JHB, add numMediaReuse to STREAM_STATS struct
+  Modified Apr 2024 JHB, add numMediaReuse to PKT_STREAM_STATS struct
   Modified May 2024 JHB, add DSGetBacktrace() API
   Modified May 2024 JHB, update documentation for DSPktStatsAddEntries()
   Modified Jul 2024 JHB, add DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to support SSRCs shared across streams. mediaMin sets this flag when dormant session detection is disabled on its command line
@@ -60,6 +60,9 @@
   Modified Jul 2024 JHB, rename SSRC fields in PKT_STATS struct to ssrc. Maintain consistency with other header file structs
   Modified Aug 2024 JHB, rename DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to DS_PKTSTATS_MATCH_CHNUM
   Modified Aug 2024 JHB, rename DSGetMD5Sum() to DSConsoleCommand() and make into generic console command execution API. See comments
+  Modified Sep 2024 JHB, update comments for DS_PKTSTATS_ORGANIZE_BY_xx flags, add DS_INIT_LOGGING_RESET_WARNINGS_ERRORS flag
+  Modified Nov 2024 JHB, rename STREAM_STATS to PKT_STREAM_STATS
+  Modified Nov 2024 JHB, DSGetLogTimestamp() now returns timestamp value in usec if timestamp param is NULL
 */
 
 #ifndef _DIAGLIB_H_
@@ -79,18 +82,29 @@ extern const char DIAGLIB_VERSION[256];
 
 /* event logging APIs */
 
-int Log_RT(uint32_t loglevel, const char *fmt, ...);  /* loglevel can be combined with DS_LOG_LEVEL_xxx flags, and also DS_EVENT_LOG__XXX_TIMESTAMPS flags, defined in shared_include/config.h */
+/* Log_RT() - log an event:
 
-#if 0 /* flag deprecated, the default (no flag) is now uptime timestamps. DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp, JHB Apr 2024 */
-#define DS_LOG_LEVEL_UPTIME_TIMESTAMP        DS_EVENT_LOG_UPTIME_TIMESTAMPS
-#else
-#define DS_LOG_LEVEL_UPTIME_TIMESTAMP        0  /* still available for readability purposes, but doesn't do anything */
-#endif
-#define DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP     DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS
-#define DS_LOG_LEVEL_USER_TIMEVAL            DS_EVENT_LOG_USER_TIMEVAL
-#define DS_LOG_LEVEL_TIMEVAL_PRECISE         DS_EVENT_LOG_TIMEVAL_PRECISE
+  -loglevel is a log level combined with optional flags; messages with a log level < uLogLevel in a DEBUG_CONFIG struct passed to DSInitLogging() will be displayed and/or logged. Typical log levels are 1 for a critical error, 2 for an error, 3 for a warning, and 4 for information
+  -fmt supports all printf() functionality
+  -loglevel can be combined with DS_LOG_LEVEL_xxx flags defined below for DSGetLogTimestamp(), and also DS_EVENT_LOG_XXX_TIMESTAMPS flags, defined in shared_include/config.h
+  -event log output to display, file, or both is controlled by DS_LOG_LEVEL_OUTPUT_XXX flags in shared_include/config.h
+  -in addition to DSInitLogging(), other APIs that control log level include DSUpdateLogConfig(), DSConfigPktlib(), DSConfigVoplib(), and DSConfigStreamlib()
+*/
+
+int Log_RT(uint32_t loglevel, const char* fmt, ...);
+
+/* Log_RT() configuration flags used by Log_RT() in uEventLogMode field of a DEBUG_CONFIG struct (shared_include/config.h), which is an input param to DSConfigPktlib() and other DSConfigXX APIs. Additional uEventLogMode flags are defined as EVENT_LOG_MODE enums in shared_include/config.h */
+
+#define LOG_CONSOLE           1  
+#define LOG_FILE              2
+#define LOG_CONSOLE_FILE      (LOG_CONSOLE | LOG_FILE)  /* default is both event log (file) and screen. For example, if a DEBUG_CONFIG struct is created, initialized to zero, passed to a DSConfigXX API, then LOG_SCREEN_FILE is in effect */
+
+#define LOG_SET_API_STATUS    0x10   /* can be combined (OR'd) with uEventLogMode settings */
+#define LOG_MODE_MASK         0x0f
 
 int DSInitLogging(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags);  /* initialize event logging. Note that DSInitLogging() should not be called twice without a matching DSCloseLogging() call, as it increments a semaphore count to track multithread usage */
+
+#define DS_INIT_LOGGING_RESET_WARNINGS_ERRORS           1  /* reset warning and error counters, otherwise they continue to accumulate if DSInitLogging() is called more than once */
 
 unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, DEBUG_CONFIG* pDebugConfig);  /* configure event logging */
 
@@ -155,15 +169,6 @@ int DSGetAPIStatus(unsigned int uFlags);
 
 #define MAX_SSRCS  65536L  /* maximum number of SSRCs (unique packet flows) that can be handled by DSPktStatXxx APIs */
 
-/* configuration flags used by Log_RT(). These are set in uEventLogMode element of a DEBUG_CONFIG struct (shared_include/config.h), which is an input param to DSConfigPktlib() and other DSConfigXX APIs. Additional uEventLogMode flags are defined as EVENT_LOG_MODE enums in shared_include/config.h */
-
-#define LOG_SCREEN_FILE       0  /* default is both event log (file) and screen. For example, if a DEBUG_CONFIG struct is created, initialized to zero, passed to a DSConfigXX API, then LOG_SCREEN_FILE is in effect */
-#define LOG_SCREEN_ONLY       1
-#define LOG_FILE_ONLY         2
-
-#define LOG_SET_API_STATUS    0x10   /* can be combined (OR'd) with uEventLogMode settings */
-#define LOG_MODE_MASK         0x0f
-
 /* packet log entry struct */
 
 typedef struct __attribute__((packed)) {
@@ -199,7 +204,7 @@ typedef struct {
    int16_t  num_chnum;
    int16_t  idx;
 
-} STREAM_STATS;
+} PKT_STREAM_STATS;
 
 
 /* DSPktStatsAddEntries() adds one or more packet stats entries. Notes:
@@ -236,10 +241,10 @@ int DSFindSSRCGroups(PKT_STATS*, unsigned int uFlags, int num_pkts, uint32_t ssr
     -first/last pkt_idx[], containing index into pkts[] for first and last packet for each ssrc
     -first/last rtp_seqnum[], containing first and last sequence number for each ssrc
 
-  5) Returns per-stream stats, see STREAM_STATS struct above. Each stream has a unique SSRC and/or channel number
+  5) Returns per-stream stats, see PKT_STREAM_STATS struct above. Each stream has a unique SSRC and/or channel number
 */
 
-int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[]);
+int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], PKT_STREAM_STATS StreamStats[]);
 
 
 /* DSPktStatsWriteLogFile() writes packet stats (previously added to PKT_STATS structs by DSPktStatsAddEntries) to a log file. Notes:
@@ -285,7 +290,7 @@ typedef struct PKT_COUNTERS {
 
 } PKT_COUNTERS;
 
-#ifndef __cplusplus  /* for gcc, define the function after PKT_COUNTERS struct definition */
+#ifndef __cplusplus  /* for gcc, forward declaration struct PKT_COUNTERS* generates a warning so we define the function struct definition */
 int DSPktStatsWriteLogFile(const char* szLogFilename, unsigned int uFlags, PKT_STATS* pInputPkts, PKT_STATS* pOutputPkts, struct PKT_COUNTERS* pPktCounters);
 #endif
 
@@ -308,11 +313,11 @@ int DSPktStatsWriteLogFile(const char* szLogFilename, unsigned int uFlags, PKT_S
 #define DS_PKTSTATS_LOG_LIST_ALL_PULLED_PKTS        0x200  /* print all buffer output packets,  "  "  */
 #define DS_PKTSTATS_LOG_RFC7198_DEBUG              0x1000
 
-/* DSPktStatsWriteLogFile() pkt stats organization flags:  can be combined, organize by SSRC is default if no flag specified */
+/* DSPktStatsWriteLogFile() packet analysis and stats organization flags */
 
-#define DS_PKTSTATS_ORGANIZE_BY_SSRC             0x100000  /* organize analysis and stats by SSRC */
-#define DS_PKTSTATS_ORGANIZE_BY_CHNUM            0x200000  /* ... by channel number */
-#define DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP      0x400000  /* ... by stream group */
+#define DS_PKTSTATS_ORGANIZE_BY_SSRC             0x100000  /* list streams by SSRC. This is the default if no DS_PKTSTATS_ORGANIZE_BY_xx flag is given */
+#define DS_PKTSTATS_ORGANIZE_BY_CHNUM            0x200000  /* list streams by channel number */
+#define DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP      0x400000  /* list streams by stream group membership first, then list streams that are non-group members. Flags may be combined to control organization of non-group member streams. Note this flag is used by pktlib packet/media worker threads, but can be changed in packet_media_flow.c */
 
 /* the DS_PKTSTATS_MATCH_CHNUM flag specifies that during packet sort and analysis, both stream (SSRC) and channel number will be used to match packets. Notes:
 
@@ -327,7 +332,18 @@ int DSPktStatsWriteLogFile(const char* szLogFilename, unsigned int uFlags, PKT_S
 
 /* diaglib utility APIs */
 
-int DSGetLogTimeStamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval);
+uint64_t DSGetLogTimestamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval);
+
+/* timestamp flags for DSGetLogTimeStamp() and Log_RT(). DS_EVENT_LOG_XXX are defined in shared_include/config.h */
+
+#if 0 /* flag deprecated, the default (no flag) is now uptime timestamps. DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp, JHB Apr 2024 */
+#define DS_LOG_LEVEL_UPTIME_TIMESTAMP                   DS_EVENT_LOG_UPTIME_TIMESTAMPS  /* relative timestamp since process start */
+#else
+#define DS_LOG_LEVEL_UPTIME_TIMESTAMP                   0  /* still available for readability purposes, but doesn't do anything */
+#endif
+#define DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP                DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS  /* current timestamp */
+#define DS_LOG_LEVEL_USER_TIMEVAL                       DS_EVENT_LOG_USER_TIMEVAL
+#define DS_LOG_LEVEL_TIMEVAL_PRECISE                    DS_EVENT_LOG_TIMEVAL_PRECISE
 
 int DSGetAPIStatus(unsigned int uFlags);  /* get per-thread API status */
 
@@ -357,6 +373,12 @@ int DSGetBacktrace(int nLevels, unsigned int uFlags, char* szBacktrace);
 
 #define DS_GETBACKTRACE_INSERT_MARKER                   1  /* insert "backtrace: " marker at start of return string */
 #define DS_GETBACKTRACE_INCLUDE_GLIBC_FUNCS             2  /* include "self" glibc functions (e.g. lib.so.N, libpthread.so, etc). Default is these are omitted */
+
+/* cumulative thread-wide warnings, errors, and critical errors. Use __sync_fetch_and_add() or other atomic method to access. These can be reset with DSInitLogging() and DS_INIT_LOGGING_RESET_WARNINGS_ERRORS flag, JHB Sep 2024 */
+
+extern uint32_t event_log_critical_errors;
+extern uint32_t event_log_errors;
+extern uint32_t event_log_warnings;
 
 #ifdef __cplusplus
 }

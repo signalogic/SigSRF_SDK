@@ -2,7 +2,7 @@
  fs_conv.c
 
  Description: sampling rate conversion for common telecom / audio sampling sampling rates, using up/down conversion by integer ratios, for example 2, 3, 4, 6, 2/3, 4/3, etc
-  
+
  Copyright (C) Signalogic, 2001-2024
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
@@ -30,6 +30,7 @@
    Modified Jul 2023 JHB, change _C66XX_ reference to _C66XX (see comments in std_rtaf.h)
    Modified Feb 2024 JHB, implement DS_FSCONV_SATURATE flag. If output of DSConvertFs() will wrap, saturate instead 
    Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
+   Modified Dec 2024 JHB, comments only regarding saturated add performance
 */
 
 #include <stdint.h>
@@ -55,7 +56,7 @@
 #endif
 
 #ifndef _MINCONFIG_
-  #include "filt_coeffs.h" /* coeff header file created Feb2022 */ 
+  #include "filt_coeffs.h" /* coeff header file created Feb 2022 */ 
 #endif
 
 /* Filter coefficients are defined in filt_coeffs.h, and filter specs are given in those header files. Some basic info on filter specs:
@@ -256,7 +257,7 @@ float* pData_f = NULL, *pDelay_f = NULL;
       filt_len = FIR_FILT_UP441_DOWN160_SIZE;
    }
 
-   if (!pFilt && up_factor != down_factor && !(uFlags & DS_FSCONV_NO_FILTER)) Log_RT(3, "WARNING: DSConvertFs() says no filter defined for sampling rate conversion ratio %d:%d \n", up_factor, down_factor);  /* apps can avoid this warning by (i) specifing DS_FSCONV_NO_FILTER or (ii) supplying user-defined filter coefficients (pFilt), JHB Mar2022 */
+   if (!pFilt && up_factor != down_factor && !(uFlags & DS_FSCONV_NO_FILTER)) Log_RT(3, "WARNING: DSConvertFs() says no filter defined for sampling rate conversion ratio %d:%d \n", up_factor, down_factor);  /* apps can avoid this warning by (i) specifing DS_FSCONV_NO_FILTER or (ii) supplying user-defined filter coefficients (pFilt), JHB Mar 2022 */
 
 #if !defined(_USE_DSPLIB_) && defined(USE_OLD_INDEXING)
    flen2 = filt_len/2;
@@ -292,7 +293,7 @@ float* pData_f = NULL, *pDelay_f = NULL;
          data_len *= up_factor;
       }
 
-   /* FIR filtering -- use either TI DSPLIB method or straight C code.  Use same FIR filters in either case */
+   /* FIR filtering -- use either TI DSPLIB method or straight C code. Use same FIR filters in either case */
 
    #ifdef _USE_DSPLIB_  /* use optimized TI lib functions */
 
@@ -302,7 +303,7 @@ float* pData_f = NULL, *pDelay_f = NULL;
       if (pFilt && !(uFlags & DS_FSCONV_NO_FILTER)) {
       #endif
 
-         if (pDelay != NULL) memcpy(fs_temp_buffer, pDelay, (filt_len-1)*sizeof(short int));  /* added pDelay != NULL JHB Aug2016*/
+         if (pDelay != NULL) memcpy(fs_temp_buffer, pDelay, (filt_len-1)*sizeof(short int));  /* added pDelay != NULL JHB Aug 2016*/
 
          memcpy(&fs_temp_buffer[(filt_len-1)], pData, data_len*sizeof(short int));  /* copy saved delay elements to start of data */
          //DSP_fir_sym(fs_temp_buffer, pFilt, pData, flen2, data_len, 15);
@@ -321,7 +322,7 @@ float* pData_f = NULL, *pDelay_f = NULL;
       #if 0
       if (up_factor > 1 || down_factor > 1) {  /* don't modify input data if no up/down conversion specified, JHB Mar 2019 */
       #else
-      if (pFilt && !(uFlags & DS_FSCONV_NO_FILTER)) {  /* note that pFilt won't be set if both up_factor and down_factor are 1 (or otherwise equal) and a user-defined filter is not given, JHB Feb2022 */
+      if (pFilt && !(uFlags & DS_FSCONV_NO_FILTER)) {  /* note that pFilt won't be set if both up_factor and down_factor are 1 (or otherwise equal) and a user-defined filter is not given, JHB Feb 2022 */
       #endif
    
          for (i=0; i<data_len; i++) { /* x[i] */
@@ -339,25 +340,24 @@ float* pData_f = NULL, *pDelay_f = NULL;
                if (index >= 0) sum += pData[index*num_chan] * pFilt[j2];  /* multiply and add */
                else sum += pDelay[filt_len + index] * pFilt[j2];
 
-               #else  /* allow even/odd length, non-symmetric filters, JHB Feb2022 */
+               #else  /* allow even/odd length, non-symmetric filters, JHB Feb 2022 */
 
                if (index >= 0) sum += pData[index*num_chan] * pFilt[j];  /* multiply and add from input data */
                else sum += pDelay[filt_len + index] * pFilt[j];  /* multiply and add from delay line data (which is per channel, managed by caller) */
                #endif
             }
 
-            #if 0
-            sum *= 0.8;  /* although filters are designed for unity gain, if coefficients are quantized fixed-point then slight numerical error could cause infrequent overflow if (i) input has sustained values near +/- max fixed-point and (ii) filter length is long, JHB Feb2022 */
-
-            //static int fOnce2 = 0;
-            //if (!fOnce2 && (sum > (32768*32768-1) || sum < -32768*32768)) { printf(" overflow, sum = %lld \n", sum); fOnce2 = 1; }
-            #endif
+         /* note that saturation for short int output is handled *after* the loop so we're not worried about performance. Possibly we could optimize by accumulating and saturating a 32-bit sum inside the loop but we would lose numerical accuracy and even potentially saturate intermediate results when the final result doesn't need it, JHB Dec 2024 */
 
             if (uFlags & DS_FSCONV_SATURATE) {  /* implement DS_FSCONV_SATURATE flag, JHB Feb 2024 */
 
-               if (sum > INT_MAX >> 1) temp_store[i] = SHRT_MAX;
-               else if (sum < INT_MIN >> 1) temp_store[i] = SHRT_MIN;
+               uint8_t uSatOccurred = 0;
+
+               if (sum > INT_MAX >> 1) { temp_store[i] = SHRT_MAX; uSatOccurred = 1; }
+               else if (sum < INT_MIN >> 1) { temp_store[i] = SHRT_MIN; uSatOccurred = 2; }
                else temp_store[i] = sum >> 15;
+
+               if (uSatOccurred && (uFlags & DS_FSCONV_DEBUG_SHOW_SATURATION_OCCURRENCES)) Log_RT(4, "INFO: DSConvertFs() says %s saturation occurred at x[%d] h[%d], uFlags = 0x%x \n", uSatOccurred == 1 ? "max" : "min", i, j);  /* implement debug output for saturation occurrences, JHB Dec 2024 */
             }
             else temp_store[i] = sum >> 15;  /* store 16-bit output in temporary array */
          }

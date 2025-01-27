@@ -14,7 +14,7 @@
   Created Aug 2017 Chris Johnson
   Modified Sep 2017 JHB, moved Log_RT() here from pktlib_logging.c.  Moved declaration of pktlib_dbg_cfg here from pktlib.c (and renamed to lib_dbg_cfg).  Added DSGetAPIStatus() error/warning and function codes
   Modified Sep 2017 JHB, added more DS_API_CODE_xxx definitions
-  Modified Jul 2018 CKJ, look at LOG_SCREEN_ONLY, LOG_FILE_ONLY, AND LOG_SCREEN_FILE constants in Log_RT()
+  Modified Jul 2018 CKJ, look at LOG_SCREEN, LOG_FILE, and LOG_SCREEN_FILE constants in Log_RT()
   Modified Oct 2018 JHB, add timestamps to Log_RT() output (see USE_TIMESTAMP define below).  Possibly this should be an option in the DEBUG_CONFIG struct (shared_include/config.h)
   Modified Jan 2019 JHB, remove 0..23 wrap from hours field of logging timestamp
   Modified Feb 2019 JHB, add code to look at LOG_SET_API_STATUS flag
@@ -22,7 +22,7 @@
   Modified Dec 2019 JHB, add log file creation if lib_dbg_cfg.uEventLogFile is NULL, recreation if the file is deleted (possibly by an external process), uEventLog_fflush_size and uEventLog_max_size support
   Modified Jan 2020 JHB, use libg_dbg_cfg.uPrintfControl to determine screen output of Log_RT(), see comments near USE_NONBUFFERED_OUTPUT
   Modified Feb 2020 JHB, implement wall clock timestamp option
-  Modified Mar 2020 JHB, implement DS_LOG_LEVEL_FILE_ONLY flag, handle leading newline (\n) in app supplied strings
+  Modified Mar 2020 JHB, implement DS_LOG_LEVEL_OUTPUT_FILE flag, handle leading newline (\n) in app supplied strings
   Modified Mar 2020 JHB, implement uLineCursorPos and isCursorMidLine in screen output handling; isCursorPosMidLine determines leading \n decisions. uLineCursorPos records cursor position within a line
   Modified Jan 2021 JHB, include string.h with _GNU_SOURCE defined, change loglevel param in Log_RT() from uint16_t to uint32_t, implement DS_LOG_LEVEL_SUBSITUTE_WEC flag (config.h). See comments
   Modified Mar 2021 JHB, minor adjustments to removal of unncessary Makefile defines, add STANDALONE #define option to build without isPmThread()
@@ -33,11 +33,14 @@
   Modified Jan 2023 JHB, add DSConfigLogging() to allow apps to abort DSPktStatsWriteLogFile() and other potentially time-consuming APIs if needed
   Modified Feb 2024 JHB, Makefile now defines NO_PKTLIB, NO_HWLIB, and STANDALONE if standalone=1 given on command line
   Modified Feb 2024 JHB, increase MAX_STR_SIZE and adjust max string size in vsnprintf() due to user-reported crash running pcap where one session had 20+ RFC8108 dynamic channel changes (evidently cell tower handoffs) and the run-time stats summary became very large
-  Modified May 2024 JHB, convert to cpp, move DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs to diaglib_util.cpp
+  Modified May 2024 JHB, convert to cpp, move DSGetLogTimestamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs to diaglib_util.cpp
   Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile no longer recognizes standalone=1
   Modified Jun 2024 JHB, change last param in in DSConfigLogging() from void* to DEBUG_CONFIG*
   Modified Jun 2024 JHB, some var and struct renaming and comment updates to improve readability
   Modified Aug 2024 JHB, bump version number due to mods in diaglib.h and diaglib.cpp
+  Modified Sep 2024 JHB, bump version number due to mods in diaglib.cpp
+  Modified Sep 2024 JHB, implement DS_INIT_LOGGING_RESET_WARNINGS_ERRORS flag in DSInitLogging()
+  Modified Nov 2024 JHB, implement harmonized LOG_XX definitions in diaglib.h and DS_LOG_LEVEL_OUTPUT_XXX flags in shared_include/config.h. See fOutputConsole and fOutputFile
 */
 
 /* Linux and/or other OS includes */
@@ -68,8 +71,8 @@ using namespace std;
 
 #define GET_PKT_INFO_TYPEDEF_ONLY  /* specify DSGetPacketInfo() typedef only (no prototype) in pktlib.h */
 #include "pktlib.h"  /* pktlib header file, only constants and definitions used here */
-#define GET_TIME_TYPEDEF_ONLY  /* specify get_time() typedef only (no prototype) in hwlib.h */
-#include "hwlib.h"  /* DirectCore header file, only constants and definitions used here */
+#define GET_TIME_TYPEDEF_ONLY  /* specify get_time() typedef only (no prototype) in directcore.h */
+#include "directcore.h"  /* DirectCore header file, only constants and definitions used here */
 
 #include "shared_include/config.h"
 
@@ -78,7 +81,7 @@ using namespace std;
 #include "diaglib_priv.h"
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.9.4";
+const char DIAGLIB_VERSION[256] = "1.9.6";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 
@@ -106,7 +109,7 @@ uint32_t event_log_warnings = 0;
 
 __attribute__((visibility("hidden"))) DSGetPacketInfo_t* DSGetPacketInfo = NULL;  /* DSGetPacketInfo_t typedef in pktlib.h */
 __attribute__((visibility("hidden"))) isPmThread_t* isPmThread = NULL;  /* isPmThread_t typedef in pktlib.h */
-__attribute__((visibility("hidden"))) get_time_t* get_time = NULL;  /* get_time_t typedef in hwlib.h */
+__attribute__((visibility("hidden"))) get_time_t* get_time = NULL;  /* get_time_t typedef in directcore.h */
 
 /* create, get, and delete per-thread indexes for use in Logging_Thread_Info[nThread].xxx access, JHB Jan 2023:
 
@@ -221,7 +224,7 @@ static int open_log_file(bool fAllowAppend, bool fUseSem) {
 
 bool fUseSemLocal = false;
 
-   if (!lib_dbg_cfg.uEventLogFile && strlen(lib_dbg_cfg.szEventLogFilePath)) {  /* create event log file (or open it for appending), if needed, JHB Dec 2019 */
+   if (!lib_dbg_cfg.uEventLogFile && strlen(lib_dbg_cfg.szEventLogFilePath)) {  /* create event log file (or open it for appending), if not already done yet, JHB Dec 2019 */
 
       if (fUseSem && diaglib_sem_init) { fUseSemLocal = true; sem_wait(&diaglib_sem); }
 
@@ -229,14 +232,14 @@ bool fUseSemLocal = false;
 
       lib_dbg_cfg.uEventLogFile = fopen(lib_dbg_cfg.szEventLogFilePath, fAppend ? "a" : "w");
 
-      if (!lib_dbg_cfg.uEventLogFile) {
+      if (!lib_dbg_cfg.uEventLogFile) {  /* error condition */
 
          if (fUseSemLocal) sem_post(&diaglib_sem);
 
          fprintf(stderr, "ERROR: Log_RT() says unable to %s event log file %s, errno = %d \n", fAppend ? "open for appending" : "create", lib_dbg_cfg.szEventLogFilePath, errno);
          return -1;  /* < 0 indicates an error condition */
       }
-      else {
+      else {  /* successful create or append */
 
          #if 0
          struct stat stats;
@@ -390,9 +393,19 @@ static uint8_t lock = 0;
 
    CreateThreadIndex();  /* get a slot for current thread (if it doesn't already exist) */
 
-   if (dbg_cfg) update_log_config(dbg_cfg, uFlags, false);  /* note that DSInitLogging() can be called with a NULL dbg_cfg, for example another thread has already set the defaults */
+   if (dbg_cfg) update_log_config(dbg_cfg, uFlags, false);  /* note that DSInitLogging() can be called with a NULL dbg_cfg, for example another thread has already set the defaults. So far update_log_config() doesn't use uFlags, but possibly DS_CONFIG_LOGGING_xx flags or other flags could be used here in the future */
 
-   if (!dbg_cfg && uFlags == 0) ret_val = diaglib_sem_init == 2 ? 1 : 0;  /* handle initialization status request (dbg_cfg NULL and uFlags zero):  if any thread has made it past this point then at least one full initialization has happened */
+   bool fLogFileRelatedFlags = (uFlags != 0) ? true : false;
+
+   if (uFlags & DS_INIT_LOGGING_RESET_WARNINGS_ERRORS) {  /* reset warning and error counters if specified, JHB Sep 2024 */
+
+      event_log_warnings = 0;
+      event_log_errors = 0;
+      event_log_critical_errors = 0;
+      fLogFileRelatedFlags = false;
+   }
+
+   if (!dbg_cfg && !fLogFileRelatedFlags) ret_val = diaglib_sem_init == 2 ? 1 : 0;  /* handle initialization status request (dbg_cfg NULL and uFlags zero):  if any thread has made it past this point then at least one full initialization has happened */
    else ret_val = open_log_file(true, false);
 
    diaglib_sem_init = 2;  /* set to fully initialized */
@@ -491,7 +504,7 @@ int slen = 0, fmt_start = 0;
 
    if ((lib_dbg_cfg.uEventLogMode & DS_EVENT_LOG_WARN_ERROR_ONLY) && (loglevel & DS_LOG_LEVEL_MASK) > 3) return 0;  /* event log warn and error output only (temporarily) */
 
-/* set a memory barrier, prevent multiple uncoordinated threads from initializing usec_base more than once. Note this same lock also protects usec_base initialization in DSGetLogTimeStamp() (in diaglib_util.cpp), JHB May 2024 */
+/* set a memory barrier, prevent multiple uncoordinated threads from initializing usec_base more than once. Note this same lock also protects usec_base initialization in DSGetLogTimestamp() (in diaglib_util.cpp), JHB May 2024 */
 
    while (__sync_lock_test_and_set(&usec_init_lock, 1) != 0);  /* wait until the lock is zero then write 1 to it. While waiting keep writing a 1 */
 
@@ -523,7 +536,7 @@ int slen = 0, fmt_start = 0;
 
       if (!(loglevel & DS_LOG_LEVEL_NO_TIMESTAMP)) {
 
-         if (DSGetLogTimeStamp(&log_string[fmt_start], (unsigned int)lib_dbg_cfg.uEventLogMode, sizeof(log_string), 0)) strcat(log_string, " ");  /* DSGetLogTimestamp() returns length of timestamp, JHB Apr 2024 */
+         if (DSGetLogTimestamp(&log_string[fmt_start], (unsigned int)lib_dbg_cfg.uEventLogMode, sizeof(log_string), 0)) strcat(log_string, " ");  /* DSGetLogTimestamp() returns length of timestamp, JHB Apr 2024 */
       }
 
       int ts_str_len = strlen(log_string);  /* zero or length of timestamp */
@@ -604,9 +617,18 @@ int slen = 0, fmt_start = 0;
       }
 #endif  /* ERROR_PARSE_LOGMSG */
 
-   /* output to log file and/or screen */
+   /* implement updated flags in shared_include/config.h and diaglib.h to control output to console and/or event log file, JHB Nov 2024 */
 
-      if ((loglevel & DS_LOG_LEVEL_DISPLAY_FILE_BOTH) || (((lib_dbg_cfg.uEventLogMode & LOG_MODE_MASK) != LOG_SCREEN_ONLY) && !(loglevel & DS_LOG_LEVEL_DISPLAY_ONLY))) {
+      bool fOutputConsole = lib_dbg_cfg.uEventLogMode & LOG_CONSOLE;  /* LOG_CONSOLE_FILE flag in diaglib.h will set both */
+      bool fOutputFile = lib_dbg_cfg.uEventLogMode & LOG_FILE;
+
+   /* check for overrides in loglevel */
+
+      if ((loglevel & DS_LOG_LEVEL_OUTPUT_FILE) && (loglevel & DS_LOG_LEVEL_OUTPUT_CONSOLE)) { fOutputFile = true; fOutputConsole = true; }  /* DS_LOG_LEVEL_OUTPUT_FILE_CONSOLE flag in config.h will set both */
+      else if (loglevel & DS_LOG_LEVEL_OUTPUT_FILE) { fOutputFile = true; fOutputConsole = false; }
+      else if (loglevel & DS_LOG_LEVEL_OUTPUT_CONSOLE) { fOutputFile = false; fOutputConsole = true; }
+ 
+      if (fOutputFile) {
 
          bool fAllowAppend = true;
          bool fUseSem = true;
@@ -683,7 +705,7 @@ create_log_file_if_needed:
          }
       }
  
-      if ((loglevel & DS_LOG_LEVEL_DISPLAY_FILE_BOTH) || ((lib_dbg_cfg.uEventLogMode & LOG_MODE_MASK) != LOG_FILE_ONLY && !(loglevel & DS_LOG_LEVEL_FILE_ONLY))) {
+      if (fOutputConsole) {
 
 #ifdef USE_NONBUFFERED_OUTPUT
          fprintf(stderr, "%s", log_string);

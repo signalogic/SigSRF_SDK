@@ -1,7 +1,7 @@
 /*
   codec.h
 
-  Voice / video codec support for c66x, x86, or combined coCPU platforms
+  Voice / video codec support for c66x, x86, Arm, or combined coCPU platforms
 
   Copyright (C) Signalogic, Inc, 2008-2012
 
@@ -11,7 +11,7 @@
   
     Support for c66x coCPU card PCIe and ATCA blade SRIO interfaces
 
-  Copyright (C) Signalogic, Inc, 2016-2024
+  Copyright (C) Signalogic, Inc, 2016-2025
 
     Add APIs to (i) encapsulate c66x PCIe and SRIO interfaces, and (ii) support x86-only or combined x86 and c66x server usage.  APIs are consistent between all use cases
 
@@ -23,69 +23,283 @@
 
     Created Oct 2023 JHB, from session.h, codec related items separated to more cleanly support codec-only applications
     Modified Dec 2023 JHB, comments only
-    Modified Feb 2024 JHB, add DS_VOICE_CODEC_TYPE_L16 definition (linear PCM 16-bit)
+    Modified Feb 2024 JHB, add DS_CODEC_VOICE_L16 definition (linear PCM 16-bit)
     Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
-    Modified Jun 2024 JHB, make video codec enums sequential with voice codec enums, define generic DS_VOICE_NUM_CODECS and DS_VIDEO_NUM_CODECS
+    Modified Jun 2024 JHB, make video codecs enums sequential with voice codecs enums, define generic DS_NUM_VOICE_CODECS and DS_NUM_VIDEO_CODECS
     Modified Jul 2024 JHB, define isVoiceCodec() and isVideoCodec() macros
+    Modified Sep 2024 JHB, add audio_codecs enums, define isAudioCodec() macro, add get_codec_type_from_name()
+    Modified Nov 2024 JHB, rename codec enums to start with DS_CODEC_XXX for documentation purposes
+    Modified Dec 2024 JHB, for documentation purposes, combine voice_codec_types, audio_codec_types, and video_codec_types into one codec_types enum definition; define a codec_types typedef
+    Modified Dec 2024 JHB, move get_codec_name() here from voplib.c, implement fVerbose option, add additional codec macros, e.g. isAMRCodec()
+    Modified Jan 2025 JHB, add compile-time assert if size of codec_types enum is not equal to int
 */
 
 #ifndef _CODEC_H_
 #define _CODEC_H_
 
-enum media_type {
+enum media_types {
 
   DS_MEDIA_TYPE_VOICE,
+  DS_MEDIA_TYPE_AUDIO,
   DS_MEDIA_TYPE_VIDEO
 };
 
-enum voice_codec_type {
+enum codec_types {
 
-  DS_CODEC_TYPE_NONE,                /* 0, pass-thru */
+  DS_CODEC_NONE,                                      /* 0, pass-thru */
 
-  DS_VOICE_CODEC_TYPE_G711_ULAW,     /* 1 */
-  DS_VOICE_CODEC_TYPE_G711_ALAW,     /* 2 */
-  DS_VOICE_CODEC_TYPE_G711_WB_ULAW,  /* 3, G711.1 */ 
-  DS_VOICE_CODEC_TYPE_G711_WB_ALAW,  /* 4, G711.1 */
-  DS_VOICE_CODEC_TYPE_G726,          /* 5 */
-  DS_VOICE_CODEC_TYPE_G729AB,        /* 6 */
-  DS_VOICE_CODEC_TYPE_G723,          /* 7 */
-  DS_VOICE_CODEC_TYPE_AMR_NB,        /* 8 */
-  DS_VOICE_CODEC_TYPE_AMR_WB,        /* 9 */
-  DS_VOICE_CODEC_TYPE_EVRC,          /* 10 */
-  DS_VOICE_CODEC_TYPE_ILBC,          /* 11 */
-  DS_VOICE_CODEC_TYPE_ISAC,          /* 12 */
-  DS_VOICE_CODEC_TYPE_OPUS,          /* 13 */
-  DS_VOICE_CODEC_TYPE_EVRCB,         /* 14 */
-  DS_VOICE_CODEC_TYPE_GSMFR,         /* 15 */
-  DS_VOICE_CODEC_TYPE_GSMHR,         /* 16 */
-  DS_VOICE_CODEC_TYPE_GSMEFR,        /* 17 */
-  DS_VOICE_CODEC_TYPE_G722,          /* 18 */
-  DS_VOICE_CODEC_TYPE_EVRC_NW,       /* 19 */
-  DS_VOICE_CODEC_TYPE_CLEARMODE,     /* 20 */
-  DS_VOICE_CODEC_TYPE_EVS,           /* 21 */
-  DS_VOICE_CODEC_TYPE_MELPE,         /* 22 */
-  DS_VOICE_CODEC_TYPE_AMR_WB_PLUS,   /* 23 */
-  DS_VOICE_CODEC_TYPE_L16,           /* 24 */
+  DS_VOICE_CODECS_MIN = DS_CODEC_NONE,                /* inclusive */
 
-  DS_VOICE_NUM_CODECS                /* 25 */
+  DS_CODEC_VOICE_G711_ULAW,                           /* 1 */
+  DS_CODEC_VOICE_G711_ALAW,                           /* 2 */
+  DS_CODEC_VOICE_G711_WB_ULAW,                        /* 3, G711.1 */ 
+  DS_CODEC_VOICE_G711_WB_ALAW,                        /* 4, G711.1 */
+  DS_CODEC_VOICE_G726,                                /* 5 */
+  DS_CODEC_VOICE_G729AB,                              /* 6 */
+  DS_CODEC_VOICE_G723,                                /* 7 */
+  DS_CODEC_VOICE_AMR_NB,                              /* 8 */
+  DS_CODEC_VOICE_AMR_WB,                              /* 9 */
+  DS_CODEC_VOICE_EVRC,                                /* 10 */
+  DS_CODEC_VOICE_ILBC,                                /* 11 */
+  DS_CODEC_VOICE_ISAC,                                /* 12 */
+  DS_CODEC_VOICE_OPUS,                                /* 13 */
+  DS_CODEC_VOICE_EVRCB,                               /* 14 */
+  DS_CODEC_VOICE_GSMFR,                               /* 15 */
+  DS_CODEC_VOICE_GSMHR,                               /* 16 */
+  DS_CODEC_VOICE_GSMEFR,                              /* 17 */
+  DS_CODEC_VOICE_G722,                                /* 18 */
+  DS_CODEC_VOICE_EVRC_NW,                             /* 19 */
+  DS_CODEC_VOICE_CLEARMODE,                           /* 20 */
+  DS_CODEC_VOICE_EVS,                                 /* 21 */
+  DS_CODEC_VOICE_MELPE,                               /* 22 */
+  DS_CODEC_VOICE_AMR_WB_PLUS,                         /* 23 */
+
+  DS_CODEC_VOICE_RESERVED1,
+  DS_CODEC_VOICE_RESERVED2,
+  DS_CODEC_VOICE_RESERVED3,
+  DS_CODEC_VOICE_RESERVED4,
+  DS_CODEC_VOICE_RESERVED5,
+  DS_CODEC_VOICE_RESERVED6,
+  DS_CODEC_VOICE_RESERVED7,
+  DS_CODEC_VOICE_RESERVED8,
+  
+  DS_VOICE_CODECS_UPPER_BOUND,                        /* exclusive */
+
+  DS_NUM_VOICE_CODECS = (DS_VOICE_CODECS_UPPER_BOUND - DS_VOICE_CODECS_MIN),
+
+  DS_AUDIO_CODECS_MIN = DS_VOICE_CODECS_UPPER_BOUND,  /* inclusive */
+
+  DS_CODEC_AUDIO_L16 = DS_AUDIO_CODECS_MIN,           /* linear 16-bit PCM */
+  DS_CODEC_AUDIO_MP3,
+
+  DS_CODEC_AUDIO_RESERVED1,
+  DS_CODEC_AUDIO_RESERVED2,
+  DS_CODEC_AUDIO_RESERVED3,
+  DS_CODEC_AUDIO_RESERVED4,
+
+  DS_AUDIO_CODECS_UPPER_BOUND,                        /* exclusive */
+
+  DS_NUM_AUDIO_CODECS = (DS_AUDIO_CODECS_UPPER_BOUND - DS_AUDIO_CODECS_MIN),
+
+  DS_VIDEO_CODECS_MIN = DS_AUDIO_CODECS_UPPER_BOUND,  /* inclusive */
+
+  DS_CODEC_VIDEO_MPEG2 = DS_VIDEO_CODECS_MIN,
+  DS_CODEC_VIDEO_H263,
+  DS_CODEC_VIDEO_H264,
+  DS_CODEC_VIDEO_H265,
+  DS_CODEC_VIDEO_VP8,
+  DS_CODEC_VIDEO_VP9,
+
+  DS_CODEC_VIDEO_RESERVED1,
+  DS_CODEC_VIDEO_RESERVED2,
+  DS_CODEC_VIDEO_RESERVED3,
+  DS_CODEC_VIDEO_RESERVED4,
+  DS_CODEC_VIDEO_RESERVED5,
+  DS_CODEC_VIDEO_RESERVED6,
+  DS_CODEC_VIDEO_RESERVED7,
+  DS_CODEC_VIDEO_RESERVED8,
+
+  DS_VIDEO_CODECS_UPPER_BOUND,                        /* exclusive */
+
+  DS_NUM_VIDEO_CODECS = (DS_VIDEO_CODECS_UPPER_BOUND - DS_VIDEO_CODECS_MIN)
 };
 
-enum video_codec_type {
+typedef enum codec_types codec_types;
 
-  DS_VIDEO_CODEC_TYPE_MPEG2 = DS_VOICE_NUM_CODECS,
-  DS_VIDEO_CODEC_TYPE_H263,
-  DS_VIDEO_CODEC_TYPE_H264,
-  DS_VIDEO_CODEC_TYPE_H265,
-  DS_VIDEO_CODEC_TYPE_VP8,
-  DS_VIDEO_CODEC_TYPE_VP9,
+STATIC_ASSERT(sizeof(codec_types) == 4)  /* this is here to cause a compile-time error if for any reason codec_types enums are not equivalent to int (i.e. size 4 bytes). STATIC_ASSERT is defined in alias.h, JHB Jan 2025 */
 
-  DS_TOTAL_NUM_CODECS,               /* use this for range-checking upper limit of codec types */
+#define DS_TOTAL_NUM_CODECS (DS_NUM_VOICE_CODECS + DS_NUM_AUDIO_CODECS + DS_NUM_VIDEO_CODECS)
 
-  DS_VIDEO_NUM_CODECS = (DS_TOTAL_NUM_CODECS - DS_VOICE_NUM_CODECS)
-};
+#define isVoiceCodec(codec_type)  ((int8_t)(codec_type) >= DS_VOICE_CODECS_MIN && (int8_t)(codec_type) < DS_VOICE_CODECS_UPPER_BOUND)  /* we limit to int8_t because codec_type field is int8_t in TERMINATION_INFO struct in session.h */
+#define isAudioCodec(codec_type)  ((int8_t)(codec_type) >= DS_AUDIO_CODECS_MIN && (int8_t)(codec_type) < DS_AUDIO_CODECS_UPPER_BOUND)
+#define isVideoCodec(codec_type)  ((int8_t)(codec_type) >= DS_VIDEO_CODECS_MIN && (int8_t)(codec_type) < DS_VIDEO_CODECS_UPPER_BOUND)
 
-#define isVoiceCodec(codec_type) (codec_type > DS_CODEC_TYPE_NONE && codec_type < DS_VOICE_NUM_CODECS)
-#define isVideoCodec(codec_type) (codec_type >= DS_VOICE_NUM_CODECS && codec_type < DS_TOTAL_NUM_CODECS)
+#define isAMRCodec(codec_type)    ((codec_type) == DS_CODEC_VOICE_AMR_NB || (codec_type) == DS_CODEC_VOICE_AMR_WB || (codec_type) == DS_CODEC_VOICE_AMR_WB_PLUS)
+#define isEVSCodec(codec_type)    ((codec_type) == DS_CODEC_VOICE_EVS)
+
+#define CODEC_NAME_MAXLEN  50
+
+#ifdef _GNU_SOURCE  /* _GNU_SOURCE must already be defined; typically done at application level or in Makefile build options */
+
+#ifdef __STDC_LIB_EXT1__  /* per https://stackoverflow.com/questions/40045973/strcpy-s-not-working-with-gcc, __STDC_LIB_EXT1__ must be defined otherwise strxxx_s() functions are not available with gcc version in use, JHB Jul 2023 */
+  #define __STDC_WANT_LIB_EXT1__ 1
+#else
+  #include "dsstring.h"  /* sig version of strncpy_s() */
+#endif
+
+#include <string.h>  /* strcasestr(), strncpy_s() if __STDC_LIB_EXT1__ defined */
+
+/* for any SigSRF lib or application that needs codec names, or a new one should be added, these are the standardized name definitions. The DSGetCodecInfo() API in voplib calls get_codec_name() when given the DS_CODEC_INFO_NAME flag and calls get_codec_type_from_name() when given the DS_CODEC_INFO_TYPE_FROM_NAME flag. Codec name string length should be less than CODEC_NAME_MAXLEN */
+
+/* return codec name given a codec_type */
+
+static inline int get_codec_name(codec_types codec_type, bool fVerbose, char* codecstr) {
+
+   if ((int8_t)codec_type < 0) return -1;
+
+   switch (codec_type) {
+
+      case DS_CODEC_VOICE_AMR_NB:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "AMR-NB", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VOICE_AMR_WB:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "AMR-WB", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VOICE_AMR_WB_PLUS:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "AMR-WB+", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VOICE_EVS:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "EVS", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VOICE_G729AB:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "G729AB", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VOICE_G726:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "G726", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VOICE_MELPE:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "MELPe", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VOICE_G711_ULAW:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "G711u", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VOICE_G711_ALAW:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "G711a", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_AUDIO_L16:
+         if (fVerbose) strncpy_s(codecstr, CODEC_NAME_MAXLEN, "L16 (linear 16-bit PCM)", CODEC_NAME_MAXLEN);
+         else strncpy_s(codecstr, CODEC_NAME_MAXLEN, "L16", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VIDEO_H263:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "H.263", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VIDEO_H264:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "H.264", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_VIDEO_H265:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "H.265", CODEC_NAME_MAXLEN);
+         break;
+
+      case DS_CODEC_NONE:
+         if (fVerbose) strncpy_s(codecstr, CODEC_NAME_MAXLEN, "None (pass-thru)", CODEC_NAME_MAXLEN);
+         else strncpy_s(codecstr, CODEC_NAME_MAXLEN, "None", CODEC_NAME_MAXLEN);
+         break;
+
+      default:
+         strncpy_s(codecstr, CODEC_NAME_MAXLEN, "undefined", CODEC_NAME_MAXLEN);  /* codec type not recognized */
+         return 0;
+   }
+
+   return strlen(codecstr);
+}
+
+/* return a codec type given a codec name */
+
+static inline int get_codec_type_from_name(const char* codecstr) {
+
+   if (strcasestr(codecstr, "NONE"))  /* anything starting with None ... */
+      return DS_CODEC_NONE;
+   else if (strcasestr(codecstr, "G711_ULAW") || strcasestr(codecstr, "G711u"))
+      return DS_CODEC_VOICE_G711_ULAW;
+   else if (strcasestr(codecstr, "G711_ALAW") || strcasestr(codecstr, "G711a"))
+      return DS_CODEC_VOICE_G711_ALAW;
+   else if (strcasestr(codecstr, "G711_ULAW"))
+      return DS_CODEC_VOICE_G711_ULAW;
+   else if (strcasestr(codecstr, "G711_WB_ULAW") || strcasestr(codecstr, "G711-WBu"))
+      return DS_CODEC_VOICE_G711_WB_ULAW;
+   else if (strcasestr(codecstr, "G711_WB_ALAW") || strcasestr(codecstr, "G711-WBa"))
+      return DS_CODEC_VOICE_G711_WB_ALAW;
+   else if (strcasestr(codecstr, "G726"))
+      return DS_CODEC_VOICE_G726;
+   else if (strcasestr(codecstr, "G729AB"))
+      return DS_CODEC_VOICE_G729AB;
+   else if (strcasestr(codecstr, "G723"))
+      return DS_CODEC_VOICE_G723;
+   else if (strcasestr(codecstr, "G722"))
+      return DS_CODEC_VOICE_G722;
+   else if (strcasestr(codecstr, "AMR_NB") || strcasestr(codecstr, "AMR-NB"))
+      return DS_CODEC_VOICE_AMR_NB;
+   else if (strcasestr(codecstr, "AMR_WB_PLUS") || strcasestr(codecstr, "AMR-WB+"))  /* needs to be before AMR-WB */
+      return DS_CODEC_VOICE_AMR_WB_PLUS;
+   else if (strcasestr(codecstr, "AMR_WB") || strcasestr(codecstr, "AMR-WB"))
+      return DS_CODEC_VOICE_AMR_WB;
+   else if (strcasestr(codecstr, "EVRCA"))
+      return DS_CODEC_VOICE_EVRC;
+   else if (strcasestr(codecstr, "ILBC"))
+      return DS_CODEC_VOICE_ILBC;
+   else if (strcasestr(codecstr, "ISAC"))
+      return DS_CODEC_VOICE_ISAC;
+   else if (strcasestr(codecstr, "OPUS"))
+      return DS_CODEC_VOICE_OPUS;
+   else if (strcasestr(codecstr, "EVRCB"))
+      return DS_CODEC_VOICE_EVRCB;
+   else if (strcasestr(codecstr, "GSMFR") || strcasestr(codecstr, "GSM-FR"))
+      return DS_CODEC_VOICE_GSMFR;
+   else if (strcasestr(codecstr, "GSMHR") || strcasestr(codecstr, "GSM-HR"))
+      return DS_CODEC_VOICE_GSMFR;
+   else if (strcasestr(codecstr, "GSMEFR") || strcasestr(codecstr, "GSM-EFR"))
+      return DS_CODEC_VOICE_GSMEFR;
+   else if (strcasestr(codecstr, "EVRCNW"))
+      return DS_CODEC_VOICE_EVRC_NW;
+   else if (strcasestr(codecstr, "CLEARMODE"))
+      return DS_CODEC_VOICE_CLEARMODE;
+   else if (strcasestr(codecstr, "EVS"))
+      return DS_CODEC_VOICE_EVS;
+   else if (strcasestr(codecstr, "MELPe"))  /* added Apr 2018, CKJ */
+      return DS_CODEC_VOICE_MELPE;
+   else if (strcasestr(codecstr, "L16"))  /* linear 16-bit PCM */
+      return DS_CODEC_AUDIO_L16;
+   else if (strcasestr(codecstr, "MP3"))
+      return DS_CODEC_AUDIO_MP3;
+   else if (strcasestr(codecstr, "MPEG2"))
+      return DS_CODEC_VIDEO_MPEG2;
+   else if (strcasestr(codecstr, "H.263"))
+      return DS_CODEC_VIDEO_H263;
+   else if (strcasestr(codecstr, "H.264"))
+      return DS_CODEC_VIDEO_H264;
+   else if (strcasestr(codecstr, "H.265"))
+      return DS_CODEC_VIDEO_H265;
+   else if (strcasestr(codecstr, "VP8"))
+      return DS_CODEC_VIDEO_VP8;
+   else if (strcasestr(codecstr, "VP9"))
+      return DS_CODEC_VIDEO_VP9;
+
+   else return -1;  /* unrecognized codec name */
+}
+
+#endif  /* _GNU_SOURCE */
 
 /* default value 0, no dtmf detection or transcoding needed. */
 enum dtmf_processing {

@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/cmd_line_interface.c
 
- Copyright (C) Signalogic Inc. 2018-2024
+ Copyright (C) Signalogic Inc. 2018-2025
 
  License
 
@@ -29,7 +29,7 @@
    Modified Sep 2019 JHB, in cmdLineInterface() check for CLI_MEDIA_APPS flag and pass to cimGetCmdLine() (cimlib.so), which will in turn give to getUserInfo() (getUserInterface.cpp)
    Modified Nov 2019 JHB, add CSV and TEXT output file types (latter to support Kaldi ASR)
    Modified Dec 2019 JHB, add nJitterBufferParams to support jitter buffer target and max delay cmd line entry (-jN)
-   Modified Jan 2020 JHB, add nRepeat to supper number of repeat times cmd line entry (-RN)
+   Modified Jan 2020 JHB, add nRepeats to support number of repeat times cmd line entry (-RN)
    Modified Jan 2021 JHB, change references to AUDIO_FILE_TYPES to IS_AUDIO_FILE_TYPE, initialize outFileType2, USBAudioInput, and USBAudioOutput, allow pcap for output file type, add char szSDPFile[CMDOPT_MAX_INPUT_LEN]
    Modified Dec 2021 JHB, make debugMode 64-bit int
    Modified Mar 2022 JHB, add GPX file input handling, -Fn flag for mediaTest gpx processing
@@ -60,34 +60,40 @@
    Modified Jul 2024 JHB, set mediaTest pcap_extract when both input and output files are pcaps, to support pcap modification operations (insert bit errors, filter, etc)
    Modified Jul 2024 JHB, add nRandomBitErrorPercentage to support --random_bit_error cmd line option
    Modified Aug 2024 JHB, add fShow_sha1sum and fShow_sha512sum to support --sha1sum and --sha512sum command line options
+   Modified Sep 2024 JHB, update get_file_type() to handle .h264, .h265, and .hevc file extensions
+   Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
+   Modified Dec 2024 JHB, include <algorithm> and use std namespace if __cplusplus defined
+   Modified Jan 2025 JHB, avoid unused var warning in get_file_type()
 */
 
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
 
 /* system header files */
 
-#ifndef _GNU_SOURCE
-  #define _GNU_SOURCE
-#endif
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
 
-/* Signalogic header files */
+/* SigSRF includes */
 
-#include "test_programs.h"   /* misc program support (command line entry, etc) */
-#include "minmax.h"
-#include "dsstring.h"  /* lstrtrim() */
-
-/* mediaTest definitions (also includes DirectCore library header and host/coCPU shared header files) */
-
-#include "mediaTest.h"
+#include "directcore.h"  /* DirectCore APIs */
+#include "diaglib.h"  /* event log and packet log APIs. Currently we only use DSConfigLogging() here, JHB Jan 2023 */
 
 #if defined(_ALSA_INSTALLED_)
   #include "aviolib.h"
 #endif
 
-#include "diaglib.h"  /* event log and packet log APIs. Currently we only use DSConfigLogging() here, JHB Jan 2023 */
+/* app support header files */
+
+#include "test_programs.h"   /* misc program support (command line entry, etc) */
+#include "minmax.h"          /* define min-max if __cplusplus not defined */
+#include "dsstring.h"        /* lstrtrim() */
+
+#include "mediaTest.h"  /* mediaTest definitions */
 
 /* global vars filled by cimGetCmdLine() */
 
@@ -107,7 +113,7 @@ int              nSegmentation = 0;
 int              nSegmentInterval = 0;
 int              nAmplitude = 0;
 int              nJitterBufferParams = 0;
-int              nRepeat = 0;
+int              nRepeats = 0;
 char             szSDPFile[CMDOPT_MAX_INPUT_LEN] = "";
 int              nSamplingFrequency;  /* rate of gps point recording in gpx file processing, Mar 2022 JHB */
 char             szStreamGroupWavOutputPath[CMDOPT_MAX_INPUT_LEN] = "";
@@ -144,6 +150,8 @@ extern int     out_type[];
 
 void intHandler(int sig) {
 
+   (void)sig;  /* not currently used */
+
    #ifndef _MEDIAMIN_  /* mediaMin has orderly cleanup so don't do any shortcuts, JHB Jan 2023 */
    pm_run = 0;  /* global var in packet/media thread processing (packet_flow_media_proc.c) */
    #endif
@@ -173,7 +181,7 @@ int get_file_type(const char*, unsigned int);
 
 int cmdLineInterface(int argc, char **argv, unsigned int uFlags, const char* version_info, const char* banner_info) {
 
-UserInterface userIfs = {0, 0, 0, 0, "", "", false};
+UserInterface userIfs = { 0, 0, 0, 0, "", "", false };
 
 bool fAudioInputFile, fAudioOutputFile, fPcapInputFile, fCodedInputFile, fCodedOutputFile, fPcapOutputFile, fGpxInputFile;
 bool __attribute__ ((unused)) fTextOutputFile, fCSVOutputFile;  /* added Nov 2019 JHB */
@@ -318,7 +326,7 @@ int i;
 
    if (userIfs.CmdLineFlags.show_audio_classification) fShow_audio_classification = true;
 
-   for (int i=0; i<min(MAXSTREAMS, MAX_INPUT_STREAMS); i++) {
+   for (i=0; i<min(MAXSTREAMS, MAX_INPUT_STREAMS); i++) {
    
       RealTimeInterval[i] = MediaParams[i].Media.frameRate;  /* store -rN frame rate cmd line entries in RealTimeInterval[], JHB May 2023 */
       if (isnan(RealTimeInterval[i]) || RealTimeInterval[i] < 0) RealTimeInterval[i] = userIfs.frameRate[i];  /* make sure it's not NaN and not negative. Default value should be -1, but we can be ultra careful that we don't get a messed up timing value, JHB Apr 2024 */
@@ -333,7 +341,7 @@ int i;
    nSegmentInterval = userIfs.nInterval;
    nAmplitude = userIfs.nAmplitude;
    nJitterBufferParams = userIfs.nJitterBufferOptions;  /* lsbyte is target delay, next byte is max delay, JHB Dec2019 */
-   nRepeat = (int)userIfs.nRepeatTimes;  /* -1 = no entry (no repeat), 0 = repeat forever, > 1 is repeat number of times, JHB Jan2020 */
+   nRepeats = (int)userIfs.nRepeatTimes;  /* -1 = no entry (no repeat), 0 = repeat forever, > 1 is repeat number of times, JHB Jan2020 */
    if (strlen(userIfs.szSDPFile)) strcpy(szSDPFile, userIfs.szSDPFile);
    nSamplingFrequency = userIfs.nSamplingFrequency;  /* sampling frequency for gpx processing */
 
@@ -359,7 +367,7 @@ int i;
 /* register signal handler to catch Ctrl-C signal and cleanly exit mediaTest, mediaMin, and other test programs */
 
 #if 1  /* disable this if needed for use with gdb (to prevent mediaTest or mediaMin from handling ctrl-c), JHB Jan 2019 */
-   struct sigaction act = {0};
+   struct sigaction act = {{ 0 }};
    act.sa_handler = intHandler;
    sigaction(SIGINT, &act, NULL);
 #endif
@@ -379,6 +387,8 @@ char* p;
 int get_file_type(const char* filestr, unsigned int io) {
 
 int fileType = 0;
+
+   (void)io;  /* avoid unused var warning, JHB Jan 2025 */
 
 #if defined(_ALSA_INSTALLED_)
    if (!strcasecmp(filestr, "usb0")) {
@@ -403,7 +413,7 @@ int fileType = 0;
    else if (find_extension(filestr, ".tim")) fileType = TIM_AUDIO;
    else if (find_extension(filestr, ".au")) fileType = AU_AUDIO;
    else if (find_extension(filestr, ".wav")) fileType = WAV_AUDIO;
-   else if (find_extension(filestr, ".cod") || find_extension(filestr, ".amr") || find_extension(filestr, ".awb") || find_extension(filestr, ".bit")) fileType = ENCODED;
+   else if (find_extension(filestr, ".cod") || find_extension(filestr, ".amr") || find_extension(filestr, ".awb") || find_extension(filestr, ".bit") || find_extension(filestr, ".h264") || find_extension(filestr, ".h265") || find_extension(filestr, ".hevc")) fileType = ENCODED;
    else if (find_extension(filestr, ".txt")) fileType = TEXT;
    else if (find_extension(filestr, ".csv")) fileType = CSV;
    else if (find_extension(filestr, ".ber")) fileType = BER;
@@ -419,8 +429,7 @@ int GetOutputFilename(char* output_filename, int output_type_file, const char* o
 
 char tmpstr[1024];
 char *tmpptr1, *tmpptr2;
-int ret_val = -1;
-int i;
+int i, ret_val = -1;
 
 #ifndef _MEDIAMIN_
 
@@ -455,7 +464,7 @@ int i;
       }
       else if (num_pcap_outputs > 0)
       {
-         for (i = 0; out_type[i] != PCAP; i++);
+         for (i=0; out_type[i] != PCAP; i++);
          strcpy(tmpstr, MediaParams[i].Media.outputFilename);
          tmpptr1 = strrchr(tmpstr, '/');
          if (tmpptr1 != NULL) tmpptr1++;
@@ -485,7 +494,7 @@ int i;
    {
       if (num_pcap_outputs > 0)
       {
-         for (i = 0; out_type[i] != PCAP; i++);
+         for (i=0; out_type[i] != PCAP; i++);
          strcpy(tmpstr, MediaParams[i].Media.outputFilename);
          tmpptr1 = strrchr(tmpstr, '/');
          if (tmpptr1 != NULL) tmpptr1++;
@@ -512,7 +521,7 @@ int i;
       }
       else if (num_wav_outputs > 0)
       {
-         for (i = 0; out_type[i] != WAV_AUDIO; i++);
+         for (i=0; out_type[i] != WAV_AUDIO; i++);
          strcpy(tmpstr, MediaParams[i].Media.outputFilename);
          tmpptr1 = strrchr(tmpstr, '/');
          if (tmpptr1 != NULL) tmpptr1++;
@@ -596,7 +605,7 @@ content_label:
 
 int GetCommandLine(char* cmdlinestr, int str_size) {
 
-int ret = 0;
+int i, ret = 0;
 
    FILE* fpCmdLine = fopen("/proc/self/cmdline", "rb");
 
@@ -606,7 +615,7 @@ int ret = 0;
 
       fclose(fpCmdLine);
 
-      for (int i=0; i<ret; i++) if (cmdlinestr[i] == 0) cmdlinestr[i] = ' ';  /* replace NULLs with spaces */
+      for (i=0; i<ret; i++) if (cmdlinestr[i] == 0) cmdlinestr[i] = ' ';  /* replace NULLs with spaces */
    }
 
    return ret;

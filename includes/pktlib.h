@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/include/pktlib.h
 
- Copyright (C) Signalogic Inc. 2010-2024
+ Copyright (C) Signalogic Inc. 2010-2025
 
  License
 
@@ -20,13 +20,13 @@
   Created Mar 2017 Chris Johnson, (some elements copied from legacy ds_vop.h)
   Modified Jun 2017 JHB, added RTP packet info items for use with DSGetPacketInfo()
   Modified Jun 2017 JHB, added DS_BUFFER_PKT_DISABLE_PROBATION, DS_BUFFER_PKT_FLUSH, and DS_BUFFER_PKT_RATECONTROL flags
-  Modified Jul 2017 CJ, added pcap file related structs and functions
-  Modified Jul 2017 CJ, added support for cases where channel numbers in Pktlib do not match up with codec handles in Voplib
-  Modified Jul 2017 CJ, added DS_SESSION_USER_MANAGED flag which includes session id in channel hash key
-  Modified Jul 2017 CJ, added support for user app supplied log file handle and log write 
+  Modified Jul 2017 CKJ, added pcap file related structs and functions
+  Modified Jul 2017 CKJ, added support for cases where channel numbers in Pktlib do not match up with codec handles in Voplib
+  Modified Jul 2017 CKJ, added DS_SESSION_USER_MANAGED flag which includes session id in channel hash key
+  Modified Jul 2017 CKJ, added support for user app supplied log file handle and log write 
   Modified Aug 2017 JHB, added FORMAT_PKT struct definition and optional header pointer arg for DSFormatPacket() (replaces pyldType, which is now either looked up in session info using chnum arg,
-                         or given in the optional RTP header pointer).  Added DS_FMT_PKT_USER_xxx attributes to support use of the FORMAT_PKT* arg
-  Modified Aug 2017 JHB, modified DSConvertFsPacket() to take an input data length arg and return amount of valid output data.  If the input data length arg is given as -1, the API calculates input data length internally based on channel info specified by chnum
+                         or given in the optional RTP header pointer). Added DS_FMT_PKT_USER_xxx attributes to support use of the FORMAT_PKT* arg
+  Modified Aug 2017 JHB, modified DSConvertFsPacket() to take an input data length arg and return amount of valid output data. If the input data length arg is given as -1, the API calculates input data length internally based on channel info specified by chnum
   Modified Aug 2017 CKJ, added DS_GET_ORDERED_PKT_ENABLE_DTX flag and DTX handling in DSGetOrderedPackets()
   Modified Aug 2017 JHB, added packet_info[] arg to DSGetOrderedPackets() and DSBufferPackets(), added DS_PKT_INFO_SID and related DS_PKT_INFO_xxx flags
   Modified Sep 2017 JHB, added DSGetSessionStatus() API and status / error codes
@@ -46,17 +46,17 @@
   Modified Aug 2018 CKJ, implement more flags in DSFormatPacket()
   Modified Aug 2018 JHB, additional DS_SESSION_INFO_xxx flags, including thread Id and channel parent
   Modified Sep 2018 JHB, increase max number of stream group contributors to 8
-  Modified Oct 2018 JHB, change DSGetSessionInfo() return value from int to int64_t, change term_id param in DSGetSessionInfo() and DSSetSessionInfo() from int to int64_t.  This supports new session info, including 64-bit thread ID values
-  Modified Oct 2018 JHB, add numPkts param to DSPullPackets(), to allow a specific number of packet to be pulled.  A -1 value indicates to pull all packets (which was the default operation prior to this mod)
+  Modified Oct 2018 JHB, change DSGetSessionInfo() return value from int to int64_t, change term_id param in DSGetSessionInfo() and DSSetSessionInfo() from int to int64_t. This supports new session info, including 64-bit thread ID values
+  Modified Oct 2018 JHB, add numPkts param to DSPullPackets(), to allow a specific number of packet to be pulled. A -1 value indicates to pull all packets (which was the default operation prior to this mod)
   Modified Nov 2018 JHB, move all stream group and stream merging definitions and APIs to streamlib.h (streamlib.so must be included in mediaTest and mediaMin builds)
   Modified Dec 2018 JHB, add DS_CONFIG_MEDIASERVICE_SET_NICENESS flag to allow control over packet/media thread priority and niceness
   Modified Dec 2018 JHB, add uFlags element to PACKETMEDIATHREADINFO struct
   Modified Jan 2019 JHB, add DSGetThreadInfo()
-  Modified Feb 2019 JHB, add profiling time items to PACKETMEDIATHREADINFO struct definition.  Items are labeled xxx_max", for example manage_sessions_time_max, input_time_max, decode_time_max, encode_time_max, etc.  Packet/media thread profiling can be turned on/off  
+  Modified Feb 2019 JHB, add profiling time items to PACKETMEDIATHREADINFO struct definition. Items are labeled xxx_max", for example manage_sessions_time_max, input_time_max, decode_time_max, encode_time_max, etc. Packet/media thread profiling can be turned on/off  
                          by calling DSConfigMediaService() with the thread index and DS_CONFIG_MEDIASERVICE_ENABLE_THREAD_PROFILING and DS_CONFIG_MEDIASERVICE_DISABLE_THREAD_PROFILING flags
-  Modified Feb 2019 JHB, add DS_GETORD_PKT_ENABLE_SID_REPAIR uFlag for DSGetOrderedPackets().  Add DSGetJitterBufferInfo() and DSSetJitterBufferInfo() APIs.  Add DS_SESSION_INFO_TERM_FLAGS, DS_SESSION_INFO_MAX_LOSS_PTIMES, and DS_SESSION_INFO_DYNAMIC_CHANNELS uFlags for DSGetSessionInfo()
+  Modified Feb 2019 JHB, add DS_GETORD_PKT_ENABLE_SID_REPAIR uFlag for DSGetOrderedPackets(). Add DSGetJitterBufferInfo() and DSSetJitterBufferInfo() APIs. Add DS_SESSION_INFO_TERM_FLAGS, DS_SESSION_INFO_MAX_LOSS_PTIMES, and DS_SESSION_INFO_DYNAMIC_CHANNELS uFlags for DSGetSessionInfo()
   Modified Mar 2019 JHB, add DSGetJitterBufferInfo() and DSSetJitterBufferInfo() APIs and associated definitions
-  Modified May 2019 JHB, add DS_PKT_PYLD_CONTENT_DTMF_SESSION payload content type, which is returned by DSGetOrderedPackets() when returning DTMF packets matching a session-defined DTMF payload type.  Otherwise the generic DS_PKT_PYLD_CONTENT_DTMF content type is returned
+  Modified May 2019 JHB, add DS_PKT_PYLD_CONTENT_DTMF_SESSION payload content type, which is returned by DSGetOrderedPackets() when returning DTMF packets matching a session-defined DTMF payload type. Otherwise the generic DS_PKT_PYLD_CONTENT_DTMF content type is returned
   Modified Aug 2019 JHB, removed #ifdef USE_PKTLIB_INLINES around extern C definition of DSGetSessionInfo()
   Modified Aug 2019 JHB, DSPullPackets() hSession param changed from unsigned int to HSESSION
   Modified Sep 2019 JHB, change include folder for if_ether.h from "linux" to "netinet" to fix -Wodr (one definition rule) warning with gcc 5.4
@@ -64,7 +64,7 @@
   Modified Nov 2019 JHB, add DS_JITTER_BUFFER_INFO_NUM_PKT_LOSS_FLUSH and DS_JITTER_BUFFER_INFO_NUM_PASTDUE_FLUSH flags to DSGetJitterBufferInfo()
   Modified Dec 2019 JHB, add DSWritePacketLogStats() API, can be called either with session handle or packet/media thread index
   Modified Dec 2019 JHB, DS_JITTER_BUFFER_INFO_xx flags to support run-time packet stats calculation added to pktlib
-  Modified Jan 2020 JHB, add optional chnum param to DSBufferPackets() and DSGetPacketInfo() to return channel numbers of matched packets.  This includes parent or child as applicable, and can save time by avoiding subsequent calls to specifically ask for parent or child chnum
+  Modified Jan 2020 JHB, add optional chnum param to DSBufferPackets() and DSGetPacketInfo() to return channel numbers of matched packets. This includes parent or child as applicable, and can save time by avoiding subsequent calls to specifically ask for parent or child chnum
   Modified Jan 2020 JHB, implement elapsed time alarm debug option inside DSPushPackets(). See uPushPacketsElapsedTime and DS_ENABLE_PUSHPACKETS_ELAPSED_TIME_ALARM in shared_include/config.h
   Modified Mar 2020 JHB, deprecate DS_GETORD_PKT_ENABLE_DTX and DS_GETORD_PKT_ENABLE_SID_REPAIR flags. Instead of these flags, DTX handling and SID repair should be controlled by TERM_DTX_ENABLE and TERM_SID_REPAIR_ENABLE flags in TERMINATION_INFO struct uFlags element (shared_include/session.h). The deprecated flags can still be applied to force DTX handling / SID repair on a case-by-case basis, but it's not recommended
   Modified Mar 2020 JHB, add DS_JITTER_BUFFER_INFO_TERM_FLAGS and DS_JITTER_BUFFER_INFO_NUM_PURGES flags in DSGetJitterBufferInfo()
@@ -95,7 +95,7 @@
   Modified Jul 2023 JHB, add DS_JITTER_BUFFER_INFO_NUM_DTMF_PKTS
   Modified Sep 2023 JHB, add DSFilterPacket() and DSFindPcapPacket() APIs, DS_FILTER_PKT_XXX flags, and DS_FIND_PCAP_PACKET_XXX flags
   Modified Nov 2023 JHB, modify pcap_hdr_t struct, add PCAP_TYPE_RTP flag, and update DSOpenPcap() and DSReadPcapRecord() to handle .rtp (.rtpdump) format
-  Modified Nov 2023 JHB, add DS_FMT_PKT_USER_RTP_HEADER flag so DSFormatPacket() can handle formatting an input payload that needs no RTP header modification (i.e. it already includes a full/correct RTP header)
+  Modified Nov 2023 JHB, add DS_FMT_PKT_USER_UDP_PAYLOAD flag so DSFormatPacket() can handle formatting an input payload that needs no UDP payload modification (e.g. it already includes a full/correct RTP header)
   Modified Nov 2023 JHB, update comments and remove references to "background process"
   Modified Feb 2024 JHB, add DS_SESSION_INFO_LAST_ACTIVE_CHANNEL option for DSGetSessionInfo()
   Modified Feb 2024 JHB, add start and end optional params to DSFindPcapPacket(), add optional amount read param to DSFilterPacket(), add DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET flag (applicable to both DSFindPcapPacket() and DSFilterPacket()) to specify seek based search vs record based and greatly improve performance of these APIs
@@ -111,6 +111,13 @@
   Modified Jul 2024 JHB, changes required per documentation review: DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap(), DSGetTermChan(), and DSConfigMediaService(), move pkt_buf_len to fourth param and add uFlags param in DSWritePcap()
   Modified Jul 2024 JHB, modify DSWritePcap() to remove (i) struct timespec* param and instead use the packet record header param timestamp and uFlags definition DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK, and (ii) TERMINATION_INFO* param and instead use IP type in pkt_buf
   Modified Aug 2024 JHB, add DSIsPacketDuplicate() and DS_PKT_DUPLICATE_XXX uFlags, add DSIsReservedUDP(). Both moved here after being initially developed and tested in mediaMin.cpp. Source is in pktlib_RFC791_fragmentation.cpp
+  Modified Sep 2024 JHB, rename DS_PULLPACKETS_TRANSCODED to DS_PULLPACKETS_OUTPUT, to reflect expanded type of output packets generated by packet/media threads
+  Modified Sep 2024 JHB, implement DS_SESSION_INFO_TERM_FLAGS in DSSetSessionInfo()
+  Modified Sep 2024 JHB, rename DS_SESSION_INFO_SAMPLE_RATE_MULT to DS_SESSION_INFO_RTP_CLOCKRATE
+  Modified Nov 2024 JHB, add #ifndef MIN_HDR for includes that need minimum definitions, add rtp_version to PKTINFO struct
+  Modified Dec 2024 JHB, add DS_PKT_INFO_EXTENDED_SESSION_SEARCH and DS_BUFFER_PKT_EXTENDED_SESSION_SEARCH flags (they are defined to same value). See comments
+  Modified Dec 2024 JHB, add DSGetPacketInfo() flags DS_PKT_INFO_USE_IP_HDR_LEN and DS_PKT_INFO_COPY_IP_HDR_LEN_IN_PINFO, these can be used to minimize number of DSGetPacketInfo() calls and overhead per call; see comments
+  Modified Jan 2025 JHB, add isRTCPPacket() macro
 */
 
 #ifndef _PKTLIB_H_
@@ -126,11 +133,6 @@
 #include "filelib.h"
 #include "diaglib.h"  /* PKT_STATS struct */
 
-/* session and configuration struct and related definitions */
-
-#include "shared_include/session_cmd.h"  /* brings in shared_include/session.h */
-#include "shared_include/config.h"
-
 /* typedefs for various pktlib and voplib handles */
 
 #if defined __MSVC__ 
@@ -143,36 +145,90 @@
  typedef HGLOBAL HSESSION;  /* session handle */
 #endif
 
+/* define some useful constants either not defined in Linux header files ip.h or netinet/in.h (alternatively they could be defined using sizeof() on struct fields from those header files) */
+
+#define IPV4_ADDR_OFS                   12  /* IP packet byte offsets to start of IP addrs */
+#define IPV6_ADDR_OFS                   8
+
+#define IPV4_ADDR_LEN                   4   /* IP address lengths (in bytes) */
+#define IPV6_ADDR_LEN                   16
+  
+/* basic IP, UDP, and RTP header lengths (in bytes) */
+
+#define IPV4_HEADER_LEN                 (IPV4_ADDR_OFS + 2*IPV4_ADDR_LEN)
+#define IPV6_HEADER_LEN                 (IPV6_ADDR_OFS + 2*IPV6_ADDR_LEN)  /* minimum, excluding extensions */
+#define UDP_HEADER_LEN                  8
+#define RTP_HEADER_LEN                  12  /* minimum, excluding extensions */
+
+#define MIN_IP_UDP_RTP_HEADER_LEN       (IPV4_HEADER_LEN + UDP_HEADER_LEN + RTP_HEADER_LEN)
+#define MAX_IP_UDP_RTP_HEADER_LEN       (IPV6_HEADER_LEN + UDP_HEADER_LEN + RTP_HEADER_LEN)  /* approximate, with header extensions could be a variable amount longer */
+
+/* max RTP packet length, mediaTest has test cases consisting of ptimes up to 240 ms, G711 will require a 1994 byte packet for IPv6. This definition also used in mediaMin */
+
+#define MAX_RTP_PACKET_LEN              (MAX_RAW_FRAME + MAX_IP_UDP_RTP_HEADER_LEN)
+#define MAX_TCP_PACKET_LEN              65535
+
+/* IP protocols */
+
+#ifndef IPv4
+  #define IPv4                          4
+#endif
+#ifndef IPv6
+  #define IPv6                          6
+#endif
+#define UDP_PROTOCOL                    17
+#ifndef UDP
+  #define UDP UDP_PROTOCOL                    /* define short-hand version if system allows it, JHB Jun 2024 */
+#endif
+#define TCP_PROTOCOL                    6
+#ifndef TCP
+  #define TCP TCP_PROTOCOL
+#endif
+#define ICMP_PROTOCOL                   1
+#ifndef ICMP
+  #define ICMP ICMP_PROTOCOL
+#endif
+#define ENCAPSULATING_SECURITY_PAYLOAD  50
+#define VRRP                            112
+
+/* SIP / SDP info ports */
+
+#define SIP_PORT                        5060  /* default SIP message port */
+#define SIP_PORT_ENCRYPTED              5061  /* same, encrypted */
+#define SIP_PORT_RANGE_LOWER            SIP_PORT
+#define SIP_PORT_RANGE_UPPER            5090  /* typical range of SIP ports (https://portforward.com/sip) */
+#define SAP_PORT                        9875  /* default UDP port for processing Session Announcement Protocol (SAP) SDP info */
+
+/* GPRS Tunneling protocol port */
+  
+#define GTP_PORT                        2152
+
+/* RTCP payload types */
+
+#define RTCP_PYLD_TYPE_MIN              72
+#define RTCP_PYLD_TYPE_MAX              82
+#define isRTCPPacket(payload_type)      ((payload_type) >= RTCP_PYLD_TYPE_MIN && (payload_type) <= RTCP_PYLD_TYPE_MAX)
+
+/* fixed RTP payload types */
+
+#define PCMU_PYLD_TYPE                  0
+#define PCMA_PYLD_TYPE                  8
+#define L16_PYLD_TYPE                   11
+
+#ifndef MIN_HDR  /* omit remaining definitions if MIN_HDR defined */
+
+/* session and configuration struct and related definitions */
+
+#include "shared_include/session_cmd.h"  /* brings in shared_include/session.h */
+#include "shared_include/config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  /* ipv6 header, copied from linux/ipv6.h to avoid redefined conflicts when including both linux/ipv6.h and arpa/inet.h */
-  struct ipv6hdr {
-
-  #if defined(__LITTLE_ENDIAN_BITFIELD)
-    __u8    priority:4,
-            version:4;
-  #elif defined(__BIG_ENDIAN_BITFIELD)
-    __u8    version:4,
-            priority:4;
-  #else
-  #error   "Please fix <asm/byteorder.h>"
-  #endif
-
-    __u8    flow_lbl[3];
-
-    __be16  payload_len;
-    __u8    nexthdr;
-    __u8    hop_limit;
-
-    struct  in6_addr saddr;
-    struct  in6_addr daddr;
-  };
-
   #ifndef _COCPU  /* _COCPU not defined for host or native CPU (x86, PowerPC, ARM, etc) */
 
-  /* RTP header struct */
+/* RTP header struct */
 
   typedef struct {
 
@@ -180,25 +236,25 @@ extern "C" {
     uint16_t  BitFields;       /* Bit fields = Vers:2, pad:1 xind:1 Cc:4 marker:1 pyldtype:7 */
     #else
 
- /* Implemented as bit fields JHB Jan 2021, Notes:
+/* Implemented as bit fields JHB Jan 2021, Notes:
 
-    -this makes all RTP header fields defined in RFC 3550 directly accessible from C/C++ application code and avoids host vs. network byte ordering issues for first 2 bytes of the RTP header
-    -bit fields are in lsb order due to gcc limitations, so ordering within each byte is reversed from msb-first layout defined in RFC 3550
- */
+   -this makes all RTP header fields defined in RFC 3550 directly accessible from C/C++ application code and avoids host vs. network byte ordering issues for first 2 bytes of the RTP header
+   -bit fields are in lsb order due to gcc limitations, so ordering within each byte is reversed from msb-first layout defined in RFC 3550
+*/
  
- /* 1st byte of RTP header */
-    uint8_t   CC        : 4;   /* CSRC count */
-    uint8_t   ExtHeader : 1;   /* Extension header */
-    uint8_t   Padding   : 1;   /* Padding */
-    uint8_t   Version   : 2;   /* RTP version */
- /* 2nd byte of RTP header */
-    uint8_t   PyldType  : 7;   /* Payload type */
-    uint8_t   Marker    : 1;   /* Marker bit */
+/* 1st byte of RTP header */
+    uint8_t   CC        : 4;    /* CSRC count */
+    uint8_t   ExtHeader : 1;    /* Extension header */
+    uint8_t   Padding   : 1;    /* Padding */
+    uint8_t   Version   : 2;    /* RTP version */
+/* 2nd byte of RTP header */
+    uint8_t   PyldType  : 7;    /* Payload type */
+    uint8_t   Marker    : 1;    /* Marker bit */
     #endif
-    uint16_t  Sequence;        /* Sequence number */
-    uint32_t  Timestamp;       /* Timestamp */
-    uint32_t  SSRC;            /* SSRC */
-    uint32_t  CSRC[1];         /* remainder of header */
+    uint16_t  Sequence;         /* Sequence number */
+    uint32_t  Timestamp;        /* Timestamp */
+    uint32_t  SSRC;             /* SSRC */
+    uint32_t  CSRC[1];          /* remainder of header */
 
   } RTPHeader;
 
@@ -206,10 +262,10 @@ extern "C" {
 
   typedef struct {
 
-    uint16_t  SrcPort;         /* Source Port */
-    uint16_t  DstPort;         /* Destination Port */
-    uint16_t  UDP_length;      /* Length */
-    uint16_t  UDP_checksum;    /* Checksum */
+    uint16_t  SrcPort;          /* Source Port */
+    uint16_t  DstPort;          /* Destination Port */
+    uint16_t  UDP_length;       /* Length */
+    uint16_t  UDP_checksum;     /* Checksum */
 
   } UDPHeader;
 
@@ -217,13 +273,13 @@ extern "C" {
 
   typedef struct {
 
-    uint16_t  SrcPort;         /* Source Port */
-    uint16_t  DstPort;         /* Destination Port */
-    uint32_t  seq_num;         /* sequence number */
-    uint32_t  ack_num;         /* ack number */
-    uint16_t  hdr_len_misc;    /* header size and flags */
+    uint16_t  SrcPort;          /* Source Port */
+    uint16_t  DstPort;          /* Destination Port */
+    uint32_t  seq_num;          /* sequence number */
+    uint32_t  ack_num;          /* ack number */
+    uint16_t  hdr_len_misc;     /* header size and flags */
     uint16_t  window;
-    uint16_t  checksum;        /* Checksum */
+    uint16_t  checksum;         /* Checksum */
     uint16_t  urgent;
 
   } TCPHeader;
@@ -258,89 +314,29 @@ extern "C" {
 
 /* struct used for packet fragmentation management linked lists */
 
-typedef struct PKT_FRAGMENT {
+  typedef struct PKT_FRAGMENT {
 
-  uint8_t   flags;            /* fragment flags */
-  uint16_t  offset;           /* fragment offset */
-  uint16_t  identifier;       /* identification field */
+    uint8_t   flags;            /* fragment flags */
+    uint16_t  offset;           /* fragment offset */
+    uint16_t  identifier;       /* identification field */
 
-/* 3-way tuple defines the stream connection */
+  /* 3-way tuple defines the stream connection */
 
-  uint8_t   protocol;
-  unsigned __int128 ip_src_addr;  /* 12 bytes left unused for IPv4 */
-  unsigned __int128 ip_dst_addr;
+    uint8_t   protocol;
+    unsigned __int128 ip_src_addr;  /* 12 bytes left unused for IPv4 */
+    unsigned __int128 ip_dst_addr;
 
-/* saved fragment data */
+  /* saved fragment data */
 
-  uint16_t  ip_hdr_len;       /* IP header length and saved header data (copied from first fragment) */
-  uint8_t*  ip_hdr_buf;
+    uint16_t  ip_hdr_len;       /* IP header length and saved header data (copied from first fragment) */
+    uint8_t*  ip_hdr_buf;
 
-  uint16_t  len;              /* fragment length and saved packet data (no IP headers) */
-  uint8_t*  pkt_buf;
+    uint16_t  len;              /* fragment length and saved packet data (no IP headers) */
+    uint8_t*  pkt_buf;
 
-  struct PKT_FRAGMENT* next;  /* pointer to next fragment */
+    struct PKT_FRAGMENT* next;  /* pointer to next fragment */
 
-} PKT_FRAGMENT;
-
-/* basic IP, UDP, and RTP header lengths */
-
-  #define IPV4_HEADER_LEN                 20
-  #define IPV6_HEADER_LEN                 40
-  #define UDP_HEADER_LEN                  8
-  #define RTP_HEADER_LEN                  12
-
-  #define MAX_IP_UDP_RTP_HEADER_LEN       (IPV6_HEADER_LEN + UDP_HEADER_LEN + RTP_HEADER_LEN)
-
-  /* max RTP packet length, mediaTest has test cases consisting of ptimes up to 240 ms, G711 will require a 1994 byte packet for IPv6.  This definition also used in mediaMin */
-
-  #define MAX_RTP_PACKET_LEN              (MAX_RAW_FRAME + MAX_IP_UDP_RTP_HEADER_LEN)
-  #define MAX_TCP_PACKET_LEN              65535
-
-/* IP protocols */
-
-  #ifndef IPv4
-    #define IPv4                          4
-  #endif
-  #ifndef IPv6
-    #define IPv6                          6
-  #endif
-  #define UDP_PROTOCOL                    17
-  #ifndef UDP
-    #define UDP UDP_PROTOCOL                    /* define short version if system allows it, JHB Jun 2024 */
-  #endif
-  #define TCP_PROTOCOL                    6
-  #ifndef TCP
-    #define TCP TCP_PROTOCOL
-  #endif
-  #define ICMP_PROTOCOL                   1
-  #ifndef ICMP
-    #define ICMP ICMP_PROTOCOL
-  #endif
-  #define ENCAPSULATING_SECURITY_PAYLOAD  50
-  #define VRRP                            112
-
-/* SIP / SDP info ports */
-
-  #define SIP_PORT                        5060  /* default SIP message port */
-  #define SIP_PORT_ENCRYPTED              5061  /* same, encrypted */
-  #define SIP_PORT_RANGE_LOWER            SIP_PORT
-  #define SIP_PORT_RANGE_UPPER            5090  /* typical range of SIP ports (https://portforward.com/sip) */
-  #define SAP_PORT                        9875  /* default UDP port for processing Session Announcement Protocol (SAP) SDP info */
-
-  /* GPRS Tunneling protocol port */
-  
-  #define GTP_PORT                        2152
-
-/* RTCP payload types */
-
-  #define RTCP_PYLD_TYPE_MIN              72
-  #define RTCP_PYLD_TYPE_MAX              82
-
-/* fixed RTP payload types */
-
-  #define PCMU_PYLD_TYPE                  0
-  #define PCMA_PYLD_TYPE                  8
-  #define L16_PYLD_TYPE                   11
+  } PKT_FRAGMENT;
 
   /* thread level items */
 
@@ -445,9 +441,9 @@ typedef struct PKT_FRAGMENT {
 
   extern const char PKTLIB_VERSION[];
 
-/* DSConfigPktlib() handles basic lib configuration.  pGlobalConfig and pDebugConfig point to GLOBAL_CONFIG and DEBUG_CONFIG structs defined in config.h.  See DS_CP_xx flags below */
+/* DSConfigPktlib() handles basic lib configuration. pGlobalConfig and pDebugConfig point to GLOBAL_CONFIG and DEBUG_CONFIG structs defined in config.h. See DS_CP_xx flags below */
 
-  int DSConfigPktlib(GLOBAL_CONFIG* pGlobalConfig, DEBUG_CONFIG* pDebugConfig, unsigned int uFlags);  /* global config, debug config, or both can be configured depending on attributes specified in uFlags.  NULL should be given for either pointer not used */
+  int DSConfigPktlib(GLOBAL_CONFIG* pGlobalConfig, DEBUG_CONFIG* pDebugConfig, unsigned int uFlags);  /* global config, debug config, or both can be configured depending on attributes specified in uFlags. NULL should be given for either pointer not used */
 
 /* Session APIs:
 
@@ -460,29 +456,28 @@ typedef struct PKT_FRAGMENT {
        network I/O add-in card             DS_SESSION_DP_DPDK_QUEUE
        coCPU card including network I/O    DS_SESSION_DP_COCPU_QUEUE
 
-      The return value is a session handle (sessionHandle) for use with other APIs.  Inputs include:
+      The return value is a session handle (sessionHandle) for use with other APIs. Inputs include:
 
         network interface -- see above
 
         uFlags -- see "uFlags" notes given here and in constant definition comments below
 
-        session data -- in the mediaTest source code examples, session data is read from session configuration files.  User apps can re-use that method and source code, or implement alternative methods
-                        to initialize SESSION_DATA structs
+        pSessionData -- in the mediaTest source code examples, session data is read from session configuration files. User apps can re-use that method and source code, or implement alternative methods to initialize SESSION_DATA structs. pSessionData cannot be NULL
 
       Network interface notes:
       
         -when no network interface is specified (default):
 
           -user applications are responsible for packet I/O and calling DSBufferPackets(), DSGetOrderedPackets(), and other APIs
-          -several APIs match sessions to packets using IP and UDP header hashing.  If user-managed sessions are active, then the session handle is also included in the hash
+          -several APIs match sessions to packets using IP and UDP header hashing. If user-managed sessions are active, then the session handle is also included in the hash
 
         -when a network interface is specified:
 
           -reserved pm thread [1] uses the DSRecvPackets() and DSSendPackets() APIs for packet I/O, and calls other APIs internally
           -networkIfName examples include:
 
-            -eth0, em1 ...    # motherboard NIC
-            -p2p1, p6p1 ...   # add-in card or coCPU card
+            -eth0, em1 ...  # motherboard NIC
+            -p2p1, p6p1 ... # add-in card or coCPU card
 
      One each of following operating modes, data flow paths, and timing values should be specified:
 
@@ -501,7 +496,7 @@ typedef struct PKT_FRAGMENT {
 
       Timing                               uFlags
 
-       -0 -- none, DSSessionTranscode() or other APIs are called by application code based on a user-defined timing.  This should be used with frame mode [default]
+       -0 -- none, DSSessionTranscode() or other APIs are called by application code based on a user-defined timing. This should be used with frame mode [default]
        -N -- internal SigSRF timing is used and packet and codec related APIs are explicitly called every N msec
 
      The following attributes may also be included in uFlags:
@@ -512,7 +507,7 @@ typedef struct PKT_FRAGMENT {
        no jitter buffer                    DS_SESSION_NO_JITTERBUFFER      This applies to reserved pm thread [1] usage only, otherwise user application code decides whether to call jitter buffer APIs
        use codec jitter buffer             DS_SESSION_CODEC_JITTERBUFFER   Only valid for codecs that include a jitter buffer in their formal spec
        enable dynamic channels             DS_SESSION_DYN_CHAN_ENABLE      Allow channels to be created based on SSRC transitions during packet flow (this implements RFC 8108 support for multiple RTP streams in a session)
-       enable user managed sessions        DS_SESSION_USER_MANAGED         User is responsible for managing sessions and must supply the session handle to any APIs that normally would match packets to sessions internally.  One use case for this is where session termination definitions are all or partially duplicated
+       enable user managed sessions        DS_SESSION_USER_MANAGED         User is responsible for managing sessions and must supply the session handle to any APIs that normally would match packets to sessions internally. One use case for this is where session termination definitions are all or partially duplicated
        disable network I/O initialization  DS_SESSION_DISABLE_NETIO        Subsequent DSRecv/SendPackets() calls will return errors if this flag is used when creating a session
        preserve incoming sequence numbers  DS_SESSION_PRESERVE_SEQNUM      Preserve RTP sequence numbers from incomming stream when formatting packets for output
 
@@ -520,10 +515,11 @@ typedef struct PKT_FRAGMENT {
 
        -if no network interface is given, DSBufferPackets, DSGetOrderedPackets, and DSFormatPacket APIs may be used but not DSSendPackets and DSRecvPackets
 
-       -in all cases, DSAssignDataPlane() must be called first to obtain a data plane handle (dpHandle).  This applies to user apps, reserved pm thread [1], and for coCPU and DPDK cores. DSAssignDataPlane() is a DirectCore API that handles resource management and monitoring, including mem allocation, core usage, number of instances and users, etc
+       -in all cases, DSAssignPlatform() must be called first to obtain a platform handle (dpHandle). This applies to user apps, reserved pm thread [1], and for coCPU and DPDK cores. DSAssignPlatform() is a DirectCore API that handles resource management and monitoring, including mem allocation, core usage, number of instances and users, etc
 
-    -DSSessionTranscode() -- transcodes one or more packets based on codecs, ptime, and other pSessionData params specified in DSCreateSession().  Notes:
+    -DSSessionTranscode() -- transcodes one or more packets based on codecs, ptime, and other pSessionData params specified in DSCreateSession(). Notes:
 
+      ** THIS API IS CURRENTLY DEPRECATED **
       -calls DSCodecEncode() and/or DSCodecDecode()
       -calls DSBufferPackets(), DSGetOrderedPackets() and DSFormatPacket() if a packet mode was given in DSCreateSession()
       -calls DSSendPackets() and DSRecvPackets() if a network interface was given in DSCreateSession()
@@ -534,7 +530,7 @@ typedef struct PKT_FRAGMENT {
    [1] reserved packet/media thread, see comments in packet_flow_media_proc.c
 */
 
-  HSESSION DSCreateSession(HDATAPLANE dpHandle, unsigned int uFlags, char* networkIfName, SESSION_DATA* pSessionData);  /* note -- SESSION_DATA struct defined in shared_include/session.h */
+  HSESSION DSCreateSession(HPLATFORM dpHandle, unsigned int uFlags, char* networkIfName, SESSION_DATA* pSessionData);  /* note -- SESSION_DATA struct defined in shared_include/session.h */
 
   int DSTranscodeSession(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, unsigned int pkt_buf_len);
 
@@ -542,7 +538,7 @@ typedef struct PKT_FRAGMENT {
 
 /* Packet flow and processing APIs:
 
-    -DSRecvPackets() - receive one or more network packets.  Notes:
+    -DSRecvPackets() - receive one or more network packets. Notes:
 
       -specifying -1 for sessionHandle receives all available packets for all existing sessions created by DSCreateSession()
 
@@ -563,7 +559,7 @@ typedef struct PKT_FRAGMENT {
 
       -TODO: add - setup a callback function to be automatically called whenever a packet is available
 
-    -DSSendPackets() - send one or more packets to network sockets or queues used for media service thread or process.  Notes:
+    -DSSendPackets() - send one or more packets to network sockets or queues used for media service thread or process. Notes:
 
       -sessionHandle is a pointer to an array of session handles, of length numPkts
 
@@ -580,17 +576,17 @@ typedef struct PKT_FRAGMENT {
 
       -if DS_SEND_PKT_FMT is given then DSFormatPacket() is called
 
-    -DSFormatPacket() - given an RTP payload and an RTP header specifying at least payload type and marker bit, format a network packet for sending.  Notes:
+    -DSFormatPacket() - given an RTP payload and an RTP header specifying at least payload type and marker bit, format a network packet for sending. Notes:
 
       -the API looks up IP addr and port info using the chnum arg, and generates IP/UDP headers
 
       -the API increments timestamps and sequence numbers and generates an RTP header
 
-      -chnum can be determined by calling DSGetPacketInfo() with the DS_PKT_INFO_CHNUM flag (see reference source code).  If chnum is -1, then the FORMAT_PKT* arg
+      -chnum can be determined by calling DSGetPacketInfo() with the DS_PKT_INFO_CHNUM flag (see reference source code). If chnum is -1, then the FORMAT_PKT* arg
        (see next note) must specify *all* information about the packet's headers
 
       -an optional (i.e. non-NULL) packet header struct pointer (FORMAT_PKT*) can be given to specify IP, UDP, and/or RTP header items (see also the UDPHeader and
-       RTPHeader structs).  Also some items that are "header related" are included, such as ptime.  Packet header items are specified with a combination of one or
+       RTPHeader structs). Also some items that are "header related" are included, such as ptime. Packet header items are specified with a combination of one or
        more DS_FMT_PKT_USER_xxx attributes given in uFlags (defined below). For a NULL pointer or any items not specified in uFlags, DSFormatPacket() will use
        internal Pktlib values
 */
@@ -606,8 +602,8 @@ typedef struct PKT_FRAGMENT {
    Common notes:
 
     -if the session handle is -1, then for DSBufferPackets, packets to be added are matched to an existing session via hashing, and for DSGetOrderedPackets all
-     available packets for all existing sessions are pulled.  If a specific session handle is given, then no hashing is performed and packets added/pulled apply
-     only to that session.  If a user-managed session is active, the session handle cannot be -1 and the correct session handle must be given (hashing is performed
+     available packets for all existing sessions are pulled. If a specific session handle is given, then no hashing is performed and packets added/pulled apply
+     only to that session. If a user-managed session is active, the session handle cannot be -1 and the correct session handle must be given (hashing is performed
      and includes the session handle)
 
     -if the pkt_info[] arg is given it will be filled in with information about packets added/pulled to/from the buffer. See the DS_PKT_PYLD_CONTENT_xxx flags
@@ -615,10 +611,10 @@ typedef struct PKT_FRAGMENT {
     -DS_PKT_INFO_HOST_BYTE_ORDER indicates that input packet headers (for DSBufferPackets) or output packet headers (for DSGetOrderedPackets) are in host byte order.
      Network byte order is the default if no flag is given (DS_PKT_INFO_NETWORK_BYTE_ORDER is given). Byte order flags apply only to headers, not payload contents
 
-    -DSBufferPackets() - add one or more packets to the SigSRF jitter buffer.  Notes:
+    -DSBufferPackets() - add one or more packets to the SigSRF jitter buffer. Notes:
 
-      -returns the number of packets added.  A zero value can be returned for several reasons, including no packet match (hashing with existing sessions) and the
-       packet timestamp is out of the current time window.  Returns -1 for an error condition
+      -returns the number of packets added. A zero value can be returned for several reasons, including no packet match (hashing with existing sessions) and the
+       packet timestamp is out of the current time window. Returns -1 for an error condition
 
       -multiple packets can be added. On input pkt_buf_len[0] contains the overall number of bytes to process (i.e. length of all pkt_buf[] data), on output
        pkt_buf_len[] contains lengths of all packets found to be correctly formatted, meeting matching criteria, and added to the buffer
@@ -626,30 +622,30 @@ typedef struct PKT_FRAGMENT {
       -DS_GETORD_PKT_FLUSH forcees any packets still in the buffer to be output. Typically this is done prior to closing a session
 
       -DS_BUFFER_PKT_RETURN_ALL_DELIVERABLE will force currently available packets to be delivered regardless of timestamp or sequence number.
-       Typically this is done during an open session, for example when a new RTP stream (new SSRC) starts.  This flag should be treated as an "override" or
+       Typically this is done during an open session, for example when a new RTP stream (new SSRC) starts. This flag should be treated as an "override" or
        "brute force pull" during which some aspects of correct jitter buffer operation may not apply 
 
       -the API should not be used -- or used very carefully -- if DSRecvPackets() is called with DS_RECV_PKT_ADDTOJITTERBUFFER
 
-    -DSGetOrderedPackets() -- pull one or more packets from the SigSRF jitter buffer that are deliverable in the current time window.  Notes:
+    -DSGetOrderedPackets() -- pull one or more packets from the SigSRF jitter buffer that are deliverable in the current time window. Notes:
 
-      -returns the number of packets pulled.  A zero value can be returned for several reasons, including no packets available in the current time window.  If more
-       than one packet is pulled, pkt_buf[] will contain each packet consecutively and the pkt_buf_len[] array will contain the length of each packet.  If there is an
+      -returns the number of packets pulled. A zero value can be returned for several reasons, including no packets available in the current time window. If more
+       than one packet is pulled, pkt_buf[] will contain each packet consecutively and the pkt_buf_len[] array will contain the length of each packet. If there is an
        error condition then -1 is returned
 
       -if DS_GETORD_PKT_SESSION is given, sessionHandle must specify a currently active session. If DS_GETORD_PKT_CHNUM is given, sessionHandle must specify a currently
-       valid channel number (including dynamic channels).  Otherwise sessionHandle is ignored and all packets (for all currently active sessions) that are deliverable
+       valid channel number (including dynamic channels). Otherwise sessionHandle is ignored and all packets (for all currently active sessions) that are deliverable
        in the current time window are returned
 
       -use DS_GETORD_PKT_ANALYTICS if packets are being added to the buffer without accurate arrival timestamps. Applying this flag updates jitter buffer time windows
        every time DSGetOrderedPackets() is called. Without the flag, the ptime value specified in session configuration determines the window update interval
 
-      -use DS_GET_ORDERED_PKT_ENABLE_DTX when DTX handling should be enabled.  Note that in this case there may be more packets output from the buffer
-       than input; typically these additional packets contain SID Reuse or SID NoData payloads due to expansion of DTX periods.  When DTX handling is not enabled,
+      -use DS_GET_ORDERED_PKT_ENABLE_DTX when DTX handling should be enabled. Note that in this case there may be more packets output from the buffer
+       than input; typically these additional packets contain SID Reuse or SID NoData payloads due to expansion of DTX periods. When DTX handling is not enabled,
        jitter buffer operation in the presence of DTX packets may vary, for example large time gaps between DTX packets and subsequent packets may cause
-       unpredictable results.  Additional notes (i) DTX = discontinuous transmission, (ii) SID frames are used by decoders for CNG (comfort noise generation) audio
+       unpredictable results. Additional notes (i) DTX = discontinuous transmission, (ii) SID frames are used by decoders for CNG (comfort noise generation) audio
 
-      -use DS_GET_ORDERED_PKT_ENABLE_DTMF when DTMF event handling should be enabled.  When enabled, the termN.dtmf_type fields in the session configuration
+      -use DS_GET_ORDERED_PKT_ENABLE_DTMF when DTMF event handling should be enabled. When enabled, the termN.dtmf_type fields in the session configuration
        determine how incoming DTMF event packets are handled, and whether they are translated through to outgoing packets
 
       -payload_info must point to a valid unsigned int array when DTX and/or DTMF handling is enabled, otherwise an error condition (-1) is returned
@@ -668,13 +664,13 @@ typedef struct PKT_FRAGMENT {
 
     -DSGetSessionInfo() - retrieves information about a session, including (i) terminations defined in session configurations, (ii) channels, including dynamic channels, in use by the session, and (iii) other session info
 
-      -if uFlags specifies DS_SESSION_INFO_HANDLE, a valid session handle must be given.  If uFlags specifies DS_SESSION_INFO_CHNUM, a valid channel number must be given. Supplying a channel number is useful when dyanmic channels are active, in which case new channels can be created after session creation -- at any time during packet flow -- depending on packet contents (see discussion of RFC 8108).  Unlike some other APIs, -1 is not allowed as a session handle argument, as no internal session matching based on packet headers is performed
+      -if uFlags specifies DS_SESSION_INFO_HANDLE, a valid session handle must be given. If uFlags specifies DS_SESSION_INFO_CHNUM, a valid channel number must be given. Supplying a channel number is useful when dyanmic channels are active, in which case new channels can be created after session creation -- at any time during packet flow -- depending on packet contents (see discussion of RFC 8108). Unlike some other APIs, -1 is not allowed as a session handle argument, as no internal session matching based on packet headers is performed
 
       -use DS_SESSION_INFO_xxx definitions for uFlags to specify which info to return
 
-      -if DS_SESSION_INFO_SESSION is included in uFlags, pInfo should point to a SESSION_DATA struct; otherwise pInfo should point to a TERMINATION_INFO struct.  If pInfo is given as NULL, no struct data is copied
+      -if DS_SESSION_INFO_SESSION is included in uFlags, pInfo should point to a SESSION_DATA struct; otherwise pInfo should point to a TERMINATION_INFO struct. If pInfo is given as NULL, no struct data is copied
 
-      -Term id values are typically 1 or 2 and refer to term1 and term2 session config file definitions (in the future arbitrary N values may be supported).  term_id values can be omitted (given as zero) when DS_SESSION_INFO_CHNUM is applied if other uFlags attributes imply a term_id value, for example DS_SESSION_INFO_CODEC_LINK implies term_id = 2
+      -Term id values are typically 1 or 2 and refer to term1 and term2 session config file definitions (in the future arbitrary N values may be supported). term_id values can be omitted (given as zero) when DS_SESSION_INFO_CHNUM is applied if other uFlags attributes imply a term_id value, for example DS_SESSION_INFO_CODEC_LINK implies term_id = 2
 
 */
 
@@ -692,11 +688,13 @@ typedef struct PKT_FRAGMENT {
 
         -SigSRF documentation often refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession()
 
-      -pkt_buf should point to a packet, and pktlen should contain the length of the packet, in bytes. If a packet length is unknown, pktlen can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet
+      -pkt_buf should point to a packet, and len should contain the length of the packet (size in bytes). If a packet length is unknown, len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet
 
       -if a DS_PKT_INFO_RTP_xxx flag is given in uFlags, the corresponding RTP header item is returned
 
       -if a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag is given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1
+
+      -len if given as a positive value specifies packet length (size in bytes) or if combined with the DS_PKT_INFO_USE_IP_HDR_LEN flag specifies IP header length of the packet (i.e. already known from a previous DSGetPacketInfo() call). Typically len is given as -1 to allow DSGetPacketInfo() to calculate the packet's length from its header contents
 
       -pInfo, if not NULL, will contain:
 
@@ -714,7 +712,7 @@ typedef struct PKT_FRAGMENT {
       -both mediaMin.cpp and packet_flow_media_proc.c contain many examples of DSGetPacketInfo() usage
  */
 
-  typedef int (DSGetPacketInfo_t)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int pkt_len, void* pInfo, int* chnum);
+  typedef int (DSGetPacketInfo_t)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int len, void* pInfo, int* chnum);
 
   #ifndef GET_PKT_INFO_TYPEDEF_ONLY  /* app or lib can specify no prototype for DSGetPacketInfo() if it will be doing its own dlsym() lookup, JHB May 2024 */
   DSGetPacketInfo_t DSGetPacketInfo;
@@ -729,7 +727,7 @@ typedef struct PKT_FRAGMENT {
      uint8_t             flags;                   /* one or more DS_PKT_FRAGMENT_XXX flags */
      uint16_t            fragment_offset;
      int                 pkt_len;
-     int                 ip_hdr_len;
+     int                 ip_hdr_len;              /* IP header size (in bytes), including IPv6 extension headers if any */
      unsigned short int  src_port;
      unsigned short int  dst_port;
      unsigned int        seqnum;                  /* TCP sequence number or UDP/RTP sequence number */
@@ -747,6 +745,7 @@ typedef struct PKT_FRAGMENT {
      int                 rtp_hdr_len;
      int                 rtp_pyld_ofs;            /* offset from start of packet to RTP payload data */
      int                 rtp_pyld_len;
+     uint8_t             rtp_version;
      uint8_t             rtp_pyld_type;
      int                 rtp_padding_len;
      uint32_t            rtp_timestamp;
@@ -772,17 +771,17 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 /* media processing related APIs:
    
-    -DSConvertFsPacket() - converts sampling rate from one codec to another, taking into account RTP packet info.  Notes:
+    -DSConvertFsPacket() - converts sampling rate from one codec to another, taking into account RTP packet info. Notes:
 
       -chnum can be determined by calling DSGetPacketInfo() with DS_PKT_INFO_CHNUM (see reference source code)
 
-      -sampling_rate elements in TERMINFO struct voice attributes are used to determine up or down sampling amount and calculate an *integer ratio* used to multiply the input sampling rate.  For example if up  sampling from 16 kHz to 24 kHz, the function will use a multiplier of 3 and a divisor of 2
+      -sampling_rate elements in TERMINFO struct voice attributes are used to determine up or down sampling amount and calculate an *integer ratio* used to multiply the input sampling rate. For example if up  sampling from 16 kHz to 24 kHz, the function will use a multiplier of 3 and a divisor of 2
 
-      -input buffer length (data_len) is in bytes.  If data_len is -1 then sampling_rate and ptime elements within the TERMINFO voice attributes used to create the channel (chnum) are referenced to determine input buffer length
+      -input buffer length (data_len) is in bytes. If data_len is -1 then sampling_rate and ptime elements within the TERMINFO voice attributes used to create the channel (chnum) are referenced to determine input buffer length
 
       -returns output buffer length in bytes, calculated by multiplying data_len by the conversion ratio
 
-      -pData points to input data and the operation is done in-place.  When up sampling, the buffer must be able to hold the additional output samples.  For example, if up sampling from 8 to 16 kHz, the buffer must be 2x the size of the input data
+      -pData points to input data and the operation is done in-place. When up sampling, the buffer must be able to hold the additional output samples. For example, if up sampling from 8 to 16 kHz, the buffer must be 2x the size of the input data
 
    Note this API is different than DSConvertFs() in alglib, which performs Fs conversion without knowing about ptime, codec type, etc
 */
@@ -790,17 +789,17 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
   int DSConvertFsPacket(unsigned int chnum, int16_t* pData, int data_len);
 
 
-/* DSGetDTMFInfo() -- parse DTMF event packet.  Notes:
+/* DSGetDTMFInfo() -- parse DTMF event packet. Notes:
 
-  -payload should point to a packet payload, and pyldlen should specify the payload length.  Currently sessionHandle and uFlags are not used, although that may change in the future
+  -payload should point to a packet payload, and pyldlen should specify the payload length. Currently sessionHandle and uFlags are not used, although that may change in the future
 
   -pkt_info[] values returned by DSGetOrderedPackets() should be checked for a DS_PKT_PYLD_CONTENT_DTMF type, and if found then DSGetDTMFInfo() is called (see mediaTest source code examples)
 
-  -on return the dtmf_event struct contains info about the DTMF event.  The dtmf_event struct is defined in shared_include/alarms.h.  -1 is returned for an error condition
+  -on return the dtmf_event struct contains info about the DTMF event. The dtmf_event struct is defined in shared_include/alarms.h. -1 is returned for an error condition
 
   -some notes to keep in mind about DTMF event packets:
 
-     -a variable number of packets may be received for a DTMF event.  Each packet contains event ID, volume, and duration info.  Only the last packet of the event should be used for final duration info.  Per RFC 4733, the last packet of the event may be duplicated
+     -a variable number of packets may be received for a DTMF event. Each packet contains event ID, volume, and duration info. Only the last packet of the event should be used for final duration info. Per RFC 4733, the last packet of the event may be duplicated
 
      -interval between DTMF packets may not match the ptime being used for media packets, for example voice packets may be arriving at 60 msec intervals and DTMF packets at 20 msec intervals
 
@@ -808,9 +807,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 */
 
   int DSGetDTMFInfo(HSESSION sessionHandle, unsigned int uFlags, unsigned char* payload, unsigned int pyldlen, struct dtmf_event* info);
-   
 
-/* Get last error condition for a given session.  See error codes defined below, for example DS_BUFFER_PKT_ERROR_xxx */
+/* Get last error condition for a given session. See error codes defined below, for example DS_BUFFER_PKT_ERROR_xxx */
 
   int DSGetSessionStatus(HSESSION sessionHandle);
 
@@ -863,13 +861,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
   } pcap_hdr_t;
 
-  #ifndef offsetof  /* if for some reason we don't see offsetof() then define it as in stddef.h */
-    #define offsetof(TYPE, MEMBER) __builtin_offsetof (TYPE, MEMBER)
-  #endif
-  #ifndef sizeof_field  /* sizeof_field() defined in later versions of stddef.h; if not found then define it as in stddef.h */
-    #define sizeof_field(t, f) (sizeof(((t*)0)->f))
-  #endif
-  #define SIZEOF_PCAP_HDR_T (offsetof(pcap_hdr_t, link_type) + sizeof_field(pcap_hdr_t, link_type))  /* define size of pcap part of pcap_hdr_t. This definition would also work without the union, JHB Nov 2023 */
+  #define SIZEOF_PCAP_HDR_T (offsetof(pcap_hdr_t, link_type) + sizeof_field(pcap_hdr_t, link_type))  /* define size of pcap part of pcap_hdr_t. This definition would also work without the union, JHB Nov 2023. sizeof_field() is defined in <stddef.h> or include/alias.h, JHB Sep 2024 */
 
   typedef struct pcapng_hdr_s {  /* section header block (SHB) for pcapng format */
 
@@ -998,7 +990,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 /* DSFilterPacket() returns the next packet from a pcap matching given filter specs */
 
-  int DSFilterPacket(FILE* fp_pcap, unsigned int uFlags, int link_layer_info, pcaprec_hdr_t* p_pcap_rec_hdr, uint8_t* pkt_buf, int pkt_buf_len, PKTINFO* PktInfo, uint64_t* pNumRead);  /* if fp_pcap is NULL then pktbuf must contain a valid packet and pktlen must be correct. Otherwise fp_pcap must point to a valid, already-opened FILE* handle */
+  int DSFilterPacket(FILE* fp_pcap, unsigned int uFlags, int link_layer_info, pcaprec_hdr_t* p_pcap_rec_hdr, uint8_t* pkt_buf, int pkt_buf_len, PKTINFO* PktInfo, uint64_t* pNumRead);  /* if fp_pcap is NULL then pktbuf must contain a valid packet and pkt_buf_len must be correct. Otherwise fp_pcap must point to a valid, already-opened FILE* handle */
 
   #define DS_FILTER_PKT_ARP                            0x10000  /* DS_FILTER_PKT_xxx flags may be combined with some DS_FIND_PCAP_PACKET_xxx flags */
   #define DS_FILTER_PKT_802                            0x20000
@@ -1027,11 +1019,11 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
   #define DS_FIND_PCAP_PACKET_LAST_MATCHING             0x2000
   #define DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET           0x4000  /* use byte offset instead of record offset. Seek offset gives faster performance but record offset can be useful when the number of records searched prior to a match is needed. Record offset is the default. This flag may be combined with DS_FILTER_PKT_xxx flags and affects the return value of pNumRead in DSFilterPacket() */
 
-/* DSConfigMediaService() -- start the SigSRF media service as a process or some number of packet/media threads.  Notes:
+/* DSConfigMediaService() -- start the SigSRF media service as a process or some number of packet/media threads. Notes:
 
-    -threads[] is an array of thread handles specifying packet/media threads to be acted on (currently handles are indexes, for example, 0 .. 3 specifies packet/media threads 0 through 3).  When the DS_CONFIG_MEDIA_SERVICE_START flag is specified, threads[] can be
-     given as NULL in which case thread handles will not be returned to the user application.  Other DS_CONFIG_MEDIA_SERVICE_XXX flags may require threads[] to be non-NULL.  Note that thread handles should not be confused with thread id values, which are determined
-     by the OS (typically Linux).  Packet/media thread id values can be determined by calling DSGetThreadInfo()
+    -threads[] is an array of thread handles specifying packet/media threads to be acted on (currently handles are indexes, for example, 0 .. 3 specifies packet/media threads 0 through 3). When the DS_CONFIG_MEDIA_SERVICE_START flag is specified, threads[] can be
+     given as NULL in which case thread handles will not be returned to the user application. Other DS_CONFIG_MEDIA_SERVICE_XXX flags may require threads[] to be non-NULL. Note that thread handles should not be confused with thread id values, which are determined
+     by the OS (typically Linux). Packet/media thread id values can be determined by calling DSGetThreadInfo()
 
     -num_threads is the number of thread handles contained in threads
 
@@ -1039,7 +1031,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
     *func is a pointer to a thread function. Ignored if DS_CONFIG_MEDIA_SERVICE_THREAD is not given
 
-    -szCmdLine points to a string containing an optional command line.  If NULL, or uFlags specifies a thread, then cmdLine is ignored
+    -szCmdLine points to a string containing an optional command line. If NULL, or uFlags specifies a thread, then cmdLine is ignored
 
     -the return value is -1 for error conditions, otherwise the the return value is the number of threads acted on
 */
@@ -1058,12 +1050,12 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
   void* packet_flow_media_proc(void* pExecutionMode);
 
 
-/* DSGetTermChan() gets the channel for hSession's termN endpoint, with optional channel validation checks.  chnum can be NULL if the channel number is not needed and only purpose is validation.  See DS_CHECK_CHAN_xxx flags below */
+/* DSGetTermChan() gets the channel for hSession's termN endpoint, with optional channel validation checks. chnum can be NULL if the channel number is not needed and only purpose is validation. See DS_CHECK_CHAN_xxx flags below */
 
   int DSGetTermChan(HSESSION hSession, unsigned int uFlags, int* chnum, int nTerm);
 
 
-/* DSPushPackets() and DSPullPackets() -- send and receive packets from the media service.  Notes:
+/* DSPushPackets() and DSPullPackets() -- send and receive packets from the media service. Notes:
 
   -pkt_buf points to one or more pushed or pulled packets stored consecutively in memory
 
@@ -1084,7 +1076,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
   -hSession:
   
      -for DSPushPackets(), an array of session handles with a one-to-one relationship with packets pointed to by pkt_buf
-     -for DSPullPackets(), a session handle that can be used to filter pullled packets by session.  If -1 is given, then all available packets for all active sessions are pulled, and per-packet session handles are stored in pktInfo[]
+     -for DSPullPackets(), a session handle that can be used to filter pullled packets by session. If -1 is given, then all available packets for all active sessions are pulled, and per-packet session handles are stored in pktInfo[]
 
   -pkt_max_buf_len is the maximum amount of buffer space pointed to by pkt_buf that DSPullPackets can write
 */
@@ -1104,7 +1096,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
   bool DSIsPktStatsHistoryLoggingEnabled(int thread_index);
 
-/* write run-time packet time and loss stats to event log using session handle.  DSConfigPktlib() can be used to set DS_ENABLE_PACKET_TIME_STATS and/or DS_ENABLE_PACKET_LOSS_STATS flags in the DEBUG_CONFIG struct uPktStatsLogging item (see shared_include/config.h) */
+/* write run-time packet time and loss stats to event log using session handle. DSConfigPktlib() can be used to set DS_ENABLE_PACKET_TIME_STATS and/or DS_ENABLE_PACKET_LOSS_STATS flags in the DEBUG_CONFIG struct uPktStatsLogging item (see shared_include/config.h) */
 
   int DSLogRunTimeStats(HSESSION hSession, unsigned int uFlags);
 
@@ -1122,7 +1114,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 /* DSCreateSession() uFlags definitions */
 
-#define DS_SESSION_USER_MANAGED                          0x100  /* session id will be used in hash key, requires user to know which session incomming packets belong to */
+#define DS_SESSION_USER_MANAGED                          0x100  /* session id will be used in hash key, requires app to know which session incomming packets belong to */
 #define DS_SESSION_DYN_CHAN_ENABLE                       0x200  /* channels will be dyanimcally created for a given session when a new SSRC value is seen on a given channel (implementation follows RFC 8108) */
 #define DS_SESSION_DISABLE_NETIO                         0x400  /* disable network I/O initialization, subsequent DSRecv/SendPackets() calls will return errors if this flag is used when creating a session */
 #define DS_SESSION_DISABLE_PRESERVE_SEQNUM               0x800  /* don't preserve RTP sequence number from incomming stream */
@@ -1139,7 +1131,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 #define DS_RECV_PKT_FILTER_RTCP                          0x100  /* filter RTCP packets */
 #define DS_RECV_PKT_QUEUE_COPY                           0x200  /* pull packets from the receive queue, but copy, or "look ahead" only, don't advance the receive queue ptr */
-#define DS_RECV_PKT_ENABLE_RFC7198_DEDUP                 0x400  /* apply RFC7198 packet temporal de-duplication to packets when returning them to the calling app or thread.  Default in the SigSRF packet/media thread is enabled */
+#define DS_RECV_PKT_ENABLE_RFC7198_DEDUP                 0x400  /* apply RFC7198 packet temporal de-duplication to packets when returning them to the calling app or thread. Default in the SigSRF packet/media thread is enabled */
 
 /* DSSendPackets() uFlags definitions */
 
@@ -1165,6 +1157,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_BUFFER_PKT_ALLOW_TIMESTAMP_JUMP              0x4000  /* prevent DSBufferPackets() from purging due to large timestamp jumps, and DSGetOrderedPackets() from returning non-deliverable due to same */ 
 #define DS_BUFFER_PKT_ENABLE_RFC7198_DEDUP              0x8000  /* legacy method of handling RFC7198 temporal de-duplication, should not be used unless needed in a specific case. New method is to apply the DS_RECV_PKT_ENABLE_RFC7198_DEDUP flag to packets being received from a per session queue */
 #define DS_BUFFER_PKT_ENABLE_DYNAMIC_ADJUST            0x10000  /* enable dynamic jitter buffer; i.e. target delay is adjusted dynamically based on measured incoming packet delays */
+#define DS_BUFFER_PKT_EXTENDED_SESSION_SEARCH  DS_PKT_INFO_EXTENDED_SESSION_SEARCH  /* enable extended session search to allow packet buffering for mix of user-managed sessions and process-managed sessions */
 
 #define DS_GETORD_PKT_SESSION                            0x100
 #define DS_GETORD_PKT_CHNUM                              0x200
@@ -1175,7 +1168,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_GETORD_PKT_ENABLE_DTX                       0x80000  /* enable DTX handling -- note this flag is deprecated, DTX handling should be controlled by the TERM_DTX_ENABLE flag in TERMINATION_INFO struct uFlags element (shared_include/session.h). DS_GETORD_PKT_ENABLE_DTX can still be applied to force DTX handling on a case-by-case basis, but that is not recommended */
 #define DS_GETORD_PKT_ENABLE_DTMF                     0x100000  /* enable DTMF handling */
 #define DS_GETORD_PKT_TIMESTAMP_GAP_RESYNC            0x200000  /* jitter buffer resync on timestamp gaps -- this flag causes DSGetOrderedPackets() to perform a jitter buffer resync for large timestamp gaps. For example if there is a large timestamp gap, the jitter buffer is immediately resync'd and packets are delivered as if there were no gap. This flag is ignored if the DS_GETORD_PKT_RETURN_ALL_DELIVERABLE flag is also specified */
-#define DS_GETORD_PKT_ENABLE_SINGLE_PKT_LKAHD         0x400000  /* [Deprecated -- see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF replacement] enable single packet look-ahead -- this flag is reserved for situations where, for some reason, the jitter buffer has only one packet available and is unable to perform comparisons for re-ordering.  Under normal oepration, this does not occur, but the flag is available if such a case should ever arise */
+#define DS_GETORD_PKT_ENABLE_SINGLE_PKT_LKAHD         0x400000  /* [Deprecated -- see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF replacement] enable single packet look-ahead -- this flag is reserved for situations where, for some reason, the jitter buffer has only one packet available and is unable to perform comparisons for re-ordering. Under normal oepration, this does not occur, but the flag is available if such a case should ever arise */
 #define DS_GETORD_PKT_ENABLE_SID_REPAIR               0x800000  /* enable SID repair if multiple lost SID packets are detected -- note this flag is deprecated, SID repair should be controlled by the TERM_SID_REPAIR_ENABLE flag in TERMINATION_INFO struct uFlags element (shared_include/session.h). DS_GETORD_PKT_ENABLE_SID_REPAIR can still be applied to force SID repair on a case-by-case basis, but that is not recommended */
 #define DS_GETORD_PKT_ADVANCE_TIMESTAMP              0x1000000  /* instructs DSGetOrderedPackets() to advance the specified channels' timestamps by ptime amount, effectively "pulling packets from future time". This is used to help control jitter buffer memory usage in overrun situations. See comments near DSGetOrderedPackets() in packet_flow_media_proc.c */
 #define DS_GETORD_PKT_ENABLE_OOO_HOLDOFF             0x2000000  /* enable dynamic holdoff to allow for outlier cases of ooo. Under certain conditions, including low jitter buffer level, a packet "in the future" will be temporarily held for delievery for a short time to see if one or missing packets arrive late. This flag replaces theDS_GETORD_PKT_ENABLE_SINGLE_PKT_LKAHD flag, which is deprecated */
@@ -1246,7 +1239,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 /* DSGetPacketInfo() uFlags definitions */
 
-#define DS_PKT_INFO_CODEC                                  0x1  /* these flags specify struct pointer for pInfo arg, either a TERMINATION_INFO struct or a SESSION_DATA struct */
+#define DS_PKT_INFO_CODEC                                  0x1  /* these flags are "session and stream items"; i.e. they apply to packets that match previously created sessions. pInfo is an optional arg that may specify a pointer to a TERMINATION_INFO struct or a SESSION_DATA struct */
 #define DS_PKT_INFO_CODEC_LINK                             0x2
 #define DS_PKT_INFO_SESSION                                0x3
 #define DS_PKT_INFO_CHNUM                                  0x4
@@ -1254,7 +1247,9 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_PKT_INFO_CODEC_TYPE                             0x6
 #define DS_PKT_INFO_CODEC_TYPE_LINK                        0x7
 
-#define DS_PKT_INFO_INDEX_MASK                            0x0f  /* mask value to isolate above DS_PKT_INFO_xxx index item flags */
+#define DS_PKT_INFO_SESSION_ITEM_MASK                     0x0f  /* mask value to isolate above DS_PKT_INFO_xxx session and stream item flags */
+
+/* flags from this point work on general IP packets and do not require previously created sessions */
 
 #define DS_PKT_INFO_RTP_VERSION                         0x0100  /* added RTP pkt info items, JHB Sep 2017 */
 #define DS_PKT_INFO_RTP_PYLDTYPE                        0x0200
@@ -1273,10 +1268,10 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 #define DS_PKT_INFO_RTP_ITEM_MASK                       0x0f00  /* mask value to isolate above DS_PKT_INFO_RTP_xxx item flags */
 
-#define DS_PKT_INFO_HDRLEN                              0x1000  /* returns length of IP address headers (valid for IPv4 and IPv6) */
+#define DS_PKT_INFO_HDRLEN                              0x1000  /* returns length of IP address headers (valid for IPv4 and IPv6, including IPv6 extension headers) */
 #define DS_PKT_INFO_PKTLEN                              0x2000  /* returns total packet length, including IP, UDP, and RTP headers, and payload */
-#define DS_PKT_INFO_SRC_PORT                            0x3000
-#define DS_PKT_INFO_DST_PORT                            0x4000
+#define DS_PKT_INFO_SRC_PORT                            0x3000  /* UDP source port */
+#define DS_PKT_INFO_DST_PORT                            0x4000  /* UDP destination port */
 #define DS_PKT_INFO_IP_VERSION                          0x5000
 #define DS_PKT_INFO_PROTOCOL                            0x6000
 #define DS_PKT_INFO_PYLDOFS                             0x7000  /* returns offset to start of UDP or TCP payload data */
@@ -1295,6 +1290,9 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_PKT_INFO_FRAGMENT_REMOVE                    0x80000  /* if packet IP header contains fragmentation info remove fragment from pktlib internal list using header's Identification field */
 #define DS_PKT_INFO_REASSEMBLY_GET_PACKET             0x100000  /* retrieve fully reassembled packet in pInfo and return the reassembled packet's length. This flag should only be specified if a previous call to DSGetPacketInfo() with the DS_PKT_INFO_FRAGMENT_SAVE flag has returned a flag value indicating a fully re-assembled packet is available */
 
+#define DS_PKT_INFO_EXTENDED_SESSION_SEARCH           0x400000  /* enable extended session search to allow matching of packets to mix of user-managed sessions and process-managed sessions */
+#define DS_PKT_INFO_COPY_IP_HDR_LEN_IN_PINFO          0x800000  /* return packet's IP header length in pInfo if pInfo is not NULL. Other flags that use pInfo take precedence if combined in uFlags */
+
 /* the following flags are returned by DSGetPacketInfo() when uFlags contains DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags */
 
 #define DS_PKT_INFO_RETURN_OK                                1  /* PktInfo struct filled successfully */
@@ -1303,24 +1301,25 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_PKT_INFO_RETURN_FRAGMENT_REMOVED                  8  /* fragment was removed from pktlib internal list */
 #define DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE     16  /* a fully re-assembled packet is available using the DS_PKT_INFO_GET_REASSEMBLED_PACKET flag in a subsequent DSGetPacketInfo() call */
 
-
 /* pktlib general API flags, for use with DSGetPacketInfo(), DSFormatPacket(), DSBufferPackets(), and DSGetOrderedPackets() */
 
-#define DS_PKTLIB_NETWORK_BYTE_ORDER                0x00000000L /* indicates packet header data is in network byte order. The byte order flags apply only to headers, not payload contents. This flag is zero as the default (no flag) is network byte order, and is defined here only for documentation purposes */
-#define DS_PKTLIB_HOST_BYTE_ORDER                   0x10000000L /* indicates packet header data is in host byte order. The byte order flags apply only to headers, not payload contents. Default (no flag) is network byte order */
-#define DS_PKTLIB_SUPPRESS_ERROR_MSG                0x40000000L /* suppress general packet format error messages */
-#define DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG            0x80000000L /* suppress RTP related error messages */
+#define DS_PKTLIB_NETWORK_BYTE_ORDER               0x00000000L  /* indicates packet header data is in network byte order. The byte order flags apply only to headers, not payload contents. This flag is zero as the default (no flag) is network byte order, and is defined here only for documentation purposes */
+#define DS_PKTLIB_HOST_BYTE_ORDER                  0x10000000L  /* indicates packet header data is in host byte order. The byte order flags apply only to headers, not payload contents. Default (no flag) is network byte order */
+#define DS_PKTLIB_SUPPRESS_ERROR_MSG               0x20000000L  /* suppress general packet format error messages; e.g. malformed packet, invalid IP version, invalid IP header, etc */
+#define DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG           0x40000000L  /* suppress RTP related error and warning messages, e.g. incorrect RTP version, RTP header extension mismatch, RTP padding mismatch, etc */
+#define DS_PKTLIB_SUPPRESS_RTP_INFO_MSG            0x80000000L  /* suppress RTP related info messages */
 
+#define DS_PKT_INFO_USE_IP_HDR_LEN                 0x80000000L  /* when combined with the len param, indicates len should be interpreted as IP header length. This flag should only be used with DS_PKT_INFO_xxx session and stream items. See PushPackets() in mediaMin.cpp for a usage example. NOTE - this flag is not a uFlag and should not be combined with any other DS_PKT_INFO_XXX uflags */
 
 /* DSGetSessionInfo() and DSSetSessionInfo() uFlags definitions */
 
 #define DS_SESSION_INFO_HANDLE                           0x100  /* specifes the sessionHandle argument is treated as a session handle (default) */
-#define DS_SESSION_INFO_CHNUM                            0x200  /* specifies the sessionHandle argument should be treated as a channel number.  If combined with DS_SESSION_INFO_HANDLE, DSGeSessionInfo() returns a channel number, depending on the term_id argument */
+#define DS_SESSION_INFO_CHNUM                            0x200  /* specifies the sessionHandle argument should be treated as a channel number. If combined with DS_SESSION_INFO_HANDLE, DSGeSessionInfo() returns a channel number, depending on the term_id argument */
 
 #define DS_SESSION_INFO_CODEC                              0x1  /* retrieves codec handles: term_id param 0 indicates group codec, 1 = chnum codec (decoder, or term1 if handle is an hSession), 2 = chnum link codec (encoder, or term2 if handle is an hSession) */
 #define DS_SESSION_INFO_SAMPLE_RATE                        0x3
 #define DS_SESSION_INFO_CODEC_TYPE                         0x4
-#define DS_SESSION_INFO_SESSION                            0x5  /* for DS_SESSION_INFO_SESSION and DS_SESSION_INFO_TERM_ID, pInfo should point to a SESSION_DATA struct.  For all other flags, pInfo should point to a TERMINATION_INFO struct */
+#define DS_SESSION_INFO_SESSION                            0x5  /* for DS_SESSION_INFO_SESSION and DS_SESSION_INFO_TERM_ID, pInfo should point to a SESSION_DATA struct. For all other flags, pInfo should point to a TERMINATION_INFO struct */
 #define DS_SESSION_INFO_TERM                               0x6  /* get term # and info using session handle or channel number */
 #if 0  /* currently not used */
 #define DS_SESSION_INFO_CHNUM_QUERY                        0x7  /* similar to DS_SESSION_INFO_TERM, except all current sessions are searched for a match, and if there is any inconsistency or duplication, an error is returned */
@@ -1328,13 +1327,13 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_SESSION_INFO_GROUP_STATUS                       0x8
 #define DS_SESSION_INFO_GROUP_MODE                         0x9
 #define DS_SESSION_INFO_UFLAGS                             0xa  /* returns uFlags applied when session was created if term_id = 0, or termN.uFlags if term_id = 1 or 2 */
-#define DS_SESSION_INFO_STATE                              0xb  /* get or set current session state (see STATE_xxx flags below).  When setting a session state, only one or more flags should be combined and used in DSSetSessionInfo(), not the session state itself.  Positive value of flags is a set, negative value is a clear */
+#define DS_SESSION_INFO_STATE                              0xb  /* get or set current session state (see STATE_xxx flags below). When setting a session state, only one or more flags should be combined and used in DSSetSessionInfo(), not the session state itself. Positive value of flags is a set, negative value is a clear */
 #define DS_SESSION_INFO_NUM_SESSIONS                       0xc  /* get total number of currently active sessions */
 #define DS_SESSION_INFO_INPUT_BUFFER_INTERVAL              0xd  /* get buffer add interval of the session */
-#define DS_SESSION_INFO_PTIME                              0xe  /* get ptime of the session.  Note that each term (channel) also has its own ptime */
-#define DS_SESSION_INFO_GROUP_OWNER                        0xf  /* get group owner session.  This is the session that initially defined the stream group ID */
-#define DS_SESSION_INFO_GROUP_SAMPLE_RATE                 0x11  /* get group term sample rate */
-#define DS_SESSION_INFO_THREAD_ID                         0x12  /* get id of thread to which session is assigned.  Only applicable if packet_flow_media_proc() is running as one or more threads */
+#define DS_SESSION_INFO_PTIME                              0xe  /* get ptime of the session. Note that each term (channel) also has its own ptime */
+#define DS_SESSION_INFO_GROUP_OWNER                        0xf  /* get stream group owner session. This is the session that initially defined the stream group ID */
+#define DS_SESSION_INFO_GROUP_SAMPLE_RATE                 0x11  /* get stream group term sample rate */
+#define DS_SESSION_INFO_THREAD_ID                         0x12  /* get id of thread to which session is assigned. Only applicable if packet_flow_media_proc() is running as one or more threads */
 #define DS_SESSION_INFO_CHNUM_PARENT                      0x13  /* get chnum of dynamic channel's parent. If param is already a parent returns itself */
 #if 0  /* currently not used */
 #define DS_SESSION_INFO_GROUP_TIMESTAMP                   0x14  /* most recent time group packetization was done */
@@ -1342,7 +1341,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_SESSION_INFO_GROUP_ID                          0x15
 #define DS_SESSION_INFO_GROUP_BUFFER_TIME                 0x16  /* get / set stream group buffer time in msec (affects both merge buffer and sample domain processing buffer sizes. Default is 260 msec, see comments in streamlib.h) */
 #define DS_SESSION_INFO_DELETE_STATUS                     0x17
-#define DS_SESSION_INFO_THREAD                            0x18  /* get index of thread to which session is assigned.  Packet/media thread indexes range from 0..MAX_PKTMEDIA_THREADS-1.  Index 0 always exists, even if all sessions are static (no dynamic sessions) */
+#define DS_SESSION_INFO_THREAD                            0x18  /* get index of thread to which session is assigned. Packet/media thread indexes range from 0..MAX_PKTMEDIA_THREADS-1. Index 0 always exists, even if all sessions are static (no dynamic sessions) */
 #define DS_SESSION_INFO_GROUP_PTIME                       0x19
 #define DS_SESSION_INFO_OUTPUT_BUFFER_INTERVAL            0x1a  /* get buffer output interval of the session */
 #define DS_SESSION_INFO_RTP_PAYLOAD_TYPE                  0x1b
@@ -1354,7 +1353,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_SESSION_INFO_CUR_ACTIVE_CHANNEL                0x21  /* returns currently active channel */
 #define DS_SESSION_INFO_RFC7198_LOOKBACK                  0x22
 #define DS_SESSION_INFO_LAST_ACTIVE_CHANNEL               0x23
-#define DS_SESSION_INFO_SAMPLE_RATE_MULT                  0x24
+#define DS_SESSION_INFO_RTP_CLOCKRATE                     0x24
+#define DS_SESSION_INFO_GROUP_IDX                         0x25  /* get stream group index */
 
 #define DS_SESSION_INFO_USE_PKTLIB_SEM              0x20000000L /* use the pktlib semaphore */
 #define DS_SESSION_INFO_SUPPRESS_ERROR_MSG          0x40000000L /* suppress any error messages generated by the API */
@@ -1369,7 +1369,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 /* actions */
 
 #define DS_SESSION_STATE_FLUSH_PACKETS                   0x100  /* flush a session, for example prior to deleting a session, flush all remaining packets from the jitter buffer */
-#define DS_SESSION_STATE_WRITE_PKT_LOG                   0x200  /* writes packet log for a session.  If the session is a stream group owner, includes all group member sessions in the log */
+#define DS_SESSION_STATE_WRITE_PKT_LOG                   0x200  /* writes packet log for a session. If the session is a stream group owner, includes all group member sessions in the log */
 #define DS_SESSION_STATE_RESET_PKT_LOG                   0x400  /* reset internal packet stats counters */
 
 /* other (reserved) */
@@ -1428,14 +1428,14 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_FMT_PKT_RTP_EVENT                           0x80000
 #define DS_FMT_PKT_NO_INC_CHNUM_TIMESTAMP             0x100000  /* do not increment chnum internal record timestamp (this flag is reserved, do not use) */
 
-#define DS_FMT_PKT_USER_RTP_HEADER                    0x200000  /* user supplies complete RTP header */
+#define DS_FMT_PKT_USER_UDP_PAYLOAD                   0x200000  /* user supplies complete UDP payload, e.g. RTP header and payload */
 
 #define DS_FMT_PKT_USER_HDRALL                        DS_FMT_PKT_USER_SRC_IPADDR | DS_FMT_PKT_USER_DST_IPADDR | DS_FMT_PKT_USER_SRC_PORT | DS_FMT_PKT_USER_DST_PORT
 
 /* DSConfigMediaService() uFlags definitions
 
-  -action flags cannot be combined.  Pktlib internally uses DS_MEDIASERVICE_ACTION_MASK to perform a single action
-  -task flags cannot be combined.  Pktlib internally uses DS_MEDIASERVICE_TASK_MASK to act on a single task object (thread, process, or app)
+  -action flags cannot be combined. Pktlib internally uses DS_MEDIASERVICE_ACTION_MASK to perform a single action
+  -task flags cannot be combined. Pktlib internally uses DS_MEDIASERVICE_TASK_MASK to act on a single task object (thread, process, or app)
   -session assignment flags (linear, round-robin) can be combined with DS_MEDIASERVICE_START
   -the cmd line flag can be combined with DS_MEDIASERVICE_START (in which case szCmdLine should not be NULL)
 */
@@ -1447,9 +1447,9 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_MEDIASERVICE_THREAD                           0x100  /* start media service as one or more threads */
 #define DS_MEDIASERVICE_PROCESS                          0x200  /* start media service as a process */
 #define DS_MEDIASERVICE_APP                              0x300  /* start media service as part of the application */
-#define DS_MEDIASERVICE_LINEAR                         0x10000  /* assign sessions to available threads in linear arrangement (fully utilize one thread before allocating sessions to another thread).  This is the default */
+#define DS_MEDIASERVICE_LINEAR                         0x10000  /* assign sessions to available threads in linear arrangement (fully utilize one thread before allocating sessions to another thread). This is the default */
 #define DS_MEDIASERVICE_ROUND_ROBIN                    0x20000  /* assign sessions to available threads in round-robin arrangement (assign sessions to threads equally) */
-#define DS_MEDIASERVICE_CMDLINE                        0x40000  /* use the szCmdLine param to specify cmd line arguments to create sessions, read/write pcap files, specify buffer add interval, etc.  Can be combined with thread, process, or app flags */
+#define DS_MEDIASERVICE_CMDLINE                        0x40000  /* use the szCmdLine param to specify cmd line arguments to create sessions, read/write pcap files, specify buffer add interval, etc. Can be combined with thread, process, or app flags */
 #define DS_MEDIASERVICE_PIN_THREADS                    0x80000
 #define DS_MEDIASERVICE_SET_NICENESS                  0x100000
 
@@ -1468,13 +1468,13 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 #define DS_THREAD_INFO_ITEM_MASK                          0xff
 
-#define DS_THREAD_INFO_PTHREAD_ID                       0x1000  /* specifies the handle param of DSGetThreadInfo() is a pthread_t thread id.  By default the handle param is a thread index (from 0 to N-1, where N is current number of active packet/media threads) */
+#define DS_THREAD_INFO_PTHREAD_ID                       0x1000  /* specifies the handle param of DSGetThreadInfo() is a pthread_t thread id. By default the handle param is a thread index (from 0 to N-1, where N is current number of active packet/media threads) */
 
 
 /* DSPullPackets() definitions, also used by DSSendPackets() */
 
 #define DS_PULLPACKETS_JITTER_BUFFER                    0x1000  /* send or pull jitter buffer output packets. Jitter buffer output packets are re-ordered and DTX expanded, as needed */
-#define DS_PULLPACKETS_TRANSCODED                       0x2000  /* send or pull transcoded packets. Transcoded packets are available for each channel of a session after decoding and encoding */
+#define DS_PULLPACKETS_OUTPUT                           0x2000  /* send or pull output packets. Audio transcoded packets and video bitstream packets are available for each channel after decoding */
 #define DS_PULLPACKETS_STREAM_GROUP                     0x4000  /* send or pull stream group packets. For example, merged packets are available after decoding, audio merging, and encoding */
 #define DS_PULLPACKETS_STREAM_GROUPS                   DS_PULLPACKETS_STREAM_GROUP
 #define DS_PULLPACKETS_GET_QUEUE_STATUS                0x10000
@@ -1509,8 +1509,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 /* DSLogRunTimeStats() flags */
 
-#define DS_LOG_RUNTIME_STATS_DISPLAY                         1  /* display run-time stats onscreen */
-#define DS_LOG_RUNTIME_STATS_EVENTLOG                        2  /* print run-time stats to event log */
+#define DS_LOG_RUNTIME_STATS_CONSOLE                         1  /* output run-time stats to console */
+#define DS_LOG_RUNTIME_STATS_EVENTLOG                        2  /* output run-time stats to event log file. Note these two flags may be combined */
 #define DS_LOG_RUNTIME_STATS_ORGANIZE_BY_STREAM_GROUP     0x10
 #define DS_LOG_RUNTIME_STATS_SUPPRESS_ERROR_MSG     0x40000000L
 
@@ -1530,6 +1530,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_BUFFER_PKT_ERROR_SAMPLE_RATE                     -4
 #define DS_BUFFER_PKT_ERROR_ADD_FAILED                      -5
 #define DS_BUFFER_PKT_SEQ_DUPLICATE                         -6
+
+/* reserved section of pktlib.h */
 
 #if defined(__LIBRARYMODE__) || defined(MEDIATEST_DEV)  /* for dynamic library internal use only. User apps should not define these !! */
   #define USE_PKTLIB_INLINES
@@ -1628,7 +1630,7 @@ char handle_str[20];
 #if 0
 error:
 #endif
-      Log_RT(2, "ERROR: DSGetSessionInfo() says invalid session handle or chnum = %d, term_id = %d, uFlags = 0x%x. %s:%d \n", sessionHandle, term_id, uFlags, __FILE__, __LINE__);
+      if (!(uFlags & DS_SESSION_INFO_SUPPRESS_ERROR_MSG)) Log_RT(2, "ERROR: DSGetSessionInfo() says invalid session handle or chnum = %d, term_id = %d, uFlags = 0x%x. %s:%d \n", sessionHandle, term_id, uFlags, __FILE__, __LINE__);
       return -2;  /* -2 return code indicates a problem with session handle, chnum, or other param. -1 return code indicates something not found or not available, but otherwise params are ok */
    }
 
@@ -1703,7 +1705,7 @@ error:
          break;
 
       case 0:  /* this happens when (i) DS_SESSION_INFO_CHNUM is given by itself, or (ii) DS_SESSION_INFO_HANDLE and DS_SESSION_INFO_CHNUM are combined */
-      case DS_SESSION_INFO_CHNUM:  /* not actually used, just here as a marker.  case 0 is used */
+      case DS_SESSION_INFO_CHNUM:  /* not actually used, just here as a marker. case 0 is used */
 
          if (n == -1) goto check_n;
          if (ChanInfo_Core[n].chan_exists) ret_val = n;
@@ -1947,6 +1949,7 @@ error:
 
          break;
 
+      case DS_SESSION_INFO_GROUP_IDX:
       case DS_SESSION_INFO_GROUP_OWNER:
 
          if (uFlags & DS_SESSION_INFO_HANDLE) {
@@ -1955,7 +1958,8 @@ error:
             int idx = get_group_idx(sessionHandle, 0, fUseSem, NULL);
 
             if (idx >= 0) {
-               ret_val = stream_groups[idx].owner_session - 1;
+               if ((uFlags & DS_SESSION_INFO_ITEM_MASK) == DS_SESSION_INFO_GROUP_IDX) ret_val = idx;
+               else ret_val = stream_groups[idx].owner_session - 1;
                if (fUseSem) sem_post(&pktlib_sem);
             }
 
@@ -1964,7 +1968,8 @@ error:
                idx = get_group_idx(sessionHandle, 1, fUseSem, NULL);
 
                if (idx >= 0) {
-                  ret_val = stream_groups[idx].owner_session - 1;
+                  if ((uFlags & DS_SESSION_INFO_ITEM_MASK) == DS_SESSION_INFO_GROUP_IDX) ret_val = idx;
+                  else ret_val = stream_groups[idx].owner_session - 1;
                   if (fUseSem) sem_post(&pktlib_sem);
                }
             }
@@ -1974,12 +1979,13 @@ error:
                idx = get_group_idx(sessionHandle, 2, fUseSem, NULL);
 
                if (idx >= 0) {
-                  ret_val = stream_groups[idx].owner_session - 1;
+                  if ((uFlags & DS_SESSION_INFO_ITEM_MASK) == DS_SESSION_INFO_GROUP_IDX) ret_val = idx;
+                  else ret_val = stream_groups[idx].owner_session - 1;
                   if (fUseSem) sem_post(&pktlib_sem);
                }
             }
 
-            return ret_val;  /* we don't use the standard return code here, which will produce error messages.  app code needs to handle the -1 possibility */
+            return ret_val;  /* we don't use the standard return code here, which will produce error messages. app code needs to handle the -1 possibility */
          }
          else {
 
@@ -2184,16 +2190,16 @@ error:
       case DS_SESSION_INFO_RTP_PAYLOAD_TYPE:
 
          if (uFlags & DS_SESSION_INFO_HANDLE) {
-            if (term_id == 1) ret_val = sessions[sessionHandle].session_data.term1.attr.voice_attr.rtp_payload_type;
-            else if (term_id == 2) ret_val = sessions[sessionHandle].session_data.term2.attr.voice_attr.rtp_payload_type;
+            if (term_id == 1) ret_val = sessions[sessionHandle].session_data.term1.attr.voice.rtp_payload_type;
+            else if (term_id == 2) ret_val = sessions[sessionHandle].session_data.term2.attr.voice.rtp_payload_type;
          }
          else if (uFlags & DS_SESSION_INFO_CHNUM) {
 
             if (n == -1) goto check_n;
 
             if (no_term_id_arg) term_id = 1;
-            if (term_id == 1 && ChanInfo_Core[n].term && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].term->attr.voice_attr.rtp_payload_type;
-            else if (term_id == 2 && ChanInfo_Core[n].link && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].link->term->attr.voice_attr.rtp_payload_type;
+            if (term_id == 1 && ChanInfo_Core[n].term && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].term->attr.voice.rtp_payload_type;
+            else if (term_id == 2 && ChanInfo_Core[n].link && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].link->term->attr.voice.rtp_payload_type;
          }
 
          break;
@@ -2243,16 +2249,17 @@ error:
 
          break;
 
-      case DS_SESSION_INFO_SAMPLE_RATE_MULT:
+      case DS_SESSION_INFO_RTP_CLOCKRATE:
 
          if (uFlags & DS_SESSION_INFO_HANDLE) {
-            ret_val = ChanInfo_Core[ sessions[sessionHandle].last_active_chan ].sample_rate_mult;  /* to-do: currently not used, needs to be tested with session handle, JHB Apr 2024 */
+            ret_val = ChanInfo_Core[sessions[sessionHandle].last_active_chan].rtp_clockrate_decoder;  /* to-do: last_active_chan is a hack, but for now DS_SESSION_INFO_HANDLE is not used. There should probably be a pointer to associated ChanInfo_core[] in TERMINATION_INFO structs, JHB Apr 2024 */
          }
          else if (uFlags & DS_SESSION_INFO_CHNUM) {
 
             if (n == -1) goto check_n;
 
-            ret_val = ChanInfo_Core[n].sample_rate_mult;
+            if (term_id == 2) ret_val = ChanInfo_Core[n].link->rtp_clockrate_encoder;  /* look at term_id to decide decoder vs encoder, JHB Sep 2024 */
+            else ret_val = ChanInfo_Core[n].rtp_clockrate_decoder;
          }
 
          break;
@@ -2303,7 +2310,7 @@ error:
 
             memcpy(pInfo, &packet_media_thread_info[ret_val], sizeof(PACKETMEDIATHREADINFO));  /* copy thread info for this session */
          }
-#if 0  /* compiler seems to be buggy when setting these directly, possibly on the link->term item.  We fought a nasty bug fight to figure this out and ended up with explicit pointer math */
+#if 0  /* compiler seems to be buggy when setting these directly, possibly on the link->term item. We fought a nasty bug fight to figure this out and ended up with explicit pointer math */
          else if (session_id >= 0) *(SESSION_DATA*)pInfo = sessions[session_id].session_data;
          else if (term_id == 1) *(TERMINATION_INFO*)pInfo = *ChanInfo_Core[n].term;
          else if (term_id == 2) *(TERMINATION_INFO*)pInfo = *ChanInfo_Core[n].link->term;
@@ -2594,5 +2601,9 @@ bool fChanActive = chnum >= 0 && chnum < NCORECHAN && ChanInfo_Core[chnum].chan_
 }
 
 #endif  /* USE_PKTLIB_INLINES */
+
+#else
+  #undef _PKTLIB_H_  /* allow additional includes if MIN_HDR defined */
+#endif
 
 #endif  /* _PKTLIB_H_ */

@@ -10,13 +10,33 @@
  Revision History
    Created Sep 2015 CKJ
    Modified Dec 2023 JHB, include transcoding.h
-   Modified Jun 2024 JHB, use DS_VOICE_NUM_CODECS instead of DS_VOICE_CODEC_TYPE_INVALID, implement H.26x codecs
+   Modified Jun 2024 JHB, add H.26x codecs to getCodecName()
+   Modified Sep 2024 JHB, in getCodecName() use DSGetCodecInfo() API in voplib for codec name instead of hard-coded naming
+   Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files), use IPvN_ADDR_XXX definitions in pktlib.h
+   Modified Dec 2024 JHB, include <algorithm> and use std namespace if __cplusplus defined
 */
+
+/* Linux includes */
+
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
 
 #include <arpa/inet.h>
 
-#include "mediaTest.h"
+/* DirectCore APIs */
+
+#include "directcore.h"
+
+/* SigSRF includes */
+
+#include "voplib.h"
 #include "shared_include/transcoding.h"
+
+/* app support header files */
+
+#include "mediaTest.h"
 
 volatile debug_counters_t debug_counters = {0};
 static struct cmd_core_stats_rsp core_stats = {0};
@@ -151,78 +171,83 @@ static void get_and_display_packet_stats(void)
 
 static void convert_ip_addr(struct ip_addr *addr, char* buffer, int max_length)
 {
-   if (addr->type == DS_IPV4)
+   if (addr->type == IPV4)
    {
       struct sockaddr_in sa;
-      sa.sin_addr.s_addr = addr->u.ipv4;
+      sa.sin_addr.s_addr = addr->u.ipv4_uint32;
       inet_ntop(AF_INET, &sa.sin_addr, buffer, max_length);
    }
    else
    {
       struct sockaddr_in6 sa;
-      memcpy(sa.sin6_addr.s6_addr, addr->u.ipv6, DS_IPV6_ADDR_LEN);
+      memcpy(sa.sin6_addr.s6_addr, addr->u.ipv6, IPV6_ADDR_LEN);
       inet_ntop(AF_INET6, &sa.sin6_addr, buffer, max_length);
    }
 }
 
 static void print_codec_flags(TERMINATION_INFO *term)
 {
-   if ((term->codec_type == DS_VOICE_CODEC_TYPE_AMR_NB) ||
-      (term->codec_type == DS_VOICE_CODEC_TYPE_AMR_WB))
+   if ((term->codec_type == DS_CODEC_VOICE_AMR_NB) ||
+      (term->codec_type == DS_CODEC_VOICE_AMR_WB))
    {
       printf("    channels = %d, octet-align = %d, crc = %d, robust-sorting = %d, interleaving = %d\n"
             "    mode-change-period = %d, mode-change-capability = %d, mode-change-neighbor = %d\n",
-            term->attr.voice_attr.u.amr.codec_flags & DS_AMR_CHANNELS,
-            (term->attr.voice_attr.u.amr.codec_flags & DS_AMR_OCTET_ALIGN) ? 1: 0,
-            (term->attr.voice_attr.u.amr.codec_flags & DS_AMR_CRC) ? 1: 0,
-            (term->attr.voice_attr.u.amr.codec_flags & DS_AMR_ROBUST_SORTING) ? 1 :0,
-            (term->attr.voice_attr.u.amr.codec_flags & DS_AMR_INTERLEAVING) ? 1 : 0,
-            (term->attr.voice_attr.u.amr.codec_flags & DS_AMR_MODE_CHANGE_PERIOD) ? 2 : 1,
-            (term->attr.voice_attr.u.amr.codec_flags & DS_AMR_MODE_CHANGE_CAP) ? 2 : 1,
-            (term->attr.voice_attr.u.amr.codec_flags & DS_AMR_MODE_CHANGE_NEIGH) ? 1 : 0);
+            term->attr.voice.u.amr.codec_flags & DS_AMR_CHANNELS,
+            (term->attr.voice.u.amr.codec_flags & DS_AMR_OCTET_ALIGN) ? 1: 0,
+            (term->attr.voice.u.amr.codec_flags & DS_AMR_CRC) ? 1: 0,
+            (term->attr.voice.u.amr.codec_flags & DS_AMR_ROBUST_SORTING) ? 1 :0,
+            (term->attr.voice.u.amr.codec_flags & DS_AMR_INTERLEAVING) ? 1 : 0,
+            (term->attr.voice.u.amr.codec_flags & DS_AMR_MODE_CHANGE_PERIOD) ? 2 : 1,
+            (term->attr.voice.u.amr.codec_flags & DS_AMR_MODE_CHANGE_CAP) ? 2 : 1,
+            (term->attr.voice.u.amr.codec_flags & DS_AMR_MODE_CHANGE_NEIGH) ? 1 : 0);
    }
-   else if ((term->codec_type == DS_VOICE_CODEC_TYPE_EVRC) ||
-      (term->codec_type == DS_VOICE_CODEC_TYPE_EVRCB) ||
-      (term->codec_type == DS_VOICE_CODEC_TYPE_EVRC_NW))
+   else if ((term->codec_type == DS_CODEC_VOICE_EVRC) ||
+      (term->codec_type == DS_CODEC_VOICE_EVRCB) ||
+      (term->codec_type == DS_CODEC_VOICE_EVRC_NW))
    {
       const char *pktFormatStr[] = { "interleaving/bundled", "header free", "compact bundled" };
-      int pktFormat = (term->attr.voice_attr.u.evrc.codec_flags & DS_EVRC_PACKET_FORMAT) >> DS_EVRC_PACKET_FORMAT_SHIFT;
+      int pktFormat = (term->attr.voice.u.evrc.codec_flags & DS_EVRC_PACKET_FORMAT) >> DS_EVRC_PACKET_FORMAT_SHIFT;
 
       printf("    frame_size = %s, packet_format = %s, bitrate = %d, mode = %d\n"
             "    interleave = %d, noise_supp = %s, dtxmin = %d, dtxmax = %d, hangover = %d\n",
-            (term->attr.voice_attr.u.evrc.codec_flags & DS_EVRC_FRAME_SIZE) ? "16khz" : "8khz",
+            (term->attr.voice.u.evrc.codec_flags & DS_EVRC_FRAME_SIZE) ? "16khz" : "8khz",
             pktFormatStr[pktFormat],
-            (term->attr.voice_attr.u.evrc.codec_flags & DS_EVRC_BITRATE) >> DS_EVRC_BITRATE_SHIFT,
-            (term->attr.voice_attr.u.evrc.codec_flags & DS_EVRC_MODE) >> DS_EVRC_MODE_SHIFT,
-            (term->attr.voice_attr.u.evrc.codec_flags & DS_EVRC_MAX_INTERLEAVE) >> DS_EVRC_MAX_INTERLEAVE_SHIFT,
-            (term->attr.voice_attr.u.evrc.codec_flags & DS_EVRC_NOISE_SUPP) ? "enabled" : "disabled",
-            term->attr.voice_attr.u.evrc.dtxmin,
-            term->attr.voice_attr.u.evrc.dtxmax,
-            term->attr.voice_attr.u.evrc.hangover);
+            (term->attr.voice.u.evrc.codec_flags & DS_EVRC_BITRATE) >> DS_EVRC_BITRATE_SHIFT,
+            (term->attr.voice.u.evrc.codec_flags & DS_EVRC_MODE) >> DS_EVRC_MODE_SHIFT,
+            (term->attr.voice.u.evrc.codec_flags & DS_EVRC_MAX_INTERLEAVE) >> DS_EVRC_MAX_INTERLEAVE_SHIFT,
+            (term->attr.voice.u.evrc.codec_flags & DS_EVRC_NOISE_SUPP) ? "enabled" : "disabled",
+            term->attr.voice.u.evrc.dtxmin,
+            term->attr.voice.u.evrc.dtxmax,
+            term->attr.voice.u.evrc.hangover);
    }
-   else if (term->codec_type == DS_VOICE_CODEC_TYPE_OPUS)
+   else if (term->codec_type == DS_CODEC_VOICE_OPUS)
    {
       printf(" %s, %s, %s, max_avg_bitrate = %d, \n"
             "max_playback_rate = %d, sprop_max_capture_rate = %d\n",
-            (term->attr.voice_attr.u.opus.codec_flags & DS_OPUS_STEREO) ? "stereo" : "mono",
-            (term->attr.voice_attr.u.opus.codec_flags & DS_OPUS_CBR) ? "CBR" : "VBR",
-            (term->attr.voice_attr.u.opus.codec_flags & DS_OPUS_FEC) ? "FEC enabled" : "FEC disabled",
-            term->attr.voice_attr.u.opus.codec_flags & DS_OPUS_MAX_AVG_BITRATE,
-            term->attr.voice_attr.u.opus.max_playback_rate,
-            term->attr.voice_attr.u.opus.sprop_max_capture_rate);
+            (term->attr.voice.u.opus.codec_flags & DS_OPUS_STEREO) ? "stereo" : "mono",
+            (term->attr.voice.u.opus.codec_flags & DS_OPUS_CBR) ? "CBR" : "VBR",
+            (term->attr.voice.u.opus.codec_flags & DS_OPUS_FEC) ? "FEC enabled" : "FEC disabled",
+            term->attr.voice.u.opus.codec_flags & DS_OPUS_MAX_AVG_BITRATE,
+            term->attr.voice.u.opus.max_playback_rate,
+            term->attr.voice.u.opus.sprop_max_capture_rate);
    }
 }
 
 static const char* getCodecName(uint8_t codecType)
 {
+   #if 0
    const char *codecName[] =
-   {  "NONE", "G711_U", "G711_A", "G711_WB_U", "G711_WB_A", "G726", "G729AB", "G723", "AMR_NB",
-      "AMR_WB", "EVRC", "ILBC", "ISAC", "OPUS", "EVRCB", "GSMFR", "GSMHR","GSMEFR", "G722", "EVRC_NW", "CLEARMODE","EVS",
+   {  "NONE", "G711-U", "G711-A", "G711_WB_U", "G711-WB-A", "G726", "G729AB", "G723", "AMR-NB",
+      "AMR-WB", "EVRC", "ILBC", "ISAC", "OPUS", "EVRCB", "GSMFR", "GSMHR","GSMEFR", "G722", "EVRC_NW", "CLEARMODE", "EVS", "MELPe", "AMR-WB PLUS", "L16", "MP3", "MPEG2", "H263", "H.264", "H.265", "VP8", "VP9",
       "INVALID" 
    };
 
-   if (codecType < DS_VOICE_NUM_CODECS)
+   if (codecType < DS_VOICE_NUM_CODECS)  /* deprecated method, JHB Sep 2024 */
       return codecName[codecType];
+   #else
+   const char* codecName[] = { "                                                  " };  /* const char placeholder */
+   if (DSGetCodecInfo(codecType, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_NAME, 0, 0, (char*)codecName[0]) >= 0) return codecName[0];  /* use voplib API, JHB Sep 2024 */
+   #endif
    else
       return "INVALID";
 }
@@ -231,9 +256,7 @@ static void print_term_data(TERMINATION_INFO *term)
 {
    char local_addr[128], remote_addr[128];
    printf("Termination %d:\n", term->term_id);
-   printf("    media_type = %d, codec_type = %s, vqe_processing_interval = %d, bit_rate = %d\n",
-         term->media_type, getCodecName(term->codec_type),
-         term->vqe_processing_interval, term->bitrate);
+   printf("    media_type = %d, codec_type = %s, vqe_processing_interval = %d, bit_rate = %d\n", term->media_type, getCodecName(term->codec_type), term->vqe_processing_interval, term->bitrate);
    
    convert_ip_addr(&term->remote_ip, remote_addr, 128);
    convert_ip_addr(&term->local_ip, local_addr, 128);
@@ -242,13 +265,13 @@ static void print_term_data(TERMINATION_INFO *term)
       remote_addr, ntohs(term->remote_port), local_addr, ntohs(term->local_port));
    
    printf("    ec_tail_len = %d, ec = %d, noise_reduction = %d, VAD = %s, CNG = %s\n",
-         term->attr.voice_attr.ec_tail_len, term->attr.voice_attr.ec,
-         term->attr.voice_attr.noise_reduction,
-         (term->attr.voice_attr.flag & VOICE_ATTR_FLAG_VAD) ? "enabled" : "disabled",
-         (term->attr.voice_attr.flag & VOICE_ATTR_FLAG_CNG) ? "enabled" : "disabled");
+         term->attr.voice.ec_tail_len, term->attr.voice.ec,
+         term->attr.voice.noise_reduction,
+         (term->attr.voice.flag & VOICE_ATTR_FLAG_VAD) ? "enabled" : "disabled",
+         (term->attr.voice.flag & VOICE_ATTR_FLAG_CNG) ? "enabled" : "disabled");
    printf("    ptime = %d, rtp_payload_type = %d, dtmf = %d, dtmf_payload_type = %d\n",
-         term->attr.voice_attr.ptime, term->attr.voice_attr.rtp_payload_type,
-         term->attr.voice_attr.dtmf_mode, term->attr.voice_attr.dtmf_payload_type);
+         term->attr.voice.ptime, term->attr.voice.rtp_payload_type,
+         term->attr.voice.dtmf_mode, term->attr.voice.dtmf_payload_type);
    print_codec_flags(term);
 }
 

@@ -7,7 +7,7 @@
    -buffer interface between data plane cores and coCPU cores
 
  Copyright (C) Signalogic and Mavenir Systems, 2013
- Copyright (C) Signalogic, 2014-2024
+ Copyright (C) Signalogic, 2014-2025
 
  Revision History
 
@@ -19,6 +19,7 @@
    Modified Mar 2019 JHB, add reference to DEMOBUILD, which is defined in pktlib, voplib, and/or hwlib Makefiles for demo build version
    Modified Sep 2019 JHB, define NIPCHAN = NCORECHAN for x86 builds
    Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
+   Modified Jan 2025 JHB, demo version of MAX_SESSIONS modified to allow up to 4 additional video sessions
 */
 
 #ifndef TRANSCODING_H_
@@ -38,9 +39,9 @@
 
 #if defined(_X86) || defined(_ARM)
   #ifdef DEMOBUILD
-    #define MAX_SESSIONS_PER_CORE  4    /* demo version */
+    #define MAX_SESSIONS_PER_CORE  8    /* demo version. Now set to 8; DSCreateSession() in pktlib allows up to 4 additional video sessions, JHB Jan 2025 */
   #else
-    #define MAX_SESSIONS_PER_CORE  512  /* x86 build current limit */
+    #define MAX_SESSIONS_PER_CORE  512  /* x86 and Arm builds current limit */
   #endif
 #else
     #define MAX_SESSIONS_PER_CORE  2048  /* c66x build limit */
@@ -52,7 +53,7 @@
   #define NIPCHAN   NCORECHAN
 #endif
 
-#if 0  /* remove, _NO_HASH_ should be defined in Makefile if used, JHB Sep2016 */
+#if 0  /* remove, _NO_HASH_ should be defined in Makefile if used, JHB Sep 2016 */
   #if defined(_USE_NET_IO_) && !defined(_USE_PCIE_)
   #define _NO_HASH_
   #endif

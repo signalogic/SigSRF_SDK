@@ -460,7 +460,7 @@ typedef struct {
 extern "C" {
 #endif
 
-/* Initialize DS3 module.  Return value is 1 if success, 0 if failure.  Note that DSAssignBoard() must have been called previously (see hwlib.h) */
+/* Initialize DS3 module.  Return value is 1 if success, 0 if failure.  Note that DSAssignBoard() must have been called previously (see directcore.h) */
 
 DECLSPEC UINT LIBAPI DSInitDs3Module(HBOARD hBoard);
 
@@ -546,7 +546,7 @@ typedef UINT H110DEVICE;
 extern "C" {
 #endif
 
-/* Initialize H.110 circuitry.  Return value is 1 if success, 0 if failure.  Note that DSAssignBoard() must have been called previously (see hwlib.h) */
+/* Initialize H.110 circuitry.  Return value is 1 if success, 0 if failure.  Note that DSAssignBoard() must have been called previously (see directcore.h) */
 
 DECLSPEC UINT LIBAPI DSInitH110(HBOARD hBoard);
 

@@ -31,6 +31,7 @@
    Modified Jul 2023 JHB, add strncpy_s(), safe version of strncpy(), in case gcc version in use doesn't support it
    Modified May 2024 JHB, change comment that references x86_mediaTest.c to mediaTest_proc.c
    Modified Aug 2024 JHB, improvement to strncpy_s()
+   Modified Dec 2024 JHB, use extern C if __cplusplus defined
 */
 
 #ifndef _DSSTRING_H_
@@ -52,7 +53,9 @@
 #endif
 
 #include "alias.h"
-#include "minmax.h"
+#if !defined(__cplusplus) || defined(USE_MIN_MAX)
+  #include "minmax.h"
+#endif
 
 #ifndef TCHAR
    #define TCHAR char
@@ -64,6 +67,10 @@
 
 typedef char LINESTR[768];       /* allow long line lengths in template files, with assumption that individual fields won't be more than 256 */
 typedef char PATHSTR[MAXPATH];   /* DOS paths, including input parameters */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 short lstrpos(LPCSTR, LPCSTR, short);  /* locate position of one string inside another */
 
@@ -178,6 +185,10 @@ static inline char* strncpy_s(char* dst, size_t max_dst_len, const char* src, si
    #endif
 
    return dst;
+}
+#endif
+
+#ifdef __cplusplus
 }
 #endif
 

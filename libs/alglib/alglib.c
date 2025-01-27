@@ -20,6 +20,7 @@
    Modified Feb 2022 JHB, update version string. Major changes made in fs_conv.c, see its comments
    Modified Aug 2023 JHB, add memadd()
    Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
+   Modified Dec 2024 JHB, comments only
 */
 
 #include <stdlib.h>
@@ -64,6 +65,8 @@ int DSMergeStreamAudio(unsigned int chnum, int16_t *x1, float x1_scale, int16_t 
    
    return i;
 }
+
+/* add two 16-bit vector, saturate to 16-bit */
 
 void* memadd(void* dst, const void* src, size_t len) {
 

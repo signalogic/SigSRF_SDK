@@ -30,7 +30,7 @@ Documentation and Usage
 
 Revision History
 
-  Created Mar 2017, Chris Johnson
+  Created Mar 2017 Chris Johnson
   Modified Jul 2017 JHB, modified DSOpenPcap() so it can be used for read or write (takes a DS_READ or DS_WRITE uFlags option, defined in filelib.h, also see DS_OPEN_PCAP_xxx defines). Added DSReadRecord() and DSWritePcapRecord() APIs
   Modified Sep 2018 CJK, added special case error message to DSOpenPcap() regarding Snoop file format magic number
   Modified Sep 2018 JHB, add VLAN header handling to DSReadPcapRecord()
@@ -51,18 +51,28 @@ Revision History
                         -implement DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT flag to cause file header data to be returned in pcap (libpcap) format instead of pcapng
   Modified Jul 2024 JHB, split out from pktlib.c, relevant revision history moved here
   Modified Jul 2024 JHB, more error handling in DSOpenPcap(), correctly return total number of bytes written in DSWritePcap()
+  Modified Sep 2024 JHB, change DS_FMT_USER_RTP_HEADER to DS_FMT_PKT_USER_UDP_PAYLOAD, per flag rename in pktlib.h
+  Modified Oct 2024 JHB, debug-only sanity checks in DSReadPcap()
+  Modified Nov 2024 JHB, use IPVn_ADDR_XXX defined in pktlib.h
+  Modified Dec 2024 JHB, add DS_PKTLIB_SUPPRESS_RTP_INFO_MSG flag in DSGetPacketInfo() call with DS_PKT_INFO_PKTINFO
+  Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
 */
 
 /* Linux and/or other OS includes */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
 
+#include <algorithm>
 using namespace std;
 
 /* SigSRF includes */
 
 #include "pktlib.h"   /* pktlib API definitions, includes arpa/inet.h, netinet/if_ether.h */
 #include "diaglib.h"  /* packet logging and diagnostics, including Log_RT() definition */
+
+#include "minmax.h"   /* note - minmax.h does not define min and max macros if __cplusplus is defined */
 
 
 static int get_link_layer_len(uint16_t link_type) {  /* added JHB Sep 2022 */
@@ -235,7 +245,7 @@ wr_ret:
             if (strstr(szShebang, "#!rtpplay1.0")) {
 
                #if 0
-               printf("\n *** read %d bytes, found shebang header %s, now reading %d more bytes \n", (int)SIZEOF_PCAP_HDR_T, szShebang, (int)(sizeof(pcap_hdr_t) - SIZEOF_PCAP_HDR_T));
+               printf("\n *** read %d bytes, found .rtp shebang header %s, now reading %d more bytes \n", (int)SIZEOF_PCAP_HDR_T, szShebang, (int)(sizeof(pcap_hdr_t) - SIZEOF_PCAP_HDR_T));
                #endif
 
             /* read remainder of rtp header. Header fields are variable length so we make sure we read more than enough, then parse through it. Once we know the actual file header length, we adjust the file ptr to the first record */
@@ -457,7 +467,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
    if (!pkt_buffer) pkt_ptr = pkt_buffer_local;
    else pkt_ptr = pkt_buffer;
 
-/* read pcap record header, skip link layer header, read packet data */
+/* read pcap or rtp record header, skip link layer header, read packet data */
 
    if (uFlags & DS_READ_PCAP_COPY) fp_save = ftell(fp_in);
 
@@ -466,7 +476,9 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
    link_len = link_layer_info & PCAP_LINK_LAYER_LEN_MASK;
 
    if (file_type == PCAP_TYPE_RTP) {
-   
+
+   /* following rtp format at https://formats.kaitai.io/rtpdump */
+ 
       uint32_t timestamp;  /* msec offset from start, per https://github.com/irtlab/rtptools/blob/master/rtpdump.h */
 
       if (fread(&record_len, sizeof(record_len), 1, fp_in) != 1) return 0;
@@ -481,7 +493,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
       timestamp = (timestamp >> 24) | ((timestamp & 0x00ff0000) >> 8) | ((timestamp & 0x0000ff00) << 8) | (timestamp << 24);  /* .rtp format has big-endian items. Is this always true ? I haven't found any documentation yet on this, JHB Nov 2023 */
 
       #if 0
-      printf("\n *** record_len = %u, rtp_len = %u, timestamp = %u \n", record_len, rtp_len, timestamp);
+      printf("\n *** rtp record_len = %u, rtp_len = %u, timestamp = %u \n", record_len, rtp_len, timestamp);
       #endif
 
       p_pkt_hdr->ts_sec = timestamp / 1000L;
@@ -593,17 +605,17 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
       -so far I've only seen .rtp file format specs that allow (i) one RTP stream per file and (ii) IPv4 addresses (see other comments with https links). Also I'm not sure why destination IP address and port are in string format but source values are not
    */
 
-      if (pcap_file_hdr && pcap_file_hdr->rtp.src_ip_addr != 0) memcpy(&format_pkt.SrcAddr, &pcap_file_hdr->rtp.src_ip_addr, DS_IPV4_ADDR_LEN);  /* use src IP addr and port if non-zero, otherwise use generic local IP values */
+      if (pcap_file_hdr && pcap_file_hdr->rtp.src_ip_addr != 0) memcpy(&format_pkt.SrcAddr, &pcap_file_hdr->rtp.src_ip_addr, IPV4_ADDR_LEN);  /* use src IP addr and port if non-zero, otherwise use generic local IP values */
       else {
          uint32_t src_ip_addr = htonl(0xC0A80003);  /* 192.168.0.3 */
-         memcpy(&format_pkt.SrcAddr, &src_ip_addr, DS_IPV4_ADDR_LEN);  /* FORMAT_PKT SrcAddr field is 16 bytes, so we use memcpy() to fill first 4 bytes */
+         memcpy(&format_pkt.SrcAddr, &src_ip_addr, IPV4_ADDR_LEN);  /* FORMAT_PKT SrcAddr field is 16 bytes, so we use memcpy() to fill first 4 bytes */
       }
       if (pcap_file_hdr && pcap_file_hdr->rtp.src_port != 0) format_pkt.udpHeader.SrcPort = pcap_file_hdr->rtp.src_port;
       else format_pkt.udpHeader.SrcPort = 0x0228;  /* 10242, network byte order */
 
       #if 0
       uint32_t src_ip_addr;
-      memcpy(&src_ip_addr, &format_pkt.SrcAddr, DS_IPV4_ADDR_LEN);
+      memcpy(&src_ip_addr, &format_pkt.SrcAddr, IPV4_ADDR_LEN);
       printf(" src ip addr = %x, port = %u \n", src_ip_addr, format_pkt.udpHeader.SrcPort);
       #endif
 
@@ -613,7 +625,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
       if (!pcap_file_hdr || inet_pton(AF_INET, (const char*)&pcap_file_hdr->rtp.dst_ip_addr, &dst_ip_addr) != 1 || dst_ip_addr == 0) {  /* if dest IP address is non-zero then convert xx.xx.xx.xx format to integer */
          dst_ip_addr = htonl(0xC0A80001);  /* otherwise use generic local IP addr 192.168.0.1 */
       }
-      memcpy(&format_pkt.DstAddr, &dst_ip_addr, DS_IPV4_ADDR_LEN);
+      memcpy(&format_pkt.DstAddr, &dst_ip_addr, IPV4_ADDR_LEN);
 
       if (!pcap_file_hdr || (dst_port = htons(atoi((const char*)&pcap_file_hdr->rtp.dst_port))) == 0) {  /* convert dest port from string (network byte order) */
          dst_port = 0x0A18;  /* 6154, network byte order */
@@ -621,14 +633,19 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
       format_pkt.udpHeader.DstPort = dst_port;
 
       #if 0
-      memcpy(&dst_ip_addr, &format_pkt.DstAddr, DS_IPV4_ADDR_LEN);
+      memcpy(&dst_ip_addr, &format_pkt.DstAddr, IPV4_ADDR_LEN);
       printf(" dst ip addr = %x, port = %u, dst ip string = %s \n", dst_ip_addr, format_pkt.udpHeader.DstPort, pcap_file_hdr ? (const char*)&pcap_file_hdr->rtp.dst_ip_addr : "n/a");
       #endif
 
-      uint32_t pkt_len_fmt = DSFormatPacket(-1, DS_FMT_PKT_STANDALONE | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_RTP_HEADER, rtp_data, rtp_len, &format_pkt, pkt_buffer);
+      uint32_t pkt_len_fmt = DSFormatPacket(-1, DS_FMT_PKT_STANDALONE | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_UDP_PAYLOAD, rtp_data, rtp_len, &format_pkt, pkt_buffer);
 
-      #if 0
-      printf("\n *** p_pkt_hdr->incl_len = %u, packet_length = %u, pkt_len_fmt = %u, rtp_len = %u, IPV4_HEADER_LEN = %u, UDP_HEADER_LEN = %u \n", p_pkt_hdr->incl_len, packet_length, pkt_len_fmt, rtp_len, IPV4_HEADER_LEN, UDP_HEADER_LEN);
+      #if 0  /* additional .rtp format sanity checks - verify all payload sub lengths match after submitting packet to DSPacketInfo(), JHB Oct 2024 */
+      int pktlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN, pkt_buffer, -1, NULL, NULL);
+      int udplen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_buffer, -1, NULL, NULL);
+      int rtplen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDLEN, pkt_buffer, -1, NULL, NULL);
+      uint32_t rtp_timestamp = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_TIMESTAMP, pkt_buffer, -1, NULL, NULL);
+
+      printf("\n *** p_pkt_hdr->incl_len = %u, packet_length = %u, pkt_len_fmt = %u, rtp_len = %u, timestamp = %u.%u sec, pktlib info: pkt len = %d, udp len = %d, rtp pyld len = %d, rtp timestamp = %u \n", p_pkt_hdr->incl_len, packet_length, pkt_len_fmt, rtp_len, p_pkt_hdr->ts_sec, p_pkt_hdr->ts_usec/1000, pktlen, udplen, rtplen, rtp_timestamp);
       #endif
 
       if (pkt_len_fmt != p_pkt_hdr->incl_len) Log_RT(3, "WARNING: DSReadPcap() says packet len after format %u not matching file record len %u \n", pkt_len_fmt, p_pkt_hdr->incl_len);
@@ -836,7 +853,7 @@ read_packet:
 
       /* fill in PktInfo struct with IP, UDP, and RTP header items */
  
-         ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG, pkt_in_buf, -1, pPktInfo, NULL);  /* note - if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 and a warning message will be printed by DSGetPacketInfo(). We use the DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG flag to suppress RTP related warning messages as the packet type is unknown at this point */
+         ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_INFO_MSG, pkt_in_buf, -1, pPktInfo, NULL);  /* note - if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 and a warning message will be printed by DSGetPacketInfo(). We use the DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG and DS_PKTLIB_SUPPRESS_RTP_INFO_MSG flags to suppress RTP related warning messages as the packet type is unknown at this point */
 
          if (ret_val < 0) {
             #ifdef PKT_DISCARD_DEBUG

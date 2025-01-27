@@ -40,6 +40,11 @@
 
 /* Linux includes */
 
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <semaphore.h>

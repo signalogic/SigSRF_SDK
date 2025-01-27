@@ -1,0 +1,8 @@
+# EVS codec config file for VBR mode wideband testing
+
+codec_type = EVS
+bitrate = 5900           # bitrate in bps - 5900 specifies VBR mode
+sample_rate = 16000      # wideband encoder sampling rate
+dtx_enable = 1
+rf_enable = 0
+header_format = compact  # compact header format

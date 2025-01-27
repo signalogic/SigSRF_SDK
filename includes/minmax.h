@@ -5,7 +5,7 @@
 
  Project: DirectCore
 
- Copyright Signalogic Inc. 1994-2021
+ Copyright Signalogic Inc. 1994-2024
 
  Revision History
  
@@ -16,21 +16,13 @@
   Clean up code and rebuild
 
   Modified Jan 2021 JHB, no mods -- just a note that alias.h now does not include minmax.h for C++ codes using std::min and std:max. C++ enforces strict type-checking on its min/max functions
+  Modified Dec 2024 JHB, define min and max macros only if __cplusplus not defined or if USE_MIN_MAX override defined
 */
 
 #ifndef _MINMAX_H_
 #define _MINMAX_H_
 
-#ifdef _LINUX_ 
-   #ifndef min
-     #define min(a,b) (((a) < (b)) ? (a) : (b))
-   #endif
-   #ifndef max
-     #define max(a,b) (((a) > (b)) ? (a) : (b))
-   #endif
-#endif
-
-#if !defined(min) && defined(__cplusplus) && !defined(__NOMINMAX) && !defined(__MINMAX_DEFINED)
+#if (!defined(min) && !defined(__cplusplus) && !defined(__NOMINMAX) && !defined(__MINMAX_DEFINED)) || defined(USE_MIN_MAX)
 
   #if defined(__WATCOMC__) || defined (_LINUX_)
     #ifndef max

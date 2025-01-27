@@ -37,6 +37,8 @@
   Modified Feb 2024 JHB, change DS_DATAFILE_USE_SEM to DS_DATAFILE_USE_SEMAPHORE
   Modified May 2024 JHB, change #ifdef _X86 to #if defined(_X86) || defined(_ARM)
   Modified May 2024 JHB, define get_time_t typedef to support alternative get_time() function signatures in other apps and libs. Honor GET_TIME_TYPEDEF_ONLY if set by app or lib source to define only typedef for get_time() and no prototype
+  Modified Nov 2024 JHB, add #ifndef MIN_HDR for includes that need minimum definitions
+  Modified Jan 2025 JHB, deprecate DSAssignDataPlane()
 */
  
 #ifndef _HWLIB_H_
@@ -106,16 +108,20 @@
 
 #if defined __MSVC__ 
    typedef void* HBOARD;         /* board handle */
-   typedef void* HCARD;          /* card handle ("board" is deprecated, JHB, Jan13) */
+   typedef void* HCARD;          /* card handle ("board" is deprecated, JHB, Jan 2013) */
+   #if 0
    typedef void* HDATAPLANE;     /* data plane handle */
+   #endif
 #elif defined _LINUX_
   /* done in alias.h */
 #elif defined _WIN32_WINNT
   /* done in alias.h */
 #else
    typedef HGLOBAL HBOARD;       /* board handle */
-   typedef HGLOBAL HCARD;        /* card handle ("board" is deprecated, JHB, Jan13) */
+   typedef HGLOBAL HCARD;        /* card handle ("board" is deprecated, JHB, Jan 2013) */
+   #if 0
    typedef HGLOBAL HDATAPLANE;   /* data plane handle */
+   #endif
 #endif
 
 #ifndef Boolean
@@ -202,6 +208,16 @@ typedef MEDIAINFO FAR* PMEDIAINFO;
 #define DS_ACQFLG_NOFILEPREALLOCATE  1
 #define DS_ACQFLG_SYSINTSENABLED     2
 
+/* CPU and coCPU modes */
+
+#define CPUMODE_X86                    1
+#define CPUMODE_X86_TEST               2
+#define CPUMODE_CPU                    0xff                           /* native types are defined in 0x1 to 0xff range */
+#define CPUMODE_C66X                   0x100
+#define CPUMODE_COCPU                  0xff00                         /* coCPU types are defined in 0x0100 to 0xff00 range */
+#define CPUMODE_X86_COCPU              (CPUMODE_X86 | CPUMODE_COCPU)
+
+#ifndef MIN_HDR
 
 /* Define EventInfo structure (used in callback functions; see DSRegisterCallbackFunc API) */
 
@@ -289,13 +305,17 @@ DECLSPEC UINT      LIBAPI DSDisableCard              (HCARD);
 DECLSPEC UINT      LIBAPI DSHoldCard                 (HCARD);
 
 #define DSAssignBoard DSAssignCard
+#if 0
 #define DSAssignDataPlane DSAssignCard  /* currently DSAssignDataPlane has the same format and args as DSAssignCard.  This may change in the future.  JHB Apr 2017 */
+#endif
 #define DSInitBoard DSInitCard
 #define DSRunBoard DSRunCard
 #define DSResetBoard DSResetCard
 #define DSLoadFileBoard DSLoadFileCard
 #define DSFreeBoard DSFreeCard
+#if 0
 #define DSFreeDataPlane DSFreeCard
+#endif
 #define DSDisableBoard DSDisableCard
 #define DSGetBoardInfo DSGetCardInfo
 #define DSGetPlatformInfo DSGetCardInfo
@@ -578,16 +598,6 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
 #define DS_AC_CORELIST64               0
 #define DS_AC_CORELISTEXTENDED         0x0100
 
-/* CPU and coCPU modes */
-
-#define CPUMODE_X86                    1
-#define CPUMODE_X86_TEST               2
-#define CPUMODE_CPU                    0xff                           /* native types are defined in 0x1 to 0xff range */
-#define CPUMODE_C66X                   0x100
-#define CPUMODE_COCPU                  0xff00                         /* coCPU types are defined in 0x0100 to 0xff00 range */
-#define CPUMODE_X86_COCPU              (CPUMODE_X86 | CPUMODE_COCPU)
-
-
 /* memory types returned by GetMemArch */
 
 #define DS_GMA_LINEAR                  1
@@ -771,8 +781,8 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
 #define DS_STC_SYNC                    4     /* sync target CPUs:  sync all specified cores to known location inside main(), wait for host release before proceeding */
 #define DS_STC_RUN                     8     /* run target CPUs:  run application code on all specified cores */
 
-#define DS_STC_DEBUGPRINT              0X10000000U
-#define DS_STC_COREDEBUGPRINT          0X20000000U
+#define DS_STC_DEBUGPRINT              0x10000000U
+#define DS_STC_COREDEBUGPRINT          0x20000000U
 
 
 /* DSWriteAppProperties flag constants */
@@ -949,6 +959,10 @@ extern BOOL 	    globalVerbose;  /* deprecated, don't use.  JHB JUL2010 */
   #undef BOOL
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* APIs for allocating contiguous host memory and mapping said memory to C66x addresses */
 
 /**
@@ -1022,4 +1036,10 @@ DWORD DSFreeC66xAddr(HCARD hCard, uint32_t mem_size, uint32_t chip_start_addr);
  **/
 DWORD DSMapHostMemToC66xAddr(HCARD hCard, uint32_t num_of_bufs, host_buf_desc_t buf_desc[], uint32_t chip_start_addr);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif  /* MIN_HDR */
+
+#endif  /* _HWLIB_H_ */

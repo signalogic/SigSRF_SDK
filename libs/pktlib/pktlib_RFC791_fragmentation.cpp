@@ -30,22 +30,28 @@ Documentation and Usage
 
 Revision History
 
-  Created Aug 2024, JHB, separated and moved here from pktlib source
+  Created Aug 2024 JHB, separated and moved here from pktlib source
   Modified Jun 2024 JHB, full fragmentation and reassembly implementation:
                          -each linked list fragment entry includes a PKT_FRAGMENT struct containing
                            (i) 3-way tuple info (IP src addr, dst addr), IP header identifier (Identification field), and fragment offset
                            (ii) packet info including flags, identifier, fragment offset, and saved IP header and packet data. See PKT_FRAGMENT struct in pktlib.h
-                        -App_Thread_Info[] contains per app thread fragment linked list head; GetThreadIndex() uses a simple mem barrier lock to coordinate multithread access
-                        -DS_PKT_INFO_FRAGMENT_xxx and DS_PKT_INFO_REASSEMBLY_xxx uFlags, and also DS_PKT_INFO_RETURN_xxx return flags, added to DSGetPacketInfo() definitions in pktlib.h 
-                        -PktXxx() functions are internal APIs, expected to be called by DSGetPacketInfo() in pktlib
-                        -To-do: IPv6
-   Modified Aug 2024 JHB, fix g++ warnings
+                         -App_Thread_Info[] contains per app thread fragment linked list head; GetThreadIndex() uses a simple mem barrier lock to coordinate multithread access
+                         -DS_PKT_INFO_FRAGMENT_xxx and DS_PKT_INFO_REASSEMBLY_xxx uFlags, and also DS_PKT_INFO_RETURN_xxx return flags, added to DSGetPacketInfo() definitions in pktlib.h 
+                         -PktXxx() functions are internal APIs, expected to be called by DSGetPacketInfo() in pktlib
+                         -To-do: IPv6
+  Modified Aug 2024 JHB, fix g++ warnings
+  Modified Sep 2024 JHB, update comments
+  Modified Nov 2024 JHB, update comments
+  Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
 */
 
 /* Linux and/or other OS includes */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
 
+#include <algorithm>
 using namespace std;
 
 /* SigSRF includes */
@@ -53,9 +59,11 @@ using namespace std;
 #include "pktlib.h"   /* pktlib API definitions, includes arpa/inet.h, netinet/if_ether.h */
 #include "diaglib.h"  /* packet logging and diagnostics, including Log_RT() definition */
 
+#include "minmax.h"   /* note - minmax.h does not define min and max macros if __cplusplus is defined */
+
 /* internal fragmentation functions and stats. Notes, JHB Jun 2024:
 
-   -fragments are managed as per app thread linked lists; a simple mem barrier lock coordinates critical section thread access and modification of App_Thread_Info[]. The method works as long as the caller has a unique thread Id; for example, p/m threads could also call DSGetPacketInfo() with fragmented packets
+   -fragments are managed as per app thread linked lists; a simple mem barrier lock coordinates critical section thread access and modification of App_Thread_Info[]. This method works as long as the caller has a unique thread Id; for example, p/m threads could also call DSGetPacketInfo() with fragmented packets
    -each linked list fragment entry includes 3-way tuple info (protocol, IP src addr, IP dst addr), IP header identifier (Identification field), and fragment offset. See PKT_FRAGMENT struct in pktlib.h
    -each linked list entry also includes packet info: flags, identifier, fragment offset, and saved IP header and packet data
    -performance wise, the worst case is an app thread with a high number of streams each with large packets of size 4500 to 6000 bytes, in which case the thread's linked list length could grow to around N*3 or N*4, where N is number of streams
@@ -103,9 +111,9 @@ static int GetThreadIndex(bool fDelete) {  /* get thread Id index; create if not
 
 int i;
 
-/* start critical section */
+/* start critical section. Section is short and conflict with other threads will be rare */
 
-   while (__sync_lock_test_and_set(&app_thread_lock, 1) != 0);  /* set a memory barrier to coordinate concurrent app thread access to App_Thread_Info[]. Wait until the lock is zero then write 1 to it. While waiting keep writing 1 */
+   while (__sync_lock_test_and_set(&app_thread_lock, 1) != 0);  /* set a memory barrier to coordinate concurrent app thread access to App_Thread_Info[]. __sync_lock_test_and_set() does atomic test and write 1. Repeat until lock is zero; i.e. no other thread has the lock (https://gcc.gnu.org/onlinedocs/gcc-4.1.0/gcc/Atomic-Builtins.html) */
 
    for (i=0; i<max_search_limit; i++) if (App_Thread_Info[i].ThreadId == pthread_self()) {  /* look for existing thread id */
 
@@ -198,7 +206,7 @@ int PktAddFragment(uint8_t* pkt, unsigned int uFlags) {
 
 /* save packet header and payload */
 
-   int ip_hdr_len = DSGetPacketInfo(-1, (uFlags & DS_PKTLIB_HOST_BYTE_ORDER) | DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN, pkt, -1, NULL, NULL);  /* recursive calls but not a problem uFlags does not include fragment or PKTINFO related flags */
+   int ip_hdr_len = DSGetPacketInfo(-1, (uFlags & DS_PKTLIB_HOST_BYTE_ORDER) | DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN, pkt, -1, NULL, NULL);  /* may be a recursive call (if caller is DSGetPacketInfo()) but not a problem if uFlags does not include fragment or PKTINFO related flags */
    int pkt_len = DSGetPacketInfo(-1, (uFlags & DS_PKTLIB_HOST_BYTE_ORDER) | DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN, pkt, -1, NULL, NULL);
 
    if (ip_hdr_len <= 0 || pkt_len <= 0) return -1;
@@ -239,7 +247,7 @@ int PktAddFragment(uint8_t* pkt, unsigned int uFlags) {
 
    if (list_count > App_Thread_Info[thread_index].max_fragment_count) App_Thread_Info[thread_index].max_fragment_count = list_count;  /* update max_fragment_count */
 
-   return DS_PKT_INFO_RETURN_FRAGMENT | DS_PKT_INFO_RETURN_FRAGMENT_SAVED;  /* To-do: error checking, is there anything that can go wrong here */
+   return DS_PKT_INFO_RETURN_FRAGMENT | DS_PKT_INFO_RETURN_FRAGMENT_SAVED;  /* return applicable DS_PKT_INFO_RETURN_xxx flags. To-do: add error checking, what can go wrong here */
 }
 
 /* walk app thread's fragment list and look for existing fragment, uniquely identified by Identification field and fragment offset */
@@ -271,7 +279,7 @@ uint16_t identifier = 0, fragment_offset = 0;
 int DSPktRemoveFragment(uint8_t* pkt, unsigned int uFlags, unsigned int* max_list_fragments) {
 
 int thread_index = GetThreadIndex(false), nRemoved = 0;
-PKT_FRAGMENT* pList = App_Thread_Info[thread_index].pPktFragmentList, *pListPrev = NULL, *pListNext = NULL;
+PKT_FRAGMENT *pList = App_Thread_Info[thread_index].pPktFragmentList, *pListPrev = NULL, *pListNext = NULL;
 
 uint8_t protocol = 0;  /* don't need to be initialized, only to avoid compiler warnings */
 unsigned __int128 ip_src_addr = 0, ip_dst_addr = 0;
@@ -376,7 +384,7 @@ uint16_t identifier = 0;
 int PktReassemble(uint8_t* pkt, unsigned int uFlags) {
 
 int thread_index = GetThreadIndex(false), matching_fragments = 0;
-PKT_FRAGMENT* pList = App_Thread_Info[thread_index].pPktFragmentList, *pListPrev = NULL, *pListNext = NULL;
+PKT_FRAGMENT *pList = App_Thread_Info[thread_index].pPktFragmentList, *pListPrev = NULL, *pListNext = NULL;
 uint16_t reassembled_len = 0, ip_hdr_len = 0;
 
 uint8_t protocol = 0;  /* don't need to be initialized, only to avoid compiler warnings */
@@ -447,6 +455,8 @@ uint16_t identifier = 0;
 }
 
 
+/* DSIsReservedUDP() returns true if UDP port is reserved (https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers). Note this function is public (mediaMin.cpp calls it, in addition to DSIsPacketDuplicate() below) */
+
 int DSIsReservedUDP(uint16_t port) {
 
    switch (port) {
@@ -494,7 +504,7 @@ int DSIsPacketDuplicate(unsigned int uFlags, PKTINFO* PktInfo1, PKTINFO* PktInfo
 
       if (PktInfo1->seqnum == PktInfo2->seqnum && PktInfo1->ack_seqnum == PktInfo2->ack_seqnum && PktInfo1->pkt_len == PktInfo2->pkt_len && PktInfo1->dst_port == PktInfo2->dst_port && PktInfo1->src_port == PktInfo2->src_port) {
 
-         return true;
+         return true;  /* duplicate TCP packet */
       }
    }
    else if (PktInfo1->protocol == UDP) {
@@ -536,7 +546,7 @@ int DSIsPacketDuplicate(unsigned int uFlags, PKTINFO* PktInfo1, PKTINFO* PktInfo
           )
          ) {
 
-         return true;
+         return true;  /* duplicate UDP packet */
       }
    }
 

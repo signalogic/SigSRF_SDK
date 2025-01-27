@@ -2,7 +2,7 @@
 
   Description:
    
-    Configuration for x86, coCPU, or combined platforms
+    Configuration for c66x, x86, Arm, or combined coCPU platforms
 
     Currently used by pktlib, streamlib, and voplib (may be expanded in the future)
 
@@ -10,7 +10,7 @@
 
     Support for c66x card PCIe and SRIO interfaces
 
-  Copyright (C) Signalogic, Inc, 2016-2024
+  Copyright (C) Signalogic, Inc, 2016-2025
 
     Add APIs to support x86-only or combined x86 and coCPU platforms.  APIs are now consistent between all use cases (for example, no difference betweeen coCPU platforms that use PCIe or SRIO interfaces)
 
@@ -84,6 +84,12 @@
 
    Modified Jul 2024 JHB
     -change comment reference lib_logging.cpp to event_logging.cpp
+
+   Modified Nov 2024 JHB
+     -harmonize DS_LOG_LEVEL_OUTPUT_CONSOLE and DS_LOG_LEVEL_OUTPUT_FILE flags with diaglib.h. Loglevel override functionality is still supported but CONSOLE and FILE flags must be combined
+
+   Modified Nov 2025 JHB
+     -comments only
 */
 
 #ifndef _CONFIG_H_
@@ -219,15 +225,19 @@ enum EVENT_LOG_MODE {  /* uEventLogMode enums, these are in addition to LOG_xx c
   DS_EVENT_LOG_TIMEVAL_PRECISE = 0x200         /* specify msec and usec (this is the default for wall-clock timestamps, which are fixed-width for event log use) */
 };
 
-#define DS_LOG_LEVEL_MASK                    0x1f       /* up to 15 event log levels supported */
-#define DS_LOG_LEVEL_NO_API_CHECK            0x1000
-#define DS_LOG_LEVEL_NO_TIMESTAMP            0x2000
-#define DS_LOG_LEVEL_FILE_ONLY               0x4000     /* Log_RT() message written to event log file only */
-#define DS_LOG_LEVEL_APPEND_STRING           0x8000     /* append Log_RT() output, including timestamps if configured, to its string param contents up to first specifier. Note this should be used carefully as it assumes a valid string has been passed to Log_RT() */
-#define DS_LOG_LEVEL_DONT_ADD_NEWLINE        0x10000    /* don't add newline to end of Log_RT() strings if one not already there */
-#define DS_LOG_LEVEL_IGNORE_LINE_CURSOR_POS  0x20000    /* ignore line cursor position for screen output. No effect on event log file output */
-#define DS_LOG_LEVEL_DISPLAY_FILE_BOTH       0x40000
-#define DS_LOG_LEVEL_DISPLAY_ONLY            0x80000    /* Log_RT() message output to console only */
+#define DS_LOG_LEVEL_MASK                         0x1f  /* up to 15 event log levels supported */
+#define DS_LOG_LEVEL_NO_API_CHECK               0x1000
+#define DS_LOG_LEVEL_NO_TIMESTAMP               0x2000
+#define DS_LOG_LEVEL_OUTPUT_FILE                0x4000  /* output (write) Log_RT() messages written to event log file. This allows a temporary override of current uEventLogMode (see DEBUG_CONFIG struct below) */
+#define DS_LOG_LEVEL_APPEND_STRING              0x8000  /* append Log_RT() output, including timestamps if configured, to its string param contents up to first specifier. Note this should be used carefully as it assumes a valid string has been passed to Log_RT() */
+#define DS_LOG_LEVEL_DONT_ADD_NEWLINE          0x10000  /* don't add newline to end of Log_RT() strings if one not already there */
+#define DS_LOG_LEVEL_IGNORE_LINE_CURSOR_POS    0x20000  /* ignore line cursor position for screen output. No effect on event log file output */
+#define DS_LOG_LEVEL_OUTPUT_CONSOLE            0x40000  /* output Log_RT() messages to console. This allows a temporary override of current uEventLogMode (see DEBUG_CONFIG struct below) */
+#if 0  /* deprecated, to display both combine DS_LOG_LEVEL_OUTPUT_FILE and DS_LOG_LEVEL_OUTPUT_DISPLAY */
+#define DS_LOG_LEVEL_OUTPUT_DISPLAY_FILE_BOTH  0x80000
+#else
+#define DS_LOG_LEVEL_OUTPUT_FILE_CONSOLE      (DS_LOG_LEVEL_OUTPUT_FILE | DS_LOG_LEVEL_OUTPUT_CONSOLE)/* output Log_RT() messages to both event log and console. This allows a temporary override of current uEventLogMode (see DEBUG_CONFIG struct below). Note this flag is used by event_logging.c in codec libs, *do not re-define* it unless part of a codec lib rebuild effort, JHB Jan 2025 */
+#endif
 
 /* DS_LOG_LEVEL_SUBSITUTE_WEC flag substitutes one character in words warning, error, or critical in event log text. Notes, JHB Jan 2021:
 
@@ -237,23 +247,23 @@ enum EVENT_LOG_MODE {  /* uEventLogMode enums, these are in addition to LOG_xx c
    -Log_RT() inserts a marker after first character in each keyword -- warning is changed to w|arning, error to e|rror, and critical to c|ritical
 */
 
-#define DS_LOG_LEVEL_SUBSITUTE_WEC           0x100000
+#define DS_LOG_LEVEL_SUBSITUTE_WEC            0x100000
 
-#define DS_LOG_LEVEL_USE_STDERR              0x200000
+#define DS_LOG_LEVEL_USE_STDERR               0x200000
 
 /* flag options for uEnablePktTracing in DEBUG_CONFIG struct (below) */
 
-#define DS_PACKET_TRACE_PUSH                 1
-#define DS_PACKET_TRACE_RECEIVE              2
-#define DS_PACKET_TRACE_JITTER_BUFFER        4
-#define DS_PACKET_TRACE_TRANSMIT             8
-#define DS_PACKET_TRACE_PULL                 0x10
-#define DS_PACKET_TRACE_MASK                 0xff
+#define DS_PACKET_TRACE_PUSH                         1
+#define DS_PACKET_TRACE_RECEIVE                      2
+#define DS_PACKET_TRACE_JITTER_BUFFER                4
+#define DS_PACKET_TRACE_TRANSMIT                     8
+#define DS_PACKET_TRACE_PULL                      0x10
+#define DS_PACKET_TRACE_MASK                      0xff
 
-#define DS_PACKET_TRACE_LOG_SRC_IP_ADDR      0x100  /* flags for additional info to log during packet tracing. Default info is the packet's channel number (chnum) and session handle */
-#define DS_PACKET_TRACE_LOG_DST_IP_ADDR      0x200
-#define DS_PACKET_TRACE_LOG_SRC_UDP_PORT     0x400
-#define DS_PACKET_TRACE_LOG_DST_UDP_PORT     0x800
+#define DS_PACKET_TRACE_LOG_SRC_IP_ADDR          0x100  /* flags for additional info to log during packet tracing. Default info is the packet's channel number (chnum) and session handle */
+#define DS_PACKET_TRACE_LOG_DST_IP_ADDR          0x200
+#define DS_PACKET_TRACE_LOG_SRC_UDP_PORT         0x400
+#define DS_PACKET_TRACE_LOG_DST_UDP_PORT         0x800
 
 typedef struct {
 

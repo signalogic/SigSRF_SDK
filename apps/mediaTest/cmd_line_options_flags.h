@@ -34,6 +34,7 @@
    Modified May 2024 JHB, update comments
    Modified Jun 2024 JHB, add DISABLE_PORT_IGNORE_MESSAGES and DISABLE_SIP_INFO_REQUEST_OK_MESSAGES flags
    Modified Jul 2024 JHB, clarification of ENABLE_TIMESTAMP_MATCH_MODE and ENABLE_WAV_OUTPUT flags
+   Modified Nov 2024 JHB, update comments
 */
 
 #ifndef _CMDLINEOPTIONSFLAGS_H_
@@ -55,7 +56,7 @@
 #define ENABLE_STREAM_GROUP_ASR                              8    /* m| enable ASR processing on stream group output */
 #define ENABLE_DER_STREAM_DECODE                        0x1000
 
-#define USE_PACKET_ARRIVAL_TIMES                          0x10    /* m| use arrival times (packet timestamps) in pcap records to control push rate. Should not be specified concurrently with AUTO_ADJUST_PUSH_RATE */
+#define USE_PACKET_ARRIVAL_TIMES                          0x10    /* m| use arrival times (packet timestamps) in pcap records to control push timing. hould not be specified concurrently with AUTO_ADJUST_PUSH_TIMING */
 
 /* stress tests / functional tests (see also fStressTest and fCapacityTest flags below) */
 
@@ -73,7 +74,7 @@
 #define ROUND_ROBIN_SESSION_ALLOCATION                  0x4000    /* m| allocate sessions to packet/media threads in round-robin manner. The idea is to keep p/m thread load balanced. This flag should be specified for high capacity situations */
 #define WHOLE_GROUP_THREAD_ALLOCATE                     0x8000    /* m| do not split stream group sessions across packet/media threads. This avoids use of locks (semaphores) inside streamlib and gives higher performance */
 #define ANALYTICS_MODE                                 0x40000    /* m| analytics mode is used when (i) no reference should be made to wall clocks, (ii) input packets do not have wall clock timing, or they might but their values are unreliable (lawful interception is one example) */
-#define AUTO_ADJUST_PUSH_RATE                          0x80000    /* m| enable automatically adjusting packet push rate. Currently supported only when ANALYTICS_MODE is enabled. Should not be specified concurrently with USE_PACKET_ARRIVAL_TIMES */
+#define AUTO_ADJUST_PUSH_TIMING                        0x80000    /* m| enable automatically adjusting packet push timing. Currently supported only when ANALYTICS_MODE is enabled. Should not be specified concurrently with USE_PACKET_ARRIVAL_TIMES */
 
 /* disables, enables */
 

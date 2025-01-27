@@ -1,0 +1,8 @@
+# EVS codec config file for AMR-WB IO mode wideband testing
+
+codec_type = EVS
+bitrate = 6600           # bitrate in bps - 6600 is an AMR-WB IO (interoperability) mode bitrate
+sample_rate = 16000      # wideband encoder sampling rate
+dtx_enable = 1
+rf_enable = 0
+header_format = 0        # compact header format

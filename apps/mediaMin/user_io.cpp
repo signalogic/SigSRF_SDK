@@ -28,18 +28,24 @@
    Modified Jan 2023 JHB, add fCtrl_C_pressed handling in ProcessKeys() (see comments in mediaTest/see cmd_line_interface.c)
    Modified Jan 2023 JHB, add command line to interactive 'd' key command (real-time debug output)
    Modified Feb 2023 JHB, one-time set stdout to non-buffered in ProcessKeys(). See comments
-   Modified Feb 2024 JHB, update usage of DSGetLogTimeStamp() per changes in diaglib.h
+   Modified Feb 2024 JHB, update usage of DSGetLogTimestamp() per changes in diaglib.h
    Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG and DS_LOG_LEVEL_UPTIME_TIMESTAMP flags, which are now deprecated (for the latter uptime timestamps are the default). See comments in pktlib.h and diaglib.h
    Modified Jun 2024 JHB, include '\r' in updating isCursorMidLine and uLineCursorPos
    Modified Jul 2024 JHB, update reference to isMasterThread()
    Modified Aug 2024 JHB, slight mod to quit key console display
+   Modified Sep 2024 JHB, change DS_PULLPACKETS_TRANSCODED to DS_PULLPACKETS_OUTPUT per flag rename in pktlib.h
+   Modified Oct 2024 JHB, fix bug in param passing order in DSGetLogTimestamp()
+   Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
+   Modified Dec 2024 JHB, include <algorithm> and use std namespace
 */
+
+#include <algorithm>
+using namespace std;
 
 #include <stdio.h>
 #include <stdarg.h>
 
-using namespace std;
-
+#include "directcore.h"  /* DirectCore APIs */
 #include "diaglib.h"    /* bring in Log_RT() definition */
 #include "pktlib.h"
 
@@ -189,8 +195,8 @@ static bool fSetStdoutNonBuffered = false;
 
       if (key == 'd' || fDisp) {  /* display debug output */
 
-         DSGetLogTimeStamp(tmpstr, sizeof(tmpstr), 0, DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP);  /* set additional user timeval param to zero (not used), JHB Feb 2024. Remove DS_LOG_LEVEL_UPTIME_TIMESTAMP flag, which is now deprecated (uptime timestamps are the default), JHB Apr 2024 */
-         strcat(tmpstr, " ");  /* DSGetLogTimeStamp() no appends trailing space, JHB Feb 2024 */
+         DSGetLogTimestamp(tmpstr, DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP, sizeof(tmpstr), 0);  /* set additional user timeval param to zero (not used), JHB Feb 2024. Remove DS_LOG_LEVEL_UPTIME_TIMESTAMP flag, which is now deprecated (uptime timestamps are the default), JHB Apr 2024. Move DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP flag to 2nd param, per change in diaglib.h, JHB Oct 2024 */
+         strcat(tmpstr, " ");  /* DSGetLogTimestamp() no appends trailing space, JHB Feb 2024 */
 
          char repeatstr[50];
          if (!fRepeatIndefinitely && nRepeatsRemaining[thread_index] >= 0) sprintf(repeatstr, ", repeats remaining = %d", nRepeatsRemaining[thread_index]);  /* if cmd line entry includes -RN with N >= 0, nRepeatsRemaining will be > 0 for repeat operation, JHB Jan2020 */
@@ -211,7 +217,7 @@ static bool fSetStdoutNonBuffered = false;
 
             sprintf(&tmpstr[strlen(tmpstr)], ", pull queue check =");
             for (i=0; i<thread_info[app_thread_index_debug].nSessionsCreated; i++) {
-               if (!(hSessions[i] & SESSION_MARKED_AS_DELETED)) sprintf(&tmpstr[strlen(tmpstr)], " %d", DSPullPackets(DS_PULLPACKETS_GET_QUEUE_STATUS | DS_PULLPACKETS_TRANSCODED | DS_PULLPACKETS_JITTER_BUFFER, NULL, NULL, hSessions[i], NULL, 0, 0));
+               if (!(hSessions[i] & SESSION_MARKED_AS_DELETED)) sprintf(&tmpstr[strlen(tmpstr)], " %d", DSPullPackets(DS_PULLPACKETS_GET_QUEUE_STATUS | DS_PULLPACKETS_OUTPUT | DS_PULLPACKETS_JITTER_BUFFER, NULL, NULL, hSessions[i], NULL, 0, 0));
             }
 
             sprintf(&tmpstr[strlen(tmpstr)], ", pcap input check =");
@@ -311,7 +317,7 @@ int slen;
             if (fEndLF) *(p+strlen(p)-1) = '\n';  /* restore end LF */
          }
 
-         Log_RT(4 | DS_LOG_LEVEL_FILE_ONLY | ((uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP) ? DS_LOG_LEVEL_NO_TIMESTAMP : 0), p);  /* if specified also print to event log */
+         Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE | ((uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP) ? DS_LOG_LEVEL_NO_TIMESTAMP : 0), p);  /* if specified also print to event log */
       }
    }
 }

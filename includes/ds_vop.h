@@ -60,7 +60,9 @@
 
 /* codecs */
 
+#if 0
 #define DS_CODEC_NONE             0            /* use this for diagnostics, e.g. loopback modes */
+#endif
 #define DS_CODEC_TYPE_MASK        0x00ff0000L
 
 /* voice codecs, ITU */
@@ -198,7 +200,7 @@
 
 #ifndef _DIRECTCORE_
 
-/* following defines needed without alias.h, which is included by hwlib.h */
+/* following defines needed without alias.h, which is included by directcore.h */
 
   #ifndef BYTE
     #define BYTE unsigned char

@@ -47,27 +47,31 @@
    Modified Jun 2024 JHB, include packet number, non-fragment dst port, and protocol in log/console messages
    Modified Jun 2024 JHB, use CRC32 to look for duplicate SDP info; if found, don't parse and don't report
    Modified Jul 2024 JHB, per change in pktlib.h, edit DSGetPacketInfo() calls to make uFlags last param
+   Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
+   Modified Dec 2024 JHB, include <algorithm> and use std namespace
 */
 
+#include <algorithm>  /* bring in std::min and std::max */
 #include <fstream>
+
 using namespace std;
 
-#include "pktlib.h"     /* DSGetPacketInfo() */
-//#include "voplib.h"
-#include "diaglib.h"    /* bring in Log_RT() definition */
+#include "directcore.h"  /* DirectCore APIs */
+#include "pktlib.h"      /* DSGetPacketInfo() */
+#include "diaglib.h"     /* bring in Log_RT() definition */
 
-#include <sdp/sdp.h>    /* SDP info API header file (../apps/common/sdp) */
-#include <crc/crc.h>    /* CRC32 routine (in ../apps/common/crc */
+#include <sdp/sdp.h>     /* SDP info API header file (../apps/common/sdp) */
+#include <crc/crc.h>     /* CRC32 routine (in ../apps/common/crc */
 
-#include "mediaTest.h"  /* bring in some constants needed by mediaMin.h */
-#include "mediaMin.h"   /* bring in THREAD_INFO typedef for thread_info[].xx[] access, indexed by thread and input stream */
+#include "mediaTest.h"   /* bring in some constants needed by mediaMin.h */
+#include "mediaMin.h"    /* bring in THREAD_INFO typedef for thread_info[].xx[] access, indexed by thread and input stream */
 #include "sdp_app.h"
 
 #ifdef FRAGMENT_DEBUG
-#include "user_io.h"  /* PrintPacketBuffer() */
+#include "user_io.h"     /* PrintPacketBuffer() */
 #endif
 
-extern APP_THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h. Indexed by thread_index */
+extern APP_THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h, indexed by thread_index */
 
 /* SDPParseInfo() notes:
 

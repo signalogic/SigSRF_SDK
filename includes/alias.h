@@ -5,7 +5,7 @@
 
  Project: DirectCore lib and driver
 
- Copyright Signalogic Inc. 1994-2024
+ Copyright Signalogic Inc. 1994-2025
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -28,6 +28,8 @@
   Modified Mar 2022 JHB, move MAXPATH outside of defined(__LIBRARYMODE__)
   Modified Oct 2022 JHB, add GCC pragmas to ignore "-Wvariadic-macros" for #define PDEBUG in gcc versions 7.x and higher. This is mainly for 3GPP builds (e.g. codecs) that use C1999
   Modified Mar 2024 JHB, check for bool already defined to avoid conflict with <stdbool.h>
+  Modified Sep 2024 JHB, define sizeof_field() macro (if not already defined) for convenient sizing of struct fields
+  Modified Jan 2025 JHB, add STATIC_ASSERT macro definition
 */
 
  
@@ -83,7 +85,18 @@
 
 #if defined(_LINUX_)
 
-   #define _GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)  /* Modified:  Added GCC version Macro to compare it with version >=4.5 to avoid pragma error in GCC versions < 4.5. HP, SC, Oct 2014 */
+/* define gcc version macro. Example usage:  #if (_GCC_VERSION >= 70000)  // gcc 7.0 or higher  */
+
+   #define _GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)  /* Modified: added GCC version macro to compare it with version >= 4.5 to avoid pragma error in GCC versions < 4.5. HP, SC, Oct 2014 */
+
+/* define generic static assertion based on compile-time condition. The typedef approach uses no memory. For example usage see shared_include/codec.h, JHB Jan 2025 */
+
+   #define CONCAT1(X,Y) X##Y  // helper macro for STATIC_ASSERT, allow unique identifier made from line number
+   #define CONCAT(X,Y) CONCAT1(X,Y)
+
+   #ifndef STATIC_ASSERT
+     #define STATIC_ASSERT(condition) typedef char CONCAT(assert,__LINE__)[ (condition) ? 1 : -1];
+   #endif
 
    #define MAX_INPUT_LEN  256
    
@@ -419,6 +432,16 @@
      	int mseek(FILE *stream, long offset, int origin);
      	int rand();
      	double pow(double, double);  /* raises parameter 1 to the power of parameter 2 */
+   #endif
+
+
+/* define sizeof_field() macro (if not already defined) for convenient sizing of struct fields */
+
+   #ifndef offsetof  /* if for some reason we don't see offsetof() then define it as in stddef.h */
+     #define offsetof(TYPE, MEMBER) __builtin_offsetof (TYPE, MEMBER)
+   #endif
+   #ifndef sizeof_field  /* sizeof_field() defined in later versions of stddef.h; if not found then define it as done in stddef.h */
+     #define sizeof_field(t, f) (sizeof(((t*)0)->f))
    #endif
 
 #endif /* _LINUX_ */

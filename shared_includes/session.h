@@ -1,7 +1,7 @@
 /*
   session.h
 
-  Voice / video session support for c66x, x86, or combined coCPU platforms
+  Voice / video session support for c66x, x86, Arm, or combined coCPU platforms
     1) Per-channel definitions.  Each channel (stream), has local and remote endpoints (or ingress/Rx and egress/Tx endpoints)
     2) Session, termination, and voice / video attributes struct definitions
 
@@ -129,6 +129,17 @@
 
     Jul 2024 JHB
       -rename SSRC fields in SESSION_INFO_THREAD struct to ssrc. Maintain consistency with other header file structs
+
+    Sep 2024 JHB
+      -add TERM_DISABLE_OUTPUT_QUEUE_PACKETS flag, applicable to uFlags element in TERMINATION_INFO struct
+      -rename TERM_NO_PACKET_TIMING to TERM_NO_PACKET_ARRIVAL_TIMESTAMPS
+
+    Nov 2024 JHB
+      -remove DS_IPVn enums. All source code now uses either IPV4 and IPV6 enums below in ip_type or defined in pktlib.h; both have identical values (4 and 6)
+      -use pktlib.h IPVn_ADDR_XXX defines and remove duplicate defines
+
+    Dec 2024 JHB
+      -comments only
 */
 
 #ifndef _SESSION_H_
@@ -136,28 +147,30 @@
 
 #include <stdint.h>
 
+#define MIN_HDR  /* bring in minimum basic defines from pktlib.h */
+  #include "pktlib.h"
+#undef MIN_HDR
+
 #define DYNAMIC_JITTER_ENABLE
 
 #ifdef NPLUS1_BUILD
-   #define  MAX_REDUNDANCY 13
+   #define  MAX_REDUNDANCY  13
 #elif ONEPLUS1_BUILD
-   #define  MAX_REDUNDANCY 1
+   #define  MAX_REDUNDANCY   1
 #else
-  #define  MAX_REDUNDANCY 0
+  #define   MAX_REDUNDANCY   0
 #endif
 
 #define USE_BIT8FIELDS
 
-#define ENABLE_TERM_MODE_FIELD  /* termination mode field added in TERMINATION_INFO struct, JHB Jul2017 */
+#define ENABLE_TERM_MODE_FIELD  /* termination mode field added in TERMINATION_INFO struct, JHB Jul 2017 */
 /*#define ENABLE_TERM_MODE_DONT_CARE */
 
                                 /*  Notes:
 
-                                    1) Currently the mode field is processed but no mode values are being used.  Functionality originally provided by the "dont care" mode value has been replaced by a more flexible
-                                       "user managed" session operating mode.  See comments on this in pktlib.c and mediaTest_proc.c
+                                    1) Currently the mode field is processed but no mode values are being used.  Functionality originally provided by the "dont care" mode value has been replaced by a more flexible "user managed" session operating mode.  See comments on this in pktlib.c and mediaTest_proc.c
 
-                                    2) For reference, the "don't care" mode allows termN session config remote/local IP addr:port values to be designated as "don't care", for example term2 IP addr:port is a don't
-                                       care because the user app is listening only, with no receive and transmit on term2 side
+                                    2) For reference, the "don't care" mode allows termN session config remote/local IP addr:port values to be designated as "don't care", for example term2 IP addr:port is a don't care because the user app is listening only, with no receive and transmit on term2 side
                                 */
 
 #include "codec.h"  /* pull in codec related items, JHB Oct 2023 */
@@ -165,37 +178,37 @@
 struct voice_attributes {
 
 #ifdef __BIG_ENDIAN__
-  uint32_t flag : 8;               /* see VOICE_ATTR_FLAG_VAD and VOICE_ATTR_FLAG_CNG */
-  uint32_t noise_reduction : 8;    /* noise reduction:  0 = none, 1-5 = type */
-  uint32_t ec : 8;                 /* see ec_type enum */
-  uint32_t ec_tail_len : 8;        /* tail length:  0 = not used, otherwise specified in msec */
+  uint32_t flag : 8;                 /* see VOICE_ATTR_FLAG_VAD and VOICE_ATTR_FLAG_CNG */
+  uint32_t noise_reduction : 8;      /* noise reduction:  0 = none, 1-5 = type */
+  uint32_t ec : 8;                   /* see ec_type enum */
+  uint32_t ec_tail_len : 8;          /* tail length:  0 = not used, otherwise specified in msec */
 #else
-  uint32_t ec_tail_len : 8;        /* tail length:  0 = not used, otherwise specified in msec */
-  uint32_t ec : 8;                 /* see ec_type enum */
-  uint32_t noise_reduction : 8;    /* noise reduction:  0 = none, 1-5 = type */
-  uint32_t flag : 8;               /* see VOICE_ATTR_FLAG_VAD and VOICE_ATTR_FLAG_CNG */
+  uint32_t ec_tail_len : 8;          /* tail length:  0 = not used, otherwise specified in msec */
+  uint32_t ec : 8;                   /* see ec_type enum */
+  uint32_t noise_reduction : 8;      /* noise reduction:  0 = none, 1-5 = type */
+  uint32_t flag : 8;                 /* see VOICE_ATTR_FLAG_VAD and VOICE_ATTR_FLAG_CNG */
 #endif
 
 #ifdef __BIG_ENDIAN__
-  uint32_t dtmf_payload_type : 8;  /* DTMF payload type to use in remote (egress) RTP header */
-  uint32_t dtmf_mode : 8;          /* Refer to dtmf_processing enum */
-  uint32_t rtp_payload_type : 8;   /* RTP payload type to use in remote (egress) RTP header */
-  uint32_t ptime : 8;              /* in msec */
+  uint32_t dtmf_payload_type : 8;    /* DTMF payload type to use in remote (egress) RTP header */
+  uint32_t dtmf_mode : 8;            /* Refer to dtmf_processing enum */
+  uint32_t rtp_payload_type : 8;     /* RTP payload type to use in remote (egress) RTP header */
+  uint32_t ptime : 8;                /* in msec */
 #else
-  uint32_t ptime : 8;              /* in msec */
-  uint32_t rtp_payload_type : 8;   /* RTP payload type to use in remote (egress) RTP header */
-  uint32_t dtmf_mode : 8;          /* Refer to dtmf_processing enum */
-  uint32_t dtmf_payload_type : 8;  /* DTMF payload type to use in remote (egress) RTP header */
+  uint32_t ptime : 8;                /* in msec */
+  uint32_t rtp_payload_type : 8;     /* RTP payload type to use in remote (egress) RTP header */
+  uint32_t dtmf_mode : 8;            /* Refer to dtmf_processing enum */
+  uint32_t dtmf_payload_type : 8;    /* DTMF payload type to use in remote (egress) RTP header */
 #endif
   union
   {
       struct
       {
-          uint32_t codec_flags;     /* See enum amr_codec_flags */
+          uint32_t codec_flags;       /* see enum amr_codec_flags */
       } amr;
       struct
       {
-          uint32_t codec_flags;     /* See enum evrc_codec_flags */
+          uint32_t codec_flags;       /* see enum evrc_codec_flags */
 #ifdef __BIG_ENDIAN__
           uint32_t reserved : 8;
           uint32_t hangover : 8;
@@ -210,7 +223,7 @@ struct voice_attributes {
       } evrc;
       struct
       {
-          uint32_t codec_flags;             /* See enum opus_codec_flags */
+          uint32_t codec_flags;       /* see enum opus_codec_flags */
 #ifdef __BIG_ENDIAN__
           uint32_t sprop_max_capture_rate : 16;  /* 8000 - 48000 */
           uint32_t max_playback_rate : 16;       /* 8000 - 48000 */
@@ -223,7 +236,7 @@ struct voice_attributes {
 #ifdef USE_ATCA_EVS_MODS
       struct
       {
-          uint32_t codec_flags;             /* See evs_codec_flags */
+          uint32_t codec_flags;       /* see evs_codec_flags */
 #ifdef __BIG_ENDIAN__
           uint32_t fixed_sid_update_interval : 16;     /* # frame periods (20 ms/frame) b/w fixed mode SID updates : {3 .. 100, default = 8} */
           uint32_t adaptive_sid_update_interval : 16;  /* # frame periods (20 ms/frame) b/w adaptive mode SID updates : {8 .. 50, default = 25} */
@@ -235,13 +248,13 @@ struct voice_attributes {
 #else
       struct
            {
-               uint32_t codec_flags;             /* See evs_codec_flags */
+               uint32_t codec_flags;  /* see evs_codec_flags */
            } evs;
 
 #endif  /* ATCA blade system EVS mods */
       struct
       {
-         uint32_t codec_flags;               /* See melpe_codec_flags */
+         uint32_t codec_flags;        /* see melpe_codec_flags */
       } melpe;
   } u;
 };
@@ -266,20 +279,16 @@ struct video_attributes {
 #endif
 };
 
-#define DS_IPV4_ADDR_LEN 4
-#define DS_IPV6_ADDR_LEN 16
-
-enum ip_type {
-
-  DS_IPV4,
-  DS_IPV6
-};
-
 #define DS_MERGE_TYPE_FIELD 0xF
 
 enum merge_type {
    DS_STREAM_GROUP_OWNER = 1,
    DS_STREAM_GROUP_CONTRIBUTOR = 2
+};
+
+enum __attribute__((__packed__)) ip_type {  /* packed so ip_type can be included efficiently in a struct */
+  IPV4 = 4,
+  IPV6 = 6
 };
 
 struct ip_addr {
@@ -288,8 +297,9 @@ struct ip_addr {
 
   union
   {
-     uint32_t ipv4;
-     uint8_t ipv6[DS_IPV6_ADDR_LEN];
+     uint32_t ipv4_uint32;  /* allow IPv4 address assignment without memcpy, JHB Nov 2024 */
+     uint8_t ipv4[IPV4_ADDR_LEN];
+     uint8_t ipv6[IPV6_ADDR_LEN];
   } u;
 };
 
@@ -323,26 +333,29 @@ typedef struct {
 
 /* common items for audio and video */
 
+/* for media_type, see enum media_types enum definitions in codec.h */
+/* if media_type is DS_MEDIA_TYPE_VOICE, codec_type should be a DS_CODEC_VOICE_XXX enum in codec_types{}, if media_type is DS_MEDIA_TYPE_VIDEO, codec_type should be a DS_CODEC_VIDEO_XXX enum, JHB Dec 2024 */
+/* vqe_processing_interval is in msec. Currently reserved and not used, may be configurable per realm */
+ 
 #ifdef USE_BIT8FIELDS
 
   #ifdef __BIG_ENDIAN__
-    uint32_t vqe_processing_interval : 16; /* ms, reserved, currently not used, maybe configurable per realm */
+    uint32_t vqe_processing_interval : 16;
     /* uint16_t payload_framesize;  // bits */
-    uint32_t codec_type : 8;  /* if media_type is VOICE, use voice_codec_type enum, else use video_codec_type enum */
-    uint32_t media_type : 8;  /* see enum media_type definition */
+    int32_t codec_type : 8;
+    uint32_t media_type : 8;
   #else
-    uint32_t media_type : 8;  /* see enum media_type definition */
-    uint32_t codec_type : 8;  /* if media_type is VOICE, use voice_codec_type enum, else use video_codec_type enum */
+    uint32_t media_type : 8;
+    int32_t codec_type : 8;
     /* uint16_t payload_framesize;  // bits */
-    uint32_t vqe_processing_interval : 16; /* ms, reserved, currently not used, maybe configurable per realm */
+    uint32_t vqe_processing_interval : 16;
   #endif
 
 #else
 
-   uint32_t vqe_processing_interval; /* ms, reserved, currently not used, maybe configurable per realm */
-   uint32_t media_type;  /* see enum media_type definition */
-   uint32_t codec_type;  /* if media_type is VOICE, use voice_codec_type enum, else use video_codec_type enum */
-
+   uint32_t vqe_processing_interval;
+   uint32_t media_type;
+   int32_t codec_type;
 #endif
 
   uint32_t bitrate;     /* bps */
@@ -353,6 +366,7 @@ typedef struct {
 
   struct ip_addr remote_ip;
   struct ip_addr local_ip;
+
 #ifdef __BIG_ENDIAN__
   uint32_t local_port : 16;
   uint32_t remote_port : 16;
@@ -370,8 +384,8 @@ typedef struct {
 #endif
 
   union {
-     struct voice_attributes voice_attr;
-     struct video_attributes video_attr;
+     struct voice_attributes voice;
+     struct video_attributes video;
   } attr;
 
 #ifdef ENABLE_TERM_MODE_FIELD
@@ -393,12 +407,13 @@ typedef struct {
   #define TERM_EXPECT_BIDIRECTIONAL_TRAFFIC       0x10   /* applications should set this flag for telecom mode applications. If not set, packet/media thread receive queue handling performance is increased for unidirectional traffic (analytics mode) */
   #define TERM_IGNORE_ARRIVAL_PACKET_TIMING       0x20   /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
   #define TERM_OOO_HOLDOFF_ENABLE                 0x40   /* see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF comments in pktlib.h */
-  #define TERM_DISABLE_DORMANT_SESSION_DETECTION  0x80   /* see comments in mediaTest/cmd_line_debug_flags.h */
+  #define TERM_DISABLE_DORMANT_SESSION_DETECTION  0x80   /* see comments in mediaTest/cmd_line_options_flags.h */
   #define TERM_DYNAMIC_SESSION                    0x100  /* flag set by mediaMin in term1 and term2 structs when creating dynamic sessions. This is an "informational only" flag, useful only for status and information during a session lifespan, JHB Jan 2023 */
-  #define TERM_ANALYTICS_MODE_PACKET_TIMING       0x200  /* flag set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
-  #define TERM_NO_PACKET_TIMING                   0x400  /* flag set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
-  uint32_t sample_rate;
-  uint32_t input_sample_rate;
+  #define TERM_ANALYTICS_MODE_PACKET_TIMING       0x200  /* analytics mode flag set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
+  #define TERM_NO_PACKET_ARRIVAL_TIMESTAMPS       0x400  /* flag indicating input packets don't have arrival timestamps, set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
+  #define TERM_DISABLE_OUTPUT_QUEUE_PACKETS       0x800  /* flag indicating packet output to application queue should be disabled. Packet/media threads check this in packet_flow_media_proc.c before transcoding and formatting audio packets or handling video packet outputs */
+  uint32_t sample_rate;                /* codec output sample rate */
+  uint32_t input_sample_rate;          /* codec input sample rate */
   uint32_t buffer_depth;
   uint32_t uFlags;
   uint16_t ptime;                      /* in msec */

@@ -8,7 +8,7 @@
       - codec test params setup
       - codec test config file parsing
  
- Copyright (C) Signalogic Inc. 2016-2022
+ Copyright (C) Signalogic Inc. 2016-2024
 
  Revision History
  
@@ -20,7 +20,20 @@
    Modified Sep 2020 JHB, mods for compatibility with gcc 9.3.0, include minmax.h (for min/max functions)
    Modified Jan 2021 JHB, include minmax.h as min() and max() macros may no longer be defined for builds that include C++ code (to allow std:min and std:max)
    Modified Sep 2022 JHB, change parse_codec_test_params() parse_codec_config() to match changes in transcoder_control.c
+   Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
+   Modified Dec 2024 JHB, include <algorithm> and use std namespace if __cplusplus defined
 */
+
+/* Linux includes */
+
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
+
+/* DirectCore APIs */
+
+#include "directcore.h"
 
 /* app support header files */
 
@@ -100,7 +113,7 @@ FILE *cfg_fp = NULL;
    /* c66x main.c used for codec unit test does not reference codec_params_t struct, which should be moved from mediaTest.h to a shared include file. c66x code is currently
       only declaring space for 6 ints, so this is a bad situation and needs to be corrected.  For now we enforce a limit on size of codec params written to c66x mem, JHB May 2018 */
 
-      if (codec_test_params_addr) DSWriteMem(hCard, DS_GM_LINEAR_DATA | DS_RM_MASTERMODE, codec_test_params_addr, DS_GM_SIZE32, codec_test_params, min(6, sizeof(codec_test_params_t)/4));
+      if (codec_test_params_addr) DSWriteMem(hCard, DS_GM_LINEAR_DATA | DS_RM_MASTERMODE, codec_test_params_addr, DS_GM_SIZE32, codec_test_params, min(6, (int)sizeof(codec_test_params_t)/4));
    }
  
    printf("\n");

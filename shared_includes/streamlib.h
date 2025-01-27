@@ -9,7 +9,7 @@
 
  Purpose
 
-  API header file for streamlib shared library used in x86 and c66x media processing
+  API header file for SigSRF streamlib shared library used in media domain processing for c66x, x86, Arm or combined coCPU platforms
 
  Revision History:
 
@@ -55,6 +55,8 @@
   Modified Feb 2024 JHB, add DS_STREAMGROUP_INFO_MERGE_FILENAME and DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME flag options for DSGetStreamGroupInfo()
   Modified Mar 2024 JHB, deprecate DS_CS_GLOBALCONFIG and DS_CS_DEBUGCONFIG flags; see comments
   Modified Jul 2024 JHB, add TIMESTAMP_MATCH_WAV_OUTPUT flag. See usage example in mediaMin.cpp
+  Modified Sep 2024 JHB, add DSGetStreamGroupInfo() DS_STREAMGROUP_INFO_OWNER_SESSION flag
+  Modified Dec 2024 JHB, comments only
 */
 
 #ifndef _STREAMLIB_H_
@@ -67,7 +69,7 @@
 
   #include <stdio.h>
 
-  #if defined(_TI66X_ACCEL)  /* hwlib.h not available (e.g. ffmpeg accelerator) */
+  #if defined(_TI66X_ACCEL)  /* directcore.h not available (e.g. ffmpeg accelerator) */
 
     #define DWORD uint32_t
     #define UINT uint32_t
@@ -81,7 +83,9 @@
     #include <sys/stat.h>
     #include <fcntl.h>
 
-    #include "hwlib.h"  /* DirectCore header file */
+    #define MIN_HDR
+      #include "directcore.h"  /* bring in MEDIAINFO struct */
+    #undef MIN_HDR
 
     #include "config.h"
 
@@ -461,10 +465,11 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
   #define DS_STREAMGROUP_INFO_CHECK_ALLTERMS               3             /* try all terms, starting with group term, Retrieve group name in szInfo if specified */
   #define DS_STREAMGROUP_INFO_MERGE_FILENAME               4             /* retrieve stream group filename in szInfo. For a usage example see mediaMin.cpp */
   #define DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME           5             /* retrieve timestamp match mode stream group filename in szInfo */
+  #define DS_STREAMGROUP_INFO_OWNER_SESSION                6             /* retrieve group owner session when combined with DS_STREAMGROUP_INFO_HANDLE_IDX and handle is a valid idx */
 
   #define DS_STREAMGROUP_INFO_ITEM_MASK                    0xff
 
-  #define DS_STREAMGROUP_INFO_HANDLE_IDX                   0x100         /* handle will be interpreted as an idx. If neither handle is interpreted as an hSession */
+  #define DS_STREAMGROUP_INFO_HANDLE_IDX                   0x100         /* handle will be interpreted as an idx. If neither DS_STREAMGROUP_INFO_HANDLE_IDX or DS_STREAMGROUP_INFO_HANDLE_CHNUM is given handle is interpreted as an hSession */
   #define DS_STREAMGROUP_INFO_HANDLE_CHNUM                 0x200         /* handle will be interpreted as a chnum */
 
   int DSGetStreamGroupContributorPastDue(int chnum);                     /* these 2 APIs only supported for analytics compatibility mode */

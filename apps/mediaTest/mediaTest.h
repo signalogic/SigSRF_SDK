@@ -24,7 +24,7 @@
    Modified Sep 2019 JHB, add uFlags param to cmdLineInterface() definition
    Modified Nov 2019 JHB, add TEXT and CSV output file types (former to support Kaldi ASR)
    Modified Dec 2019 JHB, add extern reference for nJitterBufferParams to support jitter buffer target and max delay cmd line entry (-jN)
-   Modified Jan 2020 JHB, add extern reference for nRepeat to supper number of repeat times cmd line entry (-RN)
+   Modified Jan 2020 JHB, add extern reference for nRepeats to support number of repeat times cmd line entry (-RN)
    Modified Mar 2020 JHB, handle name change of mediaThread_test_app.c to mediaMin.c
    Modified Apr 2020 JHB, add references for uLineCursorPos, isCursorMidLine, and pm_thread_printf
    Modified May 2020 JHB, add pm_sync[] reference. Currently this is only used for timing debug, see comments in mediaMin.c
@@ -55,6 +55,9 @@
    Modified Jul 2024 JHB, add fGroupOutputNoCopy to support --group_pcap_nocopy cmd line option
    Modified Jul 2024 JHB, add nRandomBitErrorPercentage to support --random_bit_error cmd line option
    Modified Aug 2024 JHB, add fShow_sha1sum and fShow_sha512sum to support --sha1sum and --sha512sum command line options
+   Modified Sep 2024 JHB, add io_data_type name to IO type enums
+   Modified Nov 2024 JHB, remove directcore.h include
+   Modified Dec 2024 JHB, rename "header_format" to "payload_format" in codec_test_params_t struct
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -64,7 +67,6 @@
 #include <netinet/in.h>
 #include <math.h>
 
-#include "hwlib.h"            /* DirectCore API */
 #include "cimlib.h"           /* CIM lib API */
 #include "filelib.h"          /* waveform file lib API */
 #include "keybd.h"            /* interactive key command support */
@@ -131,7 +133,7 @@ typedef struct
    float isf;
    unsigned int mode;
    float bitrate_plus;
-   unsigned int header_format;  /* added Apr 2021 JHB */
+   unsigned int payload_format;  /* added Apr 2021 JHB, renamed Dec 2024 */
    unsigned int framesize;  /* added Sep 2022 JHB */
    int payload_shift;  /* special case to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/-, Sep 2022 JHB */
 
@@ -218,7 +220,7 @@ extern int               nSegmentation;
 extern int               nSegmentInterval;
 extern int               nAmplitude;
 extern int               nJitterBufferParams;
-extern int               nRepeat;
+extern int               nRepeats;
 extern char              szSDPFile[CMDOPT_MAX_INPUT_LEN];
 extern int               nSamplingFrequency;
 extern char              szStreamGroupWavOutputPath[CMDOPT_MAX_INPUT_LEN];
@@ -313,22 +315,19 @@ static size_t __attribute__((optimize("O1"))) __attribute__((unused)) _fread(voi
    return fread(ptr, size, count, stream);
 }
 
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
+/* I/O file type enums */
 
-  /* I/O file type enum */
-  enum
-  {
+  enum io_data_type {
+
      RAW_AUDIO = 1,  /* currently includes .out, .inp, .raw, .sam, and .pcm.  Subject to change */
      WAV_AUDIO,
      TIM_AUDIO,
      AU_AUDIO,
      ENCODED,
-     PCAP,           /* supports both pcap and pcapng formats, JHB Oct2020 */
+     PCAP,           /* supports both pcap and pcapng formats, JHB Oct 2020 */
      TEXT,
      CSV,
-     BER,            /* added experimental, JHB Dec2021 */
+     BER,            /* added as experimental, JHB Dec 2021 */
      GPX,
      USB_AUDIO = 0x100,  /* for output only, USB audio can be combined with audio file types */
      INVALID
@@ -337,8 +336,7 @@ static size_t __attribute__((optimize("O1"))) __attribute__((unused)) _fread(voi
   #define OUTFILETYPEMASK 0xff
   #define IS_AUDIO_FILE_TYPE(a) (((a) & OUTFILETYPEMASK) >= RAW_AUDIO && ((a) & OUTFILETYPEMASK) < ENCODED)
 
-  static inline int array_sum(int array[], int length)
-  {
+  static inline int array_sum(int array[], int length) {
      int i = 0;
      int sum = 0;
      for (; i < length; i++) sum += array[i];

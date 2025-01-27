@@ -36,6 +36,8 @@
   Modified Jun 2024 JHB, rename DSWritePcapRecord() to DSWritePcap()
   Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, add uFlags param and move pkt buffer length to fourth param in DSWritePcap()
   Modified Jul 2024 JHB, in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See pktlib.h comments
+  Modified Nov 2024 JHB, use IPvN_ADDR_XXX defined in pktlib.h
+  Modified Dec 2024 JHB, add DS_FSCONV_SATURATE flag in DSConvertFs()
 */
 
 
@@ -208,12 +210,16 @@ HASRDECODER hASRDecoder;
       /* one-time output packet format setup. Note that DS_FMT_PKT_USER_HDRALL specifies DS_FMT_PKT_USER_SRC_IPADDR, DS_FMT_PKT_USER_DST_IPADDR, DS_FMT_PKT_USER_SRC_PORT, and DS_FMT_PKT_USER_DST_PORT */
 
          merge_uFlags_format = DS_FMT_PKT_NO_INC_CHNUM_TIMESTAMP | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_SEQNUM | DS_FMT_PKT_USER_TIMESTAMP | DS_FMT_PKT_USER_PYLDTYPE | DS_FMT_PKT_USER_SSRC | DS_FMT_PKT_USER_MARKERBIT;
-         memcpy(groupFormatPkt.SrcAddr, &output_term.local_ip.u, DS_IPV6_ADDR_LEN);  /* DS_IPV6_ADDR_LEN defined in shared_include/session.h */
-         memcpy(groupFormatPkt.DstAddr, &output_term.remote_ip.u, DS_IPV6_ADDR_LEN);
          groupFormatPkt.IP_Version = output_term.local_ip.type;
+         int len = (groupFormatPkt.IP_Version == IPV4) ? len = IPV4_ADDR_LEN : IPV6_ADDR_LEN;  /* IPVn_ADDR_LEN defined in pktlib.h */
+
+      /* default is to send audio output packets back to remote sender */
+
+         memcpy(groupFormatPkt.DstAddr, &output_term.remote_ip.u, len);  /* copy from ip.u, a union for both IPv4 and IPv6 addresses (see ip_addr struct in shared_include/session.h), JHB Nov 2024 */
+         memcpy(groupFormatPkt.SrcAddr, &output_term.local_ip.u, len);
          groupFormatPkt.udpHeader.SrcPort = output_term.local_port;
          groupFormatPkt.udpHeader.DstPort = output_term.remote_port;
-         groupFormatPkt.rtpHeader.PyldType = output_term.attr.voice_attr.rtp_payload_type;  /* set payload type */
+         groupFormatPkt.rtpHeader.PyldType = output_term.attr.voice.rtp_payload_type;  /* set payload type */
 
       /* check if there is a call on-hold or call waiting timestamp gap that needs to be accumulated, notes JHB Nov2019:
 
@@ -269,8 +275,10 @@ HASRDECODER hASRDecoder;
 
          int ret_val = DSASRProcess(hASRDecoder, asr_buf, num_samples);
 
-//  static bool fOnce = false;
-//  if (!fOnce) { printf("\n num_samples = %d \n", num_samples); fOnce = true; }
+         #if 0  /* debug */
+         static bool fOnce = false;
+         if (!fOnce) { printf("\n num_samples = %d \n", num_samples); fOnce = true; }
+         #endif
 
          if (ret_val != 0) Log_RT(2, "ERROR: DSProcessAudio() says DSASRProcess() returns error condition \n");
 
@@ -299,7 +307,7 @@ HASRDECODER hASRDecoder;
             -input length and return value are in samples
           */
 
-            DSConvertFs((int16_t*)pAudioBuffer, sample_rate, up_factor, down_factor, delay_buffer, frame_size/2, 1, NULL, 0, 0);  /* when calling DSConvertFs() directly, length is specified in samples (note: 4th to last param is num_chan, set for mono, JHB Jul2019) (last 3 params are user-defined filter coefficients, user-defined filter length, and flags, JHB Feb2022) */
+            DSConvertFs((int16_t*)pAudioBuffer, sample_rate, up_factor, down_factor, delay_buffer, frame_size/2, 1, NULL, 0, DS_FSCONV_SATURATE);  /* when calling DSConvertFs() directly, length is specified in samples (note: 4th to last param is num_chan, set for mono, JHB Jul 2019) (last 3 params are user-defined filter coefficients, user-defined filter length, and flags, JHB Feb 2022) */
          }
 
       /* encode audio */

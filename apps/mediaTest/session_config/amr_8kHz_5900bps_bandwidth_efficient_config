@@ -1,0 +1,7 @@
+# AMR-NB 5900 bps codec config file
+
+codec_type = AMR_NB
+bitrate = 5900              # bitrate in bps
+sample_rate = 8000          # narrowband encoder sampling rate
+dtx_enable = 1
+header_format = bandwidth-efficient  # format

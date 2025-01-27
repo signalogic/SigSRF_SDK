@@ -43,15 +43,15 @@
   Modified Jul 2018 JHB, add optional label param to DSPktStatsLogSeqnums()
   Modified Jul 2018 JHB, clearly label three main packet groups in log file, input, jitter buffer output, and analysis
   Modified Sep 2018 JHB, modified DSFindSSRCGroups() and DSPktStatsWriteLogFile() to use calloc instead of about 4.3 MB of stack usage (see comments in the function declarations)
-  Modified Jan 2019 JHB, changed io_map_ssrcs and used_map_ssrcs usage and mallocs to int from short int.  gdb was indicating an intermittent crash when freeing these two
+  Modified Jan 2019 JHB, changed io_map_ssrcs and used_map_ssrcs usage and mallocs to int from short int. gdb was indicating an intermittent crash when freeing these two
   Modified Feb 2019 JHB, fix crash case where "i_out" was -1 (due to an error situation, but still cannot be allowed)
-  Modified Feb 2019 JHB, remove hSession param from DSPktStatsAddEntries() API.  All DSGetPacketInfo() calls inside the API do not need a session handle (do not need session/channel hashing and lookup)
-  Modified Feb 2019 JHB, fix sorting bug that caused "orphan of one" in SSRC group sorting and collation.  See comments below
+  Modified Feb 2019 JHB, remove hSession param from DSPktStatsAddEntries() API. All DSGetPacketInfo() calls inside the API do not need a session handle (do not need session/channel hashing and lookup)
+  Modified Feb 2019 JHB, fix sorting bug that caused "orphan of one" in SSRC group sorting and collation. See comments below
   Modified Mar 2019 JHB, remove references to DEMOBUILD and libbuild.h
-  Modified Sep-Oct 2019 JHB, handle RTP sequence number wraps.  Look for seq_wrap[], in_seq_wrap[], and out_seq_wrap[]
+  Modified Sep-Oct 2019 JHB, handle RTP sequence number wraps. Look for seq_wrap[], in_seq_wrap[], and out_seq_wrap[]
   Modified Oct 2019 JHB, modify first stage "SSRC discovery" in DSFindSSRCGroups() to be more efficient and minimize initial SSRC groups found
-  Modified Oct 2019 JHB, add ssrcs, pkt index, and rtp seq num arrays to DSPktStatsLogSeqnums(), and return number of ssrcs found.  This cuts in half number of calls to DSFindSSRCGroups() in DSPktStatsWriteLogFile()
-  Modified Dec 2019 JHB, STREAM_STATS struct added in diaglib.h, modify DSPktStatsLogSeqnums() to return stats info in a STREAM_STATS struct ptr
+  Modified Oct 2019 JHB, add ssrcs, pkt index, and rtp seq num arrays to DSPktStatsLogSeqnums(), and return number of ssrcs found. This cuts in half number of calls to DSFindSSRCGroups() in DSPktStatsWriteLogFile()
+  Modified Dec 2019 JHB, PKT_STREAM_STATS struct added in diaglib.h, modify DSPktStatsLogSeqnums() to return stats info in a PKT_STREAM_STATS struct ptr
   Modified Dec 2019 JHB, upgrade "analysis and stats" printout section:
                          -implement new DS_PKTSTATS_ORGANIZE_BY_SSRC, DS_PKTSTATS_ORGANIZE_BY_CHNUM, and DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP flags in diaglib.h
                          -add optional hSession and idx info to PKT_STATS struct which are referenced in analysis and stats depending on new flags (and if set to valid values)
@@ -60,9 +60,9 @@
   Modified Jan 2020 JHB, fix sequence number wrap bug in DSPktStatsLogSeqnums(), display "Stream n" as channel number in analysis_and_stats() if DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP flag set
   Modified Jan 2020 JHB, make DSFindSSRCGroups() faster (see if !fCollate), fix problem in finding end seq number
   Modified Jan 2020 JHB, fix bugs in organizing-by-stream group, see "GroupMap" struct method
-  Modified Mar 2020 JHB, in analysis_and_stats() (inp vs output packet analysis), add brief info printout for timestamp mismatches as they occur, similar to packet drops.  This saves time when debugging timestamp alignment issues in pktlib
+  Modified Mar 2020 JHB, in analysis_and_stats() (inp vs output packet analysis), add brief info printout for timestamp mismatches as they occur, similar to packet drops. This saves time when debugging timestamp alignment issues in pktlib
   Modified Apr 2020 JHB, fix bug in timestamp mismatch output where output sequence number didn't include wrap count
-  Modified May 2020 JHB, implement STREAM_STATS struct changes to rename numRepair to numSIDRepair and add numMediaRepair
+  Modified May 2020 JHB, implement PKT_STREAM_STATS struct changes to rename numRepair to numSIDRepair and add numMediaRepair
   Modified Mar 2021 JHB, add STANDALONE #define option to build without SigSRF header files
   Modified Jun 2023 JHB, minor changes to packet description format (i) "pkt len =" to "rtp pyld len =" (ii) print "media" instead of nothing for media packets
   Modified Nov 2023 JHB, in analysis_and_stats() (analysis of input vs output packets) implement input vs. output sequence number range check. This solves some cases of transmissions that incorrectly increment sequence numbers after a SID (i.e. increment sequence number without sending a packet), in which case pktlib sees missing packets as loss and fills them in with SID reuse. See comments for more detail
@@ -78,7 +78,10 @@
   Modified Jul 2024 JHB, to support SSRCs shared across streams, implement DS_PKTSTATS_MATCH_CHNUM flag, create in_chnum[] and out_chnum[], and add to chnum[] param to DSFindSSRCGroups() and DSPktStatsLogSeqnums()
   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to be second param in all relevant APIs. Also in non-published API analysis_and_stats() 
   Modified Aug 2024 JHB, implement diaglib.h rename of DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM flag to DS_PKTSTATS_MATCH_CHNUM. Minor optimizations (look for fChannelMatch)
-  Modified Aug 2024 JHB, overall packet logging time improved by around 50%, significant for very long inputs. Added profiling (look for ENABLE_PROFILING) ... helpful in optimizing packet logging time
+  Modified Aug 2024 JHB, overall packet logging time improved by around 50%, significant for very long streams. Added profiling (look for ENABLE_PROFILING) ... helpful in optimizing packet logging time
+  Modified Sep 2024 JHB, in analysis_and_stats() when DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP flag is active, allow mix of stream group member and non-member streams in any sequence
+  Modified Nov 2024 JHB, change hwlib.h include to directcore.h
+  Modified Dec 2024 JHB, comments only
 */
 
 /* Linux includes */
@@ -97,8 +100,8 @@ using namespace std;
 #define GET_PKT_INFO_TYPEDEF_ONLY  /* specify DSGetPacketInfo() typedef only (no prototype) in pktlib.h */
 #include "pktlib.h"  /* pktlib header file, only constants and definitions used here */
 
-#define GET_TIME_TYPEDEF_ONLY  /* specify get_time() typedef only (no prototype) in hwlib.h */
-#include "hwlib.h"  /* DirectCore header file, only constants and definitions used here */
+#define GET_TIME_TYPEDEF_ONLY  /* specify get_time() typedef only (no prototype) in directcore.h */
+#include "directcore.h"  /* DirectCore header file, only constants and definitions used here */
 
 extern DEBUG_CONFIG lib_dbg_cfg;  /* in event_logging.cpp */
 
@@ -108,7 +111,7 @@ extern int diaglib_sem_init;
 /* function pointers set in DSInitLogging() in event_logging.cpp with return value of dlsym(), which looks for run-time presence of SigSRF APIs. Note hidden attribute to make sure diaglib-local functions are not confused at link-time with their SigSRF library function counterparts if they both exist, JHB May 2024 */
 
 extern __attribute__((visibility("hidden"))) DSGetPacketInfo_t* DSGetPacketInfo;  /* DSGetPacketInfo_t typedef in pktlib.h */
-extern __attribute__((visibility("hidden"))) get_time_t* get_time;  /* get_time_t typedef in hwlib.h */
+extern __attribute__((visibility("hidden"))) get_time_t* get_time;  /* get_time_t typedef in directcore.h */
 
 /* private includes */
 
@@ -131,6 +134,8 @@ unsigned int offset = 0;
 
       if (!pkt_length || pkt_length[j] <= 0) len = -1;
       else len = pkt_length[j];
+
+   /* note we are not applying DS_PKTLIB_SUPPRESS_XXX flags here, as we assume caller is providing already-error-checked packets */
 
       pkt_stats->rtp_seqnum = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SEQNUM | uFlags, pkt_buffer + offset, len, NULL, NULL);
       pkt_stats->rtp_timestamp = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_TIMESTAMP | uFlags, pkt_buffer + offset, len, NULL, NULL);
@@ -239,7 +244,7 @@ group_ssrcs:
 
          if (!fCollated) {  /* only search for start/end sequence numbers on first pass, JHB Jan 2020 */
 
-         /* choose first sequence number carefully, otherwise all further comparisons can be off by one or two.  So we look SEARCH_WINDOW packets ahead in case there is any ooo happening, JHB Jul 2017 */
+         /* choose first sequence number carefully, otherwise all further comparisons can be off by one or two. So we look SEARCH_WINDOW packets ahead in case there is any ooo happening, JHB Jul 2017 */
 
             first_seqnum = pkts[j].rtp_seqnum;
             last_seqnum = pkts[j].rtp_seqnum;  /* for last seq num this is an initial value only, will get updated by further packets with this SSRC */
@@ -260,7 +265,7 @@ group_ssrcs:
 #ifndef NEW_SEQ_CALC
                      last_seqnum = max(last_seqnum, pkts[j+k].rtp_seqnum + 65536L*nWrap);
 #endif
-                     if (!nWrap && pkts[j+k].rtp_seqnum == 65535L) { nWrap = 1; fWrap = true; }  /* check for seq number wrap.  Note we are sliding over a short window, so this is a local wrap check, done only once during each slide */
+                     if (!nWrap && pkts[j+k].rtp_seqnum == 65535L) { nWrap = 1; fWrap = true; }  /* check for seq number wrap. Note we are sliding over a short window, so this is a local wrap check, done only once during each slide */
                   }
                   else break;  /* any change in SSRC breaks the look-ahead search */
                }
@@ -334,7 +339,7 @@ group_ssrcs:
 
    if ((uFlags & DS_PKTSTATS_LOG_COLLATE_STREAMS) && !fCollated) {  /* use discovered SSRC groups to perform stream collation */
 
-   /* with number of unique SSRCs known, collate streams.  NB -- took a while to get exactly right combination of j, i, and sorted_point. Adjusting any of these by +/- 1 will break things, for example it might cause resorting of already sorted entries, which can make it hard to see what happened. So debug carefully and use the #if 0 debug helpers if needed ... JHB Sep 2017 */
+   /* with number of unique SSRCs known, collate streams. NB -- took a while to get exactly right combination of j, i, and sorted_point. Adjusting any of these by +/- 1 will break things, for example it might cause resorting of already sorted entries, which can make it hard to see what happened. So debug carefully and use the #if 0 debug helpers if needed ... JHB Sep 2017 */
 
       sorted_point = 0;
 
@@ -367,7 +372,7 @@ find_transition:
                if (!i) {  /* find first non-matching SSRC or chnum, mark sorted point */
 
                   i = j;
-                  sorted_point = i-1;  /* adjust sorted point.  Note -- added this to fix the "orphan SSRC" number of SSRC groups problem, see comments below near in_ssrc_start and out_ssrc_start. Also makes the sort faster, avoids unnecessary moving of already sorted enrties, JHB Feb 2019 */
+                  sorted_point = i-1;  /* adjust sorted point. Note -- added this to fix the "orphan SSRC" number of SSRC groups problem, see comments below near in_ssrc_start and out_ssrc_start. Also makes the sort faster, avoids unnecessary moving of already sorted enrties, JHB Feb 2019 */
 
                   #if 0
                   nonmatch[k]++;
@@ -462,7 +467,7 @@ void print_packet_type(FILE* fp_log, unsigned int content_flags, int rtp_pyldlen
 }
 
 
-int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, const char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], STREAM_STATS StreamStats[]) {
+int DSPktStatsLogSeqnums(FILE* fp_log, unsigned int uFlags, PKT_STATS* pkts, int num_pkts, const char* label, uint32_t ssrcs[], uint16_t chnum[], int first_pkt_idx[], int last_pkt_idx[], uint32_t first_rtp_seqnum[], uint32_t last_rtp_seqnum[], PKT_STREAM_STATS StreamStats[]) {
 
 int           i, j, k, nSpaces;
 bool          fFound_sn, fDup_sn, fOoo_sn;
@@ -549,7 +554,7 @@ char          szLastSeq[100];
          ooo_rtp_seqnum = 0;
          dup_rtp_seqnum = 0;
 
-      /* first check for duplicated seq numbers.  We use a very narrow definition:  2 consecutive identical seq numbers.  If a seq number randomly repeats somewhere, we don't currently look for that */
+      /* first check for duplicated seq numbers. We use a very narrow definition:  2 consecutive identical seq numbers. If a seq number randomly repeats somewhere, we don't currently look for that */
 
          if (j > 0 && pkts[j].rtp_seqnum == pkts[j-1].rtp_seqnum) {  /* is it duplicated ? */
 
@@ -563,7 +568,7 @@ char          szLastSeq[100];
 
             #define OOO_SEARCH_WINDOW 30  /* possibly this should be something users can set ?  JHB Dec2019 */
 
-            for (k=max(j-(OOO_SEARCH_WINDOW-1), first_pkt_idx[i]); k<min(j+OOO_SEARCH_WINDOW, last_pkt_idx[i]+1); k++) {  /* search +/- OOO_SEARCH_WINDOW number of packets to find ooo packets.  Allow for 2x consecutive duplicates, this is a window of +/- 1/2x ptime */
+            for (k=max(j-(OOO_SEARCH_WINDOW-1), first_pkt_idx[i]); k<min(j+OOO_SEARCH_WINDOW, last_pkt_idx[i]+1); k++) {  /* search +/- OOO_SEARCH_WINDOW number of packets to find ooo packets. Allow for 2x consecutive duplicates, this is a window of +/- 1/2x ptime */
 
                if (pkts[k].rtp_seqnum + seq_wrap[i]*65536L == rtp_seqnum) {
 
@@ -683,29 +688,32 @@ exit:
    return num_ssrcs;
 }
 
-
-static int analysis_and_stats(FILE* fp_log, unsigned int uFlags, int num_ssrcs, uint32_t in_ssrcs[], uint16_t in_chnum[], PKT_STATS input_pkts[], int in_first_pkt_idx[], int in_last_pkt_idx[], uint32_t in_first_rtp_seqnum[], uint32_t in_last_rtp_seqnum[], STREAM_STATS InputStreamStats[], uint32_t out_ssrcs[], uint16_t out_chnum[], PKT_STATS output_pkts[], int out_first_pkt_idx[], int out_last_pkt_idx[], uint32_t out_first_rtp_seqnum[], uint32_t out_last_rtp_seqnum[], STREAM_STATS OutputStreamStats[], int in_ssrc_start, int out_ssrc_start, int io_map_ssrcs[]) {
+static int analysis_and_stats(FILE* fp_log, unsigned int uFlags, int num_ssrcs, uint32_t in_ssrcs[], uint16_t in_chnum[], PKT_STATS input_pkts[], int in_first_pkt_idx[], int in_last_pkt_idx[], uint32_t in_first_rtp_seqnum[], uint32_t in_last_rtp_seqnum[], PKT_STREAM_STATS InputStreamStats[], uint32_t out_ssrcs[], uint16_t out_chnum[], PKT_STATS output_pkts[], int out_first_pkt_idx[], int out_last_pkt_idx[], uint32_t out_first_rtp_seqnum[], uint32_t out_last_rtp_seqnum[], PKT_STREAM_STATS OutputStreamStats[], int in_ssrc_start, int out_ssrc_start, int io_map_ssrcs[]) {
 
 int           i = 0, j, k, i_out, pkt_cnt;
-unsigned int  rtp_seqnum, rtp_seqnum_chk, mismatch_count, search_offset = 0;
+unsigned int  rtp_seqnum, mismatch_count, search_offset = 0;
 int           drop_consec_cnt, drop_cnt, dup_cnt, timestamp_mismatches, last_timestamp_mismatches, long_SID_adjust_attempts;
 int           in_seq_wrap[MAX_SSRC_TRANSITIONS] = { 0 };
 int           out_seq_wrap[MAX_SSRC_TRANSITIONS] = { 0 };
 uint32_t      total_search_offset[MAX_SSRCS] = { 0 };
-bool          fNext;
 
 char          ssrc_indent[20] = "";
 char          info_indent[20] = "  ";
 char          szLastSeq[100], szStreamStr[200], szGroupStr[200] = "";
 char          tmpstr[200];
 int           num_in_pkts, num_out_pkts;
+uint8_t       ssrcs_done[MAX_SSRCS] = { 0 };
 
 typedef struct {
    int output_index;
    uint32_t input_rtp_seqnum;
 } found_history_t;
 
-#define MAX_GROUPS 256  /* max number of stream groups is 256 and max streams per group is 8, defined in session.h and streamlib.h, but diaglib is supposed to be a generic tool, with no dependencies on pktlib or streamlib, JHB Dec 2019 */
+#ifdef MAX_STREAM_GROUPS  /* max number of stream groups defined in streamlib.h so if that's included by the application it's fine, but diaglib is a generic lib, not dependent on pktlib or streamlib, so we define locally if needed, JHB Dec 2019 */
+  #define MAX_GROUPS MAX_STREAM_GROUPS
+#else
+  #define MAX_GROUPS 256  /* nominal value is 256, and max streams per group is 8. Definitions are in shared_include/session.h and streamlib.h */
+#endif
 
 typedef struct {
   int num_streams;
@@ -713,7 +721,7 @@ typedef struct {
 } GROUPMAP;
 
 GROUPMAP* GroupMap = NULL;
-int nGroupIndex, stream_count, nNumGroups = 0;
+int nGroupIndex = 0, stream_count = 0, nNumGroups = 0;
 
    (void)in_chnum;  /* currently not used */
   
@@ -725,59 +733,57 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       return -1;
    }
 
-/* if organize-by-stream group flag is set, create a map of ssrcs to stream groups ("GroupMap") */
+/* if organize-by-stream group flag is set, create a map of ssrcs to stream groups ("GroupMap"). Additional notes, JHB Sep 2024:
+
+   -first find all SSRCs that are stream group members
+   -group indexes are stored by packet/media threads when logging packets. As groups are created and deleted by an application, group indexes can be arbitrary, not in sequence, so we create a map of all possible indexes (MAX_GROUPS)
+   -the group map, if applicable, is handled first, followed by any SSRCs not group members
+*/
 
    if (uFlags & DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP) {
 
-      GroupMap = (GROUPMAP*)calloc(MAX_GROUPS, sizeof(GROUPMAP));  /* as of Jan2020 there is still some problem with stack space in diaglib.  Declaring GroupMap on the stack causes a seg fault upon entry to analysis_and_stats() (even if first line is a printf, it won't print, and gdb shows nothing beyond the function header), so we're using calloc, JHB Jan2020 */
+      GroupMap = (GROUPMAP*)calloc(MAX_GROUPS, sizeof(GROUPMAP));  /* as of Jan 2020 there is still some problem with stack space in diaglib. Declaring GroupMap on the stack causes a seg fault upon entry to analysis_and_stats() (even if first line is a printf, it won't print, and gdb shows nothing beyond the function header), so we're using calloc, JHB Jan 2020 */
 
       for (i=0; i<num_ssrcs; i++) {
 
          if (io_map_ssrcs[i] == -1) continue;
 
-         for (j=0; j<MAX_GROUPS; j++) {
+         for (int idx=0; idx<MAX_GROUPS; idx++) {
 
-            if (InputStreamStats[i].idx == j) {  /* does input SSRC's idx match ? (idx is group number stored by packet/media thread when it logged the packet) */
+            if (idx == InputStreamStats[i].idx) {  /* does input ssrc idx match ? */
 
 //  printf("\n==== idx[%d] %d == nGroupIndex %d \n", i, InputStreamStats[i].idx, j);
 
-               GroupMap[j].streams[GroupMap[j].num_streams++] = i;  /* save stream and increment number of streams belonging to this group.  A group map entry is active if its num_streams is non-zero */
-
-               break;  /* break out of group loop, group numbers are unique so InputStreamStats[].idx is not going to match another group number */
+               GroupMap[idx].streams[GroupMap[idx].num_streams++] = i;  /* if a match then save stream, increment number of streams belonging to this group */
+               break;
             }
          }
       }
 
-      for (j=0, nNumGroups=0; j<MAX_GROUPS; j++) if (GroupMap[j].num_streams) {  /* determine total number of groups mapped */
+      for (int idx=0; idx<MAX_GROUPS; idx++) if (GroupMap[idx].num_streams) {  /* determine total number of groups found */
 
-         sprintf(&szGroupStr[strlen(szGroupStr)], "%s %d", nNumGroups > 0 ? "," : "", j);
          nNumGroups++;
+         sprintf(&szGroupStr[strlen(szGroupStr)], "%s %d", idx > 0 ? "," : "", idx);  /* build string of group indexes */
       }
-
-      nGroupIndex = 0;
-      stream_count = 0;
 
       fprintf(fp_log, "\nStream groups found = %d, group indexes =%s\n", nNumGroups, szGroupStr);
-
-      if (nNumGroups) {
-         strcpy(ssrc_indent, "  ");  /* increase indent of items under stream group headings */
-         strcpy(info_indent, "    ");
-         strcpy(szGroupStr, "");
-      }
    }
-   else if (uFlags & DS_PKTSTATS_ORGANIZE_BY_CHNUM) {}  /* to-do: implement something similar for channel numbers; i.e. a "channel map" */
+   else if (uFlags & DS_PKTSTATS_ORGANIZE_BY_CHNUM) {  /* to-do: implement something similar for channel numbers; i.e. a "channel map" */
+   
+   }
 
-
-/* iterate through input SSRCs, search each input seq number for a match within corresponding output SSRCs, JHB Sep2017:
+/* iterate through input SSRCs, search each input seq number for a match within corresponding output SSRCs, JHB Sep 2017:
 
    -perform comparison and analysis between input and output sequence numbers
    -for example if output sequence number is not found it's a dropped packet, if found more than once it's a duplicated packet, etc
-   -loop flow and termination depend on DS_PKTSTATS_ORGANIZE_BY_xx flags, see label "next_i"
+   -loop flow and termination depend on DS_PKTSTATS_ORGANIZE_BY_xx flags
 */
 
    do {
 
-      if (nNumGroups) {  /* if organize-by-stream group flag is set and we found groups, get the ssrc index ("i") from the group map.  Otherwise, we simply start from 0 and increment i until num_ssrcs (which was the original coding in 2017), JHB Dec2019 */
+      #ifndef LOOP_CACHE_SIZE_TEST
+
+      if (nNumGroups && nGroupIndex < MAX_GROUPS) {  /* if organize-by-stream group flag is set and we found groups, get the ssrc index ("i") from the group map. Otherwise, we simply start from 0 and increment i until num_ssrcs (which was the original coding in 2017), JHB Dec 2019 */
 
          if (GroupMap[nGroupIndex].num_streams && stream_count < GroupMap[nGroupIndex].num_streams) {  /* process all SSRCs belonging to same stream group */
 
@@ -786,18 +792,33 @@ int nGroupIndex, stream_count, nNumGroups = 0;
                fprintf(fp_log, "\n%s%d stream%s\n", szGroupStr, GroupMap[nGroupIndex].num_streams, GroupMap[nGroupIndex].num_streams > 0 ? "s" : "");
             }
 
-            i = GroupMap[nGroupIndex].streams[stream_count++];  /* get SSRC from map */
+            i = GroupMap[nGroupIndex].streams[stream_count++];  /* get SSRC index from map */
+
+            strcpy(ssrc_indent, "  ");  /* increase indent of items under stream group headings */
+            strcpy(info_indent, "    ");
          }
-         else {
+         else {  /* continue searching the group map */
+
             stream_count = 0;
-            nGroupIndex++;  /* advance to next possible stream group */
-            goto next_i;
+
+            if (nGroupIndex++ == MAX_GROUPS) {  /* increment to next possible group idx */
+
+               i = 0;  /* after group map search is finished reset stream index, JHB Sep 2024 */
+               strcpy(ssrc_indent, "");  /* also reset item indents */
+               strcpy(info_indent, "  ");
+            }
+
+            continue;
          }
       }
+      #endif
 
-   /* we now have an input index ("i") into ssrc data ... */
+      if (ssrcs_done[i]) continue;  /* don't repeat any streams, JHB Sep 2024 */
+      else ssrcs_done[i] = 1;
 
-      if (io_map_ssrcs[i] == -1) goto next_i;  /* make sure i_out is never -1, which would be an error case but could happen, JHB Feb 2019 */
+   /* we now have an input stream index ("i") into ssrc data ... */
+
+      if (io_map_ssrcs[i] == -1) continue;  /* make sure i_out is never -1, which would be an error case but could happen, JHB Feb 2019 */
 
       i_out = io_map_ssrcs[i];  /*  ... and a corresponding output index ("i_out") into ssrc data */
 
@@ -806,21 +827,23 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       num_in_pkts = in_last_pkt_idx[i+in_ssrc_start] - in_first_pkt_idx[i+in_ssrc_start] + 1;
       num_out_pkts = out_last_pkt_idx[i_out+out_ssrc_start] - out_first_pkt_idx[i_out+out_ssrc_start] + 1;
 
-      sprintf(szStreamStr, " %d", i);  /* print a stream heading */
+      sprintf(szStreamStr, "Stream %d", i);  /* start a stream heading */
 
-      if (uFlags & DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP) {  /* heading has additional info when organizing by stream group */
+   /* always add channel info, JHB Sep 2024 */
 
-         sprintf(&szStreamStr[strlen(szStreamStr)], ", channel");
-         sprintf(&szStreamStr[strlen(szStreamStr)], InputStreamStats[i+in_ssrc_start].num_chnum > 1 ? "s" : "");
+      sprintf(&szStreamStr[strlen(szStreamStr)], ", channel");
+      sprintf(&szStreamStr[strlen(szStreamStr)], InputStreamStats[i+in_ssrc_start].num_chnum > 1 ? "s" : "");  /* [].num_chnum might be > 1 if there were dormant sessions */
 
-         for (j=0; j<InputStreamStats[i+in_ssrc_start].num_chnum; j++) {
-            if (j > 0) sprintf(&szStreamStr[strlen(szStreamStr)], ",");
-            sprintf(&szStreamStr[strlen(szStreamStr)], " %d", InputStreamStats[i+in_ssrc_start].chnum[j]);
-         }
+      for (j=0; j<InputStreamStats[i+in_ssrc_start].num_chnum; j++) {
+         if (j > 0) sprintf(&szStreamStr[strlen(szStreamStr)], ",");
+         sprintf(&szStreamStr[strlen(szStreamStr)], " %d", InputStreamStats[i+in_ssrc_start].chnum[j]);
       }
 
-      sprintf(tmpstr, "Stream%s, SSRC = 0x%x, %d input pkts, %d output pkts", szStreamStr, in_ssrcs[i+in_ssrc_start], num_in_pkts, num_out_pkts);
-      strcpy(szStreamStr, tmpstr);  /* save for use in Log_RT() at end of i-loop below */
+   /* add stream group index (if applicable), JHB Sep 2024 */
+
+      if (nNumGroups && nGroupIndex < MAX_GROUPS) sprintf(&szStreamStr[strlen(szStreamStr)], ", stream group index %d", nGroupIndex);
+
+      sprintf(&szStreamStr[strlen(szStreamStr)], ", SSRC = 0x%x, %d input pkts, %d output pkts", in_ssrcs[i+in_ssrc_start], num_in_pkts, num_out_pkts);
       fprintf(fp_log,"\n%s%s\n\n", ssrc_indent, szStreamStr);
 
       sprintf(szLastSeq, "%u", in_last_rtp_seqnum[i+in_ssrc_start]);
@@ -873,7 +896,12 @@ int nGroupIndex, stream_count, nNumGroups = 0;
       unsigned int out_seqnum_range = out_last_rtp_seqnum[i_out+out_ssrc_start] - out_first_rtp_seqnum[i_out+out_ssrc_start] + 1;
       bool fEnableReuse = out_seqnum_range > in_seqnum_range;  /* enable reuse calculation based on sequence number range check: if output contains no additional (i.e. SID reuse) sequence numbers then disable the search offset, otherwise SID reuse packets inserted by pktlib as repairs for what it sees as packet loss will be wrongly interpreted here. Incorrectly incrementing sequence numbers is actually a transmission error, but we can handle it in this way. Note to Signalogic testers: this can be tested with test_files/reference_code_output_xxx pcaps in Nov 2023 time-frame, JHB Nov 2023 */
 
-   /* to optimize inner loop, if reuse is disabled create always-false flags and reduce number of if-conditions. DS_PKT_PYLD_CONTENT_XXX flags are in pktlib.h, JHB Aug 2024 */
+   /* to optimize inner loop, if reuse is disabled create always-false flags and reduce number of if-conditions. DS_PKT_PYLD_CONTENT_XXX flags are in pktlib.h. Additional notes, JHB Aug-Sep 2024:
+
+      -testing with tmpwpP7am.pcap sort time should be ~227 sec, analysis time around 377 sec using -O3 and optimization definitions as shown herein
+      -the latter measurement is harder to maintain, small code changes in j and k loops seem to cause alignment or cache fluctuations up to 410 sec
+      -I think the major factor is whether the outer and inner loops can fit in CPU instruction cache. For example, in the test case if LOOP_CACHE_SIZE_TEST (above) is defined time will decrease to 370 sec (1.8%), even though that code is never used. I tried with -Os to test this but it was a slower by 10 sec or so. Also tried restrict keyword in function definition, no change
+   */
 
       unsigned int uFlag_sid_reuse = fEnableReuse ? DS_PKT_PYLD_CONTENT_SID_REUSE : 0xffffffff,
                    uFlag_media_reuse = fEnableReuse ? DS_PKT_PYLD_CONTENT_MEDIA_REUSE : 0xffffffff;
@@ -897,7 +925,7 @@ int nGroupIndex, stream_count, nNumGroups = 0;
          #endif
          if (Logging_Thread_Info[nThreadIndex].uFlags & DS_CONFIG_LOGGING_PKTLOG_ABORT) goto exit;  /* see if abort flag set, JHB Jan 2023 */
 
-         rtp_seqnum_chk = input_pkts[j].rtp_seqnum + in_seq_wrap[i]*65536L;  /* input seq number */
+         unsigned int rtp_seqnum_chk = input_pkts[j].rtp_seqnum + in_seq_wrap[i]*65536L;  /* input seq number */
 
          if (abs((int32_t)(rtp_seqnum_chk - rtp_seqnum)) < SEARCH_WINDOW) rtp_seqnum = rtp_seqnum_chk;  /* watch for case where input seq number wrapped early due to ooo, JHB Jan 2020 */
          else rtp_seqnum = input_pkts[j].rtp_seqnum + max(in_seq_wrap[i]-1, 0)*65536L;
@@ -977,7 +1005,7 @@ check_for_reuse:
 
                   /* we're here if timestamp mismatch */
  
-                     #if 0  /* have not been able to get this to work. Evidently once timestamps no longer match, the amount of mismatch varies constantly. That makes it hard to print a couple of lines of output and then "get back on track".  Ends up being 100s of lines of meaningless output, JHB Feb 2020 */
+                     #if 0  /* have not been able to get this to work. Evidently once timestamps no longer match, the amount of mismatch varies constantly. That makes it hard to print a couple of lines of output and then "get back on track". Ends up being 100s of lines of meaningless output, JHB Feb 2020 */
 
                      timestamp_adjust = output_pkts[k].rtp_timestamp - input_pkts[j].rtp_timestamp;  /* update adjustment once difference stabilizes */
                      printf("ssrc 0x%x chnum %d inp seq number %u matches out seq num %u, but inp timestamp %u + adjust > out timestamp %u by = %d, adjust = %d \n", in_ssrcs[i+in_ssrc_start], in_chnum[i+in_ssrc_start], rtp_seqnum, output_pkts[k].rtp_seqnum, input_pkts[j].rtp_timestamp, output_pkts[k].rtp_timestamp, diff, timestamp_adjust);
@@ -1031,7 +1059,7 @@ check_for_reuse:
                }
             }
 
-            if (output_pkts[k].rtp_seqnum == 65535L) out_seq_wrap[i_out]++;
+            if (output_pkts[k].rtp_seqnum == 65535L) out_seq_wrap[i_out]++;  /* increment number of output packet sequence number wraps */
 
             #ifdef OMIT_REDUNDANT_SEARCH
             if (rtp_seqnum > max_seq_num) {
@@ -1179,15 +1207,11 @@ check_for_reuse:
       if (uFlags & DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY) Log_RT(4, "  %s", tmpstr);
       fprintf(fp_log, "%s", tmpstr);
 
-next_i:
+      #if 0
+      printf("\n *** nGroupIndex = %d, i = %d, num_ssrcs = %d, nNumGroups = %d, io_map_ssrcs[i] = %d, num_in_pkts = %d \n", nGroupIndex, i, num_ssrcs, nNumGroups, io_map_ssrcs[i], num_in_pkts);
+      #endif
 
-      if (nNumGroups) {  /* if organize-by-stream group flag is set and we found groups, we stay in the loop until all possible stream group indexes have been looked at, JHB Dec2019 */
-
-         fNext = (nGroupIndex < MAX_GROUPS);
-      }
-      else fNext = ++i < num_ssrcs;  /* if no flags set, then increment ssrc index and compare with num_ssrcs, JHB Dec2019 */
-
-   } while (fNext);  /* end of i (ssrc) loop */
+   } while ((nNumGroups && nGroupIndex < MAX_GROUPS) || ++i < num_ssrcs);  /* continue with stream group map search (if applicable), when that expires increment ssrc index for non-group streams, JHB Sep 2024 */
 
 exit:
 
@@ -1207,7 +1231,7 @@ int           i, j, k, num_ssrcs;
 int           in_ssrc_groups = 0;
 int           out_ssrc_groups = 0;
 
-#if 0  /* move these off the stack as they seemed to be causing sporadic seg-faults, can't even get to first line in the function.  MAX_SSRCS is 65536 (defined in diaglib.h) so this is around 2 MB of total space, maybe not a good idea. JHB Sep 2018 */
+#if 0  /* move these off the stack as they seemed to be causing sporadic seg-faults, can't even get to first line in the function. MAX_SSRCS is 65536 (defined in diaglib.h) so this is around 2 MB of total space, maybe not a good idea. JHB Sep 2018 */
 int           in_first_pkt_idx[MAX_SSRCS] = { 0 };
 int           in_last_pkt_idx[MAX_SSRCS] = { 0 };
 uint32_t      in_first_rtp_seqnum[MAX_SSRCS] = { 0 };
@@ -1227,7 +1251,7 @@ int           used_map_ssrcs[MAX_SSRCS] = { 0 };
 
 #else
 
-int*          in_first_pkt_idx = NULL;  /* packet index math in diaglib.cpp depends on indexes being int.  Don't change these to uint32_t, JHB Oct 2019 */ 
+int*          in_first_pkt_idx = NULL;  /* packet index math in diaglib.cpp depends on indexes being int. Don't change these to uint32_t, JHB Oct 2019 */ 
 int*          in_last_pkt_idx = NULL;
 uint32_t*     in_first_rtp_seqnum = NULL;
 uint32_t*     in_last_rtp_seqnum = NULL;
@@ -1244,8 +1268,8 @@ uint16_t*     out_chnum = NULL;
 int*          io_map_ssrcs = NULL;
 int*          used_map_ssrcs = NULL;
 
-STREAM_STATS*  InputStreamStats = NULL;
-STREAM_STATS*  OutputStreamStats = NULL;
+PKT_STREAM_STATS*  InputStreamStats = NULL;
+PKT_STREAM_STATS*  OutputStreamStats = NULL;
 
 #endif
 
@@ -1305,8 +1329,8 @@ int            nThreadIndex;
    io_map_ssrcs = (int*)calloc(MAX_SSRCS, sizeof(int));
    used_map_ssrcs = (int*)calloc(MAX_SSRCS, sizeof(int));
 
-   InputStreamStats = (STREAM_STATS*)calloc(MAX_SSRCS, sizeof(STREAM_STATS));
-   OutputStreamStats = (STREAM_STATS*)calloc(MAX_SSRCS, sizeof(STREAM_STATS));
+   InputStreamStats = (PKT_STREAM_STATS*)calloc(MAX_SSRCS, sizeof(PKT_STREAM_STATS));
+   OutputStreamStats = (PKT_STREAM_STATS*)calloc(MAX_SSRCS, sizeof(PKT_STREAM_STATS));
 
    if (get_time) t1 = get_time(USE_CLOCK_GETTIME);
    else {
@@ -1471,7 +1495,7 @@ int            nThreadIndex;
 
          char whichstr[10];
 
-         if (out_last_pkt_idx[0] - out_first_pkt_idx[0] > 0) {  /* NB - the "sort bug" is fixed, but leaving this code here just in case, JHB Feb 2019.  Original comment:  seems to be a sorting bug with collate streams enabled, where the first SSRC group can end up with only entry, and all of its other entries are in another group.  This hack looks for a "one entry orphan group" and if found, ignores it during analysis, JHB Aug 2018 */
+         if (out_last_pkt_idx[0] - out_first_pkt_idx[0] > 0) {  /* NB - the "sort bug" is fixed, but leaving this code here just in case, JHB Feb 2019. Original comment:  seems to be a sorting bug with collate streams enabled, where the first SSRC group can end up with only entry, and all of its other entries are in another group. This hack looks for a "one entry orphan group" and if found, ignores it during analysis, JHB Aug 2018 */
             strcpy(whichstr, "last");
          }
          else {
@@ -1486,7 +1510,7 @@ int            nThreadIndex;
 
          char whichstr[10];
 
-         if (in_last_pkt_idx[0] - in_first_pkt_idx[0] > 0) {  /* NB - the "sorting bug" is fixed, but leaving this code here just in case, JHB Feb 2019.  Orginal comment:  seems to be a sorting bug with collate streams enabled, where the first SSRC group can end up with only entry, and all of its other entries are in another group.  This hack looks for a "one entry orphan group" and if found, ignores it during analysis, JHB Aug 2018 */
+         if (in_last_pkt_idx[0] - in_first_pkt_idx[0] > 0) {  /* NB - the "sorting bug" is fixed, but leaving this code here just in case, JHB Feb 2019. Orginal comment:  seems to be a sorting bug with collate streams enabled, where the first SSRC group can end up with only entry, and all of its other entries are in another group. This hack looks for a "one entry orphan group" and if found, ignores it during analysis, JHB Aug 2018 */
             strcpy(whichstr, "last");
          }
          else {
@@ -1498,7 +1522,7 @@ int            nThreadIndex;
          num_ssrcs = out_ssrc_groups;
       }   
 
-   /* before comparing / analyzing input vs. output SSRC groups, we match up the groups, in case their order is different.  JHB Jul 2018 */
+   /* before comparing / analyzing input vs. output SSRC groups, we match up the groups, in case their order is different, JHB Jul 2018 */
 
 //      for (i=0; i<num_ssrcs; i++) printf("in_ssrcs[%u] = 0x%x\n", i, in_ssrcs[i]);
 //      for (i=0; i<num_ssrcs; i++) printf("out_ssrcs[%u] = 0x%x\n", i, out_ssrcs[i]);
@@ -1569,9 +1593,9 @@ int            nThreadIndex;
 
    fprintf(fp_log, "** Packet Egress Stats **\n\n");
 
-   fprintf(fp_log, "Total packets written to pcap = %d\n", pkt_counters->pkt_write_cnt);
+   fprintf(fp_log, "Total packets output to application queue = %d\n", pkt_counters->pkt_write_cnt);
    fprintf(fp_log, "Total packets output to network socket = %d\n", pkt_counters->pkt_output_cnt);
-   fprintf(fp_log, "Total packets decoded and written to wav file = %d\n", pkt_counters->frame_write_cnt);
+   fprintf(fp_log, "Total packets decoded and written to intermediate media file = %d\n", pkt_counters->frame_write_cnt);
 
    if (get_time) t2 = get_time(USE_CLOCK_GETTIME);
    else {

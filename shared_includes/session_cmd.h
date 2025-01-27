@@ -52,7 +52,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#if 1  /* moved here from pktlib.h, JHB Mar18 */
+#if 1  /* moved here from pktlib.h, JHB Mar 2018. Note these may be combined with DS_SESSION_XXX flags in pktlib.h */
 
 #define DS_SESSION_MODE_FRAME                 1              /* session data in frame format */
 #define DS_SESSION_MODE_IP_PACKET             2              /* session data in IP/UDP/RTP packet format */

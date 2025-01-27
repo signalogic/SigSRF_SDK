@@ -24,6 +24,7 @@
   Modified Jan 2021 JHB, add DSASRConfig() to provide initialization ease-of-use and flexibility
   Modified Feb 2021 JHB, make DSASRConfig() flexible on where it finds Kaldi .conf, .mdl, .fst, and other files
   Modified Apr 2022 JHB, for containers and rar package installs, handle Kaldi hardcoded paths inside ivector_extractor.conf; see comments in DSASRConfig() and find_kaldi_file()
+  Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
 
  Software Design Notes
 
@@ -33,14 +34,22 @@
    -DSASRxxx APIs typically are wrappers around internal functions, for example DSASRCreate() calls SigOnline2WavNnet3LatgenFasterInit()
 */
 
+/* Linux includes */
+
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
 
 /* Kaldi includes */
+
 #include "online2/online-nnet3-decoding.h"
 #include "online2/online-timing.h"
 #include "lat/lattice-functions.h"
 #include "nnet3/nnet-utils.h"
 
 /* SigSRF includes */
+
 #include "inferlib.h"
 #include "shared_include/streamlib.h"
 #include "diaglib.h"  /* provides Log_RT() */

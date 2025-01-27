@@ -1,6 +1,6 @@
 # $Header: /install_path/apps/Signalogic/mediaTest/mediaMin/Makefile
 # 
-# Copyright (C) Signalogic Inc. 2018-2024
+# Copyright (C) Signalogic Inc. 2018-2025
 #
 # Description: Makefile for mediaMin reference application
 #
@@ -39,6 +39,9 @@
 #  Modified Apr 2024 JHB, set INSTALLATH to $(shell pwd); this avoids relative paths in -rpath linker options
 #  Modified May 2024 JHB, add -rdynamic linker flag to include more symbols in executable output. This helps when backtrace_symbols() is used (which it is now by DSGetBacktrace() in diaglib)
 #  Modified Jun 2024 JHB, add crc32 object
+#  Modified Sep 2024 JHB, add -g to end of LDFLAGS, fixes issue where v7.4 gdb can't read symbol info
+#  Modified Nov 2024 JHB, add -Wextra -Wno-missing-field-initializers -Werror to CPPFLAGS to enable extra warnings *except* for missing struct initializers, which is a hopeless quest for perfection even when a struct is declared with = { 0 } so it does get fully initialized to zero (https://stackoverflow.com/questions/68555447/g11-getting-rid-of-missing-initializer-for-member-aanonymous, https://stackoverflow.com/questions/7724939/struct-initialization-fails-with-gcc-4)
+#  Modified Jan 2025 JHB, add -Wno-error=implicit-fallthrough to CPPFLAGS for gcc 7.x and higher
 
 # check make cmd line for "no_codecs" option
 
@@ -169,21 +172,28 @@ else
 endif
 
 # compiler path, g++ is required because some source codes are .cpp
-CC = /usr/bin/g++
-ifneq ($(wildcard $(CC)),$(CC))
-  echo Make error message:  g++ compiler path $(CC) not found
+CXX = /usr/bin/g++
+ifneq ($(wildcard $(CXX)),$(CXX))
+  echo Make error message:  g++ compiler path $(CXX) not found
 endif
 
 # includes
 INCLUDES = -I../ -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/apps/common
 
 # compile flags
-CPPFLAGS += $(INCLUDES) -Wall -g3 -O3 -pthread -std=c++0x
+CPPFLAGS += $(INCLUDES) -Wall -Wextra -Wno-missing-field-initializers -Werror -g3 -O3 -pthread -std=c++0x
+# if using gdb
+#CPPFLAGS += $(INCLUDES) -Wall -gdwarf-2 -pthread -std=c++0x
 
-# get gcc version
+# get gcc major version
 GCC_VERSION := $(shell gcc -dumpversion | awk -F. '{print $$1}')
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
   $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
+endif
+
+# for gcc 7 and higher degrade switch-statement fall-through errors to warnings
+ifeq ($(shell expr $(GCC_VERSION) \> 6), 1)
+  CPPFLAGS += -Wno-error=implicit-fallthrough
 endif
 
 # get ldd version (should match GLIBC version)
@@ -477,6 +487,9 @@ endif
 # without this on systems with glibc 2.31 or higher glibc functions that occur after -ldl may fail to link, JHB Feb 2024
 LDFLAGS += -Wl,--no-as-needed
 
+# without -g at tail end of linker flags, some versions of gdb can't read symbol info
+LDFLAGS += -g
+
 cpp_common_objects = timer.o getUserInterface.o cmdLineOpt.o
 c_common_objects = keybd.o
 cpp_sdp_objects = types.o sdp.o utils.o reader.o writer.o
@@ -491,29 +504,29 @@ cpp_objects = sdp_app.o session_app.o user_io.o mediaMin.o
 all: $(cpp_common_objects) $(cpp_sdp_objects) $(c_crc_objects) $(c_common_objects) $(c_mediaTest_objects) $(cpp_objects) $(c_objects) link	
 
 $(cpp_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.cpp
-	$(CC) $(CPPFLAGS) -c $< -o $@ 
+	$(CXX) $(CPPFLAGS) -c $< -o $@ 
 
 $(cpp_sdp_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/sdp/%.cpp
-	$(CC) $(CPPFLAGS) -c $< -o $@ 
+	$(CXX) $(CPPFLAGS) -c $< -o $@ 
 
 $(c_crc_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/crc/%.c
-	$(CC) $(CPPFLAGS) -c $< -o $@ 
+	$(CXX) $(CPPFLAGS) -c $< -o $@ 
 
 $(c_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.c
-	$(CC) $(CPPFLAGS) -c $< -o $@ 
+	$(CXX) $(CPPFLAGS) -c $< -o $@ 
 
 $(c_mediaTest_objects): %.o: ../%.c
-	$(CC) $(CPPFLAGS) -c $< -o $@ 
+	$(CXX) $(CPPFLAGS) -c $< -o $@ 
 
 $(cpp_objects): %.o: %.cpp
-	$(CC) $(CPPFLAGS) -c $< -o $@ 
+	$(CXX) $(CPPFLAGS) -c $< -o $@ 
 
 $(c_objects): %.o: %.c
-	$(CC) $(CPPFLAGS) -c $< -o $@ 
+	$(CXX) $(CPPFLAGS) -c $< -o $@ 
 
 # link object files, essential libs, and cimlib which provides cmd line handling. stublib is last in link order and fills in top-level APIs for any modules not available (their XX_INSTALLED flags not set) due to version, demo, license etc (examples would be some not-always-installed codecs)
 link:
-	$(CC) $(LDFLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(c_crc_objects) $(c_common_objects) $(c_mediaTest_objects) $(cpp_objects) $(c_objects) $(LINKER_INCLUDES) -o ./mediaMin -lstdc++ $(SIG_LIBS) -lcimlib -ldl -lpthread $(GLIB_2-35_LIBMVEC) -lm -lstublib
+	$(CXX) $(LDFLAGS) $(cpp_common_objects) $(cpp_sdp_objects) $(c_crc_objects) $(c_common_objects) $(c_mediaTest_objects) $(cpp_objects) $(c_objects) $(LINKER_INCLUDES) -o ./mediaMin -lstdc++ $(SIG_LIBS) -lcimlib -ldl -lpthread $(GLIB_2-35_LIBMVEC) -lm -lstublib
 
 .PHONY: clean all
 clean:

@@ -1,0 +1,48 @@
+### Session 1
+session_data_start
+
+term1.local_ip=10.0.0.1
+term1.local_port=10000
+term1.remote_ip=10.0.0.2
+term1.remote_port=10002
+term1.media_type=voice
+term1.codec_type=G711_ULAW
+term1.sample_rate = 8000 # Hz
+term1.bitrate = 64000 # bps
+term1.ptime = 20 # msec
+term1.rtp_payload_type=0
+term1.dtmf_type=NONE
+term1.dtmf_payload_type=NONE
+term1.group_id=groupA
+term1.group_mode=1
+
+term2.local_ip=192.168.0.1
+term2.local_port=18446
+term2.remote_ip=192.168.0.2
+term2.remote_port=6170
+term2.media_type=voice
+term2.codec_type=G711_ULAW
+term2.sample_rate = 8000 # Hz
+term2.bitrate = 64000 # bps
+term2.ptime = 20 # msec
+term2.rtp_payload_type=0
+term2.dtmf_type=NONE
+term2.dtmf_payload_type=NONE
+term2.group_id=groupA
+term2.group_mode=1
+
+group_term.local_ip=10.0.0.1
+group_term.local_port=10240
+group_term.remote_ip=10.0.0.2
+group_term.remote_port=10242
+group_term.media_type=voice
+group_term.codec_type=G711_ULAW
+group_term.sample_rate=8000
+group_term.bitrate=64000
+group_term.ptime=20
+group_term.rtp_payload_type=0
+group_term.group_id=groupA
+group_term.group_mode=0x30000001  # 0x10000000 flag enables intermediate wav file output, 0x20000000 enables merge stats. See shared_include/streamlib.h for more info
+
+end_of_session_data
+

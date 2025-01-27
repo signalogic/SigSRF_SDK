@@ -99,10 +99,10 @@
    Modified May 2016 SC, added CH (compact header) bitstream format support
    Modified May 2016 SC, added decoder only mode support
    Modified Jun 2016 JHB, fixed bug in output .wav file sampling rate
-   Modified Dec 2016 CKJ - Jan 2017, retested with PCIe version of c66x code, removed NO_MAILBOX defines (determined now by run-time decision)
-   Modified Jan 2017 CKJ - Feb 2017, additional x86 support
-   Modified Mar 2017 CKJ - edits for codec testing
-   Modified May 2017 CJ - added pcap extract mode
+   Modified Dec 2016 - Jan 2017 CKJ, retested with PCIe version of c66x code, removed NO_MAILBOX defines (determined now by run-time decision)
+   Modified Jan - Feb 2017 CKJ, additional x86 support
+   Modified Mar 2017 CKJ, edits for codec testing
+   Modified May 2017 CKJ, added pcap extract mode
    Modified Aug 2018 JHB, command-line related items moved to cmd_line_interface.c
    Modified Jul 2019 JHB, removed XDAIS references (which were not used anyway).  See comments in mediaTest_proc.c
    Modified Sep 2019 JHB, change include folder for udp.h and ip.h from "linux" to "netinet" to fix -Wodr (one definition rule) warning with gcc 5.4.  Remove arpa/inet.h include (already in pktlib.h)
@@ -121,9 +121,16 @@
    Modified Apr 2024 JHB, testing different modes with updated initialization for RealTimeInterval[] in cmd_line_interface.c
    Modified May 2024 JHB, update x86_mediaTest references to mediaTest_proc
    Modified Jul 2024 JHB, print command line along with banner info
+   Modified Nov 2024 JHB, update headerfull constant to match voplib.h definitions. Include directcore.h (no longer implicitly included in other header files)
+   Modified Dec 2024 JHB, change DS_PYLD_HDR_FMT_XXX to DS_PYLD_FMT_XXX due to renaming in voplib.h
 */
 
-/* system header files */
+/* Linux includes / system header files */
+
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -131,12 +138,16 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
+/* DirectCore APIs */
+
+#include "directcore.h"
+
 /* app support header files */
 
 #include "mediaTest.h"
 #include "test_programs.h"   /* application and test programs support (command line entry, etc) */
 #include "keybd.h"           /* interactive key command support */
-#include "minmax.h"
+#include "minmax.h"          /* define min-max if __cplusplus not defined */
 
 /* SigSRF lib header files */
 
@@ -678,7 +689,7 @@ short int*           pBuffer16 = NULL;
 
       numBytes = DSLoadDataFile((CPU_mode & CPUMODE_CPU) ? DS_GM_HOST_MEM : hCard, NULL, MediaParams[0].Media.inputFilename, loadDataAddr, 0, (uint32_t)NULL, NULL, NULL);
 
-      numFrames = numBytes / DSGetCodecInfo(DS_VOICE_CODEC_TYPE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, MediaParams[0].Streaming.bitRate, HEADERFULL, NULL);  /* to-do, replace later with param from session config file, JHB Jan 2016 */
+      numFrames = numBytes / DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CODED_FRAMESIZE, MediaParams[0].Streaming.bitRate, DS_PYLD_FMT_FULL, NULL);  /* to-do, replace later with param from session config file, JHB Jan 2016 */
    }
    else {  /* either encoder or both encoder + decoder are enabled */
 

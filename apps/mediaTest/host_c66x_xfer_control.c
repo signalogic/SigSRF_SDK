@@ -5,15 +5,30 @@
  
    Functions for controlling data transfers between C66x and host via host-mapped memory
  
- Copyright (C) Signalogic Inc. 2015-2023
+ Copyright (C) Signalogic Inc. 2015-2024
  
  Revision History
    Created Sep 2015 CKJ
    Modified Dec 2023 JHB, include transcoding.h
+   Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
+   Modified Dec 2024 JHB, include <algorithm> and use std namespace if __cplusplus defined
 */
 
-#include "mediaTest.h"
+/* Linux includes */
+
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
+
+/* DirectCore APIs */
+
+#include "directcore.h"
 #include "shared_include/transcoding.h"  /* MAX_SESSIONS_PER_CORE definition */
+
+/* app support header files */
+
+#include "mediaTest.h"
 
 void fill_pcie_buffer(uint8_t *buffer, int length, uint32_t chip_id, uint32_t core_id)
 {

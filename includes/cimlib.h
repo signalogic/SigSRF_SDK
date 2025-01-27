@@ -25,6 +25,7 @@
    Modified Jul 2023 JHB, add const char* version_info param to cimGetCmdLine()
    Modified Nov 2023 JHB, edit ver_str to version_info in cimGetCmdLine. No functional change
    Modified Feb 2024 JHB, add CIM_GCL_MEDIATEST flag. See usage in getUserInfo() in getUserInterface.cpp
+   Modified Nov 2024 JHB, remove streamlib.h include
 */
 
 #ifndef _CIMLIB_H_
@@ -44,7 +45,6 @@
 
 /* host and target shared header files */
 
-#include "streamlib.h"
 #include "cim.h"
 #include "c66x_accel.h"
 
@@ -181,7 +181,11 @@ typedef CARDPARAMS* PCARDPARAMS;
 #define CIM_GCL_MEDIAMIN                   0x40
 #define CIM_GCL_MEDIATEST                  0x80
 #define CIM_GCL_CMDLINEMASK                0xff
-#define CIM_GCL_DEBUGPRINT                 DS_STC_DEBUGPRINT
+#ifdef DS_STC_DEBUGPRINT
+  #define CIM_GCL_DEBUGPRINT               DS_STC_DEBUGPRINT
+#else
+  #define CIM_GCL_DEBUGPRINT               0x10000000U
+#endif
 
 #define CIM_GCL_DISABLE_MANDATORIES        0x100
 #define CIM_GCL_FILLUSERIFS                0x200

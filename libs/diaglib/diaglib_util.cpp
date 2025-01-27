@@ -22,12 +22,21 @@
   Created May 2024 JHB, DSGetLogTimeStamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs moved here from event_logging.cpp
   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSGetLogTimeStamp() and DSGetBacktrace()
   Modified Aug 2024 JHB, rename DSGetMD5Sum() to DSConsoleCommand() and make into generic console command execution API. See comments
+  Modified Nov 2024 JHB, DSGetLogTimestamp() returns timestamp in usec if timestamp param is NULL
+  Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
 */
 
 /* Linux and/or other OS includes */
 
 #ifndef _GNU_SOURCE
   #define _GNU_SOURCE  /* needed by dlfcn.h and spawn.h if used */
+#endif
+
+/* Linux includes */
+
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
 #endif
 
 #ifdef __STDC_LIB_EXT1__
@@ -41,7 +50,6 @@
 #include <time.h>      /* struct tm, time(), localtime_r() */
 #include <sys/time.h>  /* gettimeofday() */
 #include <execinfo.h>  /* backtrace() */
-#include <algorithm>   /* std::min and std::max */
 
 // #define DEBUG_OUTPUT  /* enable if needed */
 #ifdef DEBUG_OUTPUT
@@ -63,7 +71,7 @@ extern uint8_t usec_init_lock;
 
 /* retrieve and format a timestamp, can be absolute (wall-clock) time, relative to start, or both. Log_RT() (event_logging.cpp) depends on this */
 
-int DSGetLogTimeStamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval) {
+uint64_t DSGetLogTimestamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval) {
 
 time_t ltime;
 struct tm tm;
@@ -95,7 +103,7 @@ bool fUptimeTimestamp = true;
    
       ltime = time(NULL);
       localtime_r(&ltime, &tm);
-      strftime(timestamp, max_str_len, "%m/%d/%Y %H:%M:%S", &tm);
+      if (timestamp) strftime(timestamp, max_str_len, "%m/%d/%Y %H:%M:%S", &tm);
 
       if (uFlags & DS_EVENT_LOG_USER_TIMEVAL) usec = user_timeval;
       else {
@@ -103,14 +111,14 @@ bool fUptimeTimestamp = true;
          usec = tv.tv_sec*1000000L + tv.tv_usec - usec_base;
       }
 
-      if (!fUptimeTimestamp || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISE)) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));  /* add msec and usec -- see uptime timestamp generation comments below */
+      if ((!fUptimeTimestamp || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISE)) && timestamp) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));  /* add msec and usec -- see uptime timestamp generation comments below */
    }
    
    if (fUptimeTimestamp) {  /* include uptime timestamp if specified, JHB Apr 2020 */
 
       if (!fWallClockTimestamp) {
 
-         timestamp[0] = '\0';  /* if wallclock timestamps were not requested, ensure timestamp has zero length before concatenating */
+         if (timestamp) timestamp[0] = '\0';  /* if wallclock timestamps were not requested, ensure timestamp has zero length before concatenating */
 
          if (uFlags & DS_EVENT_LOG_USER_TIMEVAL) usec = user_timeval;
          else {
@@ -125,16 +133,20 @@ bool fUptimeTimestamp = true;
       -note for number of hours we don't use modulus to stay within a range. When number of digits exceeds the %02 specifier, sprintf doesn't cut anything off (verified with 100+ hr stress tests, JHB Mar 2019)
    */
 
-      if (fWallClockTimestamp) strcat(timestamp, " (");  /* note that parens () are applied only if both wallclock and uptime timestamps are requested */
-      int hours = (int)(usec/3600000000L);
-      if (!(uFlags & DS_EVENT_LOG_USER_TIMEVAL) || hours > 0) sprintf(&timestamp[strlen(timestamp)], "%02d:", hours);  /* for user-specified timeval, omit hours unless != zero, JHB Feb 2024 */
-      sprintf(&timestamp[strlen(timestamp)], "%02d:%02d", (int)(usec/60000000L) % 60, (int)(usec/1000000L) % 60);
+      if (timestamp) {
 
-      if (!(uFlags & DS_EVENT_LOG_USER_TIMEVAL) || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISE)) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));
-      if (fWallClockTimestamp) strcat(timestamp, ")");  /* for user-specified timeval, omit sec and usec unless user gives TIMEVAL_PRECISE flag, JHB Feb 2024 */
+         if (fWallClockTimestamp) strcat(timestamp, " (");  /* note that parens () are applied only if both wallclock and uptime timestamps are requested */
+         int hours = (int)(usec/3600000000L);
+         if (!(uFlags & DS_EVENT_LOG_USER_TIMEVAL) || hours > 0) sprintf(&timestamp[strlen(timestamp)], "%02d:", hours);  /* for user-specified timeval, omit hours unless != zero, JHB Feb 2024 */
+         sprintf(&timestamp[strlen(timestamp)], "%02d:%02d", (int)(usec/60000000L) % 60, (int)(usec/1000000L) % 60);
+
+         if (!(uFlags & DS_EVENT_LOG_USER_TIMEVAL) || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISE)) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));  /* add msec and usec */
+         if (fWallClockTimestamp) strcat(timestamp, ")");  /* for user-specified timeval, omit sec and usec unless user gives TIMEVAL_PRECISE flag, JHB Feb 2024 */
+      }
    }
 
-   return strlen(timestamp);
+   if (timestamp) return strlen(timestamp);
+   else return usec;
 }
 
 /* use popen() to execute console command and return result. First implemented as DSGetMD5Sum() JHB Feb 2024, modified to be generic JHB Aug 2024. See documentation in diaglib.h */

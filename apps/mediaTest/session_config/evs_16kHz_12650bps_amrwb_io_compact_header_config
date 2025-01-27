@@ -2,7 +2,7 @@
 
 codec_type = EVS
 bitrate = 12650          # bitrate in bps - 12650 is an AMR-WB IO (interoperability) mode bitrate
-sample_rate = 16000      # wideband encoder samping rate
-dtx_enable = 0
+sample_rate = 16000      # wideband encoder sampling rate
+dtx_enable = 1
 rf_enable = 0
 header_format = compact  # compact header format

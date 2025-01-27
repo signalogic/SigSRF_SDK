@@ -76,7 +76,7 @@
 #define DS_START_POS             22    /* seek constants, add DS_ prefix and use with DSSeekPos(), JHB Feb2022 */
 #define DS_END_POS               23
 #define DS_CURRENT_POS           24
-#define DS_SEEKPOS_RETURN_BYTES  0x100  /* returns byte position instead of samples, for example header length instead of zero at start of a .wav file, JHB Feb2022 */
+#define DS_SEEKPOS_RETURN_BYTES  0x100  /* returns byte position instead of samples, for example header length instead of zero at start of a .wav file, JHB Feb 2022 */
 #define DS_SEEKPOS_ITEM_MASK     0xff
 
 /*
@@ -87,7 +87,7 @@
 #define CHUNK_LEN                60000L
 #define CHUNK                    32768L
 
-/* flags used by mode param DSOpenFile(), and uFlags param in DSSaveDataFile() and DSLoadDataFile() in hwlib.h */
+/* flags used by mode param DSOpenFile(), and uFlags param in DSSaveDataFile() and DSLoadDataFile() in directcore.h */
 
 #define DS_CREATE                1      /* create new file for read-write, if file already exists it's overwritten */
 #define DS_OPEN                  2      /* open existing file for read-write */
@@ -99,7 +99,7 @@
 
 #define DS_CREATE_BAK            0x80   /* same as DS_CREATE_TMP option, but on DSCloseFile() the existing file is renamed to .bak instead of being deleted. Twice the file size of disk space is always consumed */
 
-/* flag used by uFlags param in DSSaveDataFile() and DSLoadDataFile() in hwlib.h */
+/* flag used by uFlags param in DSSaveDataFile() and DSLoadDataFile() in directcore.h */
 
 #define DS_CLOSE                 8      /* close the file */
 
