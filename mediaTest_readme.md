@@ -21,7 +21,7 @@ Use case driven improvements
  - input data caching to improve mediaMin application thread performance
  - publish interop and regression test scripts used internally for EVS and AMR testing, including (i) generated media and pcap files and (ii) "in the wild pcaps" (anonymized and content-altered)
  - updated voplib documentation
- - upgrade DSGetPayloadInfo() API in voplib to support detailed, fast, and generic RTP payload inspection and parsing modes
+ - upgrade DSGetPayloadInfo() API in voplib to support detailed, fast, and generic modes of RTP payload inspection and parsing
 
 Bug fixes
 
