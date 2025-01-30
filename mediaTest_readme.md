@@ -249,6 +249,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 ## [**_Run-Time Stats_**](#user-content-runtimestats)<br/>
 
+&nbsp;&nbsp;&nbsp;[**mediaMin Run-Time Stats**](#user-content-mediaminruntimestats)<br/>
+
 ## [**_Event Log_**](#user-content-eventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Verifying a Clean Event Log](#user-content-verifyingcleaneventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Packet Log Summary](#user-content-packetlogsummary)<br/>
@@ -1074,17 +1076,20 @@ Note that both print identical MD5 sums in mediaMin summary stats:
 <pre><console>
 === mediaMin stats
     packets [input]
+        total [0]2696
+        Fragments = [0]0, reassembled = [0]0, orphans = 0, max on list = 0
         TCP = [0]0
-        UDP = [0]2696
-        TCP redundant discards = [0]0
+        UDP = [0]2696, encapsulated = [0]0
+        RTP = [0]2686, RTCP = [0]9, Unhandled = [0]1
+        Redundant discards TCP = [0]0, UDP = [0]0
     md5sum
-        <i>timestamp-match mode b16ccd08e2bd5b06c00f624c2d0012d2</i> announcementplayout_metronometones1sec_2xAMR_merge_tsm.wav
-    arrival timing [session]
+        timestamp-match mode b16ccd08e2bd5b06c00f624c2d0012d2 /tmp/shared/announcementplayout_metronometones1sec_2xAMR_merge_tsm.wav
+    arrival timing [stream]
         delta avg/max (msec) = [0]17.79/155.79 [1]18.64/28.75
         jitter avg/max (msec) = [0]16.42/135.79 [1]1.89/19.32
-    run-time [session]
-        [0] hSession 0, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0xb101a863
-        [1] hSession 1, codec = AMR-NB, bitrate = 12200, payload type = 102, ssrc = 0x6057c1d6
+    session [stream]
+        [0] hSession 0 dynamic, term 0, ch 0, codec AMR-NB, bitrate 12200, payload type 102, ssrc 0xb101a863, first packet 00:02.413.320
+        [1] hSession 1 dynamic, term 0, ch 2, codec AMR-NB, bitrate 12200, payload type 102, ssrc 0x6057c1d6, first packet 00:02.707.160
 </console></pre>
 
 Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and thus avoid wall clock references.
@@ -2045,14 +2050,14 @@ The [voplib API interface](https://www.github.com/signalogic/SigSRF_SDK/blob/mas
 <a name="RunTimeStats"></a>
 # Run-Time Stats
 
-mediaMin displays run-time stats onscreen and/or in the event log by calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API for a session or range of sessions from user-defined applications. Also mediaMin displays run-time stats when:
+Pktlib packet/media worker threads display run-time stats onscreen and/or in the event log by calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API for a session or range of sessions from user-defined applications. Run-time stats are also displayed when:
 
   * the last session of a stream group closes
   * stream groups are not active and a session closes
 
-mediaMin sets up a default mode for packet/media threads to call DSLogRunTimeStats() (look for the API in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>).
+Applications can use the default mode, or a custom mode, for packet/media threads to call DSLogRunTimeStats() (look for the API in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>).
 
-Although mediaMin waits until sessions are closed, run-time stats can be displayed and/or printed to the event log at any time. It's probably not wise to do so often, as each instance takes some processing time and a chunk of log (or screen) space.
+Although packet/media threads wait to display run-time stats until sessions are closed, they can be displayed and/or printed to the event log at any time. It's probably not wise to do so often, as each instance takes some processing time and a chunk of log (or screen) space.
 
 Run-time stats include the following main categories:
 
@@ -2064,7 +2069,7 @@ Run-time stats include the following main categories:
 * Jitter Buffer
 * Summary of event log warnings and errors
 
-Below is a run-time stats example from a mediaMin screen capture.
+Below are run-time stats examples from mediaMin screen captures.
 
 <pre>
 00:02:24.582.168 Stream Info + Stats, stream group "mediaplayout_music_1malespeaker_5xAMRWB_notimestamps", grp 0, p/m thread 0, num packets 7359
@@ -2093,7 +2098,7 @@ Below is a run-time stats example from a mediaMin screen capture.
   Event log warnings, errors, critical 0, 0, 0
 </pre>
 
-Below is another run-time stats example from a mediaMin screen capture. Note in this case the high number of RFC8108 streams and wide range of bitrates.
+The following example shows a high number of RFC8108 streams and wide range of bitrates.
 	
 <pre>
 00:00:41.319.243 Stream Info + Stats, stream group "86_anon", grp 0, p/m thread 0, num packets 4485
@@ -2138,6 +2143,37 @@ The screencaps below show run-time stats examples, with highlighting around the 
 <img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_multirate_multiformat_example_annotated.png" width="1024" alt="Run-time stats example with session summary fields annotated" title="Run-time stats example with session summary fields annotated"/></br>
 
 <sup>1</sup> Dynamic bitrates occur when a stream's bitrate changes on-the-fly, due to a codec mode request (known as a CMR) or re-negotiation by transmit and receive endpoints. Dynamic bitrates also include DTX bitrates, for example for telecom codecs (not LBR codecs like MELPe) low values such as 1750 or 2400 bps are DTX rates
+
+<a name="MediaMinRunTimeStats"></a>
+## mediaMin Run-Time Stats
+
+In addition to run-time stats generated by packet/media worker threads, the mediaMin reference application also generates run-time stats. The key difference is that packet/media threads don't know about number and types of input streams, they just see sessions and channels. mediaMin, on the other hand, is aware of input stream sources. Here is a mediaMin command line example with a mixed audio and video input pcap, followed by run-time stats after the pcap is processed:
+
+    mediaMin -c x86 -i ../test_files/VIDEOCALL_EVS_H265.pcapng -L -d 0x0600c000c11 -r20 -g /tmp/shared -l4
+
+Note that mediaMin includes packet fragmentation and duplication stats, if applicable:
+
+<pre><console>
+=== mediaMin stats
+    packets [input]
+        total [0]57486
+        Fragments = [0]26, reassembled = [0]11, orphans = 2, max on list = 4
+        TCP = [0]700
+        UDP = [0]41396, encapsulated = [0]0
+        RTP = [0]22892, RTCP = [0]282, Unhandled = [0]0
+        Redundant discards TCP = [0]683, UDP = [0]5544
+    session [stream]
+        [0] hSession 0 dynamic, term 0, ch 0, codec EVS, bitrate 24400, payload type 110, ssrc 0xa006b6e2, first packet 00:06.806.364
+        [1] hSession 1 dynamic, term 0, ch 2, codec EVS, bitrate 24400, payload type 110, ssrc 0xa006b6e2, first packet 00:06.806.826
+        [2] hSession 2 dynamic, term 0, ch 4, codec EVS, bitrate 24400, payload type 110, ssrc 0x8b9e8be3, first packet 00:06.929.918
+        [3] hSession 3 dynamic, term 0, ch 6, codec EVS, bitrate 24400, payload type 110, ssrc 0x8b9e8be3, first packet 00:06.930.298
+        [4] hSession 4 dynamic, term 0, ch 8, codec H.265, bitrate 57856, payload type 112, ssrc 0x6002d4b9, first packet 00:07.609.577
+        [5] hSession 5 dynamic, term 0, ch 10, codec H.265, bitrate 57856, payload type 112, ssrc 0x6002d4b9, first packet 00:07.609.759
+        [6] hSession 6 dynamic, term 0, ch 12, codec H.265, bitrate 57856, payload type 112, ssrc 0x1dd21290, first packet 00:07.935.556
+        [7] hSession 7 dynamic, term 0, ch 14, codec H.265, bitrate 57856, payload type 112, ssrc 0x1dd21290, first packet 00:07.935.671
+        Missed stream group intervals = 0
+        Marginal stream group pulls = 0
+</console></pre>
 
 <a name="EventLog"></a>
 # Event Log
