@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/user_io.cpp
 
- Copyright (C) Signalogic Inc. 2021-2024
+ Copyright (C) Signalogic Inc. 2021-2025
 
  License
 
@@ -25,7 +25,7 @@
 
    Created Apr 2021 JHB, split off from mediaMin.cpp
    Modified Jan 2023 JHB, add debugMode to thread info printout ('d' key interactive command)
-   Modified Jan 2023 JHB, add fCtrl_C_pressed handling in ProcessKeys() (see comments in mediaTest/see cmd_line_interface.c)
+   Modified Jan 2023 JHB, add handling of "fCtrl_C_pressed" var in ProcessKeys() (see comments in mediaTest/see cmd_line_interface.c)
    Modified Jan 2023 JHB, add command line to interactive 'd' key command (real-time debug output)
    Modified Feb 2023 JHB, one-time set stdout to non-buffered in ProcessKeys(). See comments
    Modified Feb 2024 JHB, update usage of DSGetLogTimestamp() per changes in diaglib.h
@@ -37,6 +37,7 @@
    Modified Oct 2024 JHB, fix bug in param passing order in DSGetLogTimestamp()
    Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
    Modified Dec 2024 JHB, include <algorithm> and use std namespace
+   Modified Jan 2025 JHB, some comments added after AI tools source code review
 */
 
 #include <algorithm>
@@ -55,6 +56,8 @@ using namespace std;
 #include "mediaTest.h"  /* bring in constants needed by mediaMin.h */
 #include "mediaMin.h"
 #include "user_io.h"
+
+/*  as noted in Revision History, code was split from mediaMin.cpp; the following extern references are necessary to retain tight coupling with related source in mediaMin.cpp. There are no multithread or concurrency issues in these references */
 
 extern unsigned int num_app_threads;   /* see comments in mediaMin.h */
 extern APP_THREAD_INFO thread_info[];  /* APP_THREAD_INFO struct defined in mediaMin.h */
