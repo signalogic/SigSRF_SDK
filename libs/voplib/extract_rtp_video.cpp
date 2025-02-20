@@ -1,5 +1,5 @@
 /*
-$Header: /root/Signalogic/DirectCore/lib/pktlib/extract_rtp_video.cpp
+$Header: /root/Signalogic/DirectCore/lib/voplib/extract_rtp_video.cpp
  
 Description
 
@@ -93,8 +93,8 @@ extern "C" {
 
   Notes
 
-   - DSGetPacketInfo() is a pktlib API defined in pktlib.h
    - DSSaveDataFile() is a DirectCore API defined in directcore.h
+   - LogRT() is a dialib event-logging API
 */
 
 int extract_rtp_video(FILE* fp_out, unsigned int uFlags, uint8_t* rtp_payload, int rtp_pyld_len, int nId, const char* errstr) {
