@@ -13,6 +13,14 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+<i><b>1Q 2025</b></i>
+
+Use case driven improvements
+
+ - improved pcapng format handling, including additional block types, unused and unknown block types
+ - HEVC elementary bitstream extraction from RTP packet flow
+ - command line examples for VLC streaming to Wireshark capture
+
 <i><b>3Q-4Q 2024</b></i>
 
 Use case driven improvements
