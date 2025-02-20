@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaTest.c
 
- Copyright (C) Signalogic Inc. 2015-2024
+ Copyright (C) Signalogic Inc. 2015-2025
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -123,6 +123,7 @@
    Modified Jul 2024 JHB, print command line along with banner info
    Modified Nov 2024 JHB, update headerfull constant to match voplib.h definitions. Include directcore.h (no longer implicitly included in other header files)
    Modified Dec 2024 JHB, change DS_PYLD_HDR_FMT_XXX to DS_PYLD_FMT_XXX due to renaming in voplib.h
+   Modified Feb 2025 JHB, update version number
 */
 
 /* Linux includes / system header files */
@@ -1179,8 +1180,8 @@ exit:
 
 static char prog_str[] = "mediaTest";
 static char banner_str[] = "SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms";
-static char version_str[] = "v2.9.12";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
-static char copyright_str[] = "Copyright (C) Signalogic 2015-2024";
+static char version_str[] = "v2.10.0";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
+static char copyright_str[] = "Copyright (C) Signalogic 2015-2025";
 
 int main(int argc, char **argv) {
   

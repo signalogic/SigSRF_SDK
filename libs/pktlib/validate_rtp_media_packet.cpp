@@ -16,7 +16,7 @@ Projects
 
   SigSRF, DirectCore
  
-Copyright Signalogic Inc. 2024
+Copyright Signalogic Inc. 2024-2025
 
 License
 
@@ -25,6 +25,7 @@ License
 Revision History
 
   Created Dec 2024 JHB, separated and moved here from pktlib source
+  Revised Feb 2025 JHB, add nID and output file param in DSGetPayloadInfo() (NULL indicates not used)
 */
 
 /* Linux and/or other OS includes */
@@ -84,7 +85,7 @@ PAYLOAD_INFO PayloadInfo;  /* local payload info struct if needed */
       payload_info = &PayloadInfo;
    }
 
-   if ((ret_val = DSGetPayloadInfo(codec_type, DS_CODEC_INFO_TYPE | (uFlags & DS_PKTLIB_SUPPRESS_ERROR_MSG ? DS_PAYLOAD_INFO_SUPPRESS_WARNING_MSG : 0), &payload[rtp_hdr_len], rtp_payload_size, payload_info)) < 0) return ret_val;  /* DSGetPayloadInfo() is in voplib, suppress error / messages based on uFlags */
+   if ((ret_val = DSGetPayloadInfo(codec_type, DS_CODEC_INFO_TYPE | (uFlags & DS_PKTLIB_SUPPRESS_ERROR_MSG ? DS_PAYLOAD_INFO_SUPPRESS_WARNING_MSG : 0), &payload[rtp_hdr_len], rtp_payload_size, payload_info, 0, NULL)) < 0) return ret_val;  /* DSGetPayloadInfo() is in voplib, suppress error / messages based on uFlags */
 
 /* analyze PAYLOAD_INFO payload format and ToC info returned by DSGetPayloadInfo(), JHB Dec 2024 */
 

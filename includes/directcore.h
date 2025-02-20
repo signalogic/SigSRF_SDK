@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/include/hwlib.h
 
- Copyright (C) Signalogic Inc. 1994-2024
+ Copyright (C) Signalogic Inc. 1994-2025
 
  License
 
@@ -39,6 +39,7 @@
   Modified May 2024 JHB, define get_time_t typedef to support alternative get_time() function signatures in other apps and libs. Honor GET_TIME_TYPEDEF_ONLY if set by app or lib source to define only typedef for get_time() and no prototype
   Modified Nov 2024 JHB, add #ifndef MIN_HDR for includes that need minimum definitions
   Modified Jan 2025 JHB, deprecate DSAssignDataPlane()
+  Modified Feb 2025 JHB, improve DSLoadDataFile() and DSSaveDataFile() prototypes
 */
  
 #ifndef _HWLIB_H_
@@ -348,8 +349,8 @@ DECLSPEC UINT      LIBAPI DSRunDevices               (HCARD, QWORD);
 #define DSGetCoreStatus DSGetProcessorStatus
 
 /* memory and variable transfers, IEEE conversion */
-DECLSPEC INT       DSLoadDataFile                    (HCARD, FILE**, const char*, uintptr_t, UINT, UINT uFlags, PMEDIAINFO, HFILE*);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_OPEN flag), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
-DECLSPEC INT       DSSaveDataFile                    (HCARD, FILE**, const char*, uintptr_t, UINT, UINT uFlags, PMEDIAINFO);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_CREATE or DS_OPEN flags), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
+DECLSPEC INT       DSLoadDataFile                    (HCARD hCard, FILE** p_fp, const char* szFilename, uintptr_t pdata, UINT len, UINT uFlags, PMEDIAINFO pMediaInfo, HFILE* hFile);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_OPEN flag), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
+DECLSPEC INT       DSSaveDataFile                    (HCARD hCard, FILE** p_fp, const char* szFilename, uintptr_t pData, UINT len, UINT uFlags, PMEDIAINFO pMediaInfo);  /* card handle (can be NULL or DS_GM_xx values), pointer to a file pointer, filename (cannot be NULL for DS_CREATE or DS_OPEN flags), buffer (or card address), length, flags, pointer to CONVERSIONINFO struct (NULL if not used) */ 
 
 DECLSPEC UINT      LIBAPI DSPutMem                   (HCARD, UINT, DWORD, UINT, void far*, DWORD);
 DECLSPEC UINT      LIBAPI DSGetMem                   (HCARD, UINT, DWORD, UINT, void far*, DWORD);

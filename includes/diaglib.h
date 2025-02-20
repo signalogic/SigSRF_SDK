@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/include/diaglib.h
  
- Copyright Signalogic Inc. 2016-2024
+ Copyright Signalogic Inc. 2016-2025
 
  License
 
@@ -63,12 +63,19 @@
   Modified Sep 2024 JHB, update comments for DS_PKTSTATS_ORGANIZE_BY_xx flags, add DS_INIT_LOGGING_RESET_WARNINGS_ERRORS flag
   Modified Nov 2024 JHB, rename STREAM_STATS to PKT_STREAM_STATS
   Modified Nov 2024 JHB, DSGetLogTimestamp() now returns timestamp value in usec if timestamp param is NULL
+  Modified Feb 2025 JHB, move isFileDeleted() here as static inline from event_logging.cpp, add static inline getFilePathFromFilePointer()
 */
 
 #ifndef _DIAGLIB_H_
 #define _DIAGLIB_H_
 
-#include <stdio.h>  /* FILE* definition */
+#include <stdio.h>     /* FILE* definition */
+#include <sys/stat.h>  /* following includes needed for static inlines isFileDeleted() and getFilePathFromFilePointer() */
+#include <fcntl.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <stdbool.h>
 
 #include "shared_include/config.h"  /* config.h provides DEBUG_CONFIG struct definition used in DSInitLogging() and DSConfigLogging(); only includes Linux headers */
 
@@ -379,6 +386,59 @@ int DSGetBacktrace(int nLevels, unsigned int uFlags, char* szBacktrace);
 extern uint32_t event_log_critical_errors;
 extern uint32_t event_log_errors;
 extern uint32_t event_log_warnings;
+
+/* useful utilities */
+
+static inline bool isFileDeleted(FILE* fp) {  /* check if file has been deleted, possibly be an external process. Note we cannot use fwrite() or other error codes, we need to look at file descriptor level, JHB Dec 2019 */
+
+bool fRet = false;
+struct stat fd_stat;
+int fd;
+
+   fd = fileno(fp);  /* convert file pointer to file descriptor */
+
+   if (fcntl(fd, F_GETFL) && !fstat(fd, &fd_stat)) {
+
+      if (fd_stat.st_nlink == 0) fRet = true;  /* file has been deleted if no "hard links" exist, JHB Dec2019 */
+   }
+
+   return fRet;
+}
+
+static inline char* getFilePathFromFilePointer(FILE *file) {  /* get file path from file pointer. Caller must free returned path if not NULL. JHB Feb 2025 */
+
+   int fd = fileno(file);
+   if (fd == -1) {
+      perror("fileno");
+      return NULL;
+   }
+
+   struct stat statbuf;
+   if (fstat(fd, &statbuf) == -1) {
+      perror("fstat");
+      return NULL;
+  }
+
+   char *path = (char*)malloc(PATH_MAX);
+   if (path == NULL) {
+      perror("malloc");
+      return NULL;
+   }
+
+// Construct the path from /proc/pid/fd/fd
+   snprintf(path, PATH_MAX, "/proc/self/fd/%d", fd);
+
+   char *resolved_path = realpath(path, NULL); // Resolve the symbolic link
+
+   free(path); // Free the allocated memory for path
+
+   if (resolved_path == NULL && errno != ENOENT) {
+      perror("realpath");
+      return NULL;
+   }
+
+   return resolved_path;
+}
 
 #ifdef __cplusplus
 }

@@ -4,18 +4,22 @@
  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
- Copyright (c) 2021-2023 Signalogic, Dallas, Texas
+ Copyright (c) 2021-2025 Signalogic, Dallas, Texas
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
  Revision History
+
   Modified Jan 2021 JHB, add a=rtpmap attribute support
   Modified Feb 2021 JHB, add support for # comment delineator in SDP file lines. See parseLine() below and example.sdp for examples and more notes
   Modified Mar 2021 JHB, fix problem with possible trailing '/' after rtpmap clock rate, add reading of optional number of channels
   Modified Mar 2021 JHB, for "not numeric" error messages, include bad part of token. Always try to give users some idea of what's wrong
   Modified Mar 2021 JHB, in getToken() handle Win style CRLF line endings
-  Modified Jan 2023 JHB, don't allow search for "a=" token to get snagged on "application/xxx" line that shows up on SAP packets
+  Modified Jan 2023 JHB, in Reader::parseLine() don't allow search for "a=" token to get snagged on "application/xxx" line that may appear on SAP packets
   Modified Apr 2023 JHB, add fReportError param to readNetType(), readAddrType(), and readString(). See comments below in parseAttribute(Line& line) for a=rtcp
+  Modified Nov 2024 JHB, in Reader::parse() handle unused var warning due to -Wextra added to mediaMin Makefile
+  Modified Jan 2025 JHB, in Reader::parseLine() add "else break" to case 'a' ("application") to avoid fall-through warning in gcc 11.2 and higher
+  Modified Feb 2025 JHB, include SDP info text in invalid codec type error messages. Probably should do this for other error types too
 */
 
 #include <sdp/reader.h>
@@ -227,7 +231,9 @@ namespace sdp {
 
       CodecType result = t.toCodecType();
       if (result == SDP_CODECTYPE_NONE) {
-         throw ParseException("Invalid codec type");
+         char tmpstr[200];
+         sprintf(tmpstr, "Invalid codec type %s", value.c_str());  /* include invalid codec type string in error message, JHB Feb 2025 */
+         throw ParseException(tmpstr);
       }
 
       return result;
@@ -310,6 +316,8 @@ namespace sdp {
 
    int Reader::parse(std::string source, SDP* result, unsigned int uFlags) {
 
+      (void)uFlags;  /* not currently used */
+
       if (!source.size()) return -1;  
 
       std::vector<std::string> lines;    
@@ -371,7 +379,7 @@ namespace sdp {
          case 'c': { return parseConnectionData(l);      }
          case 't': { return parseTiming(l);              }
          case 'm': { return parseMedia(l);               }
-         case 'a': { if (!strstr(l.value.c_str(), "application")) return parseAttribute(l); }  /* ignore "application/xxx" line in SAP protocol packets, JHB Jan 2023 */
+         case 'a': { if (!strstr(l.value.c_str(), "application")) return parseAttribute(l); else break; }  /* ignore "application/xxx" line in SAP protocol packets, JHB Jan 2023 */
          case 'b': { return parseBandwidth(l);           }
 
          /* unhandled line */

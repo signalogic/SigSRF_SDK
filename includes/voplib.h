@@ -62,6 +62,8 @@
   Modified Nov 2024 JHB, implement DS_PAYLOAD_INFO_GENERIC flag for DSGetPayloadInfo(). This allows generic subset payload analysis and information retrieval without a codec type
   Modified Dec 2024 JHB, implment DS_CODEC_INFO_NAME_VERBOSE flag
   Modified Jan 2025 JHB, provide alternate codec_types definition for codec lib builds (NO_VOPLIB_HEADERS defined) and stand-alone builds (CODECS_ONLY defined)
+  Modified Feb 2025 JHB, for DSGetPayloadInfo() add nId and fp_out params for use for codec bitstream extraction, otherwise set to zero and NULL (unused)
+  Modified Feb 2025 JHB, add DS_PAYLOAD_INFO_DEBUG_OUTPUT and DS_PAYLOAD_INFO_RESET_ID flags
 */
  
 #ifndef _VOPLIB_H_
@@ -392,9 +394,9 @@ extern "C" {
 
      -codec_param can be either a codec_type enum or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec_param as an DS_CODEC_XXX enum defined in shared_include/codec.h. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c
 
-     -payload should point to a codec RTP payload
+     -rtp_payload should point to an RTP payload
 
-     -payload_size should give the size (in bytes) of the RTP payload pointed to by payload
+     -payload_size should give the size (in bytes) of the RTP payload pointed to by rtp_payload
 
      -if payload_info is non-NULL then the following payload_info items are set or cleared:
 
@@ -407,12 +409,16 @@ extern "C" {
        -fDTMF is set if the payload is a DTMF event, or cleared if not
        -only applicable to EVS, fAMRWB_IO_MOde is set true for an AMR-WB IO mode payload, false for a primary mode payload, and false for all other codec types
 
+      -nId is an optional unique thread or session identifer, currently only used for output bitstream extraction and file write
+
+     -if fp_out points to an open output binary file the payload contents will be extracted per the relevant codec RTP payload specification and appended to the file. fp_out should be NULL if not used
+     
      -return value is (i) a DS_PYLD_FMT_XXX payload format definition (see above) for applicable codecs (e.g. AMR, EVS), (ii) 0 for other codec types, or (iii) < 0 for error conditions
 */
 
   #define MAX_PAYLOAD_FRAMES 12  /* maximum number of frames per payload currently supported. For example, for a 20 msec nominal ptime codec, a max ptime of 240 msec is supported, CKJ Sep 2017 */
 
-  typedef struct {  /* codec RTP payload items extracted or derived from a combination of codec type, payload header, and payload size */
+  typedef struct {  /* RTP payload items extracted or derived from a combination of codec type, payload header, and payload size */
 
   /* payload header items */
 
@@ -430,7 +436,7 @@ extern "C" {
      bool      fAMRWB_IO_Mode;                 /* true for an EVS AMR-WB IO compatibility mode packet, false otherwise */
      bool      fDTMF;                          /* true for a DTMF event payload, false otherwise */
 
-     int       start_of_payload_data;          /* index into payload[] of start of payload data. If DSGetPayloadInfo() returns an error condition, this is the payload header byte on which the error occurred */
+     int       start_of_payload_data;          /* index into rtp_payload[] of start of payload data. If DSGetPayloadInfo() returns an error condition, this is the payload header byte on which the error occurred */
 
      int       amr_decoder_bit_pos;            /* reserved */
 
@@ -438,15 +444,19 @@ extern "C" {
 
   } PAYLOAD_INFO;
 
-  int DSGetPayloadInfo(int codec_param, unsigned int uFlags, uint8_t* payload, int payload_size, PAYLOAD_INFO* payload_info);
+  int DSGetPayloadInfo(int codec_param, unsigned int uFlags, uint8_t* rtp_payload, int payload_size, PAYLOAD_INFO* payload_info, int nId, FILE* fp_out);
 
-  #define DS_PAYLOAD_INFO_SID_ONLY                       1  /* if DS_PAYLOAD_INFO_SID_ONLY is given in uFlags DSGetPayloadInfo() will make a quick check for a SID payload. codec_param should be a valid DS_CODEC_xxx enum (defined in shared_include/codec.h), uFlags must include DS_CODEC_INFO_TYPE, no error checking is performed, and fSID in payload_info will be set or cleared. If the payload contains multiple frames only the first frame is considered. Return values are a DS_PYLD_FMT_XXX value for a SID payload and -1 for not a SID payload */
+  #define DS_PAYLOAD_INFO_SID_ONLY                       1    /* if DS_PAYLOAD_INFO_SID_ONLY is given in uFlags DSGetPayloadInfo() will make a quick check for a SID payload. codec_param should be a valid DS_CODEC_xxx enum (defined in shared_include/codec.h), uFlags must include DS_CODEC_INFO_TYPE, no error checking is performed, and fSID in payload_info will be set or cleared. If the payload contains multiple frames only the first frame is considered. Return values are a DS_PYLD_FMT_XXX value for a SID payload and -1 for not a SID payload */
 
-  #define DS_PAYLOAD_INFO_GENERIC                        2  /* if DS_PAYLOAD_INFO_GENERIC is given in uFlags DSGetPayloadInfo() will ignore codec_param and payload and set fDTMF (DTMF event) in payload_info if payload_size = 4 or set fSID (SID payload) in payload_info if payload_size <= 8. This is reliable for most codecs for single-frame payloads; however, for multiple frames (e.g. variable ptime, multiple channels, etc) -- or any situation where detailed payload information is needed -- this flag should not be used. fDTMF and fSID in payload_info are set or cleared. Return values are 0 for a SID payload and -1 for not a SID payload */
+  #define DS_PAYLOAD_INFO_GENERIC                        2    /* if DS_PAYLOAD_INFO_GENERIC is given in uFlags DSGetPayloadInfo() will ignore codec_param and rtp_payload and set fDTMF (DTMF event) in payload_info if payload_size = 4 or set fSID (SID payload) in payload_info if payload_size <= 8. This is reliable for most codecs for single-frame payloads; however, for multiple frames (e.g. variable ptime, multiple channels, etc) -- or any situation where detailed payload information is needed -- this flag should not be used. fDTMF and fSID in payload_info are set or cleared. Return values are 0 for a SID payload and -1 for not a SID payload */
 
   #define DS_PAYLOAD_INFO_NO_CODEC  DS_PAYLOAD_INFO_GENERIC  /* alternative flag name */
 
-  #define DS_PAYLOAD_INFO_IGNORE_DTMF                    4  /* DSGetPayloadInfo() default behavior is to recognize payload_size == 4 as a DTMF event (RFC 4733), set NumFrames to 1 and set fDTMF in payload_info, and immediately return 0 without reference to codec_param and payload. To override this behavior DS_PAYLOAD_INFO_IGNORE_DTMF can be given in uFlags */ 
+  #define DS_PAYLOAD_INFO_IGNORE_DTMF                    4   /* DSGetPayloadInfo() default behavior is to recognize payload_size == 4 as a DTMF event (RFC 4733), set NumFrames to 1 and set fDTMF in payload_info, and immediately return 0 without reference to codec_param and rtp_payload. To override this behavior DS_PAYLOAD_INFO_IGNORE_DTMF can be given in uFlags */ 
+
+  #define DS_PAYLOAD_INFO_DEBUG_OUTPUT                   8   /* ask for additional debug output in DSGetPayloadInfo() */ 
+
+  #define DS_PAYLOAD_INFO_RESET_ID                    0x10   /* reset unique stream or thread identifier */ 
 
   #define DS_PAYLOAD_INFO_SUPPRESS_WARNING_MSG  DS_CODEC_INFO_SUPPRESS_WARNING_MSG  /* suppress DSGetPayloadInfo() warning messages. Examples of this usage are in mediaMin.cpp */
 

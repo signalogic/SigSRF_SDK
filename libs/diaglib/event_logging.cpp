@@ -5,7 +5,7 @@
  
  Project: SigSRF, DirectCore
  
- Copyright Signalogic Inc. 2017-2024
+ Copyright Signalogic Inc. 2017-2025
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -41,6 +41,7 @@
   Modified Sep 2024 JHB, bump version number due to mods in diaglib.cpp
   Modified Sep 2024 JHB, implement DS_INIT_LOGGING_RESET_WARNINGS_ERRORS flag in DSInitLogging()
   Modified Nov 2024 JHB, implement harmonized LOG_XX definitions in diaglib.h and DS_LOG_LEVEL_OUTPUT_XXX flags in shared_include/config.h. See fOutputConsole and fOutputFile
+  Modified Feb 2025 JHB, move isFileDeleted() to diaglib.h as static inline
 */
 
 /* Linux and/or other OS includes */
@@ -52,11 +53,7 @@
 #include <string.h>
 #include <stdarg.h>  /* va_start(), va_end() */
 #include <pthread.h>
-#include <stdlib.h>
 #include <sys/time.h>  /* gettimeofday() */
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <errno.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -195,22 +192,6 @@ int nIndex;
    return nIndex;
 
 #endif
-}
-
-static bool isFileDeleted(FILE* fp) {  /* check if file has been deleted, possibly be an external process.  Note we cannot use fwrite() or other error codes, we need to look at file descriptor level, JHB Dec 2019 */
-
-bool fRet = false;
-struct stat fd_stat;
-int fd;
-
-   fd = fileno(fp);  /* convert file pointer to file descriptor */
-
-   if (fcntl(fd, F_GETFL) && !fstat(fd, &fd_stat)) {
-
-      if (fd_stat.st_nlink == 0) fRet = true;  /* file has been deleted if no "hard links" exist, JHB Dec2019 */
-   }
-
-   return fRet;
 }
 
 static inline void strlcpy(char* dst, const char* src, int maxlen) {  /* implementation of strlcpy() since it's a BSD Linux function and evidently not available in gcc/g++, JHB Jan 2020 */

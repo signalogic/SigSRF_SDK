@@ -32,7 +32,7 @@
    Modified Apr 2021 JHB, add include for derlib.h
    Modified Jan 2022 JHB, move ENABLE_xxx definitions to separate cmd_line_options_flags.h include file
    Modified Jan 2023 JHB, add Origin records (a vector of Origins) to SDP info in order to keep track of unique SDP session IDs
-   Modified Jan 2023 JHB, add STREAM_TERMINATE_xxx flags
+   Modified Jan 2023 JHB, add STREAM_TERMINATES_xxx flags
    Modified Jan 2023 JHB, add PORT_INFO_LIST struct definition
    Modified Apr 2023 JHB, add fReseek, PktInfo, and tcp_redundant_discard to APP_THREAD_INFO struct. For usage see comments in mediaMin.cpp
    Modified May 2023 JHB, add isFTRTMode and isAFAPMode macros, accel_time_ts[] to APP_THREAD_INFO struct to support "faster than real-time" and "as fast as possible" modes
@@ -51,6 +51,7 @@
    Modified Oct 2024 JHB, define INPUT_DATA_CACHE struct, add array of pointers to it in APP_THREAD_INFO struct. Rename fReseek to uCacheFlags and define CACHE_XXX flags
    Modified Nov 2024 JHB, rename DYNAMICSESSIONSTATS to STREAM_STATS and add stats support for static sessions. See StreamStats[] and StreamStatsState[] below; also see session_app.cpp for related changes
    Modified Jan 2025 JHB, add num_rtcp_packets[] and num_unhandled_rtp_packets[] to APP_THREAD_INFO struct
+   Modified Feb 2025 JHB, rename pcap_out[] to out_file[], rename link_layer_len[] to link_layer_info[]
 */
 
 #ifndef _MEDIAMIN_H_
@@ -65,26 +66,26 @@
 
 #include "derlib.h"  /* bring in definition for HDERSTREAM (handle to a DER encapsulated stream) */
 
-#define MAX_APP_STR_LEN               2000
-#define STR_APPEND                    1
+#define MAX_APP_STR_LEN                   2000
+#define STR_APPEND                        1
 
-#define SESSION_MARKED_AS_DELETED     0x80000000  /* private mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
+#define SESSION_MARKED_AS_DELETED         0x80000000  /* private mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
 
-#define MAX_INPUT_REUSE               16  /* in practice, cmd line entry up to -N9 has been tested (i.e. total reuse of 10x) */
+#define MAX_INPUT_REUSE                   16  /* in practice, cmd line entry up to -N9 has been tested (i.e. total reuse of 10x) */
 
 /* dynamic stream terminations */
 
-#define STREAM_TERMINATE_BYE_MESSAGE             1
-#define STREAM_TERMINATE_PORT_CLOSES             2
-#define STREAM_TERMINATE_INPUT_ENDS_NO_SESSIONS  0x10
+#define STREAM_TERMINATES_ON_BYE_MESSAGE  1
+#define STREAM_TERMINATES_ON_PORT_CLOSE   2
+#define STREAM_TERMINATES_NO_SESSIONS     0x10
 
 /* definitions returned by isPortAllowed(). Look for nAllowedPortStatus in mediaMin.cpp */
 
-#define PORT_ALLOW_UNKNOWN               0
-#define PORT_ALLOW_KNOWN                 1
-#define PORT_ALLOW_ON_MEDIA_ALLOW_LIST   2
-#define PORT_ALLOW_SDP_MEDIA_DISCOVERED  3
-#define PORT_ALLOW_SDP_INFO              4
+#define PORT_ALLOW_UNKNOWN                0
+#define PORT_ALLOW_KNOWN                  1
+#define PORT_ALLOW_ON_MEDIA_ALLOW_LIST    2
+#define PORT_ALLOW_SDP_MEDIA_DISCOVERED   3
+#define PORT_ALLOW_SDP_INFO               4
 
 
 extern GLOBAL_CONFIG pktlib_gbl_cfg;
@@ -174,14 +175,14 @@ typedef struct {
   int16_t              nInPcapFiles;
   int16_t              nOutFiles;  /* output pcap or bitstream files */
 
-  int32_t              link_layer_len[MAX_INPUT_STREAMS];  /* note - the current definition of MAX_INPUT_STREAMS (512, in mediaTest.h) is overkill.  Something like 10 to 50 pcaps, with say up to 10 streams (sessions) each, is more realistic */
+  int32_t              link_layer_info[MAX_INPUT_STREAMS];  /* note - the current definition of MAX_INPUT_STREAMS (512, in mediaTest.h) is overkill.  Something like 10 to 50 pcaps, with say up to 10 streams (sessions) each, is more realistic */
   FILE*                pcap_in[MAX_INPUT_STREAMS];
   uint16_t             input_index[MAX_INPUT_STREAMS];
   pcap_hdr_t*          pcap_file_hdr[MAX_INPUT_STREAMS];  /* used in DSOpenPcap() and DSOpenPcapRecord(), JHB May 2024 */
   uint8_t              uInputType[MAX_INPUT_STREAMS];
   INPUT_DATA_CACHE*    input_data_cache[MAX_INPUT_STREAMS];  /* per-stream input data read cache, JHB Oct 2024 */
 
-  FILE*                pcap_out[MAX_INPUT_STREAMS];
+  FILE*                out_file[MAX_INPUT_STREAMS];
   uint8_t              uOutputType[MAX_INPUT_STREAMS];
 
   int                  nSessions[MAX_INPUT_STREAMS];
@@ -247,7 +248,7 @@ typedef struct {
   bool                 fUnmatchedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
   bool                 fDisallowedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
 
-  uint8_t              dynamic_terminate_stream[MAX_INPUT_STREAMS];  /* non-zero values will terminate a stream, for example a SIP BYE messsage from sender or recipient with same IP addr as active media stream.  See STREAM_TERMINATE_xxx defines above */
+  uint8_t              dynamic_terminate_stream[MAX_INPUT_STREAMS];  /* non-zero values will terminate a stream, for example a SIP BYE messsage from sender or recipient with same IP addr as active media stream.  See STREAM_TERMINATES_xxx defines above */
 
 /* SIP aggregated packet handling, supports SIP messages, SIP invite, SAP protocol, and other SDP info packets, added JHB Mar 2021 */
   

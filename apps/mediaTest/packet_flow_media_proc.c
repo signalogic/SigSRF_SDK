@@ -198,6 +198,7 @@ Revision History
   Modified Dec 2024 JHB, in packet_flow_media_proc() packet processing loops make use of DS_PKT_INFO_COPY_IP_HDR_LEN_IN_PINFO, DS_PKT_INFO_USE_IP_HDR_LEN, and DS_PKT_INFO_PKTINFO flags to minimize number of DSGetPacketInfo() calls and overhead per call
   Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined. typecast arguments to min/max as needed for C++ compilation
   Modified Jan 2025 JHB, use isRTCPPacket() macro defined in pktlib.h
+  Modified Feb 2025 JHB, misc updates for video rtp handling, look for "Feb 2025"
 */
 
 /* Linux header files */
@@ -286,18 +287,18 @@ Revision History
 
 #define USE_PKTLIB_NETIO
 
-#define NONBLOCKING 1  /* define used to control whether or not the socket used in packet tests is blocking. If blocking, packet processing depends on continually receiving packets. Using nonblocking sockets is strongly recommended */
+#define NONBLOCKING  1  /* define used to control whether or not the socket used in packet tests is blocking. If blocking, packet processing depends on continually receiving packets. Using nonblocking sockets is strongly recommended */
 
 /* Max channels supported for network packet test */
-#define MT_MAX_CHAN 2
-#define JB_DEPTH 7
+#define MT_MAX_CHAN  2
+#define JB_DEPTH     100  /* changed from 7, JHB Feb 2025 */
 
 #if 0
 /* number of possible input streams, including streams that are re-used for multithread and high capacity testing */
 #define MAX_INPUT_STREAMS MAX_SESSIONS  /* max sessions defined in mediaTest.h */
 #endif
 
-/* Ptime notes:
+/* ptime notes:
 
   1) Per session ptime_config[] values are set to term1.ptime values in the specified session config file(s). If not given in the session config file, the default value is 20 ms
 
@@ -761,7 +762,6 @@ extern uint32_t uTimestampGapCount[NCORECHAN];  /* analytics and telecom timesta
 
 extern uint32_t uNumDamagedFrames[], uNumBandwidthEfficientFrames[], uNumOctetAlignFrames[], uNumCompactFrames[], uNumHeaderFullFrames[], uNumHeaderFullOnlyFrames[], uNumAMRWBIOCompatibilityFrames[];
 
-
 void* packet_flow_media_proc(void* pExecuteMode) {
 
 /* Execution mode notes:
@@ -809,7 +809,7 @@ void* packet_flow_media_proc(void* pExecuteMode) {
 
    int recv_len = 0, send_len = 0;
    unsigned char pkt_in_buf[32*MAX_RTP_PACKET_LEN] = {0}, pkt_out_buf[MAX_RTP_PACKET_LEN] = {0}, media_data_buffer[4*MAX_RTP_PACKET_LEN] = {0}, encoded_data_buffer[2*MAX_RTP_PACKET_LEN] = {0};
-   uint8_t recv_jb_buffer[MAX_RTP_PACKET_LEN*MT_MAX_CHAN*JB_DEPTH] = {0};
+   uint8_t recv_jb_buffer[MAX_RTP_PACKET_LEN*MT_MAX_CHAN*JB_DEPTH] = { 0 };
    
    TERMINATION_INFO termInfo, termInfo_link;
    int chnum_parent, chnums[MAX_TERMS*16], chnum;
@@ -838,7 +838,7 @@ void* packet_flow_media_proc(void* pExecuteMode) {
 
    int stream_indexes[MAX_INPUT_STREAMS] = { 0 };
 
-   int chan_nums[MAX_TERMS+32] = { 0 };  /* allow for dynamic channels */
+   int chan_nums[MAX_TERMS+NCORECHAN] = { 0 };  /* allow for dynamic channels */
 
    int32_t pkts_read[MAX_INPUT_STREAMS] = { 0 };
 
@@ -1871,7 +1871,7 @@ run_loop:
 
             for (j=0; j<nInFiles; j++) if (in_type[j] == PCAP) {
 
-               pkt_len[0] = DSReadPcap(fp_in[j], 0, pkt_in_buf, NULL, link_layer_length[j], NULL, NULL);
+               pkt_len[0] = DSReadPcap(fp_in[j], 0, pkt_in_buf, NULL, link_layer_length[j], NULL, NULL, NULL);
 
                #if 0  /* no longer needed, done by DSRecvPackets() when DS_RECV_PKT_FILTER_RTCP flag is applied (see below) */
                if (pkt_len[0] > 0) {
@@ -2917,11 +2917,9 @@ static int log_pkt_in_index = 0;
 
                         1) DTX handling is enabled by default. It can be controlled by the TERM_DTX_ENABLE flag in TERMINATION_INFO struct uFlags element (see shared_include/session.h). Typically the flag is set either by application code or session config file
 
-                        2) When DTX handling is not enabled, the DS_GETORD_PKT_RETURN_ALL_DELIVERABLE flag is used force all deliverable packets from the previous stream if a new SSRC stream has started. For DTX handling enabled case, DTX handling inside
-                           DSGetOrderedPackets() already does this
+                        2) When DTX handling is not enabled, the DS_GETORD_PKT_RETURN_ALL_DELIVERABLE flag is used force all deliverable packets from the previous stream if a new SSRC stream has started. For DTX handling enabled case, DTX handling inside DSGetOrderedPackets() already does this
 
-                        3) The DS_GETORD_PKT_RETURN_ALL_DELIVERABLE flag forces any packets currently in a jitter buffer to be delivered, given at least one packet is currently in the deliverable time window. This is different than flushing 
-                           (DS_DSGETORD_PKT_FLUSH) which forces out all packets regardless
+                        3) The DS_GETORD_PKT_RETURN_ALL_DELIVERABLE flag forces any packets currently in a jitter buffer to be delivered, given at least one packet is currently in the deliverable time window. This is different than flushing (DS_DSGETORD_PKT_FLUSH) which forces out all packets regardless
                      */
 
                         #if 0
@@ -2978,13 +2976,11 @@ static int log_pkt_in_index = 0;
 
                         1) If the DS_GETORD_PKT_SESSION flag is not given, a handle argument of -1 tells DSGetOrderedPackets() to retrieve all packets deliverable in the current time window for all currently active sessions
 
-                        2) If DS_GETORD_PKT_SESSION flag is given, the handle argument retrieves packets only for that session. If the session was created with the DS_SESSION_USER_MANAGED flag, then the session
-                           handle may specify sessions with partial or all duplication of termN IP addr:port values with other sessions
+                        2) If DS_GETORD_PKT_SESSION flag is given, the handle argument retrieves packets only for that session. If the session was created with the DS_SESSION_USER_MANAGED flag, then the session handle may specify sessions with partial or all duplication of termN IP addr:port values with other sessions
 
                         3) If the DS_GETORD_PKT_CHNUM flag is given, the handle argument specifies a channel and retrives packets only for that channel (a session may have more than one channel)
 
-                        4) If a session's TERMINATION_INFO endpoint channels have created dynamic channels due to RTP stream (SSRC) changes, then whatever flags are used in the DSGetOrderedPackets() call are also applied
-                           to the dynamic channels (per RFC8108). Note that dynamic channels are also referred to as child channels
+                        4) If a session's TERMINATION_INFO endpoint channels have created dynamic channels due to RTP stream (SSRC) changes, then whatever flags are used in the DSGetOrderedPackets() call are also applied to the dynamic channels (per RFC8108). Note that dynamic channels are also referred to as child channels
                      */
 
                         pkt_ptr = recv_jb_buffer;
@@ -3067,9 +3063,11 @@ pull:
                            int max_depth_ptimes;
 
                            ch[0] = chan_nums[n];
-                           int num_ch = 1;
+                           int num_ch = 1, ret_val;
 
-                           num_ch += DSGetSessionInfo(chan_nums[n], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_DYNAMIC_CHANNELS, 0, (void*)&ch[num_ch]);  /* retrieve child channels, if any. All channels are in ch[], starting with parent. (Note - need typecast here, otherwise compiler messes up. Not sure why) JHB Feb2019 */
+                           num_ch += (ret_val = DSGetSessionInfo(chan_nums[n], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_DYNAMIC_CHANNELS, 0, (void*)&ch[num_ch]));  /* retrieve child channels, if any. All channels are in ch[], starting with parent. (Note - need typecast here, otherwise compiler messes up. Not sure why) JHB Feb2019 */
+
+                           if (ret_val < 0 || ret_val >= NCORECHAN) { Log_RT(1, "CRITICAL: p/m thread %d says DSGetSessionInfo() after DSGetOrderedPackets() returns invalid number of dynamic channels %d \n", thread_index, ret_val); break; }  /* error check placed here after fixing xxx corruption bug which caused chan_nums[] to be overwritten, JHB Feb 2025 */
 
                            for (j=0; j<num_ch; j++) {  /* search channel and child channels, if any */
 
@@ -3648,7 +3646,8 @@ next_packet:
                   int num_data, packet_type;
                   unsigned int pDataLen[MAX_PACKETS_PER_PULL], pDataChan[MAX_PACKETS_PER_PULL], pDataInfo[MAX_PACKETS_PER_PULL];
                   #ifndef DEMOBUILD  /* see comments in pktlib.c about demo build internal buffering to allow slower CPUs such as Atom, JHB Apr2022 */
-                  uint8_t stream_data[5*10240];
+//                  uint8_t stream_data[5*10240];
+                  uint8_t stream_data[10*10240];  /* restored to 10x for video rtp handling, JHB Feb 2025 */
                   #else
                   uint8_t stream_data[10*10240];
                   #endif
@@ -4866,7 +4865,7 @@ int ch[32];
 
          if (!fChanFound) {
 
-            ch[0] = nOnHoldChan[hSession][i]-1;  num_ch = 1;  /* save parent channel */
+            ch[0] = nOnHoldChan[hSession][i]-1; num_ch = 1;  /* save parent channel */
 
             num_ch += DSGetSessionInfo(ch[0], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_DYNAMIC_CHANNELS, 0, (void*)&ch[num_ch]);  /* include in the search dynamic channels belonging to this term, if any. (Note - need typecast here, otherwise it's messed up. Not sure why) JHB Feb2019 */
 
@@ -5901,7 +5900,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
          if (cur_time - last_time[i] >= RealTimeInterval[i]*1000) {  /* has interval elapsed ?  (comparison is in usec) */
 
-            if (!(packet_length = DSReadPcap(fp_in[i], 0, pkt_buffer, NULL, link_layer_length[i], NULL, NULL))) continue;
+            if (!(packet_length = DSReadPcap(fp_in[i], 0, pkt_buffer, NULL, link_layer_length[i], NULL, NULL, NULL))) continue;
             else __sync_add_and_fetch(&num_pkts_read_multithread, 1);
 
             #ifdef ENABLE_MANAGED_SESSIONS
@@ -6162,7 +6161,7 @@ char tmpstr[256];
       else group_chan = j;
    }
 
-   if (k > MAX_TERMS) Log_RT(2, "CRITICAL: p/m thread %d says num parent chans %d exceeds session limit  %d \n", thread_index, k, MAX_TERMS);  /* sanity check, JHB Apr2020 */
+   if (k > MAX_TERMS) Log_RT(1, "CRITICAL: p/m thread %d says num parent chans %d exceeds session limit  %d \n", thread_index, k, MAX_TERMS);  /* sanity check, JHB Apr2020 */
  
    if (group_chan > 1) sprintf(tmpstr, "channels %d and %d active for session %d", ch[0], ch[1], hSession);
    else if (group_chan != 0) sprintf(tmpstr, "channel %d active for session %d", ch[0], hSession);
@@ -6962,7 +6961,7 @@ char tmpstr[8000] = "";
 
 void ThreadAbort(int thread_index, char* errstr) {
 
-   Log_RT(2, "CRITICAL, %s, unrecoverable error in packet/media thread %d, aborting\n", errstr, thread_index);
+   Log_RT(1, "CRITICAL, %s, unrecoverable error in packet/media thread %d, aborting\n", errstr, thread_index);
 
    int i;
 

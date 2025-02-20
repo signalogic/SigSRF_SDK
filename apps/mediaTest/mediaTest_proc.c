@@ -123,6 +123,7 @@ Revision History
   Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined. typecast arguments to min/max as needed for C++ compilation
   Modified Jan 2025 JHB, use isRTCPPacket() macro defined in pktlib.h
   Modified Jan 2025 JHB, add typecast for codec_types typedef usage (codec_types is defined in shared_include/codec.h)
+  Modified Feb 2025 JHB, add nId and fp_out params to DSGetPayloadInfo(), per changes in voplib.h. Currently these are only used for video bitstream extraction, otherwise set to zero and NULL (unused)
 */
 
 /* Linux header files */
@@ -1748,7 +1749,7 @@ PollBuffer:
                int max_sid_framesize = MAX_SID_FRAMESIZE;
                PAYLOAD_INFO PayloadInfo;
 
-               if (DSGetPayloadInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, coded_buf, coded_framesize, &PayloadInfo) >= 0) {  /* use DSGetPayloadInfo() (voplib) to handle wide range of codecs with varying SID frame sizes depending on their configuration, JHB Oct 2024 */
+               if (DSGetPayloadInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_SUPPRESS_WARNING_MSG, coded_buf, coded_framesize, &PayloadInfo, 0, NULL) >= 0) {  /* use DSGetPayloadInfo() (voplib) to handle wide range of codecs with varying SID frame sizes depending on their configuration, JHB Oct 2024 */
 
                   if (PayloadInfo.fSID) max_sid_framesize = coded_framesize+1;  /* count as a SID */
                }
@@ -1815,7 +1816,7 @@ PollBuffer:
             */
 
                #ifdef USE_AMR_UPDATE
-               DSGetPayloadInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_PAYLOAD_INFO_SUPPRESS_WARNING_MSG, coded_buf, 2, &payload_info);  /* returns either DS_PYLD_FMT_OCTETALIGN or DS_PYLD_FMT_BANDWIDTHEFFICIENT; fills in PAYLOAD_INFO struct */
+               DSGetPayloadInfo(codec_test_params.codec_type, DS_CODEC_INFO_TYPE | DS_PAYLOAD_INFO_SUPPRESS_WARNING_MSG, coded_buf, 2, &payload_info, 0, NULL);  /* returns either DS_PYLD_FMT_OCTETALIGN or DS_PYLD_FMT_BANDWIDTHEFFICIENT; fills in PAYLOAD_INFO struct */
 
                bitrate_code = (payload_info.ToC[0] >> 3) & 0xf;  /* bitrate_code used in DSGetCodecInfo() call below */
                #else
@@ -2771,7 +2772,7 @@ codec_test_cleanup:
 
          uint16_t eth_hdr_type;
 
-         if (!(packet_length = DSReadPcap(fp_in, 0, pkt_buffer, &pcap_pkt_hdr, link_layer_info, &eth_hdr_type, NULL))) break;  /* read pcap, save packet header in pcap_pkt_hdr in case needed for DSPcapWrite(). On end of file, break out of main while loop, JHB Jul 2024 */
+         if (!(packet_length = DSReadPcap(fp_in, 0, pkt_buffer, &pcap_pkt_hdr, link_layer_info, &eth_hdr_type, NULL, NULL))) break;  /* read pcap, save packet header in pcap_pkt_hdr in case needed for DSPcapWrite(). On end of file, break out of main while loop, JHB Jul 2024 */
 
          frame_count++;
          if (outFileType == ENCODED) printf("\rExtracting pcap payload %d", frame_count);
@@ -2824,7 +2825,7 @@ codec_test_cleanup:
 
       /* determine payload format */
 
-         if ((nPayloadFormat = DSGetPayloadInfo(codec_type, DS_CODEC_INFO_TYPE, rtp_pyld_ptr, rtp_pyld_len, &PayloadInfo)) == 0) {  /* returns zero if compact header or bandwidth efficient format; fills in AMR-WB IO mode, SID, CMR, and ToC */
+         if ((nPayloadFormat = DSGetPayloadInfo(codec_type, DS_CODEC_INFO_TYPE, rtp_pyld_ptr, rtp_pyld_len, &PayloadInfo, 0, NULL)) == 0) {  /* returns zero if compact header or bandwidth efficient format; fills in AMR-WB IO mode, SID, CMR, and ToC */
 
             if (codec_type == DS_CODEC_VOICE_EVS) {
 
