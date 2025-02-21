@@ -69,7 +69,9 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 * Session Border Controller (SBC) and Media Gateway
 * Bulk Pcap Processing
 * RTP Decoding (EVS <sup>1</sup>, AMR, G729, MELPe, etc)
-* Security - detect RTP malware including RTP header and codec bitstream steganography
+* Security
+    * Security assessment - auto-detect, extract, and decode audio and video RTP streams (from a variety of endpoints including phones, webcams, etc)
+    * Detect RTP malware including RTP header and codec bitstream steganography
 * Network Analyzers
 
 ### Edge Computing and Edge AI Use Cases
