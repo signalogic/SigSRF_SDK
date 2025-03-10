@@ -172,7 +172,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Voice/Audio Command Line Examples](#user-content-voiceaudiocmdlineexamples)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Video Command Line Examples](#user-content-voiceaudiocmdlineexamples)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Video Command Line Examples](#user-content-videocmdlineexamples)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[VLC Stream to Wireshark Setup and Procedure](#user-content-vlcstreamwiresharksetupprocedure)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Codec Auto-Detection](#user-content-codecautodetection)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Static Session Configuration](#user-content-staticsessionconfig)<br/>
@@ -492,7 +492,7 @@ mediaMin supports dynamic session creation, recognizing "on the fly" packet stre
 
 In cases where input streams have a definitive end, for instance one or more command line input pcaps, or a stream contains a SIP BYE message, mediaMin will automatically do session cleanup and delete.
 
-<a name="VoiceAudioCmdLineExample"></a>
+<a name="VoiceAudioCmdLineExamples"></a>
 ### Voice/Audio Command Line Examples
 
 Below are some voice and audio dynamic session command line examples:
@@ -525,7 +525,7 @@ Below are more command line examples, taken from pcaps found in the [the Brno Un
 
 For .pcap or .pcapng files with incorrect or zero packet timestamp values (sometimes referred to as "arrival timestamps"), you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
-<a name="VideoAudioCmdLineExample"></a>
+<a name="VideoCmdLineExamples"></a>
 ### Video Command Line Examples
 
 Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng on the Wireshark Samples Capture page](https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=1920x1080_H.265.pcapng#h265hevc):
@@ -547,9 +547,9 @@ For additional mediaMin test examples, below is a step-by-step procedure to gene
 
 ![VLC streaming output over RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png?raw=true "VLC streaming output over RTP setup")
 
-![Wireshark capture local host SAP/SDP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_packet_local_host.png?raw=true "Wireshark capture local host SAP/SDP setup")
+![Wireshark capture local host SAP/SDP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_local_host.png?raw=true "Wireshark capture local host SAP/SDP setup")
 
-![Wireshark capture WiFi RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_packet_local_host.png?raw=true "Wireshark capture WiFi RTP setup")
+![Wireshark capture WiFi RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_wifi.png?raw=true "Wireshark capture WiFi RTP setup")
 
 
 <a name="CodecAutoDetection"></a>
