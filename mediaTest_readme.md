@@ -562,7 +562,17 @@ A step-by-step procedure for generating RTP streams with VLC and capturing with 
 <a name="InBandOutofBandParameterSets"></a>
 ##### Inband vs Out-of-Band Parameter Sets
 
-In order to decode and play correctly, an H.26x elementary bitstream must contain VPS, SPS, and PPS parameter sets (video, sequence, and picture). Depending on streaming source, this information may be sent inband as NAL units, or out-of-band as SAP/SDP info, or both. mediaMin handles all cases, here are some notes about this
+In order to decode and play correctly, an H.26x elementary bitstream must contain VPS, SPS, and PPS parameter sets (video, sequence, and picture). Depending on streaming source, this information may be sent inband as NAL units in RTP packets, out-of-band in SAP/SDP packets, or both. mediaMin handles all cases, here are some notes about this:
+
+* mediaMin detects and decodes SAP/SDP packets, adding new media descriptions ("m=video ...") and format params ("a=fmpt ...") to an internal database
+* default behavior favors inband xps info if found in the RTP stream, but also handles cases where that isn't available and the streaming source is sending xps info out-of-band. Detailed information about how mediaMin handles this and how to control from applications can be found in [voplib.h](https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h) and [extract_rtp_video.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/libs/voplib/extract_rtp_video.cpp)
+* VLC is a good example of a streaming source that defaults to out-of-band transmission of video parameter sets
+
+The mediaMin screencap below shows video SDP info added in real-time:
+
+![mediaMin SDP info extracted from video stream SAP/SDP packets screencap](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_SDP_info_video_screencap.png?raw=true "mediaMin SDP info extracted from video stream SAP/SDP packets screencap")
+
+In the above screencap, highlighted items include an H.265 media description, a format attribute with base64 encoded VPS, SPS, and PPS parameters, and a summary report of internal database additions.
 
 <a name="VLCStreamWiresharkSetupProcedure"></a>
 ##### VLC Stream to Wireshark Setup and Procedure
