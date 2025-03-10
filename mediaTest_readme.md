@@ -171,6 +171,9 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Voice/Audio Command Line Examples](#user-content-voiceaudiocmdlineexamples)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Video Command Line Examples](#user-content-voiceaudiocmdlineexamples)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[VLC Stream to Wireshark Setup and Procedure](#user-content-vlcstreamwiresharksetupprocedure)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Codec Auto-Detection](#user-content-codecautodetection)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Static Session Configuration](#user-content-staticsessionconfig)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[User Managed Sessions](#user-content-usermanagedsessions)<br/>
@@ -487,9 +490,12 @@ mediaMin supports dynamic and static sessions. Dynamic sessions are created "on 
 
 mediaMin supports dynamic session creation, recognizing "on the fly" packet streams with unique combinations of IP/port/payload, auto-detecting the codec type, and creating sessions to process subsequent packet flow in each stream. [Static session configuration](#user-content-staticsessionconfig) is also supported using parameters in a session config file supplied on the command line.  mediaMin supports both UDP and TCP/IP streams, and also auto-detects encapsulated streams, for example [DER or BER encoded streams](#user-content-encapsulatedstreams).
 
-In cases where input streams have a definitive end, for instance one or more command line input pcaps, mediaMin will automatically do session cleanup and delete.
+In cases where input streams have a definitive end, for instance one or more command line input pcaps, or a stream contains a SIP BYE message, mediaMin will automatically do session cleanup and delete.
 
-Below are some dynamic session command line examples:
+<a name="VoiceAudioCmdLineExample"></a>
+### Voice/Audio Command Line Examples
+
+Below are some voice and audio dynamic session command line examples:
 
     mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
 
@@ -518,6 +524,33 @@ Below are more command line examples, taken from pcaps found in the [the Brno Un
 ![stream termination on BYE message](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_termination_bye_stream.png?raw=true "mediaMin stream termination on BYE message")
 
 For .pcap or .pcapng files with incorrect or zero packet timestamp values (sometimes referred to as "arrival timestamps"), you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
+
+<a name="VideoAudioCmdLineExample"></a>
+### Video Command Line Examples
+
+Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng on the Wireshark Samples Capture page](https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=1920x1080_H.265.pcapng#h265hevc):
+
+     mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x0600c000c11 -r20
+
+The resulting sample_capture_test.h265 file contains can be played in VLC, and should show a noise background as the Wireshark sample has had its content removed and otherwise been anonymized:
+
+The next example extracts two (2) HEVC streams from a pcapng included with SigSRF RAR packages and Docker containers. In this case the pcapng was acquired by configuring VLC to stream an input .mp4 file over RTP:
+
+    mediaMin -c x86 -i ../pcaps/VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng -o vlc_test_0.h265 -o vlc_test_1.h265 -L -d 0x0600c000c11 -r20
+
+The resulting vlc_test_0.h265 and vlc_test_1.h265 files can be opened and played in VLC, and should show a group of raccoons caught by a security camera:
+
+<a name="VLCStreamWiresharkSetupProcedure"></a>
+### VLC Stream to Wireshark Setup and Procedure
+
+For additional mediaMin test examples, below is a step-by-step procedure to generate HEVC pcapngs using VLC and Wireshark:
+
+![VLC streaming output over RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png?raw=true "VLC streaming output over RTP setup")
+
+![Wireshark capture local host SAP/SDP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_packet_local_host.png?raw=true "Wireshark capture local host SAP/SDP setup")
+
+![Wireshark capture WiFi RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_packet_local_host.png?raw=true "Wireshark capture WiFi RTP setup")
+
 
 <a name="CodecAutoDetection"></a>
 #### Codec Auto-Detection
