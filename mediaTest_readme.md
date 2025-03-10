@@ -550,6 +550,7 @@ The next example extracts two (2) HEVC streams from a pcapng included with SigSR
 
 The resulting vlc_test_0.h265 and vlc_test_1.h265 files can be opened and played in VLC, and should show a group of raccoons caught by a security camera:
 
+![VLC raccooons invading playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_raccoons_invading_mediamin_output.png?raw=true "VLC raccooons invading playback of mediaMin RTP extraction output")
 
 <a name="VLCStreamWiresharkSetupProcedure"></a>
 ### VLC Stream to Wireshark Setup and Procedure
