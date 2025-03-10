@@ -48,7 +48,7 @@ Below is a data flow diagram showing I/O, algorithms, and convolutional neural n
 
 &nbsp;<br/>
 
-![Log data predictive analytics data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Log_flow_diagram_algorithm_cnn.png?raw=true "Log data predictive analytics data flow diagram")
+![Log data predictive analytics data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Log_flow_diagram_algorithm_cnn.png "Log data predictive analytics data flow diagram")
 
 &nbsp;<br/>
 
@@ -61,7 +61,7 @@ Performing "recognition" based on frequency domain data is not a new approach, h
 
 &nbsp;<br/>
 
-![2-D spectrograph (frequency domain) display of speech time series data](https://github.com/signalogic/SigSRF_SDK/blob/master/images/spectrograph1.gif?raw=true "2-D spectrograph (frequency domain) display of speech time series data")
+![2-D spectrograph (frequency domain) display of speech time series data](https://github.com/signalogic/SigSRF_SDK/blob/master/images/spectrograph1.gif "2-D spectrograph (frequency domain) display of speech time series data")
 
 &nbsp;<br/>
 
@@ -88,7 +88,7 @@ Below is an excerpt from the logs used in the demo, with measurement data highli
 
 &nbsp;<br/>
 
-![Log data excerpt with measurement data highlighted](https://github.com/signalogic/SigSRF_SDK/blob/master/images/log_data_excerpt_with_measurement_data_highlighted.png?raw=true "Log data excerpt with measurement data highlighted")
+![Log data excerpt with measurement data highlighted](https://github.com/signalogic/SigSRF_SDK/blob/master/images/log_data_excerpt_with_measurement_data_highlighted.png "Log data excerpt with measurement data highlighted")
 
 &nbsp;<br/>
 
@@ -99,7 +99,7 @@ Note in the log data excerpt above that some entries include measurement data an
 
 Below is a waveform plot showing log data "number of sessions" measurements as an interpolated time series.
 
-![Time series display of the number-of-sessions feature, after log data extraction and interpolation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_time_series.png?raw=true "Time series display of the number-of-sessions feature, after log data extraction and interpolation")
+![Time series display of the number-of-sessions feature, after log data extraction and interpolation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_time_series.png "Time series display of the number-of-sessions feature, after log data extraction and interpolation")
 
 The demo uses Apache Commons Math APIs called from Java, in this case a linear interpolator to create a polynomial spline function to approximate missing samples in time series data.
 
@@ -110,7 +110,7 @@ In some cases, if long or irregular intervals beween measurements make the data 
 
 As shown in the above data flow diagram, extracted log data measurements are converted to time series and given as inputs to a regression model neural network.  Each input is considered a feature, and the network's output is a combined time series, which is then processed by short-time FFT analysis.  For explanation purposes, below is a frequency domain 2-D contour plot showing only the number of sessions feature (i.e. not combined with other features).
 
-![Frequency domain 2D contour display of the number-of-sessions feature](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_stfft_highlighted.png?raw=true "Frequency domain 2D contour display of the number-of-sessions feature")
+![Frequency domain 2D contour display of the number-of-sessions feature](https://github.com/signalogic/SigSRF_SDK/blob/master/images/num_sessions_stfft_highlighted.png "Frequency domain 2D contour display of the number-of-sessions feature")
 
 Notes about the above display:
 
