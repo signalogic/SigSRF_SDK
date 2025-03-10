@@ -535,11 +535,11 @@ Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng o
 
 The resulting sample_capture_test.h265 file can be played in VLC, and should show a noise background as the Wireshark sample has had been anonymized with its content removed:
 
-![VLC HEVC noise test playback of mediaMin RTP extraction output](https://www.github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png?raw=true "VLC HEVC noise test playback of mediaMin RTP extraction output")
+![VLC HEVC noise test playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png "VLC HEVC noise test playback of mediaMin RTP extraction output")
 
 In the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps. We can verify these attributes and others at a binary, slice-by-slice level, using the the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is a slice-by-slice display, including NALU unit parameters and their hex values, of sample_capture_test.h265:
 
-![HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output](https://www.github.com/signalogic/SigSRF_SDK/blob/master/images/HEVC_ES_Browser_display_H265_elementary_bitstream_slices.png?raw=true "HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output")
+![HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/HEVC_ES_Browser_display_H265_elementary_bitstream_slices.png "HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output")
 
 In the above HEVC ES Browser screen cap, the righthand pane is displaying the SPS (Sequence Parameter Set) slice, which shows 1920x1080 resolution and a color bit depth of 12, which match the Codec Information reported by VLC.
 
