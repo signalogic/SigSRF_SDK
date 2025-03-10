@@ -105,7 +105,7 @@ Telecom mode is defined as direct handling of IP/UDP/RTP traffic.  This mode is 
 <a name="TelecomModeDataFlowDiagram"></a>
 ### Telecom Mode Data Flow Diagram
 
-![SigSRF software telecom mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_telecom_mode_RevA9b.png?raw=true "SigSRF telecom mode data flow diagram")
+![SigSRF software telecom mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_telecom_mode_RevA9b.png "SigSRF telecom mode data flow diagram")
 
 <a name="AnalyticsMode"></a>
 ## Analytics Mode
@@ -117,7 +117,7 @@ Applications include user-defined apps and the mediaMin and mediaTest reference 
 <a name="AnalyticsModeDataFlowDiagram"></a>
 ### Analytics Mode Data Flow Diagram
 
-![SigSRF software analytics mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_analytics_mode_RevA9b.png?raw=true "SigSRF analytics mode data flow diagram")
+![SigSRF software analytics mode data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_analytics_mode_RevA9b.png "SigSRF analytics mode data flow diagram")
 
 Applications include user-defined apps and the mediaMin and mediaTest reference apps described on the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin / mediaTest page</a>.
 
@@ -126,7 +126,7 @@ Applications include user-defined apps and the mediaMin and mediaTest reference 
 
 At a high-level the SigSRF API allows simple interfaces, for example a basic, continuous push-pull loop using bare minimum APIs, as shown in the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin</a> source code excerpt below:
   
-![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface")
+![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png "Minimum API interface")
 
 Some notes about the above example:
 
@@ -160,7 +160,7 @@ High capacity operation exceeding 2000 concurrent sessions is possible on multic
 
 Below is a Linux htop measurement showing SigSRF software high capacity operation with (i) multiple media/packet threads, and (ii) multiple application threads:
 
-![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png?raw=true "SigSRF software high capacity operation")
+![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png "SigSRF software high capacity operation")
 
 The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cores, 8 physical cores per CPU, and 2 (two) CPUs) each with 16 GB of RAM. Some key aspects include:
 
@@ -174,7 +174,7 @@ The measurement was taken on an HP DL380 server with 16 (sixteen) E5-2660 v0 cor
 
 Using the thread ratio and per stream workload given above, necessary per CPU amount of RAM and number cores can be estimated as:
 
-![server capacity equations](https://github.com/signalogic/SigSRF_SDK/blob/master/images/server_capacity_math_equations.png?raw=true "server capacity math equations")
+![server capacity equations](https://github.com/signalogic/SigSRF_SDK/blob/master/images/server_capacity_math_equations.png "server capacity math equations")
 
 where N is the required number of concurrent streams, numCPUs is the number of available CPUs <sup>3</sup>, and memSize is RAM in GB. For example, a dual-socket server processing 2000 concurrent streams needs 64 GB RAM and 32 cores per CPU. For applications with server memory or core constraints, custom builds are possible to achieve tradeoffs between capacity and functionality.
 
@@ -215,7 +215,7 @@ The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/m
 
 Below is a SigSRF software and I/O architecture diagram.
 
-![SigSRF software and streaming I/O architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_and_Packet_IO_RevA2.png?raw=true "SigSRF software and streaming I/O architecture diagram")
+![SigSRF software and streaming I/O architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_Software_Architecture_and_Packet_IO_RevA2.png "SigSRF software and streaming I/O architecture diagram")
 
 <a name="PacketMediaThreadDataFlowDiagram"></a>
 ## SigSRF Packet and Media Processing Data Flow Diagram
@@ -224,7 +224,7 @@ Below is a SigSRF software streaming packet and media processing data flow diagr
 
 In addition to the APIs referenced below, SigSRF offers a simplified set of APIs that minimize user applications to session create/delete and packet push/pull.  mediaMin and mediaTest are the reference applications for the minimum API level and more detailed level, respectively.  Source code is published for both.
 
-![SigSRF streaming packet and media processing data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_RevA4.png?raw=true "SigSRF streaming packet and media processing data flow diagram")
+![SigSRF streaming packet and media processing data flow diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Streaming_packet_and_media_processing_data_flow_RevA4.png "SigSRF streaming packet and media processing data flow diagram")
 
 Some notes about the above data flow diagram:
 
