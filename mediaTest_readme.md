@@ -537,11 +537,11 @@ The resulting sample_capture_test.h265 file can be played in VLC, and should sho
 
 ![VLC HEVC noise test playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png "VLC HEVC noise test playback of mediaMin RTP extraction output")
 
-In the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps. We can verify these attributes and others at a binary, slice-by-slice level, using the the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is a slice-by-slice display, including NALU unit parameters and their hex values, of sample_capture_test.h265:
+In the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps. We can verify these attributes and others at a binary, slice-by-slice level, using the the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is a slice-by-slice display of sample_capture_test.h265, including NALU unit parameters and their hex values:
 
 ![HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/HEVC_ES_Browser_display_H265_elementary_bitstream_slices.png "HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output")
 
-In the above HEVC ES Browser screen cap, the righthand pane is displaying the SPS (Sequence Parameter Set) slice, which shows 1920x1080 resolution and a color bit depth of 12, which match the Codec Information reported by VLC.
+In the above HEVC ES Browser screen cap, the righthand pane is displaying the SPS (Sequence Parameter Set) slice, which shows 1920x1080 resolution and a color bit depth of 12, matching the Codec Information reported by VLC.
 
 The next example extracts two (2) HEVC bitstreams from an RTP stream output by VLC and captured by Wireshark:
 
@@ -555,7 +555,7 @@ Some notes about the above example:
 
 * VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng has been fully anonymized and is included with SigSRF RAR packages and Docker containers
 * the original [security camera raccoons video](https://github.com/signalogic/SigSRF_SDK/blob/master/videos/raccoons_invading_driveway.mp4) is available on the SigSRF videos subfolder
-* VLC sends parameter sets out-of-band, as SAP/SDP packets (i.e. not RTP packets). For more on this see [Inband vs Out-of-Band Parameter Sets](#user-content-inbandoutofbandparametersets)
+* VLC by default sends parameter sets out-of-band, as SAP/SDP packets (i.e. not RTP packets). For more on this see [Inband vs Out-of-Band Parameter Sets](#user-content-inbandoutofbandparametersets)
 
 A step-by-step procedure for generating RTP streams with VLC and capturing with Wireshark is given in [VLC Stream to Wireshark Setup and Procedure](#user-content-vlcstreamwiresharksetupprocedure) below.
 
@@ -564,11 +564,11 @@ A step-by-step procedure for generating RTP streams with VLC and capturing with 
 
 In order to decode and play correctly, an H.26x elementary bitstream must contain VPS, SPS, and PPS parameter sets (video, sequence, and picture). Depending on streaming source, this information may be sent inband as NAL units in RTP packets, out-of-band in SAP/SDP packets, or both. mediaMin handles all cases, here are some notes about this:
 
-* mediaMin detects and decodes SAP/SDP packets, adding new media descriptions ("m=video ...") and format params ("a=fmtp ...") to an internal database
-* default behavior favors inband xps info if found in the RTP stream, but also handles cases where that isn't available and the streaming source is sending xps info out-of-band. Detailed information about how mediaMin handles this and how to control from applications can be found in [voplib.h](https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h) and [extract_rtp_video.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/libs/voplib/extract_rtp_video.cpp)
-* VLC is a good example of a streaming source that defaults to out-of-band transmission of video parameter sets
+* mediaMin detects and decodes SAP/SDP packets, adding new media descriptions ("m=video ...") and format params ("a=fmtp ...") to an internal SDP info database
+* default behavior favors inband xps info if found in the RTP stream, but also handles cases where that isn't available and the streaming source is sending parameter sets out-of-band. Detailed information about how mediaMin handles this and how to control voplib behavior from applications can be found in [voplib.h](https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h) and [extract_rtp_video.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/libs/voplib/extract_rtp_video.cpp)
+* VLC is a good example of a streaming source that defaults to out-of-band transmission of video parameter sets. In recent years, most security cameras, webcams, and IoT video devices are increasingly likely to send parameter sets in-band to simplify the decoding process
 
-The mediaMin screencap below shows video SDP info added in real-time:
+The mediaMin screencap below shows video SDP info added as RTP stream flow is processed:
 
 ![mediaMin SDP info extracted from video stream SAP/SDP packets screencap](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_SDP_info_video_screencap.png "mediaMin SDP info extracted from video stream SAP/SDP packets screencap")
 
@@ -577,7 +577,7 @@ In the above screencap, highlighted items include an H.265 media description, a 
 <a name="VLCStreamWiresharkSetupProcedure"></a>
 ##### VLC Stream to Wireshark Setup and Procedure
 
-For additional mediaMin test examples, below is a step-by-step procedure to generate HEVC pcapngs using VLC and Wireshark:
+To create additional mediaMin test examples, or to create video RTP pcap and pcapng files in general, below is a step-by-step procedure to configure VLC and Wireshark and initiate RTP streaming and packet capture:
 
 ![VLC streaming output over RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png "VLC streaming output over RTP setup")
 
