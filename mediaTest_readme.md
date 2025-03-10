@@ -342,7 +342,7 @@ mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pc
 
 The screencap below shows mediaTest output after the second command line.
 
-![mediaMin pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png?raw=true "mediaMin pcap I/O command line example")
+![mediaMin pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png "mediaMin pcap I/O command line example")
 
 <a name="MultipleRTPStreamsCmdLine"></a>
 ### Multiple RTP Streams (RFC 8108)
@@ -357,7 +357,7 @@ The first command line above uses dynamic session creation, analytics mode, and 
 
 Below is a screen capture showing output for the second command line above, with RTP stream transitions highlighted:
 
-![mediaMin multiple RTP streams example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png?raw=true "mediaMin multiple RTP streams example")
+![mediaMin multiple RTP streams example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png "mediaMin multiple RTP streams example")
 
 Packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Log](#user-content-packetlog) below.
 
@@ -506,7 +506,7 @@ Below are some voice and audio dynamic session command line examples:
 
 The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps streams, the second has two (2) AMR-NB 12200 bps streams and the third has two (2) EVS 13200 bps streams and three (3) AMR-WB 12650 bps streams (one of the AMR-WB streams is an RFC8108, or "child" channel). Below is a Wireshark screencap of what the first example output looks like:
 
-![multiple stream pcap decode screencap](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Adele_singing_evs_decoded.png?raw=true "Adele singing pcap AMR-WB and EV decoded and displayed in Wireshark")
+![multiple stream pcap decode screencap](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Adele_singing_evs_decoded.png "Adele singing pcap AMR-WB and EV decoded and displayed in Wireshark")
 
 There are also several wav files generated, including individual stream, merged, and N-channel, which can be opened with Windows Media Player, Audacity, Hypersignal, etc.
 
@@ -520,9 +520,9 @@ Below are more command line examples, taken from pcaps found in the [the Brno Un
 
 "codecs-amr-12" is an RTP stream with AMR 12.2 kbps in octet aligned format, around 8 min run length. "codecs3-amr-wb" is a mixed RTP + SIP message stream with AMR-WB 23.85 kbps in octet aligned format. The latter stream, although only 17 sec run length, demonstrates a few interesting things. It starts with several SIP messages followed by an 8 sec pause before RTP traffic flows, then terminates with a SIP BYE message, as shown below:
 
-![SIP message example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_waiting_for_long_gap.png?raw=true "mediaMin SIP message and RTP pause example")
+![SIP message example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_waiting_for_long_gap.png "mediaMin SIP message and RTP pause example")
 
-![stream termination on BYE message](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_termination_bye_stream.png?raw=true "mediaMin stream termination on BYE message")
+![stream termination on BYE message](https://github.com/signalogic/SigSRF_SDK/blob/master/images/stream_termination_bye_stream.png "mediaMin stream termination on BYE message")
 
 For .pcap or .pcapng files with incorrect or zero packet timestamp values (sometimes referred to as "arrival timestamps"), you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
@@ -549,7 +549,7 @@ The next example extracts two (2) HEVC bitstreams from an RTP stream output by V
 
 The resulting vlc_test_0.h265 and vlc_test_1.h265 files can be opened and played in VLC, and should show a group of raccoons caught by a security camera:
 
-![VLC raccooons invading playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_raccoons_invading_mediamin_output.png?raw=true "VLC raccooons invading playback of mediaMin RTP extraction output")
+![VLC raccooons invading playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_raccoons_invading_mediamin_output.png "VLC raccooons invading playback of mediaMin RTP extraction output")
 
 Some notes about the above example:
 
@@ -570,7 +570,7 @@ In order to decode and play correctly, an H.26x elementary bitstream must contai
 
 The mediaMin screencap below shows video SDP info added in real-time:
 
-![mediaMin SDP info extracted from video stream SAP/SDP packets screencap](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_SDP_info_video_screencap.png?raw=true "mediaMin SDP info extracted from video stream SAP/SDP packets screencap")
+![mediaMin SDP info extracted from video stream SAP/SDP packets screencap](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_SDP_info_video_screencap.png "mediaMin SDP info extracted from video stream SAP/SDP packets screencap")
 
 In the above screencap, highlighted items include an H.265 media description, a format attribute with base64 encoded VPS, SPS, and PPS parameters, and a summary report of internal database additions.
 
@@ -579,11 +579,11 @@ In the above screencap, highlighted items include an H.265 media description, a 
 
 For additional mediaMin test examples, below is a step-by-step procedure to generate HEVC pcapngs using VLC and Wireshark:
 
-![VLC streaming output over RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png?raw=true "VLC streaming output over RTP setup")
+![VLC streaming output over RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png "VLC streaming output over RTP setup")
 
-![Wireshark capture local host SAP/SDP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_local_host.png?raw=true "Wireshark capture local host SAP/SDP setup")
+![Wireshark capture local host SAP/SDP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_local_host.png "Wireshark capture local host SAP/SDP setup")
 
-![Wireshark capture WiFi RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_wifi.png?raw=true "Wireshark capture WiFi RTP setup")
+![Wireshark capture WiFi RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_wifi.png "Wireshark capture WiFi RTP setup")
 
 
 <a name="CodecAutoDetection"></a>
@@ -668,7 +668,7 @@ Whether sessions are created [dynamically "on-the-fly"](#user-content-dynamicses
 
 As described in Static Session Configuration above, "remote" IP addr and UDP port values refer to stream source, and "local" values refer to stream destination, where a "stream" is a network socket or pcap.  Rx traffic (i.e. received by the user application or mediaMin reference app) should have destination IP addrs matching local IP addrs and source IP addrs matching remote IP addrs. Tx traffic (i.e. outgoing, or sent by the user application or mediaMin app) will use local IP addrs for source IP addrs and remote IP addrs for destination IP addrs.  Below is a visual explanation:
 
-![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png?raw=true "session config file and pcap terminology -- remote vs. local, src vs. dest")
+![session config file and pcap terminology -- remote vs. local, src vs. dest](https://github.com/signalogic/SigSRF_SDK/blob/master/images/session_config_pcap_terminology.png "session config file and pcap terminology -- remote vs. local, src vs. dest")
 
 Although terminations can be defined in any order, in general term1 remote should match incoming source values, and term1 local should match incoming destination values. If an outgoing stream is simply a pcap file or a UDP port that nobody is listening to, then term2 values don't have to be anything in particular, they can point to local or non-existing IP addr:port values.
 
@@ -829,7 +829,7 @@ In the various command lines above, you might notice the same media content bein
 
 mediaMin uses a minimum number of high-level APIs to process media. In the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> source example below, PushPackets() and PullPackets() call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets() to queue and dequeue packets to/from packet/media threads that handle all packet processing (jitter buffer, DTX, etc). In turn, packet/media threads call [voplib](#user-content-voplib) APIs for media decoding and encoding, and [streamlib](#user-content-streamlib) APIs for audio processing, RTP stream merging, speech recognition, etc.
 
-![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png?raw=true "Minimum API interface")
+![SigSRF minimum API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/minimum_api_interface_source_code_excerpt.png "Minimum API interface")
 
 The above example:
 
@@ -866,11 +866,11 @@ For a large number of stream groups, the WHOLE_GROUP_THREAD_ALLOCATE flag can be
 
 Screen captures below show [run-time stats](#user-content-runtimestats) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
-![Multiple AMR-WB stream group run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png?raw=true "Multiple AMR-WB stream group run-time stats")
+![Multiple AMR-WB stream group run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png "Multiple AMR-WB stream group run-time stats")
 
-![Multiple AMR-WB stream group Wireshark waveform display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_Wireshark_waveform_display.png?raw=true "Multiple AMR-WB stream group Wireshark waveform display")
+![Multiple AMR-WB stream group Wireshark waveform display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_Wireshark_waveform_display.png "Multiple AMR-WB stream group Wireshark waveform display")
 
-![Multiple AMR-WB stream group Audacity wav display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_audacity_wav.png?raw=true "Multiple AMR-WB stream group Audacity wav display")
+![Multiple AMR-WB stream group Audacity wav display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_audacity_wav.png "Multiple AMR-WB stream group Audacity wav display")
 
 See [Stream Groups](#user-content-streamgroups) below for more detailed information.
 
@@ -894,11 +894,11 @@ Here are some notes about the above command lines and what to look for when they
 
 1) An HI interception point ID should be detected and identified, as highlighted in the screen capture below.
 
-    ![OpenLI HI interception point_ID detection at mediaMin run-time](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_HI_interception_point_ID_example_screen_cap.png?raw=true "OpenLI HI interception point ID detection, mediaMin run-time stats")
+    ![OpenLI HI interception point_ID detection at mediaMin run-time](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_HI_interception_point_ID_example_screen_cap.png "OpenLI HI interception point ID detection, mediaMin run-time stats")
 
 2) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats) screen capture below. In the [stream group](#user-content-streamgroupusage) output, there should be no underrun (labeled as FLC, or frame loss concealment, in the [run-time stats](#user-content-runtimestats)), [packet logs](#user-content-packetlog) should be clean, and with no [event log](#user-content-eventlog) warnings or errors (highlighted in green).
 
-    ![OpenLI HI3 intercept processing, mediaMin run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_run-time_stats.png?raw=true "OpenLI HI3 intercept processing, mediaMin run-time stats")
+    ![OpenLI HI3 intercept processing, mediaMin run-time stats](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_run-time_stats.png "OpenLI HI3 intercept processing, mediaMin run-time stats")
 
 3) For the first example [run-time stats](#user-content-runtimestats) should show a small amount of packet loss and repair (9 packets) in the second stream.
 
@@ -906,7 +906,7 @@ Here are some notes about the above command lines and what to look for when they
 
 5) The above mediaMin command lines enable [dynamic session creation](#user-content-dynamicsessioncreation) (0x1 flag in the -dN argument) and DER stream detection (0x1000 flag in the -dN argument). When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type. HI3 DER stream detection, dynamic session creation, and codec auto-detection are highlighted in the mediaMin run-time screen captures below.
 
-    ![OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_DER_stream_detection_session_creation.png?raw=true "OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection")
+    ![OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_DER_stream_detection_session_creation.png "OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection")
 
     Note that [static session configuration](#user-content-staticsessionconfig), using a session config file supplied on the command line, is also available, depending on application needs.
 
@@ -914,9 +914,9 @@ Here are some notes about the above command lines and what to look for when they
 
 After loading stream group outputs in Wireshark (openli-voip-example_group0_am.pcap and openli-voip-example2_group0_am.pcap) you should see the following waveform displays:
 
-![OpenLI HI3 intercept processing, stream group output in Wireshark](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark")
+![OpenLI HI3 intercept processing, stream group output in Wireshark](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example_stream_group_output_wireshark.png "OpenLI HI3 intercept processing, stream group output in Wireshark")
 
-![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example2_stream_group_output_wireshark.png?raw=true "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
+![OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/openli_hi3_intercept_example2_stream_group_output_wireshark.png "OpenLI HI3 intercept processing, stream group output in Wireshark, 2nd example")
 
 In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. To play stream group output audio click on the :arrow_forward: button.
 
@@ -974,7 +974,7 @@ The [High Capacity Multithreaded Operation](https://github.com/signalogic/SigSRF
 
 In the htop screen cap on the SigSRF SDK page:
 
-![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png?raw=true "SigSRF software high capacity operation")
+![SigSRF software high capacity operation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/media_packet_thread_high_capacity_operation.png "SigSRF software high capacity operation")
 
 we can see 12 (twelve) mediaTest threads running. Actually these are mediaMin threads; how does this take place ? mediaTest has command line mode options <sup>1</sup> where it will start N mediaMin threads. In this case three key things happen:
 
@@ -1019,7 +1019,7 @@ Here is a summary of important points in achieving and sustaining real-time perf
 
 4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow system performance can cause packet delta stats to fluctuate even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both real-time performance and audio quality, and any deviation is considered problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
 
-    ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png?raw=true "Wireshark Max Delta packet stat")
+    ![Wireshark Max Delta packet stat](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_max_delta_packet_stat_screencap.png "Wireshark Max Delta packet stat")
 
     See [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark) below for step-by-step instructions to show and analyze Max Delta and other packet stats in Wireshark.
     
@@ -1057,7 +1057,7 @@ Below are some items to keep in mind when measuring audio quality of both indivi
 
     To help with time domain analysis, [streamlib](#user-content-streamlib) supports audio markers, which are inserted into [stream group](#user-content-streamgroupusage) output at regular intervals (default of 1 sec). Below is a screen capture showing audio markers in action:
 
-    ![Stream group output with 1 sec audio markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/DeepLI_1sec_timing_marker_example.png?raw=true "Stream group output with 1 sec audio markers")
+    ![Stream group output with 1 sec audio markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/DeepLI_1sec_timing_marker_example.png "Stream group output with 1 sec audio markers")
     
     Any "flexing" in audio marker spacing indicates timing issues -- frame loss (possibly resulting from packet loss or out-of-order packets), packet rate overrun or underrun, etc.
     
@@ -1067,9 +1067,9 @@ Below are some items to keep in mind when measuring audio quality of both indivi
 
 4) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained embedded "chime markers" with very specific timing and tonal content.
 
-    ![Audio quality frequency domain analysis, chime markers, zoom in](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_chimes.png?raw=true "Audio quality frequency domain analysis, chime markers, zoom in")
+    ![Audio quality frequency domain analysis, chime markers, zoom in](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_chimes.png "Audio quality frequency domain analysis, chime markers, zoom in")
 
-    ![Audio quality frequency domain analysis, chime markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_overall.png?raw=true "Audio quality frequency domain analysis, chime markers")
+    ![Audio quality frequency domain analysis, chime markers](https://github.com/signalogic/SigSRF_SDK/blob/master/images/21161-ws_freq_domain_1sec_overall.png "Audio quality frequency domain analysis, chime markers")
 
     In this case customer expectations were (i) the stream with embedded chime markers would not "slip" left or right in time relative to other streams (i.e. correct time alignment between streams would be maintained) and (ii) 1 sec spacing between chimes would stay exactly regular, with no distortion. Both of these conditions had to hold notwithstanding packet loss, out-of-order packets, and other stream integrity issues.
 
@@ -1646,19 +1646,19 @@ mediaTest -f1000 -m0xff -cSIGC66XX-8 -ecoCPU_c66x.out -itest_files/stv8c.INP -ot
 ```
 Here are screen captures for the above two mediaTest commands (with frame count and run time highlighted):
 
-![mediaTest display for EVS WB coCPU test](https://github.com/signalogic/SigSRF_SDK/blob/master/images/evs_wb_codec_test_cocpu_screencap.png?raw=true "mediaTest display for EVS WB test using coCPU card")
+![mediaTest display for EVS WB coCPU test](https://github.com/signalogic/SigSRF_SDK/blob/master/images/evs_wb_codec_test_cocpu_screencap.png "mediaTest display for EVS WB test using coCPU card")
 
-![mediaTest display for EVS NB coCPU test](https://github.com/signalogic/SigSRF_SDK/blob/master/images/evs_nb_codec_test_cocpu_screencap.png?raw=true "mediaTest display for EVS NB test using coCPU card")
+![mediaTest display for EVS NB coCPU test](https://github.com/signalogic/SigSRF_SDK/blob/master/images/evs_nb_codec_test_cocpu_screencap.png "mediaTest display for EVS NB test using coCPU card")
 
 In the above command lines, eight (8) coCPU cores are specified, although the SigSRF SDK demo is limited to one coCPU core per instance.  The coCPU clock rate can be set from 1 to 1.6 GHz (-f1000 to -f1600 in the command line).  Depending on which coCPU card you have, up to 64 coCPU cores can be specified.  Multiple instances of mediaTest can make use of more cards.
 
 Below is a screen capture showing overlay comparison of the NB output with the 3GPP reference waveform:
 
-![EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point](https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_NB_compare_screen_cap.png?raw=true "EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point")
+![EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point](https://github.com/signalogic/SigSRF_SDK/blob/master/images/EVS_NB_compare_screen_cap.png "EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point")
 
 &nbsp;
 
-![Frequency domain EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point](https://github.com/signalogic/SigSRF_SDK/blob/master/images/evs_codec_2d_spectrograph.png?raw=true "Frequency domain EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point")
+![Frequency domain EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point](https://github.com/signalogic/SigSRF_SDK/blob/master/images/evs_codec_2d_spectrograph.png "Frequency domain EVS NB comparison between coCPU fixed-point and 3GPP reference fixed-point")
 
 Note the small differences due to coCPU optimization for high capacity applications.  These differences do not perceptually affect audio quality.  Especially in the frequency domain, differences are very slight and hard to find.  If you look carefully some slight differences can be found at higher frequencies.
 
@@ -1677,7 +1677,7 @@ For professional codec and audio test purposes, below is an image showing a lab 
 
 Also shown for test and demonstration purposes is an HP 33120A function generator, providing reference waveforms and USB audio device calibration.
 
-![Lab Audio Workstation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/lab_audio_workstation_Dell_R230_Focusrite2i2_sm.jpg?raw=true "Lab audio workstation based on Dell R230 1U server and Focusrite 2i2 USB audio unit")
+![Lab Audio Workstation](https://github.com/signalogic/SigSRF_SDK/blob/master/images/lab_audio_workstation_Dell_R230_Focusrite2i2_sm.jpg "Lab audio workstation based on Dell R230 1U server and Focusrite 2i2 USB audio unit")
 
 Below is a mediaTest command line testing default capabilities of the USB audio device.  When no config file is specified, the device's default settings are used; for the Focusrite 2i2 this is 44.1 kHz and 2 channel input.
 ```C
@@ -1697,9 +1697,9 @@ The mediaTest command lines below show (i) USB audio acquisition of a stereo wav
 
 Below are waveform displays for a 1.5 kHz sine wave from the HP 33120A function generator, sampled by the Focusrite 2i2 at 48 kHz, downsampled to 16 kHz using an alglib API, and run through an EVS 13200 bps [voplib](#user-content-voplib) encode API:
 
-![USB audio input with codec processing, time domain waveform](https://github.com/signalogic/SigSRF_SDK/blob/master/images/usb_audio_evs_encoder_time_domain.png?raw=true "Time domain waveform showing EVS encoded pure sine wave from an HP 33120A function generator")
+![USB audio input with codec processing, time domain waveform](https://github.com/signalogic/SigSRF_SDK/blob/master/images/usb_audio_evs_encoder_time_domain.png "Time domain waveform showing EVS encoded pure sine wave from an HP 33120A function generator")
 
-![USB audio input with codec processing, freq domain waveform](https://github.com/signalogic/SigSRF_SDK/blob/master/images/usb_audio_evs_encoder_freq_domain.png?raw=true "Frequency domain waveform showing EVS encoded pure sine wave from an HP 33120A function generator")
+![USB audio input with codec processing, freq domain waveform](https://github.com/signalogic/SigSRF_SDK/blob/master/images/usb_audio_evs_encoder_freq_domain.png "Frequency domain waveform showing EVS encoded pure sine wave from an HP 33120A function generator")
 
 Note that EVS -- unlike older codecs that rely only on a vocal tract model -- is able to handle a pure tone input.
 
@@ -2010,7 +2010,7 @@ then increasing jitter buffer target and max depths should be helpful. In the ab
 
 The [packet history log](#user-content-packetlog) details exactly which packets were repaired, and also provides overall repair stats, organized by channel and SSRC. [Run-time stats](#user-content-runtimestats) also displays packet repair information; the screen capture below shows channel 4 (SSRC 0xd9913891) with one (1) instance of SID repair and channel 2 (SSRC 0x545d19db) with 63 timestamp repairs:
 
-![Run-Time stats showing packet repairs](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats_packet_repair.png?raw=true "Run-time stats showing packet repairs")
+![Run-Time stats showing packet repairs](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats_packet_repair.png "Run-time stats showing packet repairs")
 
 <a name="MultipleRTPStreams"></a>
 ## Multiple RTP Streams (RFC 8108)
@@ -3058,7 +3058,7 @@ The thread index commands do not change the current display before a subsequent 
 
 Below is a screen cap showing 'd' key debug display.
 
-![mediaMin run-time key command example, showing debug display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/runtime_debug_output_screencap.png?raw=true "mediaMin run-time key command example, showing debug display")
+![mediaMin run-time key command example, showing debug display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/runtime_debug_output_screencap.png "mediaMin run-time key command example, showing debug display")
 
 Debug output is highlighted in red. Individual highlighted areas are described below:
 
