@@ -67,7 +67,7 @@ Below is a software architecture diagram showing the relationship between user a
 
 <p>&nbsp;</p>
 
-![SigSRF codecs software architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_codecs_software_architecture_diagram.png?raw=true "SigSRF codecs software architecture diagram")
+![SigSRF codecs software architecture diagram](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SigSRF_codecs_software_architecture_diagram.png "SigSRF codecs software architecture diagram")
 
 <p>&nbsp;</p>
 
