@@ -549,12 +549,12 @@ The next example extracts two (2) HEVC bitstreams from an RTP stream output by V
 
 The resulting vlc_test_0.h265 and vlc_test_1.h265 files can be opened and played in VLC, and should show a group of raccoons caught by a security camera:
 
-![VLC raccooons invading playback of mediaMin RTP extraction output](https://www.github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_raccoons_invading_mediamin_output.png?raw=true "VLC raccooons invading playback of mediaMin RTP extraction output")
+![VLC raccooons invading playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_raccoons_invading_mediamin_output.png?raw=true "VLC raccooons invading playback of mediaMin RTP extraction output")
 
 Some notes about the above example:
 
 * VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng has been fully anonymized and is included with SigSRF RAR packages and Docker containers
-* the initial [security camera raccoons video](https://github.com/signalogic/SigSRF_SDK/blob/master/videos/raccoons_invading_driveway.mp4) is available on the SigSRF videos subfolder
+* the original [security camera raccoons video](https://github.com/signalogic/SigSRF_SDK/blob/master/videos/raccoons_invading_driveway.mp4) is available on the SigSRF videos subfolder
 * VLC sends parameter sets out-of-band, as SAP/SDP packets (i.e. not RTP packets). For more on this see [Inband vs Out-of-Band Parameter Sets](#user-content-inbandoutofbandparametersets)
 
 A step-by-step procedure for generating RTP streams with VLC and capturing with Wireshark is given in [VLC Stream to Wireshark Setup and Procedure](#user-content-vlcstreamwiresharksetupprocedure) below.
@@ -564,13 +564,13 @@ A step-by-step procedure for generating RTP streams with VLC and capturing with 
 
 In order to decode and play correctly, an H.26x elementary bitstream must contain VPS, SPS, and PPS parameter sets (video, sequence, and picture). Depending on streaming source, this information may be sent inband as NAL units in RTP packets, out-of-band in SAP/SDP packets, or both. mediaMin handles all cases, here are some notes about this:
 
-* mediaMin detects and decodes SAP/SDP packets, adding new media descriptions ("m=video ...") and format params ("a=fmpt ...") to an internal database
+* mediaMin detects and decodes SAP/SDP packets, adding new media descriptions ("m=video ...") and format params ("a=fmtp ...") to an internal database
 * default behavior favors inband xps info if found in the RTP stream, but also handles cases where that isn't available and the streaming source is sending xps info out-of-band. Detailed information about how mediaMin handles this and how to control from applications can be found in [voplib.h](https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h) and [extract_rtp_video.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/libs/voplib/extract_rtp_video.cpp)
 * VLC is a good example of a streaming source that defaults to out-of-band transmission of video parameter sets
 
 The mediaMin screencap below shows video SDP info added in real-time:
 
-![mediaMin SDP info extracted from video stream SAP/SDP packets screencap](https://www.github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_SDP_info_video_screencap.png?raw=true "mediaMin SDP info extracted from video stream SAP/SDP packets screencap")
+![mediaMin SDP info extracted from video stream SAP/SDP packets screencap](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_SDP_info_video_screencap.png?raw=true "mediaMin SDP info extracted from video stream SAP/SDP packets screencap")
 
 In the above screencap, highlighted items include an H.265 media description, a format attribute with base64 encoded VPS, SPS, and PPS parameters, and a summary report of internal database additions.
 
@@ -579,11 +579,11 @@ In the above screencap, highlighted items include an H.265 media description, a 
 
 For additional mediaMin test examples, below is a step-by-step procedure to generate HEVC pcapngs using VLC and Wireshark:
 
-![VLC streaming output over RTP setup](https://www.github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png?raw=true "VLC streaming output over RTP setup")
+![VLC streaming output over RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png?raw=true "VLC streaming output over RTP setup")
 
-![Wireshark capture local host SAP/SDP setup](https://www.github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_local_host.png?raw=true "Wireshark capture local host SAP/SDP setup")
+![Wireshark capture local host SAP/SDP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_local_host.png?raw=true "Wireshark capture local host SAP/SDP setup")
 
-![Wireshark capture WiFi RTP setup](https://www.github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_wifi.png?raw=true "Wireshark capture WiFi RTP setup")
+![Wireshark capture WiFi RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_wifi.png?raw=true "Wireshark capture WiFi RTP setup")
 
 
 <a name="CodecAutoDetection"></a>
