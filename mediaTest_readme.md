@@ -173,6 +173,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Voice/Audio Command Line Examples](#user-content-voiceaudiocmdlineexamples)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Video Command Line Examples](#user-content-videocmdlineexamples)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Inband vs Out-of-Band Parameter Sets](#user-content-inbandoutofbandparametersets)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[VLC Stream to Wireshark Setup and Procedure](#user-content-vlcstreamwiresharksetupprocedure)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Codec Auto-Detection](#user-content-codecautodetection)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Static Session Configuration](#user-content-staticsessionconfig)<br/>
@@ -493,7 +494,7 @@ mediaMin supports dynamic session creation, recognizing "on the fly" packet stre
 In cases where input streams have a definitive end, for instance one or more command line input pcaps, or a stream contains a SIP BYE message, mediaMin will automatically do session cleanup and delete.
 
 <a name="VoiceAudioCmdLineExamples"></a>
-### Voice/Audio Command Line Examples
+#### Voice/Audio Command Line Examples
 
 Below are some voice and audio dynamic session command line examples:
 
@@ -526,25 +527,23 @@ Below are more command line examples, taken from pcaps found in the [the Brno Un
 For .pcap or .pcapng files with incorrect or zero packet timestamp values (sometimes referred to as "arrival timestamps"), you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
 <a name="VideoCmdLineExamples"></a>
-### Video Command Line Examples
+#### Video Command Line Examples
 
 Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng on the Wireshark Samples Capture page](https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=1920x1080_H.265.pcapng#h265hevc):
 
      mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x0600c000c11 -r20
 
-The resulting sample_capture_test.h265 file contains can be played in VLC, and should show a noise background as the Wireshark sample has had been anonymized with its content removed:
+The resulting sample_capture_test.h265 file can be played in VLC, and should show a noise background as the Wireshark sample has had been anonymized with its content removed:
 
 ![VLC HEVC noise test playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png?raw=true "VLC HEVC noise test playback of mediaMin RTP extraction output")
 
-Note in the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps, all as expected.
-
-For low-level binary verification, we can use the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser); below is a slice-by-slice display of sample_capture_test.h265:
+Note in the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps. We can verify these attributes and others at a binary, slice-by-slice level, using the the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is a slice-by-slice display, including NALU unit parameters and their hex values, of sample_capture_test.h265:
 
 ![HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/HEVC_ES_Browser_display_H265_elementary_bitstream_slices.png?raw=true "HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output")
 
-Note the righthand pane is showing the SPS slice (Sequence Parameter Set), which corroborates 1920x1080 resolution.
+Note in the above HEVC ES Browser screen cap, the righthand pane is displaying the SPS (Sequence Parameter Set) slice, which shows 1920x1080 resolution and a color bit depth of 12, which match the Codec Information reported by VLC.
 
-The next example extracts two (2) HEVC streams from a pcapng included with SigSRF RAR packages and Docker containers. In this case the pcapng was acquired by configuring VLC to stream an input .mp4 file over RTP:
+The next example extracts two (2) HEVC bitstreams from an RTP stream output by VLC and captured by Wireshark:
 
     mediaMin -c x86 -i ../pcaps/VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng -o vlc_test_0.h265 -o vlc_test_1.h265 -L -d 0x0600c000c11 -r20
 
@@ -552,8 +551,20 @@ The resulting vlc_test_0.h265 and vlc_test_1.h265 files can be opened and played
 
 ![VLC raccooons invading playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_raccoons_invading_mediamin_output.png?raw=true "VLC raccooons invading playback of mediaMin RTP extraction output")
 
+Some notes about the RTP streaw and VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng capture file:
+
+* VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng has been fully anonymized and is included with SigSRF RAR packages and Docker containers
+* the input .mp4 file used by VLC is located here
+
+A step-by-step procedure for generating RTP streams with VLC and capturing with Wireshark is given in [VLC Stream to Wireshark Setup and Procedure](#user-content-vlcstreamwiresharksetupprocedure) below.
+
+<a name="InBandOutofBandParameterSets"></a>
+##### Inband vs Out-of-Band Parameter Sets
+
+In order to decode and play correctly, an H.26x elementary bitstream must contain VPS, SPS, and PPS parameter sets (video, sequence, and picture). Depending on streaming source, this information may be sent inband as NAL units, or out-of-band as SAP/SDP info, or both. mediaMin handles all cases, here are some notes about this
+
 <a name="VLCStreamWiresharkSetupProcedure"></a>
-### VLC Stream to Wireshark Setup and Procedure
+##### VLC Stream to Wireshark Setup and Procedure
 
 For additional mediaMin test examples, below is a step-by-step procedure to generate HEVC pcapngs using VLC and Wireshark:
 
