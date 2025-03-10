@@ -534,11 +534,14 @@ Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng o
 
 The resulting sample_capture_test.h265 file contains can be played in VLC, and should show a noise background as the Wireshark sample has had its content removed and otherwise been anonymized:
 
+![VLC HEVC noise test playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png?raw=true "VLC HEVC noise test playback of mediaMin RTP extraction output")
+
 The next example extracts two (2) HEVC streams from a pcapng included with SigSRF RAR packages and Docker containers. In this case the pcapng was acquired by configuring VLC to stream an input .mp4 file over RTP:
 
     mediaMin -c x86 -i ../pcaps/VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng -o vlc_test_0.h265 -o vlc_test_1.h265 -L -d 0x0600c000c11 -r20
 
 The resulting vlc_test_0.h265 and vlc_test_1.h265 files can be opened and played in VLC, and should show a group of raccoons caught by a security camera:
+
 
 <a name="VLCStreamWiresharkSetupProcedure"></a>
 ### VLC Stream to Wireshark Setup and Procedure
