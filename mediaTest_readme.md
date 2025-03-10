@@ -532,9 +532,17 @@ Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng o
 
      mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x0600c000c11 -r20
 
-The resulting sample_capture_test.h265 file contains can be played in VLC, and should show a noise background as the Wireshark sample has had its content removed and otherwise been anonymized:
+The resulting sample_capture_test.h265 file contains can be played in VLC, and should show a noise background as the Wireshark sample has had been anonymized with its content removed:
 
 ![VLC HEVC noise test playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png?raw=true "VLC HEVC noise test playback of mediaMin RTP extraction output")
+
+Note in the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps, all as expected.
+
+For low-level binary verification, we can use the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser); below is a slice-by-slice display of sample_capture_test.h265:
+
+![HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/HEVC_ES_Browser_display_H265_elementary_bitstream_slices.png?raw=true "HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output")
+
+Note the righthand pane is showing the SPS slice (Sequence Parameter Set), which corroborates 1920x1080 resolution.
 
 The next example extracts two (2) HEVC streams from a pcapng included with SigSRF RAR packages and Docker containers. In this case the pcapng was acquired by configuring VLC to stream an input .mp4 file over RTP:
 
