@@ -537,11 +537,11 @@ The resulting sample_capture_test.h265 file can be played in VLC, and should sho
 
 ![VLC HEVC noise test playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png "VLC HEVC noise test playback of mediaMin RTP extraction output")
 
-In the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps. We can verify these attributes and others at the binary NAL unit slice level using the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is a slice-by-slice display of sample_capture_test.h265, including NAL unit parameters and their hex values:
+In the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps. We can verify these attributes and others at the binary NAL unit level using the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is an elementary stream graphical display of sample_capture_test.h265, including NAL unit types and their parameters or slices, as well as hex values for each unit:
 
 ![HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/HEVC_ES_Browser_display_H265_elementary_bitstream_slices.png "HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output")
 
-In the above HEVC ES Browser screen cap, the righthand pane is displaying the SPS (Sequence Parameter Set) slice, which shows 1920x1080 resolution and a color bit depth of 12, matching the Codec Information reported by VLC.
+In the above HEVC ES Browser screen cap, the righthand pane is displaying the SPS (Sequence Parameter Set) unit, which shows 1920x1080 resolution and a color bit depth of 12, matching the Codec Information reported by VLC.
 
 The next example extracts two (2) HEVC bitstreams from an RTP stream output by VLC and captured by Wireshark:
 
