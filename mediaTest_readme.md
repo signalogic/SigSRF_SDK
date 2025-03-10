@@ -554,7 +554,7 @@ The resulting vlc_test_0.h265 and vlc_test_1.h265 files can be opened and played
 Some notes about the above example:
 
 * VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng has been fully anonymized and is included with SigSRF RAR packages and Docker containers
-* the input .mp4 file used by VLC is located here
+* the initial [security camera raccoons video](https://github.com/signalogic/SigSRF_SDK/blob/master/videos/raccoons_invading_driveway.mp4) is available on the SigSRF videos subfolder
 * VLC sends parameter sets out-of-band, as SAP/SDP packets (i.e. not RTP packets). For more on this see [Inband vs Out-of-Band Parameter Sets](#user-content-inbandoutofbandparametersets)
 
 A step-by-step procedure for generating RTP streams with VLC and capturing with Wireshark is given in [VLC Stream to Wireshark Setup and Procedure](#user-content-vlcstreamwiresharksetupprocedure) below.
