@@ -559,7 +559,7 @@ As in the first command line example, a screencap for this example shows auto-de
 
 ![mediaMin wireshark capture video RTP extraction dynamic session creation and HEVC codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_wireshark_capture_video_RTP_extraction_dynamic_session_creation_codec_auto_detection_screencap.png "mediaMin wireshark capture video RTP extraction dynamic session creation and HEVC codec auto-detection")
 
-Another interesting thing to note in the above screencap is that VLC can send very large SAP/SDP packets; one of these is highlighted, the vertical arrow shows the start of an HEVC SEI parameter set (Supplemental Enhancement Information), which can be quite large, and typically consists of metadata not used directly in video decoding. Preceding the SEI are VPS, SPS, and PPS parameter sets which are sent either inband in RTP packets or out-of-band as SAP/SDP packets, but unlike an SEI are necesary for correct decoding. Note also that VLC fragments outgoing packets if they exceed the network MTU size; mediaMin reassembles these and reports fragmentation stats in its run-time summary, as shown in the following screencap:
+Another interesting thing to note in the above screencap is that VLC can send very large SAP/SDP packets; one of these is highlighted, the vertical arrow shows the start of an HEVC SEI parameter set (Supplemental Enhancement Information), which can be quite large, and typically consists of metadata not used directly in video decoding. Preceding the SEI are VPS, SPS, and PPS parameter sets which are sent either inband in RTP packets or out-of-band as SAP/SDP packets, but unlike SEI are necesary for correct decoding. Note also that VLC fragments outgoing packets if they exceed the network MTU size; mediaMin reassembles these and reports fragmentation stats in its run-time summary, as shown in the following screencap:
 
 ![mediaMin wireshark capture fragmentation and reassembly stats display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_wireshark_capture_fragmentation_and_reassembly_stats.png "mediaMin wireshark capture fragmentation and reassembly stats display")
 
@@ -599,12 +599,15 @@ To create additional mediaMin test examples, or to create video RTP pcap and pca
 
 ![VLC streaming output over RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png "VLC streaming output over RTP setup")
 
-Note that in the last step, VLC's executable streaming command (starting with ":sout ...") is highlighted in yellow, but the actual streaming command needed to do the job is highlighted in green. For some reason, adding a second duplicated stream for SAP/SDP output with destination 127.0.0.0.1 (local host) was necessary for VLC to output both RTP and SAP/SDP packets in the same stream.
+Note that in the last step, VLC's executable streaming command (starting with ":sout ...") is highlighted in orange, but the actual streaming command needed to do the job is highlighted in green. For some reason, adding a second, duplicated stream for SAP/SDP output with destination 127.0.0.0.1 (local host) was necessary for VLC to output both RTP and SAP/SDP packets in the same stream. This has the side-effect of generating a second RTP H.265 stream, which mediaMin detects as a second session (which you can see in the mediaMin stats and run-time summary screencap above).
 
 ![Wireshark capture local host SAP/SDP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_local_host.png "Wireshark capture local host SAP/SDP setup")
 
+2) Second, configure Wireshark as shown below:
+
 ![Wireshark capture WiFi RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_wifi.png "Wireshark capture WiFi RTP setup")
 
+3) Then start Wireshark capture by selecting "Start" under the Capture menu on the main toolbar, then immediately click "Stream" on the final VLC dialog box shown above.
 
 <a name="CodecAutoDetection"></a>
 #### Codec Auto-Detection
