@@ -533,6 +533,14 @@ Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng o
 
      mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x0600c000c11 -r20
 
+The above command line example will auto-detect H.265 RTP packets and create a dynamic session, as shown in the highlighted areas of the following screencap:
+
+![mediaMin video RTP extraction dynamic session creation and HEVC codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_video_RTP_extraction_dynamic_session_creation_codec_auto_detection_screencap.png "mediaMin video RTP extraction dynamic session creation and HEVC codec auto-detection")
+
+At the end of stream, mediaMin will display channel, session, jitter buffer, and other stats, along with event log warning and error message summaries (if any), as shown in the following screencap:
+
+![mediaMin video RTP extraction stats and summary report](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_video_RTP_extraction_stats_summary_screencap.png "mediaMin video RTP extraction stats and summary report")
+
 The resulting sample_capture_test.h265 file can be played in VLC, and should show a noise background as the Wireshark sample has had been anonymized with its content removed:
 
 ![VLC HEVC noise test playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png "VLC HEVC noise test playback of mediaMin RTP extraction output")
