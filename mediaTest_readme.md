@@ -603,13 +603,17 @@ Note that in the last step, VLC's executable streaming command (starting with ":
 
 2) Second, configure Wireshark as shown below:
 
-![Wireshark capture configuration and setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_wireshark_capture_sdp_packet_wifi_screencap.png "Wireshark capture configuration and setup")
+![Wireshark capture configuration and setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/wireshark_capture_config_for_VLC_streaming.png "Wireshark capture configuration and setup")
 
 Note that both the WiFi (192.168.1.2) and local host (127.0.0.1) interfaces are selected (multiple interfaces can be selected using shift + left click).
 
 3) Then start Wireshark capture by selecting "Start" under the Capture menu on the main toolbar, then immediately click "Stream" on the final VLC dialog box shown above.
 
-Normally SAP/SDP packets will appear in the capture first, as shown in the step 2) screencap. Note the large size of some SAP/SDP packets, which VLC handles with fragmentation; this is highlighted in yellow in the step 2) screencap.
+Normally SAP/SDP packets will appear in the capture first, as shown in the following screencap:
+
+![Wireshark capturing SAP/SDP packets from VLC streaming](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_wireshark_capture_sdp_packet_wifi_screencap.png "Wireshark capturing SAP/SDP packets from VLC streaming")
+
+Note the large size of some SAP/SDP packets, which VLC handles with fragmentation. The SAP/SDP packet highlighted in yellow in the above screencap requires three (3) fragments. SDP info contained in the packet is highlighted in the lower half of the screencap, with an arrow indicating parameter set information necessary for correct decoding.
 
 Next H.265 RTP packets should appear in the capture; the screencap below shows H.265 packets sent by VLC on the WiFi interface:
 
