@@ -593,9 +593,13 @@ In the above screencap, highlighted items include an H.265 media description, a 
 <a name="VLCStreamWiresharkSetupProcedure"></a>
 ##### VLC Stream to Wireshark Setup and Procedure
 
-To create additional mediaMin test examples, or to create video RTP pcap and pcapng files in general, below is a step-by-step procedure to configure VLC and Wireshark and initiate RTP streaming and packet capture:
+To create additional mediaMin test examples, or to create video RTP pcap and pcapng files in general, below is a step-by-step procedure to configure VLC and Wireshark and initiate RTP streaming and packet capture.
+
+1) First configure VLC for streaming, as shown in the dialog box sequence below:
 
 ![VLC streaming output over RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png "VLC streaming output over RTP setup")
+
+Note that in the last step, VLC's executable streaming command (starting with ":sout ...") is highlighted in yellow, but the actual streaming command needed to do the job is highlighted in green. For some reason, adding a second duplicated stream for SAP/SDP output with destination 127.0.0.0.1 (local host) was necessary for VLC to output both RTP and SAP/SDP packets in the same stream.
 
 ![Wireshark capture local host SAP/SDP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_local_host.png "Wireshark capture local host SAP/SDP setup")
 
