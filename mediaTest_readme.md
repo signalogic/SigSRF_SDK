@@ -601,13 +601,25 @@ To create additional mediaMin test examples, or to create video RTP pcap and pca
 
 Note that in the last step, VLC's executable streaming command (starting with ":sout ...") is highlighted in orange, but the actual streaming command needed to do the job is highlighted in green. For some reason, adding a second, duplicated stream for SAP/SDP output with destination 127.0.0.0.1 (local host) was necessary for VLC to output both RTP and SAP/SDP packets in the same stream. This has the side-effect of generating a second RTP H.265 stream, which mediaMin detects as a second session (which you can see in the mediaMin stats and run-time summary screencap above).
 
-![Wireshark capture local host SAP/SDP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_sdp_local_host.png "Wireshark capture local host SAP/SDP setup")
-
 2) Second, configure Wireshark as shown below:
 
-![Wireshark capture WiFi RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_wifi.png "Wireshark capture WiFi RTP setup")
+![Wireshark capture configuration and setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_wireshark_capture_sdp_packet_wifi_screencap.png "Wireshark capture configuration and setup")
+
+Note that both the WiFi (192.168.1.2) and local host (127.0.0.1) interfaces are selected (multiple interfaces can be selected using shift + left click).
 
 3) Then start Wireshark capture by selecting "Start" under the Capture menu on the main toolbar, then immediately click "Stream" on the final VLC dialog box shown above.
+
+Normally SAP/SDP packets will appear in the capture first, as shown in the step 2) screencap. Note the large size of some SAP/SDP packets, which VLC handles with fragmentation; this is highlighted in yellow in the step 2) screencap.
+
+Next H.265 RTP packets should appear in the capture; the screencap below shows H.265 packets sent by VLC on the WiFi interface:
+
+![Wireshark capturing H.265 RTP packets on WiFi interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_wifi.png "Wireshark capturing H.265 RTP packets on WiFi interface")
+
+Since we configured VLC to duplicate stream output, later in the capture H.265 RTP packes should appear on the local host interface, as shown in the following screencap:
+
+![Wireshark capturing H.265 RTP packets on localhost interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_localhost_wifi.png "Wireshark capturing H.265 RTP packets on localhost interface")
+
+mediaMin will detect the second stream as a new (because of its different IP address), and create a second dynamic session.
 
 <a name="CodecAutoDetection"></a>
 #### Codec Auto-Detection
