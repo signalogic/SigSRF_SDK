@@ -545,7 +545,7 @@ The resulting sample_capture_test.h265 file can be played in VLC, and should sho
 
 ![VLC HEVC noise test playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png "VLC HEVC noise test playback of mediaMin RTP extraction output")
 
-In the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps. We can verify these attributes and others at the binary NAL unit level using the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is an elementary stream graphical display of sample_capture_test.h265, including NAL unit types and their parameters or slices, as well as hex values for each unit:
+In the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps. We can verify these attributes and others at the binary NAL unit level using the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is an elementary stream graphical display of sample_capture_test.h265, including NAL unit types and their parameters or slices, as well as hex values for each NAL unit:
 
 ![HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/HEVC_ES_Browser_display_H265_elementary_bitstream_slices.png "HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output")
 
@@ -554,6 +554,14 @@ In the above HEVC ES Browser screen cap, the righthand pane is displaying the SP
 The next example extracts two (2) HEVC bitstreams from an RTP stream output by VLC and captured by Wireshark:
 
     mediaMin -c x86 -i ../pcaps/VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng -o vlc_test_0.h265 -o vlc_test_1.h265 -L -d 0x0600c000c11 -r20
+
+As in the first command line example, a screencap for this example shows auto-detection of H.265 RTP packets and dynamic session creation (shown in the yellow highlighted areas), but in this case  destination IP address and UDP port are as specified in VLC streaming setup (shown in the pink highlighted areas):
+
+![mediaMin wireshark capture video RTP extraction dynamic session creation and HEVC codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_wireshark_capture_video_RTP_extraction_dynamic_session_creation_codec_auto_detection_screencap.png "mediaMin wireshark capture video RTP extraction dynamic session creation and HEVC codec auto-detection")
+
+Another interesting thing to note in the above screencap is that VLC can send very large SAP/SDP packets; one of these is highlighted, the vertical arrow shows the start of an HEVC SEI parameter set (Supplemental Enhancement Information), which can be quite large, and typically consists of metadata not used directly in video decoding. Preceding the SEI are VPS, SPS, and PPS parameter sets which are sent either inband in RTP packets or out-of-band as SAP/SDP packets, but unlike an SEI are necesary for correct decoding. Note also that VLC fragments outgoing packets if they exceed the network MTU size; mediaMin reassembles these and reports fragmentation stats in its run-time summary, as shown in the following screencap:
+
+![mediaMin wireshark capture fragmentation and reassembly stats display](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_wireshark_capture_fragmentation_and_reassembly_stats.png "mediaMin wireshark capture fragmentation and reassembly stats display")
 
 The resulting vlc_test_0.h265 and vlc_test_1.h265 files can be opened and played in VLC, and should show a group of raccoons caught by a security camera:
 
