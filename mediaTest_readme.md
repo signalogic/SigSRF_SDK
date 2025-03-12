@@ -627,7 +627,7 @@ mediaMin will detect the second stream as new (because of its different IP addre
 
 ![mediaMin creating dynamic sessions for multiple VLC RTP video output streams](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaMin_video_RTP_extraction_2x_VLC_dynamic_sessions.png "mediaMin creating dynamic sessions for multiple VLC RTP video output streams")
 
-Note the first session is created at packet #286 (occuring around 5 sec in the capture) and the second session at packet #2761 (occurring around 19 sec in the capture).
+Note the first session is created at packet #286 (occurring around 7 sec in the capture) and the second session at packet #2761 (occurring around 19 sec in the capture).
 
 <a name="CodecAutoDetection"></a>
 #### Codec Auto-Detection
