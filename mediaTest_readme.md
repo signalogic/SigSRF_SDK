@@ -599,7 +599,7 @@ To create additional mediaMin test examples, or to create video RTP pcap and pca
 
 ![VLC streaming output over RTP setup](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_setup_sequence.png "VLC streaming output over RTP setup")
 
-Note that in the last step, VLC's executable streaming command (starting with ":sout ...") is highlighted in orange, but the actual streaming command needed to do the job is highlighted in green. For some reason, adding a second, duplicated stream for SAP/SDP output with destination 127.0.0.1 (localhost) is necessary for VLC to output both RTP and SAP/SDP packets in the same stream, which mediaMin detects as a second session (which you can see in the mediaMin stats and run-time summary screencap above).
+Note that in the last step, VLC's executable streaming command (starting with ":sout ...") is highlighted in orange, but the actual streaming command needed to do the job is highlighted in green. For some reason, adding a second, duplicated stream for SAP/SDP output with destination 127.0.0.1 (localhost) is necessary for VLC to output both RTP and SAP/SDP packets in the same stream, which mediaMin detects as a second session (and which you can see in the mediaMin stats and run-time summary screencap above).
 
 2) Second, on the main Wireshark toolbar under "Capture" select "Options":
 
