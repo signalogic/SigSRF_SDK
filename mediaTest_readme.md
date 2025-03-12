@@ -533,7 +533,7 @@ Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng o
 
      mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x0600c000c11 -r20
 
-The above command line example will auto-detect H.265 RTP packets and create a dynamic session, as shown in the highlighted areas:
+The above command line example will auto-detect H.265 RTP packets and create a dynamic session, as highlighted:
 
 ![mediaMin video RTP extraction dynamic session creation and HEVC codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_video_RTP_extraction_dynamic_session_creation_codec_auto_detection_screencap.png "mediaMin video RTP extraction dynamic session creation and HEVC codec auto-detection")
 
