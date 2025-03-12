@@ -619,11 +619,13 @@ Next, H.265 RTP packets should appear in the capture; the screencap below shows 
 
 ![Wireshark capturing H.265 RTP packets on WiFi interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_wifi.png "Wireshark capturing H.265 RTP packets on WiFi interface")
 
-Since we configured VLC to duplicate stream output, later in the capture H.265 RTP packets should appear on the localhost interface, as shown in the following screencap:
+Since we configured VLC to duplicate stream output, and VLC handles duplicated outputs sequentially, later in the capture H.265 RTP packets should appear on the localhost interface, as shown in the following screencap:
 
 ![Wireshark capturing H.265 RTP packets on localhost interface](https://github.com/signalogic/SigSRF_SDK/blob/master/images/vlc_stream_rtp_wireshark_capture_h265_localhost.png "Wireshark capturing H.265 RTP packets on localhost interface")
 
-mediaMin will detect the second stream as a new (because of its different IP address), and create a second dynamic session.
+mediaMin will detect the second stream as new (because of its different IP address), and create a second dynamic session, as shown in the following screencap:
+
+![mediaMin creating dynamic sessions for multiple VLC RTP video output streams](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaMin_video_RTP_extraction_2x_VLC_dynamic_sessions.png "mediaMin creating dynamic sessions for multiple VLC RTP video output streams")
 
 <a name="CodecAutoDetection"></a>
 #### Codec Auto-Detection
