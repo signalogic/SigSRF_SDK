@@ -588,7 +588,7 @@ The mediaMin screencap below shows video SDP info added as RTP stream flow is pr
 
 ![mediaMin SDP info extracted from video stream SAP/SDP packets screencap](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_SDP_info_video_screencap.png "mediaMin SDP info extracted from video stream SAP/SDP packets screencap")
 
-In the above screencap, highlighted items include an H.265 media description, a format attribute with base64 encoded VPS, SPS, and PPS parameters, and a summary report of internal database additions.
+In the above screencap, highlighted items include an H.265 media description, a format attribute with base64 encoded VPS, SPS, and PPS parameters, and a summary report of SDP info internal database additions.
 
 <a name="VLCStreamWiresharkSetupProcedure"></a>
 ##### VLC Stream to Wireshark Setup and Procedure
