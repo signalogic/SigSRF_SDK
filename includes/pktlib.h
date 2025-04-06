@@ -121,6 +121,7 @@
                          -add p_block_type param to DSReadPcap()
                          -re-factor pcapng structs, break out pcapng_block_header struct separately. Add struct for simple packet blocks
   Modified Feb 2025 JHB, add DSReadPcap() flags DS_READ_PCAP_DISABLE_NULL_LOOPBACK_PROTOCOL and DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX, see comments
+  Modified Mar 2025 JHB, to standardize with other SigSRF libs, adjust values of DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, DS_PKTLIB_SUPPRESS_INFO_MSG, and DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG flags
 */
 
 #ifndef _PKTLIB_H_
@@ -1022,8 +1023,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
   #define DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX           0x0400  /* by default DSReadPcap() fixes TCP Segment Offload (TSO) packets with "zero length", and sets packet length inside returned packet data to what's in the pcap/pcapng record (typically labeled as "captured" length). Currently this is done only for block types PCAP_PB_TYPE, PCAPNG_EPB_TYPE, and PCAPNG_SPB_TYPE, and for IPv4 TCP packets. Note that Wireshark will label these as "length reported as 0, presumed to be because of TCP segmentation offload (TSO)". To disable this behavior the DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX flag can be applied; note however that disabling may cause "malformed packet" warnings */
 
-  #define DS_READ_PCAP_SUPPRESS_INFO_MSG                DS_PKTLIB_SUPPRESS_RTP_INFO_MSG
-  #define DS_READ_PCAP_SUPPRESS_WARNING_MSG             DS_PKTLIB_SUPPRESS_ERROR_MSG
+  #define DS_READ_PCAP_SUPPRESS_WARNING_ERROR_MSG       DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG
+  #define DS_READ_PCAP_SUPPRESS_INFO_MSG                DS_PKTLIB_SUPPRESS_INFO_MSG
 
   int DSWritePcap(FILE* fp_pcap, unsigned int uFlags, uint8_t* pkt_buf, int pkt_buf_len, pcaprec_hdr_t* pcap_pkt_hdr, struct ethhdr* p_eth_hdr, pcap_hdr_t* pcap_file_hdr);
 
@@ -1183,7 +1184,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_SEND_PKT_FMT                                    0x1
 #define DS_SEND_PKT_SOCKET_HANDLE                          0x2
 #define DS_SEND_PKT_QUEUE                                  0x4
-#define DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG         0x40000000L
+#define DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG                DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG
 
 
 /* DSBufferPackets() and DSGetOrderedPackets() uFlags definitions */
@@ -1277,6 +1278,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_JITTER_BUFFER_INFO_MAX_ALLOCS                  0x32
 #define DS_JITTER_BUFFER_INFO_NUM_DTMF_PKTS               0x33  /* DTMF RTP event packet count, JHB Jul 2023 */
 #define DS_JITTER_BUFFER_INFO_PKT_CLASSIFICATION_LIST     0x34
+#define DS_JITTER_BUFFER_INFO_NUM_TIMESTAMP_SETBACKS      0x35
 
 #define DS_JITTER_BUFFER_INFO_ITEM_MASK                   0xff
 
@@ -1349,15 +1351,15 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 /* pktlib general API flags, for use with uFlags argument in DSGetPacketInfo(), DSFormatPacket(), DSBufferPackets(), and DSGetOrderedPackets() */
 
-#define DS_PKTLIB_NETWORK_BYTE_ORDER                0x00000000L /* indicates packet header data is in network byte order. The byte order flags apply only to headers, not payload contents. This flag is zero as the default (no flag) is network byte order, and is defined here only for documentation purposes */
-#define DS_PKTLIB_HOST_BYTE_ORDER                   0x10000000L /* indicates packet header data is in host byte order. The byte order flags apply only to headers, not payload contents. Default (no flag) is network byte order */
-#define DS_PKTLIB_SUPPRESS_ERROR_MSG                0x20000000L /* suppress general packet format error messages; e.g. malformed packet, invalid IP version, invalid IP header, etc */
-#define DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG            0x40000000L /* suppress RTP related error and warning messages, e.g. incorrect RTP version, RTP header extension mismatch, RTP padding mismatch, etc */
-#define DS_PKTLIB_SUPPRESS_RTP_INFO_MSG             0x80000000L /* suppress RTP related info messages */
+#define DS_PKTLIB_NETWORK_BYTE_ORDER               0x00000000L  /* indicates packet header data is in network byte order. The byte order flags apply only to headers, not payload contents. This flag is zero as the default (no flag) is network byte order, and is defined here only for documentation purposes */
+#define DS_PKTLIB_HOST_BYTE_ORDER                  0x10000000L  /* indicates packet header data is in host byte order. The byte order flags apply only to headers, not payload contents. Default (no flag) is network byte order */
+#define DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG       0x20000000L  /* suppress general packet format error messages; e.g. malformed packet, invalid IP version, invalid IP header, etc */
+#define DS_PKTLIB_SUPPRESS_INFO_MSG                0x40000000L  /* suppress info messages, many are RTP related */
+#define DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG   0x80000000L  /* suppress RTP related error and warning messages, e.g. incorrect RTP version, RTP header extension mismatch, RTP padding mismatch, etc. Note RTP related warnings and errors are treated separately from general pktlib API warning and error messages */
 
 /* other pktlib flags (not for use with uFlags argument) */
 
-#define DS_PKT_INFO_USE_IP_HDR_LEN                  0x80000000L /* when combined with the len param, indicates len should be interpreted as IP header length. This flag should only be used with DS_PKT_INFO_xxx session and stream items. See PushPackets() in mediaMin.cpp for a usage example. NOTE - this flag is not a uFlag and should not be combined with any other DS_PKT_INFO_XXX uflags */
+#define DS_PKT_INFO_USE_IP_HDR_LEN                 0x80000000L  /* when combined with the len param, indicates len should be interpreted as IP header length. This flag should only be used with DS_PKT_INFO_xxx session and stream items. See PushPackets() in mediaMin.cpp for a usage example. NOTE - this flag is not a uFlag and should not be combined with any other DS_PKT_INFO_XXX uflags */
 
 /* DSGetSessionInfo() and DSSetSessionInfo() uFlags definitions */
 
@@ -1404,8 +1406,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_SESSION_INFO_RTP_CLOCKRATE                     0x24
 #define DS_SESSION_INFO_GROUP_IDX                         0x25  /* get stream group index */
 
-#define DS_SESSION_INFO_USE_PKTLIB_SEM              0x20000000L /* use the pktlib semaphore */
-#define DS_SESSION_INFO_SUPPRESS_ERROR_MSG          0x40000000L /* suppress any error messages generated by the API */
+#define DS_SESSION_INFO_USE_PKTLIB_SEM             0x20000000L  /* use the pktlib semaphore */
+#define DS_SESSION_INFO_SUPPRESS_ERROR_MSG         DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG  /* suppress warning or error messages generated by the API */
 
 #define DS_SESSION_INFO_ITEM_MASK                         0xff
 
@@ -1560,7 +1562,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_LOG_RUNTIME_STATS_CONSOLE                         1  /* output run-time stats to console */
 #define DS_LOG_RUNTIME_STATS_EVENTLOG                        2  /* output run-time stats to event log file. Note these two flags may be combined */
 #define DS_LOG_RUNTIME_STATS_ORGANIZE_BY_STREAM_GROUP     0x10
-#define DS_LOG_RUNTIME_STATS_SUPPRESS_ERROR_MSG     0x40000000L
+#define DS_LOG_RUNTIME_STATS_SUPPRESS_ERROR_MSG           DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG
 
 /* DSDisplayThreadDebugInfo() flags */
 
@@ -2643,6 +2645,10 @@ bool fChanActive = chnum >= 0 && chnum < NCORECHAN && ChanInfo_Core[chnum].chan_
       case DS_JITTER_BUFFER_INFO_PKT_CLASSIFICATION_LIST:
 
          return ChanInfo_Core[chnum].pkt_classification_list;
+
+      case DS_JITTER_BUFFER_INFO_NUM_TIMESTAMP_SETBACKS:
+
+         return JitterBuffer->timestamp_setback_count;
    }
 
    return -1;

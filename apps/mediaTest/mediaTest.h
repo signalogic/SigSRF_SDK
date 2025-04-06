@@ -3,7 +3,7 @@
 
   header file for mediaMin application and mediaTest test and measurement program
 
-  Copyright (C) Signalogic, 2015-2024
+  Copyright (C) Signalogic, 2015-2025
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -58,6 +58,7 @@
    Modified Sep 2024 JHB, add io_data_type name to IO type enums
    Modified Nov 2024 JHB, remove directcore.h include
    Modified Dec 2024 JHB, rename "header_format" to "payload_format" in codec_test_params_t struct
+   Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS to MAX_STREAMS, which is defined in shared_include/streamlib.h. MAX_STREAMS specifies maximum streams available for reference applications and multithread / high capacity testing
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -67,14 +68,20 @@
 #include <netinet/in.h>
 #include <math.h>
 
-#include "cimlib.h"           /* CIM lib API */
-#include "filelib.h"          /* waveform file lib API */
+/* SigSRF header files */
+
+#include "filelib.h"  /* waveform file lib API */
+#include "cimlib.h"   /* CIM lib API, after definition of MAX_STREAMS */
+
+/* SigSRF header files shared by host and coCPUs, see Signalogic/shared_include folder */
+
+#include "shared_include/streamlib.h"  /* MAX_STREAMS definition */
+#include "shared_include/media.h"      /* media definitions shared with target CPUs */
+#include "shared_include/debug.h"
+
+/* app helper includes */
+
 #include "keybd.h"            /* interactive key command support */
-
-/* header files shared by host and coCPUs, see Signalogic/shared_include folder */
-
-#include "media.h"            /* media definitions shared with target CPUs */
-#include "debug.h"
 
 /* program modes */
 
@@ -93,7 +100,6 @@
 
 /* max app values */
 
-#define MAX_INPUT_STREAMS          512  /* number of possible input streams, including streams that are re-used for multithread and high capacity testing */
 #define MAX_APP_THREADS            64
 #define MAX_CMDLINE_STR_LEN        1024
 
@@ -225,7 +231,7 @@ extern char              szSDPFile[CMDOPT_MAX_INPUT_LEN];
 extern int               nSamplingFrequency;
 extern char              szStreamGroupWavOutputPath[CMDOPT_MAX_INPUT_LEN];
 extern char              szStreamGroupPcapOutputPath[CMDOPT_MAX_INPUT_LEN];
-extern uint16_t          uPortList[MAX_CONCURRENT_STREAMS];
+extern uint16_t          uPortList[MAX_STREAMS];
 extern uint8_t           uLookbackDepth;
 
 extern QWORD             nCoreList;                         /* bitwise core list given in command line */

@@ -4,7 +4,7 @@
 
  Project: DirectCore, SigSRF
 
- Copyright Signalogic Inc. 1994-2024
+ Copyright Signalogic Inc. 1994-2025
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -37,6 +37,7 @@
    Modified Jul 2024 JHB, add CmdLineFlags_t struct with 1-bit flags to support continued command-line options expansion
    Modified Jul 2024 JHB, add nRandomBitErrorPercentage define to support mediaTest payload / packet impairment operations
    Modified Aug 2024 JHB, add sha1sum and sha512sum flags to CmdLineFlags_t
+   Modified Feb 2025 JHB, remove references to MAX_CONCURRENT_STREAMS and MAXSTREAMS; instead all libs and apps are now using a single definition MAX_STREAMS, in shared_include/streamlib.h
 */
 
 #ifndef _USERINFO_H_
@@ -57,10 +58,12 @@
   #include "streamlib.h"
 #endif
 
+#if 0
 #ifdef MAXSTREAMS
   #define MAX_CONCURRENT_STREAMS MAXSTREAMS
 #else
   #define MAX_CONCURRENT_STREAMS 8
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -96,10 +99,10 @@ typedef struct UserInterface_t {
    char      testMode[CMDOPT_MAX_INPUT_LEN];
    int       routingConfig;
    int       detailsLevel;
-   char      inputFile[MAX_CONCURRENT_STREAMS][CMDOPT_MAX_INPUT_LEN];
-   char      outputFile[MAX_CONCURRENT_STREAMS][CMDOPT_MAX_INPUT_LEN];
-   char      configFile[MAX_CONCURRENT_STREAMS][CMDOPT_MAX_INPUT_LEN];
-   char      logFile[MAX_CONCURRENT_STREAMS][CMDOPT_MAX_INPUT_LEN];
+   char      inputFile[MAX_STREAMS][CMDOPT_MAX_INPUT_LEN];
+   char      outputFile[MAX_STREAMS][CMDOPT_MAX_INPUT_LEN];
+   char      configFile[MAX_STREAMS][CMDOPT_MAX_INPUT_LEN];
+   char      logFile[MAX_STREAMS][CMDOPT_MAX_INPUT_LEN];
    int       algorithmIdNum;
    int       libFlags;
    uint64_t  taskAssignmentCoreLists;
@@ -115,24 +118,24 @@ typedef struct UserInterface_t {
 
 /* video parameters */
 
-   int       xres[MAX_CONCURRENT_STREAMS];
-   int       yres[MAX_CONCURRENT_STREAMS];
-   int       streamingMode[MAX_CONCURRENT_STREAMS];
-   float     frameRate[MAX_CONCURRENT_STREAMS];
-   int       profile[MAX_CONCURRENT_STREAMS];
-   int       bitrateConfig[MAX_CONCURRENT_STREAMS];
-   int       qpValues[MAX_CONCURRENT_STREAMS];
-   int       interFrameConfig[MAX_CONCURRENT_STREAMS];
+   int       xres[MAX_STREAMS];
+   int       yres[MAX_STREAMS];
+   int       streamingMode[MAX_STREAMS];
+   float     frameRate[MAX_STREAMS];
+   int       profile[MAX_STREAMS];
+   int       bitrateConfig[MAX_STREAMS];
+   int       qpValues[MAX_STREAMS];
+   int       interFrameConfig[MAX_STREAMS];
 
 /* streaming parameters */
 
-   int       bitRate[MAX_CONCURRENT_STREAMS];
-   int       dstIpAddr[MAX_CONCURRENT_STREAMS];
-   uint16_t  dstUdpPort[MAX_CONCURRENT_STREAMS];
-   unsigned long long dstMacAddr[MAX_CONCURRENT_STREAMS];  /* 6 bytes */
-   int       srcIpAddr[MAX_CONCURRENT_STREAMS];
-   uint16_t  srcUdpPort[MAX_CONCURRENT_STREAMS];
-   unsigned long long srcMacAddr[MAX_CONCURRENT_STREAMS];  /* 6 bytes */
+   int       bitRate[MAX_STREAMS];
+   int       dstIpAddr[MAX_STREAMS];
+   uint16_t  dstUdpPort[MAX_STREAMS];
+   unsigned long long dstMacAddr[MAX_STREAMS];  /* 6 bytes */
+   int       srcIpAddr[MAX_STREAMS];
+   uint16_t  srcUdpPort[MAX_STREAMS];
+   unsigned long long srcMacAddr[MAX_STREAMS];  /* 6 bytes */
    
 /* Scrypt algorithm parameters */
 

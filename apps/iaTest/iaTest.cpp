@@ -1,23 +1,25 @@
 /*
-   $Header: /root/Signalogic/DirectCore/apps/SigC641x_C667x/iaTest/iaTest.c
+  $Header: /root/Signalogic/DirectCore/apps/SigC641x_C667x/iaTest/iaTest.c
 
-   Purpose:
+  Purpose:
 
-     Test, demo, and benchmark program for Image Analytics
+    Test, demo, and benchmark program for Image Analytics
  
-   Description:
+  Description:
 
-     Image analytics demo, test, and performance measurement program, using x86 and/or coCPU hardware
+    Image analytics demo, test, and performance measurement program, using x86 and/or coCPU hardware
 
-   Copyright (C) Signalogic Inc. 2014-2024
+  Copyright (C) Signalogic Inc. 2014-2025
 
-   Revision History
-     Created Nov 2014 AKM
-     Modified 2015 JHB, support additional modes
-     Modified 2015 JHB, make consistent with vid_streaming_host_rt.c OpenMP test program
-     Modified May-Jun 2017 AM & JHB, add x86 mode for purposes of (i) SigSRF image analytics demo and (ii) benchmark and comparison between x86 and coCPU
-     Modified May 2024 JHB, convert to cpp; see also Makefile mods
-     Modified Nov 2024 JHB, include directcore.h (renamed from hwlib.h)
+  Revision History
+
+    Created Nov 2014 AKM
+    Modified 2015 JHB, support additional modes
+    Modified 2015 JHB, make consistent with vid_streaming_host_rt.c OpenMP test program
+    Modified May-Jun 2017 AM & JHB, add x86 mode for purposes of (i) SigSRF image analytics demo and (ii) benchmark and comparison between x86 and coCPU
+    Modified May 2024 JHB, convert to cpp; see also Makefile mods
+    Modified Nov 2024 JHB, include directcore.h (renamed from hwlib.h)
+    Modified Feb 2025 JHB, change references to MAXSTREAMS to MAX_COCPU_STREAMS (due to change in shared_include/streamlib.h)
 */
 
 /*
@@ -78,9 +80,9 @@ using namespace std;
 
 QWORD           nCoreList = 0;   /* bitwise core list, usually given in command line */
 
-unsigned char   inputbuf[MAXSTREAMS][MAXVIDDESCRIPTORSIZE];
-unsigned char   outputbuf[MAXSTREAMS][MAXVIDDESCRIPTORSIZE];
-IAPARAMS        IAParams[MAXSTREAMS] = { 0 };  /* image analytics, video, and streaming params filled in by command line, see cimlib.h */
+unsigned char   inputbuf[MAX_COCPU_STREAMS][MAXVIDDESCRIPTORSIZE];
+unsigned char   outputbuf[MAX_COCPU_STREAMS][MAXVIDDESCRIPTORSIZE];
+IAPARAMS        IAParams[MAX_COCPU_STREAMS] = { 0 };  /* image analytics, video, and streaming params filled in by command line, see cimlib.h */
 unsigned int    numStreams = 0; 
 unsigned int    hostFramesWritten = 0;
 unsigned int    numFileBytes, numBytesPerFrame;
@@ -118,11 +120,11 @@ int main(int argc, char *argv[]) {
 
 HDATAPLANE      dpHandle = (HDATAPLANE)NULL;  /* handle to data plane config and/or coCPU card */
 PLATFORMPARAMS  PlatformParams;
-int             i, exitCode, nBytesReadInput[MAXSTREAMS], nBytesReadOutput[MAXSTREAMS];
-FILE*           fp_in[MAXSTREAMS] = { NULL }; 
-FILE*           fp_out[MAXSTREAMS] = { NULL }; 
-char*           memBuffer[MAXSTREAMS] = { NULL };
-time_t          timerInterval[MAXSTREAMS] = { 1000 };  /* default timer setting:  1 msec rate in oneshot mode.  For continuous mode we set based on frame rate (below) */
+int             i, exitCode, nBytesReadInput[MAX_COCPU_STREAMS], nBytesReadOutput[MAX_COCPU_STREAMS];
+FILE*           fp_in[MAX_COCPU_STREAMS] = { NULL }; 
+FILE*           fp_out[MAX_COCPU_STREAMS] = { NULL }; 
+char*           memBuffer[MAX_COCPU_STREAMS] = { NULL };
+time_t          timerInterval[MAX_COCPU_STREAMS] = { 1000 };  /* default timer setting:  1 msec rate in oneshot mode.  For continuous mode we set based on frame rate (below) */
 
 
 /* display program banner */
@@ -258,7 +260,7 @@ cleanup:
 
 void RunOnce(int numStreams, time_t timerInterval[]) {
 
-static bool fRunOnce[MAXSTREAMS] = { false };
+static bool fRunOnce[MAX_COCPU_STREAMS] = { false };
 int i;
 
    for (i=0; i<numStreams; i++) {

@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/session_app.cpp
 
- Copyright (C) Signalogic Inc. 2021-2024
+ Copyright (C) Signalogic Inc. 2021-2025
 
  License
 
@@ -44,6 +44,8 @@
                            should produce an md5 sum ending in d689c8 for -rN entries from 0.8 to 20
 
    Modified Dec 2024 JHB, include <algorithm> and use std namespace
+   Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS to MAX_STREAMS
+   Modified Mar 2025 JHB, add cur_time param to CreateStaticSessions(), which gives it to app_printf()
 */
 
 #include <algorithm>
@@ -73,9 +75,9 @@ extern int nRepeatsRemaining[];
 
 /* functions currently in mediaMin.cpp */
 
-void JitterBufferOutputSetup(HSESSION hSession, int thread_index);  /* set up jitter buffer output */
-int OutputSetup(HSESSION hSession, int thread_index);  /* set up application packet/media packet output */
-void StreamGroupOutputSetup(HSESSION hSession, int nInput, int thread_index);  /* set up stream group output */
+void JitterBufferOutputSetup(HSESSION hSessions[], HSESSION hSession, int thread_index);  /* set up jitter buffer output */
+int OutputSetup(HSESSION hSessions[], HSESSION hSession, int thread_index);  /* set up application packet/media packet output */
+void StreamGroupOutputSetup(HSESSION hSession, int nStream, int thread_index);  /* set up stream group output */
 
 #define ENABLE_MANAGED_SESSIONS  /* managed sessions are defined by default. See GetSessionFlags() below */
 
@@ -320,7 +322,7 @@ int nSessionsConfigured = 0;
 
 /* create static sessions */
 
-int CreateStaticSessions(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, int thread_index) {
+int CreateStaticSessions(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, uint64_t cur_time, int thread_index) {
 
 int i, nSessionsCreated = 0;
 HSESSION hSession;
@@ -431,9 +433,9 @@ bool fStreamGroup;
          DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_BUFFER_TIME, STREAM_GROUP_BUFFER_TIME, NULL);  /* if STREAM_GROUP_BUFFER_TIME defined above, set group buffer time to value other than 260 msec default */
          #endif
 
-         JitterBufferOutputSetup(hSession, thread_index);  /* set up jitter buffer output for this session */
+         JitterBufferOutputSetup(hSessions, hSession, thread_index);  /* set up jitter buffer output for this session */
 
-         if (!OutputSetup(hSession, thread_index)) {  /* set up next matching cmd line output for this session, if any (e.g. transcoded audio, video bitstream), JHB Sep 2024 */
+         if (!OutputSetup(hSessions, hSession, thread_index)) {  /* set up next matching cmd line output for this session, if any (e.g. transcoded audio, video bitstream), JHB Sep 2024 */
 
          /* if no matching cmd line output spec found, disable output queue packets for this session */
 
@@ -446,9 +448,9 @@ bool fStreamGroup;
 
          if (fStreamGroup) {
 
-            int nInput = 0;  /* default is first cmd line input */
-            StreamGroupOutputSetup(hSession, nInput, thread_index);  /* set up stream group output if session is a group owner */
-           // thread_info[thread_index].fGroupOwnerCreated[!(Mode & COMBINE_INPUT_SPECS) ? nInput: 0][nReuse] = true;  /* done in CreateDynamicSession(), not sure yet if this is needed for static sessions */
+            int nStream = 0;  /* default is first cmd line input */
+            StreamGroupOutputSetup(hSession, nStream, thread_index);  /* set up stream group output if session is a group owner */
+           // thread_info[thread_index].fGroupOwnerCreated[!(Mode & COMBINE_INPUT_SPECS) ? nStream : 0][nReuse] = true;  /* done in CreateDynamicSession(), not sure yet if this is needed for static sessions */
          }
 
          thread_info[thread_index].nSessionsCreated++;  /* update per app thread vars */
@@ -458,7 +460,7 @@ bool fStreamGroup;
 
          for (int j=0; j<MAX_TERMS; j++) {
 
-            if (thread_info[thread_index].stream_stats_index < MAX_INPUT_STREAMS) {
+            if (thread_info[thread_index].stream_stats_index < MAX_STREAMS) {
 
                TERMINATION_INFO termInfo = !j ? session_data[i].term1 : session_data[i].term2;
 
@@ -487,7 +489,7 @@ bool fStreamGroup;
 
          if (Mode & CREATE_DELETE_TEST_PCAP) break;
       }
-      else app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG, thread_index, "mediaMin INFO: Failed to create static session %d%s \n", i, i > 0 ? ", continuing test with already created sessions" : "");
+      else app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG, cur_time, thread_index, "mediaMin INFO: Failed to create static session %d%s \n", i, i > 0 ? ", continuing test with already created sessions" : "");
    }
 
    if (nSessionsConfigured && !nSessionsCreated) {

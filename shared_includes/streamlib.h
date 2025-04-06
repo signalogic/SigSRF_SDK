@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/DirectCore/apps/SigC641x_C667x/streamTest/streamlib.h
 
- Copyright (C) Signalogic Inc. 2014-2024
+ Copyright (C) Signalogic Inc. 2014-2025
 
  License
 
@@ -57,6 +57,8 @@
   Modified Jul 2024 JHB, add TIMESTAMP_MATCH_WAV_OUTPUT flag. See usage example in mediaMin.cpp
   Modified Sep 2024 JHB, add DSGetStreamGroupInfo() DS_STREAMGROUP_INFO_OWNER_SESSION flag
   Modified Dec 2024 JHB, comments only
+  Modified Feb 2025 JHB, rename MAXSTREAMS to MAX_COCPU_STREAMS, move definition of MAX_STREAMS here from mediaTest.h
+  Modified Mar 2025 JHB, add TIMESTAMP_MATCH_ENABLE_STREAM_SYNC and TIMESTAMP_MATCH_ENABLE_DEBUG_OUTPUT flags
 */
 
 #ifndef _STREAMLIB_H_
@@ -94,7 +96,9 @@
 
 /* constant defines */
 
-#define MAXSTREAMS                    8                /* Max concurrent streams currently supported -- note this constant will be used by both host CPUs and coCPUs; shared mem arrays using this constant must agree, for example in CIM code generation */
+#define MAX_STREAMS                   512              /* max concurrent streams currently supported */
+
+#define MAX_COCPU_STREAMS             8                /* max concurrent coCPU streams currently supported -- note this constant will be used by both host CPUs and coCPUs; shared mem arrays using this constant must agree, for example in CIM code generation */
 
 #define MIN_FPS                       4                /* for now we use 4 fps as minimum frame rate allowed */
 #define DEFAULT_30_FPS                30
@@ -372,10 +376,10 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
    -should not be combined with group contributor flags (although currently they may not overlap in value, at some point they might)
 */
 
-  #define STREAM_GROUP_ENABLE_MERGING                                      0x1  /* merge all group contributors to generate "unified conversation" output and maintain stream alignment.  Contributors can opt in or out using the DS_MERGE_AUDIO_xx flags (alglib.h) in their termN.group_mode flags */
-  #define STREAM_GROUP_ENABLE_CONFERENCING                                 0x2
-  #define STREAM_GROUP_ENABLE_DEDUPLICATION                                0x4  /* applies a deduplication algorithm, which looks for similar content between stream contributors and attempts to align highly similar streams. The objective is to reduce perceived reverb/echo due to duplicated streams */
-  #define STREAM_GROUP_ENABLE_ASR                                          0x8  /* apply ASR to stream group output */
+  #define STREAM_GROUP_ENABLE_MERGING                                        1  /* merge all group contributors to generate "unified conversation" output and maintain stream alignment.  Contributors can opt in or out using the DS_MERGE_AUDIO_xx flags (alglib.h) in their termN.group_mode flags */
+  #define STREAM_GROUP_ENABLE_CONFERENCING                                   2
+  #define STREAM_GROUP_ENABLE_DEDUPLICATION                                  4  /* applies a deduplication algorithm, which looks for similar content between stream contributors and attempts to align highly similar streams. The objective is to reduce perceived reverb/echo due to duplicated streams */
+  #define STREAM_GROUP_ENABLE_ASR                                            8  /* apply ASR to stream group output */
 
   /* stream group wav output.  Stream group output wav files are named xxx_groupN.wav, multichannel contributor wav files are named xxx_streamN.wav, and mono contributor wav files are named xxx_streamN_M.wav, where xxx is first-found -o cmd line entry and N and M are the group and stream numbers, respectively */
 
@@ -429,10 +433,10 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
 
   #if 1 /* DECLARE_LEGACY_DEFINES */
   /* legacy defines for apps prior to Mar 2019 */
-  #define GROUP_MODE_DISABLE_FLC                                     STREAM_GROUP_FLC_DISABLE
-  #define GROUP_MODE_DISABLE_RTP_TIMESTAMP_ONHOLD_ADVANCE            STREAM_GROUP_RTP_TIMESTAMP_ONHOLD_ADVANCE_DISABLE
-  #define GROUP_MODE_DISABLE_DORMANT_SSRC_DETECTION                  STREAM_CONTRIBUTOR_DORMANT_SSRC_DETECTION_DISABLE
-  #define GROUP_MODE_ENABLE_ONHOLD_FLUSH_DETECTION                   STREAM_CONTRIBUTOR_ONHOLD_FLUSH_DETECTION_ENABLE
+  #define GROUP_MODE_DISABLE_FLC                                             STREAM_GROUP_FLC_DISABLE
+  #define GROUP_MODE_DISABLE_RTP_TIMESTAMP_ONHOLD_ADVANCE                    STREAM_GROUP_RTP_TIMESTAMP_ONHOLD_ADVANCE_DISABLE
+  #define GROUP_MODE_DISABLE_DORMANT_SSRC_DETECTION                          STREAM_CONTRIBUTOR_DORMANT_SSRC_DETECTION_DISABLE
+  #define GROUP_MODE_ENABLE_ONHOLD_FLUSH_DETECTION                           STREAM_CONTRIBUTOR_ONHOLD_FLUSH_DETECTION_ENABLE
   #endif
 
 /* Stream attach/remove APIs:
@@ -452,25 +456,25 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
 
 /* flags for DSGetStreamGroupContributorData() and DSStoreStreamGroupContributorData() */
 
-  #define DS_GROUPDATA_PEEK                                1             /* peek: can be used with DSGetGroupData() to see if a channel has a specific amount of data available. No actual data is returned (buf can be NULL) and internal buffer pointers are not modified */
-  #define DS_GROUPDATA_TOTAL_AVAILABLE                     2             /* DSGetGroupData() will return a channel's total amount of available data. length param is ignored, and no actual data is returned (buf can be NULL) and internal buffer pointers are not modified. This can be used to monitor a channel's overrun condition */
-  #define DS_GROUPDATA_SIM_TEST                            4             /* reserved */
-  #define DS_GROUPDATA_NORMALIZE_INSERTION_POINT           8             /* reserved */
+  #define DS_GROUPDATA_PEEK                                                  1  /* peek: can be used with DSGetGroupData() to see if a channel has a specific amount of data available. No actual data is returned (buf can be NULL) and internal buffer pointers are not modified */
+  #define DS_GROUPDATA_TOTAL_AVAILABLE                                       2  /* DSGetGroupData() will return a channel's total amount of available data. length param is ignored, and no actual data is returned (buf can be NULL) and internal buffer pointers are not modified. This can be used to monitor a channel's overrun condition */
+  #define DS_GROUPDATA_SIM_TEST                                              4  /* reserved */
+  #define DS_GROUPDATA_NORMALIZE_INSERTION_POINT                             8  /* reserved */
 
   int DSGetStreamGroupInfo(int handle, unsigned int uFlags, int* pNumContributors, int contributor_list[], char* szInfo);  /* returns a group index, szInfo if specified points to string into which group_name or filename should be retrieved */
 
-  #define DS_STREAMGROUP_INFO_CHECK_GROUPTERM              0             /* DSGetStreamGroupInfo() flags assume handle is an hSession, specifying hSession's group term, term1 or term2 to determine group info. Default is to use only the group term */
-  #define DS_STREAMGROUP_INFO_CHECK_TERM1                  1
-  #define DS_STREAMGROUP_INFO_CHECK_TERM2                  2
-  #define DS_STREAMGROUP_INFO_CHECK_ALLTERMS               3             /* try all terms, starting with group term, Retrieve group name in szInfo if specified */
-  #define DS_STREAMGROUP_INFO_MERGE_FILENAME               4             /* retrieve stream group filename in szInfo. For a usage example see mediaMin.cpp */
-  #define DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME           5             /* retrieve timestamp match mode stream group filename in szInfo */
-  #define DS_STREAMGROUP_INFO_OWNER_SESSION                6             /* retrieve group owner session when combined with DS_STREAMGROUP_INFO_HANDLE_IDX and handle is a valid idx */
+  #define DS_STREAMGROUP_INFO_CHECK_GROUPTERM                                0  /* DSGetStreamGroupInfo() flags assume handle is an hSession, specifying hSession's group term, term1 or term2 to determine group info. Default is to use only the group term */
+  #define DS_STREAMGROUP_INFO_CHECK_TERM1                                    1
+  #define DS_STREAMGROUP_INFO_CHECK_TERM2                                    2
+  #define DS_STREAMGROUP_INFO_CHECK_ALLTERMS                                 3  /* try all terms, starting with group term, Retrieve group name in szInfo if specified */
+  #define DS_STREAMGROUP_INFO_MERGE_FILENAME                                 4  /* retrieve stream group filename in szInfo. For a usage example see mediaMin.cpp */
+  #define DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME                             5  /* retrieve timestamp match mode stream group filename in szInfo */
+  #define DS_STREAMGROUP_INFO_OWNER_SESSION                                  6  /* retrieve group owner session when combined with DS_STREAMGROUP_INFO_HANDLE_IDX and handle is a valid idx */
 
-  #define DS_STREAMGROUP_INFO_ITEM_MASK                    0xff
+  #define DS_STREAMGROUP_INFO_ITEM_MASK                                   0xff
 
-  #define DS_STREAMGROUP_INFO_HANDLE_IDX                   0x100         /* handle will be interpreted as an idx. If neither DS_STREAMGROUP_INFO_HANDLE_IDX or DS_STREAMGROUP_INFO_HANDLE_CHNUM is given handle is interpreted as an hSession */
-  #define DS_STREAMGROUP_INFO_HANDLE_CHNUM                 0x200         /* handle will be interpreted as a chnum */
+  #define DS_STREAMGROUP_INFO_HANDLE_IDX                                 0x100  /* handle will be interpreted as an idx. If neither DS_STREAMGROUP_INFO_HANDLE_IDX or DS_STREAMGROUP_INFO_HANDLE_CHNUM is given handle is interpreted as an hSession */
+  #define DS_STREAMGROUP_INFO_HANDLE_CHNUM                               0x200  /* handle will be interpreted as a chnum */
 
   int DSGetStreamGroupContributorPastDue(int chnum);                     /* these 2 APIs only supported for analytics compatibility mode */
   int DSSetStreamGroupContributorPastDue(int chnum, int pastdue);
@@ -510,12 +514,15 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
 
 /* flags for DSProcessStreamGroupContributorsTSM(). In packet_flow_media_proc.c and mediaMin.cpp, look for uTimestampMatchMode to see flag usage, JHB Aug 2023 */
 
-  #define TIMESTAMP_MATCH_MODE_ENABLE           1     /* enable timestamp-match output mode */
-  #define TIMESTAMP_MATCH_WAV_OUTPUT            2     /* enable wav output in timestamp-match mode */
-  #define TIMESTAMP_MATCH_DISABLE_FLUSH         4     /* disable all jitter buffer packet flush (loss, level, etc) */
-  #define TIMESTAMP_MATCH_DISABLE_RESYNCS       8     /* disable jitter buffer resync */
-  #define TIMESTAMP_MATCH_INCLUDE_INPUT_PAUSES  0x10  /* include input stream pauses in timestamp-match wav output */
-  #define TIMESTAMP_MATCH_LIVE_MERGE_OUTPUT     0x20  /* enable live timestamp-match wav merge output */
+  #define TIMESTAMP_MATCH_MODE_ENABLE                                        1  /* enable timestamp-match output mode */
+  #define TIMESTAMP_MATCH_WAV_OUTPUT                                         2  /* enable wav output in timestamp-match mode */
+  #define TIMESTAMP_MATCH_DISABLE_FLUSH                                      4  /* disable all jitter buffer packet flush (loss, level, etc) */
+  #define TIMESTAMP_MATCH_DISABLE_RESYNCS                                    8  /* disable jitter buffer resync */
+  #define TIMESTAMP_MATCH_INCLUDE_INPUT_PAUSES                            0x10  /* include input stream pauses in timestamp-match wav output */
+  #define TIMESTAMP_MATCH_LIVE_MERGE_OUTPUT                               0x20  /* enable live timestamp-match wav merge output */
+
+  #define TIMESTAMP_MATCH_ENABLE_STREAM_SYNC                              0x40  /* enable stream synchronization. This only turns on under several strict conditions, the beta version still has issues with repeatability, JHB Mar 2025 */
+  #define TIMESTAMP_MATCH_ENABLE_DEBUG_OUTPUT                             0x80  /* enable timestamp match mode debug output */
 
 /* DSProcessAudio() performs audio domain processing, with options for sampling rate conversion, ASR, user-defined signal processing, and packet output
 
@@ -529,11 +536,11 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
 
 /* uFlags for DSProcessAudio() */
 
-  #define DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT     1  /* input audio frames (group_audio_buffer) are from the stream group indexed by idx */ 
-  #define DS_PROCESS_AUDIO_CONVERT_FS          0x100  /* convert sampling rate, upf and dnf specify up and down conversion multipliers */ 
-  #define DS_PROCESS_AUDIO_APPLY_ASR           0x200  /* ASR should be applied to processe audio */
-  #define DS_PROCESS_AUDIO_ENCODE            0x10000  /* encode audio */
-  #define DS_PROCESS_AUDIO_PACKET_OUTPUT     0x20000  /* processed audio output should be encoded, formatted into RTP packets, and sent to applications */
+  #define DS_PROCESS_AUDIO_STREAM_GROUP_OUTPUT                        1  /* input audio frames (group_audio_buffer) are from the stream group indexed by idx */ 
+  #define DS_PROCESS_AUDIO_CONVERT_FS                             0x100  /* convert sampling rate, upf and dnf specify up and down conversion multipliers */ 
+  #define DS_PROCESS_AUDIO_APPLY_ASR                              0x200  /* ASR should be applied to processe audio */
+  #define DS_PROCESS_AUDIO_ENCODE                               0x10000  /* encode audio */
+  #define DS_PROCESS_AUDIO_PACKET_OUTPUT                        0x20000  /* processed audio output should be encoded, formatted into RTP packets, and sent to applications */
 
 /* DSDeduplicateStreams() applies a deduplication algorithm, which looks for similar content between stream group contributors and attempts to align similar streams. The objective is to reduce perceived reverb/echo due to duplicated streams. A typical scenario is a multipath (duplicated) endpoint with different latencies */
 

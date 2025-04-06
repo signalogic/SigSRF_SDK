@@ -85,7 +85,7 @@ PAYLOAD_INFO PayloadInfo;  /* local payload info struct if needed */
       payload_info = &PayloadInfo;
    }
 
-   if ((ret_val = DSGetPayloadInfo(codec_type, DS_CODEC_INFO_TYPE | (uFlags & DS_PKTLIB_SUPPRESS_ERROR_MSG ? DS_PAYLOAD_INFO_SUPPRESS_WARNING_MSG : 0), &payload[rtp_hdr_len], rtp_payload_size, payload_info, 0, NULL)) < 0) return ret_val;  /* DSGetPayloadInfo() is in voplib, suppress error / messages based on uFlags */
+   if ((ret_val = DSGetPayloadInfo(codec_type, DS_CODEC_INFO_TYPE | (uFlags & DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG ? DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG : 0), &payload[rtp_hdr_len], rtp_payload_size, payload_info, NULL, -1, NULL, NULL)) < 0) return ret_val;  /* DSGetPayloadInfo() is in voplib, suppress error / messages based on uFlags */
 
 /* analyze PAYLOAD_INFO payload format and ToC info returned by DSGetPayloadInfo(), JHB Dec 2024 */
 
@@ -103,7 +103,7 @@ PAYLOAD_INFO PayloadInfo;  /* local payload info struct if needed */
    }
    else if (isEVSCodec(codec_type)) {  /* EVS */
 
-      if (payload_info->fAMRWB_IO_Mode) {  /* AMR-WB IO compatibility mode */
+      if (payload_info->voice.fAMRWB_IO_Mode) {  /* AMR-WB IO compatibility mode */
 
          if (payload_info->uFormat != DS_PYLD_FMT_COMPACT) uQBitpos = 0x10;  /* for EVS only AMR-WB IO compatibility mode frames have a Q bit */
          if (n >= 0) uNumAMRWBIOCompatibilityFrames[n]++;
@@ -121,7 +121,7 @@ PAYLOAD_INFO PayloadInfo;  /* local payload info struct if needed */
 
    for (int i=0; i<payload_info->NumFrames; i++) {  /* NumFrames can't be zero and can't be != 1 in compact format, but no need to error-check here, already done in DSGetPayloadInfo() */
 
-      if (uQBitpos && !(payload_info->ToC[i] & uQBitpos)) {
+      if (uQBitpos && !(payload_info->voice.ToC[i] & uQBitpos)) {
 
          if (pDamagedFrame) pDamagedFrame[i] = true;
          if (n >= 0) uNumDamagedFrames[n]++;  /* update run-time stats if channel number >= 0 */

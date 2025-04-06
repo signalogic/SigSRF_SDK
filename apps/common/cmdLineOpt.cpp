@@ -3,7 +3,7 @@
  
  Purpose: parse commanmd line options for SigSRF and DirectCore programs
   
- Copyright (C) Signalogic Inc. 2005-2024
+ Copyright (C) Signalogic Inc. 2005-2025
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -29,6 +29,7 @@
    Modified Feb 2024 JHB, add static to long_options[]. Reference apps (mediaTest, mediaMin) and both cimlib.so pull in cmdLineOpt.cpp and depending on gcc and ld version, without static long_options[] may appear twice and cause warning message such as "/usr/bin/ld: warning: size of symbol `long_options' changed from 160 in cmdLineOpt.o (symbol from plugin) to 192 in /tmp/ccqwricj.ltrans0.ltrans.o"
    Modified Jul 2024 JHB, add --group_pcap_nocopy and --random_bit_error cmd line options
    Modified Aug 2024 JHB, add --sha1sum and --sha512sum cmd line options
+   Modified Mar 2025 JHB, handle ALLOW_XX attributes defined in cmdLineOpt.h for overloaded options, for example -rN can accept N either int or float and fInvalidFormat is not set if the option can't be converted to a valid integer
 */
 
 #include <stdint.h>
@@ -104,9 +105,9 @@ intptr_t   x;
 float      f;
 long long  llx;
 char*      p, *p2, *p3;
-int        d[10] = {0,0,0,0,0,0,0,0,0,0};
+int        d[10] = { 0 };
 int        i, ret;
-uint64_t   m[10] = {0,0,0,0,0,0,0,0,0,0};
+uint64_t   m[10] = { 0 };
 uint64_t   ulx;
 int        instance_index, nMultiple, valueSuffix;
 char       suffix;
@@ -176,10 +177,9 @@ int long_option_index = -1;  /* index of long option, if found */
             printf(" *** in loop option = %d \n", optionFound);
             #endif
 
-            switch (this->options[optCounter].type) {
+            switch (this->options[optCounter].type & OPTION_TYPE_MASK) {
 
                case INTEGER:  /* usually accept entry in format -option NN, but also -option 0xNN and -option NN:NN:NN (up to 3 values) */
-               case INTEGER_ALLOWFLOAT:
 
                   nMultiple = 0;
                   if (!optarg) {
@@ -219,7 +219,7 @@ int long_option_index = -1;  /* index of long option, if found */
                      else ret = sscanf(p2, "%d", (int*)&x);
                      #endif
 
-                     if (ret != 1 || !valid_number(fHexVal ? &p2[2] : p2, fHexVal, this->options[optCounter].type == INTEGER_ALLOWFLOAT)) fInvalidFormat = true;
+                     if ((ret != 1 || !valid_number(fHexVal ? &p2[2] : p2, fHexVal, this->options[optCounter].type & ALLOW_FLOAT)) && !(this->options[optCounter].type & ALLOW_STRING)) fInvalidFormat = true;
 
                      if (valueSuffix >= 0) {
 
@@ -258,7 +258,7 @@ int long_option_index = -1;  /* index of long option, if found */
                        ret = sscanf(p2, "%lld", (unsigned long long*)&llx);
                        #endif
 
-                     if (ret != 1 || !valid_number(fHexVal ? &p2[2] : p2, fHexVal, false)) fInvalidFormat = true;
+                     if ((ret != 1 || !valid_number(fHexVal ? &p2[2] : p2, fHexVal, false)) && !(this->options[optCounter].type & ALLOW_STRING)) fInvalidFormat = true;
 
                      this->options[optCounter].value3[instance_index] = llx;
 
@@ -341,7 +341,7 @@ int long_option_index = -1;  /* index of long option, if found */
                   f = atof(optarg);
                   #else
                   ret = sscanf(optarg, "%f", (float*)&f);
-                  if (ret != 1 || !valid_number(optarg, false, true)) fInvalidFormat = true;  /* not a hex value, allow float chars */
+                  if ((ret != 1 || !valid_number(optarg, false, true)) && !(this->options[optCounter].type & ALLOW_STRING)) fInvalidFormat = true;  /* not a hex value, allow float chars */
                   #endif
 
                   #if 0

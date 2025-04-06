@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/sdp_app.h
 
- Copyright (C) Signalogic Inc. 2021-2024
+ Copyright (C) Signalogic Inc. 2021-2025
 
  License
 
@@ -33,6 +33,8 @@
    Modified Mar 2023 JHB, add SESSION_CONTROL_NO_PARSE uFlag
    Modified Jun 2024 JHB, add SESSION_CONTROL_SIP_BYE_MESSAGES and SESSION_CONTROL_DISABLE_MESSAGE_DISPLAY flags
    Modified Jun 2024 JHB, add SESSION_CONTROL_FOUND_SIP_UDP_FRAGMENT flag, returned by ProcessSessionControl() after saving incomplete / fragmented SDP info packet data (i.e. more packet data is needed for completion)
+   Modified Feb 2025 JHB, change nInput param name to nStream to match changes in mediaMin.cpp
+   Modified Mar 2025 JHB, add SDP_PARSE_ALLOW_ZERO_ORIGIN flag
 */
 
 #ifndef _SDP_APP_H_
@@ -43,6 +45,7 @@
 #define SDP_PARSE_NOADD                                 0       /* use this or no flag to parse only, without adding to thread_info[].xxx[stream] SDP database */
 #define SDP_PARSE_ADD                                   1 
 #define SDP_PARSE_IGNORE_ORIGINS                        2
+#define SDP_PARSE_ALLOW_ZERO_ORIGIN                     4       /* allow o= field to be zero, e.g. "o=0". Currently this flag is enabled only for command line sdp files, not for RTP streams */
 
 /* uFlags options for ProcessSessionControl() */
 
@@ -89,8 +92,8 @@ typedef struct {
 /* functions in sdp_app.cpp */
 
 int SDPSetup(const char* szSDPFile, int thread_index);
-int SDPParseInfo(std::string szSDP, unsigned int uFlags, int nInput, int thread_index);
-int ProcessSessionControl(uint8_t* pkt_in_buf, unsigned int uFlags, int nInput, int thread_index, char* szKeyword);
+int SDPParseInfo(std::string szSDP, unsigned int uFlags, int nStream, int thread_index);
+int ProcessSessionControl(uint8_t* pkt_in_buf, unsigned int uFlags, int nStream, int thread_index, char* szKeyword);
 
 #ifdef __cplusplus
   }

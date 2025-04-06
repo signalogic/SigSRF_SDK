@@ -54,13 +54,14 @@ Revision History
   Modified Sep 2024 JHB, change DS_FMT_USER_RTP_HEADER to DS_FMT_PKT_USER_UDP_PAYLOAD, per flag rename in pktlib.h
   Modified Oct 2024 JHB, debug-only sanity checks in DSReadPcap()
   Modified Nov 2024 JHB, use IPVn_ADDR_XXX defined in pktlib.h
-  Modified Dec 2024 JHB, add DS_PKTLIB_SUPPRESS_RTP_INFO_MSG flag in DSGetPacketInfo() call with DS_PKT_INFO_PKTINFO
+  Modified Dec 2024 JHB, add DS_PKTLIB_SUPPRESS_INFO_MSG flag in DSGetPacketInfo() call with DS_PKT_INFO_PKTINFO
   Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
   Modified Feb 2025 JHB, DSReadPcap() improvements:
                            -handle pcapng format IDB blocks, other known blocks (e.g. NRB, statistics, etc), and custom (unknown) blocks
                            -detect and adjust link layer length for Null/Loopback protocol
                            -detect and fix and TCP Segmentation Offload (TSO) zero lengths
                            -comprehensive error handling
+  Modified Mar 2025 JHB, per changes in pktlib.h to standardize with other SigSRF libs, adjust references to DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, DS_PKTLIB_SUPPRESS_INFO_MSG, and DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG flags
 */
 
 /* Linux and/or other OS includes */
@@ -630,7 +631,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
             if (!(uFlags & DS_READ_PCAP_SUPPRESS_INFO_MSG)) Log_RT(4, "INFO: DSReadPcap() says reading unused %s block (type = %d), ignoring data, link len = %d, uFlags = 0x%x \n", blkstr, pcapng_block_header.block_type, link_len_save, uFlags);
          }
-         else if (!(uFlags & DS_READ_PCAP_SUPPRESS_WARNING_MSG)) Log_RT(3, "WARNING: DSReadPcap() says reading unknown block type %d, ignoring data, link_len = %d, uFlags = 0x%x \n", pcapng_block_header.block_type, link_len_save, uFlags);
+         else if (!(uFlags & DS_READ_PCAP_SUPPRESS_WARNING_ERROR_MSG)) Log_RT(3, "WARNING: DSReadPcap() says reading unknown block type %d, ignoring data, link_len = %d, uFlags = 0x%x \n", pcapng_block_header.block_type, link_len_save, uFlags);
       }
    }
 
@@ -1048,7 +1049,7 @@ read_packet:
 
       /* fill in PktInfo struct with IP, UDP, and RTP header items */
  
-         ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_INFO_MSG, pkt_in_buf, -1, pPktInfo, NULL);  /* note - if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 and a warning message will be printed by DSGetPacketInfo(). We use the DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG and DS_PKTLIB_SUPPRESS_RTP_INFO_MSG flags to suppress RTP related warning messages as the packet type is unknown at this point */
+         ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_in_buf, -1, pPktInfo, NULL);  /* note - if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 and a warning message will be printed by DSGetPacketInfo(). We use the DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG and DS_PKTLIB_SUPPRESS_INFO_MSG flags to suppress RTP related warning messages as the packet type is unknown at this point */
 
          if (ret_val < 0) {
             #ifdef PKT_DISCARD_DEBUG

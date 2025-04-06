@@ -4,15 +4,17 @@
  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
- Copyright (c) 2021-2024 Signalogic, Dallas, Texas
+ Copyright (c) 2021-2025 Signalogic, Dallas, Texas
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
  Revision History
+
   Modified Jan 2021 JHB, add a=rtpmap attribute support
   Modified Mar 2021 JHB, more codec types
   Modified Jan 2023 JHB, additional codec types
   Modified Jun 2024 JHB, add H.263 and H.265 codec types
+  Modified Feb 2025 JHB, add L16 (linear 16-bit PCM) and MPA (MPEG-I/II) audio codec types
 */
 
 #include <sdp/utils.h>
@@ -114,6 +116,12 @@ namespace sdp {
     }
     else if (input == "H265") {
       result = SDP_H265;
+    }
+    else if (input == "PCM") {
+      result = SDP_L16;
+    }
+    else if (input == "MPA") {
+      result = SDP_MPA;
     }
     else if (input == "iLBC") {
       result = SDP_iLBC;

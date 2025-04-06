@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/session_app.h
 
- Copyright (C) Signalogic Inc. 2021-2023
+ Copyright (C) Signalogic Inc. 2021-2025
 
  License
 
@@ -25,6 +25,7 @@
 
    Created Apr 2021 JHB, split off from mediaMin.cpp
    Modified May 2023 JHB, changed SetIntervalTiming() to SetSessionTiming() and StaticSessionsCreate() to CreateStaticSessions()
+   Modified Mar 2025 JHB, add cur_time param to CreateStaticSessions()
 */
 #ifndef _SESSION_APP_H_
 #define _SESSION_APP_H_
@@ -35,7 +36,7 @@
 
 int ReadSessionConfig(SESSION_DATA session_data[], int thread_index);
 int ReadCodecConfig(codec_test_params_t* codec_test_params, int thread_index);
-int CreateStaticSessions(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, int thread_index);
+int CreateStaticSessions(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, uint64_t cur_time, int thread_index);
 void SetSessionTiming(SESSION_DATA session_data[]);
 unsigned int GetSessionFlags();
 

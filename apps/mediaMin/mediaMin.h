@@ -23,7 +23,7 @@
    Modified Oct 2019 JHB, index fGroupOwnerCreated by number of input specs to allow multiple multistream pcaps per cmd line, index fp_pcap_jb by number of sessions to allow jitter buffer output per session
    Modified Jan 2020 JHB, add nSessions, hSessions, and fDuplicatedHeaders for increased flexibility in handling multiple inputs / stream group cmd line inputs to APP_THREAD_INFO struct
    Modified Jan 2020 JHB, flush_state per-session (see comments about per-session flush in mediaThread_test_app.c), increase size of flushstr
-   Modified Mar 2020 JHB, index fFirstGroupPull[], add first_packet_push_time[]
+   Modified Mar 2020 JHB, index fFirstGroupPull[], add first_pkt_time[]
    Modified Apr 2020 JHB, add hSession to STREAM_STATS struct, increase max number of dynamic session stats to allow for repeating tests with multiple cmd line inputs
    Modified Oct 2020 JHB, expand link_layer_len to int32_t to handle mods to DSOpenPcap() and DSReadPcap() (pktlib) made to support pcapng format. Note - still needs to be an int (not unint) because DSOpenPcap() returns values < 0 for error conditions
    Modified Jan 2021 JHB, for SDP info and SIP Invite message support, add rtpmaps records (a vector of rtpmaps) and a few other items (see comments) to APP_THREAD_INFO struct
@@ -52,6 +52,8 @@
    Modified Nov 2024 JHB, rename DYNAMICSESSIONSTATS to STREAM_STATS and add stats support for static sessions. See StreamStats[] and StreamStatsState[] below; also see session_app.cpp for related changes
    Modified Jan 2025 JHB, add num_rtcp_packets[] and num_unhandled_rtp_packets[] to APP_THREAD_INFO struct
    Modified Feb 2025 JHB, rename pcap_out[] to out_file[], rename link_layer_len[] to link_layer_info[]
+   Modified Feb 2025 JHB, add fmtp to SDP info database structs. A key use case is handling sprop-vps, -sps, and -pps fields for video streams
+   Modified Mar 2025 JHB, add most_recent_console_output to thread_info[]; see comments in mediaMin.cpp
 */
 
 #ifndef _MEDIAMIN_H_
@@ -66,10 +68,29 @@
 
 #include "derlib.h"  /* bring in definition for HDERSTREAM (handle to a DER encapsulated stream) */
 
+/* stream and session notes
+
+  1) No session related arrays are indexed directly by session handles, which can be quite large values. Instead mediaMin maintains an hSessions[] array that maps session indexes to handles. This both establishes realistic for per-thread performance limits and reduces memory requirements
+
+  2) Each thread maintains stream / session mapping arrays
+
+    map_session_index_to_stream[], which is many:1, i.e. each session maps to one stream. Given a session index, this array returns its stream
+    map_stream_to_session_indexes[][], which is 1:many, i.e. one stream may have many sessions. Given a stream, this array returns a list of session indexes
+
+  3) Input stream indexes are 0 based and generally correspond to command line input spec indexes (e.g. pcaps and UDP port ranges) but not always. cmd_line_input_index[] will safely return a cmd line input index from a stream index
+
+  4) Output stream indexes are based on session functionality, for example output streams are created due to (i) stream groups (unified audio conversations) are formed, (ii) call/stream recordings, (iii) output specs on the cmd line
+
+  5) MAX_SESSIONS_THREAD and MAX_STREAMS_THREAD are defined here as per-thread limits. These are not be confused with MAX_SESSIONS and MAX_STREAMS which are defined in shared_include/transcoding.h and shared_include/streamlib.h and used by packet/media thread workers (pktlib)
+*/
+
+#define MAX_STREAMS_THREAD                64  /* maximum number of streams per thread */
+#define MAX_SESSIONS_THREAD               64  /* maximum number of sessions per thread */
+
 #define MAX_APP_STR_LEN                   2000
 #define STR_APPEND                        1
 
-#define SESSION_MARKED_AS_DELETED         0x80000000  /* private mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
+#define SESSION_MARKED_AS_DELETED         0x80000000L  /* private mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
 
 #define MAX_INPUT_REUSE                   16  /* in practice, cmd line entry up to -N9 has been tested (i.e. total reuse of 10x) */
 
@@ -167,49 +188,52 @@ typedef struct {  /* input data cache read items, JHB Oct 2024 */
 
 typedef struct {
 
-  int                  nSessionsCreated;
-  int                  nSessionsDeleted;
-  int                  nDynamicSessions;
-  uint32_t             total_sessions_created;
+  int                   nSessionsCreated;
+  int                   nSessionsDeleted;
+  int                   nDynamicSessions;
+  uint32_t              total_sessions_created;
 
-  int16_t              nInPcapFiles;
-  int16_t              nOutFiles;  /* output pcap or bitstream files */
+  int16_t               nInPcapFiles;
+  int16_t               nOutFiles;  /* output pcap or bitstream files */
 
-  int32_t              link_layer_info[MAX_INPUT_STREAMS];  /* note - the current definition of MAX_INPUT_STREAMS (512, in mediaTest.h) is overkill.  Something like 10 to 50 pcaps, with say up to 10 streams (sessions) each, is more realistic */
-  FILE*                pcap_in[MAX_INPUT_STREAMS];
-  uint16_t             input_index[MAX_INPUT_STREAMS];
-  pcap_hdr_t*          pcap_file_hdr[MAX_INPUT_STREAMS];  /* used in DSOpenPcap() and DSOpenPcapRecord(), JHB May 2024 */
-  uint8_t              uInputType[MAX_INPUT_STREAMS];
-  INPUT_DATA_CACHE*    input_data_cache[MAX_INPUT_STREAMS];  /* per-stream input data read cache, JHB Oct 2024 */
+  int32_t               link_layer_info[MAX_STREAMS_THREAD];
+  FILE*                 pcap_in[MAX_STREAMS_THREAD];
+  uint16_t              cmd_line_input_index[MAX_STREAMS_THREAD];
+  pcap_hdr_t*           pcap_file_hdr[MAX_STREAMS_THREAD];  /* used in DSOpenPcap() and DSOpenPcapRecord(), JHB May 2024 */
+  uint8_t               uInputType[MAX_STREAMS_THREAD];
+  INPUT_DATA_CACHE*     input_data_cache[MAX_STREAMS_THREAD];  /* per-stream input data read cache, JHB Oct 2024 */
 
-  FILE*                out_file[MAX_INPUT_STREAMS];
-  uint8_t              uOutputType[MAX_INPUT_STREAMS];
+  FILE*                 out_file[MAX_STREAMS_THREAD];
+  uint8_t               uOutputType[MAX_STREAMS_THREAD];
 
-  int                  nSessions[MAX_INPUT_STREAMS];
-  int                  nSessionIndex[MAX_INPUT_STREAMS][MAX_SESSIONS];  /* MAX_SESSIONS is defined in shared_include/transcoding.h */
-  int                  nSessionOutputIndex[MAX_SESSIONS];
-  bool                 fDuplicatedHeaders[MAX_INPUT_STREAMS];
-  FILE*                fp_pcap_jb[MAX_SESSIONS];
-  bool                 init_err;
+  int                   nSessions[MAX_STREAMS_THREAD];  /* thread's current number of sessions */
+
+  int                   map_session_index_to_stream[MAX_SESSIONS_THREAD];  /* many:1 mapping, for a given session index, retrieve its stream. See "stream and session notes" */
+  int                   map_stream_to_session_indexes[MAX_STREAMS_THREAD][MAX_SESSIONS_THREAD];  /* 1:many mapping: for a given stream, retrieve a list of session indexes */
+
+  int                   nSessionOutputStream[MAX_SESSIONS_THREAD];
+  bool                  fDuplicatedHeaders[MAX_STREAMS_THREAD];
+  FILE*                 fp_pcap_jb[MAX_SESSIONS_THREAD];
+  bool                  init_err;
 
 /* packet stats */
 
-  uint32_t             packet_number[MAX_INPUT_STREAMS];  /* for pcaps this stat matches "packet number" in Wireshark displays. It also serves as a counter for total number of packets per stream */
-  uint32_t             num_tcp_packets[MAX_INPUT_STREAMS];
-  uint32_t             num_udp_packets[MAX_INPUT_STREAMS];
-  uint32_t             num_packets_encapsulated[MAX_INPUT_STREAMS];
-  uint32_t             num_rtp_packets[MAX_INPUT_STREAMS];
-  uint32_t             num_rtcp_packets[MAX_INPUT_STREAMS];
-  uint32_t             num_unhandled_rtp_packets[MAX_INPUT_STREAMS];
+  uint32_t              packet_number[MAX_STREAMS_THREAD];  /* for pcaps this stat matches "packet number" in Wireshark displays. It also serves as a counter for total number of packets per stream */
+  uint32_t              num_tcp_packets[MAX_STREAMS_THREAD];
+  uint32_t              num_udp_packets[MAX_STREAMS_THREAD];
+  uint32_t              num_packets_encapsulated[MAX_STREAMS_THREAD];
+  uint32_t              num_rtp_packets[MAX_STREAMS_THREAD];
+  uint32_t              num_rtcp_packets[MAX_STREAMS_THREAD];
+  uint32_t              num_unhandled_rtp_packets[MAX_STREAMS_THREAD];
 
-  uint32_t             num_packets_fragmented[MAX_INPUT_STREAMS];
-  uint32_t             num_packets_reassembled[MAX_INPUT_STREAMS];
+  uint32_t              num_packets_fragmented[MAX_STREAMS_THREAD];
+  uint32_t              num_packets_reassembled[MAX_STREAMS_THREAD];
 
-  FILE*                fp_pcap_group[MAX_STREAM_GROUPS];  /* note - this array is accessed by a session counter, and each app thread might handle up to 50 sessions, so this size (172, defined in shared_include/streamlib.h) is overkill.  But leave it for now */
-  FILE*                fp_text_group[MAX_STREAM_GROUPS];
-  char                 szGroupPcap[MAX_STREAM_GROUPS][CMDOPT_MAX_INPUT_LEN];  /* added to support --group_pcap cmd line option, JHB Dec 2023 */
-  char                 szGroupName[MAX_STREAM_GROUPS][MAX_GROUPID_LEN];
-  bool                 fGroupOwnerCreated[MAX_STREAM_GROUPS][MAX_INPUT_REUSE];  /* used in dynamic session mode */
+  FILE*                 fp_pcap_group[MAX_STREAM_GROUPS];  /* note - this array is accessed by a session counter, and each app thread might handle up to 50 sessions, so this size (172, defined in shared_include/streamlib.h) is overkill.  But leave it for now */
+  FILE*                 fp_text_group[MAX_STREAM_GROUPS];
+  char                  szGroupPcap[MAX_STREAM_GROUPS][CMDOPT_MAX_INPUT_LEN];  /* added to support --group_pcap cmd line option, JHB Dec 2023 */
+  char                  szGroupName[MAX_STREAM_GROUPS][MAX_GROUPID_LEN];
+  bool                  fGroupOwnerCreated[MAX_STREAM_GROUPS][MAX_INPUT_REUSE];  /* used in dynamic session mode */
 
   bool                  fFirstGroupPull[MAX_STREAM_GROUPS];
   GROUP_PULL_STATS      GroupPullStats[MAX_GROUP_STATS];
@@ -219,67 +243,92 @@ typedef struct {
 
 /* stream stats */
 
-  uint32_t             uStreamStatsState[NCORECHAN];
-  #define              STREAM_STATE_FIRST_PKT  0x10000000
-  #define              STREAM_STATE_FLAG_MASK  0xf0000000
-  STREAM_STATS         StreamStats[MAX_INPUT_STREAMS];
-  int16_t              stream_stats_index;
+  uint32_t              uStreamStatsState[NCORECHAN];
+  #define               STREAM_STATE_FIRST_PKT  0x10000000
+  #define               STREAM_STATE_FLAG_MASK  0xf0000000
+  STREAM_STATS          StreamStats[MAX_STREAMS_THREAD];
+  int16_t               stream_stats_index;
 
-  uint32_t             pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_xcode_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_xcode_ctr, prev_pkt_pull_streamgroup_ctr;  /* referenced in UpdateCounters() console update in user_io.cpp */
+  uint32_t              pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_xcode_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_xcode_ctr, prev_pkt_pull_streamgroup_ctr;  /* referenced in UpdateCounters() console update in user_io.cpp */
 
-  int8_t               flush_state[MAX_SESSIONS];
-  uint32_t             flush_count;
+  int8_t                flush_state[MAX_SESSIONS_THREAD];
+  uint32_t              flush_count;
 
-  bool                 fDynamicSessions;
+  bool                  fDynamicSessions;
 
-  uint64_t             pkt_base_timestamp[MAX_INPUT_STREAMS];
-  uint64_t             initial_push_time[MAX_INPUT_STREAMS];
-  uint64_t             total_push_time[MAX_INPUT_STREAMS];
+  uint64_t              pkt_base_timestamp[MAX_STREAMS_THREAD];  /* arrival timestamp of first packet in a stream, in msec */
+  uint64_t              first_pkt_time[MAX_STREAMS_THREAD];      /* time of first packet processed to be in a stream, in msec */
+  uint64_t              total_pkt_time[MAX_STREAMS_THREAD];      /* total time of packet processing in a stream */
 
 /* SDP info and SIP invite message items, added JHB Jan 2021 */
 
-  uint16_t                 num_rtpmaps[MAX_INPUT_STREAMS];
-  vector<sdp::Attribute*>  rtpmaps[MAX_INPUT_STREAMS];
-  uint16_t                 num_origins[MAX_INPUT_STREAMS];
-  vector<sdp::Origin*>     origins[MAX_INPUT_STREAMS];
-  uint16_t                 num_media_descriptions[MAX_INPUT_STREAMS];  /* add media descriptions, JHB Jun 2024 */
-  vector<sdp::Media*>      media_descriptions[MAX_INPUT_STREAMS];
+  uint16_t                 num_rtpmaps[MAX_STREAMS_THREAD];
+  vector<sdp::Attribute*>  rtpmaps[MAX_STREAMS_THREAD];
+  uint16_t                 num_origins[MAX_STREAMS_THREAD];
+  vector<sdp::Origin*>     origins[MAX_STREAMS_THREAD];
+  uint16_t                 num_media_descriptions[MAX_STREAMS_THREAD];  /* add media descriptions, JHB Jun 2024 */
+  vector<sdp::Media*>      media_descriptions[MAX_STREAMS_THREAD];
+  uint16_t                 num_fmtps[MAX_STREAMS_THREAD];
+  vector<sdp::Attribute*>  fmtps[MAX_STREAMS_THREAD];
 
-  bool                 fUnmatchedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
-  bool                 fDisallowedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_INPUT_STREAMS];
+/* misc stream strangenesses we can keep track of */
 
-  uint8_t              dynamic_terminate_stream[MAX_INPUT_STREAMS];  /* non-zero values will terminate a stream, for example a SIP BYE messsage from sender or recipient with same IP addr as active media stream.  See STREAM_TERMINATES_xxx defines above */
+  uint32_t              uNoDataFrame[MAX_STREAMS_THREAD];
+  bool                  fUnmatchedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_STREAMS_THREAD];
+  bool                  fDisallowedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_STREAMS_THREAD];
+
+  uint8_t               dynamic_terminate_stream[MAX_STREAMS_THREAD];  /* non-zero values will terminate a stream, for example a SIP BYE messsage from sender or recipient with same IP addr as active media stream.  See STREAM_TERMINATES_xxx defines above */
 
 /* SIP aggregated packet handling, supports SIP messages, SIP invite, SAP protocol, and other SDP info packets, added JHB Mar 2021 */
   
-  uint8_t*             sip_info_save[MAX_INPUT_STREAMS];
-  int                  sip_info_save_len[MAX_INPUT_STREAMS];
-  int32_t              sip_info_crc32[MAX_INPUT_STREAMS];
+  uint8_t*              sip_info_save[MAX_STREAMS_THREAD];
+  int                   sip_info_save_len[MAX_STREAMS_THREAD];
+  int32_t               sip_info_crc32[MAX_STREAMS_THREAD];
 
 /* LI HI2/HI3 items */
 
-  HDERSTREAM           hDerStreams[MAX_INPUT_STREAMS];  /* DER stream handles, added JHB Mar 2021 */
-  FILE*                hFile_ASN_XML[MAX_INPUT_STREAMS];  /* DER stream XML output file handles, JHB Dec 2022 */
+  HDERSTREAM            hDerStreams[MAX_STREAMS_THREAD];  /* DER stream handles, added JHB Mar 2021 */
+  FILE*                 hFile_ASN_XML[MAX_STREAMS_THREAD];  /* DER stream XML output file handles, JHB Dec 2022 */
 
  /* items used in GetInputData() and PushPackets() */
 
-  uint8_t              uCacheFlags[MAX_INPUT_STREAMS];             /* input cache flags controlling operation of GetInputData() */
-  PKTINFO              PktInfo[MAX_INPUT_STREAMS];                 /* saved copy of PktInfo, can be used to compare current and previous packets */ 
-  unsigned int         tcp_redundant_discards[MAX_INPUT_STREAMS];  /* count of discarded TCP redundant retransmissions */
-  unsigned int         udp_redundant_discards[MAX_INPUT_STREAMS];  /* count of discarded UDP redundant retransmissions, JHB Jun 2024 */
+  uint8_t               uCacheFlags[MAX_STREAMS_THREAD];             /* input cache flags controlling operation of GetInputData() */
+  PKTINFO               PktInfo[MAX_STREAMS_THREAD];                 /* saved copy of PktInfo, can be used to compare current and previous packets */ 
+  unsigned int          tcp_redundant_discards[MAX_STREAMS_THREAD];  /* count of discarded TCP redundant retransmissions */
+  unsigned int          udp_redundant_discards[MAX_STREAMS_THREAD];  /* count of discarded UDP redundant retransmissions, JHB Jun 2024 */
 
 /* packet fragmentation items, JHB Jun 2024 */
 
-  uint16_t             dst_port[MAX_INPUT_STREAMS];                /* ports are saved when MF flag is set and fragment offset is not */
-  uint16_t             src_port[MAX_INPUT_STREAMS];
+  uint16_t              dst_port[MAX_STREAMS_THREAD];                /* ports are saved when MF flag is set and fragment offset is not */
+  uint16_t              src_port[MAX_STREAMS_THREAD];
   
 /* AFAP and FTRT mode support */
 
-  struct timespec      accel_time_ts[MAX_STREAM_GROUPS];  /* stream group accerated timestamps, added to support FTRT and AFAP modes, JHB May 2023 */
+  struct timespec       accel_time_ts[MAX_STREAM_GROUPS];  /* stream group accerated timestamps, added to support FTRT and AFAP modes, JHB May 2023 */
 
 /* console output (auto quit, etc) */
 
-  uint64_t             uOneTimeConsoleQuitMessage;
+  uint64_t              uOneTimeConsoleQuitMessage;
+  uint64_t              most_recent_console_output;  /* most recent console output, in usec. See cur_time in mediaMin.cpp */ 
+
+/* per-thread arrival timing stats */
+
+  float                 arrival_avg_delta[MAX_SESSIONS_THREAD];
+  float                 arrival_avg_delta_clock[MAX_SESSIONS_THREAD];
+  float                 arrival_avg_jitter[MAX_SESSIONS_THREAD];
+  float                 arrival_max_delta[MAX_SESSIONS_THREAD];
+  float                 arrival_max_jitter[MAX_SESSIONS_THREAD];
+
+  float                 last_msec_timestamp[MAX_SESSIONS_THREAD];
+  int                   last_rtp_pyld_len[MAX_SESSIONS_THREAD];
+
+  //# define RTP_TIMESTAMP_STATS  /* define for RTP timestamp stats and debug, and then do make clean; make all. Not normally used as timestamps are unlikely to be in correct order until processing by pktlib jitter buffer, JHB Mar 2025 */
+  #ifdef RTP_TIMESTAMP_STATS
+  float                 rtp_timestamp_avg_delta[MAX_SESSIONS_THREAD];
+  uint32_t              last_rtp_timestamp[MAX_SESSIONS_THREAD];
+  #endif
+
+  uint32_t              num_arrival_stats_pkts[MAX_SESSIONS_THREAD];
 
 } APP_THREAD_INFO;
 

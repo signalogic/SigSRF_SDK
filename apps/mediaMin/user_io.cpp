@@ -38,6 +38,7 @@
    Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
    Modified Dec 2024 JHB, include <algorithm> and use std namespace
    Modified Jan 2025 JHB, some comments added after AI tools source code review
+   Modified Mar 2025 JHB, in app_printf() update thread_info[].most_recent_console_output, add cur_time param in app_printf() and UpdateCounters()
 */
 
 #include <algorithm>
@@ -90,6 +91,7 @@ static uint64_t last_time[MAX_PKTMEDIA_THREADS] = { 0 };
       if (thread_info[thread_index].pkt_pull_xcode_ctr || thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], "j");
       if (thread_info[thread_index].pkt_pull_xcode_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].pkt_pull_xcode_ctr);
       if (thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %ds", thread_info[thread_index].pkt_pull_streamgroup_ctr);
+      strcat(tmpstr, " ");  /* real-time stats readability, JHB Mar 2025 */
 
       thread_info[thread_index].prev_pkt_push_ctr = thread_info[thread_index].pkt_push_ctr;
       thread_info[thread_index].prev_pkt_pull_jb_ctr = thread_info[thread_index].pkt_pull_jb_ctr;
@@ -97,13 +99,13 @@ static uint64_t last_time[MAX_PKTMEDIA_THREADS] = { 0 };
       thread_info[thread_index].prev_pkt_pull_streamgroup_ctr = thread_info[thread_index].pkt_pull_streamgroup_ctr;
    }
 
-   if (strlen(tmpstr)) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX, thread_index, tmpstr);  /* use fully buffered I/O; i.e. not stdout (line buffered) or stderr (per character) */
+   if (strlen(tmpstr)) app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX, cur_time, thread_index, tmpstr);  /* use fully buffered I/O; i.e. not stdout (line buffered) or stderr (per character) */
 }
 
 
 /* process interactive keyboard input */
 
-bool ProcessKeys(HSESSION hSessions[], uint64_t cur_time, DEBUG_CONFIG* dbg_cfg, int thread_index) {
+bool ProcessKeys(HSESSION hSessions[], DEBUG_CONFIG* dbg_cfg, uint64_t cur_time, int thread_index) {
 
 char key;
 static int app_thread_index_debug = 0;
@@ -154,7 +156,7 @@ static bool fSetStdoutNonBuffered = false;
          else if (fCtrl_C_pressed) sprintf(&tmpstr[strlen(tmpstr)], "Ctrl-C entered");
 
          sprintf(&tmpstr[strlen(tmpstr)], ", exiting mediaMin");
-         app_printf(APP_PRINTF_NEW_LINE, thread_index, tmpstr);
+         app_printf(APP_PRINTF_NEW_LINE, cur_time, thread_index, tmpstr);
 
          fQuit = true;
          return true;
@@ -274,7 +276,7 @@ static bool fSetStdoutNonBuffered = false;
 
 /* handy function to handle application screen output, event logging, and cursor position update. For uFlags, see flags in user_io.h */
 
-void app_printf(unsigned int uFlags, int thread_index, const char* fmt, ...) {
+void app_printf(unsigned int uFlags, uint64_t cur_time, int thread_index, const char* fmt, ...) {
 
 char outstr[MAX_APP_STR_LEN];
 char* p;
@@ -308,7 +310,9 @@ int slen;
       uLineCursorPos = (p[slen-1] != '\n' && p[slen-1] != '\r') ? slen : 0;  /* update line cursor position */
 
       printf("%s", p);  /* use buffered output */
-      
+
+      thread_info[thread_index].most_recent_console_output = cur_time;  /* update time of most recent console output, JHB Mar 2025 */
+
       if ((uFlags & APP_PRINTF_EVENT_LOG) || (uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP)) {
 
          if (uFlags & APP_PRINTF_EVENT_LOG_STRIP_LFs) {

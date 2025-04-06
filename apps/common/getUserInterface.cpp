@@ -3,7 +3,7 @@
 
  Purpose: Defines help menu and collects command line options
 
- Copyright (C) Signalogic Inc. 1992-2024
+ Copyright (C) Signalogic Inc. 1992-2025
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -44,6 +44,7 @@
    Modified Feb 2024 JHB, add static to options[]. Reference apps (mediaTest, mediaMin) and cimlib.so both pull in getUserInterface.cpp and depending on gcc and ld version, without static options[] may appear twice and cause warning message such as "/usr/bin/ld: warning: size of symbol `options' changed from 30080 in getUserInterface.o (symbol from plugin) to 30720 in /tmp/ccqwricj.ltrans2.ltrans.o"
    Modified Jul 2024 JHB, add --group_pcap_nocopy and --random_bit_error cmd line options, integrate userInfo.h CmdLineFlags_t struct with 1-bit flags. Look for CmdLineFlags.xxx
    Modified Aug 2024 JHB, add --sha1sum and --sha512sum cmd line options, used by mediaMin and mediaTest apps
+   Modified Mar 2025 JHB, use ALLOW_XX attributes defined in cmdLineOpt.h for overloaded options, for example -rN can accept N either int or float
 */
 
 #include <stdlib.h>
@@ -122,7 +123,7 @@ static CmdLineOpt::Record options[] = {
           (char *)"x resolution (e.g. -x1920 for 1920 video width)", {{(void*)0}} },
    {'y', CmdLineOpt::INTEGER, NOTMANDATORY, 
           (char *)"y resolution (e.g. -x1080 for 1080 video height)", {{(void*)0}} },
-	{'s', CmdLineOpt::INTEGER, NOTMANDATORY,
+	{'s', (CmdLineOpt::Type)(CmdLineOpt::INTEGER | CmdLineOpt::ALLOW_STRING), NOTMANDATORY,
           (char *)"Segmentation for mediaTest audio, streaming mode for streamTest (e.g. -s0 for oneshot, -s1 for continuous)", {{(void*)0}} },
 	{'s', CmdLineOpt::STRING, NOTMANDATORY,
           (char *)"sdp file input for mediaMin" },
@@ -162,11 +163,11 @@ static CmdLineOpt::Record options[] = {
           (char *)"Scrypt algorithm mode encode" },
 	{'D', CmdLineOpt::BOOLEAN, NOTMANDATORY,
           (char *)"Scrypt algorithm mode decode" },
-	{'s', CmdLineOpt::BOOLEAN, NOTMANDATORY,
+	{'s', (CmdLineOpt::Type)(CmdLineOpt::BOOLEAN | CmdLineOpt::ALLOW_STRING), NOTMANDATORY,
           (char *)"Scrypt"},
 	{'N', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Scrypt algorithm N parameter" },
-	{'r', CmdLineOpt::INTEGER_ALLOWFLOAT, NOTMANDATORY,
+	{'r', (CmdLineOpt::Type)(CmdLineOpt::INTEGER | CmdLineOpt::ALLOW_FLOAT), NOTMANDATORY,
           (char *)"Scrypt algorithm r parameter" },
 	{'p', CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"Scrypt algorithm p parameter", {{(void*)0}} },
@@ -317,6 +318,7 @@ char clkstr[100];
            for (i=0; i<instances; i++) userIfs->yres[i] = cmdOpts.getInt('y', i, 0);
 
          if (uFlags & CLI_MEDIA_APPS) {
+
             if ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) && cmdOpts.getStr('s', 0) != NULL) strncpy(userIfs->szSDPFile, cmdOpts.getStr('s', 0), CMDOPT_MAX_INPUT_LEN);  /* added for mediaMin SDP file input, JHB Jan 2021 */
             else userIfs->nSegmentation = cmdOpts.getInt('s', 0, 0);  /* added for mediaTest segmentation, silence detection, strip, chunk rewrite, etc, JHB Jul 2019 */
          }

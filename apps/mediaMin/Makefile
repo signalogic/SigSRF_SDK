@@ -42,6 +42,7 @@
 #  Modified Sep 2024 JHB, add -g to end of LDFLAGS, fixes issue where v7.4 gdb can't read symbol info
 #  Modified Nov 2024 JHB, add -Wextra -Wno-missing-field-initializers -Werror to CPPFLAGS to enable extra warnings *except* for missing struct initializers, which is a hopeless quest for perfection even when a struct is declared with = { 0 } so it does get fully initialized to zero (https://stackoverflow.com/questions/68555447/g11-getting-rid-of-missing-initializer-for-member-aanonymous, https://stackoverflow.com/questions/7724939/struct-initialization-fails-with-gcc-4)
 #  Modified Jan 2025 JHB, add -Wno-error=implicit-fallthrough to CPPFLAGS for gcc 7.x and higher
+#  Modified Feb 2025 JHB, comments only
 
 # check make cmd line for "no_codecs" option
 

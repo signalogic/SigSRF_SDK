@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/user_io.h
 
- Copyright (C) Signalogic Inc. 2021-2024
+ Copyright (C) Signalogic Inc. 2021-2025
 
  License
 
@@ -26,6 +26,7 @@
    Created Apr 2021 JHB, split off from mediaMin.cpp
    Modified Jan 2023 JHB, add APP_PRINTF_PRINT_ONLY flag
    Modified Jun 2024 JHB, add PrintPacketBuffer()
+   Modified Mar 2025 JHB, add cur_time param to app_printf() and UpdateCounters()
 */
 
 #ifndef _USER_IO_H_
@@ -45,8 +46,8 @@
 /* functions in user_io.cpp */
 
 void UpdateCounters(uint64_t cur_time, int thread_index);
-bool ProcessKeys(HSESSION hSessions[], uint64_t, DEBUG_CONFIG*, int);  /* process keyboard command input */
-void app_printf(unsigned int uFlags, int thread_index, const char* fmt, ...);
+bool ProcessKeys(HSESSION hSessions[], DEBUG_CONFIG* pDebugConfig, uint64_t cur_time, int thread_index);  /* process keyboard command input */
+void app_printf(unsigned int uFlags, uint64_t cur_time, int thread_index, const char* fmt, ...);
 void PrintPacketBuffer(uint8_t* buf, int len, const char*, const char*);
 void PrintSIPInviteFragments(uint8_t* pkt_buf, PKTINFO* PktInfo, int pkt_len);
 

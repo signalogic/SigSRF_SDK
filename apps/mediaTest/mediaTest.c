@@ -1180,7 +1180,7 @@ exit:
 
 static char prog_str[] = "mediaTest";
 static char banner_str[] = "SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms";
-static char version_str[] = "v2.10.0";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
+static char version_str[] = "v2.10.1";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
 static char copyright_str[] = "Copyright (C) Signalogic 2015-2025";
 
 int main(int argc, char **argv) {

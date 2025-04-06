@@ -3,7 +3,7 @@
 
  Purpose:  command line options parsing and handling
   
- Copyright (C) Signalogic Inc. 2005-2024
+ Copyright (C) Signalogic Inc. 2005-2025
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -21,6 +21,8 @@
    Modified May 2023 JHB, add FLOAT option type, FLOAT switch statement cases, getFloat(), change getUdpPort() from unsigned int to uint16_t
    Modified Jul 2023 JHB, add getPosition() public function to CmdLineOpt class
    Modified Feb 2024 JHB, add CLI_MEDIA_APPS_MEDIATEST flag
+   Modified Dec 2024 JHB, don't define CmdLineOpt class if __cplusplus not defined
+   Modified Mar 2025 JHB, define ALLOW_XX Type enums for use with overloaded options, for example -rN can accept N either int or float
 */
 
 #ifndef _CMDLINEOPT_H_
@@ -46,6 +48,8 @@
 #define MANDATORY_COCPU             2
 #define NOTMANDATORY                0
 
+#ifdef __cplusplus
+
 class CmdLineOpt {
 
 public:
@@ -60,7 +64,9 @@ public:
       BOOLEAN,
       IPADDR,
       FLOAT,
-      INTEGER_ALLOWFLOAT
+      ALLOW_FLOAT = 0x100,  /* ALLOW_XX attributes can be combined with option types to indicate the argument is overloaded and errors in converting to the primary type should be ignored, JHB Mar 2025 */
+      ALLOW_STRING = 0x200,
+      OPTION_TYPE_MASK = 0xff
    };
 
 /* Structure for working with command line options */
@@ -109,5 +115,6 @@ private:
    int numOptions;
 };
 
+#endif  /* __cplusplus */
 
-#endif /* _CMDLINEOPT_H_ */
+#endif  /* _CMDLINEOPT_H_ */

@@ -78,7 +78,7 @@ using namespace std;
 #include "diaglib_priv.h"
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.9.6";
+const char DIAGLIB_VERSION[256] = "1.9.7";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 

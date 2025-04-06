@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/mediaMin/sdp_app.cpp
 
- Copyright (C) Signalogic Inc. 2021-2024
+ Copyright (C) Signalogic Inc. 2021-2025
 
  License
 
@@ -24,6 +24,10 @@
     after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
 
     before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
+
+ Notes
+
+    Uses sdp namespace and SDP class in apps/common/sdp
 
  Revision History
 
@@ -49,6 +53,10 @@
    Modified Jul 2024 JHB, per change in pktlib.h, edit DSGetPacketInfo() calls to make uFlags last param
    Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
    Modified Dec 2024 JHB, include <algorithm> and use std namespace
+   Modified Feb 2025 JHB, add fmtp parsing, save in thread_info[] fmtps attribute per-stream vectors
+   Modified Feb 2025 JHB, for all items, not only origins, search database first to see if already there and avoid adding duplicates. This became necessary after video stream test cases where SDP info is repeated at regular intervals
+   Modified Mar 2025 JHB, fix bug in media description search (look for SDP_MEDIA_ANY)
+   Modified Mar 2025 JHB, improve display of SDP info originating from .sdp files (i) implement SDP_PARSE_ALLOW_ZERO_ORIGIN flag, (i) leave comments occurring later on the same line as SDP info text, (iii) remove whitespace lines (e.g. all spaces then a CRLF)
 */
 
 #include <algorithm>  /* bring in std::min and std::max */
@@ -80,9 +88,10 @@ extern APP_THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin
   -SDP info can be from command line .sdp file or SIP invite packet text data. SDP info can contain multiple Media elements, multiple rtpmap attributes
   -SDP info can be added at any time, in any sequence (cmd line .sdp file, if one, is added first)
   -currently duplicate media elements and rtpmap attributes are not filtered out. When searching through an rtpmap vector, it's application dependent on whether first or latest matching rtpmap is used
+  -when struct items are added in sdp/types.h (e.g. Media, AttributeRTP, AttributeFMTP) the new items should also be added to comparisons below. To-do: created an overloaded == comparison for the sdp class
 */
 
-int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread_index) {
+int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nStream, int thread_index) {
 
 /* SDP related items */
 
@@ -91,19 +100,15 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
 //   sdp::Writer writer;  /* not currently used */
    sdp::Media* media = NULL;
 //   sdp::Media media = {};
-   int node = 0;
+   int nodes = 0;
 
 // #define PRINT_SDP_DEBUG  /* turn on for SDP parsing debug */
 
    if (!sdpstr.length()) return -1;  /* empty string is an error */
 
-// printf(" *** before reader parse \n");
-
 /* parse input SDP info string into an sdp::SDP session */
 
    reader.parse(sdpstr, &sdp_session, 0);
-
-// printf(" *** after reader parse \n");
 
 /* retrieve Media elements ("m=audio, m=video") */
 
@@ -115,7 +120,7 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
 
    -first search for an origin field. If any found through them and create Origin objects. If not found then do the loop at least once in order to find all Media objects. To-Do: at some future point we may associate each Origin object with a group of Media objects
  
-   -inside the loop:
+   -inside the loop
 
      -compare found originator description session IDs with thread_info[].origins[stream] originator descriptions. If already existing, don't add an Origin object, assuming the SIP sender has repeated a SIP Invite for whatever reason
      -if an Origin object does not already exist then add it
@@ -123,25 +128,24 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
 
    -second summarize results, including display/log messages (see nOriginsFound and nMediaObjectsFound)
 
-   -return number of Origins added
+   -return number of origins added
 
-   Notes:
+   Notes
 
-   -Media and Origin nodes are parents and Attribute nodes are children of Media element nodes (see reader.cpp)
+   -media and origin nodes are parents and attribute nodes are children of media element nodes (see reader.cpp)
    -in find() functions in types.cpp, starting node is zero unless we pass in a start node. nodes.size() = 0 means no nodes were found/added (see types.cpp)
-   -for Media nodes, advance by one in the while loop to find attributes associated with that media node. For Origin nodes search those already found/added looking for unique session Id
+   -after finding a media node, we advance by one in the while loop to find attributes associated with that media node, and for searching for the next media node. For origin nodes search those already found/added looking for unique session Id
    -it's possible to loop/search through attributes objects also, but currently we're not doing that (unless the debug #define is turned on)
 */
 
-   vector<sdp::Origin*> origins = {};  /* create Origin vector, init to zero */
-   int nOriginsFound = 0, nOriginsAdded = 0, nMediaObjectsFound = 0, nMediaObjectsAdded = 0, nRTPMapsFound = 0, nRTPMapsAdded = 0;
+   vector<sdp::Origin*> origins = {};  /* create origin vector, init to zero */
+   int nOriginsFound = 0, nOriginsAdded = 0, nMediaObjectsFound = 0, nMediaObjectsAdded = 0, nRtpmapsFound = 0, nRtpmapsAdded = 0, nFmtpsFound = 0, nFmtpsAdded = 0;
+   bool fMediaAlreadyExist = true, fRtpmapsAlreadyExist = true, fFmtpsAlreadyExist = true;
 
-/* search for origin fields, if any found then we find out how many, gather info on them (e.g. session ID), and iterate through them */
+/* search for origin nodes, if any found then we find out how many, gather info on them (e.g. session ID), and iterate through them */
 
-// printf(" *** before session.find \n");
-
-   int num_origins = sdp_session.find(sdp::SDP_ORIGIN, origins, NULL);  /* retrieve Origin nodes if any. Starting node is always zero */
-   bool fParseOrigins = !(uFlags & SDP_PARSE_IGNORE_ORIGINS) && (num_origins > 0);  /* don't look for Origins if IGNORE flag is set */
+   int num_origins = sdp_session.find(sdp::SDP_ORIGIN, origins, NULL);  /* retrieve origin nodes if any. Currently we don't save origin node numbers (which are essentially line numbers) */
+   bool fParseOrigins = !(uFlags & SDP_PARSE_IGNORE_ORIGINS) && (num_origins > 0);  /* don't look for origins if IGNORE flag is set */
 
 // printf(" *** after session.find \n");
 
@@ -149,29 +153,29 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
 
   //printf(" \n *** before origins loop, parse = %d, num origins = %d, o pos = %d \n", fParseOrigins, num_origins, (int)sdpstr.find("o="));
 
-   for (int i=0; i<max(num_origins, 1); i++) {  /* we need to enter the loop at least once even. fParseOrigins is checked inside the loop */
+   for (int i=0; i<max(num_origins, 1); i++) {  /* we need to enter the loop at least once. fParseOrigins is checked inside the loop */
 
       #ifdef PRINT_SDP_DEBUG
       printf(" + num rtpmaps %d \n", num_origins);
       #endif
 
-   /* loop through found Origin nodes - should be only one per SDP info, but you never know */
+   /* loop through found origin nodes - should be only one per SDP info, but you never know */
 
       bool fNewOrigin = false;
       int j;
 
       if (fParseOrigins) {
 
-         sdp::Origin* origin_found = (sdp::Origin*)origins[i];  /* make a scalar Origin object to work with */
+         sdp::Origin* origin_found = (sdp::Origin*)origins[i];  /* make a scalar origin object to work with */
 
          #ifdef PRINT_SDP_DEBUG
          printf("%s orgin[%d], session id = %s, username = %s, session version = %llu, \n", !i ? "\n" : "", i, origin_found->sess_id.c_str(), origin_found->username.c_str(), (long long unsigned int)origin_found->sess_version);
          #endif
 
-         if (origin_found->sess_id == "0" || origin_found->sess_id == "") Log_RT(4, "mediaMin INFO: SDP info with invalid Origin session ID %s not used \n", origin_found->sess_id.c_str());
-         else for (fNewOrigin = true, j=0; j<thread_info[thread_index].num_origins[nInput]; j++) {  /* search existing origins. Note we set fNewOrigin in case it's the first one */
+         if (((origin_found->sess_id == "0" && !(uFlags & SDP_PARSE_ALLOW_ZERO_ORIGIN)) || origin_found->sess_id == "")) Log_RT(4, "mediaMin INFO: SDP info with invalid Origin session ID %s not used \n", origin_found->sess_id.c_str());  /* consider SDP_PARSE_ALLOW_ZERO_ORIGIN flag, JHB Mar 2025 */
+         else for (fNewOrigin = true, j=0; j<thread_info[thread_index].num_origins[nStream]; j++) {  /* search existing origins. Note we set fNewOrigin in case it's the first one */
  
-            sdp::Origin* origin = (sdp::Origin*)thread_info[thread_index].origins[nInput][j];
+            sdp::Origin* origin = (sdp::Origin*)thread_info[thread_index].origins[nStream][j];
 
             if (origin_found->sess_id == origin->sess_id) {  /* compare with existing origin */
 
@@ -192,99 +196,182 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
 
             /* save found origin(s) in thread_info[]. Note we add i to ignore origins that were either invalid or already existing */
 
-               vector<sdp::Origin*> th_origins = thread_info[thread_index].origins[nInput];  /* append origin info */
+               vector<sdp::Origin*> th_origins = thread_info[thread_index].origins[nStream];  /* append origin info */
 
 //  printf(" before insert, session id = %s \n", origin_found->sess_id.c_str());
 
                th_origins.insert( th_origins.end(), origins.begin() + i, origins.begin() + i + 1 );  /* C++ still doesn't have append so we "insert at the end" ( https://stackoverflow.com/questions/2551775/appending-a-vector-to-a-vector) */
-               thread_info[thread_index].origins[nInput] = th_origins;
+               thread_info[thread_index].origins[nStream] = th_origins;
 
-               thread_info[thread_index].num_origins[nInput]++;  /* increment number of origins in stream's thread_info[] */
+               thread_info[thread_index].num_origins[nStream]++;  /* increment number of origins in stream's thread_info[] */
 
                nOriginsAdded++;
             }
          }
       }
 
-      if (!fParseOrigins || nOriginsFound) while (sdp_session.find(sdp::SDP_AUDIO, &media, &node)  /* find all audio Media elements. Note that node starts at zero (Node::find(MediaType t, Media** m, int* node) is in types.cpp) */
-       #if 0  /* uncomment to parse video Media elements */
-       || sdp_session.find(sdp::SDP_VIDEO, &media, NULL)
-       #endif
-      ) {
+      #if 0
+      if (!fParseOrigins || nOriginsFound) while (sdp_session.find(sdp::SDP_AUDIO, &media, &nodes) || sdp_session.find(sdp::SDP_VIDEO, &media, &nodes)) {  /* find audio and video media elements. nodes is returned as the number of parent level nodes before and including the found media node, if one. See "parent and child node" notes in Reader::parse() in apps/common/sdp/reader.cpp. Node::find(MediaType t, Media** m, int* node) is in apps/common/sdp/types.cpp */
+      #else  /* bug-fix: search for all media description type at one time, otherwise our order of search might be different from order in the SDP info. Test with 1920x1080_H.265.pcapng and VIDEOCALL_EVS_H265.pcapng, make sure all media descriptions, rtpmaps, and fmtps are reported, JHB Mar 2025 */
+      if (!fParseOrigins || nOriginsFound) while (sdp_session.find(sdp::SDP_MEDIA_ANY, &media, &nodes)) {  /* find audio and video media elements. nodes is returned as the number of parent level nodes before and including the found media node, if one. See "parent and child node" notes in Reader::parse() in apps/common/sdp/reader.cpp. Node::find(MediaType t, Media** m, int* node) is in apps/common/sdp/types.cpp */
+      #endif
 
          #ifdef PRINT_SDP_DEBUG
-         printf(" + media found, media_node = %d \n", node);
+         printf(" + media found, current search node = %d \n", nodes);
          #endif
+
+         nodes++;  /* advance media sibling node by one before searching for next media description. See "parent and child node" notes in Reader::parse() in apps/common/sdp/reader.cpp */
 
          nMediaObjectsFound++;
 
-        {  /* currently we always add media descriptions and ignore the SD_PARSE_ADD flag. That might change so we still have separate found and added counters */
+        {  /* currently we always add media descriptions and ignore the SD_PARSE_ADD flag. That might change so we still continue to use separate found and added counters */
  
-         /* save found media descriptions in thread_info[]. User apps can look at these to make exceptions for media ports outside standard port ranges (see mediaMin.cpp for an example), JHB Jun 2024 */
+         /* save found media descriptions in thread_info[] if not already existing. User apps can look at these to make exceptions for media ports outside standard port ranges (see mediaMin.cpp for an example), JHB Jun 2024 */
 
-            vector<sdp::Media*> th_media_descriptions = thread_info[thread_index].media_descriptions[nInput];  /* append media object */
-            th_media_descriptions.insert( th_media_descriptions.end(), media );
-            thread_info[thread_index].media_descriptions[nInput] = th_media_descriptions;
+            bool fNewMedia = true;
 
-            thread_info[thread_index].num_media_descriptions[nInput]++;  /* increment number of rtpmaps. Note we're not inside a num_rtpmaps loop, so we're adding all rtpmaps from the current while-loop Media object vs adding one-by-one as with Origin objects, JHB Jan 2023 */
+            for (j=0; j<thread_info[thread_index].num_media_descriptions[nStream]; j++) {  /* search existing rtpmaps */
 
-            nMediaObjectsAdded++;
+               sdp::Media* media_database = (sdp::Media*)thread_info[thread_index].media_descriptions[nStream][j];
+
+               if (media->media_type == media_database->media_type &&
+                   media->port == media_database->port &&
+                   media->proto == media_database->proto &&
+                   media->fmt == media_database->fmt) { fNewMedia = false; break; }
+            }
+
+            if (fNewMedia) {
+
+               vector<sdp::Media*> th_media_descriptions = thread_info[thread_index].media_descriptions[nStream];  /* append media object */
+               th_media_descriptions.insert( th_media_descriptions.end(), media );
+               thread_info[thread_index].media_descriptions[nStream] = th_media_descriptions;
+
+               thread_info[thread_index].num_media_descriptions[nStream]++;  /* increment number of media descriptions, JHB Jan 2023 */
+
+               nMediaObjectsAdded++;
+               fMediaAlreadyExist = false;
+            }
          }
-
-         #if 0  /* the output value of *node in Node::find(MediaType t, Media** m, int* node) in apps/common/sdp/types.cpp does not make sense to me, should be looked at. I would have thought the idea is to pass in a start node, and get back the node it finds, then increment by one to avoid repeating before calling again, but something else is happening, JHB Jun 2024 */
-         printf(" *** node %d returned by sdp_session.find \n", node);
-         #endif
-
-         node++;  /* increment node, in case there are more Media elements */
 
          vector<sdp::Attribute*> rtpmaps = {};  /* create an rtpmap vector, init to zero */
 
-         if (int num_rtpmaps = media->find(sdp::SDP_ATTR_RTPMAP, rtpmaps, NULL)) {  /* (int Node::find(AttrType t, std::vector<Attribute*>& result, int* node) in types.cpp) */
-
-//  printf(" adding %d num_rtpmaps \n", num_rtpmaps);
-
-            nRTPMapsFound += num_rtpmaps;
+         if (int num_rtpmaps = media->find(sdp::SDP_ATTR_RTPMAP, rtpmaps, NULL)) {  /* search for rtpmaps within the found media node. int Node::find(AttrType t, std::vector<Attribute*>& result, int* node) is in apps/common/sdp/types.cpp */
 
             #ifdef PRINT_SDP_DEBUG
-            printf(" + num rtpmaps %d \n", num_rtpmaps);
+            printf(" + parsing num rtpmaps %d \n", num_rtpmaps);
             #endif
 
+            nRtpmapsFound += num_rtpmaps;
+
             #ifdef PRINT_SDP_DEBUG
-            for (int i=0; i<num_rtpmaps; i++) {  /* debug: loop through rtpmap attributes - this could be used to skip existing identical attributes, etc */
+            for (int k=0; k<num_rtpmaps; k++) {  /* debug: loop through rtpmap attributes - this could be used to skip existing identical attributes, etc */
 
-               sdp::AttributeRTP* rtpmap = (sdp::AttributeRTP*)rtpmaps[i];  /* map RTP attribute onto generic attribute in order to do something useful with it ... */
+               sdp::AttributeRTP* rtpmap = (sdp::AttributeRTP*)rtpmaps[k];  /* map RTP attribute onto generic attribute in order to do something useful with it ... */
 
-               printf("%s rtpmap[%d], pyld type = %d, codec type = %d, sample rate = %d, num chan = %d \n", !i ? "\n" : "", i, rtpmap->pyld_type, rtpmap->codec_type, rtpmap->clock_rate, rtpmap->num_chan);
+               printf("%s rtpmap[%d], pyld type = %d, codec type = %d, sample rate = %d, num chan = %d \n", !k ? "\n" : "", k, rtpmap->pyld_type, rtpmap->codec_type, rtpmap->clock_rate, rtpmap->num_chan);
             }
             #endif
+
+            for (int k=0; k<num_rtpmaps; k++) {  /* loop through rtpmaps found */
+
+            /* if identical rtpmap is already there don't add another one */
+
+               bool fNewRtpmap = true;
+
+               sdp::AttributeRTP* rtpmap_found = (sdp::AttributeRTP*)rtpmaps[k];  /* make a scalar for comparison purposes */
+
+               for (j=0; j<thread_info[thread_index].num_rtpmaps[nStream]; j++) {  /* search existing rtpmaps */
+
+                  sdp::AttributeRTP* rtpmap = (sdp::AttributeRTP*)thread_info[thread_index].rtpmaps[nStream][j];
+
+               /* compare with existing rtpmap, if duplicate found break out of loop */
+
+                  if (rtpmap->pyld_type == rtpmap_found->pyld_type &&
+                      rtpmap->codec_type == rtpmap_found->codec_type &&
+                      rtpmap->clock_rate == rtpmap_found->clock_rate &&
+                      rtpmap->num_chan == rtpmap_found->num_chan) { fNewRtpmap = false; break; }  /* I tried using just rtpmap == rtpmap_found but doesn't work, I guess because "C++ only automatically defines the equality operator (==) for built-in types (e.g., int, float, char). For user-defined types, if you don't explicitly define ==, the compiler might provide a default implementation that performs a shallow comparison. This means it simply checks if the memory addresses of the two objects are the same" per Gemini */
+               }
  
-            if (uFlags & SDP_PARSE_ADD) {
+               if (fNewRtpmap && (uFlags & SDP_PARSE_ADD)) {  /* add new rtpmap if found */
 
-            /* save found rtmpaps in thread_info[] for reference in create_dynamic_session() in mediaMin.cpp */
+               /* save found rtmpaps in thread_info[] for reference in create_dynamic_session() in mediaMin.cpp */
 
-               vector<sdp::Attribute*> th_rtpmaps = thread_info[thread_index].rtpmaps[nInput];  /* append rtpmap attribute */
-               th_rtpmaps.insert( th_rtpmaps.end(), rtpmaps.begin(), rtpmaps.end() );
-               thread_info[thread_index].rtpmaps[nInput] = th_rtpmaps;
+                  vector<sdp::Attribute*> th_rtpmaps = thread_info[thread_index].rtpmaps[nStream];  /* append rtpmap attribute */
+                  th_rtpmaps.insert( th_rtpmaps.end(), rtpmap_found );
+                  thread_info[thread_index].rtpmaps[nStream] = th_rtpmaps;
 
-               thread_info[thread_index].num_rtpmaps[nInput] += num_rtpmaps;  /* increment number of rtpmaps. Note we're not inside a num_rtpmaps loop, so we're adding all rtpmaps from the current while-loop Media object vs adding one-by-one as with Origin objects. Each Media object may add more rtpmaps, JHB Jan 2023 */
+                  thread_info[thread_index].num_rtpmaps[nStream]++;
 
-               nRTPMapsAdded += num_rtpmaps;
+                  #if 0
+                  thread_info[thread_index].num_rtpmaps[nStream] += num_rtpmaps;  /* increment number of rtpmaps. Note we're not inside a num_rtpmaps loop, so we're adding all rtpmaps from the current while-loop Media object vs adding one-by-one as with Origin objects. Each Media object may add more rtpmaps, JHB Jan 2023 */
+                  #endif
+
+                  nRtpmapsAdded++;
+                  fRtpmapsAlreadyExist = false;
+               }
+            }
+
+         /* if an rtpmap is found, also look for fmtp. Currently payload types don't have to match, we just parse them and add to SDP database, JHB Feb 2025 */
+
+            vector<sdp::Attribute*> fmtps = {};  /* create an fmtp vector, init to zero */
+
+            if (int num_fmtps = media->find(sdp::SDP_ATTR_FMTP, fmtps, NULL)) {
+
+               #ifdef PRINT_SDP_DEBUG
+               printf(" + parsing num fmtps %d \n", num_fmtps);
+               #endif
+
+               nFmtpsFound += num_fmtps;  /* search for fmtps, starting with first media node. int Node::find(AttrType t, std::vector<Attribute*>& result, int* node) is in apps/common/sdp/types.cpp) */
+ 
+            /* always add fmtps to SDP database, they may or may not be needed. For example, for video we may need sprop-xps fields if the RTP stream doesn't include in-band xps info, JHB Feb 2025 */
+
+               for (int k=0; k<num_fmtps; k++) {  /* loop through fmtps found */
+
+            /* if identical fmtp is already there don't add another one */
+
+                  bool fNewFmtp = true;
+
+                  sdp::AttributeFMTP* fmtp_found = (sdp::AttributeFMTP*)fmtps[k];  /* make a scalar for comparison purposes */
+
+                  for (j=0; j<thread_info[thread_index].num_fmtps[nStream]; j++) {  /* search existing fmtps */
+ 
+                     sdp::AttributeFMTP* fmtp = (sdp::AttributeFMTP*)thread_info[thread_index].fmtps[nStream][j];
+
+//    printf("\n *** fmtp found options = %s, comparing with existing %s \n", fmtp_found->options.c_str(), fmtp->options.c_str());
+
+                  /* compare with existing fmtp, if duplicate found break out of loop */
+
+                     if (fmtp->pyld_type == fmtp_found->pyld_type && fmtp->options == fmtp_found->options) { fNewFmtp = false; break; }
+                  }
+
+                  if (fNewFmtp) {  /* add new fmtp if found */
+
+                     vector<sdp::Attribute*> th_fmtps = thread_info[thread_index].fmtps[nStream];  /* append fmtp attribute */
+                     th_fmtps.insert( th_fmtps.end(), fmtp_found );
+                     thread_info[thread_index].fmtps[nStream] = th_fmtps;
+
+                     thread_info[thread_index].num_fmtps[nStream]++;
+
+                     nFmtpsAdded++;
+                     fFmtpsAlreadyExist = false;
+                  }
+               }
             }
          }
-      }
+      }  /* end of while audio/video media description search loop */
    }
 
-/* format and display/log SDP info summary message of found and/or added items */
+/* format and display and/or log SDP info summary message of found / added items */
 
-   if (nMediaObjectsFound || nRTPMapsFound || nOriginsFound) {
+   if (nMediaObjectsFound || nRtpmapsFound || nFmtpsFound || nOriginsFound) {
 
       bool fPrev1 = false, fPrev2 = false;
 
       char szLogSummary[500] = "mediaMin INFO: SDP info with";
 
       if (nMediaObjectsFound) {
-         sprintf(&szLogSummary[strlen(szLogSummary)], " %d unique media description%s", nMediaObjectsFound, nMediaObjectsFound > 1 ? "s" : "");
-         sprintf(&szLogSummary[strlen(szLogSummary)], "%s added to database", nMediaObjectsAdded ? "" : " found but not");
+         sprintf(&szLogSummary[strlen(szLogSummary)], " %d %smedia description%s", nMediaObjectsFound, !fMediaAlreadyExist ? "unique " : "", nMediaObjectsFound > 1 ? "s" : "");
+         sprintf(&szLogSummary[strlen(szLogSummary)], "%s %s database", nMediaObjectsAdded ? "" : " found but", fMediaAlreadyExist ? "already in" : (!nMediaObjectsAdded ? "not added to" : "added to"));
          fPrev1 = true;
       }
 
@@ -294,14 +381,19 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nInput, int thread
          fPrev2 = true;
       }
 
-      if (nRTPMapsFound) {
-         sprintf(&szLogSummary[strlen(szLogSummary)], "%s %d RTP attribute%s", fPrev1 || fPrev2 ? "," : "", nRTPMapsFound, nRTPMapsFound > 1 ? "s" : "");
-         sprintf(&szLogSummary[strlen(szLogSummary)], "%s added to database", nRTPMapsAdded ? "" : " found but not");
+      if (nRtpmapsFound) {
+         sprintf(&szLogSummary[strlen(szLogSummary)], "%s %d RTP attribute%s", fPrev1 || fPrev2 ? "," : "", nRtpmapsFound, nRtpmapsFound > 1 ? "s" : "");
+         sprintf(&szLogSummary[strlen(szLogSummary)], "%s %s database", nRtpmapsAdded ? "" : " found but", fRtpmapsAlreadyExist && (uFlags & SDP_PARSE_ADD) ? "already in" : (!nRtpmapsAdded ? "not added to" : "added to"));
       }
 
-      sprintf(&szLogSummary[strlen(szLogSummary)], " for thread %d stream %d%s", thread_index, nInput, (uFlags & SDP_PARSE_ADD) ? "" : ". To add, apply the ENABLE_STREAM_SDP_INFO flag in cmd line -dN options");
+      if (nFmtpsFound) {
+         sprintf(&szLogSummary[strlen(szLogSummary)], "%s %d FMTP attribute%s", fPrev1 || fPrev2 ? "," : "", nFmtpsFound, nFmtpsFound > 1 ? "s" : "");
+         sprintf(&szLogSummary[strlen(szLogSummary)], "%s %s database", nFmtpsAdded ? "" : " found but", fFmtpsAlreadyExist ? "already in" : (!nFmtpsAdded ? "not added to" : "added to"));
+      }
 
-      Log_RT(4, "%s \n", szLogSummary);
+      sprintf(&szLogSummary[strlen(szLogSummary)], " for thread %d stream %d%s", thread_index, nStream, uFlags & SDP_PARSE_ADD ? "" : ". To add origins and rtpmaps, apply the ENABLE_STREAM_SDP_INFO flag in cmd line -dN options");
+
+      Log_RT(4, "%s \n", szLogSummary);  /* display and print to event log if enabled */
    }
 
    return nOriginsAdded;
@@ -338,21 +430,32 @@ find_blank_lines:
 
    for (i=0; i<len; i++) {
 
-      if ((szSDP[i] == 0x0a || szSDP[i] == 0x0d) && (szSDP[i+1] == 0x0a || szSDP[i+1] == 0x0d)) {
+      if (szSDP[i] == 0x0a || szSDP[i] == 0x0d) {
 
-         szSDP[i++] = 0x0a;  /* leave one Linux style end-of-line, strip out anything else */
-         j = i;
-         while ((szSDP[j] == 0x0a || szSDP[j] == 0x0d) && j < len) { j++; k = 1; }
-         if (k) {
-            memmove(&szSDP[i], &szSDP[j], len - j);
-            szSDP[len - (j-i)] = 0;
-            goto find_blank_lines;
+         bool fStrip = false;
+
+         if (i < len-1 && (szSDP[i+1] == 0x0a || szSDP[i+1] == 0x0d)) fStrip = true;
+         else if (k == 0) fStrip = true;
+
+         if (fStrip) {
+
+            if (k > 0) szSDP[i++] = 0x0a;  /* leave one Linux style end-of-line, strip out anything else */
+            j = i;
+            bool fEndOfLine = false;
+            while ((szSDP[j] == 0x0a || szSDP[j] == 0x0d) && j < len) { j++; fEndOfLine = true; }
+            if (fEndOfLine) {
+               memmove(&szSDP[i], &szSDP[j], len - j);
+               szSDP[len - (j-i)] = 0;
+               goto find_blank_lines;
+            }
          }
       }
+
+      k++;
    }
 
    #if 0  /* handy debug to see szSDP in its final form before parsing, JHB Apr 2023 */
-   printf(" **** inside format_sdp_str afte string cleanup: \n%safter szSDP \n", szSDP);
+   printf(" **** inside format_sdp_str after string cleanup: \n%safter szSDP \n", szSDP);
    #endif
 }
 
@@ -360,7 +463,7 @@ find_blank_lines:
 
    -we expect a similar format as SIP invite packets, so we use the SESSION_CONTROL_ADD_SIP_INVITE_SDP_INFO flag
    -read whole file into a std::string (sdpstr) and submit to SDPParseInfo()
-   -To-Do: cmd line SDP info applies to all inputs  -- we may need to modify this to allow per-stream .sdp files
+   -To-do: cmd line SDP info applies to all inputs  -- we may need to modify this to allow per-stream .sdp files
 */
 
 int SDPSetup(const char* szSDPFile, int thread_index) {
@@ -392,23 +495,41 @@ int ret_val = 0;
    char* szSDP = (char*)malloc(sdpstr.size());
    strcpy(szSDP, sdpstr.c_str());
 
-/* make a condensed SDP info version for display and logging */
+/* make a trimmed and formatted SDP info version for display and logging */
 
 find_comment:
 
    int i, j, k = 0, len = strlen(szSDP);
+   int nWhiteSpace = 0;
 
-   for (i=0; i<len; i++) if (szSDP[i] == '#') {  /* strip out comments */
+   for (i=0; i<len; i++) {
 
-      for (j=i+1; j<len; j++) {
+      if (szSDP[i] == ' ' || szSDP[i] == 0x0d) nWhiteSpace++;  /* possibly add tabs or other white space to this */
 
-         while ((szSDP[j] == 0x0a || szSDP[j] == 0x0d) && j < len) { j++; k = 1; }
-         if (k) break;
+      if ((szSDP[i] == 0x0a) && k > 0 && k == nWhiteSpace) {  /* remove leading white space */
+
+         memmove(&szSDP[i-nWhiteSpace], &szSDP[i], len-i);
+         szSDP[len - nWhiteSpace] = 0;
+
+         goto find_comment;  /* repeat until all comments are handled */
       }
 
-      memmove(&szSDP[i], &szSDP[j], len - j);
-      szSDP[len - (j-i)] = 0;
-      goto find_comment;  /* repeat until all comments are removed */
+      if (szSDP[i] == '#' && k == nWhiteSpace) {  /* strip out comments occurring by themselves (on seperate lines), leave comments occurring later on the same line as SDP info text, JHB Mar 2025 */
+
+         for (j=i+1; j<len; j++) {
+
+            bool fEndOfLine = false;
+            while ((szSDP[j] == 0x0a || szSDP[j] == 0x0d) && j < len) { j++; fEndOfLine = true; }
+            if (fEndOfLine) break;
+         }
+
+         memmove(&szSDP[i], &szSDP[j], len - j);
+         szSDP[len - (j-i)] = 0;
+         goto find_comment;  /* repeat until all comments are handled */
+      }
+
+      if (szSDP[i] == 0x0a) { k = 0; nWhiteSpace = 0; }
+      else k++;
    }
 
    format_sdp_str(szSDP, strlen(szSDP));  /* remove blank lines and any extra trailing zeros or end-of-lines */
@@ -419,7 +540,7 @@ find_comment:
 
    /* parse SDP info according to SIP Invite format and add any valid results to all streams' SDP info database. Note that SDPParseInfo() handles all error and status/progress messages. To-do: find a way to handle per-stream .sdp files on the command line, JHB Jan 2023 */
 
-      if ((ret_val = SDPParseInfo(sdpstr, SESSION_CONTROL_ADD_SIP_INVITE_SDP_INFO | SDP_PARSE_ADD, nStream, thread_index)) < 0) break;
+      if ((ret_val = SDPParseInfo(sdpstr, SESSION_CONTROL_ADD_SIP_INVITE_SDP_INFO | SDP_PARSE_ADD | SDP_PARSE_ALLOW_ZERO_ORIGIN, nStream, thread_index)) < 0) break;  /* add SDP_PARSE_ALLOW_ZERO_ORIGIN flag, JHB Mar 2025 */
    }
 
    if (szSDP) free(szSDP);
@@ -461,7 +582,7 @@ uint8_t* find_keyword(uint8_t* buffer, uint16_t buflen, const char* szKeyword, b
    return (uint8_t*)memmem(buffer, buflen, (const void*)szKeyword, strlen(szKeyword));  /* case-exact search, ignoring any NULL chars */
 }
 
-int ProcessSessionControl(uint8_t* pkt_buf, unsigned int uFlags, int nInput, int thread_index, char* szKeyword) {
+int ProcessSessionControl(uint8_t* pkt_buf, unsigned int uFlags, int nStream, int thread_index, char* szKeyword) {
 
 PKTINFO PktInfo;
 bool fFragmentData = false;
@@ -480,28 +601,28 @@ bool fFragmentData = false;
 
 /* insert previous fragment data (if any) at start of payload */
 
-   if (thread_info[thread_index].sip_info_save_len[nInput]) {
+   if (thread_info[thread_index].sip_info_save_len[nStream]) {
 
       #ifdef FRAGMENT_DEBUG
-      PrintPacketBuffer(thread_info[thread_index].sip_info_save[nInput], thread_info[thread_index].sip_info_save_len[nInput], " *** inside fragment restore, start of saved data \n", " *** end of saved data \n");
+      PrintPacketBuffer(thread_info[thread_index].sip_info_save[nStream], thread_info[thread_index].sip_info_save_len[nStream], " *** inside fragment restore, start of saved data \n", " *** end of saved data \n");
       #endif
 
-      memmove(&pkt_buf[pyld_ofs + thread_info[thread_index].sip_info_save_len[nInput]], &pkt_buf[pyld_ofs], pyld_len);
-      memcpy(&pkt_buf[pyld_ofs], thread_info[thread_index].sip_info_save[nInput], thread_info[thread_index].sip_info_save_len[nInput]);
-      pyld_len += thread_info[thread_index].sip_info_save_len[nInput];
+      memmove(&pkt_buf[pyld_ofs + thread_info[thread_index].sip_info_save_len[nStream]], &pkt_buf[pyld_ofs], pyld_len);
+      memcpy(&pkt_buf[pyld_ofs], thread_info[thread_index].sip_info_save[nStream], thread_info[thread_index].sip_info_save_len[nStream]);
+      pyld_len += thread_info[thread_index].sip_info_save_len[nStream];
 
       #ifdef FIND_INVITE_DEBUG
-      save_amount = thread_info[thread_index].sip_info_save_len[nInput];
+      save_amount = thread_info[thread_index].sip_info_save_len[nStream];
       #endif
 
       #ifdef FRAGMENT_DEBUG
       char tmpstr[400];
-      sprintf(tmpstr, " *** inside fragment restore, start of aggregated data, saved amount = %d, pyld_ofs = %d, pyld_len = %d, flags = 0x%x \n", thread_info[thread_index].sip_info_save_len[nInput], pyld_ofs, pyld_len, PktInfo.flags);
+      sprintf(tmpstr, " *** inside fragment restore, start of aggregated data, saved amount = %d, pyld_ofs = %d, pyld_len = %d, flags = 0x%x \n", thread_info[thread_index].sip_info_save_len[nStream], pyld_ofs, pyld_len, PktInfo.flags);
       PrintPacketBuffer(&pkt_buf[pyld_ofs], pyld_len, tmpstr, " *** end of aggregated data \n");
       #endif
 
-      thread_info[thread_index].sip_info_save_len[nInput] = 0;
-      free(thread_info[thread_index].sip_info_save[nInput]);
+      thread_info[thread_index].sip_info_save_len[nStream] = 0;
+      free(thread_info[thread_index].sip_info_save[nStream]);
 
       fFragmentData = true;
    }
@@ -629,15 +750,15 @@ type_check:
 
          if (len > rem) {  /* save partial SIP invite, starting with "Length:" */
 
-            thread_info[thread_index].sip_info_save_len[nInput] = pyld_len - (p_ofs - &pkt_buf[pyld_ofs]);
-            thread_info[thread_index].sip_info_save[nInput] = (uint8_t*)malloc(thread_info[thread_index].sip_info_save_len[nInput]);
-            memcpy(thread_info[thread_index].sip_info_save[nInput], p_ofs, thread_info[thread_index].sip_info_save_len[nInput]);
+            thread_info[thread_index].sip_info_save_len[nStream] = pyld_len - (p_ofs - &pkt_buf[pyld_ofs]);
+            thread_info[thread_index].sip_info_save[nStream] = (uint8_t*)malloc(thread_info[thread_index].sip_info_save_len[nStream]);
+            memcpy(thread_info[thread_index].sip_info_save[nStream], p_ofs, thread_info[thread_index].sip_info_save_len[nStream]);
 
             #ifdef FRAGMENT_DEBUG
             char tmpstr[400];
-            sprintf(tmpstr, " *** inside fragment save, start of saved data, amount = %d, len = %d, rem = %d, pyld_len = %d, flags = 0x%x, start to \"v0\" = %d, ret val = %d \n", thread_info[thread_index].sip_info_save_len[nInput], len, rem, pyld_len, PktInfo.flags, (int)(p_ofs - &pkt_buf[pyld_ofs]), candidate_session_pkt_type_found);
+            sprintf(tmpstr, " *** inside fragment save, start of saved data, amount = %d, len = %d, rem = %d, pyld_len = %d, flags = 0x%x, start to \"v0\" = %d, ret val = %d \n", thread_info[thread_index].sip_info_save_len[nStream], len, rem, pyld_len, PktInfo.flags, (int)(p_ofs - &pkt_buf[pyld_ofs]), candidate_session_pkt_type_found);
 
-            PrintPacketBuffer(thread_info[thread_index].sip_info_save[nInput], thread_info[thread_index].sip_info_save_len[nInput], tmpstr, " *** end of saved data \n");
+            PrintPacketBuffer(thread_info[thread_index].sip_info_save[nStream], thread_info[thread_index].sip_info_save_len[nStream], tmpstr, " *** end of saved data \n");
             #endif
 
             session_pkt_type_found =  SESSION_CONTROL_FOUND_SIP_UDP_FRAGMENT;  /* no longer return zero for fragments, let user app (or mediaMin) know, JHB Jun 2024 */
@@ -662,14 +783,14 @@ type_check:
 
             int crc32_val = crc32(-1, (const unsigned char*)szSDP, len);
 
-            if (fFragmentData && crc32_val == thread_info[thread_index].sip_info_crc32[nInput]) {  /* ignore duplicates: no parsing, no announcement */
+            if (fFragmentData && crc32_val == thread_info[thread_index].sip_info_crc32[nStream]) {  /* ignore duplicates: no parsing, no announcement */
 
-               Log_RT(4, "mediaMin INFO: duplicate %s found, pkt number = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d \n", (candidate_session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nInput], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nInput], pyld_len, PktInfo.flags, len, rem, index);
+               Log_RT(4, "mediaMin INFO: duplicate %s found, pkt number = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d \n", (candidate_session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nStream], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nStream], pyld_len, PktInfo.flags, len, rem, index);
 
                goto update_index;
             }
 
-            thread_info[thread_index].sip_info_crc32[nInput] = crc32_val;  /* update saved CRC32 */
+            thread_info[thread_index].sip_info_crc32[nStream] = crc32_val;  /* update saved CRC32 */
 
             #ifdef FRAGMENT_DEBUG
             printf("\n *** inside SDP parse, len = %d, rem = %d, pyld_len = %d, flags = 0x%x, ret val = %d. szSDP = \n%s", len, rem, pyld_len, PktInfo.flags, candidate_session_pkt_type_found, szSDP);
@@ -679,12 +800,12 @@ type_check:
 
             if (!(uFlags & SESSION_CONTROL_DISABLE_MESSAGE_DISPLAY)) {  /* display/log mediaMin INFO message and SDP info contents */
 
-               Log_RT(4, "mediaMin INFO: %s found, pkt number = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d, SDP info content as follows \n%s", (session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nInput], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nInput], pyld_len, PktInfo.flags, len, rem, index, szSDP);
+               Log_RT(4, "mediaMin INFO: %s found, pkt number = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d, SDP info content as follows \n%s", (session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nStream], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nStream], pyld_len, PktInfo.flags, len, rem, index, szSDP);
 
                fSIPInviteFoundMessageDisplayed = true;
             }
 
-            SDPParseInfo(szSDP, (uFlags & SESSION_CONTROL_ADD_ITEM_MASK) ? SDP_PARSE_ADD : SDP_PARSE_NOADD, nInput, thread_index);  /* SDPParseInfo() will show messages if SDP infos are invalid, repeats of existing session IDs, or added to the input stream's SDP database. Note that return value is number of Invite added, if that should be needed, JHB Jan 2023 */
+            SDPParseInfo(szSDP, (uFlags & SESSION_CONTROL_ADD_ITEM_MASK) ? SDP_PARSE_ADD : SDP_PARSE_NOADD, nStream, thread_index);  /* SDPParseInfo() will show messages if SDP infos are invalid, repeats of existing session IDs, or added to the input stream's SDP database. Note that return value is number of Invite added, if that should be needed, JHB Jan 2023 */
 
 update_index:
 
@@ -717,7 +838,7 @@ update_index:
 
          if (!(uFlags & SESSION_CONTROL_DISABLE_MESSAGE_DISPLAY)) {  /* display/log mediaMin INFO SIP message contents */
 
-            Log_RT(4, "mediaMin INFO: SIP %s message found, pkt number = %d, %s dst port = %u, pyld len = %d, index = %d \n", search_str, thread_info[thread_index].packet_number[nInput], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nInput], pyld_len, index);  /* include packet number, non-fragmented packet dst port, and protocol in message, JHB Jun 2024 */
+            Log_RT(4, "mediaMin INFO: SIP %s message found, pkt# %d, %s dst port = %u, pyld len = %d, index = %d \n", search_str, thread_info[thread_index].packet_number[nStream], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nStream], pyld_len, index);  /* include packet number, non-fragmented packet dst port, and protocol in message, JHB Jun 2024 */
          }
 
          break;

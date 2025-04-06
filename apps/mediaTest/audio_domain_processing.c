@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/apps/mediaTest/audio_domain_processing.c
 
- Copyright (C) Signalogic Inc. 2018-2024
+ Copyright (C) Signalogic Inc. 2018-2025
 
  License
 
@@ -38,8 +38,13 @@
   Modified Jul 2024 JHB, in DSWritePcap() add uFlags param and move pkt buffer length to fourth param, add pcap_hdr_t* param, remove timestamp (struct timespec*) and TERMINATION_INFO* params (the packet record header param now supplies a timestamp, if needed, and IP type is read from packet data in pkt_buf). See pktlib.h comments
   Modified Nov 2024 JHB, use IPvN_ADDR_XXX defined in pktlib.h
   Modified Dec 2024 JHB, add DS_FSCONV_SATURATE flag in DSConvertFs()
+  Modified Mar 2025 JHB, minor changes to make compatible with g++ compiler and -std=gnu++11
 */
 
+#ifdef __cplusplus
+  #include <algorithm>
+  using namespace std;
+#endif
 
 /* Linux header files */
 
@@ -211,7 +216,7 @@ HASRDECODER hASRDecoder;
 
          merge_uFlags_format = DS_FMT_PKT_NO_INC_CHNUM_TIMESTAMP | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_SEQNUM | DS_FMT_PKT_USER_TIMESTAMP | DS_FMT_PKT_USER_PYLDTYPE | DS_FMT_PKT_USER_SSRC | DS_FMT_PKT_USER_MARKERBIT;
          groupFormatPkt.IP_Version = output_term.local_ip.type;
-         int len = (groupFormatPkt.IP_Version == IPV4) ? len = IPV4_ADDR_LEN : IPV6_ADDR_LEN;  /* IPVn_ADDR_LEN defined in pktlib.h */
+         int len = (groupFormatPkt.IP_Version == IPV4) ? IPV4_ADDR_LEN : IPV6_ADDR_LEN;  /* IPVn_ADDR_LEN defined in pktlib.h */
 
       /* default is to send audio output packets back to remote sender */
 

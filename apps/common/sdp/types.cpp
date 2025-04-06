@@ -4,15 +4,17 @@
  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
- Copyright (c) 2021-2023 Signalogic, Dallas, Texas
+ Copyright (c) 2021-2025 Signalogic, Dallas, Texas
 
  Revision History
+
   Modified Jan 2021 JHB, re-arranged initializer lists to remove -wReorder warnings
   Modified Jan 2021 JHB, add a=rtpmap attribute support
   Modified Mar 2021 JHB, add b=bandwidth field support
   Modified Mar 2021 JHB, add *node param for some find() calls, which specifies start node and returns found node (NULL = start at 0). This allows finding/handling Media objects in sequence
   Modified Mar 2021 JHB, fix bug in Media object find() where media type parameter was ignored
   Modified Jan 2023 JHB, add Node::find() function for Origin objects. See notes below on find() functions
+  Modified Feb 2025 JHB, add fmtp parsing
 */
 
 #include <sdp/types.h>
@@ -53,7 +55,9 @@ namespace sdp {
 
   bool Node::find(MediaType t, Media** m, int* node) {
 
-    *m = NULL;
+    if (!m) { fprintf(stderr, "sdp: Media** is NULL, node = %d \n", node ? *node : 0); return false; }  /* add error check, JHB Feb 2025 */
+
+    *m = NULL;  /* initialize to no media element found */
 
  #if 0
  printf(" ++ inside media node:find, *node = %d, size = %d \n", node ? *node : 0, (int)nodes.size());
@@ -85,7 +89,7 @@ namespace sdp {
     Attribute* attr;
 
  #if 0
- printf(" ++ inside rtpmaps node:find, *node = %d, size = %d \n", node ? *node : 0, (int)nodes.size());
+ printf(" ++ inside %s node:find, *node = %d, size = %d \n", t == SDP_ATTR_RTPMAP ? "rtpmaps" : "fmtps", node ? *node : 0, (int)nodes.size());
  #endif
  
     for (size_t i = node ? *node : 0; i < nodes.size(); ++i) {
@@ -215,6 +219,13 @@ namespace sdp {
     Attribute()
   {
     attr_type = SDP_ATTR_RTPMAP;
+  }
+
+  /* a=fmtp: */
+  AttributeFMTP::AttributeFMTP():
+    Attribute()
+  {
+    attr_type = SDP_ATTR_FMTP;
   }
 
   AttributeCandidate::AttributeCandidate():

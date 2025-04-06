@@ -4,11 +4,16 @@
  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
- Copyright (c) 2021-2024 Signalogic, Dallas, Texas
+ Copyright (c) 2021-2025 Signalogic, Dallas, Texas
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
+ Notes
+
+   1) When adding struct items (e.g. Media, AttributeRTP, AttributeFMTP) the new items should also be added to comparisons in SDPParseInfo() in sdp_app.cpp. To-do: created an overloaded == comparison for the sdp class
+ 
  Revision History
+
   Modified Jan 2021 JHB, add a=rtpmap attribute support, see struct AttributeRTP
   Modified Mar 2021 JHB, add num_chan to struct AttributeRTP
   Modified Mar 2021 JHB, add more codec types
@@ -16,6 +21,8 @@
   Modified Jan 2023 JHB, add Node::find() function for Origin objects
   Modified Jan 2023 JHB, handle more codec types
   Modified Jun 2024 JHB, add H.263 and H.265 codec types
+  Modified Feb 2025 JHB, add L16 (linear 16-bit PCM) codec type
+  Modified Feb 2025 JHB, add fmtp parsing, add MPA audio codec type (MPEG-I/II)
 */
 
 /*
@@ -105,6 +112,8 @@ namespace sdp {
     SDP_H263,                        /* video codecs */
     SDP_H264,
     SDP_H265,
+    SDP_L16,                         /* linear 16-bit PCM */
+    SDP_MPA,                         /* MPEG-I/II audio */
     SDP_TELEPHONE_EVENT,
     SDP_TONE                         /* not sure what this is, but seeing it in SIP Invite messages */
   };
@@ -130,6 +139,7 @@ namespace sdp {
     SDP_ATTR_ICE_UFRAG,
     SDP_ATTR_ICE_PWD,
     SDP_ATTR_FINGERPRINT,
+    SDP_ATTR_FMTP,
 
     /* etc... etc.. */
     SDP_ATTR_UNKNOWN
@@ -155,6 +165,7 @@ namespace sdp {
   struct AttributeRTCP;
   struct AttributeCandidate;
   struct AttributeRTP;
+  struct AttributeFMTP;
   struct Bandwidth;
 
   struct Node {
@@ -172,13 +183,13 @@ namespace sdp {
     std::vector<Node*> nodes;
   };
 
-  /* v= */
+/* v= */
   struct Version : public Node {
     Version();
     int version;
   };
 
-  /* o= */
+/* o= */
   struct Origin : public Node {
     Origin();
 
@@ -190,7 +201,7 @@ namespace sdp {
     std::string unicast_address;         /* address of the machine from which the session was created, e.g. 127.0.0.1 */
   };
 
-  /* m= */
+/* m= */
   struct Media : public Node {
     Media();
 
@@ -200,44 +211,44 @@ namespace sdp {
     int fmt;
   };
 
-  /* s= */
+/* s= */
   struct SessionName : public Node {
     SessionName();
     std::string session_name;
   };
 
-  /* i= */
+/* i= */
   struct SessionInformation : public Node {
     SessionInformation();
     std::string session_description;
   };
 
-  /* u= */
+/* u= */
   struct URI : public Node {
     URI();
     std::string uri;
   };
 
-  /* e= */
+/* e= */
   struct EmailAddress : public Node { 
     EmailAddress();
     std::string email_address;
   };
 
-  /* p= */
+/* p= */
   struct PhoneNumber : public Node {
     PhoneNumber();
     std::string phone_number;
   };
 
-  /* t= */
+/* t= */
   struct Timing : public Node {
     Timing();
     uint64_t start_time;
     uint64_t stop_time;
   };
 
-  /* c= */
+/* c= */
   struct ConnectionData : public Node {
     ConnectionData();
     NetType net_type;
@@ -245,12 +256,12 @@ namespace sdp {
     std::string connection_address; 
   };
 
-  /* 
-     Because the list of attribute types is huge, we create a generic Attribute struct which contains some members that are meant for common types.
-     So in general not all members of this struct are always used. The reader will set the members base on the AttrType member.
+/* 
+   Because the list of attribute types is huge, we create a generic Attribute struct which contains some members that are meant for common types.
+   So in general not all members of this struct are always used. The reader will set the members base on the AttrType member.
 
-     a=
-  */
+   a=
+*/
   struct Attribute : public Node {
     Attribute();
     AttrType attr_type;
@@ -258,7 +269,8 @@ namespace sdp {
     std::string value;
   };
 
-  /* e.g. a=rtcp:59976 IN IP4 192.168.0.194 */
+/* e.g. a=rtcp:59976 IN IP4 192.168.0.194 */
+
   struct AttributeRTCP : public Attribute {
     AttributeRTCP();
     uint16_t port;
@@ -267,7 +279,11 @@ namespace sdp {
     std::string connection_address;
   };
 
-  /* e.g. a=rtpmap:96 AMR-WB/16000, a=rtpmap:109 EVS/16000/1, etc. */
+/* rtpmap examples:
+
+  a=rtpmap:96 AMR-WB/16000, a=rtpmap:109 EVS/16000/1
+  a=rtpmap:110 EVS/16000/1
+*/
   struct AttributeRTP : public Attribute {
     AttributeRTP();
     uint16_t pyld_type;
@@ -276,7 +292,21 @@ namespace sdp {
     uint16_t num_chan;
   };
 
-  /* e.g. a=candidate:4252876256 1 udp 2122260223 192.168.0.194 59976 typ host generation 0 */
+/* fmtp examples:
+
+   a=fmtp:110 br=9.6-24.4;bw=nb-swb;ch-aw-recv=-1;max-red=0
+   a=fmtp:112 profile-id=1;level-id=93;sprop-vps=RAHA88ACEA==;sprop-sps=QAEMAf//AWAAAAMAsAAAAwAAAwBdrFk=;sprop-pps=QgEBAWAAAAMAsAAAAwAAAwBdoAXCAFAcT5a7kyS
+*/
+  struct AttributeFMTP : public Attribute {
+    AttributeFMTP();
+    uint16_t pyld_type;
+    std::string options;
+  };
+
+/* example:
+
+   a=candidate:4252876256 1 udp 2122260223 192.168.0.194 59976 typ host generation 0
+*/
   struct AttributeCandidate : public Attribute {
     AttributeCandidate();
 
@@ -291,7 +321,7 @@ namespace sdp {
     uint16_t rel_port;    
   };
 
-  /* b= */
+/* b= */
   struct Bandwidth : public Node {
     Bandwidth();
     std::string total_bandwidth_type;

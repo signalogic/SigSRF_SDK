@@ -64,6 +64,8 @@
    Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
    Modified Dec 2024 JHB, include <algorithm> and use std namespace if __cplusplus defined
    Modified Jan 2025 JHB, avoid unused var warning in get_file_type()
+   Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS and MAX_CONCURRENT_STREAMS to MAX_STREAMS, defined in shared_include/streamlib.h. All libs and reference apps are now using the same definition
+   Modified Mar 2025 JHB, remove debug print flag from cimGetCmdLine() uFlags for mediaMin and mediaTest apps
 */
 
 #ifdef __cplusplus
@@ -93,15 +95,15 @@
 #include "minmax.h"          /* define min-max if __cplusplus not defined */
 #include "dsstring.h"        /* lstrtrim() */
 
-#include "mediaTest.h"  /* mediaTest definitions */
+#include "mediaTest.h"  /* externs for following global vars, plus mediaTest definitions */
 
 /* global vars filled by cimGetCmdLine() */
 
 PLATFORMPARAMS PlatformParams = {{ 0 }};
-MEDIAPARAMS MediaParams[MAXSTREAMS];
-float RealTimeInterval[MAX_INPUT_STREAMS] = { 0 };
+MEDIAPARAMS MediaParams[MAX_STREAMS];
+float RealTimeInterval[MAX_STREAMS] = { 0 };
 
-/* global vars referenced in mediaMin.c, mediaTest_proc.c, and packet_flow_media_proc.c */
+/* global vars referenced in mediaMin.cpp, mediaTest_proc.c, and packet_flow_media_proc.c */
 
 volatile int8_t  pm_run = 1;  /* may be cleared by application signal handler to stop packet / media processing loops */
 unsigned int     inFileType, outFileType, outFileType2 = 0, USBAudioInput = 0, USBAudioOutput = 0;
@@ -126,7 +128,7 @@ char             sig_lib_event_log_filename[] = { "sig_lib_event_log.txt" };  /*
 bool             fCtrl_C_pressed = false;
 char             full_cmd_line[MAX_CMDLINE_STR_LEN] = "";  /* app full command line, filled in by cmdLineInterface(), which calls GetCommandLine(). Note that mediaTest.h publishes this as this as const char* szAppFullCmdLine, JHB Jan 2023 */
 double           timeScale = 0;  /* support FTRT and AFAP modes, see comments in packet_flow_media_proc.c */
-uint16_t         uPortList[MAX_CONCURRENT_STREAMS] = { 0 };
+uint16_t         uPortList[MAX_STREAMS] = { 0 };
 uint8_t          uLookbackDepth = 1;
 unsigned int     uTimestampMatchMode = 0;  /* timestamp-match wav output mode. Flags are defined in shared_include/streamlib.h, JHB Aug 2023 */
 bool             fCapacityTest = false;  /* set by apps if they are doing capacity test (moved here from mediaMin.cpp), JHB Sep 2023 */
@@ -214,8 +216,8 @@ int i;
 
       cim_uFlags = CIM_GCL_SUPPRESS_STREAM_MSGS | CIM_GCL_FILLUSERIFS | CIM_GCL_DEBUGPRINT;
       if (uFlags & CLI_MEDIA_APPS) cim_uFlags |= CIM_GCL_MED;
-      if (uFlags & CLI_MEDIA_APPS_MEDIAMIN) cim_uFlags |= CIM_GCL_MEDIAMIN;
-      if (uFlags & CLI_MEDIA_APPS_MEDIATEST) cim_uFlags |= CIM_GCL_MEDIATEST;
+      if (uFlags & CLI_MEDIA_APPS_MEDIAMIN) cim_uFlags = (cim_uFlags | CIM_GCL_MEDIAMIN) & ~CIM_GCL_DEBUGPRINT;  /* remove debug print flag for mediaMin and mediaTest apps, no longer useful JHB Mar 2025 */
+      if (uFlags & CLI_MEDIA_APPS_MEDIATEST) cim_uFlags = (cim_uFlags | CIM_GCL_MEDIATEST) & ~CIM_GCL_DEBUGPRINT;
 
       #ifndef NO_CIMLIB
       if (!cimGetCmdLine(argc, argv, &userIfs, cim_uFlags, &PlatformParams, &MediaParams, version_info)) return 0;  /* run again with everything enabled, report cmd line errors */
@@ -326,7 +328,7 @@ int i;
 
    if (userIfs.CmdLineFlags.show_audio_classification) fShow_audio_classification = true;
 
-   for (i=0; i<min(MAXSTREAMS, MAX_INPUT_STREAMS); i++) {
+   for (i=0; i<MAX_STREAMS; i++) {
    
       RealTimeInterval[i] = MediaParams[i].Media.frameRate;  /* store -rN frame rate cmd line entries in RealTimeInterval[], JHB May 2023 */
       if (isnan(RealTimeInterval[i]) || RealTimeInterval[i] < 0) RealTimeInterval[i] = userIfs.frameRate[i];  /* make sure it's not NaN and not negative. Default value should be -1, but we can be ultra careful that we don't get a messed up timing value, JHB Apr 2024 */
@@ -358,7 +360,7 @@ int i;
 
    fGroupOutputNoCopy = userIfs.CmdLineFlags.group_output_no_copy;
 
-   for (i=0; i<MAX_CONCURRENT_STREAMS; i++) uPortList[i] = userIfs.dstUdpPort[i];  /* fill in port list, JHB May 2023 */
+   for (i=0; i<MAX_STREAMS; i++) uPortList[i] = userIfs.dstUdpPort[i];  /* fill in port list, JHB May 2023 */
 
    uLookbackDepth = userIfs.nLookbackDepth;
 

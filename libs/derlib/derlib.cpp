@@ -1,7 +1,7 @@
 /*
  $Header: /root/Signalogic/Directcore/lib/derlib/derlib.cpp
 
- Copyright (C) Signalogic Inc. 2021-2023
+ Copyright (C) Signalogic Inc. 2021-2025
 
  License
 
@@ -32,10 +32,11 @@
   Modified Feb 2022 JHB, undefine IPV4DEBUG and IPV6DEBUG
   Modified Nov 2022 JHB, additional comments for event INFO log message about interception point ID type and content. This INFO log message has proven useful for evaluating LEA user screen traces and event logs
   Modified Dec 2022 JHB, add DSDecodeDerFields() to generate XML output from DER streams in formats (i) DER tag/set notation (ii) ASN.1 notation (per ETSI LI ASN.1 specs)
-  Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_ERROR_MSG. See comments in pktlib.h
+  Modified Jan 2023 JHB, change DS_PKT_INFO_SUPPRESS_ERROR_MSG to generic DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG. See comments in pktlib.h
   Modified Apr 2023 JHB, add calloc buffer overflow check, improve error handling in DSDecodeDerFields()
   Modified Jun 2023 JHB, add local buffer in DSDecodeDerStream() to make it non-destructive on input pkt_in_buf. Also add buffer size checks and warning messages, and error check on UDP length calculation in IPv6 candidate checksum
   Modified Jul 2024 JHB, per change in pktlib.h, edit DSGetPacketInfo() calls to make uFlags second param
+  Modified Mar 2025 JHB, per changes in pktlib.h to standardize with other SigSRF libs, adjust references to DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG flag
 */
 
 /* Linux includes */
@@ -1209,7 +1210,7 @@ uint8_t* pkt_in_buf_local = NULL;
                if ((uint16_t)~checksum_candidate == checksum) {  /* compare checksums, 1's complement */
 
                   uint8_t* p2 = &p[asn_index];
-                  int pktlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN | DS_PKTLIB_SUPPRESS_ERROR_MSG, p2, -1, NULL, NULL);
+                  int pktlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, p2, -1, NULL, NULL);
 
                   if (pktlen < 0) goto next_byte;  /* if packet header values are bad, assume checksum hash matched wrong data. Happens every so often with IPv4 */
 
