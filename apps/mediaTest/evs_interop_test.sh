@@ -113,12 +113,12 @@ mediaMin -c x86 -i ../test_files/evs_float_b24_4m_dtx_swb_cbr_hfOnly0_cmr1_ptime
 mediaMin -c x86 -i ../test_files/evs_float_b13_2m_dtx_swb_cbr_rf3hi_hfOnly0_cmr0_ptime20.pcap -L -d 0x08000c11 -r0.9 "${MEDIAMIN_WAV_OUTPUTS}" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 mediaMin -c x86 -i ../test_files/evs_float_b13_2m_dtx_swb_cbr_rf3hi_hfOnly0_cmr1_ptime20.pcap -L -d 0x08000c11 -r0.9 "${MEDIAMIN_WAV_OUTPUTS}" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-# VBR 5900 mono channel, hf0 has collision avoidance padding, hf1 is hf-only format
+# VBR 5900 single channel, hf0 has collision avoidance padding, hf1 is hf-only format
 #
 mediaMin -cx86 -i../pcaps/evs_5900_1_hf0.rtpdump -L -d0x08000c11 -r0.9 "${MEDIAMIN_WAV_OUTPUTS}" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 mediaMin -cx86 -i../pcaps/evs_5900_1_hf1.rtpdump -L -d0x08000c11 -r0.9 "${MEDIAMIN_WAV_OUTPUTS}" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 #
-# VBR 5900 2x mono channels, hf0 has collision avoidance padding, hf1 is hf-only format
+# VBR 5900 single channel, some payloads carry 2x frames, hf0 has collision avoidance padding, hf1 is hf-only format
 #
 mediaMin -cx86 -i../pcaps/evs_5900_2_hf0.rtpdump -L -d0x08000c11 -r0.9 "${MEDIAMIN_WAV_OUTPUTS}" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 mediaMin -cx86 -i../pcaps/evs_5900_2_hf1.rtpdump -L -d0x08000c11 -r0.9 "${MEDIAMIN_WAV_OUTPUTS}" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"

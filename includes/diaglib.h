@@ -64,6 +64,8 @@
   Modified Nov 2024 JHB, rename STREAM_STATS to PKT_STREAM_STATS
   Modified Nov 2024 JHB, DSGetLogTimestamp() now returns timestamp value in usec if timestamp param is NULL
   Modified Feb 2025 JHB, move isFileDeleted() here as static inline from event_logging.cpp, add static inline getFilePathFromFilePointer()
+  Modified Apr 2025 JHB, change DS_LOG_LEVEL_TIMEVAL_PRECISE flag to DS_LOG_LEVEL_TIMEVAL_PRECISION_USEC and add DS_LOG__LEVEL_TIMEVAL_PRECISION_MSEC flag. See DSGetLogTimestamp() in diaglib_util.cpp
+  Modified Apr 2025 JHB, fix C89 and C90 gcc build warnings in getFilePathFromFilePointer(): ensure all comments ar C-style, ifdef out altogether unless __STDC_VERSION__ or __cplusplus is defined (mixed declarations and code warning). This came up when building 3GPP reference codecs, which tend to have several years old C code and Makefiles
 */
 
 #ifndef _DIAGLIB_H_
@@ -350,7 +352,8 @@ uint64_t DSGetLogTimestamp(char* timestamp, unsigned int uFlags, int max_str_len
 #endif
 #define DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP                DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS  /* current timestamp */
 #define DS_LOG_LEVEL_USER_TIMEVAL                       DS_EVENT_LOG_USER_TIMEVAL
-#define DS_LOG_LEVEL_TIMEVAL_PRECISE                    DS_EVENT_LOG_TIMEVAL_PRECISE
+#define DS_LOG_LEVEL_TIMEVAL_PRECISION_MSEC             DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC
+#define DS_LOG_LEVEL_TIMEVAL_PRECISION_USEC             DS_EVENT_LOG_TIMEVAL_PRECISION_USEC
 
 int DSGetAPIStatus(unsigned int uFlags);  /* get per-thread API status */
 
@@ -405,7 +408,9 @@ int fd;
    return fRet;
 }
 
-static inline char* getFilePathFromFilePointer(FILE *file) {  /* get file path from file pointer. Caller must free returned path if not NULL. JHB Feb 2025 */
+#if defined(__STDC_VERSION__) || defined(__cplusplus)
+
+static inline char* getFilePathFromFilePointer(FILE *file) {  /* get file path from file pointer. Caller must free returned path if not NULL, JHB Feb 2025 */
 
    int fd = fileno(file);
    if (fd == -1) {
@@ -425,12 +430,12 @@ static inline char* getFilePathFromFilePointer(FILE *file) {  /* get file path f
       return NULL;
    }
 
-// Construct the path from /proc/pid/fd/fd
+/* Construct the path from /proc/pid/fd/fd */
    snprintf(path, PATH_MAX, "/proc/self/fd/%d", fd);
 
-   char *resolved_path = realpath(path, NULL); // Resolve the symbolic link
+   char *resolved_path = realpath(path, NULL); /* Resolve the symbolic link */
 
-   free(path); // Free the allocated memory for path
+   free(path);  /* Free the allocated memory for path */
 
    if (resolved_path == NULL && errno != ENOENT) {
       perror("realpath");
@@ -439,6 +444,8 @@ static inline char* getFilePathFromFilePointer(FILE *file) {  /* get file path f
 
    return resolved_path;
 }
+
+#endif  /* defined(__STDC_VERSION__) || defined(__cplusplus) */
 
 #ifdef __cplusplus
 }

@@ -39,6 +39,7 @@
    Modified Dec 2024 JHB, include <algorithm> and use std namespace
    Modified Jan 2025 JHB, some comments added after AI tools source code review
    Modified Mar 2025 JHB, in app_printf() update thread_info[].most_recent_console_output, add cur_time param in app_printf() and UpdateCounters()
+   Modified Apr 2025 JHB, in app_printf() implement APP_PRINTF_SAME_LINE_PRESERVE, fix bug with slen not being incremented when \n or \r inserted at output string reserved zeroth location
 */
 
 #include <algorithm>
@@ -88,6 +89,7 @@ static uint64_t last_time[MAX_PKTMEDIA_THREADS] = { 0 };
 
       if (thread_info[thread_index].pkt_pull_jb_ctr >= 100000L) sprintf(tmpstr, "\rPsh %d, pul %d", thread_info[thread_index].pkt_push_ctr, thread_info[thread_index].pkt_pull_jb_ctr);
       else sprintf(tmpstr, "\rPushed pkts %d, pulled pkts %d", thread_info[thread_index].pkt_push_ctr, thread_info[thread_index].pkt_pull_jb_ctr);
+
       if (thread_info[thread_index].pkt_pull_xcode_ctr || thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], "j");
       if (thread_info[thread_index].pkt_pull_xcode_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].pkt_pull_xcode_ctr);
       if (thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %ds", thread_info[thread_index].pkt_pull_streamgroup_ctr);
@@ -304,8 +306,17 @@ int slen;
 
    if (slen) {
 
-      if ((uFlags & APP_PRINTF_NEW_LINE) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) *(--p) = '\n';  /* prefix with newline, update isCursorMidLine if needed */
-      else if (p[slen-1] != '\n' && p[slen-1] != '\r') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);
+      if ((uFlags & APP_PRINTF_NEW_LINE) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) { *(--p) = '\n'; slen++; }  /* prefix with newline, update isCursorMidLine if needed */
+      else if (p[slen-1] != '\n' && p[slen-1] != '\r') {
+
+         __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);
+
+         if (uFlags & APP_PRINTF_SAME_LINE_PRESERVE) isLinePreserve = true;
+         else if (isLinePreserve) {
+            if (p[0] != '\n') { *(--p) = '\n'; slen++; }
+            isLinePreserve = false;
+         }
+      }
 
       uLineCursorPos = (p[slen-1] != '\n' && p[slen-1] != '\r') ? slen : 0;  /* update line cursor position */
 

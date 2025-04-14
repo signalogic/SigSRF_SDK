@@ -42,6 +42,7 @@
   Modified Sep 2024 JHB, implement DS_INIT_LOGGING_RESET_WARNINGS_ERRORS flag in DSInitLogging()
   Modified Nov 2024 JHB, implement harmonized LOG_XX definitions in diaglib.h and DS_LOG_LEVEL_OUTPUT_XXX flags in shared_include/config.h. See fOutputConsole and fOutputFile
   Modified Feb 2025 JHB, move isFileDeleted() to diaglib.h as static inline
+  Modified Apr 2025 JHB, add isLinePreserve
 */
 
 /* Linux and/or other OS includes */
@@ -92,9 +93,10 @@ static int app_log_file_count = 0;
 
 DEBUG_CONFIG lib_dbg_cfg = { 5 };  /* moved here from pktlib.c, JHB Sep 2017.  Init to log level 5 for apps that don't make a DSConfigPktlib() call, JHB Jul 2019 */
 
-volatile uint8_t uLineCursorPos = 0;  /* referenced by p/m threads and apps if they want to know / set the current screen line cursor position */
+volatile uint8_t uLineCursorPos = 0;  /* referenced by p/m threads and apps if they want to know / set the current screen line cursor position. Extern references are in mediaTest.h */
 volatile uint8_t isCursorMidLine = 0;
 volatile uint32_t pm_thread_printf = 0;
+volatile uint8_t isLinePreserve = 0;
 
 uint32_t event_log_critical_errors = 0;  /* keep track of event log errors and warnings for program lifespan. The main purpose of this is to quickly show a general error summary in the run-time stats without having to search the event log. It's not that useful because it doesn't break down by session or stream (channel), JHB May 2020 */
 uint32_t event_log_errors = 0;

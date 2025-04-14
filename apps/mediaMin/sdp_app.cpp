@@ -46,7 +46,7 @@
    Modified Jun 2023 JHB, additional SIP Invite debug if needed, look for FIND_INVITE_DEBUG
    Modified Jun 2024 JHB, in SESSION_CONTROL_NO_PARSE section (latter part) of ProcessSessionControl(), add logic to omit Invite messages if the SESSION_CONTROL_SIP_INVITE_MESSAGES flag is not given in uFlags, and omit Bye messages if the SESSION_CONTROL_SIP_BYE_MESSAGES FLAG is not given. This gives mediaMin and user apps more control over what is parsed and displayed
    Modified Jun 2024 JHB, include protocol type (TCP or UDP) in SIP messages
-   Modified Jun 2024 JHB, in ProcessSessionControl() return SESSION_CONTROL_FOUND_SIP_UDP_FRAGMENT when saving payload data for an incomplete / fragmented SDP info packet
+   Modified Jun 2024 JHB, in ProcessSessionControl() return SESSION_CONTROL_FOUND_SIP_FRAGMENT when saving payload data for an incomplete / fragmented SDP info packet
    Modified Jun 2024 JHB, in SDPParseInfo() add media descriptions (e.g. m=video 45002 RTP/AVP xxx xxx) to thread_info[]
    Modified Jun 2024 JHB, include packet number, non-fragment dst port, and protocol in log/console messages
    Modified Jun 2024 JHB, use CRC32 to look for duplicate SDP info; if found, don't parse and don't report
@@ -57,6 +57,8 @@
    Modified Feb 2025 JHB, for all items, not only origins, search database first to see if already there and avoid adding duplicates. This became necessary after video stream test cases where SDP info is repeated at regular intervals
    Modified Mar 2025 JHB, fix bug in media description search (look for SDP_MEDIA_ANY)
    Modified Mar 2025 JHB, improve display of SDP info originating from .sdp files (i) implement SDP_PARSE_ALLOW_ZERO_ORIGIN flag, (i) leave comments occurring later on the same line as SDP info text, (iii) remove whitespace lines (e.g. all spaces then a CRLF)
+   Modified Apr 2025 JHB, improve SIP message detection and display, add SESSION_CONTROL_FOUND_SIP_TCP_OTHER and SESSION_CONTROL_FOUND_SIP_UDP_OTHER flags, add port exclude and text exclude to avoid MySQL messages with similar keywords as SIP or messages with conflicting keywords
+   Modified Apr 2025 JHB, fix bug in find_keyword() case-insensitive search, return value is offset relative to buffer input param, not tmpstr
 */
 
 #include <algorithm>  /* bring in std::min and std::max */
@@ -212,7 +214,7 @@ int SDPParseInfo(std::string sdpstr, unsigned int uFlags, int nStream, int threa
 
       #if 0
       if (!fParseOrigins || nOriginsFound) while (sdp_session.find(sdp::SDP_AUDIO, &media, &nodes) || sdp_session.find(sdp::SDP_VIDEO, &media, &nodes)) {  /* find audio and video media elements. nodes is returned as the number of parent level nodes before and including the found media node, if one. See "parent and child node" notes in Reader::parse() in apps/common/sdp/reader.cpp. Node::find(MediaType t, Media** m, int* node) is in apps/common/sdp/types.cpp */
-      #else  /* bug-fix: search for all media description type at one time, otherwise our order of search might be different from order in the SDP info. Test with 1920x1080_H.265.pcapng and VIDEOCALL_EVS_H265.pcapng, make sure all media descriptions, rtpmaps, and fmtps are reported, JHB Mar 2025 */
+      #else  /* bug-fix: search for all media description type at one time, otherwise our order of search might be different from order in the SDP info. Test with 1920x1080_H.265.pcapng and VxxxxCALL_Exx_H265.pcapng, make sure all media descriptions, rtpmaps, and fmtps are reported, JHB Mar 2025 */
       if (!fParseOrigins || nOriginsFound) while (sdp_session.find(sdp::SDP_MEDIA_ANY, &media, &nodes)) {  /* find audio and video media elements. nodes is returned as the number of parent level nodes before and including the found media node, if one. See "parent and child node" notes in Reader::parse() in apps/common/sdp/reader.cpp. Node::find(MediaType t, Media** m, int* node) is in apps/common/sdp/types.cpp */
       #endif
 
@@ -514,7 +516,7 @@ find_comment:
          goto find_comment;  /* repeat until all comments are handled */
       }
 
-      if (szSDP[i] == '#' && k == nWhiteSpace) {  /* strip out comments occurring by themselves (on seperate lines), leave comments occurring later on the same line as SDP info text, JHB Mar 2025 */
+      if (szSDP[i] == '#' && k == nWhiteSpace) {  /* strip out comments occurring by themselves (on seperate lines), leave comments occurring later on the same line as SDP info text. Note that RFC 8866 allows '#' in the s= and i= (session or stream description, additional info) fields, and we would not strip those because they would not be stand-alone comment lines, JHB Mar 2025 */
 
          for (j=i+1; j<len; j++) {
 
@@ -551,32 +553,36 @@ find_comment:
 
 /* list of SIP messages we look for. SIP_MESSAGES struct is defined in sdp_app.h */
 
-static SIP_MESSAGES SIP_Messages[] = { {"100 Trying", "100 Trying", SESSION_CONTROL_FOUND_SIP_TRYING},
-                                       {"180 Ringing", "180 Ringing", SESSION_CONTROL_FOUND_SIP_RINGING},
-                                       {"183 Session", "183 Session Progress", SESSION_CONTROL_FOUND_SIP_PROGRESS},
-                                       {"PRACK sip", "Prov ACK", SESSION_CONTROL_FOUND_SIP_PROV_ACK},
-                                       {"ACK sip", "ACK", SESSION_CONTROL_FOUND_SIP_ACK},
-                                       {"200 OK", "200 Ok", SESSION_CONTROL_FOUND_SIP_OK},
-                                       {"BYE\r", "BYE", SESSION_CONTROL_FOUND_SIP_BYE},  /* BYE followed by either carriage return or line feed, per RFC 2327, JHB Mar 2023 */
-                                       {"BYE\n", "BYE", SESSION_CONTROL_FOUND_SIP_BYE},
-                                       {"Invite", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE},
-                                       {"INVITE sip", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE},
-                                       {"200 Playing Announcement", "200 Playing Announcement", SESSION_CONTROL_FOUND_SIP_PLAYING_ANNOUNCEMENT},
-                                       {"INFO", "INFO Request", SESSION_CONTROL_FOUND_SIP_INFO_REQUEST},
-                                       {"UDP SIP/2.0", "UDP fragment", SESSION_CONTROL_FOUND_SIP_UDP_FRAGMENT}  /* fragments should be lowest priority in search */
+static SIP_MESSAGES SIP_Messages[] = { {"100 Trying", "100 Trying", SESSION_CONTROL_FOUND_SIP_TRYING, "", 0},
+                                       {"180 Ringing", "180 Ringing", SESSION_CONTROL_FOUND_SIP_RINGING, "", 0},
+                                       {"183 Session", "183 Session Progress", SESSION_CONTROL_FOUND_SIP_PROGRESS, "", 0},
+                                       {"PRACK sip", "Prov ACK", SESSION_CONTROL_FOUND_SIP_PROV_ACK, "", 0},
+                                       {"ACK sip", "ACK", SESSION_CONTROL_FOUND_SIP_ACK, "", 0},
+                                       {"200 OK", "200 Ok", SESSION_CONTROL_FOUND_SIP_OK, "", 0},
+                                       {"BYE\r", "BYE", SESSION_CONTROL_FOUND_SIP_BYE, "", 0},  /* BYE followed by either carriage return or line feed, per RFC 2327, JHB Mar 2023 */
+                                       {"BYE\n", "BYE", SESSION_CONTROL_FOUND_SIP_BYE, "", 0},
+                                       {"Invite", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE, "SUBSCRIBE", 3306},   /* generic "invite" but exclude messages with "subscribe" and MySQL messages (port 3306) with similar keywords */
+                                       {"INVITE sip", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE, "SUBSCRIBE", 0},  /*  ""   ""  */
+                                       {"200 Playing Announcement", "200 Playing Announcement", SESSION_CONTROL_FOUND_SIP_PLAYING_ANNOUNCEMENT, "", 0},
+                                       {"INFO", "INFO Request", SESSION_CONTROL_FOUND_SIP_INFO_REQUEST, "", 3306},  /* generic "info" but exclude MySQL messages (port 3306) with similar keywords */
+                                       {"UDP SIP/2.0", "Options or other", SESSION_CONTROL_FOUND_SIP_UDP_OTHER, "", 0},  /* includes OPTIONS, CANCEL, REGISTER, etc. Lowest priority in search */
+                                       {"TCP SIP/2.0", "Options or other", SESSION_CONTROL_FOUND_SIP_TCP_OTHER, "", 0}   /* same, TCP */
                                      };
 
 uint8_t* find_keyword(uint8_t* buffer, uint16_t buflen, const char* szKeyword, bool fCaseInsensitive) {
 
-   if (fCaseInsensitive) {  /* if fCaseInsensitive specified we copy buffer to a temporary string, being careful not to overflow and removing any NULL chars, and do case insensitive search, JHB May 2023 */
+   if (!strlen(szKeyword)) return NULL;
 
-      char tmpstr1[500];
-      int i,j;
+   if (fCaseInsensitive) {  /* if fCaseInsensitive specified we copy buffer to a temporary string, being careful not to overflow and replacing any zero chars, and do case insensitive search, JHB May 2023 */
 
-      for (j=0,i=0; i<min((int)(sizeof(tmpstr1)-1), (int)buflen); i++) if (buffer[i] != 0) tmpstr1[j++] = buffer[i];  /* copy buffer to temporary string, removing any NULL chars */
-      tmpstr1[j] = 0;  /* add terminating NULL */
+      char tmpstr[4000]; int i = 0;
 
-      return (uint8_t*)strcasestr(tmpstr1, szKeyword);  /* case-insensitive comparison */
+      for (int j=0; j<min((int)(sizeof(tmpstr)-1), (int)buflen); j++) tmpstr[i++] = buffer[j] != 0 ? buffer[j] : 127;  /* copy buffer to temporary string, replace zeros with something temporary */
+      tmpstr[i] = 0;  /* add terminating zero */
+
+      uint8_t* p_ret = (uint8_t*)strcasestr(tmpstr, szKeyword);  /* case-insensitive comparison */
+
+      return p_ret ? p_ret - (uint8_t*)tmpstr + buffer : NULL;  /* if found return offset relative to buffer, JHB Apr 2025 */
    }
 
    return (uint8_t*)memmem(buffer, buflen, (const void*)szKeyword, strlen(szKeyword));  /* case-exact search, ignoring any NULL chars */
@@ -695,7 +701,7 @@ type_check:
 
             if (len <= 1 || len > (int)MAX_TCP_PACKET_LEN) { session_pkt_type_found = -1; goto ret; };  /* invalid Length: value */
 
-         /* additional search to handle INVITE formats where non-SDP info lines appear between Content-Length: and actual SDP info, JHB May2021
+         /* additional search to handle INVITE formats where non-SDP info lines appear between Content-Length: and actual SDP info, JHB May 2021
 
             -Content-Length: value only applies to actual SDP info, but in some cases (e.g. siprec) may include additional, non-useful info
             -this makes us dependent on presence of v=0. RFC4566 does say v= is mandatory, and for many years version is zero
@@ -718,7 +724,7 @@ type_check:
 
          /* Session Recording Protocol (SIPREC, RFC 7866) is an open SIP based protocol for call recording, partly based on RFC 7245 (https://datatracker.ietf.org/doc/id/draft-portman-siprec-protocol-01.html) */
 
-            p_siprec = find_keyword(p2, pyld_len - index - (int)(p2 - &pkt_buf[pyld_ofs+index]), "--OSS-unique-boundary-42", false);  /* look for siprec header, JHB Apr 2023 */
+            p_siprec = find_keyword(p2, pyld_len - index - (int)(p2 - &pkt_buf[pyld_ofs+index]), "--OSS-unique-boundary-42", true);  /* look for siprec header, JHB Apr 2023 */
 
             if (p_siprec) {  /* siprec Invite has a different format, with "unique-boundary" marked header and footer, and XML section */
 
@@ -761,7 +767,9 @@ type_check:
             PrintPacketBuffer(thread_info[thread_index].sip_info_save[nStream], thread_info[thread_index].sip_info_save_len[nStream], tmpstr, " *** end of saved data \n");
             #endif
 
-            session_pkt_type_found =  SESSION_CONTROL_FOUND_SIP_UDP_FRAGMENT;  /* no longer return zero for fragments, let user app (or mediaMin) know, JHB Jun 2024 */
+         /* tested with openli-voip-example2.pcap and this still happens for encapsulated packets, possibly not being reassembled correctly in PushPackets() in mediaMin.cpp, JHB Apr 2025 */
+
+            session_pkt_type_found =  SESSION_CONTROL_FOUND_SIP_FRAGMENT;  /* return non-zero for fragments, let user app (or PushPackets() in mediaMin.cpp) know, JHB Jun 2024 */
          }
          else {  /* SIP invite or SAP/SDP protocol found, display and/or extract Origin and Media objects from SDP info, add to thread_info[].origins[stream] */
 
@@ -785,7 +793,7 @@ type_check:
 
             if (fFragmentData && crc32_val == thread_info[thread_index].sip_info_crc32[nStream]) {  /* ignore duplicates: no parsing, no announcement */
 
-               Log_RT(4, "mediaMin INFO: duplicate %s found, pkt number = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d \n", (candidate_session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nStream], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nStream], pyld_len, PktInfo.flags, len, rem, index);
+               Log_RT(4, "mediaMin INFO: duplicate %s found, pkt# %u, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d \n", (candidate_session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nStream], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nStream], pyld_len, PktInfo.flags, len, rem, index);
 
                goto update_index;
             }
@@ -800,7 +808,7 @@ type_check:
 
             if (!(uFlags & SESSION_CONTROL_DISABLE_MESSAGE_DISPLAY)) {  /* display/log mediaMin INFO message and SDP info contents */
 
-               Log_RT(4, "mediaMin INFO: %s found, pkt number = %d, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d, SDP info content as follows \n%s", (session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nStream], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nStream], pyld_len, PktInfo.flags, len, rem, index, szSDP);
+               Log_RT(4, "mediaMin INFO: %s found, pkt# %u, %s dst port = %u, pyld len = %d, flags = 0x%x, len = %d, rem = %d, index = %d, SDP info content as follows \n%s", (session_pkt_type_found == SESSION_CONTROL_FOUND_SIP_INVITE) ? "SIP Invite" : "SAP/SDP protocol", thread_info[thread_index].packet_number[nStream], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nStream], pyld_len, PktInfo.flags, len, rem, index, szSDP);
 
                fSIPInviteFoundMessageDisplayed = true;
             }
@@ -820,7 +828,7 @@ update_index:
       strcpy(search_str, "");
       int i, num_session_types = sizeof(SIP_Messages)/sizeof(SIP_MESSAGES);
 
-      for (i=0; i<num_session_types; i++) if (find_keyword(&pkt_buf[pyld_ofs], pyld_len, SIP_Messages[i].szTextStr, true)) {
+      for (i=0; i<num_session_types; i++) if (find_keyword(&pkt_buf[pyld_ofs], pyld_len, SIP_Messages[i].szTextStr, true) && !find_keyword(&pkt_buf[pyld_ofs], pyld_len, SIP_Messages[i].szTextExclude, true) && SIP_Messages[i].uPortExclude != thread_info[thread_index].dst_port[nStream] && SIP_Messages[i].uPortExclude != thread_info[thread_index].src_port[nStream]) {
 
       /* implement updated flags to control message parse and display logic with more precision, JHB Jun 2024 */
 
@@ -838,7 +846,7 @@ update_index:
 
          if (!(uFlags & SESSION_CONTROL_DISABLE_MESSAGE_DISPLAY)) {  /* display/log mediaMin INFO SIP message contents */
 
-            Log_RT(4, "mediaMin INFO: SIP %s message found, pkt# %d, %s dst port = %u, pyld len = %d, index = %d \n", search_str, thread_info[thread_index].packet_number[nStream], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nStream], pyld_len, index);  /* include packet number, non-fragmented packet dst port, and protocol in message, JHB Jun 2024 */
+            Log_RT(4, "mediaMin INFO: SIP %s message found, pkt# %u, %s dst port = %u, pyld len = %d, index = %d \n", search_str, thread_info[thread_index].packet_number[nStream], PktInfo.protocol == TCP ? "TCP" : "UDP", thread_info[thread_index].dst_port[nStream], pyld_len, index);  /* include packet number, non-fragmented packet dst port, and protocol in message, JHB Jun 2024 */
          }
 
          break;

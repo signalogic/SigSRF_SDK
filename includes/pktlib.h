@@ -122,6 +122,7 @@
                          -re-factor pcapng structs, break out pcapng_block_header struct separately. Add struct for simple packet blocks
   Modified Feb 2025 JHB, add DSReadPcap() flags DS_READ_PCAP_DISABLE_NULL_LOOPBACK_PROTOCOL and DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX, see comments
   Modified Mar 2025 JHB, to standardize with other SigSRF libs, adjust values of DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, DS_PKTLIB_SUPPRESS_INFO_MSG, and DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG flags
+  Modified Apr 2025 JHB, add MAX_MTU definition
 */
 
 #ifndef _PKTLIB_H_
@@ -176,7 +177,8 @@
 #define MAX_RTP_PACKET_LEN              (MAX_RAW_FRAME + MAX_IP_UDP_RTP_HEADER_LEN)
 #define MAX_TCP_PACKET_LEN              65535
 
-#define MAX_RTP_PYLD_MTU                (1500 - MIN_IP_UDP_RTP_HEADER_LEN)  /* a more or less safe guess assuming an MTU of 1500 */
+#define MAX_MTU                         1500
+#define MAX_RTP_PYLD_MTU                (MAX_MTU - MIN_IP_UDP_RTP_HEADER_LEN)  /* a more or less safe guess assuming an MTU of 1500 */
 
 /* IP protocols */
 

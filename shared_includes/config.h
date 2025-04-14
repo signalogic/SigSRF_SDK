@@ -71,7 +71,7 @@
     -add uStreamGroupOutputWavFileSeekTimeAlarmThreshold in DEBUG_CONFIG struct (no change in struct size, uses uReserved1)
 
    Modified Feb 2024 JHB
-    -add DS_EVENT_LOG_USER_TIMEVAL and DS_EVENT_LOG_TIMEVAL_PRECISE flags. See DSGetLogTimestamp() function in event_logging.c (diaglib)
+    -add DS_EVENT_LOG_USER_TIMEVAL and DS_EVENT_LOG_TIMEVAL_PRECISE flags. See DSGetLogTimestamp() in diaglib_util.cpp (diaglib)
 
    Modified Mar 2024 JHB
     -add DS_LOG_LEVEL_DISPLAY_FILE_BOTH and DS_LOG_LEVEL_USE_STDERR flags, re-assign value of DS_LOG_LEVEL_SUBSITUTE_WEC flag
@@ -90,6 +90,9 @@
 
    Modified Nov 2025 JHB
      -comments only
+
+   Modified Apr 2025 JHB
+    -change DS_EVENT_LOG_TIMEVAL_PRECISE flag to DS_EVENT_LOG_TIMEVAL_PRECISION_USEC and add DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC flag. See DSGetLogTimestamp() in diaglib_util.cpp (diaglib)
 */
 
 #ifndef _CONFIG_H_
@@ -222,7 +225,8 @@ enum EVENT_LOG_MODE {  /* uEventLogMode enums, these are in addition to LOG_xx c
   DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS = 0x40,    /* event log uses wall clock (system) date/time stamps */
   DS_EVENT_LOG_WARN_ERROR_ONLY = 0x80,         /* set event log to level 3 output and below. Intended for temporary purposes, for example file or screen I/O is taking a lot of system time */
   DS_EVENT_LOG_USER_TIMEVAL = 0x100,           /* user-supplied time value (in usec) when calling DSGetLogTimeStamp() in diaglib, JHB Feb 2024 */
-  DS_EVENT_LOG_TIMEVAL_PRECISE = 0x200         /* specify msec and usec (this is the default for wall-clock timestamps, which are fixed-width for event log use) */
+  DS_EVENT_LOG_TIMEVAL_PRECISION_USEC = 0x200, /* specify msec and usec formatting (this is the default for wall-clock timestamps, which are fixed-width for event log use) */
+  DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC = 0x400  /* specify msec formatting */
 };
 
 #define DS_LOG_LEVEL_MASK                         0x1f  /* up to 15 event log levels supported */

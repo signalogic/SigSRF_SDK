@@ -201,7 +201,7 @@
   Modified Feb 2025 JHB, misc updates for video rtp handling, look for "Feb 2025". Added timestamp setback stat (look for timestamp_setback_count). This keeps track of new jitter buffer functionality that looks for sequence numbers being returned out-of-order due to timestamps being "set back" even while sequence numbers continue to increment smoothly. VLC video streaming output seems to "jump back" in time, maybe for synchronization purposes, not sure yet
   Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS to MAX_STREAMS, defined in shared_include/streamlib.h. All libs and reference apps are now using the same definition
   Modified Mar 2025 JHB, per changes in pktlib.h to standardize with other SigSRF libs, adjust references to DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, DS_PKTLIB_SUPPRESS_INFO_MSG, and DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG flags
-  Modified Mar 2025 JHB, fix a few summary stats that were not be corrected by timeScale multipler (i.e. for accelerated mode processing)
+  Modified Mar 2025 JHB, fix a few summary stats that were not being corrected by timeScale multipler (i.e. for accelerated / bulk mode processing)
 */
 
 /* Linux header files */

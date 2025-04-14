@@ -30,6 +30,7 @@
   Modified Mar 2024 JHB, check for bool already defined to avoid conflict with <stdbool.h>
   Modified Sep 2024 JHB, define sizeof_field() macro (if not already defined) for convenient sizing of struct fields
   Modified Jan 2025 JHB, add STATIC_ASSERT macro definition
+  Modified Apr 2025 JHB, convert // comments to C-style to avoid warnings when built with C89 or C90 gcc
 */
 
  
@@ -62,7 +63,7 @@
    #include "minmax.h"
 #endif
 
-#define MAXPATH 260  /* pull MAXPATH out of defined(__LIBRARYMODE__) and make available to apps, JHB Mar2022 */
+#define MAXPATH 260  /* pull MAXPATH out of defined(__LIBRARYMODE__) and make available to apps, JHB Mar 2022 */
 
 #if defined(__LIBRARYMODE__)
 
@@ -91,7 +92,7 @@
 
 /* define generic static assertion based on compile-time condition. The typedef approach uses no memory. For example usage see shared_include/codec.h, JHB Jan 2025 */
 
-   #define CONCAT1(X,Y) X##Y  // helper macro for STATIC_ASSERT, allow unique identifier made from line number
+   #define CONCAT1(X,Y) X##Y  /* helper macro for STATIC_ASSERT, allow unique identifier made from line number */
    #define CONCAT(X,Y) CONCAT1(X,Y)
 
    #ifndef STATIC_ASSERT
@@ -116,7 +117,7 @@
   		   #include <sys/io.h>
 	   #endif
 
-/* End of Mod YT 16JUL08 */
+/* End of Mod YT 16Jul08 */
 
       typedef int SOCKET; /* adding SOCKET typedef AKM 04/24/2015 */
 
@@ -144,7 +145,7 @@
 
    #define Boolean BOOL
 
-   #ifndef __cplusplus  /* added JHB Jun2017 */
+   #ifndef __cplusplus  /* added JHB Jun 2017 */
 #if 0
       #define bool   BOOL
 #else

@@ -10,7 +10,7 @@
 
   -fully multithreaded, no locks, no semaphore
   -input packet stream should have all redundancy removed, fragmented packets reassembled, and be in correct RTP sequence number order. In SigSRF software this is handled by pktlib
-  -currently only HEVC supported, H.264 is to-do
+  -currently HEVC supported, H.264 is to-do
   -called by DSGetPayloadInfo() API in voplib (https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-dsgetpayloadinfo)
   -calls Log_RT() API in diaglib
   -writing file output is done with DSSaveDataFile() in DirectCore, this can be replaced with simple fwrite() if needed

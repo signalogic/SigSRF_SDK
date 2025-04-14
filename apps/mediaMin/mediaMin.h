@@ -48,19 +48,25 @@
    Modified Aug 2024 JHB, add uOneTimeConsoleQuitMessage item to APP_THREAD_INFO struct, add STR_APPEND definition
    Modified Sep 2024 JHB, rename nPcapOutFiles to nOutFiles to include pcap, bitstream, and other format files
    Modified Sep 2024 JHB, add uInputType[], uOutputType[], and nSessionOutputIndex[] to APP_THREAD_INFO struct
-   Modified Oct 2024 JHB, define INPUT_DATA_CACHE struct, add array of pointers to it in APP_THREAD_INFO struct. Rename fReseek to uCacheFlags and define CACHE_XXX flags
+   Modified Oct 2024 JHB, define INPUT_DATA_CACHE struct, add array of pointers to it in APP_THREAD_INFO struct. Rename fReseek to input_data_cache[].uFlags and define CACHE_XXX flags
    Modified Nov 2024 JHB, rename DYNAMICSESSIONSTATS to STREAM_STATS and add stats support for static sessions. See StreamStats[] and StreamStatsState[] below; also see session_app.cpp for related changes
    Modified Jan 2025 JHB, add num_rtcp_packets[] and num_unhandled_rtp_packets[] to APP_THREAD_INFO struct
    Modified Feb 2025 JHB, rename pcap_out[] to out_file[], rename link_layer_len[] to link_layer_info[]
    Modified Feb 2025 JHB, add fmtp to SDP info database structs. A key use case is handling sprop-vps, -sps, and -pps fields for video streams
    Modified Mar 2025 JHB, add most_recent_console_output to thread_info[]; see comments in mediaMin.cpp
+   Modified Apr 2025 JHB, modify INPUT_DATA_CACHE struct and add CACHE_MTU_EXPANDED flag to allow cache packet data buffer size variation on-the-fly. This both reduces memory usage and better handles TSO/LSO and other oversize packets, for which cache packet data memory can be temporarily expanded. See comments in GetInputData() in mediaMin.cpp
+   Modified Apr 2025 JHB, add num_oversize_nonfragmented_packets[] stat
 */
 
 #ifndef _MEDIAMIN_H_
 #define _MEDIAMIN_H_
 
 #include "cmd_line_options_flags.h"  /* cmd line options and flags definitions. cmd_line_options_flags.h is on mediaTest subfolder, JHB Jan 2022 */
-#include "voplib.h"                  /* voice and video over packet library */
+
+/* SigSRF includes */
+
+#include "pktlib.h"     /* pktlib */
+#include "voplib.h"     /* voice and video over packet library */
 
 #ifndef HAVE_SDP
   #include <sdp/sdp.h>  /* include sdp.h if needed */
@@ -84,29 +90,29 @@
   5) MAX_SESSIONS_THREAD and MAX_STREAMS_THREAD are defined here as per-thread limits. These are not be confused with MAX_SESSIONS and MAX_STREAMS which are defined in shared_include/transcoding.h and shared_include/streamlib.h and used by packet/media thread workers (pktlib)
 */
 
-#define MAX_STREAMS_THREAD                64  /* maximum number of streams per thread */
-#define MAX_SESSIONS_THREAD               64  /* maximum number of sessions per thread */
+#define MAX_STREAMS_THREAD                  64  /* maximum number of streams per thread */
+#define MAX_SESSIONS_THREAD                 64  /* maximum number of sessions per thread */
 
 #define MAX_APP_STR_LEN                   2000
-#define STR_APPEND                        1
+#define STR_APPEND                           1
 
-#define SESSION_MARKED_AS_DELETED         0x80000000L  /* private mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
+#define SESSION_MARKED_AS_DELETED  0x80000000L  /* reserved mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
 
-#define MAX_INPUT_REUSE                   16  /* in practice, cmd line entry up to -N9 has been tested (i.e. total reuse of 10x) */
+#define MAX_INPUT_REUSE                     16  /* in practice, cmd line entry up to -N9 has been tested (i.e. total reuse of 10x) */
 
 /* dynamic stream terminations */
 
-#define STREAM_TERMINATES_ON_BYE_MESSAGE  1
-#define STREAM_TERMINATES_ON_PORT_CLOSE   2
+#define STREAM_TERMINATES_ON_BYE_MESSAGE     1
+#define STREAM_TERMINATES_ON_PORT_CLOSE      2
 #define STREAM_TERMINATES_NO_SESSIONS     0x10
 
 /* definitions returned by isPortAllowed(). Look for nAllowedPortStatus in mediaMin.cpp */
 
-#define PORT_ALLOW_UNKNOWN                0
-#define PORT_ALLOW_KNOWN                  1
-#define PORT_ALLOW_ON_MEDIA_ALLOW_LIST    2
-#define PORT_ALLOW_SDP_MEDIA_DISCOVERED   3
-#define PORT_ALLOW_SDP_INFO               4
+#define PORT_ALLOW_UNKNOWN                   0
+#define PORT_ALLOW_KNOWN                     1
+#define PORT_ALLOW_ON_MEDIA_ALLOW_LIST       2
+#define PORT_ALLOW_SDP_MEDIA_DISCOVERED      3
+#define PORT_ALLOW_SDP_INFO                  4
 
 
 extern GLOBAL_CONFIG pktlib_gbl_cfg;
@@ -158,30 +164,26 @@ typedef struct {
 
 #define MAX_DYN_PYLD_TYPES  32  /* max number of disallowed payload type messsages (fDisallowedPyldTypeMsg) */
 
-typedef struct {
-
-   uint16_t port;
-
-} PORT_INFO_LIST;
-
-typedef struct {  /* input data cache read items, JHB Oct 2024 */
+typedef struct {  /* input data cache items, JHB Oct 2024 */
 
   uint16_t       hdr_type;
   pcaprec_hdr_t  pcap_rec_hdr;
-  int            pkt_len;
-  uint8_t        pkt_buf[MAX_TCP_PACKET_LEN];
+  int            pkt_len;        /* packet length */
+  uint8_t*       pkt_buf;        /* pointer to allocated packet data buffer */
+  uint8_t        uFlags;
 
 } INPUT_DATA_CACHE;
 
-/* definitions for uCacheFlags field in APP_THREAD_INFO struct */
+/* definitions for uFlags field in INPUT_DATA_CACHE struct */
 
-#define CACHE_INVALID       0  /* indicate to GetInputData() that input cache contains stale or outdated data */
-#define CACHE_READ          1  /* indicate to GetInputData() that current packet data is still being processed and should be read from input cache, examples include (i) packet arrival timestamp not yet elapsed and (ii) a TCP packet being consumed in segments */
-#define CACHE_READ_PKTBUF   2  /* same as CACHE_READ but indicates pktbuf is no longer valid due to in-place processing and should also be read from cache */
+#define CACHE_INVALID          0  /* indicate to GetInputData() that input cache contains stale or outdated data */
+#define CACHE_READ             1  /* indicate to GetInputData() that current packet data is still being processed and should be read from input cache, examples include (i) packet arrival timestamp not yet elapsed and (ii) a TCP packet being consumed in segments */
+#define CACHE_READ_PKTBUF      2  /* same as CACHE_READ but indicates pktbuf is no longer valid due to in-place processing and should also be read from cache */
 
-#define CACHE_NEW_DATA   0x10  /* set by GetInputData(), indicates input cache has been updated with new data */
+#define CACHE_NEW_DATA      0x10  /* set by GetInputData(), indicates input cache has been updated with new data */
+#define CACHE_MTU_EXPANDED  0x20  /* set by GetInputData(), indicates input cache packet data buffer size is currently expanded for an oversize packet */
 
-#define CACHE_ITEM_MASK  0x0f  /* mask to isolate flags that instruct GetInputData() */
+#define CACHE_ITEM_MASK     0x0f  /* mask to isolate flags that instruct GetInputData() */
 
 
 /* APP_THREAD_INFO defines per-thread application vars and structs. If mediaMin is run from the cmd line then there is just one application thread, if mediaMin is run from mediaTest with -Et command line entry, then -tN entry determines how many application threads */
@@ -201,7 +203,8 @@ typedef struct {
   uint16_t              cmd_line_input_index[MAX_STREAMS_THREAD];
   pcap_hdr_t*           pcap_file_hdr[MAX_STREAMS_THREAD];  /* used in DSOpenPcap() and DSOpenPcapRecord(), JHB May 2024 */
   uint8_t               uInputType[MAX_STREAMS_THREAD];
-  INPUT_DATA_CACHE*     input_data_cache[MAX_STREAMS_THREAD];  /* per-stream input data read cache, JHB Oct 2024 */
+
+  INPUT_DATA_CACHE      input_data_cache[MAX_STREAMS_THREAD];  /* per-stream input data read cache, JHB Oct 2024 */
 
   FILE*                 out_file[MAX_STREAMS_THREAD];
   uint8_t               uOutputType[MAX_STREAMS_THREAD];
@@ -225,6 +228,7 @@ typedef struct {
   uint32_t              num_rtp_packets[MAX_STREAMS_THREAD];
   uint32_t              num_rtcp_packets[MAX_STREAMS_THREAD];
   uint32_t              num_unhandled_rtp_packets[MAX_STREAMS_THREAD];
+  uint32_t              num_oversize_nonfragmented_packets[MAX_STREAMS_THREAD];
 
   uint32_t              num_packets_fragmented[MAX_STREAMS_THREAD];
   uint32_t              num_packets_reassembled[MAX_STREAMS_THREAD];
@@ -290,9 +294,8 @@ typedef struct {
   HDERSTREAM            hDerStreams[MAX_STREAMS_THREAD];  /* DER stream handles, added JHB Mar 2021 */
   FILE*                 hFile_ASN_XML[MAX_STREAMS_THREAD];  /* DER stream XML output file handles, JHB Dec 2022 */
 
- /* items used in GetInputData() and PushPackets() */
+ /* items used in PushPackets() */
 
-  uint8_t               uCacheFlags[MAX_STREAMS_THREAD];             /* input cache flags controlling operation of GetInputData() */
   PKTINFO               PktInfo[MAX_STREAMS_THREAD];                 /* saved copy of PktInfo, can be used to compare current and previous packets */ 
   unsigned int          tcp_redundant_discards[MAX_STREAMS_THREAD];  /* count of discarded TCP redundant retransmissions */
   unsigned int          udp_redundant_discards[MAX_STREAMS_THREAD];  /* count of discarded UDP redundant retransmissions, JHB Jun 2024 */

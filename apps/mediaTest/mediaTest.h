@@ -59,6 +59,7 @@
    Modified Nov 2024 JHB, remove directcore.h include
    Modified Dec 2024 JHB, rename "header_format" to "payload_format" in codec_test_params_t struct
    Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS to MAX_STREAMS, which is defined in shared_include/streamlib.h. MAX_STREAMS specifies maximum streams available for reference applications and multithread / high capacity testing
+   Modified Apr 2025 JHB, add isLinePreserve extern
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -206,9 +207,10 @@ extern volatile char     fPMMasterThreadExit;
 extern volatile char     fPMThreadsClosing;
 extern volatile uint8_t  uQueueRead;
 
-extern volatile uint8_t  uLineCursorPos;  /* may be referenced by apps if they want to know / set the current screen line cursor position. These 3 vars are declared in diaglib.so */
+extern volatile uint8_t  uLineCursorPos;  /* may be referenced by apps if they want to know / set the current screen line cursor position. These 4 vars are declared in diaglib.so */
 extern volatile uint8_t  isCursorMidLine;
 extern volatile uint32_t pm_thread_printf;
+extern volatile uint8_t  isLinePreserve;
 
 extern volatile bool     fNetIOAllowed;
 extern volatile bool     fUSBIOAllowed;

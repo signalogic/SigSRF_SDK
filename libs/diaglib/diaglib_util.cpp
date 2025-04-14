@@ -5,7 +5,7 @@
  
  Project: SigSRF, DirectCore
  
- Copyright Signalogic Inc. 2017-2024
+ Copyright Signalogic Inc. 2017-2025
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -24,6 +24,7 @@
   Modified Aug 2024 JHB, rename DSGetMD5Sum() to DSConsoleCommand() and make into generic console command execution API. See comments
   Modified Nov 2024 JHB, DSGetLogTimestamp() returns timestamp in usec if timestamp param is NULL
   Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
+  Modified Apr 2025 JHB, in DSGetLogTimestamp() convert DS_EVENT_LOG_TIMEVAL_PRECISE flag to DS_EVENT_LOG_TIMEVAL_PRECISION_USEC and add DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC flag
 */
 
 /* Linux and/or other OS includes */
@@ -71,7 +72,7 @@ extern uint8_t usec_init_lock;
 
 /* retrieve and format a timestamp, can be absolute (wall-clock) time, relative to start, or both. Log_RT() (event_logging.cpp) depends on this */
 
-uint64_t DSGetLogTimestamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval) {
+uint64_t DSGetLogTimestamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval) {  /* flags are defined in diaglib.h, user_timeval is in usec */
 
 time_t ltime;
 struct tm tm;
@@ -111,7 +112,8 @@ bool fUptimeTimestamp = true;
          usec = tv.tv_sec*1000000L + tv.tv_usec - usec_base;
       }
 
-      if ((!fUptimeTimestamp || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISE)) && timestamp) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));  /* add msec and usec -- see uptime timestamp generation comments below */
+      if ((!fUptimeTimestamp || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISION_USEC)) && timestamp) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));  /* add msec and usec -- see uptime timestamp generation comments below */
+      else if ((uFlags & DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC) && timestamp) sprintf(&timestamp[strlen(timestamp)], ".%03d", (int)(usec/1000) % 1000);
    }
    
    if (fUptimeTimestamp) {  /* include uptime timestamp if specified, JHB Apr 2020 */
@@ -140,8 +142,12 @@ bool fUptimeTimestamp = true;
          if (!(uFlags & DS_EVENT_LOG_USER_TIMEVAL) || hours > 0) sprintf(&timestamp[strlen(timestamp)], "%02d:", hours);  /* for user-specified timeval, omit hours unless != zero, JHB Feb 2024 */
          sprintf(&timestamp[strlen(timestamp)], "%02d:%02d", (int)(usec/60000000L) % 60, (int)(usec/1000000L) % 60);
 
-         if (!(uFlags & DS_EVENT_LOG_USER_TIMEVAL) || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISE)) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));  /* add msec and usec */
-         if (fWallClockTimestamp) strcat(timestamp, ")");  /* for user-specified timeval, omit sec and usec unless user gives TIMEVAL_PRECISE flag, JHB Feb 2024 */
+      /* for user-specified timeval, omit sec and usec unless user gives DS_EVENT_LOG_TIMEVAL_PRECISION_XXX flags, JHB Feb 2024 */
+
+         if (!(uFlags & DS_EVENT_LOG_USER_TIMEVAL) || (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISION_USEC)) sprintf(&timestamp[strlen(timestamp)], ".%03d.%03d", (int)(usec/1000) % 1000, (int)(usec % 1000));  /* add msec and usec */
+         else if (uFlags & DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC) sprintf(&timestamp[strlen(timestamp)], ".%03d", (int)(usec/1000) % 1000); 
+
+         if (fWallClockTimestamp) strcat(timestamp, ")");
       }
    }
 

@@ -14,7 +14,7 @@ Projects
 
   SigSRF, DirectCore
  
-Copyright Signalogic Inc. 2024
+Copyright Signalogic Inc. 2025
 
 License
 
@@ -43,6 +43,7 @@ Revision History
   Modified Sep 2024 JHB, update comments
   Modified Nov 2024 JHB, update comments
   Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
+  Modified Apr 2025 JHB, comments only
 */
 
 /* Linux and/or other OS includes */
@@ -534,7 +535,7 @@ int DSIsPacketDuplicate(unsigned int uFlags, PKTINFO* PktInfo1, PKTINFO* PktInfo
       }
 
       bool fFragmentCompare = (PktInfo1->flags & DS_PKT_FRAGMENT_ITEM_MASK) && (PktInfo1->flags & DS_PKT_FRAGMENT_ITEM_MASK) == (PktInfo2->flags & DS_PKT_FRAGMENT_ITEM_MASK);  /* both current and previous packet contain identical non-zero fragment flags ? */
-      bool fPortCompare = DSIsReservedUDP(PktInfo1->dst_port) && PktInfo1->dst_port == PktInfo2->dst_port;  /* both current and previous packet are sent to specific dst ports ? Test with codecs-amr-12.pcap, codecs3-amr-wb.pcap, VIDEOCALL_EVS_H265.pcapng, JHB Jul 2024 */
+      bool fPortCompare = DSIsReservedUDP(PktInfo1->dst_port) && PktInfo1->dst_port == PktInfo2->dst_port;  /* both current and previous packet are sent to specific dst ports ? Test with codecs-amr-12.pcap, codecs3-amr-wb.pcap, VxxxxCALL_Exx_H265.pcapng, JHB Jul 2024 */
 
       if (
           (fFragmentCompare || fPortCompare) &&

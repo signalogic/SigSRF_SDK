@@ -27,6 +27,7 @@
    Modified Jan 2023 JHB, add APP_PRINTF_PRINT_ONLY flag
    Modified Jun 2024 JHB, add PrintPacketBuffer()
    Modified Mar 2025 JHB, add cur_time param to app_printf() and UpdateCounters()
+   Modified Apr 2025 JHB, add APP_PRINTF_SAME_LINE_PRESERVE flag
 */
 
 #ifndef _USER_IO_H_
@@ -39,6 +40,7 @@
 #define APP_PRINTF_EVENT_LOG               8
 #define APP_PRINTF_EVENT_LOG_NO_TIMESTAMP  0x10
 #define APP_PRINTF_EVENT_LOG_STRIP_LFs     0x20        /* strip intermediate (screen formatting) LFs */
+#define APP_PRINTF_SAME_LINE_PRESERVE      0x40        /* */
 
 #include "shared_include/session.h"    /* session management structs and definitions */
 #include "shared_include/config.h"     /* configuration structs and definitions */

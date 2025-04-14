@@ -42,7 +42,7 @@
 
  Source Code Notes
  
-   -mediaMin.cpp is primarily C code for high performance, but newer additions are C++ code
+   -mediaMin.cpp is primarily C code for high performance, newer additions are C++ code when there is no performance concern
    -several additional cpp files are included in the build
 
  Revision History
@@ -209,6 +209,9 @@
    Modified Mar 2025 JHB, per changes in pktlib.h to standardize with other SigSRF libs, adjust references to DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, DS_PKTLIB_SUPPRESS_INFO_MSG, and DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG flags
    Modified Mar 2025 JHB, move TCP packet handling after packet arrival timestamp gating, this fixes a problem in packet arrival stats with pcaps starting with several seconds of TCP and other non-UDP/RTP packets (e.g. Wireshark captures). Associated with this the most recent console output time is saved per thread, and several functions have cur_time added as a param
    Modified Mar 2025 JHB, enable beta version of timestamp match mode stream synchronization (look for TIMESTAMP_MATCH_ENABLE_STREAM_SYNC flag, defined in streamlib.h)
+   Modified Apr 2025 JHB, fix broken media time and processing time display after stream completion. Improve display format of processing time, which can be short in accelerated/bulk modes (look for DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC flag)
+   Modified Apr 2025 JHB, add H.264 auto-detect
+   Modified Apr 2025 JHB, in GetInputData() temporarily expand packet data cache mem beyond MAX_MTU for oversize packets, for example Wireshark using TSO/LSO to capture at software level before the NIC, or user-inserted packets. See comments in GetInputData() and in mediaMin.h about per-thread mem savings
 */
 
 /* Linux header files */
@@ -261,13 +264,13 @@ using namespace std;
 
 #define NON_DYNAMIC_UDP_PORT_RANGE  4096  /* non-dynamic UDP port range. Change this if less or more UDP ports should be ignored. See FILTER_UDP_PACKETS below, JHB Jan 2023 */
 
-PORT_INFO_LIST UDP_Port_Media_Allow_List[] = { 1234, 3078, 3079 };  /* add exceptions here for UDP ports that should be allowed for RTP media (and are not expressed by in-stream SDP info). Currently the list has some arbitrary ports found in a few legacy test pcaps used in mediaMin regression test. Port exceptions can also be added at run-time using -p cmd line entry */
+uint16_t UDP_Port_Media_Allow_List[] = { 1234, 3078, 3079 };  /* add exceptions here for UDP ports that should be allowed for RTP media (and are not expressed by in-stream SDP info). Currently the list has some arbitrary ports found in a few legacy test pcaps used in mediaMin regression test. Port exceptions can also be added at run-time using -p cmd line entry */
 
 static char prog_str[] = "mediaMin";
 #ifdef _MEDIAMIN_
 static char banner_str[] = "packet media streaming for analytics and telecom applications on x86 and coCPU platforms";
 #endif
-static char version_str[] = "v3.8.6";
+static char version_str[] = "v3.8.8";
 static char copyright_str[] = "Copyright (C) Signalogic 2018-2025";
 
 //#define VALGRIND_DEBUG  /* enable when using Valgrind for debug */
@@ -886,14 +889,14 @@ cleanup:
             thread_info[thread_index].pcap_file_hdr[j] = NULL;
          }
 
-         if (thread_info[thread_index].input_data_cache[j]) {
-            free(thread_info[thread_index].input_data_cache[j]);  /* free input data cache mem, JHB Oct 2024 */
-            thread_info[thread_index].input_data_cache[j] = NULL;
-         }
+      /* free cache packet data mem and reset cache, JHB Apr 2025 */
+  
+         if (thread_info[thread_index].input_data_cache[j].pkt_buf) free(thread_info[thread_index].input_data_cache[j].pkt_buf);
+         thread_info[thread_index].input_data_cache[j].pkt_buf = NULL;
+         thread_info[thread_index].input_data_cache[j].uFlags = CACHE_INVALID;
 
          DSClosePcap(thread_info[thread_index].pcap_in[j], DS_CLOSE_PCAP_QUIET);
          thread_info[thread_index].pcap_in[j] = NULL;
-         thread_info[thread_index].uCacheFlags[j] = CACHE_INVALID;
       }
 
       #if 0
@@ -1065,7 +1068,7 @@ cleanup:
 
    if (!fExitErrorCond && !fStressTest && !fCapacityTest && (thread_info[thread_index].fDynamicSessions || (Mode & ENABLE_STREAM_GROUPS))) {
 
-   /* note stats are concatenated into one string and one call to app_printf() prior to display and logging; this avoids fragmentation and mixing with other messages when multiple app threads and packet/media threads are running */
+   /* note stats are concatenated into one string and one call to app_printf() prior to display and logging; this avoids console display fragments and mixing with other messages when multiple app threads and packet/media threads are running */
 
       sprintf(tmpstr, "=== mediaMin stats");
       if (num_app_threads > 1) sprintf(&tmpstr[strlen(tmpstr)], " (%d)", thread_index);
@@ -1086,6 +1089,9 @@ cleanup:
 
       sprintf(&tmpstr[strlen(tmpstr)], ", max on list = ");
       sprintf(&tmpstr[strlen(tmpstr)], "%u", nMaxListFragments);
+
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sOversize non-fragmented = ", tabstr, tabstr);
+      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_oversize_nonfragmented_packets[i]);
 
       sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sTCP = ", tabstr, tabstr);
       for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s[%d]%u", i != 0 ? " " : "", i, thread_info[thread_index].num_tcp_packets[i]);
@@ -1151,7 +1157,7 @@ cleanup:
 
          char szSessInfo[200], szTimestamp[200];
 
-         DSGetLogTimestamp(szTimestamp, DS_EVENT_LOG_USER_TIMEVAL | DS_EVENT_LOG_UPTIME_TIMESTAMPS | DS_EVENT_LOG_TIMEVAL_PRECISE, sizeof(szTimestamp), timeScale*thread_info[thread_index].StreamStats[i].first_pkt_usec);  /* convert usec to timestamp string */
+         DSGetLogTimestamp(szTimestamp, DS_EVENT_LOG_USER_TIMEVAL | DS_EVENT_LOG_UPTIME_TIMESTAMPS | DS_EVENT_LOG_TIMEVAL_PRECISION_USEC, sizeof(szTimestamp), timeScale*thread_info[thread_index].StreamStats[i].first_pkt_usec);  /* convert usec to timestamp string */
 
          sprintf(szSessInfo, "%s%s[%d] hSession %d %s, term %d, ch %d, codec %s, bitrate %d, payload type %d, ssrc 0x%x, first packet %s \n", tabstr, tabstr, i, thread_info[thread_index].StreamStats[i].hSession, thread_info[thread_index].StreamStats[i].uFlags & DYNAMIC_SESSION ? "dynamic" : "static", thread_info[thread_index].StreamStats[i].term, thread_info[thread_index].StreamStats[i].chnum, thread_info[thread_index].StreamStats[i].codec_name, thread_info[thread_index].StreamStats[i].bitrate, thread_info[thread_index].StreamStats[i].payload_type, thread_info[thread_index].StreamStats[i].first_pkt_ssrc, szTimestamp);
 
@@ -1388,9 +1394,6 @@ enum {
    -as of mid-2024 tested on over 150 pcaps with a wide range of codec types and bitrates, no known failures. If you have a pcap not detected correctly please anonymize (you can use TraceWrangler) and submit on the Github page or privately by e-mail
 */
 
-int temp_nStream;
-int temp_thread_index;
-
 int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsigned uFlags, uint8_t payload_type, int codec_type, uint32_t* bitrate, uint32_t* ptime, int8_t* category) {
 
 /* use local vars for any unsupplied pointers */
@@ -1451,14 +1454,14 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
    if (!(uFlags & RTP_DETECT_EXCLUDE_VIDEO)) {
 
       uint16_t pyld_hdr = (rtp_pkt[0] << 8) | rtp_pkt[1];  /* create possible NAL unit header */
-      #if 0  /* not currently used */
-      uint8_t Type = pyld_hdr >> 9;
-      uint16_t min_HEVC_size = (rtp_pkt[4] << 8) | rtp_pkt[5];  /* for aggregation packets, payload size must be > NALU sizes */
-      #else
-      uint16_t min_HEVC_size = 10;
-      #endif
+      uint16_t min_HEVC_size = 10;  /* arbitrary min RTP packet size */
 
-      if (rtp_pyld_len > min_HEVC_size && (pyld_hdr & 0x81f8) == 0 && (pyld_hdr & 7) != 0) {  /* are F bit and LayerId are zero and TID is non-zero (per RFC 7798) ? */
+      uint16_t pyld_hdr_mask =  pyld_hdr & 0x81f8;
+      bool fH265_candidate = rtp_pyld_len > min_HEVC_size && pyld_hdr_mask == 0 && (pyld_hdr & 7) != 0;  /* F bit and LayerId must be zero and TID must be non-zero per RFC 7798 */
+      pyld_hdr_mask =  pyld_hdr & 0xfff8;
+      bool fH264_candidate = rtp_pyld_len > min_HEVC_size && (pyld_hdr_mask == 0x6740 || pyld_hdr_mask == 0x68c8 || pyld_hdr_mask == 0x0600 || pyld_hdr_mask == 0x7c80);  /* possible NAL unit headers per RFC 6184 */
+
+      if (fH265_candidate || fH264_candidate) {
 
          #if 0
          char code_seq_3byte[3] = { '\0', '\0', '\1' };
@@ -1499,7 +1502,9 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
             else {
 
                *bitrate = 320000;  /* temporary */
-               return H265;
+
+               if (fH265_candidate) return H265;
+               else return H264;
             }
          }
       }
@@ -2165,6 +2170,9 @@ char szOutOfSpecRTPPadding[100] = "";
                case sdp::SDP_EVS:
                   found_codec_type = EVS;
                   break;
+               case sdp::SDP_H264:
+                  found_codec_type = H264;
+                  break;
                case sdp::SDP_H265:
                   found_codec_type = H265;
                   break;
@@ -2173,7 +2181,6 @@ char szOutOfSpecRTPPadding[100] = "";
                   break;
 
                case sdp::SDP_H263:
-               case sdp::SDP_H264:
                case sdp::SDP_CN:  /* codec types in sdp/types.h that SDK version of mediaMin is currently not handling, JHB May 2021 */
 
                default:
@@ -2264,7 +2271,7 @@ char szOutOfSpecRTPPadding[100] = "";
             if (fNoDataFrameAMR) sprintf(bitrate_str, "%d or %d bps", DSGetCodecInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CMR_BITRATE, PayloadInfo_AMR.voice.CMR >> 4, 0, NULL), DSGetCodecInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CMR_BITRATE, PayloadInfo_AMR.voice.CMR >> 4, 0, NULL));
             else sprintf(bitrate_str, "%d bps", DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_CMR_BITRATE, PayloadInfo_EVS.voice.CMR & 0x7f, 0, NULL));
 
-            Log_RT(4, "mediaMin INFO: found %s in input stream %d occurrence %d pkt #%d SSRC = 0x%x with requested bitrate %s, session not created yet but likely \n", fNoDataFrameAMR ? "AMR No-Transmission" : "EVS NO_DATA", nStream, ++thread_info[thread_index].uNoDataFrame[nStream], thread_info[thread_index].packet_number[nStream], PktInfo.rtp_ssrc, bitrate_str);
+            Log_RT(4, "mediaMin INFO: found %s in input stream %d occurrence %d pkt #%u SSRC = 0x%x with requested bitrate %s, session not created yet but likely \n", fNoDataFrameAMR ? "AMR No-Transmission" : "EVS NO_DATA", nStream, ++thread_info[thread_index].uNoDataFrame[nStream], thread_info[thread_index].packet_number[nStream], PktInfo.rtp_ssrc, bitrate_str);
 
             return 0;  /* return "information only" (not an error) */
          }
@@ -2291,7 +2298,7 @@ err_msg:
 
          char logstr[512];
 
-         sprintf(logstr, "%s for session creation, %s, pkt #%d, IP ver %d, payload type %d, ssrc = 0x%x, seq num = %d, pkt len %d, RTP pyld offset = %d, RTP pyld size %d, cat 0x%x, pyld[0..%d]%s \n", fCodecNotDetected ? "codec not detected" : "invalid packet", errstr, thread_info[thread_index].packet_number[nStream], PktInfo.version, PktInfo.rtp_pyld_type, PktInfo.rtp_ssrc, PktInfo.rtp_seqnum, PktInfo.pkt_len, PktInfo.rtp_pyld_ofs, PktInfo.rtp_pyld_len, cat, min(PktInfo.rtp_pyld_len, MAX_RTP_PYLD_DISPLAY_LEN)-1, pyldstr);
+         sprintf(logstr, "%s for session creation, %s, pkt #%u, IP ver %d, payload type %d, ssrc = 0x%x, seq num = %d, pkt len %d, RTP pyld offset = %d, RTP pyld size %d, cat 0x%x, pyld[0..%d]%s \n", fCodecNotDetected ? "codec not detected" : "invalid packet", errstr, thread_info[thread_index].packet_number[nStream], PktInfo.version, PktInfo.rtp_pyld_type, PktInfo.rtp_ssrc, PktInfo.rtp_seqnum, PktInfo.pkt_len, PktInfo.rtp_pyld_ofs, PktInfo.rtp_pyld_len, cat, min(PktInfo.rtp_pyld_len, MAX_RTP_PYLD_DISPLAY_LEN)-1, pyldstr);
 
          if (fPrevErr) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, logstr);
          #if 0
@@ -2504,6 +2511,14 @@ err_msg:
  
          break;
 
+      case H264:
+
+         session->term1.sample_rate = 90000;
+         session->term1.bitrate = (bitrate == 0) ? 320000 : bitrate;
+         strcpy(codec_name, "H.264");
+ 
+         break;
+
       case L16:
 
          session->term1.sample_rate = 32000;
@@ -2589,7 +2604,7 @@ err_msg:
       session->term2.bitrate = 128000;  /* 8 kHz Fs, 16-bit output. For call recording applications this might need to be 16 kHz Fs */
    }
    else if (isVideoCodec(codec_type)) {
-      session->term2.codec_type = H265;
+      session->term2.codec_type = codec_type;
       session->term2.bitrate = 320000;
    }
    else {  /* otherwise default is G711 uLaw */
@@ -2691,7 +2706,7 @@ err_msg:
            thread_info[thread_index].nSessionsCreated+1, nStream+1, fSDPPyldTypeFound ? "SDP specified" : "auto-detected", codec_name, session->term1.bitrate,
            strlen(group_id) ? ", stream group " : "", strlen(group_id) ? group_id : "");
    sprintf(tmpstr2,
-           "Creation packet info: pkt #%d, IPv%d, ssrc = 0x%x, seq num = %d, payload type %d, pkt len %d, RTP payload size %d%s, cat 0x%x, rtp_pkt[0..2] 0x%x 0x%x 0x%x, src port %u, dst_port %u, input stream %d",
+           "Creation packet info: pkt #%u, IPv%d, ssrc = 0x%x, seq num = %d, payload type %d, pkt len %d, RTP payload size %d%s, cat 0x%x, rtp_pkt[0..2] 0x%x 0x%x 0x%x, src port %u, dst_port %u, input stream %d",
            thread_info[thread_index].packet_number[nStream], PktInfo.version, PktInfo.rtp_ssrc, PktInfo.rtp_seqnum, PktInfo.rtp_pyld_type, PktInfo.pkt_len, PktInfo.rtp_pyld_len, szOutOfSpecRTPPadding, cat, pkt[PktInfo.rtp_pyld_ofs], pkt[PktInfo.rtp_pyld_ofs+1], pkt[PktInfo.rtp_pyld_ofs+2], thread_info[thread_index].src_port[nStream], thread_info[thread_index].dst_port[nStream], nStream);
 
    app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "^^^^^^^ %s\n\t%s", tmpstr, tmpstr2);
@@ -2933,7 +2948,7 @@ next_packet:  /* next packet input */
                                      DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG |  /* if packet is malformed (invalid IP version, incorrect header, mismatching length, etc), we enable general pktlib warning messages but disable RTP related warning messages as the packet type is unknown at this point. We check the DSGetPacketInfo() return value for error conditions below */
                                      DS_PKTLIB_SUPPRESS_INFO_MSG;                /* also if RTP packets have infrequent attributes (RTP header extensions, non-standard padding length) we suppress those info messages also, JHB Dec 2024 */
 
-               if (thread_info[tId].uCacheFlags[j] & CACHE_NEW_DATA) {  /* new input data */
+               if (thread_info[tId].input_data_cache[j].uFlags & CACHE_NEW_DATA) {  /* new input data */
 
                /* increment packet number, notes:
 
@@ -2944,7 +2959,7 @@ next_packet:  /* next packet input */
                   if (block_type != PCAP_PB_TYPE && block_type != RTP_PB_TYPE && block_type != PCAPNG_EPB_TYPE && block_type != PCAPNG_SPB_TYPE) {  /* ignore IDB, NRB, statistics, and other non-packet data block types; these are not actually packets (don't increment the packet number). See definitions in pktlib.h, JHB Feb 2025 */
 
                      #if 0  /* enable to verify packet numbers are matching Wireshark for pcap(ng)s that include non-packet blocks. For example recent version Wireshark captures typically have an IDB at start and one or more statistics blocks at end; these don't show as numbered packets in Wireshark and we ignore them here, JHB Feb 2025 */
-                     printf("\n *** ignoring non packet block type = %d, last pkt# = %d \n", block_type, thread_info[tId].packet_number[j]);
+                     printf("\n *** ignoring non packet block type = %d, last pkt# %u \n", block_type, thread_info[tId].packet_number[j]);
                      #endif
                      goto next_packet;
                   }
@@ -2989,14 +3004,14 @@ next_packet:  /* next packet input */
                pkt_info_ret_val = DSGetPacketInfo(-1, uFlags, pkt_buf, -1, &PktInfo, NULL);  /* if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 */
 
                #if 0  // debug
-               if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) printf("\n *** mediaMin packet fragment added, protocol = %d, pkt number = %d, pkt info ret val = 0x%x \n", PktInfo.protocol, thread_info[tId].packet_number[j], pkt_info_ret_val);
+               if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) printf("\n *** mediaMin packet fragment added, protocol = %d, pkt# %u, pkt info ret val = 0x%x \n", PktInfo.protocol, thread_info[tId].packet_number[j], pkt_info_ret_val);
                #endif
 
             /* check if input packet is still in-processing and resume if so. Examples include switching between input streams (ports or files) and arrival timestamps still ahead of the wall clock */
 
-               if (thread_info[tId].uCacheFlags[j] & CACHE_ITEM_MASK) {
+               if (thread_info[tId].input_data_cache[j].uFlags & CACHE_ITEM_MASK) {
 
-                  thread_info[tId].uCacheFlags[j] = CACHE_INVALID;  /* mark input cache data as no longer valid (new input data needed). Processing may change this depending on what happens */
+                  thread_info[tId].input_data_cache[j].uFlags = CACHE_INVALID;  /* mark input cache data as no longer valid (new input data needed). Processing may change this depending on what happens */
                   goto protocol_based_processing;
                }
 
@@ -3147,13 +3162,11 @@ next_packet:  /* next packet input */
 
       /* stream termination checks */
  
-         if (pkt_len <= 0 || thread_info[tId].dynamic_terminate_stream[j]) {  /* packet stream terminates (i) end of stream input (e.g. end of pcap/pcapng/.rtpxxx file), (ii) stream read error condition (e.g. pcap/pcapng/.rtpxxx file read error), (iii) dynamic termination (e.g. SIP BYE message), or (iv) UDP port closes. In the case of a pcap file we close it (or rewind if input repeat or certain types of stress tests are enabled) */
+         if (pkt_len <= 0 || thread_info[tId].dynamic_terminate_stream[j]) {  /* packet stream terminates (i) end of stream input (e.g. end of pcap/pcapng/.rtpxxx file, pkt_len == 0), (ii) stream read error condition (e.g. pcap/pcapng/.rtpxxx file read error, pkt_len < 0), (iii) dynamic termination (e.g. SIP BYE message), or (iv) UDP port closes. In the case of a pcap file we close it (or rewind if input repeat or certain types of stress tests are enabled) */
 
             bool fRepeat = false;
 
-            if (!(Mode & CREATE_DELETE_TEST_PCAP) && !(Mode & REPEAT_INPUTS)) {  /* check for input repeat */
-
-close_input:
+            if (!(Mode & CREATE_DELETE_TEST_PCAP) && (!(Mode & REPEAT_INPUTS) || !thread_info[tId].num_rtp_packets[j])) {  /* check for input repeat */
 
             /* no input repeats - close the input and set stream handle to NULL so it's no longer operated on */
   
@@ -3167,8 +3180,6 @@ close_input:
                for (int nSessionIndex,i=0; i<thread_info[tId].nSessions[j]; i++) if ((nSessionIndex = thread_info[tId].map_stream_to_session_indexes[j][i]) >= 0) DSPushPackets(DS_PUSHPACKETS_PAUSE_INPUT, NULL, NULL, &hSessions[nSessionIndex], 1);
 
                if (!thread_info[tId].total_sessions_created) thread_info[tId].dynamic_terminate_stream[j] |= STREAM_TERMINATES_NO_SESSIONS; /* stream terminates with no sessions created */
-
-               continue;  /* move to next input. Add continue here and remove duplicated "if (pkt_len == 0 || thread_info[tId].dynamic_terminate_stream[j])" check, JHB Feb 2025 */
             }
             else {  /* in certain test modes or if input repeat is enabled, start the pcap over. If there is a stream read error condition (pkt_len < 0), hopefully subsequent stream read will return pkt_len == 0 but I'm not sure about this. Could end up with a bunch of stream error messages before jitter buffer and other packet processing queues empty out and the stream repeats; needs to be tested, JHB Feb 2025 */
 
@@ -3190,27 +3201,26 @@ close_input:
 
                app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "mediaMin INFO: pcap %s wraps", MediaParams[thread_info[tId].cmd_line_input_index[j]].Media.inputFilename);
 
-               if (thread_info[tId].num_rtp_packets[j]) fRepeat = true;  /* set repeat flag (note the check whether stream has produced at least one valid packet, we don't wanna end up in infinite pkt_len <= 0 loop), JHB Dec 2021. Note this also handles an input stream error condition (pkt_len < 0), JHB Feb 2025 */
+               if ((Mode & CREATE_DELETE_TEST_PCAP) || thread_info[tId].num_rtp_packets[j]) fRepeat = true;  /* set repeat flag if stream has produced at least one valid packet (we don't wanna end up in infinite pkt_len == 0 loop), JHB Dec 2021 */
             }
 
             thread_info[tId].first_pkt_time[j] = 0;  /* reset first packet time */
             thread_info[tId].most_recent_console_output = 0;
 
-            #if 0  /* with extended AFAP and FTRT mode support in place, we now display and log media time or processing time in all cases, JHB May 2023 */
-            if (((Mode & USE_PACKET_ARRIVAL_TIMES) || RealTimeInterval[0] > 1) && isMasterThread(thread_index)) {
-            #else
+         /* display and log media time in all timing cases, JHB May 2023. For faster-than-real-time mode, show both processing time and media time, JHB Feb 2024 */
+
             if (isMasterThread(thread_index)) {
-            #endif
 
                char tmpstr[200], proctimestr[50], mediatimestr[50], descripstr[50] = "media";
-               uint64_t total_pkt_time = thread_info[tId].total_pkt_time[j];
 
                if (isAFAPMode || isFTRTMode) strcpy(descripstr, "processing");
-               DSGetLogTimestamp(proctimestr, DS_EVENT_LOG_USER_TIMEVAL, sizeof(proctimestr), total_pkt_time);  /* use DSGetLogTimestamp() user-specified time value feature to format as hours:min:sec (hours not shown if not > 0), JHB Feb 2024 */
+               unsigned int uFlags = DS_EVENT_LOG_USER_TIMEVAL;
+               if (thread_info[tId].total_pkt_time[j] < 60*1000000) uFlags |= DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC;  /* use msec precision if time is under 60 sec, JHB Apr 2025 */
+               DSGetLogTimestamp(proctimestr, uFlags, sizeof(proctimestr), thread_info[tId].total_pkt_time[j]);  /* apply DSGetLogTimestamp() to user-specified time value to format as hours:min:sec (hours not shown if not > 0), JHB Feb 2024 */
                sprintf(tmpstr, "=== mediaMin INFO: %sinput pcap[%d] %s time %s", !(Mode & USE_PACKET_ARRIVAL_TIMES) ? "estimated " : "", j, descripstr, proctimestr);
 
-               if (isFTRTMode) {  /* show both processing and media time in FTRT mode, JHB Feb 2024 */
-                  DSGetLogTimestamp(mediatimestr, DS_EVENT_LOG_USER_TIMEVAL, sizeof(mediatimestr), total_pkt_time*timeScale);
+               if (isFTRTMode) {  /* show both processing and media time in FTRT mode */
+                  DSGetLogTimestamp(mediatimestr, DS_EVENT_LOG_USER_TIMEVAL, sizeof(mediatimestr), thread_info[tId].total_pkt_time[j]*timeScale);
                   sprintf(&tmpstr[strlen(tmpstr)], ", media time %s", mediatimestr);
                }
 
@@ -3219,7 +3229,7 @@ close_input:
             }
 
             if (fRepeat) { thread_info[tId].dynamic_terminate_stream[j] = 0; goto next_packet; }
-            else goto close_input;
+            else continue;  /* move on to next input stream */
 
          }  /* end of stream termination checks */
 
@@ -3288,7 +3298,7 @@ protocol_based_processing:
                      pcap_rec_hdr.ts_usec = der_decode.timeStamp_usec.value;
                   }
 
-                  if (der_decode.asn_index != 0) thread_info[tId].uCacheFlags[j] = CACHE_READ_PKTBUF;  /* indicate to GetInputData() that cache read data should include pktbuf (due to in-place processing in DSDecodeDerStream(), JHB Oct 2024 */
+                  if (der_decode.asn_index != 0) thread_info[tId].input_data_cache[j].uFlags = CACHE_READ_PKTBUF;  /* indicate to GetInputData() that cache read data should include pktbuf (due to in-place processing in DSDecodeDerStream(), JHB Oct 2024 */
  
 //  uint64_t pkt_timestamp = (uint64_t)pcap_rec_hdr.ts_sec*1000000L + pcap_rec_hdr.ts_usec;
 //  if (pkt_index) printf("updating pkt index = %d, prev index = %d, timestamp = %llu \n", pkt_index, thread_info[tId].EncapsulatedStreamIndex[j], (unsigned long long)pkt_timestamp);
@@ -3298,7 +3308,7 @@ protocol_based_processing:
 
                if (fFoundEncapsulatedCCPkt) {  /* CC UDP packet found, set protocol to UDP/RTP, update PktInfo */
 
-                  pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO, pkt_buf, -1, &PktInfo, NULL);  /* note we allow error messages here because we expect UDP/RTP and would like to know if that's not the case ... might need to change this, JHB Jan 2023 */
+                  pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_buf, -1, &PktInfo, NULL);  /* note we suppress info messages (like extended RTP header length, etc) but we allow error messages because we expect UDP/RTP and we'd like to know if that's not the case ... might need to change this, JHB Jan 2023 */
 
                   if (PktInfo.protocol != UDP) Log_RT(3, "mediaMin WARNING: DER decoded packet not UDP format \n");
                   else thread_info[tId].num_packets_encapsulated[j]++;
@@ -3366,13 +3376,13 @@ protocol_based_processing:
                         if (++waiting_inputs >= thread_info[tId].nInPcapFiles) {  /* print waiting status only if all inputs are waiting */
 
                            if (wait_time/1000 > 0) {
-                           
+
                               char protstr[20] = "";
                               if (PktInfo.protocol == UDP) sprintf(protstr, "UDP");
                               else if (PktInfo.protocol == TCP) sprintf(protstr, "TCP");
                               else sprintf(protstr, "protocol %d", PktInfo.protocol);
 
-                              app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "%sWaiting %llu of %llu sec pause in packet arrival times at %s pkt #%u%s%s...", (isCursorMidLine && !last_wait_check_time[j]) ? "\n" : "\r", (long long unsigned int)wait_time/1000, (long long unsigned int)wait_pause[j]/1000, protstr, thread_info[tId].packet_number[j], thread_info[tId].nInPcapFiles > 1 ? " in input" : "", thread_info[tId].nInPcapFiles > 1 ? MediaParams[thread_info[tId].cmd_line_input_index[j]].Media.inputFilename : "");  /* show packet number; for multiple cmd line inputs, show input name, JHB Oct 2024 */
+                              app_printf(APP_PRINTF_SAME_LINE | APP_PRINTF_SAME_LINE_PRESERVE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "%sWaiting %llu of %llu sec pause in packet arrival times at %s pkt #%u%s%s...", (isCursorMidLine && (!last_wait_check_time[j] || !isLinePreserve)) ? "\n" : "\r", (long long unsigned int)wait_time/1000, (long long unsigned int)wait_pause[j]/1000, protstr, thread_info[tId].packet_number[j], thread_info[tId].nInPcapFiles > 1 ? " in input" : "", thread_info[tId].nInPcapFiles > 1 ? MediaParams[thread_info[tId].cmd_line_input_index[j]].Media.inputFilename : "");  /* show packet number; for multiple cmd line inputs, show input name, JHB Oct 2024. Either last_wait_check_time[] being reset (indicating a new packet) or preserve line request removed by another thread causes a new line, otherwise we repeat on same line (for line preserve test with 1920x1080_H.265.pcapng which has a 4 sec wait at packet #801, occurring in the midst of packet/media thread printouts), JHB Apr 2025 */
                            }
 
                            last_wait_check_time[j] = msec_elapsedtime;  waiting_inputs = 0;
@@ -3381,7 +3391,7 @@ protocol_based_processing:
                   }
                }
 
-               if (fReseek) thread_info[tId].uCacheFlags[j] = CACHE_READ;  /* packet still waiting to be processed; indicate to GetInputData() to read packet data from cache */
+               if (fReseek) thread_info[tId].input_data_cache[j].uFlags = CACHE_READ;  /* packet still waiting to be processed; indicate to GetInputData() to read packet data from cache */
 
             /* arrival timestamp not yet expired. Notes:
 
@@ -3399,12 +3409,12 @@ protocol_based_processing:
 
             if (pkt_info_ret_val & DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE) {  /* if a fully reassembled packet is available then read whole packet into pkt_buf and update pkt_len and PktInfo */
 
-               pkt_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKT_INFO_REASSEMBLY_GET_PACKET | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_buf, -1, &PktInfo, NULL);  /* notes - (i) pkt_buf will be overwritten with reassembled packet data, (ii) PktInfo fields pkt len, UDP len, and RTP payload len will be updated */
+               pkt_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKT_INFO_REASSEMBLY_GET_PACKET | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_buf, -1, &PktInfo, NULL);  /* notes - (i) pkt_buf will be overwritten with reassembled packet data so it can be much larger than MTU size at this point, (ii) PktInfo fields pkt len, UDP len, and RTP payload len will be updated */
 
                if (pkt_len > 0) thread_info[tId].num_packets_reassembled[j]++;
 
                #if 0
-               printf("\n *** mediaMin reassembled packet number = %d length = %d, src port = %d, dst port = %d \n", thread_info[tId].packet_number[j], pkt_len, thread_info[tId].src_port[j], thread_info[tId].dst_port[j]);
+               printf("\n *** mediaMin reassembled pkt# %u length = %d, src port = %d, dst port = %d \n", thread_info[tId].packet_number[j], pkt_len, thread_info[tId].src_port[j], thread_info[tId].dst_port[j]);
                #endif
             }
 
@@ -3481,38 +3491,38 @@ protocol_based_processing:
          static unsigned int last_ignore_str_len = 0;
          static int pkt_ignore_nums[MAX_PKT_IGNORE_COUNT], pkt_ignore_lens[MAX_PKT_IGNORE_COUNT], pkt_ignore_flags[MAX_PKT_IGNORE_COUNT];
          bool fSIP = false;
-         int nShowPorts = 0, nPortAllowedStatus;
+         int nShowPorts = 0, nPortAllowStatus;
          uint16_t dst_port = thread_info[tId].dst_port[j];  /* get saved UDP dst and src ports */
          uint16_t src_port = thread_info[tId].src_port[j];
 
          #if 0  /* example of printing a range of packet buffers to compare with Wireshark display */
          if (thread_info[tId].packet_number[j] >= 648 && thread_info[tId].packet_number[j] <= 655) {
             char tmpstr[300];
-            sprintf(tmpstr, "\n *** before UDP port checks, pkt number = %d, pkt len = %d, pyld ofs = %d, frag flags = 0x%x, dst port = %u, buf start[ \n", thread_info[tId].packet_number[j], pkt_len, PktInfo.pyld_ofs, PktInfo.flags, dst_port);
+            sprintf(tmpstr, "\n *** before UDP port checks, pkt# %u, pkt len = %d, pyld ofs = %d, frag flags = 0x%x, dst port = %u, buf start[ \n", thread_info[tId].packet_number[j], pkt_len, PktInfo.pyld_ofs, PktInfo.flags, dst_port);
             PrintPacketBuffer(&pkt_buf[PktInfo.pyld_ofs], PktInfo.pyld_len, tmpstr, " *** buf end] \n");
          }
          #endif
 
-         nPortAllowedStatus = isPortAllowed(dst_port, pkt_buf, pkt_len, j, cur_time, thread_index);  /* isPortAllowed() will come back with any media or SIP port exceptions to the standard port range. PORT_ALLOW_xxx definitions are in mediaMin.h */
+         nPortAllowStatus = isPortAllowed(dst_port, pkt_buf, pkt_len, j, cur_time, thread_index);  /* isPortAllowed() will come back with any media or SIP port exceptions to the standard port range. PORT_ALLOW_xxx definitions are in mediaMin.h */
 
       /* if dst port is on media port allow list or discovered in SDP media info then we look no further and submit the packet for RTP processing, JHB Jan 2023 */
 
-         if (nPortAllowedStatus == PORT_ALLOW_ON_MEDIA_ALLOW_LIST || nPortAllowedStatus == PORT_ALLOW_SDP_MEDIA_DISCOVERED) goto rtp_packet_processing;
+         if (nPortAllowStatus == PORT_ALLOW_ON_MEDIA_ALLOW_LIST || nPortAllowStatus == PORT_ALLOW_SDP_MEDIA_DISCOVERED) goto rtp_packet_processing;
 
          if (dst_port < NON_DYNAMIC_UDP_PORT_RANGE || DSIsReservedUDP(dst_port)) {  /* ignore non-dynamic and reserved UDP ports */
 
             nShowPorts = 3;
 
             #ifdef FORCE_IGNORE
-            nPortAllowedStatus = 0;
+            nPortAllowStatus = PORT_ALLOW_UNKNOWN;
             #endif
 
-            if (nPortAllowedStatus == PORT_ALLOW_UNKNOWN) goto ignore_udp_packet;  /* unknown - ignore it */
-            else if (nPortAllowedStatus == PORT_ALLOW_KNOWN) goto next_packet;     /* known type but not media or SDP info - display/log it (isPortAllowed() does that), then move on to next packet */
-            else if (nPortAllowedStatus == PORT_ALLOW_SDP_INFO) goto sip_check;    /* known and is carrying SDP info (SIP Invite, SAP protocol, etc) */
-            else {}                                                                /* fall through and process it */
+            if (nPortAllowStatus == PORT_ALLOW_UNKNOWN) goto ignore_udp_packet;  /* unknown - ignore the packet */
+            else if (nPortAllowStatus == PORT_ALLOW_KNOWN) goto next_packet;     /* known packet type but not media or SDP info - display/log packet (isPortAllowed() does that), then move on to next packet */
+            else if (nPortAllowStatus == PORT_ALLOW_SDP_INFO) goto sip_check;    /* known packet type carrying SDP info (SIP Invite, SAP protocol, etc) */
+            else {}                                                              /* fall through and process packet */
          }
-         else if ((dst_port >= SIP_PORT_RANGE_LOWER && dst_port <= SIP_PORT_RANGE_UPPER) || dst_port == SAP_PORT || nPortAllowedStatus == PORT_ALLOW_SDP_INFO) {  /* see if dst port is (i) within range of commonly used SIP ports, (ii) known to carry SDP info (such as GTP), JHB Jun 2024 */
+         else if ((dst_port >= SIP_PORT_RANGE_LOWER && dst_port <= SIP_PORT_RANGE_UPPER) || dst_port == SAP_PORT || nPortAllowStatus == PORT_ALLOW_SDP_INFO) {  /* see if dst port is (i) within range of commonly used SIP ports, (ii) known to carry SDP info (such as GTP), JHB Jun 2024 */
 
 sip_check:
             fSIP = true;
@@ -3537,7 +3547,7 @@ sip_check:
 
                switch (nMsgTypeFound) {
 
-                  case SESSION_CONTROL_FOUND_SIP_INVITE:  /* do something additional with SIP invites if needed */
+                  case SESSION_CONTROL_FOUND_SIP_INVITE:  /* if something additional for SIP invites is needed add here */
                   break;
 
                   case SESSION_CONTROL_FOUND_SAP_SDP:
@@ -3606,7 +3616,7 @@ ignore_udp_packet:
          }
          else if (  /* if source port in UDP SIP range we look for and display SIP messages but don't act on them, JHB Mar 2023 */
                   (src_port >= SIP_PORT_RANGE_LOWER && src_port <= SIP_PORT_RANGE_UPPER) || src_port == SAP_PORT ||
-                  (nPortAllowedStatus = isPortAllowed(src_port, pkt_buf, pkt_len, j, cur_time, thread_index)) == PORT_ALLOW_SDP_INFO
+                  (nPortAllowStatus = isPortAllowed(src_port, pkt_buf, pkt_len, j, cur_time, thread_index)) == PORT_ALLOW_SDP_INFO
                  ) {
 
             fSIP = true;
@@ -3640,7 +3650,7 @@ rtp_packet_processing:
             if (fShowWarnings) Log_RT(4, "mediaMin INFO: PushPackets() says unknown UDP packet; DSGetPacketInfo() found invalid RTP payload type %u, dst port = %u, pkt len = %d \n", PktInfo.rtp_pyld_type, thread_info[tId].dst_port[j], pkt_len);
 
             #ifdef SHOW_UNHANDLED_RTP
-            printf("\n *** unhandled RTP packet, invalid rtp pyld len, stream %d packet number %d \n", j, thread_info[tId].packet_number[j]);
+            printf("\n *** unhandled RTP packet, invalid rtp pyld len, stream %d pkt# %u \n", j, thread_info[tId].packet_number[j]);
             #endif
             thread_info[tId].num_unhandled_rtp_packets[j]++;
             goto next_packet;
@@ -3668,7 +3678,7 @@ rtp_packet_processing:
             if (fShowWarnings) Log_RT(4, "mediaMin INFO: PushPackets() says unknown UDP packet; DSGetPacketInfo() says invalid RTP payload size %d, dst port = %u, pkt len = %d \n", PktInfo.rtp_pyld_len, thread_info[tId].dst_port[j], pkt_len);
 
             #ifdef SHOW_UNHANDLED_RTP
-            printf("\n *** unhandled RTP packet, invalid rtp pyld len, stream %d packet number %d \n", j, thread_info[tId].packet_number[j]);
+            printf("\n *** unhandled RTP packet, invalid rtp pyld len, stream %d pkt# %u \n", j, thread_info[tId].packet_number[j]);
             #endif
             thread_info[tId].num_unhandled_rtp_packets[j]++;
             goto next_packet;
@@ -3839,7 +3849,7 @@ push:
                         queue_full_warning[hSessions[i]]++;  /* will wrap after 255 */
                      }
 
-                     thread_info[tId].uCacheFlags[j] = CACHE_READ;  /* unable to push this packet, try again later. Keep the packet in cache */
+                     thread_info[tId].input_data_cache[j].uFlags = CACHE_READ;  /* unable to push this packet, try again later. Keep the packet in cache */
 
                      continue;
                   }
@@ -3933,7 +3943,7 @@ push:
          else if (isRTCPPacket(PktInfo.rtp_pyld_type)) thread_info[tId].num_rtcp_packets[j]++;  /* RTCP packets are handled either above or by packet/media worker threads. isRTCPPacket() macro is defined in pktlib.h */
          else {  /* unhandled RTP; for example no-transmission or NO_DATA packets not accepted as the first packet in a new session (see comments in CreateDynamicSession() */
             #ifdef SHOW_UNHANDLED_RTP
-            printf("\n *** unhandled RTP packet, session match, stream %d packet number = %d \n", j, thread_info[tId].packet_number[j]);
+            printf("\n *** unhandled RTP packet, session match, stream %d pkt# %u \n", j, thread_info[tId].packet_number[j]);
             #endif
             thread_info[tId].num_unhandled_rtp_packets[j]++;
          }
@@ -4318,11 +4328,11 @@ exit:
 }
 
 
-/* GetInputData() gets next input data, notes JHB Oct 2024:
+/* GetInputData() get next input data, notes JHB Oct 2024:
 
    -called by PushPackets()
 
-   -currently reads from pcaps (.pcap, .pcapng, .rtpxx files). Reading from UDP ports and wav files to be added
+   -currently reads from pcaps (.pcap, .pcapng, .rtpxx files). Reading from UDP ports and wav files not yet supported in public SDK
 
    -use per-thread input cache to return previously read input data and avoid re-reading. Examples include
 
@@ -4338,13 +4348,18 @@ static int last_input[MAX_APP_THREADS];
 
 int pkt_len;  /* return value */
 
+   if (!p_pcap_rec_hdr || !p_hdr_type || !p_block_type) {  /* error check */
+      Log_RT(2, "mediaMin ERROR: GetInputData() says either p_pcap_rec_hdr %p, p_hdr_type %p, or p_block_type %p param(s) is NULL \n", p_pcap_rec_hdr, p_hdr_type, p_block_type);
+      return -1;
+   }
+
 /* read new input data if input cache marked as invalid */
 
-   if ((thread_info[tId].uCacheFlags[nStream] & CACHE_ITEM_MASK) == CACHE_INVALID) {
+   if ((thread_info[tId].input_data_cache[nStream].uFlags & CACHE_ITEM_MASK) == CACHE_INVALID) {
 
       #ifdef INPUT_CACHE_DEBUG_PRINT  /* define INPUT_CACHE_DEBUG_PRINT above to see cache stats during mediaMin run-time */
 
-      printf("\n *** before read, last read pos = %llu, cache mode = %d, read count = %d, cache count = %d \n", (long long unsigned int)thread_info[tId].last_read_pos[nStream], thread_info[tId].uCacheFlags[nStream], read_count, cache_count);
+      printf("\n *** before read, last read pos = %llu, cache mode = %d, read count = %d, cache count = %d \n", (long long unsigned int)thread_info[tId].last_read_pos[nStream], thread_info[tId].input_data_cache[j].uFlags, read_count, cache_count);
       #endif
 
       pkt_len = DSReadPcap(thread_info[tId].pcap_in[nStream], 0, pkt_buf, (Mode & USE_PACKET_ARRIVAL_TIMES) ? p_pcap_rec_hdr : NULL, thread_info[tId].link_layer_info[nStream], p_hdr_type, p_block_type, thread_info[tId].pcap_file_hdr[nStream]);  /* DSReadPcap() handles pcap, pcapng, and .rtpdump format, source is in pktlib_pcap.cpp. Return value is packet length (or block data length in case of some none-packet blocks in pcapng format); a return value of zero indicates end of file, -1 indicates an error condition (in which case an error message has been displayed/logged) */
@@ -4359,10 +4374,12 @@ int pkt_len;  /* return value */
 
          if (!fAssumeIP && *p_hdr_type != ETH_P_ARP && !(*p_hdr_type >= 82 && *p_hdr_type <= 1536) && *p_hdr_type != ETH_P_8021Q) {  /* note - this could also happen with some pcapng non-packet blocks that use non-standard Ethernet header types, such as IDB and statistics, JHB Feb 2025 */
 
-            if ((*p_hdr_type != ETH_P_IP && *p_hdr_type != ETH_P_IPV6) || ((pkt_buf[0] >> 4) != 4 && (pkt_buf[0] >> 4) != 6)) {
+            uint8_t IPver = pkt_buf[0] >> 4;
+
+            if ((*p_hdr_type != ETH_P_IP && *p_hdr_type != ETH_P_IPV6) || (IPver != 4 && IPver != 6)) {
 
                char tmpstr[400];
-               sprintf(tmpstr, "\n *** after DSReadPcap() pkt #%d non IP frame, link layer len = %d, header type = %d, block type = %d, IP ver = %d", thread_info[tId].packet_number[nStream]+1, link_len, *p_hdr_type, *p_block_type, pkt_buf[0] >> 4);
+               sprintf(tmpstr, "\n *** after DSReadPcap() pkt #%u non IP frame, link layer len = %d, header type = %d, block type = %d, IP ver = %d", thread_info[tId].packet_number[nStream]+1, link_len, *p_hdr_type, *p_block_type, pkt_buf[0] >> 4);
                for (int i=0; i<8; i++) sprintf(&tmpstr[strlen(tmpstr)], " 0x%x", pkt_buf[i]);
                printf("%s \n", tmpstr);
             }
@@ -4370,16 +4387,46 @@ int pkt_len;  /* return value */
       }
       #endif
 
-   /* return new input data, update cache */
+      if (pkt_len < 0) return pkt_len;
 
-      thread_info[tId].input_data_cache[nStream]->pkt_len = pkt_len;
-      thread_info[tId].input_data_cache[nStream]->hdr_type = *p_hdr_type;
-      thread_info[tId].input_data_cache[nStream]->pcap_rec_hdr = *p_pcap_rec_hdr;
+   /* return new input data, write to cache */
 
-      memcpy(thread_info[tId].input_data_cache[nStream]->pkt_buf, pkt_buf, pkt_len);
+      thread_info[tId].input_data_cache[nStream].hdr_type = *p_hdr_type;
+      thread_info[tId].input_data_cache[nStream].pcap_rec_hdr = *p_pcap_rec_hdr;
+
+  /* check if expansion of input cache packet data buffer is needed, notes JHB Apr 2025:
+
+     -generally we expect SIP/SDP/SAP and UDP/RTP packets larger than the standard MTU size to be fragmented and reassembled, which is handled in PushPackets(). But packets captured before the NIC ("at software level") by Wireshark or other tools, or custom packets inserted by users, may be oversize but not fragmented. For example, Wireshark captures can show protocols captured using TSO/LSO, or users may insert application-specific packets. By expanding input data cache packet data size only as needed to hold oversize packets, we can (i) conserve mediaMin memory usage and (ii) keep track of oversize packets, which might help in application support and debug
+
+     -note that in many cases oversized packets might be saved in cache but never retrieved, due to their typical stream location and packet arrival timestamps (i) being ignored (e.g. analytics mode with average packet push rate), or (ii) instantaneously elapsing. An example of the latter is call recording apps following RFC 7245 that insert a (typically oversize) SIP/SDP/XML at the start of a pcap (time = 0)
+
+     -oversize non-fragmented packet cases found so far in the total pcap test suite: VxxxxCALL_Exx_H265.pcapng (1 unknown TCP), dozens of call recording pcaps (1 SIP/SDP/XML packet at start), VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng (5 TLSv1.x packets), and openli-voip-example-cc.pcap (306 TCP retransmissions of some type; each packet seems to contain several copies of the same content)
+
+     -a per-stream "Oversize non-fragmented" packet stat is maintained and displayed in mediaMin run-time summary stats. Currently an event log INFO message is written only for first few instances, which covers most cases and gives some idea of what type of oversize packets have been encountered
+  */
+
+      if (max(pkt_len - MAX_MTU, 0) > 0) {  /* check for packet size larger than input cache data buffer nominal size, for infrequent reasons as noted above. MAX_MTU is defined in pktlib.h */
+
+         thread_info[tId].input_data_cache[nStream].uFlags |= CACHE_MTU_EXPANDED;
+
+         thread_info[tId].input_data_cache[nStream].pkt_buf = (uint8_t*)realloc(thread_info[tId].input_data_cache[nStream].pkt_buf, pkt_len);  /* realloc cache packet data buffer size as needed */
+
+         if (thread_info[tId].num_oversize_nonfragmented_packets[nStream] < 3) Log_RT(4, "mediaMin INFO: GetInputData() says oversize pkt #%u size %d (could be TSO/LSO or user-inserted), expanding input cache size by %d, nStream = %d, hdr type = %d, block type = %d \n", thread_info[tId].packet_number[nStream]+1, pkt_len, pkt_len - MAX_MTU, nStream, *p_hdr_type, *p_block_type);
+
+         thread_info[tId].num_oversize_nonfragmented_packets[nStream]++;  /* update oversize packet stat */
+      }
+      else if (thread_info[tId].input_data_cache[nStream].uFlags & CACHE_MTU_EXPANDED) {  /* packet size is less than nominal cache buffer size */
+
+         thread_info[tId].input_data_cache[nStream].uFlags &= ~CACHE_MTU_EXPANDED;
+
+         thread_info[tId].input_data_cache[nStream].pkt_buf = (uint8_t*)realloc(thread_info[tId].input_data_cache[nStream].pkt_buf, MAX_MTU);  /* restore cache packet data buffer to nominal size */
+      }
+
+      thread_info[tId].input_data_cache[nStream].pkt_len = pkt_len;
+      memcpy(thread_info[tId].input_data_cache[nStream].pkt_buf, pkt_buf, pkt_len);  /* copy packet data to cache buffer */
       last_input[tId] = nStream;
 
-      thread_info[tId].uCacheFlags[nStream] |= CACHE_NEW_DATA;  /* mark input cache as updated with new data */
+      thread_info[tId].input_data_cache[nStream].uFlags |= CACHE_NEW_DATA;  /* mark input cache as updated with new data */
 
       #ifdef INPUT_CACHE_DEBUG_PRINT
       printf("\n *** file pos = %llu, pkt len = %d \n", (unsigned long long int)thread_info[tId].last_read_pos[nStream] , pkt_len);
@@ -4392,15 +4439,18 @@ int pkt_len;  /* return value */
    }
    else {  /* return cached data */
 
-      thread_info[tId].uCacheFlags[nStream] &= ~CACHE_NEW_DATA;  /* remove new data flag */
+      thread_info[tId].input_data_cache[nStream].uFlags &= ~CACHE_NEW_DATA;  /* remove new data flag */
 
-      pkt_len = thread_info[tId].input_data_cache[nStream]->pkt_len;
-      *p_hdr_type = thread_info[tId].input_data_cache[nStream]->hdr_type;
-      *p_pcap_rec_hdr = thread_info[tId].input_data_cache[nStream]->pcap_rec_hdr;
+      pkt_len = thread_info[tId].input_data_cache[nStream].pkt_len;
+      *p_hdr_type = thread_info[tId].input_data_cache[nStream].hdr_type;
+      *p_pcap_rec_hdr = thread_info[tId].input_data_cache[nStream].pcap_rec_hdr;
 
-      if (nStream != last_input[tId] || thread_info[tId].uCacheFlags[nStream] == CACHE_READ_PKTBUF) {  /* copy pktbuf from cache if either (i) input has changed or (ii) pktbuf has been modified due to in-place processing */
+      if (nStream != last_input[tId] || thread_info[tId].input_data_cache[nStream].uFlags == CACHE_READ_PKTBUF) {  /* copy pktbuf from cache if either (i) input has changed or (ii) pktbuf has been modified due to in-place processing */
 
-         memcpy(pkt_buf, thread_info[tId].input_data_cache[nStream]->pkt_buf, pkt_len);
+      /* copy cache buffer to packet data */
+
+         memcpy(pkt_buf, thread_info[tId].input_data_cache[nStream].pkt_buf, pkt_len);
+
          last_input[tId] = nStream;
          #ifdef INPUT_CACHE_DEBUG
          cache_pkt_copy_count++;
@@ -4484,16 +4534,18 @@ valid_input_spec:
          thread_info[thread_index].num_rtp_packets[nStream] = 0;
          thread_info[thread_index].num_rtcp_packets[nStream] = 0;
          thread_info[thread_index].num_unhandled_rtp_packets[nStream] = 0;
+         thread_info[thread_index].num_oversize_nonfragmented_packets[nStream] = 0;
          thread_info[thread_index].num_packets_encapsulated[nStream] = 0;
          thread_info[thread_index].num_packets_fragmented[nStream] = 0;
          thread_info[thread_index].num_packets_reassembled[nStream] = 0;
          thread_info[thread_index].cmd_line_input_index[nStream] = cmd_line_input;  /* save to allow mapping from command line input to stream index. See "stream and session notes" in mediaMin.h */
 
-         thread_info[thread_index].input_data_cache[nStream] = (INPUT_DATA_CACHE*)calloc(1, sizeof(INPUT_DATA_CACHE));
+         thread_info[thread_index].input_data_cache[nStream].uFlags = CACHE_INVALID;  /* set cache state to invalid data */
+         thread_info[thread_index].input_data_cache[nStream].pkt_buf = (uint8_t*)calloc(1, MAX_MTU);  /* allocate nominal size packet data mem, clear to zero. MAX_MTU is defined in pktlib.h */
 
-         if (!thread_info[thread_index].input_data_cache[nStream]) {
+         if (!thread_info[thread_index].input_data_cache[nStream].pkt_buf) {
 
-            fprintf(stderr, "Failed to allocate memory (%d bytes) for input data cache, thread_index = %d \n", (int)sizeof(INPUT_DATA_CACHE), thread_index);
+            fprintf(stderr, "Failed to allocate memory (%d bytes) for input cache packet data, thread_index = %d \n", MAX_MTU, thread_index);
 
             if (thread_info[thread_index].pcap_in[nStream]) {
                fclose(thread_info[thread_index].pcap_in[nStream]);
@@ -4569,16 +4621,16 @@ int nOutputIndex = thread_info[thread_index].nOutFiles;  /* start with first cmd
 
          thread_info[thread_index].uOutputType[thread_info[thread_index].nOutFiles] = PCAP;  /* set data type for use in PullPackets(). See io_data_type enums (mediaTest.h), JHB Sep 2024 */
       }
-      else if (isVideoCodec(codec_type) &&
-               (strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h265") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".hevc"))) {  /* look for output video bitstream files on cmd line */
+      else if (isVideoCodec(codec_type) &&  /* to-do: needs to be reverse strcasestr() */
+               (strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h265") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".hevc") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h264"))) {  /* look for output video bitstream files on cmd line */
 
-         char* p1 = strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h265");
+         char* p1 = strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h26");
          strcpy(tmpstr, MediaParams[nOutputIndex].Media.outputFilename);
          char* p2 = strrchr(tmpstr, '.');
          if (p2) *p2 = 0;
 
          if (num_app_threads > 1) {
-            if (p1) sprintf(filestr, "%s%d.h265", tmpstr, thread_index);
+            if (p1) sprintf(filestr, "%s%d%s", tmpstr, thread_index, p1);
             else sprintf(filestr, "%s%d.hevc", tmpstr, thread_index);
          }
          else strcpy(filestr, MediaParams[nOutputIndex].Media.outputFilename);
@@ -5388,7 +5440,7 @@ static unsigned num_GPRS = 0;
 
 /* second check allowed list of ports */
 
-   for (i=0; i<sizeof(UDP_Port_Media_Allow_List)/sizeof(PORT_INFO_LIST); i++) if (port == UDP_Port_Media_Allow_List[i].port) return PORT_ALLOW_ON_MEDIA_ALLOW_LIST;
+   for (i=0; i<sizeof(UDP_Port_Media_Allow_List)/sizeof(UDP_Port_Media_Allow_List[0]); i++) if (port == UDP_Port_Media_Allow_List[i]) return PORT_ALLOW_ON_MEDIA_ALLOW_LIST;
 
 /* check SDP info database for allowed media ports, JHB Jun 2024 */
 
@@ -5433,7 +5485,7 @@ static unsigned num_GPRS = 0;
 
    if (fFound) {
 
-      if ((!(Mode & DISABLE_PORT_IGNORE_MESSAGES) || !fFirstConsoleMediaOutput) && strlen(portstr)) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "%s packet found%s, pkt number = %u, dst port = %u \n", portstr, countstr, thread_info[thread_index].packet_number[nStream], port);
+      if ((!(Mode & DISABLE_PORT_IGNORE_MESSAGES) || !fFirstConsoleMediaOutput) && strlen(portstr)) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "%s packet found%s, pkt# %u, dst port = %u \n", portstr, countstr, thread_info[thread_index].packet_number[nStream], port);
 
       if (fSDPInfoFound) return PORT_ALLOW_SDP_INFO;
 
@@ -5454,7 +5506,7 @@ char version_info[500], lib_info[500], banner_info[2048];
    GetCommandLine((char*)szAppFullCmdLine, MAX_CMDLINE_STR_LEN);  /* save full command in szAppFullCmdLine global var, for use as needed, JHB Jan 2023 */
 
    bool fDemo = strstr(PKTLIB_VERSION, "DEMO") || strstr(VOPLIB_VERSION, "DEMO") || strstr(STREAMLIB_VERSION, "DEMO");
- 
+
    sprintf(version_info, "%s %s \n%s%s \n", prog_str, version_str, copyright_str, fDemo ? " \nUsing demo-only library versions" : "");
 
    sprintf(lib_info, "  SigSRF libraries in use: DirectCore v%s, pktlib v%s, streamlib v%s, voplib v%s, derlib v%s, alglib v%s, diaglib v%s, cimlib v%s", HWLIB_VERSION, PKTLIB_VERSION, STREAMLIB_VERSION, VOPLIB_VERSION, DERLIB_VERSION, ALGLIB_VERSION, DIAGLIB_VERSION, CIMLIB_VERSION);
