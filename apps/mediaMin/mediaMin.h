@@ -56,6 +56,9 @@
    Modified Mar 2025 JHB, add most_recent_console_output to thread_info[]; see comments in mediaMin.cpp
    Modified Apr 2025 JHB, modify INPUT_DATA_CACHE struct and add CACHE_MTU_EXPANDED flag to allow cache packet data buffer size variation on-the-fly. This both reduces memory usage and better handles TSO/LSO and other oversize packets, for which cache packet data memory can be temporarily expanded. See comments in GetInputData() in mediaMin.cpp
    Modified Apr 2025 JHB, add num_oversize_nonfragmented_packets[] stat
+   Modified Apr 2025 JHB, rename hdr_type field to eth_protocol in INPUT_DATA_CACHE struct, to align with updates in pktlib.h
+   Modified Apr 2025 JHB, add num_rtcp_custom_packets[] stat
+   Modified Apr 2025 JHB, simplify stream stats implementation, remove uStreamStatsState[]
 */
 
 #ifndef _MEDIAMIN_H_
@@ -145,28 +148,30 @@ typedef struct {
 
 typedef struct {
 
-   HSESSION hSession;
-   uint8_t  term;                           /* session termination: 0 or 1 */
-   int32_t  chnum;                          /* channel */
-   uint8_t  uFlags;                         /* type of session (dynamic vs static), other flags as needed */
-   char     codec_name[CODEC_NAME_MAXLEN];  /* CODEC_NAME_MAXLEN defined in voplib.h */
-   uint16_t bitrate;
-   uint8_t  payload_type;
-   uint64_t first_pkt_usec;                 /* arrival time of first packet, in usec */
-   uint32_t first_pkt_ssrc;                 /* first packet RTP SSRC */
+   HSESSION  hSession;
+   uint8_t   term;                           /* session termination: 0 or 1 */
+   int32_t   chnum;                          /* channel */
+   uint8_t   uFlags;                         /* type of session (dynamic vs static), other flags as needed */
+   char      codec_name[CODEC_NAME_MAXLEN];  /* CODEC_NAME_MAXLEN defined in voplib.h */
+   uint16_t  bitrate;
+   uint8_t   payload_type;
+   uint64_t  first_pkt_usec;                 /* arrival time of first packet, in usec */
+   uint32_t  first_pkt_ssrc;                 /* first packet RTP SSRC */
    
 } STREAM_STATS;
 
 /* STREAM_STATS uFlags */
 
-#define STATIC_SESSION       0  /* default, set in CreateStaticSessions() in session_app.cpp */
-#define DYNAMIC_SESSION      1  /* dynamic session, set in CreateDynamicSession() in mediaMin.cpp */
+#define STREAM_STAT_STATIC_SESSION            0  /* default, set in CreateStaticSessions() in session_app.cpp */
+#define STREAM_STAT_DYNAMIC_SESSION           1  /* dynamic session, set in CreateDynamicSession() in mediaMin.cpp */
+#define STREAM_STAT_FIRST_PKT              0x10  /* set when stream receives first packet */
+#define STREAM_STAT_FLAG_MASK              0xf0
 
 #define MAX_DYN_PYLD_TYPES  32  /* max number of disallowed payload type messsages (fDisallowedPyldTypeMsg) */
 
 typedef struct {  /* input data cache items, JHB Oct 2024 */
 
-  uint16_t       hdr_type;
+  uint16_t       eth_protocol;
   pcaprec_hdr_t  pcap_rec_hdr;
   int            pkt_len;        /* packet length */
   uint8_t*       pkt_buf;        /* pointer to allocated packet data buffer */
@@ -227,11 +232,14 @@ typedef struct {
   uint32_t              num_packets_encapsulated[MAX_STREAMS_THREAD];
   uint32_t              num_rtp_packets[MAX_STREAMS_THREAD];
   uint32_t              num_rtcp_packets[MAX_STREAMS_THREAD];
+  uint32_t              num_rtcp_custom_packets[MAX_STREAMS_THREAD];
   uint32_t              num_unhandled_rtp_packets[MAX_STREAMS_THREAD];
   uint32_t              num_oversize_nonfragmented_packets[MAX_STREAMS_THREAD];
 
   uint32_t              num_packets_fragmented[MAX_STREAMS_THREAD];
   uint32_t              num_packets_reassembled[MAX_STREAMS_THREAD];
+
+/* stream group items */
 
   FILE*                 fp_pcap_group[MAX_STREAM_GROUPS];  /* note - this array is accessed by a session counter, and each app thread might handle up to 50 sessions, so this size (172, defined in shared_include/streamlib.h) is overkill.  But leave it for now */
   FILE*                 fp_text_group[MAX_STREAM_GROUPS];
@@ -245,13 +253,12 @@ typedef struct {
   GROUP_INTERVAL_STATS  GroupIntervalStats[MAX_GROUP_STATS];
   int16_t               group_interval_stats_index;
 
+  char                  szVideoStreamOutput[MAX_STREAMS_THREAD][CMDOPT_MAX_INPUT_LEN];  /* added to support md5sum and other run-time summary operations on video output files, JHB Apr 2025 */
+
 /* stream stats */
 
-  uint32_t              uStreamStatsState[NCORECHAN];
-  #define               STREAM_STATE_FIRST_PKT  0x10000000
-  #define               STREAM_STATE_FLAG_MASK  0xf0000000
   STREAM_STATS          StreamStats[MAX_STREAMS_THREAD];
-  int16_t               stream_stats_index;
+  int16_t               num_stream_stats;
 
   uint32_t              pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_xcode_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_xcode_ctr, prev_pkt_pull_streamgroup_ctr;  /* referenced in UpdateCounters() console update in user_io.cpp */
 

@@ -62,6 +62,7 @@ Revision History
                            -detect and fix and TCP Segmentation Offload (TSO) zero lengths
                            -comprehensive error handling
   Modified Mar 2025 JHB, per changes in pktlib.h to standardize with other SigSRF libs, adjust references to DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, DS_PKTLIB_SUPPRESS_INFO_MSG, and DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG flags
+  Modified Apr 2025 JHB, per updates in pktlib.h, rename p_eth_hdr_type to p_eth_protocol 
 */
 
 /* Linux and/or other OS includes */
@@ -444,7 +445,7 @@ typedef struct {
 
 /* read a pcap record */
 
-int DSReadPcap(FILE* fp_in, unsigned int uFlags, uint8_t* pkt_buffer, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* p_eth_hdr_type, uint16_t* p_block_type, pcap_hdr_t* pcap_file_hdr) {
+int DSReadPcap(FILE* fp_in, unsigned int uFlags, uint8_t* pkt_buffer, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* p_eth_protocol, uint16_t* p_block_type, pcap_hdr_t* pcap_file_hdr) {
 
 pcaprec_hdr_t pcap_pkt_hdr_local;  /* defined in pktlib.h */
 pcaprec_hdr_t* p_pkt_hdr;
@@ -458,7 +459,7 @@ uint8_t pkt_buffer_local[MAX_TCP_PACKET_LEN];  /* overly large but at least no c
 uint8_t* pkt_ptr;
 struct ethhdr eth_hdr;  /* defined in netinet/if_ether.h */
 vlan_hdr_t vlan_hdr;  /* defined in pktlib.h */
-uint16_t eth_hdr_type = 0, file_type, link_len, link_type, padding = 0;
+uint16_t eth_protocol = 0, file_type, link_len, link_type, padding = 0;
 uint16_t rtp_len = 0, record_len = 0;  /* rtp file format items */
 char errstr[1024] = "";
 bool fUnusedBlockType = false;
@@ -525,7 +526,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
       p_pkt_hdr->incl_len = rtp_len;
 
-      eth_hdr_type = 0;  /* no concept of ARP or 802.2 packet types in .rtp files */
+      eth_protocol = 0;  /* no concept of ARP or 802.2 packet types in .rtp files */
    }
    else if (file_type == PCAP_TYPE_LIBPCAP) {
 
@@ -670,7 +671,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
       if (!(uFlags & DS_READ_PCAP_DISABLE_NULL_LOOPBACK_PROTOCOL) && null_loopback_af_inet == 2) {  /* check for Wireshark capture "Null/loopback" protocol, first 4 bytes == AF_INETxx. Test with capture_test2.pcapng, JHB Feb 2025 */
 
          link_len = NULL_LOOPBACK_LINK_LEN;
-         eth_hdr_type = ETH_P_IP;
+         eth_protocol = ETH_P_IP;
          #ifdef NULL_LOOPBACK_DEBUG
          uint8_t* pkt = (uint8_t*)&eth_hdr;
          printf("\n *** inside null/loopback af_inet = 2, incl_len = %d, orig_len = %d, first pkt byte = 0x%x \n", p_pkt_hdr->incl_len, p_pkt_hdr->orig_len, pkt[NULL_LOOPBACK_LINK_LEN]);
@@ -684,7 +685,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
          if (!fOnce) { fOnce = true; fprintf(stderr, "\n *** inside pcapng null/loopback af_inet = 4 \n"); }
 
          link_len = NULL_LOOPBACK_LINK_LEN;
-         eth_hdr_type = ETH_P_IPV6;
+         eth_protocol = ETH_P_IPV6;
 
          fseek(fp_in, NULL_LOOPBACK_LINK_LEN - PRE_ETH_HDR_READ, SEEK_CUR);
       }
@@ -692,9 +693,9 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
          if (fread((uint8_t*)&eth_hdr + PRE_ETH_HDR_READ, link_len - PRE_ETH_HDR_READ, 1, fp_in) != 1) { sprintf(errstr, "unable to read link layer %d bytes", link_len-PRE_ETH_HDR_READ); goto pcap_read_error; }  /* read link_len bytes */
 
-         eth_hdr_type = ((eth_hdr.h_proto & 0xff) << 8) | ((eth_hdr.h_proto & 0xff00) >> 8);  /* stored in file as big-endian */
+         eth_protocol = ((eth_hdr.h_proto & 0xff) << 8) | ((eth_hdr.h_proto & 0xff00) >> 8);  /* stored in file as big-endian */
 
-         if (eth_hdr_type == ETH_P_8021Q) {  /* check for VLAN header type. Note if there is "double-tagging" (stacked VLAN) we need to add a little more code here */
+         if (eth_protocol == ETH_P_8021Q) {  /* check for VLAN header type. Note if there is "double-tagging" (stacked VLAN) we need to add a little more code here */
 
             if (fread(&vlan_hdr, sizeof(vlan_hdr), 1, fp_in) != 1) return 0;  /* read vlan header */
 
@@ -702,7 +703,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
          }
 
          #ifdef DEBUG_SUBHEADERS
-         static bool fOnce = false; if (!fOnce) { printf("Ethernet header type field = 0x%x\n", eth_hdr_type); fOnce = true; }
+         static bool fOnce = false; if (!fOnce) { printf("Ethernet header type field = 0x%x\n", eth_protocol); fOnce = true; }
          #endif
       }
    }
@@ -710,9 +711,9 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
       fseek(fp_in, sizeof(ethhdr), SEEK_CUR);  /* skip first 14 bytes (12 bytes MAC addresses, 2 unused bytes, per  https://stackoverflow.com/questions/37889179/converting-pcap-format-from-linktype-linux-ssl-to-linktype-ethernet) */
 
-      if (fread(&eth_hdr_type, sizeof(eth_hdr_type), 1, fp_in) != 1) { sprintf(errstr, "unable to read Linux SLL link layer ethernet header type %d bytes", (int)sizeof(eth_hdr_type)); goto pcap_read_error; }  /* read ethernet header type */
+      if (fread(&eth_protocol, sizeof(eth_protocol), 1, fp_in) != 1) { sprintf(errstr, "unable to read Linux SLL link layer ethernet header type %d bytes", (int)sizeof(eth_protocol)); goto pcap_read_error; }  /* read ethernet header type */
 
-      eth_hdr_type = ((eth_hdr_type & 0xff) << 8) | ((eth_hdr_type & 0xff00) >> 8);  /* stored in file as big-endian */
+      eth_protocol = ((eth_protocol & 0xff) << 8) | ((eth_protocol & 0xff00) >> 8);  /* stored in file as big-endian */
    }
    else {
 
@@ -730,9 +731,9 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
       }
    }
 
-   if (p_eth_hdr_type) *p_eth_hdr_type = eth_hdr_type;
+   if (p_eth_protocol) *p_eth_protocol = eth_protocol;
 
-// if (eth_hdr_type == ETH_P_ARP) printf(" *************** found ARP packet, include len = %d, link len = %d \n", p_pkt_hdr->incl_len, link_len);
+// if (eth_protocol == ETH_P_ARP) printf(" *************** found ARP packet, include len = %d, link len = %d \n", p_pkt_hdr->incl_len, link_len);
 
    if ((packet_length = p_pkt_hdr->incl_len - link_len) <= 0) { sprintf(errstr, "incl_len %d - link_len %d <= 0 when reading", p_pkt_hdr->incl_len, link_len); goto pcap_read_error; }  /* error check amount of next file read */
 

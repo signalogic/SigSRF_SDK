@@ -40,6 +40,7 @@
    Modified Jan 2025 JHB, some comments added after AI tools source code review
    Modified Mar 2025 JHB, in app_printf() update thread_info[].most_recent_console_output, add cur_time param in app_printf() and UpdateCounters()
    Modified Apr 2025 JHB, in app_printf() implement APP_PRINTF_SAME_LINE_PRESERVE, fix bug with slen not being incremented when \n or \r inserted at output string reserved zeroth location
+   Modified Apr 2025 JHB, in app_printf() fixes and simplification to updating line cursor position, mid-line check, and isLinePreserve
 */
 
 #include <algorithm>
@@ -72,7 +73,9 @@ extern int num_pktmed_threads;    /* number of packet/media threads running */
 extern bool fRepeatIndefinitely;  /* true if -R0 is given on the cmd line */
 extern int nRepeatsRemaining[];
 
-
+extern uint8_t uApp_progress_line_cursor_pos;
+static uint8_t uLine_cursor_pos[MAX_APP_THREADS] = { 0 };
+ 
 /* update screen counters */
 
 void UpdateCounters(uint64_t cur_time, int thread_index) {
@@ -81,7 +84,7 @@ char tmpstr[MAX_APP_STR_LEN] = "";
 static uint64_t last_time[MAX_PKTMEDIA_THREADS] = { 0 };
 
    if (last_time[thread_index] == 0) last_time[thread_index] = cur_time;
-   if ((int64_t)cur_time - (int64_t)last_time[thread_index] <= 100*1000) return;  /* update counters no faster than 100 msec */
+   if ((int64_t)cur_time - (int64_t)last_time[thread_index] <= 100*1000) return;  /* update counters at 100 msec intervals, objective being to keep amount of buffered I/O to a minimum to prevent application threads from blocking if the buffer should fill up due to other threads; e.g. sig_printf() in p/m threads (packet_flow_media_proc.c in pktlib) and Log_RT() (event_logging.cpp in diaglib) */
 
    last_time[thread_index] = cur_time;
 
@@ -94,6 +97,11 @@ static uint64_t last_time[MAX_PKTMEDIA_THREADS] = { 0 };
       if (thread_info[thread_index].pkt_pull_xcode_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].pkt_pull_xcode_ctr);
       if (thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %ds", thread_info[thread_index].pkt_pull_streamgroup_ctr);
       strcat(tmpstr, " ");  /* real-time stats readability, JHB Mar 2025 */
+
+      uLine_cursor_pos[thread_index] = strlen(tmpstr)-1; /* save thread's progress line cursor pos */
+      uint8_t max_pos = 0;
+      for (int i=0; i<(int)num_app_threads; i++) max_pos = max(max_pos, uLine_cursor_pos[i]);
+      uApp_progress_line_cursor_pos = max_pos;  /* set app progress line cursor position, used by p/m threads. Find max pos for multiple threads, JHB Apr 2025 */
 
       thread_info[thread_index].prev_pkt_push_ctr = thread_info[thread_index].pkt_push_ctr;
       thread_info[thread_index].prev_pkt_pull_jb_ctr = thread_info[thread_index].pkt_pull_jb_ctr;
@@ -293,7 +301,7 @@ int slen;
 
    if ((uFlags & APP_PRINTF_THREAD_INDEX_SUFFIX) && num_app_threads > 1) sprintf(&p[strlen(p)], " (%d)", thread_index);  /* add application thread index suffix if specified */
 
-/* make a reasonable effort to coordinate screen output between application threads and p/m threads, JHB Apr2020:
+/* make a reasonable effort to coordinate screen output between application threads and p/m threads, JHB Apr 2020:
 
    -p/m threads indicate when they are printing to screen by setting a bit in pm_thread_printf
    -atomic read/compare/write sets/clears isCursorMidLine to indicate cursor position is "start of line" or somewhere mid-line
@@ -306,10 +314,8 @@ int slen;
 
    if (slen) {
 
-      if ((uFlags & APP_PRINTF_NEW_LINE) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) { *(--p) = '\n'; slen++; }  /* prefix with newline, update isCursorMidLine if needed */
-      else if (p[slen-1] != '\n' && p[slen-1] != '\r') {
-
-         __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);
+      if ((uFlags & APP_PRINTF_NEW_LINE) && isCursorMidLine) { *(--p) = '\n'; slen++; isLinePreserve = false; }  /* prefix with newline, update isCursorMidLine if needed */
+      else { //if (p[slen-1] != '\n' && p[slen-1] != '\r') {
 
          if (uFlags & APP_PRINTF_SAME_LINE_PRESERVE) isLinePreserve = true;
          else if (isLinePreserve) {
@@ -318,7 +324,16 @@ int slen;
          }
       }
 
-      uLineCursorPos = (p[slen-1] != '\n' && p[slen-1] != '\r') ? slen : 0;  /* update line cursor position */
+   /* update line cursor position and is mid-line quick check */
+
+      uLineCursorPos = (p[slen-1] == '\n' || p[slen-1] == '\r') ? 0 : (p[0] == '\r' ? 0 : uLineCursorPos) + slen;  /* modify to include checks for \r, fix calculation as pos + len instead of just len, JHB Apr 2025 */
+
+      #if 0
+      if ((p[slen-1] == '\n' || p[slen-1] == '\r') || p[0] == '\r')  __sync_val_compare_and_swap(&isCursorMidLine, 1, 0);  /* if one set to zero */
+      else __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);  /* if zero set to 1 */
+      #else  /* simplify mid-line check update, JHB Apr 2025 */
+      __sync_val_compare_and_swap(&isCursorMidLine, uLineCursorPos == 0, uLineCursorPos != 0);  /* if uLineCursorPos > 0 set to 1, otherwise set to 0 */
+      #endif
 
       printf("%s", p);  /* use buffered output */
 

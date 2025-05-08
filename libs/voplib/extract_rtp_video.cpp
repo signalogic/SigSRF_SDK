@@ -4,17 +4,16 @@
 
  Description
 
-  extract H.264 and HEVC elementary bitstreams from RTP packets
+  for H.264 and H.265 (HEVC) RTP packet streams, retrieve payload information and/or extract HEVC elementary bitstreams
 
  Notes
 
   -fully multithreaded, no locks, no semaphore
   -input packet stream should have all redundancy removed, fragmented packets reassembled, and be in correct RTP sequence number order. In SigSRF software this is handled by pktlib
-  -currently HEVC supported, H.264 is to-do
   -called by DSGetPayloadInfo() API in voplib (https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-dsgetpayloadinfo)
   -calls Log_RT() API in diaglib
   -writing file output is done with DSSaveDataFile() in DirectCore, this can be replaced with simple fwrite() if needed
-  -normally linked with voplib, but could be linked with any app or with mediaMin earlier in link order as needed. No other dependencies on other SigSRF libs
+  -normally linked with voplib, but could be linked with any app or with mediaMin earlier in link order as needed. No dependencies on other SigSRF libs
  
  Projects
 
@@ -36,6 +35,7 @@
   Modified Feb 2025 JHB, add SDP info handling, base64 decoding of fmtp sprop-xps fields
   Modified Mar 2025 JHB, set payload_info items regardless of whether fp_out supplied
   Modified Mar 2025 JHB, add pInfo param to allow copying to mem buffer extracted bitstream data
+  Modified Apr-May 2025 JHB, add H.264 functionality
 */
 
 /* Linux and/or other OS includes */
@@ -48,8 +48,8 @@ using namespace std;
 
 /* SigSRF includes */
 
-#include "voplib.h"         /* PAYLOAD_INFO and SDP_INFO struct definitions */
-#include "directcore.h"     /* DSSaveDataFile() */ 
+#include "voplib.h"         /* PAYLOAD_INFO and SDP_INFO struct definitions; voplib.h includes shared_include/codec.h */
+#include "directcore.h"     /* DSSaveDataFile() handles bitstream and wav files */ 
 #include "diaglib.h"        /* Log_RT() event logging */
 #include "base64/base64.h"  /* base64 decode API header file */
 
@@ -57,7 +57,7 @@ using namespace std;
 extern "C" {
 #endif
 
-  int extract_rtp_video(FILE* fp_out, unsigned int uFlags, uint8_t* rtp_payload, int rtp_pyld_len, PAYLOAD_INFO* payload_info, SDP_INFO* sdp_info, void* pInfo, int nID, const char* errstr);
+  int extract_rtp_video(FILE* fp_out, codec_types codec_type, unsigned int uFlags, uint8_t* rtp_payload, int rtp_pyld_len, PAYLOAD_INFO* payload_info, SDP_INFO* sdp_info, void* pInfo, int nID, const char* errstr);
 
   static int write_to_buffer(uint8_t* buf, uint8_t* data, int offset, int len);  /* local buffering with length and space available checks */
 
@@ -65,34 +65,53 @@ extern "C" {
 }
 #endif
 
-/* NAL unit definitions from the spec, https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-H.265-201802-S!!PDF-E&type=items */
+/* NAL unit definitions from the specs
 
-#define NAL_UNIT_VPS  32
-#define NAL_UNIT_SPS  33
-#define NAL_UNIT_PPS  34
+   H.265 - https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-H.265-201802-S!!PDF-E&type=items
+   H.264 - https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-H.264-201304-S!!PDF-E&type=items
+*/
 
-/* technically not NAL units (not in H.264 or HEVC specs), but in RTP format they are treated that way (RFC 7798) */
+#define NAL_UNIT_VPS_HEVC       32
+#define NAL_UNIT_SPS_HEVC       33
+#define NAL_UNIT_PPS_HEVC       34
 
-#define NAL_UNIT_AP   48  /* RFC 7798 section 4.4.2, Aggregation Packets */
-#define NAL_UNIT_FU   49  /* RFC 7798 section 4.4.3, Fragmentation Units */
+#define NAL_UNIT_SEI_H264        6
+#define NAL_UNIT_SPS_H264        7
+#define NAL_UNIT_PPS_H264        8
+
+#define NAL_UNIT_NON_IDR_SLICE   1  /* H.264 specs */
+#define NAL_UNIT_IDR_SLICE       5
+
+/* NAL UNIT definitions from the RTP format specs. Technically these are not NAL units (i.e. not in HEVC or H.264 codec specs), but in RTP format specs (RFC 7798 and RFC 6184) they are assigned NAL unit type values marked as Reserved in the codec specs */
+
+#define NAL_UNIT_AP             48  /* H.265 RFC 7798 section 4.4.2, Aggregation Packets */
+#define NAL_UNIT_FU             49  /* H.265 RFC 7798 section 4.4.3, Fragmentation Units */
+
+#define NAL_UNIT_STAPA          24  /* H.264 RFC 6184 */
+#define NAL_UNIT_STAPB          25
+#define NAL_UNIT_MTAP16         26
+#define NAL_UNIT_MTAP24         27
+#define NAL_UNIT_FU_A           28
+#define NAL_UNIT_FU_B           29
 
 /* misc error check limits */
 
-#define MIN_RTP_PYLD_LEN  4
-#define MAX_RTP_PYLD_LEN  5000  /* extraction is after IP fragmentation reassembly, so packet size could be very large. Is there a maximum HEVC unit size prior to fragmentation ? */
+#define MIN_RTP_PYLD_LEN         4
+#define MAX_RTP_PYLD_LEN      5000  /* extraction is after IP fragment reassembly, so packet size could be very large. Is there a maximum MTU size prior to fragmentation ? */
 
 /* extract_rtp_video() extracts H.264 and HEVC elementary bitstreams from RTP packets
 
-  Arguments
+  Arguments - any marked "optional" should be NULL if not used, unless specified otherwise
 
-   - fp_out should point to an opened output elementary bitstream file
-   - uFlags may contain DS_PAYLOAD_INFO_IGNORE_INBAND_XPS, DS_PAYLOAD_INFO_DEBUG_OUTPUT, DS_PAYLOAD_INFO_RESET_ID, DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, DS_VOPLIB_SUPPRESS_INFO_MSG, or a combination (voplib.h). DS_PAYLOAD_INFO_DEBUG_OUTPUT can be enabled/disabled at any time to control debug info visibility
-   - rtp_payload should point to an RTP payload
+   - fp_out is an optional pointer to an elementary bitstream file. If fp_out is given it should point to should point to an open output binary file, otherwise it should be NULL
+   - codec_type specifies the codec type (see definitions in shared_include/codec.h)
+   - uFlags may contain DS_PAYLOAD_INFO_IGNORE_INBAND_XPS, DS_PAYLOAD_INFO_DEBUG_OUTPUT, DS_PAYLOAD_INFO_RESET_ID, DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, DS_VOPLIB_SUPPRESS_INFO_MSG, or a combination. DS_PAYLOAD_INFO_DEBUG_OUTPUT can be enabled/disabled at any time to control debug info visibility
+   - rtp_payload should point to an RTP payload. All uFlags are defined in voplib.h
    - rtp_pyld_len should contain RTP payload length (in bytes)
-   - payload_info should point to an optional PAYLOAD_INFO struct to retrieve payload info, including NAL unit header type
-   - sdp_info should point to an optional SDP_INFO struct containing an SDP info fmtp string with sprop-vps, sprop-sps, and/or sprop-pps fields. An example is given below in comments after code ends
-   - pInfo should point to an optional mem buffer to copy extracted elementary bitstream data
-   - nId is an optional unique identifer for multithread or concurrent stream applications
+   - payload_info is an optional pointer to a PAYLOAD_INFO struct to retrieve payload information, including NAL unit header type. PAYLOAD_INFO is defined in voplib.h
+   - sdp_info is an optional pointer to an SDP_INFO struct containing an SDP info fmtp string with sprop-vps, sprop-sps, and/or sprop-pps "a=fmtp.." fields. An example is given below in comments after code ends. SDP_INFO is defined in voplib.h
+   - pInfo is an optional pointer to a buffer to copy extracted elementary bitstream data
+   - nId is an optional unique identifer for multithread or concurrent stream applications. nId should be -1 if not used
    - errstr is an optional string to be included in error/warning messages
 
   Return value
@@ -101,13 +120,15 @@ extern "C" {
 
   Notes
 
-   - DSSaveDataFile() is a DirectCore API defined in directcore.h
-   - LogRT() is a diaglib event-logging API
+   - any combination of fp_out, payload_info, pInfo may be given. If they are all NULL a warning message will be displayed but the API will continue to function, for example displaying debug information
+   - for any given stream, any sequence of calls with nId >= 0 and nId < 0 is supported. But to enable fragmented packet reassembly, packet and debug stats, duplicate detection, and other functionality that depends on prior input, nId should be >= 0
+   - DSSaveDataFile() is a DirectCore API defined in directcore.h (hwlib.so)
+   - LogRT() is an event-logging API defined in diagib.h (diaglib.so)
    - base64_decode() is in apps/common/base64/base64.cpp
-   - xps is shorthand for vps, sps, and/or pps
+   - xps is shorthand for vps, sps, and/or pps NAL units. Note that H.264 doesn't have a vps NAL unit type
 */
 
-int extract_rtp_video(FILE* fp_out, unsigned int uFlags, uint8_t* rtp_payload, int rtp_pyld_len, PAYLOAD_INFO* payload_info, SDP_INFO* sdp_info, void* pInfo, int nId, const char* errstr) {
+int extract_rtp_video(FILE* fp_out, codec_types codec_type, unsigned int uFlags, uint8_t* rtp_payload, int rtp_pyld_len, PAYLOAD_INFO* payload_info, SDP_INFO* sdp_info, void* pInfo, int nId, const char* errstr) {
 
 #define MAX_IDs  64  /* temporary definition */
 
@@ -131,8 +152,9 @@ static struct {  /* persistent info for FU packet state, duplicate detection, an
 uint8_t out_data[MAX_RTP_PYLD_LEN] = { 0 };
 int ret_val = -1, out_index = 0;
 
-const uint8_t NAL_unit_start_code[] = { 0, 0, 0, 1 };
-const uint8_t NAL_unit_start_code_xps[][5] = { { 0, 0, 0, 1, 0x40 }, { 0, 0, 0, 1, 0x42 }, { 0, 0, 0, 1, 0x44 } };  /* VPS, SPS, PPS NAL unit start codes */
+const uint8_t NAL_unit_start_code_H264[] = { 0, 0, 1 };
+const uint8_t NAL_unit_start_code_HEVC[] = { 0, 0, 0, 1 };
+const uint8_t NAL_unit_start_code_xps_HEVC[][5] = { { 0, 0, 0, 1, 0x40 }, { 0, 0, 0, 1, 0x42 }, { 0, 0, 0, 1, 0x44 } };  /* HEVC VPS, SPS, PPS NAL unit start codes. These are compared with incoming data when searching for in-band xps NAL units */
 
 /* SDP info sprop-xps definitions */
 
@@ -140,43 +162,67 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
 
 /* error checks */
 
-   if (nId < -1 || nId >= MAX_IDs) {
-      Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() says nID %d < -1 or exceeds %d \n", nId, MAX_IDs-1);
-      return -1;
-   }
+   bool fError = false;
 
-   if (nId >= 0 && (uFlags & DS_PAYLOAD_INFO_RESET_ID)) {  /* reset data for specified nId, return */
+   if (nId < -1 || nId >= MAX_IDs) {
+      Log_RT(2, "ERROR: DSGetPayloadInfo() -> extract_rtp_video() says nID %d < -1 or exceeds %d, uFlags = 0x%x \n", nId, MAX_IDs-1, uFlags);
+      fError = true;
+   }
+   else if (nId >= 0 && (uFlags & DS_PAYLOAD_INFO_RESET_ID)) {  /* reset data for specified nId, return */
       memset(&stream_info[nId], 0, sizeof(stream_info[1]));
       return 0;
    }
 
    if (!rtp_payload) {
-      Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() says rtp_payload is NULL \n");
-      return -1;
+      Log_RT(2, "ERROR: DSGetPayloadInfo() -> extract_rtp_video() says rtp_payload is NULL, uFlags = 0x%x \n", uFlags);
+      fError = true;
    }
 
    if (rtp_pyld_len < 0 || rtp_pyld_len < MIN_RTP_PYLD_LEN) {
-      Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() says rtp_pyld_len %d < 0 or less than minimum %d \n", rtp_pyld_len, MIN_RTP_PYLD_LEN);
-      return -1;
+      Log_RT(2, "ERROR: DSGetPayloadInfo() -> extract_rtp_video() says rtp_pyld_len %d < 0 or less than minimum %d, uFlags = 0x%x \n", rtp_pyld_len, MIN_RTP_PYLD_LEN, uFlags);
+      fError = true;
    }
 
-   if (!payload_info && !fp_out && !pInfo && !(uFlags & DS_VOPLIB_SUPPRESS_INFO_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() says payload_info, fp_out, and pInfo are all NULL \n");  /* if fp_out and pInfo are NULL, continue with file write and mem retrieval omitted; examples include filling in payload_info, checking for warnings and errors, and viewing debug information */
+   if (codec_type != DS_CODEC_VIDEO_H265 && codec_type != DS_CODEC_VIDEO_H264) {
+      Log_RT(2, "ERROR: DSGetPayloadInfo() -> extract_rtp_video() says unsupported codec type %d, uFlags = 0x%x \n", codec_type, uFlags);
+      fError = true;
+   }
 
-   uint16_t nal_pyld_hdr = (rtp_payload[0] << 8) | rtp_payload[1];  /* form NAL payload header in host byte order */
+   if (fError) return -1;
+
+   if (!payload_info && !fp_out && !pInfo && !(uFlags & DS_VOPLIB_SUPPRESS_INFO_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() says payload_info, fp_out, and pInfo are all NULL, uFlags = 0x%x \n", uFlags);  /* if payload_info, fp_out and pInfo are all NULL, continue without payload info parsing, file write, and mem retrieval; examples include checking for warnings and errors, and viewing debug information */
+
+   uint16_t nal_pyld_hdr, nal_mask_value1, nal_mask_value2;
+
+   if (codec_type == DS_CODEC_VIDEO_H265) {
+
+      nal_pyld_hdr = (rtp_payload[0] << 8) | rtp_payload[1];  /* form NAL payload header in host byte order */
+      nal_mask_value1 = 0x81f8;
+      nal_mask_value2 = 0x7;
+   }
+   else if (codec_type == DS_CODEC_VIDEO_H264) {
+
+      nal_pyld_hdr = rtp_payload[0];
+      nal_mask_value1 = 0x80;
+      nal_mask_value2 = 0x1f;
+   }
 
 /* check for malformed NAL payload header */
 
-   if ((nal_pyld_hdr & 0x81f8) != 0 || (nal_pyld_hdr & 7) == 0) {  /* see if F bit, LayerId, or TID are out of spec (per RFC 7798) */
+   if ((nal_pyld_hdr & nal_mask_value1) != 0 || (nal_pyld_hdr & nal_mask_value2) == 0) {  /* RFC 7798: check if F bit, LayerId, or TID are out of spec, RFC 6184: check if F bit or type is out of spec */
 
       if (nId >= 0) stream_info[nId].nNAL_header_format_error_count++;
  
-      if (uFlags & DS_PAYLOAD_INFO_DEBUG_OUTPUT) fprintf(stderr, "\n *** malformed NAL payload header F bit %d, LayerId %d, TID %d \n", nal_pyld_hdr >> 15, (nal_pyld_hdr >> 3) & 0x3f, nal_pyld_hdr & 7);
+      if (uFlags & DS_PAYLOAD_INFO_DEBUG_OUTPUT) {
+         if (codec_type == DS_CODEC_VIDEO_H265) fprintf(stderr, "\n *** malformed NAL payload header F bit %d, LayerId %d, TID %d \n", nal_pyld_hdr >> 15, (nal_pyld_hdr >> 3) & 0x3f, nal_pyld_hdr & 7);
+         else fprintf(stderr, "\n *** malformed NAL payload header F bit %d, Type %d \n", nal_pyld_hdr >> 7, nal_pyld_hdr & 0x1f);
+      }
 
-      if (!(uFlags & DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() says invalid NAL payload header 0x%x%s%s \n", nal_pyld_hdr, errstr ? " during " : "", errstr ? errstr : "");
+      if (!(uFlags & DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() says invalid NAL payload header 0x%x%s%s, uFlags = 0x%x \n", nal_pyld_hdr, errstr ? " during " : "", errstr ? errstr : "", uFlags);
 
       return -1;
 
-      #if 0  /* probably not a good idea, but for future reference fixing a malformed payload header would look something like this */
+      #if 0  /* probably not a good idea, but for future reference fixing a malformed HEVC payload header would look something like this */
 
       if ((nal_pyld_hdr & 0x81f8) != 0) nal_pyld_hdr &= ~0x81f8;
       if ((nal_pyld_hdr & 7) == 0) nal_pyld_hdr |= 1;
@@ -189,110 +235,307 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
 
    if (payload_info) {
 
-      payload_info->uFormat = DS_PYLD_FMT_H265;
-      payload_info->video.NALU_Header = (uint16_t)nal_pyld_hdr;
+      payload_info->uFormat = codec_type == DS_CODEC_VIDEO_H265 ? DS_PYLD_FMT_H265 : DS_PYLD_FMT_H264;
+      payload_info->video.NALU_Header = nal_pyld_hdr;
    }
+
+  // #define H264_DEBUG
+
+   #ifdef H264_DEBUG
+   static int pkt_count = 1;
+   #endif
 
 /* begin extraction based on NAL unit type */
 
-   const int nal_unit_type = (rtp_payload[0] & 0x7f) >> 1;
+   uint8_t nal_unit_type = codec_type == DS_CODEC_VIDEO_H265 ? (rtp_payload[0] & 0x7f) >> 1 : rtp_payload[0] & 0x1f;
 
-   if (nal_unit_type == NAL_UNIT_AP) {  /* RFC 7798 section 4.4.2, Aggregation Packets. Separate out and prefix each with start code, JHB Feb 2025 */
+   switch (codec_type) {
+   
+      case DS_CODEC_VIDEO_H265:
+ 
+         if (nal_unit_type == NAL_UNIT_AP) {  /* RFC 7798 section 4.4.2, Aggregation Packets. Separate out and prefix each with start code, JHB Feb 2025 */
 
-   /* extract AP units:
+         /* extract AP units:
 
-      -first 2 bytes are unit length, then the unit, then another length if applicable, and so on. We use int16_t to help with error checking
-      -a length of zero (or end of the payload) indicates no further units
-      -length checks: can't be longer than remainder of payload, can't be negative
-      -index checks: can't go beyond end of payload
-   */
+            -first 2 bytes are unit length, then the unit, then another length if applicable, and so on. We use int16_t to help with error checking
+            -a length of zero (or end of the payload) indicates no further units
+            -length checks: can't be longer than remainder of payload, can't be negative
+            -index checks: can't go beyond end of payload
+         */
 
-      int16_t len, index = 2;
-      while (index+1 < rtp_pyld_len && (len = min(((rtp_payload[index] << 8) | rtp_payload[index+1]), rtp_pyld_len-index)) > 0 ) {
+            int16_t len, index = 2;
+            while (index+1 < rtp_pyld_len && (len = min(((rtp_payload[index] << 8) | rtp_payload[index+1]), rtp_pyld_len-index)) > 0 ) {
 
-         index += 2;
+               index += 2;
 
-         if (fp_out || pInfo) {
-            out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code, out_index, sizeof(NAL_unit_start_code));
-            out_index += write_to_buffer(out_data, &rtp_payload[index], out_index, len);
+               if (fp_out || pInfo) {
+                  out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code_HEVC, out_index, sizeof(NAL_unit_start_code_HEVC));
+                  out_index += write_to_buffer(out_data, &rtp_payload[index], out_index, len);
+               }
+
+               index += len;
+
+               if (payload_info) {
+                  if (payload_info->NumFrames >= 0 && payload_info->NumFrames < MAX_PAYLOAD_FRAMES) payload_info->FrameSize[payload_info->NumFrames] = len;
+                  payload_info->NumFrames++;
+               }
+            }
+
+            if (payload_info) payload_info->video.FU_Header = 0;
+            if (nId >= 0) stream_info[nId].out_index_total = 0;  /* restart long framesize count */
          }
+         else if (nal_unit_type == NAL_UNIT_FU) {  /* RFC 7798 section 4.4.3, Fragmentation Units */
 
-         index += len;
+            const uint8_t fu_header = rtp_payload[2];
+            bool fFuStart = !!(fu_header & 0x80);
+            bool fFuEnd = !!(fu_header & 0x40);  /* FU End (i.e. fragmented frame complete) used to (i) determine when to set payload_info->NumFrames and (ii) detect mismatches in FU start and end */
 
-         if (payload_info) {
-            if (payload_info->NumFrames >= 0 && payload_info->NumFrames < MAX_PAYLOAD_FRAMES) payload_info->FrameSize[payload_info->NumFrames] = len;
-            payload_info->NumFrames++;
-         }
-      }
+            const uint8_t fu_type = fu_header & 0x3f;
 
-      if (payload_info) payload_info->video.FU_Header = 0;
-      if (nId >= 0) stream_info[nId].out_index_total = 0;  /* restart long framesize count */
-   }
-   else if (nal_unit_type == NAL_UNIT_FU) {  /* RFC 7798 section 4.4.3, Fragmentation Units */
+            if (fFuStart) {
 
-      const uint8_t fu_header = rtp_payload[2];
-      bool fFuStart = !!(fu_header & 0x80);
-      bool fFuEnd = !!(fu_header & 0x40);  /* used to (i) detect mismatches in FU start and stop and (ii) determine when to set payload_info->NumFrames (i.e. when frame is complete) */
+               if (fFuEnd && !(uFlags & DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() H.265 says both FuStart and FuEnd bits set in FU Header 0x%x, not all RTP redundancy or out-of-order removed from stream or RTP payload may be corrupted%s%s \n", fu_header, errstr ? " during " : "", errstr ? errstr : "");
 
-      const uint8_t fu_type = fu_header & 0x3f;
+            /* set FU packet state */
 
-      if (fFuStart) {
+               if (nId >= 0) {
 
-         if (fFuEnd && !(uFlags & DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() says both FuStart and FuEnd bits set in fu_header 0x%x, not all RTP redundancy or out-of-order removed from stream or RTP payload may be corrupted%s%s \n", fu_header, errstr ? " during " : "", errstr ? errstr : "");
+                  if (stream_info[nId].fu_state) stream_info[nId].fu_state_mismatch_count++;  /* increment mismatch count on FU start packets with no intervening FU end packet */
+                  else {
+                     stream_info[nId].fu_state = 1;
+                     stream_info[nId].out_index_total = 0;  /* restart long frame size count */
+                  }
+               }
 
-      /* set FU packet state */
+               if (fp_out || pInfo) {
+               
+                  out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code_HEVC, out_index, sizeof(NAL_unit_start_code_HEVC));
 
-         if (nId >= 0) {
+                  uint8_t nal_unit[] = { (uint8_t)(nal_pyld_hdr >> 8), (uint8_t)nal_pyld_hdr };  /* form NAL unit header, use payload header LayerId and TID (Temporal Id) */
+                  nal_unit[0] &= 0x81;
+                  nal_unit[0] |= fu_type << 1;
 
-            if (stream_info[nId].fu_state) stream_info[nId].fu_state_mismatch_count++;  /* increment mismatch count on FU start packets with no intervening FU end packet */
-            else {
-               stream_info[nId].fu_state = 1;
-               stream_info[nId].out_index_total = 0;  /* restart long frame size count */
+                  out_index += write_to_buffer(out_data, (uint8_t*)&nal_unit, out_index, sizeof(nal_unit));
+               }
+            }
+
+            if (nId >= 0 && !stream_info[nId].fu_state) stream_info[nId].fu_state_mismatch_count++;  /* increment mismatch count on (i) consecutive FU end packets or (ii) FU middle or end packet with no start packet */
+
+            if (fFuEnd && nId >= 0) stream_info[nId].fu_state = 0;  /* reset FU packet state */
+
+            if (fp_out || pInfo) {
+
+               int k = rtp_pyld_len;
+
+               if (fFuEnd) while (k > 3 && rtp_payload[k-1] == 0) k--;  /* remove trailing zeros from FU end packet, if any. This was initially found with some H.264 RTP streams and has been applied here */  
+
+               //if (k < rtp_pyld_len) printf("\n *** trimmed %d trailing zeros \n", rtp_pyld_len-k);
+
+               out_index += write_to_buffer(out_data, &rtp_payload[3], out_index, k-3);//rtp_pyld_len-3);
+            }
+
+            if (payload_info) {
+
+               payload_info->video.FU_Header = fu_header;
+
+               payload_info->FrameSize[0] = (nId >= 0 ? stream_info[nId].out_index_total : 0) + out_index;  /* update frame size continuously - in case of error we have a partial value and some idea where the error occurred */
+
+               payload_info->NumFrames = fFuEnd ? 1 : 0;  /* same with num frames - update continuously, but not a full frame until FU header indicates an end fragment */
             }
          }
+         else {  /* all other NAL units */
 
-         if (fp_out || pInfo) out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code, out_index, sizeof(NAL_unit_start_code));
+            if (nId >= 0 && stream_info[nId].fu_state) stream_info[nId].fu_state_mismatch_count++;  /* increment mismatch count if a non FU packet shows up before an FU end packet */
 
-         uint8_t nal_unit[] = { (uint8_t)(nal_pyld_hdr >> 8), (uint8_t)nal_pyld_hdr };  /* form NAL unit header, use payload header LayerId and TID (Temporal Id) */
-         nal_unit[0] &= 0x81;
-         nal_unit[0] |= fu_type << 1;
+            if (fp_out || pInfo) {
+               out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code_HEVC, out_index, sizeof(NAL_unit_start_code_HEVC));
+               out_index += write_to_buffer(out_data, rtp_payload, out_index, rtp_pyld_len);
+            }
 
-         if (fp_out || pInfo) out_index += write_to_buffer(out_data, (uint8_t*)&nal_unit, out_index, sizeof(nal_unit));
-      }
+            if (payload_info) {
 
-      if (nId >= 0 && !stream_info[nId].fu_state) stream_info[nId].fu_state_mismatch_count++;  /* increment mismatch count on (i) consecutive FU end packets or (ii) FU middle or end packet with no start packet */
+               payload_info->video.FU_Header = 0;
+               payload_info->FrameSize[0] = out_index;
+               payload_info->NumFrames = 1;
+            }
 
-      if (fFuEnd && nId >= 0) stream_info[nId].fu_state = 0;  /* reset FU packet state */
+            if (nId >= 0) stream_info[nId].out_index_total = 0;  /* restart long framesize count */
+         }
 
-      if (fp_out || pInfo) out_index += write_to_buffer(out_data, &rtp_payload[3], out_index, rtp_pyld_len-3);
+         break;
 
-      if (payload_info) {
+      case DS_CODEC_VIDEO_H264:
 
-         payload_info->video.FU_Header = fu_header;
+         if (nal_unit_type == NAL_UNIT_STAPA || nal_unit_type == NAL_UNIT_STAPB) {
 
-         payload_info->FrameSize[0] = (nId >= 0 ? stream_info[nId].out_index_total : 0) + out_index;  /* update frame size continuously - in case of error we have a partial value and some idea where the error occurred */
+            #ifdef H264_DEBUG
+            static bool fSTAPAOnce = false; if (!fSTAPAOnce) { fSTAPAOnce = true; printf("\n *** received STAPA unit \n"); }
+            static bool fSTAPBOnce = false; if (!fSTAPBOnce) { fSTAPBOnce = true; printf("\n *** received STAPB unit \n"); }
+            #endif
+         }
+         else if (nal_unit_type == NAL_UNIT_MTAP16 || nal_unit_type == NAL_UNIT_MTAP24) {
 
-         payload_info->NumFrames = fFuEnd ? 1 : 0;  /* same with num frames - update continuously, but not a full frame until FU header indicates an end fragment */
-      }
+            #ifdef H264_DEBUG
+            static bool fMTAP16Once = false; if (!fMTAP16Once) { fMTAP16Once = true; printf("\n *** received MTAP16 unit \n"); }
+            static bool fMTAP24Once = false; if (!fMTAP24Once) { fMTAP24Once = true; printf("\n *** received MTAP24 unit \n"); }
+            #endif
+         }
+         else if (nal_unit_type == NAL_UNIT_FU_A || nal_unit_type == NAL_UNIT_FU_B) {
+
+            const uint8_t fu_header = rtp_payload[1];
+            bool fFuStart = !!(fu_header & 0x80);
+            bool fFuEnd = !!(fu_header & 0x40);  /* FU End (i.e. fragmented frame complete) used to (i) determine when to set payload_info->NumFrames and (ii) detect mismatches in FU start and end */
+
+            const uint8_t fu_type = fu_header & 0x1f;
+
+            #ifdef H264_DEBUG
+            static bool fFUAOnce = false; if (nId >= 0 && !fFUAOnce && nal_unit_type == NAL_UNIT_FU_A) { fFUAOnce = true; printf("\n *** received FU A unit, FU Header = 0x%x, fFuStart = %d \n", fu_header, fFuStart); }
+            static bool fFUBOnce = false; if (nId >= 0 && !fFUBOnce && nal_unit_type == NAL_UNIT_FU_B) { fFUBOnce = true; printf("\n *** received FU B unit \n"); }
+            #endif
+
+            #ifdef H264_DEBUG
+            int nal_size = 0;
+            #endif
+
+            if (fFuStart) {
+
+               #ifdef H264_DEBUG
+               static bool fFUAStart = false; if (nId >= 0 && !fFUAStart && nal_unit_type == NAL_UNIT_FU_A) { fFUAStart = true; printf("\n *** received FU A Start, pkt count = %d \n", pkt_count); }
+               static bool fFUBStart = false; if (nId >= 0 && !fFUBStart && nal_unit_type == NAL_UNIT_FU_B) { fFUBStart = true; printf("\n *** received FU B Start \n"); }
+               #endif
+
+               if (fFuEnd && !(uFlags & DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() H.264 says both Start and End bits set in FU Header 0x%x, possibly not all RTP redundancy or out-of-order removed from stream or RTP payload is corrupted%s%s \n", fu_header, errstr ? " during " : "", errstr ? errstr : "");
+
+            /* set FU packet state */
+
+               if (nId >= 0) {
+
+                  if (stream_info[nId].fu_state) {
+
+                     stream_info[nId].fu_state_mismatch_count++;  /* increment mismatch count on FU start packets with no intervening FU end packet */
+
+                     #ifdef H264_DEBUG
+                     printf("\n *** FU state mismatch (2nd consecutive start), NAL unit type = %d \n", nal_unit_type);
+                     #endif
+                  }
+                  else {
+                     stream_info[nId].fu_state = 1;
+                     stream_info[nId].out_index_total = 0;  /* restart long frame size count */
+                  }
+               }
+
+               if (fp_out || pInfo) {
+               
+                  out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code_H264, out_index, sizeof(NAL_unit_start_code_H264));
+
+                  uint8_t nal_unit[] = { (uint8_t)((nal_pyld_hdr & 0xe0) | fu_type) };  /* form NAL unit header, combine payload header NRI and FU header type */
+
+                  #ifdef H264_DEBUG
+                  nal_size = sizeof(nal_unit);
+                  #endif
+
+                  out_index += write_to_buffer(out_data, (uint8_t*)&nal_unit, out_index, sizeof(nal_unit));
+               }
+            }
+
+               #ifdef H264_DEBUG
+               if (nId >= 0 && (pkt_count == 4 || pkt_count == 12)) printf("\n *** pkt# %d FU A unit, FU Header = 0x%x, fFuStart = %d, fFuEnd = %d, nal unit size = %d, nId = %d \n", pkt_count, fu_header, fFuStart, fFuEnd, nal_size, nId);  /* applies to pcaps/h264.pcap only */
+               #endif
+ 
+            if (nId >= 0 && !stream_info[nId].fu_state) {
+
+               stream_info[nId].fu_state_mismatch_count++;  /* increment mismatch count on (i) consecutive FU end packets or (ii) FU middle or end packet with no start packet */
+
+               #ifdef H264_DEBUG
+               printf("\n *** FU state mismatch (end without start), NAL unit type = %d \n", nal_unit_type);
+               #endif
+            }
+
+            if (nId >= 0 && fFuEnd) {
+            
+               stream_info[nId].fu_state = 0;  /* reset FU packet state */
+
+               #ifdef H264_DEBUG
+               static bool fFUAEnd = false; if (!fFUAEnd && nal_unit_type == NAL_UNIT_FU_A) { fFUAEnd = true; printf("\n *** received FU A End, pkt count = %d \n", pkt_count); }
+               static bool fFUBEnd = false; if (!fFUBEnd && nal_unit_type == NAL_UNIT_FU_B) { fFUBEnd = true; printf("\n *** received FU B End \n"); }
+               #endif
+            }
+
+            if (fp_out || pInfo) {
+
+            /* remove trailing zeros from FU end packet, if any. Notes:
+
+               -the reason for this is to not leave zeros that will get confused with the next NAL start code
+               -test with pcaps/h264.pcap (whoever made that pcap set every FU packet size to 1024 bytes regardless of middle or end)
+            */
+  
+               int k = rtp_pyld_len;
+
+               if (fFuEnd) while (k > 2 && rtp_payload[k-1] == 0) k--;
+
+               //if (k < rtp_pyld_len) printf("\n *** trimmed %d trailing zeros \n", rtp_pyld_len-k);
+
+            /* write FU data to buffer */
+
+               out_index += write_to_buffer(out_data, &rtp_payload[2], out_index, k-2);
+            }
+
+            if (payload_info) {
+
+               payload_info->video.FU_Header = fu_header;
+
+               payload_info->FrameSize[0] = (nId >= 0 ? stream_info[nId].out_index_total : 0) + out_index;  /* update frame size continuously - in case of error we have a partial value and some idea where the error occurred */
+
+               payload_info->NumFrames = fFuEnd ? 1 : 0;  /* same with num frames - update continuously, but not a full frame until FU header indicates an end fragment */
+            }
+
+         }
+         else {  /* single NAL unit, includes SEI, SPS, and non-IDR slices */
+
+            #ifdef H264_DEBUG
+
+            if (nal_unit_type == NAL_UNIT_SEI_H264) {
+               static bool fSEIOnce = false; if (nId >= 0 && !fSEIOnce) { fSEIOnce = true; printf("\n *** received SEI unit, pkt count = %d \n", pkt_count); }
+            }
+            else if (nal_unit_type == NAL_UNIT_SPS_H264) {
+               static bool fSPSOnce = false; if (nId >= 0 && !fSPSOnce) { fSPSOnce = true; printf("\n *** received SPS unit, pkt count = %d \n", pkt_count); }
+            }
+            else if (nal_unit_type == NAL_UNIT_PPS_H264) {
+               static bool fPPSOnce = false; if (nId >= 0 && !fPPSOnce) { fPPSOnce = true; printf("\n *** received PPS unit, pkt count = %d \n", pkt_count); }
+            }
+            else if (nal_unit_type == NAL_UNIT_NON_IDR_SLICE) {
+               static bool fnonIDRSliceOnce = false; if (nId >= 0 && !fnonIDRSliceOnce) { fnonIDRSliceOnce = true; printf("\n *** received non-IDR slice unit, pkt count = %d \n", pkt_count); }
+            }
+            else printf("\n *** new single NAL unit type = %u \n", nal_unit_type);
+
+            #endif
+
+            if (fp_out || pInfo) {
+               out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code_H264, out_index, sizeof(NAL_unit_start_code_H264));
+               out_index += write_to_buffer(out_data, rtp_payload, out_index, rtp_pyld_len);
+            }
+
+         }
+
+         break;
+
+      default:
+
+         Log_RT(3, "WARNING: extract_rtp_video() says unsupported codec type %d, uFlags = 0x%x \n", codec_type, uFlags);
+         break;
+
+   }  /* end of codec type switch statement */
+
+   #if 0  // FU end packet trailing zero debug
+   if (nId >= 0 && !stream_info[nId].fu_state && out_index >= 2 && out_data[out_index-1] == 0 && out_data[out_index-2] == 0) {  /* last 2 bytes of a single unit or end FU unit are zero, decoder may get confused with start code for next unit */
+
+      printf("\n *** last 2 bytes are zero \n");
    }
-   else {  /* all other NAL units */
+   #endif
 
-      if (nId >= 0 && stream_info[nId].fu_state) stream_info[nId].fu_state_mismatch_count++;  /* increment mismatch count if a non FU packet shows up before an FU end packet */
-
-      if (fp_out || pInfo) {
-         out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code, out_index, sizeof(NAL_unit_start_code));
-         out_index += write_to_buffer(out_data, rtp_payload, out_index, rtp_pyld_len);
-      }
-
-      if (payload_info) {
-
-         payload_info->video.FU_Header = 0;
-         payload_info->FrameSize[0] = out_index;
-         payload_info->NumFrames = 1;
-      }
-
-      if (nId >= 0) stream_info[nId].out_index_total = 0;  /* restart long framesize count */
-   }
+   #ifdef H264_DEBUG
+   if (nId >= 0) pkt_count++;
+   #endif
 
 /* check for consecutive duplicate RTP payload */
 
@@ -315,18 +558,18 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
 
    -xps is shorthand for any one or all of these
 
-   -if SDP xps info is sent by application caller, see if conditions are satisfied to insert in output bitstream
+   -if SIP/SDP/SAP (out-of-band) xps info is sent by application caller, see if conditions are satisfied to insert in output bitstream
 
    -default behavior is to favor inband xps info if found in the RTP stream, but we need to handle cases where that isn't available and the streaming source is sending xps info out-of-band. VLC is a good example
 
-   -typically inband xps NAL units are sent in initial RTP packets of a stream, before other unit types; therefore if application callers are concerned that inband xps NAL units may not be present, they should send SDP fmtp info with the first RTP payload. Note that at any time applications may call DSGetPayloadInfo() without specifying bitstream extraction and examine the NALU_Header in returned payload_info struct info to determine if inband xps NAL units are present and what SDP fmtp action may be required
+   -typically inband xps NAL units are sent in initial RTP packets of a stream, before other unit types; therefore if application callers are concerned that inband xps NAL units may not be present, they should send SDP fmtp info with the first RTP payload. Note that at any time applications may call DSGetPayloadInfo() without specifying bitstream extraction to file and examine the NALU_Header in returned payload_info struct info to determine if inband xps NAL units are present and what SDP fmtp action may be required, then call DSGetPayloadInfo() again with appropriate uFlags and file extraction enabled
 */
 
    if ((fp_out || pInfo) && sdp_info && sdp_info->fmtp && strlen(sdp_info->fmtp)) {
 
       bool fInsertSDPInfo = true;  /* assume insertion */
 
-      for (int i=0; i<(int)(sizeof(NAL_unit_start_code_xps)/sizeof(NAL_unit_start_code_xps[0])); i++) if (!memcmp(out_data, NAL_unit_start_code_xps[i], sizeof(NAL_unit_start_code_xps[i]))) {  /* does RTP payload contain an xps start code ? */
+      for (int i=0; i<(int)(sizeof(NAL_unit_start_code_xps_HEVC)/sizeof(NAL_unit_start_code_xps_HEVC[0])); i++) if (!memcmp(out_data, NAL_unit_start_code_xps_HEVC[i], sizeof(NAL_unit_start_code_xps_HEVC[i]))) {  /* does RTP payload contain an xps start code ? */
 
          if (!(uFlags & DS_PAYLOAD_INFO_IGNORE_INBAND_XPS)) fInsertSDPInfo = false;  /* default behavior is to use inband xps info, if found, in favor of SDP xps info. Application callers can override this by applying the DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag */
          break;
@@ -334,7 +577,7 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
 
       if (fInsertSDPInfo) for (int i=(int)(sizeof(sprop_xps)/sizeof(sprop_xps[0]))-1; i>=0; i--) {  /* order insertions so vps is first in bitstream sequence */
 
-         if (char* p = strstr(sdp_info->fmtp, sprop_xps[i])) {  /* search for xps-prop= in application supplied fmtp. See SDP info example in comments below, after code ends */
+         if (char* p = strstr(sdp_info->fmtp, sprop_xps[i])) {  /* search for xps-prop= in application supplied fmtp. See SDP info example in comments below, after code ends. Remember the "x" in xps can be v, s, or p */
 
             p += strlen(sprop_xps[i]);
             char* p2; if ((p2 = strstr(p, ";"))) *p2 = 0;  /* temporarily remove semicolon delimiter */
@@ -351,17 +594,17 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
 
             if (xprop_str.length()) {
 
-               memmove(&out_data[sizeof(NAL_unit_start_code) + xprop_str.length()], out_data, out_index);  /* shift current frame data right, allow for xps insertion */
+               memmove(&out_data[sizeof(NAL_unit_start_code_HEVC) + xprop_str.length()], out_data, out_index);  /* shift current frame data right, allow for xps insertion */
 
-               out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code, 0, sizeof(NAL_unit_start_code));
-               out_index += write_to_buffer(out_data, (uint8_t*)&xprop_str[0], sizeof(NAL_unit_start_code), xprop_str.length());
+               out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code_HEVC, 0, sizeof(NAL_unit_start_code_HEVC));
+               out_index += write_to_buffer(out_data, (uint8_t*)&xprop_str[0], sizeof(NAL_unit_start_code_HEVC), xprop_str.length());
 
                #ifdef INSERTION_DEBUG
                char tmpstr[2000] = "";
                for (int i=0; i<100; i++) sprintf(&tmpstr[strlen(tmpstr)], " 0x%x", out_data[i]);
                fprintf(stderr, "\n *** after xps insertion %s \n", tmpstr);
 
-               xps_out_index += sizeof(NAL_unit_start_code) + xprop_str.length();
+               xps_out_index += sizeof(NAL_unit_start_code_HEVC) + xprop_str.length();
                #endif
 
                if (nId >= 0) stream_info[nId].uXPS_outofband_inserted |= (1 << i);  /* set status bit for type of insertion made */
@@ -394,12 +637,13 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
       char tmpstr[2000];
       char fu_hdr_str[10] = "n/a";
       if (nal_unit_type == NAL_UNIT_FU) sprintf(fu_hdr_str, "0x%x", rtp_payload[2]);
+      else if (nal_unit_type == NAL_UNIT_FU_A) sprintf(fu_hdr_str, "0x%x", rtp_payload[1]);
 
       sprintf(tmpstr, "output bitstream %d for packet #%d rtp len = %d, out_index = %d, NAL unit type = %d, FU header = %s, FU state mismatch count = %d, duplicate = %d, duplicate count = %d, xps out-of-band info inserted = %d, NAL header format errors = %d, header =", nId, stream_info[nId].pkt_count+1, rtp_pyld_len, out_index, nal_unit_type, fu_hdr_str, stream_info[nId].fu_state_mismatch_count, fDuplicate, stream_info[nId].duplicate_count, stream_info[nId].uXPS_outofband_inserted, stream_info[nId].nNAL_header_format_error_count);
 
       int len;
       if (nal_unit_type == NAL_UNIT_AP) len = out_index;
-      else if (nal_unit_type == NAL_UNIT_VPS || nal_unit_type == NAL_UNIT_SPS || nal_unit_type == NAL_UNIT_PPS) len = min(out_index, 100);
+      else if (nal_unit_type == NAL_UNIT_VPS_HEVC || nal_unit_type == NAL_UNIT_SPS_HEVC || nal_unit_type == NAL_UNIT_PPS_HEVC) len = min(out_index, 100);
       else len = min(out_index, 20);
       for (int i=0; i<len; i++) sprintf(&tmpstr[strlen(tmpstr)], " 0x%x", out_data[i]);
       fprintf(stderr, "\n *** %s \n", tmpstr);
@@ -420,7 +664,7 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
       ret_val = out_index;  /* return number of bytes copied to buffer */
    }
 
-   if (ret_val == -1) ret_val = DS_PYLD_FMT_H265;  /* return format type if bitstream file or memory buffer output not requested */
+   if (ret_val == -1) ret_val = codec_type == DS_CODEC_VIDEO_H265 ? DS_PYLD_FMT_H265 : DS_PYLD_FMT_H264;  /* return format type if bitstream file or memory buffer output not requested */
 
    if (nId >= 0) {
    

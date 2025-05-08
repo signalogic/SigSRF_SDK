@@ -221,7 +221,7 @@ typedef struct {
   -pkt_stats should point to a PKT_STATS struct
   -pkt_buffer should contain num_pkts packets, each with a pkt_length[]. One or more pkt_length[] can be -1 if not known, or if all pkt_length[] are unknown pkt_length can be given as NULL
   -uFlags should contain one of the DS_BUFFER_PKT_xxx flags and optionally one or more of the "general API flags" defined in pktlib.h
-  -payload_content[] may optionally specify one of the DS_PKT_PYLD_CONTENT_xxx flags defined in pktlib.h for one or more packets
+  -pkt_info[] may optionally specify one of the DS_PKT_PYLD_CONTENT_xxx flags defined in pktlib.h for one or more packets
   -return value is the number of packets added to pkt_stats, or -1 for an error condition
 
   -see mediaTest/packet_flow_media_proc.c for tested examples of API usage and PKT_STATS declaration
@@ -229,7 +229,7 @@ typedef struct {
   -if DSGetPacketInfo() does not exist in the build (i.e. the build does not link the pktlib library) then DSPktStatsAddEntries() will return -2
 */
 
-int DSPktStatsAddEntries(PKT_STATS* pkt_stats, unsigned int uFlags, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int payload_content[]);
+int DSPktStatsAddEntries(PKT_STATS* pkt_stats, unsigned int uFlags, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int pkt_info[]);
 
 
 /* DSFindSSRCGroups() find SSRC groups and returns start/end packet indexes and sequence numbers for each group */

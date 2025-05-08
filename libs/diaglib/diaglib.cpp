@@ -82,6 +82,7 @@
   Modified Sep 2024 JHB, in analysis_and_stats() when DS_PKTSTATS_ORGANIZE_BY_STREAMGROUP flag is active, allow mix of stream group member and non-member streams in any sequence
   Modified Nov 2024 JHB, change hwlib.h include to directcore.h
   Modified Dec 2024 JHB, comments only
+  Modified May 2025 JHB, remove "DTX" packet labeling which was based only on payload size. No assumptions should be based only on payload size, we need to go by DS_PKT_PYLD_CONTENT_XXX flags only
 */
 
 /* Linux includes */
@@ -121,7 +122,7 @@ extern LOGGING_THREAD_INFO Logging_Thread_Info[];
 
 #define DS_PKT_PYLD_CONTENT_DTMF_END  1  /* DTMF Event End, determined in DSPktStatsAddEntries and then passed thru to other functions, JHB Jun 2019 */
 
-int DSPktStatsAddEntries(PKT_STATS* pkt_stats, unsigned int uFlags, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int payload_content[]) {
+int DSPktStatsAddEntries(PKT_STATS* pkt_stats, unsigned int uFlags, int num_pkts, uint8_t* pkt_buffer, int pkt_length[], unsigned int pkt_info[]) {
 
 int j, len;
 unsigned int offset = 0;
@@ -142,14 +143,14 @@ unsigned int offset = 0;
       pkt_stats->rtp_ssrc = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SSRC | uFlags, pkt_buffer + offset, len, NULL, NULL);
       pkt_stats->rtp_pyldlen = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDLEN | uFlags, pkt_buffer + offset, len, NULL, NULL);
 
-      if (payload_content) {
+      if (pkt_info) {
 
-         pkt_stats->content_flags = payload_content[j];
+         pkt_stats->content_flags = pkt_info[j];
 
-         if ((payload_content[j] & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF) {
+         if ((pkt_stats->content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF) {
 
-            unsigned int rtp_pyldoffset = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags, pkt_buffer + offset, len, NULL, NULL);
-            if (pkt_buffer[offset + rtp_pyldoffset + 1] & 0x80) pkt_stats->content_flags |= DS_PKT_PYLD_CONTENT_DTMF_END;
+            unsigned int rtp_pyld_ofs = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags, pkt_buffer + offset, len, NULL, NULL);
+            if (pkt_buffer[offset + rtp_pyld_ofs + 1] & 0x80) pkt_stats->content_flags |= DS_PKT_PYLD_CONTENT_DTMF_END;
          }
       }
 
@@ -459,7 +460,12 @@ void print_packet_type(FILE* fp_log, unsigned int content_flags, int rtp_pyldlen
       if (content_flags & DS_PKT_PYLD_CONTENT_DTMF_END)  fprintf(fp_log, " (DTMF Event End)");
       else fprintf(fp_log, " (DTMF Event)");
    }
+   #if 0  /* no assumptions should be based only on payload size, we need to go by DS_PKT_PYLD_CONTENT_XXX flags only, JHB May 2025 */
    else if (rtp_pyldlen > 0 && rtp_pyldlen <= 7) fprintf(fp_log, " (DTX)");
+   #else
+   else if ((content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTX) fprintf(fp_log, " (DTX)");
+   (void)rtp_pyldlen;
+   #endif
 
    if (chnum >= 0) fprintf(fp_log, " chnum = %d", chnum);
 
@@ -641,7 +647,11 @@ char          szLastSeq[100];
                if (pkts[j].content_flags & DS_PKT_PYLD_CONTENT_DTMF_END) sprintf(&tmpstr[strlen(tmpstr)], " DTMF Event End");
                sprintf(&tmpstr[strlen(tmpstr)], " DTMF Event");
             }
+            #if 0  /* no assumptions should be based only on payload size, we need to go by DS_PKT_PYLD_CONTENT_XXX flags only, JHB May 2025 */
             else if (pkts[j].rtp_pyldlen > 0 && pkts[j].rtp_pyldlen <= 7) {
+            #else
+            else if ((pkts[j].content_flags & DS_PKT_INFO_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTX) {
+            #endif
                numDTX++;
                sprintf(&tmpstr[strlen(tmpstr)], " DTX");
             }

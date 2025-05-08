@@ -43,7 +43,7 @@ Revision History
   Modified Sep 2024 JHB, update comments
   Modified Nov 2024 JHB, update comments
   Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
-  Modified Apr 2025 JHB, comments only
+  Modified Apr 2025 JHB, add check for UDP SIP duplicates in DSIsPacketDuplicate(). See comments about differentiating UDP and RTP payloads
 */
 
 /* Linux and/or other OS includes */
@@ -535,10 +535,20 @@ int DSIsPacketDuplicate(unsigned int uFlags, PKTINFO* PktInfo1, PKTINFO* PktInfo
       }
 
       bool fFragmentCompare = (PktInfo1->flags & DS_PKT_FRAGMENT_ITEM_MASK) && (PktInfo1->flags & DS_PKT_FRAGMENT_ITEM_MASK) == (PktInfo2->flags & DS_PKT_FRAGMENT_ITEM_MASK);  /* both current and previous packet contain identical non-zero fragment flags ? */
-      bool fPortCompare = DSIsReservedUDP(PktInfo1->dst_port) && PktInfo1->dst_port == PktInfo2->dst_port;  /* both current and previous packet are sent to specific dst ports ? Test with codecs-amr-12.pcap, codecs3-amr-wb.pcap, VxxxxCALL_Exx_H265.pcapng, JHB Jul 2024 */
+      bool fPortCompare = fFragmentCompare ? true : DSIsReservedUDP(PktInfo1->dst_port) && PktInfo1->dst_port == PktInfo2->dst_port;  /* both current and previous packet are sent to specific dst ports ? Test with codecs-amr-12.pcap, codecs3-amr-wb.pcap, VxxxxCALL_Exx_H265.pcapng, JHB Jul 2024 */
+
+   /* add check for SIP duplicates, notes JHB Apr 2025:
+
+      -this is more difficult because RTP packets may also be using common SIP destination ports. We want to avoid RTP duplicates (RFC 7198), which are handled in DSRecvPackets()
+      -we can make some RTP tests but they are not 100% reliable and may allow a few SIP duplicates through; however, they will screen out all RTP packets
+      -checking for RTP version is reliable and independent of anything else, but that's only 2 bits and any given SIP packet could easily satisfy that. Any calculation involving RTP header and payload sizes is problematic because they are dependent on packet and UDP payload sizes, same as UDP SIP, but we can look for odd values, like RTP payload size negative or larger than overall packet size. A combination of these is a reasonable effort for the time being
+      -experimental, needs to be fully regression tested
+   */
+
+      bool fPortCompareSIP = fPortCompare ? true : PktInfo1->dst_port >= SIP_PORT_RANGE_LOWER && PktInfo1->dst_port <= SIP_PORT_RANGE_UPPER && PktInfo1->dst_port == PktInfo2->dst_port && ((PktInfo1->rtp_version != 2 && PktInfo2->rtp_version != 2) || ((PktInfo1->rtp_pyld_len < 0 || PktInfo1->rtp_pyld_len > PktInfo1->pkt_len) && (PktInfo2->rtp_pyld_len < 0 || PktInfo2->rtp_pyld_len > PktInfo2->pkt_len)));
 
       if (
-          (fFragmentCompare || fPortCompare) &&
+          (fFragmentCompare || fPortCompare || fPortCompareSIP) &&
           (
            (!(uFlags & DS_PKT_DUPLICATE_INCLUDE_UDP_CHECKSUM) || PktInfo1->udp_checksum == PktInfo2->udp_checksum) &&  /* ignore UDP checksum unless specified in uFlags. Ignoring is the default, as noted above comments. Maybe there is some way to know when / when not */
            (PktInfo1->fragment_offset != 0 || PktInfo2->fragment_offset != 0 || PktInfo1->pyld_len == PktInfo2->pyld_len) &&  /* compare UDP payload lengths if both fragment offsets are zero */
@@ -546,6 +556,16 @@ int DSIsPacketDuplicate(unsigned int uFlags, PKTINFO* PktInfo1, PKTINFO* PktInfo
            PktInfo1->ip_hdr_checksum == PktInfo2->ip_hdr_checksum  /* compare IP header checksums, which implicitly compares IP header lengths */
           )
          ) {
+
+         #if 0  /* debug printout for SIP port comparison with RTP avoidance */
+
+         if (!fFragmentCompare && !fPortCompare && fPortCompareSIP) {
+
+            int san1 = PktInfo1->pkt_len - PktInfo1->ip_hdr_len - UDP_HEADER_LEN - PktInfo1->rtp_pyld_len;
+            int san2 = PktInfo2->pkt_len - PktInfo2->ip_hdr_len - UDP_HEADER_LEN - PktInfo2->rtp_pyld_len;
+            if (PktInfo1->rtp_seqnum == PktInfo2->rtp_seqnum) printf("\n *** RTP seq num = %u,%u rtp version = %d,%d pkt len = %d,%d rtp hdr len = %d,%d rtp pyld len = %d,%d san = %d,%d \n", PktInfo1->rtp_seqnum, PktInfo2->rtp_seqnum, PktInfo1->rtp_version, PktInfo2->rtp_version, PktInfo1->pkt_len, PktInfo2->pkt_len, PktInfo1->rtp_hdr_len, PktInfo2->rtp_hdr_len, PktInfo1->rtp_pyld_len, PktInfo2->rtp_pyld_len, san1, san2);
+         }
+         #endif
 
          return true;  /* duplicate UDP packet */
       }

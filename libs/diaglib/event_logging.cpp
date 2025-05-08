@@ -42,7 +42,8 @@
   Modified Sep 2024 JHB, implement DS_INIT_LOGGING_RESET_WARNINGS_ERRORS flag in DSInitLogging()
   Modified Nov 2024 JHB, implement harmonized LOG_XX definitions in diaglib.h and DS_LOG_LEVEL_OUTPUT_XXX flags in shared_include/config.h. See fOutputConsole and fOutputFile
   Modified Feb 2025 JHB, move isFileDeleted() to diaglib.h as static inline
-  Modified Apr 2025 JHB, add isLinePreserve
+  Modified Apr 2025 JHB, add isLinePreserve, change uLineCursorPos from uint8_t to unsigned int (to handle very long console display lines)
+  Modified Apr 2025 JHB, in Log_RT() fixes and simplification to updating line cursor position, mid-line check, and isLinePreserve
 */
 
 /* Linux and/or other OS includes */
@@ -79,7 +80,7 @@ using namespace std;
 #include "diaglib_priv.h"
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.9.7";
+const char DIAGLIB_VERSION[256] = "1.9.9";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 
@@ -93,12 +94,16 @@ static int app_log_file_count = 0;
 
 DEBUG_CONFIG lib_dbg_cfg = { 5 };  /* moved here from pktlib.c, JHB Sep 2017.  Init to log level 5 for apps that don't make a DSConfigPktlib() call, JHB Jul 2019 */
 
-volatile uint8_t uLineCursorPos = 0;  /* referenced by p/m threads and apps if they want to know / set the current screen line cursor position. Extern references are in mediaTest.h */
-volatile uint8_t isCursorMidLine = 0;
+/* referenced by p/m threads and apps to write/read current screen line cursor position. Read/written by Log_RT() (below), sig_printf() (called by p/m worker threads in packet_flow_media_proc.c), and app_printf() in user_io.cpp (mediaMin). Extern references are in mediaTest.h */
+  
+volatile unsigned int uLineCursorPos = 0;  /* size int to handle long lines */
+volatile uint8_t isCursorMidLine = 0;      /* quick check for cursor position, set/cleared using __sync_val_compare_and_swap() */
 volatile uint32_t pm_thread_printf = 0;
 volatile uint8_t isLinePreserve = 0;
 
-uint32_t event_log_critical_errors = 0;  /* keep track of event log errors and warnings for program lifespan. The main purpose of this is to quickly show a general error summary in the run-time stats without having to search the event log. It's not that useful because it doesn't break down by session or stream (channel), JHB May 2020 */
+/* keep track of event log errors and warnings for program lifespan. The main purpose of this is to quickly show a general error summary in the run-time stats without having to search the event log. It's not that useful because it doesn't break down by session or stream (channel), JHB May 2020 */
+  
+uint32_t event_log_critical_errors = 0;
 uint32_t event_log_errors = 0;
 uint32_t event_log_warnings = 0;
 
@@ -694,7 +699,7 @@ create_log_file_if_needed:
          fprintf(stderr, "%s", log_string);
          if ((slen=strlen(log_string)) && log_string[slen-1] != '\n') fprintf(stderr, "\n");  /* add newline char if one not already there, JHB Sep2017 */
 #else
-      /* As with sig_print() in packet_flow_media_proc.c, we now use lib_dbg_cfg.uPrintfControl to determine screen output type, JHB Jan2020:
+      /* As with sig_print() in packet_flow_media_proc.c, we now use lib_dbg_cfg.uPrintfControl to determine screen output type, JHB Jan 2020:
 
          -before stderr was always used, which uses non-buffered output (_IONBF)
          -non-buffered output is evidently more likely to block due to any type of I/O issue, for example intermittent internet connection in remote terminal usage
@@ -705,25 +710,34 @@ create_log_file_if_needed:
             bool fNextLine = false;
             int thread_index = -1;
 
-         /* make a reasonable effort to coordinate screen output between application threads and p/m threads, JHB Apr2020:
+         /* make a reasonable effort to coordinate screen output between application threads and p/m threads, JHB Apr 2020:
 
             -let application threads know when a p/m thread is printing to screen
             -atomic read/compare/write sets/clears isCursorMidLine to indicate cursor position is "start of line" or somewhere mid-line. Note this is a boolean because x86 __sync_bool_compare_and_swap only offers eq comparison and not ne
             -race conditions in determining when the cursor is mid-line can still occur, but they are greatly reduced
           */
 
-            if (isPmThread && isPmThread(-1, &thread_index)) __sync_or_and_fetch(&pm_thread_printf, 1 << thread_index);  /* if this is a p/m thread, set corresponding bit in pm_thread_printf. isPmThread() is in pktlib.h; if pktlib is not used then this call can be stubbed out in a placeholder .so to always return 0 */
+            if (isPmThread && isPmThread(-1, &thread_index)) __sync_or_and_fetch(&pm_thread_printf, 1 << thread_index);  /* if this is a packet/media thread, set corresponding bit in pm_thread_printf. isPmThread() is defined in pktlib.h, note that DSInitLogging() checks to see if pktlib.so is in the build, and if not sets isPMThread to NULL */
 
+            #if 0
             if (!(loglevel & DS_LOG_LEVEL_IGNORE_LINE_CURSOR_POS) && __sync_val_compare_and_swap(&isCursorMidLine, 1, 0)) fNextLine = true;  /* fNextLine reflects leading \n decision. If semaphore is 1 (cursor currently at midline) then set to 0 (cursor is at start-of-line) and set fNextLine. If already 1 ignore. Note there is a tad bit of race condition here, but cursor control is not a critical thing; if we get it right 99% of the time that's fine */
-            else if (log_string[slen-1] != '\n') __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);  /* if line has no end-of-line, and cursor is at start-of-line, then set to 1 (midline) */
+            else if (slen && (log_string[slen-1] != '\n' && log_string[slen-1] != '\r')) __sync_val_compare_and_swap(&isCursorMidLine, 0, 1);  /* if line has no end-of-line, and cursor is at start-of-line, then set to 1 (midline). Add checks for slen  > 0 and \r, JHB Apr 2025 */
+            #else
+
+            if (!(loglevel & DS_LOG_LEVEL_IGNORE_LINE_CURSOR_POS) && isCursorMidLine) fNextLine = true;
+            #endif
+
+         /* update line cursor position, mid-line quick check, and isLinePreserve */
+
+            uLineCursorPos = (slen && (log_string[slen-1] == '\n' || log_string[slen-1] == '\r')) ? 0 : (log_string[0] == '\r' ? 0 : uLineCursorPos) + slen;  /* modify to include checks for slen > 0 and \r, fix calculation as pos + len instead of just len, JHB Apr 2025 */
+            __sync_val_compare_and_swap(&isCursorMidLine, uLineCursorPos == 0, uLineCursorPos != 0);  /* if uLineCursorPos > 0 set to 1, otherwise set to 0 */
+            isLinePreserve = false;
 
          /* screen output method:  0 = printf() (buffered, default), 1 = fprintf(stdout), 2 = fprintf(stderr), 3 = none */
 
             if ((loglevel & DS_LOG_LEVEL_USE_STDERR) || lib_dbg_cfg.uPrintfControl == 2) fprintf(stderr, "%s%s", fNextLine ? "\n" : "", log_string);  /* check for user-specified stderr output, JHB Mar 2024 */
             else if (lib_dbg_cfg.uPrintfControl == 1) fprintf(stdout, "%s%s", fNextLine ? "\n" : "", log_string);
             else /* if (lib_dbg_cfg.uPrintfControl == 0) */ printf("%s%s", fNextLine ? "\n" : "", log_string);  /* make default action non-buffered output, JHB Mar 2024 */
-
-            uLineCursorPos = log_string[slen-1] != '\n' ? slen : 0;  /* update line cursor position */
 
             if (thread_index >= 0) __sync_and_and_fetch(&pm_thread_printf, ~(1 << thread_index));  /* clear corresponding p/m thread bit */
          }

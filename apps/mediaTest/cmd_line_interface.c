@@ -66,6 +66,7 @@
    Modified Jan 2025 JHB, avoid unused var warning in get_file_type()
    Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS and MAX_CONCURRENT_STREAMS to MAX_STREAMS, defined in shared_include/streamlib.h. All libs and reference apps are now using the same definition
    Modified Mar 2025 JHB, remove debug print flag from cimGetCmdLine() uFlags for mediaMin and mediaTest apps
+   Modified Apr 2025 JHB, comments only
 */
 
 #ifdef __cplusplus
@@ -93,9 +94,9 @@
 
 #include "test_programs.h"   /* misc program support (command line entry, etc) */
 #include "minmax.h"          /* define min-max if __cplusplus not defined */
-#include "dsstring.h"        /* lstrtrim() */
+#include "dsstring.h"        /* lstrtrim(), strncpy_s() if __STDC_LIB_EXT1__ not defined */
 
-#include "mediaTest.h"  /* externs for following global vars, plus mediaTest definitions */
+#include "mediaTest.h"  /* externs for global vars declared here, plus mediaTest definitions */
 
 /* global vars filled by cimGetCmdLine() */
 

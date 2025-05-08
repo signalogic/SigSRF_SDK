@@ -32,19 +32,28 @@
     Modified Dec 2024 JHB, for documentation purposes, combine voice_codec_types, audio_codec_types, and video_codec_types into one codec_types enum definition; define a codec_types typedef
     Modified Dec 2024 JHB, move get_codec_name() here from voplib.c, implement fVerbose option, add additional codec macros, e.g. isAMRCodec()
     Modified Jan 2025 JHB, add compile-time assert if size of codec_types enum is not equal to int
+    Modified May 2025 JHB, thanks to a user question about C++11, specify type (and size) for media_types and codec_types enums. This is important for structs that contain an enum typedef, like PAYLOAD_INFO in voplib.h Enum sizes should be int for C++03 and earlier but enum scoping was not supported then
 */
 
 #ifndef _CODEC_H_
 #define _CODEC_H_
 
+#if __cplusplus >= 201103
+enum media_types: int {
+#else
 enum media_types {
+#endif
 
   DS_MEDIA_TYPE_VOICE,
   DS_MEDIA_TYPE_AUDIO,
   DS_MEDIA_TYPE_VIDEO
 };
 
+#if __cplusplus >= 201103
+enum codec_types: int {
+#else
 enum codec_types {
+#endif
 
   DS_CODEC_NONE,                                      /* 0, pass-thru */
 

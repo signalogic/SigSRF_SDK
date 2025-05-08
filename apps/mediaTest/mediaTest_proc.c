@@ -1776,7 +1776,7 @@ PollBuffer:
             int bitrate_code = 0, offset = 0;
             #define USE_AMR_UPDATE  /* JHB Dec 2024 */
             #ifdef USE_AMR_UPDATE
-            PAYLOAD_INFO payload_info = { 0 };
+            PAYLOAD_INFO payload_info = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
             #else
             bool fAMROctetAligned = false;
             #endif
@@ -2813,7 +2813,7 @@ codec_test_cleanup:
       */
 
          bool fTocInPyld = true;  /* default until found otherwise */
-         PAYLOAD_INFO PayloadInfo = { 0 };
+         PAYLOAD_INFO PayloadInfo = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
          int nPayloadFormat;
 
          if (isRTCPPacket(rtp_pyld_type)) {

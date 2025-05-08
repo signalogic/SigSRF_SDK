@@ -333,8 +333,8 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
      -1 for an error condition
 */
 
-  int DSStoreStreamData(int chnum, uint32_t uFlags, uint8_t *data, uint32_t data_len);
-  int DSGetStreamData(int chnum, uint32_t uFlags, uint8_t *data, uint32_t data_buf_len, uint32_t data_len[], uint32_t data_info[], uint32_t data_chan[]);
+  int DSStoreStreamData(int chnum, unsigned int uFlags, uint8_t *data, uint32_t data_len);
+  int DSGetStreamData(int chnum, unsigned uFlags, uint8_t *data, uint32_t data_buf_len, uint32_t data_len[], uint32_t data_info[], uint32_t data_chan[]);
 
 
 /* Stream Group APIs.  Stream group notes:

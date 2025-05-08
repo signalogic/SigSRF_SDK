@@ -43,6 +43,7 @@
 #  Modified Nov 2024 JHB, add -Wextra -Wno-missing-field-initializers -Werror to CPPFLAGS to enable extra warnings *except* for missing struct initializers, which is a hopeless quest for perfection even when a struct is declared with = { 0 } so it does get fully initialized to zero (https://stackoverflow.com/questions/68555447/g11-getting-rid-of-missing-initializer-for-member-aanonymous, https://stackoverflow.com/questions/7724939/struct-initialization-fails-with-gcc-4)
 #  Modified Jan 2025 JHB, add -Wno-error=implicit-fallthrough to CPPFLAGS for gcc 7.x and higher
 #  Modified Feb 2025 JHB, comments only
+#  Modified Apr 2025 JHB, add exception for gcc 9.3.1, the -Wno-error=implicit-fallthrough flag is not supported
 
 # check make cmd line for "no_codecs" option
 
@@ -188,13 +189,21 @@ CPPFLAGS += $(INCLUDES) -Wall -Wextra -Wno-missing-field-initializers -Werror -g
 
 # get gcc major version
 GCC_VERSION := $(shell gcc -dumpversion | awk -F. '{print $$1}')
+GCC_VERSION_FULL := $(shell gcc -dumpfullversion 2> /dev/null | awk '{print $$1}')
+ifeq ($(GCC_VERSION_FULL),)  # dumpfullversion can fail on older compilers
+  GCC_VERSION_FULL := $(shell gcc -dumpversion | awk '{print $$1}')
+endif
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
-  $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
+  $(info GCC_VERSION=$(GCC_VERSION) major version found in Makefile)
+  $(info GCC_VERSION_FULL=$(GCC_VERSION_FULL) full version found in Makefile)
 endif
 
 # for gcc 7 and higher degrade switch-statement fall-through errors to warnings
 ifeq ($(shell expr $(GCC_VERSION) \> 6), 1)
-  CPPFLAGS += -Wno-error=implicit-fallthrough
+  # for whatever reason, gcc 9.3.1 is an exception and can't handle this flag, JHB Apr 2025
+  ifneq ($(GCC_VERSION_FULL), 9.3.1)
+    CPPFLAGS += -Wno-error=implicit-fallthrough
+  endif
 endif
 
 # get ldd version (should match GLIBC version)

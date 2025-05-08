@@ -46,6 +46,7 @@
    Modified Dec 2024 JHB, include <algorithm> and use std namespace
    Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS to MAX_STREAMS
    Modified Mar 2025 JHB, add cur_time param to CreateStaticSessions(), which gives it to app_printf()
+   Modified Apr 2025 JHB, in CreateStaticSessions() update stream stats initialization per changes in mediaMin.h and mediaMin.cpp
 */
 
 #include <algorithm>
@@ -456,31 +457,29 @@ bool fStreamGroup;
          thread_info[thread_index].nSessionsCreated++;  /* update per app thread vars */
          thread_info[thread_index].total_sessions_created++;
 
-      /* update session stats, JHB Nov 2024 */
+      /* update stream stats, JHB Nov 2024 */
 
          for (int j=0; j<MAX_TERMS; j++) {
 
-            if (thread_info[thread_index].stream_stats_index < MAX_STREAMS) {
+            if (thread_info[thread_index].num_stream_stats < MAX_STREAMS) {
 
                TERMINATION_INFO termInfo = !j ? session_data[i].term1 : session_data[i].term2;
 
                if (termInfo.remote_ip.type && termInfo.local_ip.type) {  /* make sure term been initialized */
 
-                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].uFlags |= STATIC_SESSION;
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].uFlags |= STREAM_STAT_STATIC_SESSION;
  
-                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].hSession = hSession;
-                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].term = j;
-                  int chnum = thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].chnum = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, j+1, NULL);  /* channel number known after DSCreateSession() called */
-
-                   thread_info[thread_index].uStreamStatsState[chnum] = thread_info[thread_index].stream_stats_index;  /* map chnum to stream stats index */
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].hSession = hSession;
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].term = j;
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].chnum = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CHNUM, j+1, NULL);  /* channel number known after DSCreateSession() called */
 
                   char codec_name[100] = "";
-                  if (DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_NAME, 0, 0, codec_name) >= 0) strcpy(thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].codec_name, codec_name);
+                  if (DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_NAME, 0, 0, codec_name) >= 0) strcpy(thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].codec_name, codec_name);
 
-                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].bitrate = termInfo.bitrate;
-                  thread_info[thread_index].StreamStats[thread_info[thread_index].stream_stats_index].payload_type = termInfo.attr.voice.rtp_payload_type;
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].bitrate = termInfo.bitrate;
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].payload_type = termInfo.attr.voice.rtp_payload_type;
 
-                  thread_info[thread_index].stream_stats_index++;
+                  thread_info[thread_index].num_stream_stats++;
                }
             }
          }

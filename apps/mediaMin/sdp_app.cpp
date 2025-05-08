@@ -558,13 +558,13 @@ static SIP_MESSAGES SIP_Messages[] = { {"100 Trying", "100 Trying", SESSION_CONT
                                        {"183 Session", "183 Session Progress", SESSION_CONTROL_FOUND_SIP_PROGRESS, "", 0},
                                        {"PRACK sip", "Prov ACK", SESSION_CONTROL_FOUND_SIP_PROV_ACK, "", 0},
                                        {"ACK sip", "ACK", SESSION_CONTROL_FOUND_SIP_ACK, "", 0},
-                                       {"200 OK", "200 Ok", SESSION_CONTROL_FOUND_SIP_OK, "", 0},
+                                       {"200 OK", "200 Ok", SESSION_CONTROL_FOUND_SIP_OK, "SUBSCRIBE", 0},
                                        {"BYE\r", "BYE", SESSION_CONTROL_FOUND_SIP_BYE, "", 0},  /* BYE followed by either carriage return or line feed, per RFC 2327, JHB Mar 2023 */
                                        {"BYE\n", "BYE", SESSION_CONTROL_FOUND_SIP_BYE, "", 0},
-                                       {"Invite", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE, "SUBSCRIBE", 3306},   /* generic "invite" but exclude messages with "subscribe" and MySQL messages (port 3306) with similar keywords */
+                                       {"Invite", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE, "SUBSCRIBE", 3306},   /* generic "invite" but exclude messages with "subscribe" and MySQL messages (port 3306) that have similar keywords as SIP. Test cases include VxxxxCALL_Exx_H265.pcapng (several MySQL protocol messages, pkt# 35785 one of several SIP SUBSCRIBE messages) */
                                        {"INVITE sip", "Invite", SESSION_CONTROL_FOUND_SIP_INVITE, "SUBSCRIBE", 0},  /*  ""   ""  */
                                        {"200 Playing Announcement", "200 Playing Announcement", SESSION_CONTROL_FOUND_SIP_PLAYING_ANNOUNCEMENT, "", 0},
-                                       {"INFO", "INFO Request", SESSION_CONTROL_FOUND_SIP_INFO_REQUEST, "", 3306},  /* generic "info" but exclude MySQL messages (port 3306) with similar keywords */
+                                       {"INFO", "INFO Request", SESSION_CONTROL_FOUND_SIP_INFO_REQUEST, "SUBSCRIBE", 3306},  /* generic "info" but exclude MySQL messages (port 3306) with similar keywords */
                                        {"UDP SIP/2.0", "Options or other", SESSION_CONTROL_FOUND_SIP_UDP_OTHER, "", 0},  /* includes OPTIONS, CANCEL, REGISTER, etc. Lowest priority in search */
                                        {"TCP SIP/2.0", "Options or other", SESSION_CONTROL_FOUND_SIP_TCP_OTHER, "", 0}   /* same, TCP */
                                      };
