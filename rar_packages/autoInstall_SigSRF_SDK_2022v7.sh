@@ -40,12 +40,13 @@
 #  Modified May 2023 JHB, add "no prompt" command line argument (look for use of noprompts var)
 #  Modified Aug 2023 JHB, add symlink for mediaMin and mediaTest apps
 #  Modified Dec 2023 JHB, add -f flag to lib cp commands, otherwise they might not overwrite during a re-install or upgrade. Note the use of "cp_prefix" to avoid alias cp commands on CentOS systems
-#  Modified Mar 2024 JHB, for Debian unrar install add --allow-releaseinfo-change to apt-get update 
+#  Modified Mar 2024 JHB, for Debian unrar install add --allow-releaseinfo-change to apt-get update
+#  Modified Apr 2025 JHB, add /etc/centos-release and "CentOS" to $OS string search to handle CentOS 6.x
 #================================================================================================
 
 depInstall_wo_dpkg() {
 
-	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS" ]; then
 		yum localinstall $line_pkg
 #	elif [ "$platform" = "VM" -o "$OS" = "Ubuntu" ]; then
    else  # else includes Ubuntu, Debian, VM platform, or anything else
@@ -60,7 +61,7 @@ packageSetup() { # check for .rar file and if found, prompt for Signalogic insta
    #  -host vs VM
    #  -distro version and date
 
-	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS" ]; then
 		if [ "$installOptions" = "ASR" ]; then  # demo includes automatic speech recognition
 			rarFile="Signalogic_sw_host_SigSRF_*_ASR_*CentOS*.rar"
 		else
@@ -140,7 +141,7 @@ unrarCheck() {
 
 	            if [ "$unrarInstalled" == "" ]; then  # if still not installed, then try non-package methods
 
-                  if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+                  if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS" ]; then
 
                      echo "Attempting to install rarlab unrar ..."
 
@@ -212,7 +213,7 @@ unrarCheck() {
 
 depInstall() {
 
-	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS" ]; then
 		yum localinstall $line
 #	elif [ "$platform" = "VM" -o "$OS" = "Ubuntu" ]; then
    else  # else includes Ubuntu, Debian, VM platform, or anything else
@@ -241,7 +242,7 @@ swInstallSetup() {  # basic setup needed by both dependencyCheck() and swInstall
 	echo
 	echo "Creating symlinks..."
 
-	if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS" ]; then
 		if [ ! -L /usr/src/linux ]; then
 			ln -s /usr/src/kernels/$kernel_version /usr/src/linux
 		fi 
@@ -302,7 +303,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 	if [ "$dependencyInstall" = "Dependency Check + Install" ]; then
 
-      if [[ "$OS" != "Ubuntu" && "$OS" != "Red Hat Enterprise Linux Server" && "$OS" != "CentOS Linux" ]]; then
+      if [[ "$OS" != "Ubuntu" && "$OS" != "Red Hat Enterprise Linux Server" && "$OS" != "CentOS Linux" && "$OS" != "CentOS" ]]; then
          echo
          echo "Distro $OS is not Ubuntu or CentOS / RHEL; attempting to install assuming Ubuntu / Debian derivative ..."
       fi
@@ -318,7 +319,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
             gpp_path=$(which g++)
             ln -s $gpp_path /usr/bin/g++  # set necessary symlink
          else
-            if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+            if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS" ]; then
                gcc_package=$(rpm -qa gcc-c++)  # generic g++ package check, should come back with version installed
             else
                gcc_package=$(dpkg -s g++ 2>/dev/null | grep Status | awk ' {print $4} ')  # generic g++ package check, should come back with "installed"
@@ -338,7 +339,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 
 			if [[ ($Dn = "y") || ($Dn = "Y") ]]; then
 
-            if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+            if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS" ]; then
                yum install gcc-c++
                gcc_package=$(rpm -qa gcc-c++)  # recheck
             else
@@ -358,7 +359,7 @@ dependencyCheck() {  # Check for generic sw packages and prompt for installation
 		fi
    fi
 	
-	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+	if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS" ]; then
 	{
 		cd $installPath/Signalogic/installation_rpms/RHEL
 		filename="rhelDependency.txt"
@@ -443,7 +444,7 @@ swInstall() {  # install Signalogic SW on specified path
 
 # note -- assumes dependencyCheck() and swInstallSetup() have run
 
-   if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+   if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS" ]; then
       cp_prefix="/bin/"
 #   elif [ "$OS" = "Ubuntu" ]; then
    else  # else includes Ubuntu, Debian, VM platform, or anything else
@@ -458,7 +459,7 @@ swInstall() {  # install Signalogic SW on specified path
 
 		if [ "$platform" = "Host" ]; then
 
-         if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+         if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS"]; then
             distribution=$(cat /etc/centos-release)
          elif [ "$OS" = "Ubuntu" -a "$lsbReleaseInstalled" != "" ]; then
             distribution=$(cat /etc/lsb-release)
@@ -515,7 +516,7 @@ swInstall() {  # install Signalogic SW on specified path
 
 		depmod -a
 
-		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS" ]; then
 			cp -p $installPath/Signalogic/DirectCore/driver/sig_mc_hw.modules /etc/sysconfig/modules/
 			chmod 755 /etc/sysconfig/modules/sig_mc_hw.modules
 			echo "chmod 666 /dev/sig_mc_hw" >> /etc/rc.d/rc.local
@@ -591,6 +592,9 @@ swInstall() {  # install Signalogic SW on specified path
 unInstall() { # uninstall Signalogic SW completely
 
 	OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')
+   if [ -z "$OS" ]; then
+      OS=$(cat /etc/centos-release | grep -w CentOS* | sed 's/ .*//')  # CentOS before 7 seems to not have /cat/os-release folder. Add any other OS releases here, keep checking for $OS empty, JHB Apr 2025
+   fi
 	echo
 	echo "Uninstalling SigSRF and EdgeStream software..."
 	echo
@@ -619,11 +623,11 @@ unInstall() { # uninstall Signalogic SW completely
 		rmmod sig_mc_hw
 		unlink /usr/src/linux
 	
-		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS" ]; then
 			rm -rf /etc/sysconfig/modules/sig_mc_hw.modules
 		fi
 	
-		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS" ]; then
 			if [ $platform = "Host" ]; then
 				rm -rf /usr/lib/modules/$kernel_version/sig_mc_hw.ko
 			elif [ $platform = "VM" ]; then
@@ -638,7 +642,7 @@ unInstall() { # uninstall Signalogic SW completely
 			fi
 		fi
 	
-		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" ]; then
+		if [ "$OS" = "CentOS Linux" -o "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS" ]; then
 			sed -i '/chmod 666 \/dev\/sig_mc_hw/d' /etc/rc.d/rc.local 
 #		elif [ "$OS" = "Ubuntu" ]; then
       else  # else includes Ubuntu, Debian, VM platform, or anything else
@@ -715,7 +719,7 @@ installCheckVerify() {
 	echo "Distro Info" | tee -a $diagReportFile
    lsbreleaseInstalled=`type -p lsb_release`
 
-   if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" ]; then
+   if [ "$OS" = "Red Hat Enterprise Linux Server" -o "$OS" = "CentOS Linux" -o "$OS" = "CentOS" ]; then
       cat /etc/centos-release | tee -a $diagReportFile
    elif [ "$OS" = "Ubuntu" -a "$lsbReleaseInstalled" != "" ]; then  # use /etc/lsb-release for Ubuntu, unless lsb-release package not found (maybe installing it earlier ran into trouble)
       cat /etc/lsb-release | tee -a $diagReportFile
@@ -837,10 +841,13 @@ else
   unset noprompts  # make noprompts empty
 fi
 
-# initialize global vars, including OS distribution name
+# initialize global vars, including OS distribution name and kernel version
 
 startPath=$PWD
 OS=$(cat /etc/os-release | grep -w NAME=* | sed -n -e '/NAME/ s/.*\= *//p' | sed 's/"//g')  # OS var is used throughout script
+if [ -z "$OS" ]; then
+  OS=$(cat /etc/centos-release | grep -w CentOS* | sed 's/ .*//')  # CentOS before 7 seems to not have /cat/os-release folder. Add any other OS releases here, keep checking for $OS empty, JHB Apr 2025
+fi
 kernel_version=`uname -r`
 echo "OS distro: $OS, kernel version: $kernel_version"
 echo
