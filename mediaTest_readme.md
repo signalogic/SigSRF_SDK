@@ -13,9 +13,20 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+<i><b>2Q 2025</b></i>
+
+Use case improvements
+
+ - H.264 RTP auto-detect
+ - improved oversized packet handling (e.g. TSO/LSO or other packets captured or inserted at software level, before the NIC)
+
+Bug fixes
+
+ - fix to multi-frame EVS packet decoding
+
 <i><b>1Q 2025</b></i>
 
-Use case driven improvements
+Use case improvements
 
  - improved pcapng format handling, including additional block types, unused and unknown block types
  - HEVC elementary bitstream extraction from RTP packet flow
@@ -23,7 +34,7 @@ Use case driven improvements
 
 <i><b>3Q-4Q 2024</b></i>
 
-Use case driven improvements
+Use case improvements
 
  - H.265 dynamic codec detection and session creation, bitstream extraction
  - input data caching to improve mediaMin application thread performance
@@ -46,7 +57,7 @@ Bug fixes
 
 Arm support is under development !
 
-Use case driven improvements
+Use case improvements
 
  - packet fragmentation and reassembly management, including UDP duplicate packet detection
  - [SDP info](#user-content-sdpsupport) expanded support, including media port discovery
@@ -66,7 +77,7 @@ Bug fixes
 
 <i><b>3Q-4Q 2023</b></i>
 
-Use case driven improvements
+Use case improvements
 
  - call recording "time stamp match" mode for reproducible, bit-exact media output files
  - .rtp and .rtpdump file format support
