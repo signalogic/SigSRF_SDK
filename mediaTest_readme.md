@@ -604,7 +604,7 @@ The above command line example will auto-detect the H.264 RTP stream and create 
 
 ![mediaMin video RTP extraction dynamic session creation and H.264 codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_video_RTP_extraction_dynamic_session_creation_H264_auto_detection_screencap.png "mediaMin video RTP extraction dynamic session creation and H.264 codec auto-detection")
 
-At stream end, mediaMin will display channel, session, jitter buffer, and other stats, along with event log warning and error message summaries (if any):
+In this case, auto-detection is necessary as the pcap contains no SDP/SAP/SIP information. At stream end, mediaMin will display channel, session, jitter buffer, and other stats, along with event log warning and error message summaries (if any):
 
 ![mediaMin video RTP extraction stats and summary report](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_H264_RTP_extraction_stats_summary_screencap.png "mediaMin H.264 RTP extraction stats and summary report")
 
