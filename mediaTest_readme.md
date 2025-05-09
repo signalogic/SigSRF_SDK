@@ -405,7 +405,7 @@ mediaMin is aware of RTP Event packet groups and instructs [pktlib](#user-conten
 
     mediaMin -cx86 -i../pcaps/DTMF_RTP_Event.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
 
-In the first two examples, the -jN cmd line argument (see [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) below) is applied because dtmf_rtp_event_multiple_groups.pcapng has a high amount of packet out-of-order (ooo). The second command line runs the same test 40 times faster (see [Packet Push Rate Control](#user-content=packetpushratecontrol), [Bulk Pcap Handling](#user-content-bulkpcaphandling), and [Real-Time Interval](#user-content-realtimeinterval) below). The third command line is a static session configuration of a simple G711 pcap with no DTX and only a few RTP event packets, and runs with assumed -r0 entry ("as fast as possible" mode; see [Real-Time Interval](#user-content-realtimeinterval) below).
+In the first two examples, the -jN cmd line argument (see [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) below) is applied because dtmf_rtp_event_multiple_groups.pcapng has a high amount of packet out-of-order (ooo). The second command line runs the same test 40 times faster (see [Packet Push Rate Control](#user-content-packetpushratecontrol), [Bulk Pcap Handling](#user-content-bulkpcaphandling), and [Real-Time Interval](#user-content-realtimeinterval) below). The third command line is a static session configuration of a simple G711 pcap with no DTX and only a few RTP event packets, and runs with assumed -r0 entry ("as fast as possible" mode; see [Real-Time Interval](#user-content-realtimeinterval) below).
 
 For the first two command lines, below are excerpts from mediaMin display and the [packet log](#user-content-packetlog) generated at the conclusion of the mediaMin run.
 
@@ -516,6 +516,8 @@ Below are some voice and audio dynamic session command line examples:
     mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r20
 
     mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
+
+![mediaMin pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png "mediaMin pcap I/O command line example")
 
 The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps streams, the second has two (2) AMR-NB 12200 bps streams and the third has two (2) EVS 13200 bps streams and three (3) AMR-WB 12650 bps streams (one of the AMR-WB streams is an RFC8108, or "child" channel). Below is a Wireshark screencap of what the first example output looks like:
 
