@@ -563,7 +563,7 @@ The resulting sample_capture_test.h265 file can be played in VLC, and should sho
 
 ![VLC HEVC noise test playback of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/VLC_playback_HEVC_noise_test_mediamin_output.png "VLC HEVC noise test playback of mediaMin RTP extraction output")
 
-In the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate of 30 fps. We can verify these attributes and others at the NAL unit level using the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is an elementary stream graphical display of sample_capture_test.h265, including NAL unit types, parameter sets or slices, and hex values:
+In the above screen cap VLC is displaying the "Codec Information" tab of its "Current Media Information" dialog, which shows the codec type as "MPEG-H Part2/HEVC (H.265)", resolution 1920x1080, and frame rate 30 fps. We can verify these attributes and others at the NAL unit level using the [HEVC ES Browser](https://github.com/virinext/hevcesbrowser). Below is an elementary stream graphical display of sample_capture_test.h265, including NAL unit types, parameter sets or slices, and hex values:
 
 ![HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/HEVC_ES_Browser_display_H265_elementary_bitstream_slices.png "HEVC ES Browser low-level binary slice-by-slice display of mediaMin RTP extraction output")
 
@@ -612,7 +612,7 @@ The resulting sample_capture_test.h264 file can be played in SMPlayer, and shoul
 
 ![SMPlayer playback of mediaMin H.264 RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SMPlayer_playback_of_H264_mediamin_output.png "SMPlayer playback of mediaMin H.264 RTP extraction output")
 
-In the above screen cap SMPlayer is displaying the "Information" tab of its "Information and Properties" dialog, which shows the codec format as "H264", resolution 640x480, and frame rate of 25 fps.
+In the above screen cap SMPlayer is displaying the "Information" tab of its "Information and Properties" dialog, which shows the codec format as "H264", resolution 640x480, and frame rate 25 fps.
 
 <a name="InBandOutofBandParameterSets"></a>
 ##### Inband vs Out-of-Band Parameter Sets
