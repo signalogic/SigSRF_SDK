@@ -17,7 +17,7 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 Use case improvements
 
- - H.264 RTP auto-detect
+ - H.264 RTP auto-detect and elementary bitstream extraction
  - improved oversized packet handling (e.g. TSO/LSO or other packets captured or inserted at software level, before the NIC)
 
 Bug fixes
@@ -540,11 +540,16 @@ For .pcap or .pcapng files with incorrect or zero packet timestamp values (somet
 <a name="VideoCmdLineExamples"></a>
 #### Video Command Line Examples
 
+Below are example command lines for H.264 and H.265 auto-detection, dynamic session creation, and bitstream extraction from RTP streams.
+
+<a name="VideoCmdLineExamplesH265"></a>
+##### H.265 Command Line Examples
+
 Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng on the Wireshark Samples Capture page](https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=1920x1080_H.265.pcapng#h265hevc):
 
      mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x0600c000c11 -r20
 
-The above command line example will auto-detect H.265 RTP packets and create a dynamic session, as highlighted:
+The above command line example will auto-detect the H.265 RTP stream and create a dynamic session, as highlighted:
 
 ![mediaMin video RTP extraction dynamic session creation and HEVC codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_video_RTP_extraction_dynamic_session_creation_codec_auto_detection_screencap.png "mediaMin video RTP extraction dynamic session creation and HEVC codec auto-detection")
 
@@ -585,6 +590,27 @@ Some notes about the above example:
 * VLC by default sends parameter sets out-of-band, as SAP/SDP packets (i.e. not RTP packets). For more on this see [Inband vs Out-of-Band Parameter Sets](#user-content-inbandoutofbandparametersets)
 
 A step-by-step procedure for generating RTP streams with VLC and capturing with Wireshark is given in [VLC Stream to Wireshark Setup and Procedure](#user-content-vlcstreamwiresharksetupprocedure) below.
+
+<a name="VideoCmdLineExamplesH264"></a>
+##### H.264 Command Line Examples
+
+Below is an example H.264 elementary bitstream extraction from an [H.264 pcap online sample](https://github.com/saghul/sipp-scenarios/blob/master/h264.pcap):
+
+     mediaMin -c x86 -i ../pcaps/h264.pcap -o sample_capture_test.h264 -L -d 0x0600c000c11 -r20 -g /tmp/shared --md5sum
+ 
+The above command line example will auto-detect the H.264 RTP stream and create a dynamic session, as highlighted:
+
+![mediaMin video RTP extraction dynamic session creation and H.264 codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_video_RTP_extraction_dynamic_session_creation_H.264_auto_detection_screencap.png "mediaMin video RTP extraction dynamic session creation and H.264 codec auto-detection")
+
+At stream end, mediaMin will display channel, session, jitter buffer, and other stats, along with event log warning and error message summaries (if any):
+
+![mediaMin video RTP extraction stats and summary report](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_H.264_RTP_extraction_stats_summary_screencap.png "mediaMin H.264 RTP extraction stats and summary report")
+
+The resulting sample_capture_test.h264 file can be played in SMPlayer, and should show a security camera under setup and test:
+
+![SMPlayer playback of mediaMin H.264 RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SMPlayer_playback_of_H.264_mediamin_output.png "SMPlayer playback of mediaMin H.264 RTP extraction output")
+
+In the above screen cap SMPlayer is displaying the "Information" tab of its "Information and Properties" dialog, which shows the codec format as "H264", resolution 640x480, and frame rate of 25 fps.
 
 <a name="InBandOutofBandParameterSets"></a>
 ##### Inband vs Out-of-Band Parameter Sets
