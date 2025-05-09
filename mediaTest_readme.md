@@ -602,15 +602,15 @@ Below is an example H.264 elementary bitstream extraction from an [H.264 pcap on
  
 The above command line example will auto-detect the H.264 RTP stream and create a dynamic session, as highlighted:
 
-![mediaMin video RTP extraction dynamic session creation and H.264 codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_video_RTP_extraction_dynamic_session_creation_H.264_auto_detection_screencap.png "mediaMin video RTP extraction dynamic session creation and H.264 codec auto-detection")
+![mediaMin video RTP extraction dynamic session creation and H.264 codec auto-detection](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_video_RTP_extraction_dynamic_session_creation_H264_auto_detection_screencap.png "mediaMin video RTP extraction dynamic session creation and H.264 codec auto-detection")
 
 At stream end, mediaMin will display channel, session, jitter buffer, and other stats, along with event log warning and error message summaries (if any):
 
-![mediaMin video RTP extraction stats and summary report](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_H.264_RTP_extraction_stats_summary_screencap.png "mediaMin H.264 RTP extraction stats and summary report")
+![mediaMin video RTP extraction stats and summary report](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediamin_H264_RTP_extraction_stats_summary_screencap.png "mediaMin H.264 RTP extraction stats and summary report")
 
 The resulting sample_capture_test.h264 file can be played in SMPlayer, and should show a security camera under setup and test:
 
-![SMPlayer playback of mediaMin H.264 RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SMPlayer_playback_of_H.264_mediamin_output.png "SMPlayer playback of mediaMin H.264 RTP extraction output")
+![SMPlayer playback of mediaMin H.264 RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SMPlayer_playback_of_H264_mediamin_output.png "SMPlayer playback of mediaMin H.264 RTP extraction output")
 
 In the above screen cap SMPlayer is displaying the "Information" tab of its "Information and Properties" dialog, which shows the codec format as "H264", resolution 640x480, and frame rate of 25 fps.
 
