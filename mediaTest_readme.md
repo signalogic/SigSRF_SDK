@@ -357,6 +357,8 @@ The screencap below shows mediaTest output after the second command line.
 
 ![mediaMin pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png "mediaMin pcap I/O command line example")
 
+![mediaMin pcap I/O command line example](/images/mediatest_demo_screencap.png "mediaMin pcap I/O command line example")
+
 <a name="MultipleRTPStreamsCmdLine"></a>
 ### Multiple RTP Streams (RFC 8108)
 
@@ -371,8 +373,6 @@ The first command line above uses dynamic session creation, analytics mode, and 
 Below is a screen capture showing output for the second command line above, with RTP stream transitions highlighted:
 
 ![mediaMin multiple RTP streams example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png "mediaMin multiple RTP streams example")
-
-![mediaMin multiple RTP streams example](/assets/images/mediaTest_multiple_ssrc_screencap.png "mediaMin multiple RTP streams example")
 
 Packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Log](#user-content-packetlog) below.
 
