@@ -9,9 +9,7 @@ After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-
 
 Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav). Example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the [SigSRF SDK](https://github.com/signalogic/SigSRF_SDK). SDK capacity is limited to four (4) concurrent transcoding streams, and four (4) concurrent instances (one instance = console window), for a total of eight (8) streams. The commercial software has no limitations for concurrency or multiuser, bare metal, VM, container, or other platform limitations.
 
-[Jump to Table of Contents](#toc)
-
-## [Section I Want]
+**_[Jump to Table of Contents](#user-content-toc)_**
 
 # News and Updates
 
@@ -371,6 +369,8 @@ As explained in [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstream
 The first command line above uses dynamic session creation, analytics mode, and an -r20 argument (see [Real-Time Interval](#user-content-realtimeinterval) below) to specify a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
 
 Below is a screen capture showing output for the second command line above, with RTP stream transitions highlighted:
+
+![mediaMin multiple RTP streams example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediaTest_multiple_ssrc_screencap.png "mediaMin multiple RTP streams example")
 
 ![mediaMin multiple RTP streams example](/assets/images/mediaTest_multiple_ssrc_screencap.png "mediaMin multiple RTP streams example")
 
