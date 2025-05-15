@@ -9,7 +9,7 @@ After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-
 
 Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav). Example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the [SigSRF SDK](https://github.com/signalogic/SigSRF_SDK). SDK capacity is limited to four (4) concurrent transcoding streams, and four (4) concurrent instances (one instance = console window), for a total of eight (8) streams. The commercial software has no limitations for concurrency or multiuser, bare metal, VM, container, or other platform limitations.
 
-**_[Jump to Table of Contents](#user-content-toc)_**
+**_[Jump to Table of Contents](#table-of-contents)_**
 
 # News and Updates
 
