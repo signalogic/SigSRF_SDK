@@ -169,7 +169,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 [paTest Demo (Predictive Analytics)](https://github.com/signalogic/SigSRF_SDK/blob/master/paTest_readme.md)
 
-<a name="TOC"></a>
+<a name="toc"></a>
 # Table of Contents
 
 ## [**_mediaMin_**](#user-content-mediamin)<br/>
