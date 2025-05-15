@@ -357,8 +357,6 @@ The screencap below shows mediaTest output after the second command line.
 
 ![mediaMin pcap I/O command line example](https://github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png "mediaMin pcap I/O command line example")
 
-![mediaMin pcap I/O command line example](/images/mediatest_demo_screencap.png "mediaMin pcap I/O command line example")
-
 <a name="MultipleRTPStreamsCmdLine"></a>
 ### Multiple RTP Streams (RFC 8108)
 
