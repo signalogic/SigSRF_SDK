@@ -141,6 +141,7 @@
 #define DS_PYLD_FMT_HF_ONLY             2   /* EVS hf-only format formally supported and tested, JHB Sep 2024 */
 #define DS_PYLD_FMT_H264                0x10
 #define DS_PYLD_FMT_H265                0x11
+#define DS_PYLD_FMT_HEVC                DS_PYLD_FMT_H265
 
 /* typedefs for voplib handles */
 

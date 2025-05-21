@@ -209,6 +209,8 @@
                          -in pktlib.h DS_PKT_INFO_RTP_PYLD_CONTENT was changed to DS_PKT_INFO_PYLD_CONTENT to support this
                          -in pktlib DS_PKT_INFO_PYLD_CONTENT is now a session item inside DSGetPacketInfo() and calls DSGetPayloadInfo()
   Modified May 2025 JHB, call DSStoreStreamData() with uFlags either DS_PKT_PYLD_CONTENT_MEDIA or DS_PKT_PYLD_CONTENT_DTMF
+  Modified May 2025 JHB, set DS_PKT_PYLD_CONTENT_IGNORE_PTIME flag for video streams when calling DSGetStreamData()
+  Modified May 2025 JHB, adjust loss and level flush for video streams in logic after DSGetOrderedPackets()
 */
 
 /* Linux header files */
@@ -768,9 +770,12 @@ extern uint32_t uTimestampGapCount[NCORECHAN];  /* analytics and telecom timesta
 
 /* run-time stats Codecs items declared in pktlib, accessed here in DSLogRunTimeStats() and in validate_rtp_media_payload() in validate_rtp_media_packet.cpp, JHB Dec 2024 */
 
-extern uint32_t uNumDamagedFrames[], uNumBandwidthEfficientFrames[], uNumOctetAlignFrames[], uNumCompactFrames[], uNumHeaderFullFrames[], uNumHeaderFullOnlyFrames[], uNumAMRWBIOCompatibilityFrames[];
+extern uint32_t uNumDamagedFrames[], uNumBandwidthEfficientFrames[], uNumOctetAlignFrames[], uNumCompactFrames[], uNumHeaderFullFrames[], uNumHeaderFullOnlyFrames[], uNumAMRWBIOCompatibilityFrames[], uNumHEVCFrames[], uNumH264Frames[];
 
 uint8_t uApp_progress_line_cursor_pos = 0;
+
+
+int SentCount = 0;
 
 
 void* packet_flow_media_proc(void* pExecuteMode) {
@@ -821,7 +826,7 @@ void* packet_flow_media_proc(void* pExecuteMode) {
    int recv_len = 0, send_len = 0;
    unsigned char pkt_in_buf[32*MAX_RTP_PACKET_LEN] = {0}, pkt_out_buf[MAX_RTP_PACKET_LEN] = {0}, media_data_buffer[4*MAX_RTP_PACKET_LEN] = {0}, encoded_data_buffer[2*MAX_RTP_PACKET_LEN] = {0};
    uint8_t recv_jb_buffer[MAX_RTP_PACKET_LEN*MT_MAX_CHAN*JB_DEPTH] = { 0 };
-   
+
    TERMINATION_INFO termInfo, termInfo_link;
    int chnum_parent, chnums[MAX_TERMS*16], chnum;
    int recv_sock_fd = -1;
@@ -3042,6 +3047,7 @@ static int log_pkt_in_index = 0;
                         int pull_pkts, offset = 0, nRePull = 0;
                         num_pkts = 0;
                         bool fRePull;
+                        codec_types codec_type = (codec_types)DSGetSessionInfo(chan_nums[n], DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_CODEC_TYPE, 1, NULL);
 
                         #define USE_CHAN_NUMS
 pull:
@@ -3104,7 +3110,7 @@ pull:
                         if (!fFlushDisable && !fFlushChan && (uInfo & DS_GETORD_PKT_INFO_PULLATTEMPT)) do {
 
                            fRePull = false;
-                           bool fFlush = false, fLevel = false;
+                           bool fFlush, fLevel;
                            int numpkts = 0, chan = 0;
                            int max_depth_ptimes;
 
@@ -3117,10 +3123,14 @@ pull:
 
                            for (j=0; j<num_ch; j++) {  /* search channel and child channels, if any */
 
+                              fFlush = false;
+                              fLevel = false;  /* for num_ch > 1 it was possible that fLevel could be left to a previous channel value in the if-then-else logic below, JHB Ma 2025 */ 
+
                            /* for analytics mode the depth limit is max delay number of packets, for telecom mode the limit is an amount of time delay. In telecom mode comparing with time delay (not packets) is required to correctly handle large input gaps (test with 6537.0). See also above comments */
 
                               numpkts = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_NUM_PKTS);
                               int nTargetDelay = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_TARGET_DELAY);
+                              if (isVideoCodec(codec_type)) nTargetDelay *= 8;  /* adjust for typical video streams with many chunks of duplicated timestamps. See also corresponding mod "mult" inside PullPackets() in mediaMin.cpp, JHB May 2025 */
                               int nMaxDelay = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MAX_DELAY);
 
                               #ifdef ENABLE_GAP_RESYNC  /* change made due to tests with 4392.pcap; after a call-on-hold pause, the DS_GETORD_PKT_TIMESTAMP_GAP_RESYNC mod above is helpful but not enough. Otherwise it takes too long for ch 4 (in this example) cumulative and pull timestamps to catch up and re-align with other streams not affected by the pause, JHB Sep 2023 */
@@ -3131,11 +3141,29 @@ pull:
                               max_depth_ptimes = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MAX_DEPTH_PTIMES);
                               #endif
 
+                              #if 0  /* make this more readable, JHB May 2025 */
                               if (
                                   ((uFlags_get & DS_GETORD_PKT_ANALYTICS) && (fLevel = numpkts > nTargetDelay) && nTargetDelay > 7) ||
                                   ((uFlags_get & DS_GETORD_PKT_ANALYTICS) && (fLevel = numpkts > nMaxDelay) && nTargetDelay <= 7) ||  /* level flush added for analytics compatibility mode. Verify with test cases 5280.0.ws, 5281.0.ws, 13041.0, JHB May 2020 */
                                   (!(uFlags_get & DS_GETORD_PKT_ANALYTICS) && ((fFlush = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP) < DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME) && (cur_time - last_pull_time[chan_nums[n]] + 500)/1000 > (uint32_t)ptime[hSession][term] && numpkts > nTargetDelay) || (fLevel = (DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_DELAY) > max_depth_ptimes) || numpkts > nTargetDelay)))
                                  ) {
+                              #else
+
+                              bool fPullCheck = false;
+
+                              if (uFlags_get & DS_GETORD_PKT_ANALYTICS) {  /* analytics mode */
+                              
+                                 if ((fLevel = numpkts > nTargetDelay) && nTargetDelay > 7) fPullCheck = true;
+                                 else if ((fLevel = numpkts > nMaxDelay) && nTargetDelay <= 7) fPullCheck = true;  /* level flush added for analytics compatibility mode. Verify with test cases 5280.0.ws, 5281.0.ws, 13041.0, JHB May 2020 */
+                              }
+                              else {  /* telecom mode */
+
+                                 if ((fFlush = !isVideoCodec(codec_type) && DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP) < DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME) && (cur_time - last_pull_time[chan_nums[n]] + 500)/1000 > (uint32_t)ptime[hSession][term] && numpkts > nTargetDelay)) fPullCheck = true;  /* adjust for typical video streams with chunks of packets with same timestamps, JHB May 2025 */
+                                 else if ((fLevel = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_DELAY) > max_depth_ptimes || numpkts > nTargetDelay)) fPullCheck = true;
+                              }
+
+                              if (fPullCheck) {
+                              #endif
 
                                  if ((nRePull == 0 && fFlush) || (nRePull < 50 && !fFlush)) {  /* impose some limit on number of repulls to avoid excessive increase in subloops (based on num_pkts); after several main loops timestamps will catch up */
 
@@ -3143,6 +3171,9 @@ pull:
                                     fRePull = true;
                                     break;
                                  }
+                                 #if 0  /* helpful debug for streams accumulating in the jitter buffer (video being one example), JHB May 2025 */
+                                 else printf("\n *** flush = %d, level = %d, numpkts %d, nTargetDelay %d, nRePull = %d \n", fFlush, fLevel, numpkts, nTargetDelay, nRePull);
+                                 #endif
                               }
                               #if 0
                               else {
@@ -3154,7 +3185,7 @@ pull:
                            }
 
    #ifdef SHOW_FLUSH_AND_TIMESTAMP_CONDITIONS
-    if (fRePull && !fFlush && chan == 2) Log_RT(4, " *** ch %d repull to advance timestamp, num_ch = %d, fFlush = %d, fLevel = %d, nRePull = %d, (cum timestamp %d < cum pull time %d && cur_time %d - last pull time %d > 20 && numpkts %d > nTargetDelay %d) || (delay %d > max depth ptimes %d), output pkts = %d, num ooo = %d \n", chan, num_ch, fFlush, fLevel, nRePull, (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP), (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME), (int)cur_time/1000, (int)last_pull_time[chan_nums[n]]/1000, numpkts, (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_TARGET_DELAY), (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_DELAY), max_depth_ptimes, (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_OUTPUT_PKT_COUNT), nNumOoo);
+   if (fRePull && !fFlush && chan == 2) Log_RT(4, " *** ch %d repull to advance timestamp, num_ch = %d, fFlush = %d, fLevel = %d, nRePull = %d, (cum timestamp %d < cum pull time %d && cur_time %d - last pull time %d > 20 && numpkts %d > nTargetDelay %d) || (delay %d > max depth ptimes %d), output pkts = %d, num ooo = %d \n", chan, num_ch, fFlush, fLevel, nRePull, (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_CUMULATIVE_TIMESTAMP), (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_CUMULATIVE_PULLTIME), (int)cur_time/1000, (int)last_pull_time[chan_nums[n]]/1000, numpkts, (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_TARGET_DELAY), (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_DELAY), max_depth_ptimes, (int)DSGetJitterBufferInfo(chan, DS_JITTER_BUFFER_INFO_OUTPUT_PKT_COUNT), nNumOoo);
    #endif
                            if (fRePull) {
 
@@ -3191,6 +3222,16 @@ pull:
                            }
 
                         } while (fRePull);
+
+  #if 0
+  static int max_pull[100] = { 0 };
+  if (num_pkts > max_pull[chan_nums[n]]) { max_pull[chan_nums[n]] = num_pkts; printf("\n *** max pull[%d] = %d \n", chan_nums[n], max_pull[chan_nums[n]]); }
+  #endif
+
+  #if 0
+  static int count[100] = { 0 };
+  if (num_pkts > 0) { count[chan_nums[n]] += num_pkts; printf("\n *** pull[%d] = %d, count[%d] = %d \n", chan_nums[n], num_pkts, chan_nums[n], count[chan_nums[n]]); }
+  #endif
 
                         if (num_pkts < 0) {
                            sprintf(tmpstr, "Error retrieving packet(s) from jitter buffer for session %d\n", i);
@@ -3393,6 +3434,8 @@ pull:
 
                               DSSendPackets((HSESSION*)&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_JITTER_BUFFER | DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG, pkt_ptr, &packet_len[j], 1);  /* send jitter buffer output packet to application thread (write to outgoing packet queue). While working on video, which can have many large packets for each timestamp, wondering if it's not a good idea to suppress queue full messages, JHB Jul 2024 */
 
+            //if (chnum == 0 && ++SentCount >= 1306) printf("\n *** jb sent packet #%d \n", SentCount);  
+
                               #ifdef DONT_USE_PKTINFO
                               rtp_timestamp[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_TIMESTAMP, pkt_ptr, packet_len[j], NULL, NULL);  /* save packet timestamp and ssrc */
                               rtp_ssrc[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_SSRC, pkt_ptr, packet_len[j], NULL, NULL);
@@ -3426,6 +3469,8 @@ pull:
                         Log_RT(2, "ERROR: p/m thread %d says failed to get chnum %d terminfo for term2 \n", thread_index, chnum);
                         break;
                      }
+
+            //if (chnum == 0 && SentCount >= 1306) printf("\n *** checking for pkt content #%d, content = 0x%x \n", SentCount, pkt_info[j]);
 
                   /* check if packet is DTMF event */
 
@@ -3488,6 +3533,8 @@ pull:
                   /* process media packets */
 
                      if (packet_type == MEDIA_PACKET || packet_type == PROBATION_PACKET) {
+
+            //if (chnum == 0 && SentCount >= 1306) printf("\n *** inside media packet #%d \n", SentCount);
 
                      /* find the channel's codec instance (channel can be parent or child). Notes: 1) if channel has changed from previous loop iteration or not yet initialized (e.g. first packet is a DTMF event, followed by a media packet) then we need to look up hCodec, 2) decoder and encoder instances are always created for a session, even if they are not used (for example, for passthru or unidirectional operation, both decoder and encoder instances exist) */
 
@@ -3672,9 +3719,16 @@ pull:
                            if (hSession == 0 && !fOnce[chnum]) { fOnce[chnum] = true; printf("\n *** before DSStoreStream ch = %d, rtp_pyld_len = %d, media_data_len = %d \n", chnum, rtp_pyld_len, media_data_len); }
                         #endif
 
+            //if (chnum == 0 && SentCount >= 1306) printf("\n *** before media store stream #%d, num_pkts = %d, media_data_len = %d \n", SentCount, num_pkts, media_data_len);
+
                         DSStoreStreamData(chnum_parent, DS_PKT_PYLD_CONTENT_MEDIA, media_data_buffer, media_data_len);  /* store decoded media data */
                      }
-                     else if (packet_type == DTMF_PACKET) DSStoreStreamData(chnum_parent, DS_PKT_PYLD_CONTENT_DTMF, rtp_pyld_ptr, rtp_pyld_len);  /* store DTMF event */
+                     else if (packet_type == DTMF_PACKET) {
+
+            //if (chnum == 0 && SentCount >= 1306) printf("\n *** before DTMF store stream #%d, num_pkts = %d, rtp_pyld_len = %d \n", SentCount, num_pkts, rtp_pyld_len);
+
+                        DSStoreStreamData(chnum_parent, DS_PKT_PYLD_CONTENT_DTMF, rtp_pyld_ptr, rtp_pyld_len);  /* store DTMF event */
+                     }
 
                   /* end of loop items */
 
@@ -3692,7 +3746,7 @@ next_packet:
                         break;
                      }
 
-                  }  /* end of packet + payload processing loop. Note -- if DECOUPLE_STREAM_PROCESSING is not defined then the loop end is not here */
+                  }  /* end of packet + payload processing loop (num_pkts). Note -- if DECOUPLE_STREAM_PROCESSING is not defined then the loop end is not here */
 
                /* decode time profiling, if enabled */
 
@@ -3728,7 +3782,11 @@ next_packet:
                /* pull media data from stream buffers. DSGetStreamData() accounts for variable ptime, multichannel data, etc */
 
                   #ifdef USE_CHAN_NUMS  /* the more efficient way is to search for specific channels, and avoid searching the entire channel space. Also it's required for multiple pkt/media thread operation, JHB Oct 2018 */
-                  num_data = DSGetStreamData(chan_nums[n], 0, stream_ptr, sizeof(stream_data), pDataLen, pDataInfo, pDataChan);
+
+                  num_data = DSGetStreamData(chan_nums[n], isVideoCodec(termInfo.codec_type) ? DS_PKT_PYLD_CONTENT_IGNORE_PTIME : 0, stream_ptr, sizeof(stream_data), pDataLen, pDataInfo, pDataChan);  /* add DS_PKT_PYLD_CONTENT_IGNORE_PTIME flag for video streams, JHB May 2025 */
+
+            //if (chnum == 0 && SentCount >= 1306 && num_data) printf("\n *** after get stream #%d, num_data = %d \n", SentCount, num_data);
+
                   #else
                   num_data = DSGetStreamData(-1, 0, stream_ptr, sizeof(stream_data), pDataLen, pDataInfo, pDataChan);
                   #endif
@@ -4101,8 +4159,13 @@ static int log_pkt_index = 0;
                            if (fDebugTelecomSIDHandling) printf("\n === sending packet TimeStamp = %u \n", (unsigned int)(get_time(USE_CLOCK_GETTIME)/1000));
                            #endif
 
-                           if (fOutputPacketProcessing) DSSendPackets(&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_OUTPUT | DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG, pkt_out_buf, &packet_length, 1);  /* queue output packet to application. Note we are not checking for queue full here; external applications may or may not be de-queuing packets */
-             
+                           if (fOutputPacketProcessing) {
+                           
+                              DSSendPackets(&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_OUTPUT /*| DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG */, pkt_out_buf, &packet_length, 1);  /* queue output packet to application. Note we are not checking for queue full here; external applications may or may not be de-queuing packets */
+                           
+            //if (chnum == 0 && SentCount >= 1306) printf("\n *** output sent packet #%d, num_data = %d \n", SentCount, num_data);  
+                           }
+
                            if (fTimestampMatchModeL16Transcode) {
 
                               uint8_t pyld_type_sav = pkt_out_buf[IPV4_HEADER_LEN+UDP_HEADER_LEN+1];
@@ -4184,7 +4247,7 @@ static int log_pkt_index = 0;
 
                      prev_chnum = chnum;
 
-                  }  /* end of data_len loop */
+                  }  /* end of num_data loop */
 
                   if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_TRANSMIT) DSLogPktTrace(hSession_param, pkt_out_buf, packet_length, thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_TRANSMIT);
                }
@@ -5447,6 +5510,8 @@ int ch[64];
          uNumHeaderFullFrames[ch[j]] = 0;
          uNumHeaderFullOnlyFrames[ch[j]] = 0;
          uNumAMRWBIOCompatibilityFrames[ch[j]] = 0;
+         uNumHEVCFrames[ch[j]] = 0;
+         uNumH264Frames[ch[j]] = 0;
       }
    }
 
@@ -6362,7 +6427,7 @@ char iptstr[MAX_STATS_STRLEN] = "", jbptstr[MAX_STATS_STRLEN] = "", jbrpstr[MAX_
      sidistr[MAX_STATS_STRLEN] = "", tsamstr[MAX_STATS_STRLEN] = "", purgstr[MAX_STATS_STRLEN] = "", dupstr[MAX_STATS_STRLEN] = "", jbundrstr[MAX_STATS_STRLEN] = "", jboverstr[MAX_STATS_STRLEN] = "", iooostr[MAX_STATS_STRLEN] = "", jboooostr[MAX_STATS_STRLEN] = "", dtmfstr[MAX_STATS_STRLEN] = "",
      jbmxooostr[MAX_STATS_STRLEN] = "", jbdropstr[MAX_STATS_STRLEN] = "", jbdupstr[MAX_STATS_STRLEN] = "", jbtgapstr[MAX_STATS_STRLEN] = "", mxovrnstr[MAX_STATS_STRLEN] = "", mxnpktstr[MAX_STATS_STRLEN] = "", noutpkts[MAX_STATS_STRLEN] = "",
      jbhldadj[MAX_STATS_STRLEN] = "", jbhlddel[MAX_STATS_STRLEN] = "", pobrststr[MAX_STATS_STRLEN] = "", lvflstr[MAX_STATS_STRLEN] = "", gapstr[MAX_STATS_STRLEN] = "", onholdstr[MAX_STATS_STRLEN] = "",
-     dmgfrmstr[MAX_STATS_STRLEN] = "", bwefrmstr[MAX_STATS_STRLEN] = "", octfrmstr[MAX_STATS_STRLEN] = "", cmpfrmstr[MAX_STATS_STRLEN] = "", hffrmstr[MAX_STATS_STRLEN] = "", hfofrmstr[MAX_STATS_STRLEN] = "", amriomodefrmstr[MAX_STATS_STRLEN] = "", jbtssetbacksstr[MAX_STATS_STRLEN] = "", synccompstr[MAX_STATS_STRLEN] = "";
+     dmgfrmstr[MAX_STATS_STRLEN] = "", bwefrmstr[MAX_STATS_STRLEN] = "", octfrmstr[MAX_STATS_STRLEN] = "", cmpfrmstr[MAX_STATS_STRLEN] = "", hffrmstr[MAX_STATS_STRLEN] = "", hfofrmstr[MAX_STATS_STRLEN] = "", amriomodefrmstr[MAX_STATS_STRLEN] = "", hevcfrmstr[MAX_STATS_STRLEN] = "", h264frmstr[MAX_STATS_STRLEN] = "", jbtssetbacksstr[MAX_STATS_STRLEN] = "", synccompstr[MAX_STATS_STRLEN] = "";
 
    if (uFlags & DS_LOG_RUNTIME_STATS_ORGANIZE_BY_STREAM_GROUP) {
 
@@ -6532,7 +6597,7 @@ organize_by_session:
                   #endif
                }
 
-               if (!fShowOwnerOnce) add_stats_str(undrstr, MAX_STATS_STRLEN, " %d%c%d/%d/%d", idx, num_missed_interval_index[idx], num_flc_applied[idx], num_flc_holdoffs[idx]);
+               if (!fShowOwnerOnce) add_stats_str(undrstr, MAX_STATS_STRLEN, " %d%c%d/%d/%d", idx, ISL, num_missed_interval_index[idx], num_flc_applied[idx], num_flc_holdoffs[idx]);
 
                fShowOwnerOnce = true;
             }
@@ -6589,6 +6654,8 @@ organize_by_session:
             add_stats_str(hffrmstr, MAX_STATS_STRLEN, " %d%c%d", c, ISL, uNumHeaderFullFrames[c]);
             add_stats_str(hfofrmstr, MAX_STATS_STRLEN, " %d%c%d", c, ISL, uNumHeaderFullOnlyFrames[c]);
             add_stats_str(amriomodefrmstr, MAX_STATS_STRLEN, " %d%c%d", c, ISL, uNumAMRWBIOCompatibilityFrames[c]);
+            add_stats_str(hevcfrmstr, MAX_STATS_STRLEN, " %d%c%d", c, ISL, uNumHEVCFrames[c]);
+            add_stats_str(h264frmstr, MAX_STATS_STRLEN, " %d%c%d", c, ISL, uNumH264Frames[c]);
 
          /* misc */
 
@@ -6710,7 +6777,7 @@ organize_by_session:
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Codecs\n");
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Damaged frames (ch%cnum)%s\n", ISL, dmgfrmstr);
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Payload formats (ch%cnum) compact%s, headerfull%s, hf-only%s, AMR IO compatibility%s, bandwidth-efficient%s, octet-aligned%s\n", ISL, cmpfrmstr, hffrmstr, hfofrmstr, amriomodefrmstr, bwefrmstr, octfrmstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Payload formats (ch%cnum) compact%s, headerfull%s, hf-only%s, AMR IO compatibility%s, bandwidth-efficient%s, octet-aligned%s, HEVC%s, H.264%s\n", ISL, cmpfrmstr, hffrmstr, hfofrmstr, amriomodefrmstr, bwefrmstr, octfrmstr, hevcfrmstr, h264frmstr);
 
    /* include event log stats, to make it easier to see if anything happened to worry about, JHB May 2020 */
    

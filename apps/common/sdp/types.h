@@ -23,6 +23,8 @@
   Modified Jun 2024 JHB, add H.263 and H.265 codec types
   Modified Feb 2025 JHB, add L16 (linear 16-bit PCM) codec type
   Modified Feb 2025 JHB, add fmtp parsing, add MPA audio codec type (MPEG-I/II)
+  Modified May 2025 JHB, add codec types G.728, H.224, H.261, H.263-1998, H.264-SVC, and Polycom SIREN LPR and VND LPR
+  Modified May 2025 JHB, add SDP_RTP_UDP_BFCP MediaProto enum
 */
 
 /*
@@ -87,11 +89,16 @@ namespace sdp {
     SDP_UDP,
     SDP_RTP_AVP,
     SDP_RTP_SAVP,
-    SDP_RTP_SAVPF                    /* http://tools.ietf.org/html/rfc5124 */
+    SDP_RTP_SAVPF,                    /* http://tools.ietf.org/html/rfc5124 */
+    SDP_RTP_UDP_BFCP                  /* https://datatracker.ietf.org/doc/html/rfc8855 */
   };
 
   enum CodecType {
+
     SDP_CODECTYPE_NONE,
+
+/* voice codecs */
+
     SDP_G711U,
     SDP_G711A,
     SDP_G722,
@@ -100,6 +107,7 @@ namespace sdp {
     SDP_G726_24,
     SDP_G726_32,
     SDP_G726_40,
+    SDP_G728,
     SDP_G729,
     SDP_AMRNB,
     SDP_AMRWB,
@@ -109,13 +117,32 @@ namespace sdp {
     SDP_gsm,
     SDP_SILK,
     SDP_CN,                          /* comfort noise */
-    SDP_H263,                        /* video codecs */
+
+/* video codecs */
+
+    SDP_H263,
     SDP_H264,
     SDP_H265,
+
+/* video conferencing codecs */
+
+    SDP_H224,
+    SDP_SIREN_LPR,
+    SDP_H261,
+    SDP_H263_1998,
+    SDP_H264_SVC,
+    SDP_VND_POLYCOM_LPR,
+
+/* audio codecs */
+
     SDP_L16,                         /* linear 16-bit PCM */
     SDP_MPA,                         /* MPEG-I/II audio */
+
+/* misc */
+
     SDP_TELEPHONE_EVENT,
-    SDP_TONE                         /* not sure what this is, but seeing it in SIP Invite messages */
+    SDP_TONE,                        /* not sure what this is, but seeing it in SIP Invite messages */
+    SDP_NSE                          /* fax and modem over G.711, per https://community.cisco.com/t5/collaboration-knowledge-base/nse-passthrough/ta-p/3117916 */
   };
 
   enum AttrType {

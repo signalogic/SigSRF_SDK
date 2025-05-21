@@ -22,6 +22,7 @@
   Modified Feb 2025 JHB, include SDP info text in invalid codec type error messages. Probably should do this for other error types too
   Modified Feb 2025 JHB, add fmtp parsing, update comment notes for parent and child nodes
   Modified Mar 2025 JHB, in Reader::parseLine() ignore "Content-Length", "Content-Type", other "Content-xxx" lines in SDP info text. SDPParseInfo() in sdp_app.cpp handles these
+  Modified May 2025 JHB, add fAllowNonNumeric param to Line:readInt(), first use-case is with RTP UDP/BFCP media prototype
 */
 
 #include <sdp/reader.h>
@@ -126,23 +127,23 @@ namespace sdp {
    std::string Line::readString(char until, bool fReportError) {
 
       Token t = getToken(until);
-      if (t.size() == 0) {
+      if (!t.size()) {
          if (fReportError) throw ParseException("Invalid string token. Token is empty.");
          return "";
       }
       return t.toString();
    }
 
-   int Line::readInt(char until, bool fReportError) {  /* add error reporting option, JHB Mar 2021 */
+   int Line::readInt(char until, bool fAllowNonNumeric, bool fReportError) {  /* add error reporting option, JHB Mar 2021. Add non-numeric option, JHB May 2025 */
 
       Token t = getToken(until);
 
-      if (t.size() == 0 && fReportError) {
+      if (!t.size() && fReportError) {
          throw ParseException("Int token is empty");
          return 0;
       }
 
-      if (t.size() && !t.isNumeric()) {
+      if (t.size() && !fAllowNonNumeric && !t.isNumeric() && fReportError) {
 
          char errstr[100];
          sprintf(errstr, "Int token %s is not numeric~~", t.toString().c_str());
@@ -157,16 +158,17 @@ namespace sdp {
          throw ParseException(errstr);
          return 0;
       }
+ 
+      if (t.size() && !fAllowNonNumeric && t.isNumeric()) return t.toInt();  /* return int */
 
-      if (t.size()) return t.toInt();
-      else return 0;  /* no int found, JHB Mar2021 */
+      return 0;  /* no int found, JHB Mar 2021 */
    }
 
    uint64_t Line::readU64(char until) {
 
       Token t = getToken(until);
 
-      if (t.size() == 0) {
+      if (!t.size()) {
          throw ParseException("Token is empty");
          return 0;
       }
@@ -194,7 +196,7 @@ namespace sdp {
    AddrType Line::readAddrType(char until, bool fReportError) {
 
       Token t = getToken(until);
-      if (t.size() == 0) {
+      if (!t.size()) {
          if (fReportError) throw ParseException("IP address token is empty");
          return SDP_ADDRTYPE_NONE;
       }
@@ -210,7 +212,7 @@ namespace sdp {
    NetType Line::readNetType(char until, bool fReportError) {
 
       Token t = getToken(until);
-      if (t.size() == 0) {
+      if (!t.size()) {
          if (fReportError) throw ParseException("Net type token is empty");
          return SDP_NETTYPE_NONE;
       }
@@ -226,7 +228,7 @@ namespace sdp {
    CodecType Line::readCodecType(char until) {
 
       Token t = getToken(until);
-      if (t.size() == 0) {
+      if (!t.size()) {
          throw ParseException("Codec token is empty");
          return SDP_CODECTYPE_NONE;
       }
@@ -244,14 +246,14 @@ namespace sdp {
    MediaProto Line::readMediaProto(char until) {
 
       Token t = getToken(until);
-      if (t.size() == 0) {
+      if (!t.size()) {
          throw ParseException("Media proto token is empty");
          return SDP_MEDIAPROTO_NONE;
       }
 
       MediaProto result = t.toMediaProto();
       if (result == SDP_MEDIAPROTO_NONE) {
-         throw ParseException("Invalid media proto");
+         throw ParseException("Invalid media proto: " + t.value);
       }
 
       return result;
@@ -260,14 +262,14 @@ namespace sdp {
    MediaType Line::readMediaType(char until) {
 
       Token t = getToken(until);
-      if (t.size() == 0) {
+      if (!t.size()) {
          throw ParseException("Media type token is empty");
          return SDP_MEDIATYPE_NONE;
       }
 
       MediaType result = t.toMediaType();
       if (result == SDP_MEDIATYPE_NONE) {
-         throw ParseException("Invalid media type");
+         throw ParseException("Invalid media type: " + t.value);
       }
 
       return result;
@@ -276,14 +278,14 @@ namespace sdp {
    CandType Line::readCandType(char until) {
 
       Token t = getToken(until);
-      if (t.size() == 0) {
+      if (!t.size()) {
          throw ParseException("Candidate type token is empty");
          return SDP_CANDTYPE_NONE;
       }
 
       CandType result = t.toCandType();
       if (result == SDP_CANDTYPE_NONE) {
-         throw ParseException("Invalid candidate type: " +t.value);
+         throw ParseException("Invalid candidate type: " + t.value);
       }
 
       return result;
@@ -663,7 +665,7 @@ namespace sdp {
          node->media_type = line.readMediaType();
          node->port = line.readInt();
          node->proto = line.readMediaProto();
-         node->fmt = line.readInt();
+         node->fmt = line.readInt(' ', node->proto == SDP_RTP_UDP_BFCP, true);  /* allow non-numeric int for UDP/BFCP media prototypes, JHB May 2025 */
       }
 
       catch(std::exception& e) {
@@ -733,7 +735,7 @@ namespace sdp {
             attr->pyld_type = line.readInt();
             attr->codec_type = line.readCodecType();
             attr->clock_rate = line.readInt('/');  /* note the possibility of a trailing /, which if present would be followed by a number-of-channels value, JHB Mar 2021 */
-            attr->num_chan = std::max(line.readInt('/', false), 1);  /* number of channels may or may not be there, JHB Mar 2021 */
+            attr->num_chan = std::max(line.readInt('/', false, false), 1);  /* number of channels may or may not be there, JHB Mar 2021 */
             node->attr_type = SDP_ATTR_RTPMAP;
          }
 

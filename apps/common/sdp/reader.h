@@ -4,7 +4,7 @@
  Copyright (c) 2014 Diedrick H, as part of his "SDP" Github repository at https://github.com/diederickh/SDP
  License -- none given. Internet archive page as of 10Jan21 https://web.archive.org/web/20200918222637/https://github.com/diederickh/SDP
 
- Copyright (c) 2021-2023 Signalogic, Dallas, Texas
+ Copyright (c) 2021-2025 Signalogic, Dallas, Texas
 
  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -13,6 +13,7 @@
   Modified Mar 2021 JHB, add error reporting option to Line.readInt()
   Modified Mar 2021 JHB, add bandwidth field support (b= )
   Modified Apr 2023 JHB, add fReportError param to readNetType(), readAddrType(), and readString(). See comments in reader.cpp
+  Modified May 2025 JHB, add fAllowNonNumeric param to Line:readInt()
 */
 
 #ifndef SDP_READER_H
@@ -74,7 +75,7 @@ namespace sdp {
     /* read the next token as a specific type */
     bool        readType(char type);                        /* read until the type element (e.g. o=, v=, a=) and return true when the line is the given type */
     std::string readString(char until = ' ', bool fReportError = true);               /* read a string from the next token */
-    int         readInt(char until = ' ', bool fReportError = true);  /* read an integer value from the next token */
+    int         readInt(char until = ' ', bool fAllowNonNumeric = false, bool fReportError = true);  /* read an integer value from the next token */
     uint64_t    readU64(char until = ' ');                  /* read an integer (u64) */
     AddrType    readAddrType(char until = ' ', bool fReportError = true);  /* read an AddrType */
     NetType     readNetType(char until = ' ', bool fReportError = true);  /* read a NetType */

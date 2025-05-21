@@ -3,7 +3,7 @@
 
   keyboard handling support for SigSRF and EdgeStream reference applications
 
-  Copyright (C) Signalogic, 2007-2024
+  Copyright (C) Signalogic, 2007-2025
 
   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
 
@@ -11,9 +11,11 @@
 
    Created May 2007 NR
    Modified May-Jun 2010 VR, JHB, adjusted to updated DirectCore (merged with SigC641x)
-   Modified Feb 2023 JHB, in getkey(), add simple multithread semaphore lock and fix problem in Docker containers where fgetc() input is ignored
+   Modified Feb 2023 JHB, in getkey() add simple multithread semaphore lock
+   Modified Feb 2023 JHB, in getkey() fix problem in Docker containers where fgetc() input is ignored
    Modified Apr 2023 JHB, fix uninitialized variable in getkey(). See comment
    Modified May 2024 JHB, add extern "C" around getkey(), which fixes link errors with g++ compilation (same mod made in keybd.h). Possibly other functions will need this at some point
+   Modified May 2025 JHB, comments only
 */
 
 #include <stdlib.h>
@@ -184,7 +186,7 @@ static int sem = 0;
 
    #ifdef USE_FGETC
    ch = fgetc(stdin);  /* read a character from the stdin stream without blocking, returns EOF (-1) if no character is available */
-   #else  /* fix problem in Docker containers where fgetc() input is ignored */
+   #else  /* fix problem in Docker containers where fgetc() input is ignored, JHB Feb 2023. Tested with interactive 'd' key in mediaMin (display instantaneous run-time stats) in Ubuntu, CentOS, and Debian containers, JHB May 2025 */
    if (!read(fileno(stdin), (char*)&ch, 1)) ch = -1;  /* if no chars available, set to -1 to be compatible with fgetc() JHB Feb 2023 */
    #endif
 

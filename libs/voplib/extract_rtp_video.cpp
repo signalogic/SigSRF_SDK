@@ -65,7 +65,7 @@ extern "C" {
 }
 #endif
 
-/* NAL unit definitions from the specs
+/* NAL unit definitions from the codec specs
 
    H.265 - https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-H.265-201802-S!!PDF-E&type=items
    H.264 - https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-H.264-201304-S!!PDF-E&type=items
@@ -75,12 +75,12 @@ extern "C" {
 #define NAL_UNIT_SPS_HEVC       33
 #define NAL_UNIT_PPS_HEVC       34
 
+#define NAL_UNIT_NON_IDR_SLICE   1  /* H.264 specs */
+#define NAL_UNIT_IDR_SLICE       5
+
 #define NAL_UNIT_SEI_H264        6
 #define NAL_UNIT_SPS_H264        7
 #define NAL_UNIT_PPS_H264        8
-
-#define NAL_UNIT_NON_IDR_SLICE   1  /* H.264 specs */
-#define NAL_UNIT_IDR_SLICE       5
 
 /* NAL UNIT definitions from the RTP format specs. Technically these are not NAL units (i.e. not in HEVC or H.264 codec specs), but in RTP format specs (RFC 7798 and RFC 6184) they are assigned NAL unit type values marked as Reserved in the codec specs */
 
@@ -125,7 +125,7 @@ extern "C" {
    - DSSaveDataFile() is a DirectCore API defined in directcore.h (hwlib.so)
    - LogRT() is an event-logging API defined in diagib.h (diaglib.so)
    - base64_decode() is in apps/common/base64/base64.cpp
-   - xps is shorthand for vps, sps, and/or pps NAL units. Note that H.264 doesn't have a vps NAL unit type
+   - xps is shorthand for VPS, SPS, and/or PPS NAL units. Note that H.264 does not have a VPS NAL unit type
 */
 
 int extract_rtp_video(FILE* fp_out, codec_types codec_type, unsigned int uFlags, uint8_t* rtp_payload, int rtp_pyld_len, PAYLOAD_INFO* payload_info, SDP_INFO* sdp_info, void* pInfo, int nId, const char* errstr) {
@@ -145,16 +145,22 @@ static struct {  /* persistent info for FU packet state, duplicate detection, an
   int nNAL_header_format_error_count;  /* debug stats */
   int fu_state_mismatch_count;
   int pkt_count;
-  uint8_t uXPS_outofband_inserted;  /* set with 1 bit flags if vps, sps, or pps SDP info is inserted */
+  uint8_t uXPS_outofband_inserted;  /* set with 1 bit flags if vps, sps, and/or pps SDP info is inserted */
 
 } stream_info[MAX_IDs] = {{ 0 }};
 
 uint8_t out_data[MAX_RTP_PYLD_LEN] = { 0 };
 int ret_val = -1, out_index = 0;
 
+/* generic start codes */
+
 const uint8_t NAL_unit_start_code_H264[] = { 0, 0, 1 };
 const uint8_t NAL_unit_start_code_HEVC[] = { 0, 0, 0, 1 };
-const uint8_t NAL_unit_start_code_xps_HEVC[][5] = { { 0, 0, 0, 1, 0x40 }, { 0, 0, 0, 1, 0x42 }, { 0, 0, 0, 1, 0x44 } };  /* HEVC VPS, SPS, PPS NAL unit start codes. These are compared with incoming data when searching for in-band xps NAL units */
+
+/* H.264 and HEVC xps NAL unit start codes. These are compared with incoming data when searching for in-band xps NAL units */
+
+const uint8_t NAL_unit_start_code_xps_H264[][4] = { { 0, 0, 1, 0x7 }, { 0, 0, 1, 0x08 } };  /* H.264 SPS and PPS NAL unit start codes */
+const uint8_t NAL_unit_start_code_xps_HEVC[][5] = { { 0, 0, 0, 1, 0x40 }, { 0, 0, 0, 1, 0x42 }, { 0, 0, 0, 1, 0x44 } };  /* HEVC VPS, SPS, and PPS NAL unit start codes */
 
 /* SDP info sprop-xps definitions */
 
@@ -190,7 +196,7 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
 
    if (fError) return -1;
 
-   if (!payload_info && !fp_out && !pInfo && !(uFlags & DS_VOPLIB_SUPPRESS_INFO_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() says payload_info, fp_out, and pInfo are all NULL, uFlags = 0x%x \n", uFlags);  /* if payload_info, fp_out and pInfo are all NULL, continue without payload info parsing, file write, and mem retrieval; examples include checking for warnings and errors, and viewing debug information */
+   if (!payload_info && !fp_out && !pInfo && !(uFlags & DS_VOPLIB_SUPPRESS_INFO_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() will process with payload_info, fp_out, and pInfo all NULL, uFlags = 0x%x \n", uFlags);  /* if payload_info, fp_out and pInfo are all NULL, continue without payload info parsing, file write, and mem retrieval; examples include checking for warnings and errors, and viewing debug information */
 
    uint16_t nal_pyld_hdr, nal_mask_value1, nal_mask_value2;
 
@@ -568,11 +574,36 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
    if ((fp_out || pInfo) && sdp_info && sdp_info->fmtp && strlen(sdp_info->fmtp)) {
 
       bool fInsertSDPInfo = true;  /* assume insertion */
+      int num_xps, start_code_size;
+      const uint8_t* p_start;
 
-      for (int i=0; i<(int)(sizeof(NAL_unit_start_code_xps_HEVC)/sizeof(NAL_unit_start_code_xps_HEVC[0])); i++) if (!memcmp(out_data, NAL_unit_start_code_xps_HEVC[i], sizeof(NAL_unit_start_code_xps_HEVC[i]))) {  /* does RTP payload contain an xps start code ? */
+      if (codec_type == DS_CODEC_VIDEO_H265) {
 
-         if (!(uFlags & DS_PAYLOAD_INFO_IGNORE_INBAND_XPS)) fInsertSDPInfo = false;  /* default behavior is to use inband xps info, if found, in favor of SDP xps info. Application callers can override this by applying the DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag */
-         break;
+         num_xps = sizeof(NAL_unit_start_code_xps_HEVC)/sizeof(NAL_unit_start_code_xps_HEVC[0]);
+         p_start = &NAL_unit_start_code_HEVC[0];
+         start_code_size = sizeof(NAL_unit_start_code_HEVC);
+      }
+      else {
+
+         num_xps = sizeof(NAL_unit_start_code_xps_H264)/sizeof(NAL_unit_start_code_xps_H264[0]);
+         p_start = &NAL_unit_start_code_H264[0];
+         start_code_size = sizeof(NAL_unit_start_code_H264);
+      }
+
+      for (int i=0; i<num_xps; i++) {  /* see if NAL unit we extracted is an xps NAL unit */
+
+         #define temp_size max(sizeof(NAL_unit_start_code_xps_HEVC[i]), sizeof(NAL_unit_start_code_xps_H264[i]))
+         uint8_t temp[temp_size];
+         for (int j=0; j<(int)temp_size; j++) temp[j] = out_data[j] & (codec_type == DS_CODEC_VIDEO_H264 ? 0x1f : 0xff);  /* for H.264 mask off NRI bits */
+
+         if ((codec_type == DS_CODEC_VIDEO_H265 && !memcmp(temp, NAL_unit_start_code_xps_HEVC[i], sizeof(NAL_unit_start_code_xps_HEVC[i]))) ||  /* search bitstream for start code + xps NAL unit */
+             (codec_type == DS_CODEC_VIDEO_H264 && !memcmp(temp, NAL_unit_start_code_xps_H264[i], sizeof(NAL_unit_start_code_xps_H264[i])))) {
+
+         /* default behavior is to use inband xps info, if found, in favor of SDP xps info. Application callers can override this by applying the DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag */
+
+            if (!(uFlags & DS_PAYLOAD_INFO_IGNORE_INBAND_XPS)) fInsertSDPInfo = false;  /* xps NAL unit found and DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag is not active so we are not inserting SDP info */
+            break;
+         }
       }
 
       if (fInsertSDPInfo) for (int i=(int)(sizeof(sprop_xps)/sizeof(sprop_xps[0]))-1; i>=0; i--) {  /* order insertions so vps is first in bitstream sequence */
@@ -594,17 +625,17 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
 
             if (xprop_str.length()) {
 
-               memmove(&out_data[sizeof(NAL_unit_start_code_HEVC) + xprop_str.length()], out_data, out_index);  /* shift current frame data right, allow for xps insertion */
+               memmove(&out_data[start_code_size + xprop_str.length()], out_data, out_index);  /* shift current frame data right, allow for xps insertion */
 
-               out_index += write_to_buffer(out_data, (uint8_t*)&NAL_unit_start_code_HEVC, 0, sizeof(NAL_unit_start_code_HEVC));
-               out_index += write_to_buffer(out_data, (uint8_t*)&xprop_str[0], sizeof(NAL_unit_start_code_HEVC), xprop_str.length());
+               out_index += write_to_buffer(out_data, (uint8_t*)p_start, 0, start_code_size);
+               out_index += write_to_buffer(out_data, (uint8_t*)&xprop_str[0], start_code_size, xprop_str.length());
 
                #ifdef INSERTION_DEBUG
                char tmpstr[2000] = "";
                for (int i=0; i<100; i++) sprintf(&tmpstr[strlen(tmpstr)], " 0x%x", out_data[i]);
                fprintf(stderr, "\n *** after xps insertion %s \n", tmpstr);
 
-               xps_out_index += sizeof(NAL_unit_start_code_HEVC) + xprop_str.length();
+               xps_out_index += start_code_size + xprop_str.length();
                #endif
 
                if (nId >= 0) stream_info[nId].uXPS_outofband_inserted |= (1 << i);  /* set status bit for type of insertion made */
@@ -677,7 +708,7 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
       stream_info[nId].out_index_total += out_index;  /* keep track of long NAL unit frame sizes. These can easily exceed 200 kB when units are fragmented */
    }
 
-   return ret_val;  /* return (i) payload format or (ii) number of bytes written to bitstream file and/or copied to mem buffer */
+   return ret_val;  /* return (i) payload format or (ii) number of bytes written to bitstream file and/or copied to mem buffer (depending on operation specified by uFlags) */
 }
 
 /* write bitstream data to output buffer

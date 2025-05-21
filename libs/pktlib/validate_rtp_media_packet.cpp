@@ -42,7 +42,7 @@ using namespace std;
 
 /* run-time stats Codecs items declared in packet_flow_media_proc.c */
 
-extern uint32_t uNumDamagedFrames[], uNumBandwidthEfficientFrames[], uNumOctetAlignFrames[], uNumCompactFrames[], uNumHeaderFullFrames[], uNumHeaderFullOnlyFrames[], uNumAMRWBIOCompatibilityFrames[];
+extern uint32_t uNumDamagedFrames[], uNumBandwidthEfficientFrames[], uNumOctetAlignFrames[], uNumCompactFrames[], uNumHeaderFullFrames[], uNumHeaderFullOnlyFrames[], uNumAMRWBIOCompatibilityFrames[], uNumHEVCFrames[], uNumH264Frames[];
 
 /* validate_rtp_media_payload() error-checks and inspects an RTP media payload, optionally adds info to run-time stats
 
@@ -115,6 +115,11 @@ PAYLOAD_INFO PayloadInfo;  /* local payload info struct if needed */
          else if (payload_info->uFormat == DS_PYLD_FMT_FULL) uNumHeaderFullFrames[n]++;
          else if (payload_info->uFormat == DS_PYLD_FMT_HF_ONLY) uNumHeaderFullOnlyFrames[n]++;
       }
+   }
+   else if (isVideoCodec(codec_type)) {
+
+      if (payload_info->uFormat == DS_PYLD_FMT_HEVC) uNumHEVCFrames[n]++;
+      else if (payload_info->uFormat == DS_PYLD_FMT_H264) uNumH264Frames[n]++;
    }
 
 /* look for damaged frames: if uQBitpos is non-zero use it to check ToC byte(s) Q bit value */

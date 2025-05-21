@@ -59,6 +59,7 @@
    Modified Apr 2025 JHB, rename hdr_type field to eth_protocol in INPUT_DATA_CACHE struct, to align with updates in pktlib.h
    Modified Apr 2025 JHB, add num_rtcp_custom_packets[] stat
    Modified Apr 2025 JHB, simplify stream stats implementation, remove uStreamStatsState[]
+   Modified May 2025 JHB, add output stats pkt_stream_group_pcap_out_ctr[], pkt_transcode_pcap_out_ctr[], and pkt_bitstream_out_ctr[]
 */
 
 #ifndef _MEDIAMIN_H_
@@ -96,7 +97,7 @@
 #define MAX_STREAMS_THREAD                  64  /* maximum number of streams per thread */
 #define MAX_SESSIONS_THREAD                 64  /* maximum number of sessions per thread */
 
-#define MAX_APP_STR_LEN                   2000
+#define MAX_APP_STR_LEN                  12000
 #define STR_APPEND                           1
 
 #define SESSION_MARKED_AS_DELETED  0x80000000L  /* reserved mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
@@ -200,8 +201,8 @@ typedef struct {
   int                   nDynamicSessions;
   uint32_t              total_sessions_created;
 
-  int16_t               nInPcapFiles;
-  int16_t               nOutFiles;  /* output pcap or bitstream files */
+  int                   nInPcapFiles;
+  int                   nOutFiles;  /* output pcap or bitstream files */
 
   int32_t               link_layer_info[MAX_STREAMS_THREAD];
   FILE*                 pcap_in[MAX_STREAMS_THREAD];
@@ -212,7 +213,7 @@ typedef struct {
   INPUT_DATA_CACHE      input_data_cache[MAX_STREAMS_THREAD];  /* per-stream input data read cache, JHB Oct 2024 */
 
   FILE*                 out_file[MAX_STREAMS_THREAD];
-  uint8_t               uOutputType[MAX_STREAMS_THREAD];
+  int8_t                nOutputType[MAX_STREAMS_THREAD];
 
   int                   nSessions[MAX_STREAMS_THREAD];  /* thread's current number of sessions */
 
@@ -242,6 +243,7 @@ typedef struct {
 /* stream group items */
 
   FILE*                 fp_pcap_group[MAX_STREAM_GROUPS];  /* note - this array is accessed by a session counter, and each app thread might handle up to 50 sessions, so this size (172, defined in shared_include/streamlib.h) is overkill.  But leave it for now */
+  int                   nStreamGroups;
   FILE*                 fp_text_group[MAX_STREAM_GROUPS];
   char                  szGroupPcap[MAX_STREAM_GROUPS][CMDOPT_MAX_INPUT_LEN];  /* added to support --group_pcap cmd line option, JHB Dec 2023 */
   char                  szGroupName[MAX_STREAM_GROUPS][MAX_GROUPID_LEN];
@@ -260,7 +262,9 @@ typedef struct {
   STREAM_STATS          StreamStats[MAX_STREAMS_THREAD];
   int16_t               num_stream_stats;
 
-  uint32_t              pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_xcode_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_xcode_ctr, prev_pkt_pull_streamgroup_ctr;  /* referenced in UpdateCounters() console update in user_io.cpp */
+  uint32_t              pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_output_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_output_ctr, prev_pkt_pull_streamgroup_ctr;  /* referenced in UpdateCounters() console update in user_io.cpp */
+
+  uint32_t              pkt_stream_group_pcap_out_ctr[MAX_STREAMS_THREAD], pkt_transcode_pcap_out_ctr[MAX_STREAMS_THREAD], pkt_bitstream_out_ctr[MAX_STREAMS_THREAD];  /* output stats */
 
   int8_t                flush_state[MAX_SESSIONS_THREAD];
   uint32_t              flush_count;

@@ -125,6 +125,7 @@
   Modified Apr 2025 JHB, add NOMINAL_MTU definition
   Modified Apr 2025 JHB, add DS_PKT_INFO_PINFO_CONTAINS_ETH_PROTOCOL flag to support rudimentary non-IP packet handling in DSGetPacketInfo(). An ethernet protocol can be given in pInfo and this flag applied. For example usage see GetInputData() in mediaMin.cpp
   Modified Apr 2025 JHB, add rtcp_pyld_type field to PKTINFO struct, add isRTCPCustomPacket() macro. See comments
+  Modified May 2025 JHB, add DS_PKT_PYLD_CONTENT_IGNORE_PTIME flag
 */
 
 #ifndef _PKTLIB_H_
@@ -1478,6 +1479,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_PKT_PYLD_CONTENT_REPAIR                     0x10000  /* indicates packet was repaired, for example a jitter buffer output packet that resulted from media PLC or SID repair */
 #define DS_PKT_PYLD_CONTENT_MULTICHAN                  0x20000
 #define DS_PKT_PYLD_CONTENT_MULTIFRAME                 0x40000
+#define DS_PKT_PYLD_CONTENT_IGNORE_PTIME               0x80000  /* currently used by packet/media thread workers calling DSGetStreamData() */
 
 #define DS_PKT_PYLD_CONTENT_ITEM_MASK                   0xff00
 

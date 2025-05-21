@@ -217,6 +217,10 @@
    Modified Apr 2025 JHB, in isPortAllowed() improvements to console formatting of port-found messages
    Modified Apr 2025 JHB, simplify stream stats implementation
    Modified Apr 2025 JHB, fix bug preventing display of final mediaMin stats for static sessions
+   Modified May 2025 JHB, improve H.264 auto-detect, test with more H.264 pcaps
+   Modified May 2025 JHB, in DSPullPackets() add one to strlen() inside malloc() to fix intermittent crash when closing output bitstream files
+   Modified May 2025 JHB, in DSPullPackets() for video streams set a higher number packets pulled
+   Modified May 2025 JHB, add output stats
 */
 
 /* Linux header files */
@@ -275,7 +279,7 @@ static char prog_str[] = "mediaMin";
 #ifdef _MEDIAMIN_
 static char banner_str[] = "packet media streaming for analytics, telecom, and robotics applications on x86 and coCPU platforms";
 #endif
-static char version_str[] = "v3.8.10";
+static char version_str[] = "v3.8.12";
 static char copyright_str[] = "Copyright (C) Signalogic 2018-2025";
 
 //#define VALGRIND_DEBUG  /* enable when using Valgrind for debug */
@@ -964,14 +968,11 @@ cleanup:
 
    /* close output file */
 
-      if (thread_info[thread_index].uOutputType[thread_info[thread_index].nOutFiles] == PCAP) DSClosePcap(thread_info[thread_index].out_file[i], DS_CLOSE_PCAP_QUIET);
+      if (thread_info[thread_index].nOutputType[thread_info[thread_index].nOutFiles] == PCAP) DSClosePcap(thread_info[thread_index].out_file[i], DS_CLOSE_PCAP_QUIET);
       else DSSaveDataFile(DS_GM_HOST_MEM, &thread_info[thread_index].out_file[i], NULL, (uintptr_t)NULL, 0, DS_CLOSE | DS_DATAFILE_USE_SEMAPHORE, NULL);
 
       thread_info[thread_index].out_file[i] = NULL;
-      thread_info[thread_index].uOutputType[i] = 0;
    }
-
-   thread_info[thread_index].nOutFiles = 0;
 
 /* close stream group output file descriptors and other items */
 
@@ -1032,6 +1033,8 @@ cleanup:
          memset(&thread_info[thread_index].fDisallowedPyldTypeMsg[0][i], 0, MAX_DYN_PYLD_TYPES);
       }
 
+      for (i=0; i<thread_info[thread_index].nOutFiles; i++) thread_info[thread_index].nOutputType[i] = 0;
+
       #if 0  /* allow stream group interval/pull stats for repeating tests */
       thread_info[thread_index].group_interval_stats_index = 0;
       thread_info[thread_index].group_pull_stats_index = 0;
@@ -1062,6 +1065,10 @@ cleanup:
       else sprintf(&tmpstr[strlen(tmpstr)], " ...");
       app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, tmpstr);
 
+      thread_info[thread_index].nInPcapFiles = 0;
+      thread_info[thread_index].nOutFiles = 0;
+      thread_info[thread_index].nStreamGroups = 0;
+
       nRepeatsCompleted[thread_index]++;
       goto start;
    }
@@ -1078,6 +1085,8 @@ cleanup:
 
       sprintf(tmpstr, "=== mediaMin stats");
       if (num_app_threads > 1) sprintf(&tmpstr[strlen(tmpstr)], " (%d)", thread_index);
+
+   /* display input stats */
 
       sprintf(&tmpstr[strlen(tmpstr)], "\n%spackets [input]", tabstr);
 
@@ -1184,28 +1193,54 @@ cleanup:
       }
 
       if (strlen(tmpstr)) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), cur_time, thread_index, tmpstr);  /* display stats summary */
-  
-   /* display stream group output stats */
+
+      char threadstr[10] = "";
+      if (num_app_threads > 1) sprintf(threadstr, " (%d)", thread_index);
+
+   /* display / log stream group output stats */
 
       if ((Mode & ENABLE_STREAM_GROUPS) && !isAFAPMode && !isFTRTMode) {  /* in "as fast as possible" (-r0 cmd line entry) and "faster than real-time" modes (-r0.N cmd line entry where 0 < 0.N < 1) we are currently not showing stream group output stats. This may change after extensive AFAP and FTRT mode testing, JHB May 2023 */
-  
-         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, cur_time, thread_index, "\tMissed stream group intervals = %d", thread_info[thread_index].group_interval_stats_index);
+
+         sprintf(tmpstr, "\tMissed stream group intervals = %d%s \n", thread_info[thread_index].group_interval_stats_index, threadstr);
 
          for (i=0; i<thread_info[thread_index].group_interval_stats_index; i++) {
 
-            sprintf(tmpstr, "\t[%d] missed stream group interval = %d, hSession = %d", i, thread_info[thread_index].GroupIntervalStats[i].missed_interval, thread_info[thread_index].GroupIntervalStats[i].hSession);
+            sprintf(&tmpstr[strlen(tmpstr)], "\t[%d] missed stream group interval = %d, hSession = %d", i, thread_info[thread_index].GroupIntervalStats[i].missed_interval, thread_info[thread_index].GroupIntervalStats[i].hSession);
             if (thread_info[thread_index].GroupIntervalStats[i].repeats) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].GroupIntervalStats[i].repeats+1);
 
-            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, cur_time, thread_index, tmpstr);
+            strcat(tmpstr, " \n");
          }
 
-         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, cur_time, thread_index, "\tMarginal stream group pulls = %d", thread_info[thread_index].group_pull_stats_index);
+         sprintf(&tmpstr[strlen(tmpstr)], "\tMarginal stream group pulls = %d%s \n", thread_info[thread_index].group_pull_stats_index, threadstr);
 
          for (i=0; i<thread_info[thread_index].group_pull_stats_index; i++) {
-            sprintf(tmpstr, "\t[%d] marginal stream group pull at %d, retries = %d, hSession = %d", i, thread_info[thread_index].GroupPullStats[i].retry_interval, thread_info[thread_index].GroupPullStats[i].num_retries, thread_info[thread_index].GroupPullStats[i].hSession);
-            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, cur_time, thread_index, tmpstr);
+
+            sprintf(&tmpstr[strlen(tmpstr)], "\t[%d] marginal stream group pull at %d, retries = %d, hSession = %d \n", i, thread_info[thread_index].GroupPullStats[i].retry_interval, thread_info[thread_index].GroupPullStats[i].num_retries, thread_info[thread_index].GroupPullStats[i].hSession);
          }
       }
+
+   /* display / log output stats */
+
+      sprintf(&tmpstr[strlen(tmpstr)], "%spackets [output] \n", tabstr);
+
+      sprintf(&tmpstr[strlen(tmpstr)], "\tStream group =");
+      for (i=0; i<thread_info[thread_index].nStreamGroups; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%d", i, thread_info[thread_index].pkt_stream_group_pcap_out_ctr[i]);
+      if (i == 0) sprintf(&tmpstr[strlen(tmpstr)], " n/a \n");
+      else sprintf(&tmpstr[strlen(tmpstr)], "%s \n", threadstr);
+
+      sprintf(&tmpstr[strlen(tmpstr)], "\tTranscode =");
+      int na = 0;
+      for (i=0; i<thread_info[thread_index].nOutFiles; i++) if (thread_info[thread_index].nOutputType[i] == PCAP) { sprintf(&tmpstr[strlen(tmpstr)], " [%d]%d", i, thread_info[thread_index].pkt_transcode_pcap_out_ctr[i]), na++; };
+      if (!na) sprintf(&tmpstr[strlen(tmpstr)], " n/a \n");
+      else sprintf(&tmpstr[strlen(tmpstr)], "%s \n", threadstr);
+
+      sprintf(&tmpstr[strlen(tmpstr)], "\tBitstream =");
+      na = 0;
+      for (i=0; i<thread_info[thread_index].nOutFiles; i++) if (thread_info[thread_index].nOutputType[i] == ENCODED) { sprintf(&tmpstr[strlen(tmpstr)], " [%d]%d", i, thread_info[thread_index].pkt_bitstream_out_ctr[i]), na++; }
+      if (!na) sprintf(&tmpstr[strlen(tmpstr)], " n/a \n");
+      else sprintf(&tmpstr[strlen(tmpstr)], "%s \n", threadstr);
+
+      app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, cur_time, thread_index, tmpstr);
    }
 
 /* show summary of repeat info if applicable, JHB Sep 2024 */
@@ -1467,12 +1502,12 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
    if (!(uFlags & RTP_DETECT_EXCLUDE_VIDEO)) {
 
       uint16_t pyld_hdr = (rtp_pkt[0] << 8) | rtp_pkt[1];  /* create possible NAL unit header */
-      uint16_t min_HEVC_size = 10;  /* arbitrary min RTP packet size */
+      uint16_t min_H26x_size = 10;  /* arbitrary min RTP packet size */
 
       uint16_t pyld_hdr_mask =  pyld_hdr & 0x81f8;
-      bool fH265_candidate = rtp_pyld_len > min_HEVC_size && pyld_hdr_mask == 0 && (pyld_hdr & 7) != 0;  /* F bit and LayerId must be zero and TID must be non-zero per RFC 7798 */
+      bool fH265_candidate = rtp_pyld_len > min_H26x_size && pyld_hdr_mask == 0 && (pyld_hdr & 7) != 0;  /* F bit and LayerId must be zero and TID must be non-zero per RFC 7798 */
       pyld_hdr_mask =  pyld_hdr & 0xfff8;
-      bool fH264_candidate = rtp_pyld_len > min_HEVC_size && (pyld_hdr_mask == 0x6740 || pyld_hdr_mask == 0x68c8 || pyld_hdr_mask == 0x0600 || pyld_hdr_mask == 0x7c80);  /* likely initial NAL unit headers per RFC 6184 */
+      bool fH264_candidate = rtp_pyld_len > min_H26x_size && (pyld_hdr_mask == 0x2760 || pyld_hdr_mask == 0x6760 || pyld_hdr_mask == 0x6740 || pyld_hdr_mask == 0x68c8 || pyld_hdr_mask == 0x0600 || pyld_hdr_mask == 0x7c80);  /* likely initial NAL unit headers per RFC 6184 */
 
       if (fH265_candidate || fH264_candidate) {
 
@@ -1506,7 +1541,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
 
             char code_seq_esc[4] = { '\0', '\0', '\03', '\0' };  /* could be audio but look for H.26x escape sequences */
 
-            if (audio_codec_type > 0 && !memmem(&rtp_pkt[min_HEVC_size], rtp_pyld_len-min_HEVC_size, code_seq_esc, sizeof(code_seq_esc))) {  /* audio codec found, no need to run detection algorithm again */
+            if (audio_codec_type > 0 && !memmem(&rtp_pkt[min_H26x_size], rtp_pyld_len-min_H26x_size, code_seq_esc, sizeof(code_seq_esc))) {  /* audio codec found, no need to run detection algorithm again */
 
                *bitrate = audio_bitrate;
                *category = audio_category | 8;  /* set debug flag indicating partial video codec detection */
@@ -2847,7 +2882,9 @@ int nStream;
 #endif
 
    DSDeleteSession(hSession);
+   #if 0  /* needed in summary stats so not reset here. Repeat logic resets if needed */
    thread_info[thread_index].nSessionOutputStream[nSessionIndex] = 0;  /* reset session output stream, JHB Sep 2024 */
+   #endif
    thread_info[thread_index].nSessionsDeleted++;
 
    #ifdef MANAGE_HSESSIONS_DELETIONS
@@ -3081,9 +3118,9 @@ next_packet:  /* next packet input */
 
 #if 0  /* filter RTP packets example, using SSRC(s) only */
 
-   if (PktInfo.protocol == UDP && PktInfo.src_port > SIP_PORT_RANGE_UPPER && PktInfo.dst_port > SIP_PORT_RANGE_UPPER && pkt_len < 200) {  /* must be UDP, rough checks to avoid non-RTP packets */
+   if (PktInfo.protocol == UDP && (PktInfo.src_port > SIP_PORT_RANGE_UPPER || PktInfo.dst_port > SIP_PORT_RANGE_UPPER) /*&& pkt_len < 200*/) {  /* must be UDP, rough checks to avoid non-RTP packets */
 
-      uint32_t filt_rtp_ssrc[] = { 0xe38e9ffc, 0xc87c0d25 };  /* SSRCs to allow -- examples only */
+      uint32_t filt_rtp_ssrc[] = { 0x66bd73f1 /* 0x1d34a2ae, 0xe38e9ffc, 0xc87c0d25*/ };  /* SSRCs to allow -- examples only */
       bool fFilter = false;
 
       for (unsigned int i=0; i<sizeof(filt_rtp_ssrc)/sizeof(uint32_t); i++) if (PktInfo.rtp_ssrc != filt_rtp_ssrc[i]) { fFilter = true; break; }  /* search list of ssrcs to allow, anything that doesn't match break and filter it out */
@@ -4042,7 +4079,9 @@ char errstr[20] = "";
 int nRetry[MAX_SESSIONS_THREAD] = { 0 };
 int group_idx = -1;
 bool fRetry = false;
-uint8_t uOutputType = PCAP;  /* default output type. See io_data_type enums (mediaTest.h), JHB Sep 2024 */
+int8_t nOutputType;  /* default output type. See io_data_type enums (mediaTest.h), JHB Sep 2024 */
+
+int mult, nOutputIndex;
 
    if (!thread_info[thread_index].nSessionsCreated) return 0;  /* nothing to do if no sessions created yet */
 
@@ -4052,32 +4091,47 @@ pull_setup:
 
       fp = NULL;  /* fp controls file output; reset each time through loop */
       HSESSION hSession = hSessions[nSessionIndex];
+      group_idx = -1;
+      nOutputIndex = -1;
+      mult = 1;
+      nOutputType = -1;
 
       if ((hSession & SESSION_MARKED_AS_DELETED) || (nRetry[nSessionIndex] & 0x100)) continue;  /* make sure we have a valid session handle (we may have previously deleted the session), also if we're here due to a retry, check to see if this session already had a successful pull */
 
       if (uFlags == DS_PULLPACKETS_JITTER_BUFFER) {
 
-         if (!strlen(errstr)) strcpy(errstr, "jitter buffer");
+         nOutputType = PCAP;
+         strcpy(errstr, "jitter buffer");
+
          fp = thread_info[thread_index].fp_pcap_jb[nSessionIndex];
+
+         if (isVideoCodec(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC_TYPE, 1, NULL))) mult = 4;
       }
       else if (uFlags == DS_PULLPACKETS_OUTPUT) {
 
-         int output_index = thread_info[thread_index].nSessionOutputStream[nSessionIndex] - 1;  /* subtract +1 added by OutputSetup() */
+         nOutputIndex = thread_info[thread_index].nSessionOutputStream[nSessionIndex] - 1;  /* subtract +1 added by OutputSetup() */
 
-         if (output_index >= 0) {
+         if (nOutputIndex >= 0) {
 
-            if (!strlen(errstr))  {
-               if (thread_info[thread_index].uOutputType[output_index] == PCAP) strcpy(errstr, "transcode");
-               else if (thread_info[thread_index].uOutputType[output_index] == ENCODED) { uOutputType = ENCODED; strcpy(errstr, "H.26x bitstream"); }
+            if (thread_info[thread_index].nOutputType[nOutputIndex] == PCAP) {
+               nOutputType = PCAP;
+               strcpy(errstr, "transcode");
+            }
+            else if (thread_info[thread_index].nOutputType[nOutputIndex] == ENCODED) {
+               nOutputType = ENCODED;
+               strcpy(errstr, "H.26x bitstream");
             }
 
-            fp = thread_info[thread_index].out_file[output_index];
+            fp = thread_info[thread_index].out_file[nOutputIndex];
          }
          else {};  /* not an error condition, for sessions with no matching output we still need to check and pull any packets to guard against queue overflow */
+
+         if (isVideoCodec(DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC_TYPE, 1, NULL))) mult = 4;
       }
       else if ((Mode & ENABLE_STREAM_GROUPS) && uFlags == DS_PULLPACKETS_STREAM_GROUP) {
 
-         if (!strlen(errstr)) strcpy(errstr, "stream group");
+         nOutputType = PCAP;
+         strcpy(errstr, "stream group");
 
          if ((group_idx = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_IDX | DS_SESSION_INFO_SUPPRESS_ERROR_MSG, 0, NULL)) >= 0 && DSGetStreamGroupInfo(group_idx, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_OWNER_SESSION, NULL, NULL, NULL) == hSession) {  /* note if hSession is marked for deletion it will have 0x80000000 flag and DSGetSessionInfo() will return -1. This is not a problem as we check for the deletion flag at top of the pull loop (above), but worth mentioning */
 
@@ -4090,7 +4144,7 @@ pull_setup:
       if ((Mode & ANALYTICS_MODE) || session_data[nSessionIndex].term1.input_buffer_interval > 0) numPkts = 1;  /* pull one packet in timed situations */
       else numPkts = -1;  /* numPkts set to -1 tells DSPullPackets() to pull all available packets. Note this applies in untimed mode with -r0 timing (look for fUntimedMode), JHB Jan 2023 */
 
-      nPulledPackets = DSPullPackets(uFlags, pkt_out_buf, packet_out_len, hSession, packet_info, pkt_buf_len, numPkts);  /* pull available output packets of type specified by uFlags from packet/media thread queues. numPkts = -1 indicates pull all available */
+      nPulledPackets = DSPullPackets(uFlags, pkt_out_buf, packet_out_len, hSession, packet_info, pkt_buf_len, mult*numPkts);  /* pull available output packets of type specified by uFlags from packet/media thread queues. numPkts = -1 indicates pull all available */
 
       if (nPulledPackets < 0) {
          app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "Error in DSPullPackets() for %s output, return code = %d", errstr, nPulledPackets);
@@ -4139,7 +4193,10 @@ pull_setup:
       }
       else if (uFlags == DS_PULLPACKETS_OUTPUT) {
 
-         thread_info[thread_index].pkt_pull_xcode_ctr += nPulledPackets;
+         thread_info[thread_index].pkt_pull_output_ctr += nPulledPackets;
+
+ //if (thread_info[thread_index].pkt_pull_output_ctr >= 760 && nPulledPackets) printf("\n *** inside DSPullPackets 1 count = %d, fQueueEmpty = %d, fp = %p, nPulledPackets = %d, numPkts = %d \n", thread_info[thread_index].pkt_pull_output_ctr, fQueueEmpty, fp, nPulledPackets, numPkts);
+
       }
       else if (uFlags == DS_PULLPACKETS_STREAM_GROUP) {
 
@@ -4203,7 +4260,7 @@ pull_setup:
 
       if (fp) for (j=0, pkt_out_ptr=pkt_out_buf; j<nPulledPackets; j++) {
 
-         if (uOutputType == PCAP) {
+         if (nOutputType == PCAP) {
 
             unsigned int uFlags_write = DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK;  /* default is to tell DSWritePcap() to read wall clock to set packet arrival timestamps, JHB Jul 2024 */
             pcaprec_hdr_t pcap_pkt_hdr = { 0 };
@@ -4247,8 +4304,13 @@ pull_setup:
             }
 
             if (DSWritePcap(fp, uFlags_write, pkt_out_ptr, packet_out_len[j], &pcap_pkt_hdr, NULL, NULL) < 0) { fprintf(stderr, "DSWritePcap() failed for %s output \n", errstr); return -1; }
+            else {
+
+               if (group_idx >= 0) thread_info[thread_index].pkt_stream_group_pcap_out_ctr[group_idx]++;
+               else if (nOutputIndex >= 0) thread_info[thread_index].pkt_transcode_pcap_out_ctr[nOutputIndex]++;
+            }
          }
-         else if (uOutputType == ENCODED) {  /* handle encoded outputs, JHB Sep 2024 */
+         else if (nOutputType == ENCODED) {  /* handle encoded outputs, JHB Sep 2024 */
 
             codec_types codec_type;
 
@@ -4276,9 +4338,12 @@ pull_setup:
 
                         if (session_pyld_type == ((sdp::AttributeFMTP*)(thread_info[thread_index].fmtps[nStream][k]))->pyld_type) {  /* use payload type for session matching */
 
-      //printf("\n *** found payload type %d, fmtp = %s \n", session_pyld_type, ((sdp::AttributeFMTP*)(thread_info[thread_index].fmtps[nStream][k]))->options.c_str());
+                           #if 0
+                           static bool fPT[10] = {};
+                           if (!fPT[hSession]) { fPT[hSession] = true;  printf("\n *** hSesssion %d found payload type %d, fmtp = %s, strlen = %d \n", hSession, session_pyld_type, ((sdp::AttributeFMTP*)(thread_info[thread_index].fmtps[nStream][k]))->options.c_str(), (int)strlen(((sdp::AttributeFMTP*)(thread_info[thread_index].fmtps[nStream][k]))->options.c_str())); }
+                           #endif
 
-                           sdp_info.fmtp = (char*)malloc(strlen(((sdp::AttributeFMTP*)(thread_info[thread_index].fmtps[nStream][k]))->options.c_str()));
+                           sdp_info.fmtp = (char*)malloc(strlen(((sdp::AttributeFMTP*)(thread_info[thread_index].fmtps[nStream][k]))->options.c_str()) + 1);  /* add one for terminating zero, JHB May 2025 */
                            strcpy(sdp_info.fmtp, ((sdp::AttributeFMTP*)(thread_info[thread_index].fmtps[nStream][k]))->options.c_str());
                            sdp_info.payload_type = session_pyld_type;
                         }
@@ -4298,9 +4363,14 @@ pull_setup:
                      if (!fOnce[nSessionIndex]) { fOnce[nSessionIndex] = true; fprintf(stderr, "\n *** inside HEVC video bitstream file write before DSGetPayloadInfo(), hSession = %d, nSessionIndex = %d, nStream = %d \n", hSession, nSessionIndex, nStream); }
                   }
 
+   //static int count[10] = {};
+   //count[hSession]++;
+   //if ((hSession == 0 && count[hSession] >= 1300) || (hSession == 1 && count[hSession] >= 1870)) printf("\n *** payload count[%d] = %d \n", hSession, count[hSession]);
+
                   int ret_val = DSGetPayloadInfo(codec_type, uFlags, rtp_pyld, rtp_pyld_len, NULL, sdp_info.fmtp ? &sdp_info : NULL, nSessionIndex, fp, NULL);  /* we leave PAYLOAD_INFO* NULL, we could use it if we wanted payload info, for example NAL unit header. Also we leave pInfo NULL, we could use that to copy extracted video bitstream contents to a memory buffer */
 
                   if (ret_val < 0) VideoExtractStatus[nSessionIndex] |= VIDEO_EXTRACT_STATUS_ERROR;  /* on error or warning (i) messages will already be displayed and/or logged, and (ii) we continue in the loop to ensure all packets are pulled, but we no longer attempt to extract video for this session to avoid repeated messages */
+                  else thread_info[thread_index].pkt_bitstream_out_ctr[nOutputIndex]++;
                }
 
                if (sdp_info.fmtp) free(sdp_info.fmtp);
@@ -4554,8 +4624,6 @@ unsigned int uFlags;
 
    if (Mode & AUTO_ADJUST_PUSH_TIMING) average_push_rate[thread_index] = 2;  /* initialize auto-adjust push rate algorithm state */
 
-   thread_info[thread_index].nInPcapFiles = 0;
-
    uFlags = DS_READ;
    if (fCapacityTest) uFlags |= DS_OPEN_PCAP_QUIET;
 
@@ -4668,7 +4736,7 @@ int nOutputIndex = thread_info[thread_index].nOutFiles;  /* start with first cmd
 
    #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
    #pragma GCC diagnostic ignored "-Waddress"
-   while (MediaParams[nOutputIndex].Media.outputFilename != NULL && strlen(MediaParams[nOutputIndex].Media.outputFilename) && !thread_info[thread_index].uOutputType[nOutputIndex]) {
+   while (MediaParams[nOutputIndex].Media.outputFilename != NULL && strlen(MediaParams[nOutputIndex].Media.outputFilename) && !thread_info[thread_index].nOutputType[nOutputIndex]) {
    #pragma GCC diagnostic pop
 
       int codec_type = DSGetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_CODEC_TYPE, 1, NULL);
@@ -4698,12 +4766,14 @@ int nOutputIndex = thread_info[thread_index].nOutFiles;  /* start with first cmd
             nOutputIndex++; continue;  /* look for next output spec on cmd line; we don't know in what order sessions will be created vs order user has entered on cmd line */
          }
 
-         thread_info[thread_index].uOutputType[thread_info[thread_index].nOutFiles] = PCAP;  /* set data type for use in PullPackets(). See io_data_type enums (mediaTest.h), JHB Sep 2024 */
+         thread_info[thread_index].nOutputType[thread_info[thread_index].nOutFiles] = PCAP;  /* set data type for use in PullPackets(). See io_data_type enums (mediaTest.h), JHB Sep 2024 */
       }
       else if (isVideoCodec(codec_type) &&  /* to-do: needs to be reverse strcasestr() */
-               (strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h265") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".hevc") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h264"))) {  /* look for output video bitstream files on cmd line */
+               (strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h265") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".265") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".hevc") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h264") || strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".264"))) {  /* look for output video bitstream files on cmd line */
 
          char* p1 = strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".h26");
+         if (!p1) p1 = strcasestr(MediaParams[nOutputIndex].Media.outputFilename, ".26");
+
          strcpy(tmpstr, MediaParams[nOutputIndex].Media.outputFilename);
          char* p2 = strrchr(tmpstr, '.');
          if (p2) *p2 = 0;
@@ -4726,10 +4796,10 @@ int nOutputIndex = thread_info[thread_index].nOutFiles;  /* start with first cmd
 
          strcpy(thread_info[thread_index].szVideoStreamOutput[thread_info[thread_index].nOutFiles], filestr);  /* save copy of video stream output path, JHB Apr 2025 */
 
-         thread_info[thread_index].uOutputType[thread_info[thread_index].nOutFiles] = ENCODED;  /* set data type for use in PullPackets(). See io_data_type enums (mediaTest.h), JHB Sep 2024 */
+         thread_info[thread_index].nOutputType[thread_info[thread_index].nOutFiles] = ENCODED;  /* set data type for use in PullPackets(). See io_data_type enums (mediaTest.h), JHB Sep 2024 */
       }
 
-      if (thread_info[thread_index].uOutputType[thread_info[thread_index].nOutFiles]) {
+      if (thread_info[thread_index].nOutputType[thread_info[thread_index].nOutFiles]) {
 
          #if 0
          static bool fOnce = false;
@@ -4845,6 +4915,7 @@ unsigned int uFlags;
          thread_info[thread_index].fp_pcap_group[group_idx] = NULL;
          thread_info[thread_index].init_err = true;
       }
+      else thread_info[thread_index].nStreamGroups++;
    }
 
    #if 0  /* not used, ASR output text is handled in pktlib and streamlib, JHB Jan 2021 */
@@ -4951,7 +5022,7 @@ void FlushCheck(HSESSION hSessions[], uint64_t cur_time, uint64_t (*pQueueCheckT
 
 int i, j, nDelayTime, nStream;
 int nFlushed = 0;
-char flushstr[MAX_APP_STR_LEN] = "Flushing NNN sessions";  /* this text will be updated at actual print/log time */
+char flushstr[2000] = "Flushing NNN sessions";  /* this text will be updated at actual print/log time */
 int flushstr_initlen = strlen(flushstr);
 uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
 
@@ -4991,13 +5062,13 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
                   thread_info[thread_index].flush_state[i]++;  /* only need to flush once */
                }
 
-               unsigned int queue_flags = DS_PULLPACKETS_OUTPUT | DS_PULLPACKETS_JITTER_BUFFER | DS_PULLPACKETS_STREAM_GROUPS;  /* if stream groups are not enabled, the stream group queue status will show as empty, so this is ok */ 
+               unsigned int queue_flags = DS_PULLPACKETS_OUTPUT | DS_PULLPACKETS_JITTER_BUFFER | DS_PULLPACKETS_STREAM_GROUPS | DS_PULLPACKETS_OUTPUT;  /* if output packets (e.g. transcoding, video bitstream payloads) or stream groups are not enabled, queue status will show as empty, so this is ok */ 
 
                if (DSPullPackets(DS_PULLPACKETS_GET_QUEUE_STATUS | queue_flags, NULL, NULL, hSessions[i], NULL, 0, 0) == 0) queue_empty = false;  /* not empty yet */
             }
          }
 
-         unsigned int flush_wait = 50000;  /* arbitrary delay to wait before checking whether all queues are empty, or for packet arrival time / analytics modes, finalizing flush state */
+         unsigned int flush_wait = 50000;  /* arbitrary short delay to wait before checking whether all queues are empty, or for packet arrival time / analytics modes, finalizing flush state */
 
          if (!queue_empty || queue_check_time[i] == 0) queue_check_time[i] = cur_time;  /* don't flush yet if queue not empty, reset queue check time */
          else if (cur_time - queue_check_time[i] > flush_wait) {

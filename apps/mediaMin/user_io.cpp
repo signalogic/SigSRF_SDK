@@ -88,13 +88,13 @@ static uint64_t last_time[MAX_PKTMEDIA_THREADS] = { 0 };
 
    last_time[thread_index] = cur_time;
 
-   if (thread_info[thread_index].pkt_push_ctr != thread_info[thread_index].prev_pkt_push_ctr || thread_info[thread_index].pkt_pull_jb_ctr != thread_info[thread_index].prev_pkt_pull_jb_ctr || thread_info[thread_index].pkt_pull_xcode_ctr != thread_info[thread_index].prev_pkt_pull_xcode_ctr || thread_info[thread_index].pkt_pull_streamgroup_ctr != thread_info[thread_index].prev_pkt_pull_streamgroup_ctr) {
+   if (thread_info[thread_index].pkt_push_ctr != thread_info[thread_index].prev_pkt_push_ctr || thread_info[thread_index].pkt_pull_jb_ctr != thread_info[thread_index].prev_pkt_pull_jb_ctr || thread_info[thread_index].pkt_pull_output_ctr != thread_info[thread_index].prev_pkt_pull_output_ctr || thread_info[thread_index].pkt_pull_streamgroup_ctr != thread_info[thread_index].prev_pkt_pull_streamgroup_ctr) {
 
       if (thread_info[thread_index].pkt_pull_jb_ctr >= 100000L) sprintf(tmpstr, "\rPsh %d, pul %d", thread_info[thread_index].pkt_push_ctr, thread_info[thread_index].pkt_pull_jb_ctr);
       else sprintf(tmpstr, "\rPushed pkts %d, pulled pkts %d", thread_info[thread_index].pkt_push_ctr, thread_info[thread_index].pkt_pull_jb_ctr);
 
-      if (thread_info[thread_index].pkt_pull_xcode_ctr || thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], "j");
-      if (thread_info[thread_index].pkt_pull_xcode_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].pkt_pull_xcode_ctr);
+      if (thread_info[thread_index].pkt_pull_output_ctr || thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], "j");
+      if (thread_info[thread_index].pkt_pull_output_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].pkt_pull_output_ctr);
       if (thread_info[thread_index].pkt_pull_streamgroup_ctr) sprintf(&tmpstr[strlen(tmpstr)], " %ds", thread_info[thread_index].pkt_pull_streamgroup_ctr);
       strcat(tmpstr, " ");  /* real-time stats readability, JHB Mar 2025 */
 
@@ -105,7 +105,7 @@ static uint64_t last_time[MAX_PKTMEDIA_THREADS] = { 0 };
 
       thread_info[thread_index].prev_pkt_push_ctr = thread_info[thread_index].pkt_push_ctr;
       thread_info[thread_index].prev_pkt_pull_jb_ctr = thread_info[thread_index].pkt_pull_jb_ctr;
-      thread_info[thread_index].prev_pkt_pull_xcode_ctr = thread_info[thread_index].pkt_pull_xcode_ctr;
+      thread_info[thread_index].prev_pkt_pull_output_ctr = thread_info[thread_index].pkt_pull_output_ctr;
       thread_info[thread_index].prev_pkt_pull_streamgroup_ctr = thread_info[thread_index].pkt_pull_streamgroup_ctr;
    }
 
@@ -221,7 +221,7 @@ static bool fSetStdoutNonBuffered = false;
 
          strcpy(tmpstr, "");
          for (i=0; i<thread_info[app_thread_index_debug].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " %d", thread_info[app_thread_index_debug].flush_state[i]);
-         printf("flush state =%s, flush_count = %d, nSessionsCreated = %d, push cnt = %d, jb pull cnt = %d, xcode pull cnt = %d \n", tmpstr, thread_info[app_thread_index_debug].flush_count, thread_info[app_thread_index_debug].nSessionsCreated, thread_info[app_thread_index_debug].pkt_push_ctr, thread_info[app_thread_index_debug].pkt_pull_jb_ctr, thread_info[app_thread_index_debug].pkt_pull_xcode_ctr);
+         printf("flush state =%s, flush_count = %d, nSessionsCreated = %d, push cnt = %d, jb pull cnt = %d, xcode pull cnt = %d \n", tmpstr, thread_info[app_thread_index_debug].flush_count, thread_info[app_thread_index_debug].nSessionsCreated, thread_info[app_thread_index_debug].pkt_push_ctr, thread_info[app_thread_index_debug].pkt_pull_jb_ctr, thread_info[app_thread_index_debug].pkt_pull_output_ctr);
 
          if (hSessions) {
 
@@ -337,7 +337,7 @@ int slen;
 
       printf("%s", p);  /* use buffered output */
 
-      thread_info[thread_index].most_recent_console_output = cur_time;  /* update time of most recent console output, JHB Mar 2025 */
+      if (cur_time) thread_info[thread_index].most_recent_console_output = cur_time;  /* update time of most recent console output, JHB Mar 2025 */
 
       if ((uFlags & APP_PRINTF_EVENT_LOG) || (uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP)) {
 

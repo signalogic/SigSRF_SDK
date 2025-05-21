@@ -15,6 +15,8 @@
   Modified Jan 2023 JHB, additional codec types
   Modified Jun 2024 JHB, add H.263 and H.265 codec types
   Modified Feb 2025 JHB, add L16 (linear 16-bit PCM) and MPA (MPEG-I/II) audio codec types
+  Modified May 2025 JHB, add codec types G.728, H.224, H.261, H.263-1998, H.264-SVC, and Polycom SIREN LPR and VND LPR
+  Modified May 2025 JHB, add SDP_RTP_UDP_BFCP MediaProto enum
 */
 
 #include <sdp/utils.h>
@@ -93,6 +95,9 @@ namespace sdp {
     else if (input == "G726-40") {
       result = SDP_G726_40;
     }
+    else if (input == "G728") {
+      result = SDP_G728;
+    }
     else if (input == "G729") {
       result = SDP_G729;
     }
@@ -117,6 +122,24 @@ namespace sdp {
     else if (input == "H265") {
       result = SDP_H265;
     }
+    else if (input == "H224") {
+      result = SDP_H224;
+    }
+    else if (input == "SIRENLPR") {
+      result = SDP_SIREN_LPR;
+    }
+    else if (input == "H261") {
+      result = SDP_H261;
+    }
+    else if (input == "H263-1998") {
+      result = SDP_H263_1998;
+    }
+    else if (input == "H264-SVC") {
+      result = SDP_H264_SVC;
+    }
+    else if (input == "vnd.polycom.lpr") {
+      result = SDP_VND_POLYCOM_LPR;
+    }
     else if (input == "PCM") {
       result = SDP_L16;
     }
@@ -140,6 +163,9 @@ namespace sdp {
     }
     else if (input == "tone") {
       result = SDP_TONE;
+    }
+    else if (input == "NSE") {
+      result = SDP_NSE;
     }
 
     return result != SDP_CODECTYPE_NONE;
@@ -193,6 +219,9 @@ namespace sdp {
     }
     else if (input == "RTP/SAVPF") {
       result = SDP_RTP_SAVPF;
+    }
+    else if (input == "UDP/BFCP") {  /* "binary floor control protocol", RFC 8855 https://datatracker.ietf.org/doc/rfc8855 */
+      result = SDP_RTP_UDP_BFCP;
     }
 
     return result != SDP_MEDIAPROTO_NONE;
@@ -251,6 +280,7 @@ namespace sdp {
       case SDP_G726_24: { return "G726-24"; }
       case SDP_G726_32: { return "G726-32"; }
       case SDP_G726_40: { return "G726-40"; }
+      case SDP_G728: { return "G728"; }
       case SDP_G729: { return "G729"; }
       case SDP_AMRNB: { return "AMR"; }
       case SDP_AMRWB: { return "AMR-WB"; }
@@ -259,9 +289,16 @@ namespace sdp {
       case SDP_gsm: { return "gsm"; }
       case SDP_SILK: { return "SILK"; }
       case SDP_CN: { return "Comfort Noise"; }
-      case SDP_H263: { return "H.263"; }
-      case SDP_H264: { return "H.264"; }
-      case SDP_H265: { return "H.265"; }
+      case SDP_H263: { return "H263"; }
+      case SDP_H264: { return "H264"; }
+      case SDP_H265: { return "H265"; }
+      case SDP_H224: { return "H224"; }
+      case SDP_SIREN_LPR: { return "SIRENLPR"; }
+      case SDP_H261: { return "H261"; }
+      case SDP_H263_1998: { return "H263-1998"; }
+      case SDP_H264_SVC: { return "H264-SVC"; }
+      case SDP_VND_POLYCOM_LPR: { return "vnd.polycom.lpr"; }
+      case SDP_NSE: { return "NSE"; }
       case SDP_TELEPHONE_EVENT: { return "telephone-event"; }
       default: { return "unknown"; }
     };
