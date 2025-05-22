@@ -622,8 +622,6 @@ The resulting sample_capture_test2.h264 and sample_capture_test3.h264 files can 
 
 ![SMPlayer playback of mediaMin H.264 dual stream RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SMPlayer_playback_of_H264_mediaMin_output_color_wave_pattern.png "SMPlayer playback of mediaMin H.264 dual stream RTP extraction output")
 
-![image](https://github.com/user-attachments/assets/a45592b9-4a95-433b-8033-62bb1ce90268)
-
 <a name="InBandOutofBandParameterSets"></a>
 ##### Inband vs Out-of-Band Parameter Sets
 
