@@ -614,6 +614,16 @@ The resulting sample_capture_test.h264 file can be played in SMPlayer, and shoul
 
 In the above screen cap SMPlayer is displaying the "Information" tab of its "Information and Properties" dialog, which shows the codec format as "H264", resolution 640x480, and frame rate 25 fps.
 
+Below is a mediMin command line example that extracts H.264 elementary bitstreams from two (2) RTP streams in another [H.264 pcap online sample](https://gitlab.com/-/project/7898047/uploads/635e0cd5d6db6b8a3a303f5e1c20b9dd/h264-fua.pcap):
+
+    mediaMin -c x86 -i ../test_files/h264-fua.pcap -o sample_capture_test2.h264 -L -o sample_capture_test3.h264 -d 0x0600c000c11 -r20 -g /tmp/shared --md5sum
+
+The resulting sample_capture_test2.h264 and sample_capture_test3.h264 files can be played in SMPlayer; the second one should show a color wave pattern:
+
+![SMPlayer playback of mediaMin H.264 dual stream RTP extraction output](https://github.com/signalogic/SigSRF_SDK/blob/master/images/SMPlayer_playback_of_H264_mediaMin_output_color_wave_pattern.png "SMPlayer playback of mediaMin H.264 dual stream RTP extraction output")
+
+![image](https://github.com/user-attachments/assets/a45592b9-4a95-433b-8033-62bb1ce90268)
+
 <a name="InBandOutofBandParameterSets"></a>
 ##### Inband vs Out-of-Band Parameter Sets
 
