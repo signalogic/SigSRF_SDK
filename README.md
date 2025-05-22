@@ -198,7 +198,7 @@ In addition to customer production testing, stress tests are always ongoing in S
 <a name="LiveStreaming"></a>
 ### Live Streaming
 
-The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) generates live streaming output, including both real-time RTP audio and wav file output. RTP audio can be directed to a UDP port or pcap file. wav files include individual input streams, merged streams, and N-channel wav file.
+The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) generates live streaming output, including real-time RTP audio, wav file output, and video elementary bitstream. RTP audio can be directed to a UDP port or pcap file. wav files include individual input streams, merged streams, and N-channel wav file.
 
 <a name="AcceleratedModeBulkPcapProcessing"></a>
 ### Accelerated Mode (Bulk Pcap Processing)
@@ -208,7 +208,7 @@ The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/m
 <a name="Reproducibility"></a>
 ### Reproducibility
 
-The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) includes a timestamp matching option that relies on [Analytics Mode](#user-content-analyticsmode), with no references to wall clocks, to generate bit-exact repeatable RTP audio and wav output, independent of other parameters (such as accelerated processing mode). This can be useful for call recording applications. The [reproducibility section](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-reproducibility) on the mediaMin page has a detailed discussion of this option. 
+The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) includes a timestamp matching option that relies on [Analytics Mode](#user-content-analyticsmode), with no references to wall clocks, to generate bit-exact repeatable RTP audio, wav output, and video bitstream, independent of other parameters (such as accelerated processing mode). This can be useful for call recording applications. The [reproducibility section](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-reproducibility) on the mediaMin page has a detailed discussion of this option. 
 
 <a name="SoftwareArchitectureDiagram"></a>
 ## SigSRF Software and I/O Architecture Diagram
@@ -605,9 +605,9 @@ If you would prefer an evaluation version with increased data and concurrency li
 <a name="mediaMin_and_mediaTest"></a>
 ### mediaMin and mediaTest Reference Applications
 
-The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
+The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, video stream auto-detect and extraction, and more.
 
-mediaMin is a production reference application, using a minimum set of APIs (create/delete session, push/pull packets), it can handle a wide range of RTP audio packet inputs. mediaTest is focused on test and measurement functionality and accepts USB and wav file audio input. Some things you can do with mediaMin and mediaTest command lines:
+mediaMin is a production reference application, using a minimum set of APIs (create/delete session, push/pull packets), it can handle a wide range of RTP audio and video packet inputs. mediaTest is focused on test and measurement functionality and accepts USB and wav file audio input. Some things you can do with mediaMin and mediaTest command lines:
 
   * transcode between pcaps, for example EVS to AMR-WB, AMR-NB to G711, etc.
   * "AMR Player", play an AMR pcap (either AMR-WB or AMR-NB)
