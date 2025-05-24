@@ -519,7 +519,7 @@ Below are some voice and audio dynamic session command line examples:
 
 The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps streams, the second has two (2) AMR-NB 12200 bps streams and the third has two (2) EVS 13200 bps streams and three (3) AMR-WB 12650 bps streams (one of the AMR-WB streams is an RFC8108, or "child" channel). Below is a Wireshark screencap of what the first example output looks like:
 
-![multiple stream pcap decode screencap](https://github.com/signalogic/SigSRF_SDK/blob/master/images/Adele_singing_evs_decoded.png "Adele singing pcap AMR-WB and EV decoded and displayed in Wireshark")
+![multiple stream pcap decode screencap](https://githubusercontent.com/signalogic/SigSRF_SDK/master/images/Adele_singing_evs_decoded.png "Adele singing pcap AMR-WB and EV decoded and displayed in Wireshark")
 
 There are also several wav files generated, including individual stream, merged, and N-channel, which can be opened with Windows Media Player, Audacity, Hypersignal, etc.
 
