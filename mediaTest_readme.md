@@ -1684,7 +1684,7 @@ Debug flag options are defined in <a href="https://github.com/signalogic/SigSRF_
  
  Below is an htop screencap showing CPU core consumption during a multithreaded codec max capacity test:
 	
-<img src="https://github.com/signalogic/SigSRF_SDK/blob/master/images/codec_max_capacity_test_multithread.png" width="800" alt="Multithread measurement of codec max capacity CPU usage with htop" title="Multithread measurement of codec max capacity CPU usage with htop"/></br>
+<img src="https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/codec_max_capacity_test_multithread.png" width="800" alt="Multithread measurement of codec max capacity CPU usage with htop" title="Multithread measurement of codec max capacity CPU usage with htop"/></br>
 
 Again note the highlighted screencap areas, showing 100% core usage across two mediaTest process, for a total of 42 EVS encoder instances and 42 decoder instances. In this example, the two mediaTest process were run in two (2) separate terminal windows. By contrast, the mediaMin reference application uses one process to start multiple threads. In either case, at the shared object library (.so) level, SigSRF codecs are completely thread-safe, with no knowledge of application structure, process, thread, etc.
 
