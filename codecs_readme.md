@@ -294,11 +294,11 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 
     #define DS_PAYLOAD_INFO_IGNORE_DTMF               /* DSGetPayloadInfo() default behavior for voice and audio codecs is to recognize payload_size == 4 as a DTMF event (RFC 4733), set NumFrames to 1 and set fDTMF in payload_info, and immediately return 0 without reference to codec_param and payload. To override this behavior DS_PAYLOAD_INFO_IGNORE_DTMF can be given in uFlags */ 
 
-    #define DS_PAYLOAD_INFO_DEBUG_OUTPUT                /* ask for additional debug output in DSGetPayloadInfo() */ 
+    #define DS_PAYLOAD_INFO_DEBUG_OUTPUT              /* ask for additional debug output in DSGetPayloadInfo() */ 
 
-    #define DS_PAYLOAD_INFO_RESET_ID                    /* reset unique stream or thread identifier */ 
+    #define DS_PAYLOAD_INFO_RESET_ID                  /* reset unique stream or thread identifier */ 
 
-    #define DS_PAYLOAD_INFO_IGNORE_INBAND_XPS           /* default DSGetPayloadInfo() behavior for video RTP streams is to favor inband xps info within the stream, and if not found insert SDP xps info when sdp_info contains an fmtp string. The DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag can be applied to override this behavior and force sdp_info to be used regardless of inband xps info. For example VLC output streams may contain repeated SDP info fmtp xps fields, but no inband xps info, in which case the mediaMin reference application will supply SDP info when calling DSGetPayloadInfo() */
+    #define DS_PAYLOAD_INFO_IGNORE_INBAND_XPS         /* default DSGetPayloadInfo() behavior for video RTP streams is to favor inband xps info within the stream, and if not found insert SDP xps info when sdp_info contains an fmtp string. The DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag can be applied to override this behavior and force sdp_info to be used regardless of inband xps info. For example VLC output streams may contain repeated SDP info fmtp xps fields, but no inband xps info, in which case the mediaMin reference application will supply SDP info when calling DSGetPayloadInfo() */
 ```
 
 <a name="DSGetPayloadHeaderToC"></a>
@@ -334,9 +334,12 @@ Payload format definitions are currently applicable only to EVS and AMR codecs. 
 ```c++
     #define DS_PYLD_FMT_COMPACT                       /* compact format (coded media frame has no payload header) */
     #define DS_PYLD_FMT_FULL                          /* headerfull format (coded media frames may or may not have a payload header, differentiated by collision avoidance padding */
-    #define DS_PYLD_FMT_HF_ONLY                       /* headerfull-only format (coded media frames always have a payload header, with no collision avoidance padding */
     #define DS_PYLD_FMT_BANDWIDTHEFFICIENT            /* bandwidth-efficient format */
     #define DS_PYLD_FMT_OCTETALIGN                    /* octet-aligned format */
+    #define DS_PYLD_FMT_HF_ONLY                       /* EVS headerfull-only format (coded media frames always have a payload header, with no collision avoidance padding */
+    #define DS_PYLD_FMT_H264                          /* H.264 format (RFC 6184) */
+    #define DS_PYLD_FMT_H265                          /* H.265 format (RFC 7798) */
+    #define DS_PYLD_FMT_HEVC  DS_PYLD_FMT_H265
 ```
 
 <a name="GeneraluFlags"></a>
@@ -345,8 +348,14 @@ Payload format definitions are currently applicable only to EVS and AMR codecs. 
 Following are general flags, applicable in multiple APIs
 
 ```c++
+
+    #define DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG      /* suppress voplib API error and warning messages, e.g. DSGetCodecInfo() codec type not found. Note these are same values used in pktlib.h */
+
+    #define DS_VOPLIB_SUPPRESS_INFO_MSG               /* suppress voplib API info messages; e.g. DSGetPayloadInfo() fp_out NULL when extracting video payloads */
+
     #define DS_CODEC_TRACK_MEM_USAGE                  /* track instance memory usage */
-    #define DS_CODEC_USE_EVENT_LOG                    /* Use the SigSRF diaglib event log for progress, debug, and error messages. By default codec event and error logging is handled according to uEventLogMode element of a DEBUG_CONFIG struct specified in DSConfigVoplib(). uEventLogMode should be set with EVENT_LOG_MODE enums in shared_include/config.h. This flag may be combined with uFlags in DSCodecCreate() and/or uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS structs to override uEventLogMode */
+
+    #define DS_CODEC_USE_EVENT_LOG                    /* use the SigSRF diaglib event log for progress, debug, and error messages. By default codec event and error logging is handled according to uEventLogMode element of a DEBUG_CONFIG struct specified in DSConfigVoplib(). uEventLogMode should be set with EVENT_LOG_MODE enums in shared_include/config.h. This flag may be combined with uFlags in DSCodecCreate() and/or uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS structs to override uEventLogMode */
 ```
 
 <a name="Structs"></a>
@@ -571,32 +580,71 @@ Definitions for uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS
 A PAYLOAD_INFO struct is returned by DSGetPayloadInfo().
 
 ```c++
-  typedef struct {  /* codec RTP payload items extracted or derived from a combination of codec type, payload header, and payload size */
+  typedef struct PAYLOAD_INFO {  /* codec RTP payload items extracted or derived from a combination of codec type, payload header, and payload size */
 
-  /* payload header items */
+  /* common items derived from payload header and size */
 
-     uint8_t   CMR;                            /* change mode request value, if found in payload and applicable to the codec type, zero otherwise. Not shifted or otherwise modified */
-     int16_t   NumFrames;                      /* number of frames in payload. On error set to number of valid payload frames processed before the error occurred */
-     uint8_t   ToC[MAX_PAYLOAD_FRAMES];        /* payload header ToC (table of contents) if applicable to the codec type, including EVS and AMR, which can have multiple frames per payload (e.g. variable ptime), or multiple channels per payload (e.g. stereo or independent mono channels), or a mix. Zero otherwise */
-     int16_t   FrameSize[MAX_PAYLOAD_FRAMES];  /* frame size in bytes for all codec types except AMR. For AMR (NB, WB, WB+) codecs this is frame size in bits (i.e. number of data bits in the frame, as shown at https://www.ietf.org/proceedings/50/slides/avt-8/sld009.htm). -1 indicates an error condition in payload ToC */
-     int32_t   BitRate[MAX_PAYLOAD_FRAMES];    /* bitrate */
-     uint16_t  NALU_Hdr;                       /* H.26x NALU header */
+     codec_types  codec_type;                     /* set to codec type determined inside DSGetPayloadInfo() depending on uFlags containing DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE (in the latter case it's a copy of codec_param). codec_types enums are defined in shared_include/codec.h with size int */
 
-  /* payload types or operating modes */
+     uint8_t      uFormat;                        /* set to a DS_PYLD_FMT_XXX payload format definition for applicable codecs (e.g. AMR, EVS, H.26x), 0 otherwise */
 
-     uint8_t   uFormat;                        /* set to a DS_PYLD_FMT_XXX payload format definition for applicable codecs (e.g. AMR, EVS), 0 otherwise */
-     bool      fSID;                           /* true for a SID payload, false otherwise */
-     bool      fAMRWB_IO_Mode;                 /* true for an EVS AMR-WB IO compatibility mode packet, false otherwise */
-     bool      fDTMF;                          /* true for a DTMF event payload, false otherwise */
+     int16_t      NumFrames;                      /* number of frames in payload. On error set to number of valid payload frames processed before the error occurred */
+     int32_t      FrameSize[MAX_PAYLOAD_FRAMES];  /* frame size in bytes for all codec types except AMR. For AMR (NB, WB, WB+) codecs this is frame size in bits (i.e. number of data bits in the frame, as shown at https://www.ietf.org/proceedings/50/slides/avt-8/sld009.htm). -1 indicates an error condition in payload ToC */
+     int32_t      BitRate[MAX_PAYLOAD_FRAMES];    /* bitrate */
 
-     int       start_of_payload_data;          /* index into payload[] of start of payload data. If DSGetPayloadInfo() returns an error condition, this is the payload header byte on which the error occurred */
+     struct voice {
 
-     int       amr_decoder_bit_pos;            /* reserved */
+    /* voice payload types, header values, or operating modes */
 
-     int       Reserved[16];
+       uint8_t    CMR;                            /* change mode request value, if found in payload and applicable to the codec type, zero otherwise. Not shifted or otherwise modified */
+       uint8_t    ToC[MAX_PAYLOAD_FRAMES];        /* payload header ToC (table of contents) if applicable to the codec type, including EVS and AMR, which can have multiple frames per payload (e.g. variable ptime), or multiple channels per payload (e.g. stereo or independent mono channels), or a mix. Zero otherwise */
+       bool       fSID;                           /* set true for a SID payload, false otherwise */
+       bool       fAMRWB_IO_Mode;                 /* set true for an EVS AMR-WB IO compatibility mode payload, false otherwise */
+       bool       fDTMF;                          /* set true for a DTMF event payload, false otherwise */
+       uint8_t    Reserved[16];
+
+     } voice;
+
+     struct audio {
+
+       uint8_t    Reserved[16];
+
+     } audio;
+
+  /* video payload header values */
+
+     struct video {
+
+       uint16_t   NALU_Header;                    /* H.26x NAL unit header. Possible values include NAL unit types defined in H.26x specs and fragment and aggregation unit types defined only for RTP transport (RFCs 6184 and 7798) */
+       uint8_t    FU_Header;                      /* H.26x Fragmentation Packet header */
+
+       int        Reserved[32];
+
+     } video;
+
+  /* misc */
+
+     int          start_of_payload_data;          /* index into rtp_payload[] of start of payload data. If DSGetPayloadInfo() returns an error condition, this is the payload header byte on which the error occurred */
+
+     int          amr_decoder_bit_pos;            /* reserved */
+
+     int          Reserved[16];
 
   } PAYLOAD_INFO;
+```
 
+<a name="SDPInfo"></a>
+### SDP_INFO
+
+An SDP_INFO struct can be given in the sdp_info pointer param in DSGetPayloadInfo().
+
+```c++
+  typedef struct SDP_INFO {  /* SDP info associated with RTP payload, if any */
+  
+     uint8_t      payload_type;
+     char*        fmtp;                           /* see extract_rtp_video.cpp for fmtp string examples */
+
+  } SDP_INFO;
 ```
 
 <a name="hellocodecExampleApp"></a>
