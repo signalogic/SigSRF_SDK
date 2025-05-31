@@ -36,6 +36,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_OUTARGS**](#user-content-codecoutargs)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**CODEC_INARGS**](#user-content-codecinargs)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**PAYLOAD_INFO**](#user-content-payloadinfo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**SDP_INFO**](#user-content-sdpinfo)<br/>
 </sup></sub>
 
 [**_hello_codec Example App_**](#user-content-hellocodecexampleapp)<br/>
