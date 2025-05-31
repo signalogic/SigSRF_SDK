@@ -268,8 +268,8 @@ DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodec
                                                          -ToC[] is set to the payload header "table of contents" value for each frame in the payload if applicable to the codec type, or set to zero if not 
                                                          -fSID is set if the payload is a SID (silence identifier), or cleared if not
                                                          -fDTMF is set if the payload is a DTMF event, or cleared if not
-                                                         -only applicable to EVS, fAMRWB_IO_Mode is set true for an AMR-WB IO mode payload, false for a primary mode payload, and false for all other codec types */
-                                                         -for H.26x codecs NALU_Header and FU_Header are extracted from payload header values 
+                                                         -only applicable to EVS, fAMRWB_IO_Mode is set true for an AMR-WB IO mode payload, false for a primary mode payload, and false for all other codec types
+                                                         -for H.26x codecs NALU_Header and FU_Header are extracted from payload header values */
 
                          SDP_INFO* sdp_info,          /* sdp_info (if used) should point to an SDP_INFO struct associated with the RTP payload. For example a video stream may omit in-band vps, sps, or pps NAL units in which case DSGetPayloadInfo() can construct and insert that information from "fmtp" SDP info fields. If sdp_info is not NULL and the first RTP payload for a stream does not contain xps info, sdp_info will be scanned for sprop-vps, sprop-sps, and sprop-pps fields, converted from base64 into binary sequences, and inserted into the elementary bitstream */
                          int nId,                     /* nId is an optional unique thread or session identifier that should only used be for output bitstream extraction and/or file write. If not used a value of -1 should be given, otherwise saved state information may become confused between threads or sessions */
