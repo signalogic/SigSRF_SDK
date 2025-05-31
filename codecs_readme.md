@@ -164,7 +164,7 @@ int DSCodecDecode(HCODEC*          hCodec,           /* pointer to one or more c
 uFlags definitions
 
 ```c++
-    #define DS_CODEC_GET_NUMFRAMES                    /* return the number of frames in the payload. No decoding is performed */
+#define DS_CODEC_GET_NUMFRAMES                       /* return the number of frames in the payload. No decoding is performed */
 ```
 <a name="DSCodecEncode"></a>
 ## DSCodecEncode
@@ -186,7 +186,7 @@ int DSCodecEncode(HCODEC*          hCodec,           /* pointer to one or more c
 
 uFlags definitions 
 
-    None
+None
 
 <a name="DSGetCodecInfo"></a>
 ## DSGetCodecInfo
@@ -300,7 +300,7 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 
 #define DS_PAYLOAD_INFO_RESET_ID                     /* reset unique stream or thread identifier */ 
 
-#define DS_PAYLOAD_INFO_IGNORE_INBAND_XPS           /* default DSGetPayloadInfo() behavior for video RTP streams is to favor inband xps info within the stream, and if not found insert SDP xps info when sdp_info contains an fmtp string. The DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag can be applied to override this behavior and force sdp_info to be used regardless of inband xps info. For example VLC output streams may contain repeated SDP info fmtp xps fields, but no inband xps info, in which case the mediaMin reference application will supply SDP info when calling DSGetPayloadInfo() */
+#define DS_PAYLOAD_INFO_IGNORE_INBAND_XPS            /* default DSGetPayloadInfo() behavior for video RTP streams is to favor inband xps info within the stream, and if not found insert SDP xps info when sdp_info contains an fmtp string. The DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag can be applied to override this behavior and force sdp_info to be used regardless of inband xps info. For example VLC output streams may contain repeated SDP info fmtp xps fields, but no inband xps info, in which case the mediaMin reference application will supply SDP info when calling DSGetPayloadInfo() */
 ```
 
 <a name="DSGetPayloadHeaderToC"></a>
@@ -323,8 +323,8 @@ int DSGetPayloadHeaderToC(codec_types codec_type,    /* a DS_CODEC_xxx enum defi
   * returns > 0 on success, or < 0 on error condition
 
 ```c++
-int DSCodecDelete(HCODEC              hCodec,        /* handle of encoder or decoder instance to be deleted */
-                  unsigned int        uFlags         /* flags - currently only the DS_CODEC_TRACK_MEM_USAGE flag is recognized */
+int DSCodecDelete(HCODEC           hCodec,           /* handle of encoder or decoder instance to be deleted */
+                  unsigned int     uFlags            /* flags - currently only the DS_CODEC_TRACK_MEM_USAGE flag is recognized */
                  );
 ```
 
@@ -334,14 +334,14 @@ int DSCodecDelete(HCODEC              hCodec,        /* handle of encoder or dec
 Payload format definitions are currently applicable only to EVS and AMR codecs. These definitions can be used in the CODEC_ENC_PARAMS struct payload_format or oct_align fields; also they are returned by DSGetPayloadInfo() in the uFormat field of a [PAYLOAD_INFO struct](#user-content-payloadinfo) when given an EVS or AMR codec instance handle or codec_type enum.
 
 ```c++
-    #define DS_PYLD_FMT_COMPACT                          /* compact format (coded media frame has no payload header) */
-    #define DS_PYLD_FMT_FULL                             /* headerfull format (coded media frames may or may not have a payload header, differentiated by collision avoidance padding */
-    #define DS_PYLD_FMT_BANDWIDTHEFFICIENT               /* bandwidth-efficient format */
-    #define DS_PYLD_FMT_OCTETALIGN                       /* octet-aligned format */
-    #define DS_PYLD_FMT_HF_ONLY                          /* EVS headerfull-only format (coded media frames always have a payload header, with no collision avoidance padding */
-    #define DS_PYLD_FMT_H264                             /* H.264 format (RFC 6184) */
-    #define DS_PYLD_FMT_H265                             /* H.265 format (RFC 7798) */
-    #define DS_PYLD_FMT_HEVC  DS_PYLD_FMT_H265
+#define DS_PYLD_FMT_COMPACT                          /* compact format (coded media frame has no payload header) */
+#define DS_PYLD_FMT_FULL                             /* headerfull format (coded media frames may or may not have a payload header, differentiated by collision avoidance padding */
+#define DS_PYLD_FMT_BANDWIDTHEFFICIENT               /* bandwidth-efficient format */
+#define DS_PYLD_FMT_OCTETALIGN                       /* octet-aligned format */
+#define DS_PYLD_FMT_HF_ONLY                          /* EVS headerfull-only format (coded media frames always have a payload header, with no collision avoidance padding */
+#define DS_PYLD_FMT_H264                             /* H.264 format (RFC 6184) */
+#define DS_PYLD_FMT_H265                             /* H.265 format (RFC 7798) */
+#define DS_PYLD_FMT_HEVC  DS_PYLD_FMT_H265
 ```
 
 <a name="GeneraluFlags"></a>
@@ -351,13 +351,13 @@ Following are general flags, applicable in multiple APIs
 
 ```c++
 
-    #define DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG         /* suppress voplib API error and warning messages, e.g. DSGetCodecInfo() codec type not found. Note these are same values used in pktlib.h */
+#define DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG         /* suppress voplib API error and warning messages, e.g. DSGetCodecInfo() codec type not found. Note these are same values used in pktlib.h */
 
-    #define DS_VOPLIB_SUPPRESS_INFO_MSG                  /* suppress voplib API info messages; e.g. DSGetPayloadInfo() fp_out NULL when extracting video payloads */
+#define DS_VOPLIB_SUPPRESS_INFO_MSG                  /* suppress voplib API info messages; e.g. DSGetPayloadInfo() fp_out NULL when extracting video payloads */
 
-    #define DS_CODEC_TRACK_MEM_USAGE                     /* track instance memory usage */
+#define DS_CODEC_TRACK_MEM_USAGE                     /* track instance memory usage */
 
-    #define DS_CODEC_USE_EVENT_LOG                       /* use the SigSRF diaglib event log for progress, debug, and error messages. By default codec event and error logging is handled according to uEventLogMode element of a DEBUG_CONFIG struct specified in DSConfigVoplib(). uEventLogMode should be set with EVENT_LOG_MODE enums in shared_include/config.h. This flag may be combined with uFlags in DSCodecCreate() and/or uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS structs to override uEventLogMode */
+#define DS_CODEC_USE_EVENT_LOG                       /* use the SigSRF diaglib event log for progress, debug, and error messages. By default codec event and error logging is handled according to uEventLogMode element of a DEBUG_CONFIG struct specified in DSConfigVoplib(). uEventLogMode should be set with EVENT_LOG_MODE enums in shared_include/config.h. This flag may be combined with uFlags in DSCodecCreate() and/or uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS structs to override uEventLogMode */
 ```
 
 <a name="Structs"></a>
@@ -369,18 +369,18 @@ Following are general flags, applicable in multiple APIs
 Struct used in DSCodecCreate() and DSGetCodecInfo()
 
 ```c++
-  typedef struct {
+typedef struct {
 
-     int codec_type;                      /* should specify a codec_types enum (defined in shared_include/codec.h) */
-     char codec_name[CODEC_NAME_MAXLEN];  /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecInfo() with DS_CODEC_INFO_NAME flag */
-     uint16_t raw_frame_size;             /* filled in by DSCodecCreate() and DSGetCodecInfo() */
-     uint16_t coded_frame_size;           /*   "    "    " */
-     int payload_shift;                   /* special case item, when non-zero indicates shift payload after encoding or before decoding, depending on which codec and the case. Initially needed to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/- */
+  int codec_type;                      /* should specify a codec_types enum (defined in shared_include/codec.h) */
+  char codec_name[CODEC_NAME_MAXLEN];  /* pointer to codec name string that will be filled in. Note this is the same string as returned by DSGetCodecInfo() with DS_CODEC_INFO_NAME flag */
+  uint16_t raw_frame_size;             /* filled in by DSCodecCreate() and DSGetCodecInfo() */
+  uint16_t coded_frame_size;           /*   "    "    " */
+  int payload_shift;                   /* special case item, when non-zero indicates shift payload after encoding or before decoding, depending on which codec and the case. Initially needed to "unshift" EVS AMR-WB IO mode bit-shifted packets observed in-the-wild. Note shift can be +/- */
 
-     CODEC_ENC_PARAMS enc_params;         /* if encoder instance is being created, this must point to desired encoder params. See examples in mediaTest_proc.c or hello_codec.c */
-     CODEC_DEC_PARAMS dec_params;         /* if decoder instance is being created, this must point to desired decoder params. See examples in mediaTest_proc.c or hello_codec.c */
+  CODEC_ENC_PARAMS enc_params;         /* if encoder instance is being created, this must point to desired encoder params. See examples in mediaTest_proc.c or hello_codec.c */
+  CODEC_DEC_PARAMS dec_params;         /* if decoder instance is being created, this must point to desired decoder params. See examples in mediaTest_proc.c or hello_codec.c */
 
-  } CODEC_PARAMS;
+} CODEC_PARAMS;
 ```
 
 <a name="CodecDecParams"></a>
@@ -389,34 +389,34 @@ Struct used in DSCodecCreate() and DSGetCodecInfo()
 Decode parameters struct, a substruct within CODEC_PARAMS and CODEC_INARGS
 
 ```c++
-  typedef struct {
+typedef struct {
 
 /* generic items */
 
-   int bitRate;               /* bitrate may not be used for codecs that can derive it from payload contents */
-   int samplingRate;          /* not used for most codecs */
-   float frameSize;           /* amount of data (in msec) processed by the codec per frame, for example 20 msec for AMR or EVS, 22.5 msec for MELPe, etc */
+  int bitRate;               /* bitrate may not be used for codecs that can derive it from payload contents */
+  int samplingRate;          /* not used for most codecs */
+  float frameSize;           /* amount of data (in msec) processed by the codec per frame, for example 20 msec for AMR or EVS, 22.5 msec for MELPe, etc */
 
 /* G729, G726 items */
 
-   int uncompress;
+  int uncompress;
 
 /* AMR-WB+ items */
 
-   int limiter;               /* avoids output clipping (recommended) */
-   int mono;
+  int limiter;               /* avoids output clipping (recommended) */
+  int mono;
 
 /* LBR codec items (e.g. MELPe) */
 
-   int bitDensity;            /* channel bit density: 6, 54, 56 */
-   int post;                  /* post filter flag */
-   int noReseed;              /* disable random number generator seeding (used for jitter) */
+  int bitDensity;            /* channel bit density: 6, 54, 56 */
+  int post;                  /* post filter flag */
+  int noReseed;              /* disable random number generator seeding (used for jitter) */
 
-   unsigned int uFlags;       /* see RTP_FORMAT_xxx and DEBUG_OUTPUT_xxx flag definitions below */
+  unsigned int uFlags;       /* see RTP_FORMAT_xxx and DEBUG_OUTPUT_xxx flag definitions below */
 
-   int reserved[19];
+  int reserved[19];
 
-  } CODEC_DEC_PARAMS;
+} CODEC_DEC_PARAMS;
 ```
 
 <a name="CodecEncParams"></a>
@@ -425,78 +425,78 @@ Decode parameters struct, a substruct within CODEC_PARAMS and CODEC_INARGS
 Encode parameters struct, a substruct within CODEC_PARAMS and CODEC_INARGS
 
 ```c++
-  typedef struct  {
+typedef struct  {
 
 /* generic items */
 
-   int bitRate;               /* bitrate in bps */
-   int samplingRate;          /* most codecs are based on a fixed sampling rate so this is used only for advanced codecs such as EVS and Opus */
-   float frameSize;           /* amount of data (in msec) processed by the codec per frame, for example 20 msec for AMR or EVS, 22.5 msec for MELPe, etc */
+  int bitRate;               /* bitrate in bps */
+  int samplingRate;          /* most codecs are based on a fixed sampling rate so this is used only for advanced codecs such as EVS and Opus */
+  float frameSize;           /* amount of data (in msec) processed by the codec per frame, for example 20 msec for AMR or EVS, 22.5 msec for MELPe, etc */
 
-   union {
-      int dtx_enable;
-      int vad;                /* G729 terminology for DTX */
-   } dtx;
-   union {
-      int payload_format;     /* RTP payload format ... e.g. for AMR, octet align vs. bandwidth efficient, for EVS compact vs. full header */
-      int oct_align;          /* AMR terminology */
-   } rtp_pyld_format;
+  union {
+    int dtx_enable;
+    int vad;                /* G729 terminology for DTX */
+  } dtx;
+  union {
+    int payload_format;     /* RTP payload format ... e.g. for AMR, octet align vs. bandwidth efficient, for EVS compact vs. full header */
+    int oct_align;          /* AMR terminology */
+  } rtp_pyld_format;
 
 /* G729, G726 items */
 
-   int uncompress;
+  int uncompress;
 
 /* AMR-WB+ items */
 
-   int mode;
-   float isf;                 /* internal sampling frequency */
-   int low_complexity;
-   int nChannels;
-   int mono;
+  int mode;
+  float isf;                 /* internal sampling frequency */
+  int low_complexity;
+  int nChannels;
+  int mono;
 
 /* EVS, Opus, other advanced codec items */
 
-   int sid_update_interval;   /* interval between SID frames when DTX is enabled */
-   int rf_enable;             /* channel-aware mode (for EVS only supported at 13.2 kbps) */
-   int fec_indicator;         /* for EVS, LO = 0, HI = 1 */
-   int fec_offset;            /* for EVS, 2, 3, 5, or 7 in number of frames */
-   int bandwidth_limit;       /* for EVS, typically set to SWB or FB */
+  int sid_update_interval;   /* interval between SID frames when DTX is enabled */
+  int rf_enable;             /* channel-aware mode (for EVS only supported at 13.2 kbps) */
+  int fec_indicator;         /* for EVS, LO = 0, HI = 1 */
+  int fec_offset;            /* for EVS, 2, 3, 5, or 7 in number of frames */
+  int bandwidth_limit;       /* for EVS, typically set to SWB or FB */
 
 /* LBR codec items (e.g. MELPe) */
 
-   int bitDensity;            /* channel bit density: 6, 54, 56 */
-   int Npp;                   /* noise preprocessor control flag */
+  int bitDensity;            /* channel bit density: 6, 54, 56 */
+  int Npp;                   /* noise preprocessor control flag */
 
-   unsigned int uFlags;       /* see RTP_FORMAT_xxx and DEBUG_OUTPUT_xxx flag definitions */
+  unsigned int uFlags;       /* see RTP_FORMAT_xxx and DEBUG_OUTPUT_xxx flag definitions */
 
-   int reserved[19];
+  int reserved[19];
 
-  } CODEC_ENC_PARAMS;
+} CODEC_ENC_PARAMS;
 ```
 
 Audio classification frame types returned in CODEC_OUTARGS frameType
 
 ```c++
-  enum audio_classification_frametype {
+enum audio_classification_frametype {
 
 /* classification type items */
 
-    FRAMETYPE_VOICED,              /* speech, voiced */
-    FRAMETYPE_UNVOICED,            /* speech, unvoiced */
-    FRAMETYPE_SID,                 /* SID (silence / comfort noise) frames for codecs that support DTX */
-    FRAMETYPE_NODATA,              /* untransmitted frame for codecs that support DTX */
-    FRAMETYPE_NOISE,               /* background noise for codecs that support audio classification */
-    FRAMETYPE_AUDIO,               /* sounds and other audio for codecs that support audio classification */
-    FRAMETYPE_MUSIC,               /* music for codecs that support audio classification */
+  FRAMETYPE_VOICED,              /* speech, voiced */
+  FRAMETYPE_UNVOICED,            /* speech, unvoiced */
+  FRAMETYPE_SID,                 /* SID (silence / comfort noise) frames for codecs that support DTX */
+  FRAMETYPE_NODATA,              /* untransmitted frame for codecs that support DTX */
+  FRAMETYPE_NOISE,               /* background noise for codecs that support audio classification */
+  FRAMETYPE_AUDIO,               /* sounds and other audio for codecs that support audio classification */
+  FRAMETYPE_MUSIC,               /* music for codecs that support audio classification */
 
 /* attribute flags that may be combined with above classification type items */
 
-    FRAMETYPE_TRANSITION,          /* transition between types */
-    FRAMETYPE_MELP,                /* low bitrate voiced (mixed excited linear prediction) */
-    FRAMETYPE_NELP,                /* low bitrate voiced (noise excited linear prediction) */
+  FRAMETYPE_TRANSITION,          /* transition between types */
+  FRAMETYPE_MELP,                /* low bitrate voiced (mixed excited linear prediction) */
+  FRAMETYPE_NELP,                /* low bitrate voiced (noise excited linear prediction) */
 
-    FRAMETYPE_ITEM_MASK            /* mask to separate attributes from classification types */
-  };
+  FRAMETYPE_ITEM_MASK            /* mask to separate attributes from classification types */
+};
  ```
 
 <a name="CodecOutArgs"></a>
@@ -507,22 +507,21 @@ Optional struct for output from DSCodecEncode() and DSCodecDecode()
   * pOutArgs in DSCodecEncode() or DSCodecDecode() should point to a CODEC_OUTARGS struct, otherwise be given as NULL
 
 ```c++
-  typedef struct {
+typedef struct {
 
-   short int size;       /* generic size field, used differently by codecs */
-   short int frameType;  /* audio content frame type classified by the encoder, if supported by the codec type. Possible types are enumerated in audio_classification_frametype */
-   int extendedError;
+  short int size;       /* generic size field, used differently by codecs */
+  short int frameType;  /* audio content frame type classified by the encoder, if supported by the codec type. Possible types are enumerated in audio_classification_frametype */
+  int extendedError;
 
-   uint8_t CMR;          /* for DSCodecDecode(), CMR (Codec Mode Request) will reflect the value in the input bitstream, if supported by the codec type. Notes:
+  uint8_t CMR;          /* for DSCodecDecode(), CMR (Codec Mode Request) will reflect the value in the input bitstream, if supported by the codec type. Notes:
 
-                            -for AMR codecs CMR examples include 0xf0 (no mode request), 0x20 (AMR-WB 12.65 bps), 0x70 (AMR-NB 1.20 kbps), etc. If the bitstream CMR is "no mode request" (the default value), CMR will be 0xf0
-                            -for EVS codecs CMR will be non-zero only if present in the input bitstream. Examples include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. CMR will be non-zero if the input bitstream is (a) in headerfull format and includes a CMR byte or (b) in AMR-WB IO mode compact format
-                            -received CMR values are not shifted in any way. For octet aligned and headerfull formats, CMR contains the whole byte as received (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR contains the partial 4 or 3 bits, in the exact position they were received, with other CMR bits zero
-                         */
+                           -for AMR codecs CMR examples include 0xf0 (no mode request), 0x20 (AMR-WB 12.65 bps), 0x70 (AMR-NB 1.20 kbps), etc. If the bitstream CMR is "no mode request" (the default value), CMR will be 0xf0
+                           -for EVS codecs CMR will be non-zero only if present in the input bitstream. Examples include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. CMR will be non-zero if the input bitstream is (a) in headerfull format and includes a CMR byte or (b) in AMR-WB IO mode compact format
+                           -received CMR values are not shifted in any way. For octet aligned and headerfull formats, CMR contains the whole byte as received (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR contains the partial 4 or 3 bits, in the exact position they were received, with other CMR bits zero */
 
-   int bitRate;          /* for DSCodecDecode(), bitrate detected by the decoder (in bps) from the input bitstream, if supported by the codec type */
+  int bitRate;          /* for DSCodecDecode(), bitrate detected by the decoder (in bps) from the input bitstream, if supported by the codec type */
 
-  } CODEC_OUTARGS;
+} CODEC_OUTARGS;
 ```
 
 <a name="CodecOutArgs"></a>
@@ -533,48 +532,47 @@ Optional struct for input to DSCodecEncode() and DSCodecDecode()
   * pInArgs in DSCodecEncode() or DSCodecDecode() should point to a CODEC_INARGS struct, otherwise be given as NULL
 
 ```c++
-  typedef struct {
+typedef struct {
 
-   uint8_t CMR;          /* for DSCodecEncode(), this is the CMR (Codec Mode Request) in the encoder output bitstream frame. Notes:
+  uint8_t CMR;          /* for DSCodecEncode(), this is the CMR (Codec Mode Request) in the encoder output bitstream frame. Notes:
 
-                            -SigSRF encoders generate a CMR if mandated by the spec. For example, encoders generate a CMR for all AMR frames and for EVS AMR-WB IO mode SID frames (as required by spec section A.2.2.1.1). In these cases a CMR specified here will override the one generated
-                            -for AMR codecs if "no mode request" should be inserted, then specify 0xf0. When pInArgs is NULL, the default CMR value is 0xf0
-                            -for EVS codecs using headerfull format, if pInArgs is non-NULL then zero CMR values are ignored. Examples of valid CMR values include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. Note the CMR value msb should be set in order to comply with spec section A.2.2.1.1 (the "H" bit). When pInArgs is NULL, or when compact format is in use, CMR is ignored
-                            -for EVS codecs using AMR-WB IO mode in compact format valid values of CMR include 0 (6.6 kbps), 0xc0 (23.85 kbps), 0xe0 (no mode request), etc.
-                            -CMR should not be shifted in any way. For octet aligned and headerfull formats, CMR should give the whole byte to insert in the output frame (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR should give the partial 4 or 3 bits, in the exact position within a payload byte as shown in the codec spec, with the rest of CMR zero'ed
+                           -SigSRF encoders generate a CMR if mandated by the spec. For example, encoders generate a CMR for all AMR frames and for EVS AMR-WB IO mode SID frames (as required by spec section A.2.2.1.1). In these cases a CMR specified here will override the one generated
+                           -for AMR codecs if "no mode request" should be inserted, then specify 0xf0. When pInArgs is NULL, the default CMR value is 0xf0
+                           -for EVS codecs using headerfull format, if pInArgs is non-NULL then zero CMR values are ignored. Examples of valid CMR values include 0x80 (CMR = 0), 0xa4 (CMR = 0x24), 0x92 (CMR = 0x12), etc. Note the CMR value msb should be set in order to comply with spec section A.2.2.1.1 (the "H" bit). When pInArgs is NULL, or when compact format is in use, CMR is ignored
+                           -for EVS codecs using AMR-WB IO mode in compact format valid values of CMR include 0 (6.6 kbps), 0xc0 (23.85 kbps), 0xe0 (no mode request), etc.
+                           -CMR should not be shifted in any way. For octet aligned and headerfull formats, CMR should give the whole byte to insert in the output frame (including H bit or R bits as applicable). For bandwidth efficent and compact formats, CMR should give the partial 4 or 3 bits, in the exact position within a payload byte as shown in the codec spec, with the rest of CMR zero'ed
 
-                            for DSCodecDecode(), this is the CMR in the decoder input bitstream frame. Notes:
+                           for DSCodecDecode(), this is the CMR in the decoder input bitstream frame. Notes:
 
-                            -zero values are ignored
-                            -normally SigSRF decoders expect CMR in frame input. If one is specified here, then it's inserted at the start of the frame and processed without any additional assumptions. This implies that if the frame already has a CMR, the calling application should remove it
-                         */
+                           -zero values are ignored
+                           -normally SigSRF decoders expect CMR in frame input. If one is specified here, then it's inserted at the start of the frame and processed without any additional assumptions. This implies that if the frame already has a CMR, the calling application should remove it */
 
-   CODEC_ENC_PARAMS* pCodecEncParams;  /* to change bitRate or codec-specific parameters within the duration of an encoder instance, specify a CODEC_ENC_PARAMS struct. Note this only applies to newer, advanced codecs such as EVS and Opus */
+  CODEC_ENC_PARAMS* pCodecEncParams;  /* to change bitRate or codec-specific parameters within the duration of an encoder instance, specify a CODEC_ENC_PARAMS struct. Note this only applies to newer, advanced codecs such as EVS and Opus */
 
-   CODEC_DEC_PARAMS* pCodecDecParams;  /* to change output sampling rate or codec-specific parameters within the duration of a decoder instance, specify a CODEC_DEC_PARAMS struct. Note this only applies to newer, advanced codecs such as EVS and Opus */
+  CODEC_DEC_PARAMS* pCodecDecParams;  /* to change output sampling rate or codec-specific parameters within the duration of a decoder instance, specify a CODEC_DEC_PARAMS struct. Note this only applies to newer, advanced codecs such as EVS and Opus */
 
-  } CODEC_INARGS;
+} CODEC_INARGS;
 ```
 Definitions for uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS
 
 ```c++
-  #define RTP_FORMAT_ENCODER_NO_AMRWBIO_PADDING_BYTES      
-  #define RTP_FORMAT_ENCODER_NO_VBR_PADDING_BYTES          
-  #define RTP_FORMAT_DECODER_IGNORE_AMRWBIO_PADDING_BYTES  
-  #define RTP_FORMAT_DECODER_IGNORE_VBR_PADDING_BYTES      
-  #define RTP_FORMAT_ENCODER_FORCE_CMR                                /* force CMR to be inserted at start of output (value of 0xff "NO_REQ" is used). Intended for test/debug purposes */
+#define RTP_FORMAT_ENCODER_NO_AMRWBIO_PADDING_BYTES      
+#define RTP_FORMAT_ENCODER_NO_VBR_PADDING_BYTES          
+#define RTP_FORMAT_DECODER_IGNORE_AMRWBIO_PADDING_BYTES  
+#define RTP_FORMAT_DECODER_IGNORE_VBR_PADDING_BYTES      
+#define RTP_FORMAT_ENCODER_FORCE_CMR                     /* force CMR to be inserted at start of output (value of 0xff "NO_REQ" is used). Intended for test/debug purposes */
 
-  #define DEBUG_OUTPUT_VOPLIB_ONTHEFLY_UPDATES                        /* show on-the-fly updates at voplib level */
-  #define DEBUG_OUTPUT_CODEC_LIB_ONTHEFLY_UPDATES                     /* show on-the-fly updates at encoder or decoder lib level */
+#define DEBUG_OUTPUT_VOPLIB_ONTHEFLY_UPDATES             /* show on-the-fly updates at voplib level */
+#define DEBUG_OUTPUT_CODEC_LIB_ONTHEFLY_UPDATES          /* show on-the-fly updates at encoder or decoder lib level */
 
-  #define DEBUG_OUTPUT_VOPLIB_PADDING_BYTE_APPEND                     /* show encoder padding bytes when appended */
-  #define DEBUG_OUTPUT_VOPLIB_SHOW_BITSTREAM_BYTES                    /* show input bitstream bytes on entry to DSCodecDecode(), or output bitstream bytes on exit from DSCodecEncode(). Displayed values are compressed bitstream bytes in hex format */
-  #define DEBUG_OUTPUT_VOPLIB_SHOW_INTERNAL_INFO                      /* show decoder or encoder internal info, once for each framesize. Internal info includes CMR, I/O mode, payload format, framesize, and first payload byte */
-  #define DEBUG_OUTPUT_SHOW_INIT_PARAMS                               /* show encoder and/or decoder init params when instance is created. Note this flag is only active during DSCodecCreate() */
+#define DEBUG_OUTPUT_VOPLIB_PADDING_BYTE_APPEND          /* show encoder padding bytes when appended */
+#define DEBUG_OUTPUT_VOPLIB_SHOW_BITSTREAM_BYTES         /* show input bitstream bytes on entry to DSCodecDecode(), or output bitstream bytes on exit from DSCodecEncode(). Displayed values are compressed bitstream bytes in hex format */
+#define DEBUG_OUTPUT_VOPLIB_SHOW_INTERNAL_INFO           /* show decoder or encoder internal info, once for each framesize. Internal info includes CMR, I/O mode, payload format, framesize, and first payload byte */
+#define DEBUG_OUTPUT_SHOW_INIT_PARAMS                    /* show encoder and/or decoder init params when instance is created. Note this flag is only active during DSCodecCreate() */
 
-  #define DEBUG_TEST_ABORT_EXIT_INTERCEPTION                          /* test abort() and exit() function interception at encoder or decoder lib level. Interception prevents abort() or exit() from terminating the libary and calling application, and allows code flow to continue. The test will simulate one abort() and one exit() interception, and display an example event log error message. Note that this only applies to codecs with embedded abort() and exit() functions that cannot -- or are not allowed to -- be removed, for example due to (i) binary implementation, (ii) possible license violation if source code is modified */
+#define DEBUG_TEST_ABORT_EXIT_INTERCEPTION               /* test abort() and exit() function interception at encoder or decoder lib level. Interception prevents abort() or exit() from terminating the libary and calling application, and allows code flow to continue. The test will simulate one abort() and one exit() interception, and display an example event log error message. Note that this only applies to codecs with embedded abort() and exit() functions that cannot -- or are not allowed to -- be removed, for example due to (i) binary implementation, (ii) possible license violation if source code is modified */
 
-  #define DEBUG_OUTPUT_ADD_TO_EVENT_LOG                               /* add debug output to event log */
+#define DEBUG_OUTPUT_ADD_TO_EVENT_LOG                    /* add debug output to event log */
 ```
 <a name="PayloadInfo"></a>
 ### PAYLOAD_INFO
@@ -582,57 +580,57 @@ Definitions for uFlags in CODEC_ENC_PARAMS and CODEC_DEC_PARAMS
 A PAYLOAD_INFO struct is returned by DSGetPayloadInfo().
 
 ```c++
-  typedef struct PAYLOAD_INFO {  /* codec RTP payload items extracted or derived from a combination of codec type, payload header, and payload size */
+typedef struct PAYLOAD_INFO {  /* codec RTP payload items extracted or derived from a combination of codec type, payload header, and payload size */
 
-  /* common items derived from payload header and size */
+/* common items derived from payload header and size */
 
-     codec_types  codec_type;                     /* set to codec type determined inside DSGetPayloadInfo() depending on uFlags containing DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE (in the latter case it's a copy of codec_param). codec_types enums are defined in shared_include/codec.h with size int */
+   codec_types  codec_type;                     /* set to codec type determined inside DSGetPayloadInfo() depending on uFlags containing DS_CODEC_INFO_HANDLE or DS_CODEC_INFO_TYPE (in the latter case it's a copy of codec_param). codec_types enums are defined in shared_include/codec.h with size int */
 
-     uint8_t      uFormat;                        /* set to a DS_PYLD_FMT_XXX payload format definition for applicable codecs (e.g. AMR, EVS, H.26x), 0 otherwise */
+   uint8_t      uFormat;                        /* set to a DS_PYLD_FMT_XXX payload format definition for applicable codecs (e.g. AMR, EVS, H.26x), 0 otherwise */
 
-     int16_t      NumFrames;                      /* number of frames in payload. On error set to number of valid payload frames processed before the error occurred */
-     int32_t      FrameSize[MAX_PAYLOAD_FRAMES];  /* frame size in bytes for all codec types except AMR. For AMR (NB, WB, WB+) codecs this is frame size in bits (i.e. number of data bits in the frame, as shown at https://www.ietf.org/proceedings/50/slides/avt-8/sld009.htm). -1 indicates an error condition in payload ToC */
-     int32_t      BitRate[MAX_PAYLOAD_FRAMES];    /* bitrate */
+   int16_t      NumFrames;                      /* number of frames in payload. On error set to number of valid payload frames processed before the error occurred */
+   int32_t      FrameSize[MAX_PAYLOAD_FRAMES];  /* frame size in bytes for all codec types except AMR. For AMR (NB, WB, WB+) codecs this is frame size in bits (i.e. number of data bits in the frame, as shown at https://www.ietf.org/proceedings/50/slides/avt-8/sld009.htm). -1 indicates an error condition in payload ToC */
+   int32_t      BitRate[MAX_PAYLOAD_FRAMES];    /* bitrate */
 
-     struct voice {
+   struct voice {
 
-    /* voice payload types, header values, or operating modes */
+  /* voice payload types, header values, or operating modes */
 
-       uint8_t    CMR;                            /* change mode request value, if found in payload and applicable to the codec type, zero otherwise. Not shifted or otherwise modified */
-       uint8_t    ToC[MAX_PAYLOAD_FRAMES];        /* payload header ToC (table of contents) if applicable to the codec type, including EVS and AMR, which can have multiple frames per payload (e.g. variable ptime), or multiple channels per payload (e.g. stereo or independent mono channels), or a mix. Zero otherwise */
-       bool       fSID;                           /* set true for a SID payload, false otherwise */
-       bool       fAMRWB_IO_Mode;                 /* set true for an EVS AMR-WB IO compatibility mode payload, false otherwise */
-       bool       fDTMF;                          /* set true for a DTMF event payload, false otherwise */
-       uint8_t    Reserved[16];
+     uint8_t    CMR;                            /* change mode request value, if found in payload and applicable to the codec type, zero otherwise. Not shifted or otherwise modified */
+     uint8_t    ToC[MAX_PAYLOAD_FRAMES];        /* payload header ToC (table of contents) if applicable to the codec type, including EVS and AMR, which can have multiple frames per payload (e.g. variable ptime), or multiple channels per payload (e.g. stereo or independent mono channels), or a mix. Zero otherwise */
+     bool       fSID;                           /* set true for a SID payload, false otherwise */
+     bool       fAMRWB_IO_Mode;                 /* set true for an EVS AMR-WB IO compatibility mode payload, false otherwise */
+     bool       fDTMF;                          /* set true for a DTMF event payload, false otherwise */
+     uint8_t    Reserved[16];
 
-     } voice;
+   } voice;
 
-     struct audio {
+   struct audio {
 
-       uint8_t    Reserved[16];
+     uint8_t    Reserved[16];
 
-     } audio;
+   } audio;
 
-  /* video payload header values */
+/* video payload header values */
 
-     struct video {
+   struct video {
 
-       uint16_t   NALU_Header;                    /* H.26x NAL unit header. Possible values include NAL unit types defined in H.26x specs and fragment and aggregation unit types defined only for RTP transport (RFCs 6184 and 7798) */
-       uint8_t    FU_Header;                      /* H.26x Fragmentation Packet header */
+     uint16_t   NALU_Header;                    /* H.26x NAL unit header. Possible values include NAL unit types defined in H.26x specs and fragment and aggregation unit types defined only for RTP transport (RFCs 6184 and 7798) */
+     uint8_t    FU_Header;                      /* H.26x Fragmentation Packet header */
 
-       int        Reserved[32];
+     int        Reserved[32];
 
-     } video;
+   } video;
 
-  /* misc */
+/* misc */
 
-     int          start_of_payload_data;          /* index into rtp_payload[] of start of payload data. If DSGetPayloadInfo() returns an error condition, this is the payload header byte on which the error occurred */
+   int          start_of_payload_data;          /* index into rtp_payload[] of start of payload data. If DSGetPayloadInfo() returns an error condition, this is the payload header byte on which the error occurred */
 
-     int          amr_decoder_bit_pos;            /* reserved */
+   int          amr_decoder_bit_pos;            /* reserved */
 
-     int          Reserved[16];
+   int          Reserved[16];
 
-  } PAYLOAD_INFO;
+} PAYLOAD_INFO;
 ```
 
 <a name="SDPInfo"></a>
@@ -641,12 +639,12 @@ A PAYLOAD_INFO struct is returned by DSGetPayloadInfo().
 An SDP_INFO struct can be given in the sdp_info pointer param in DSGetPayloadInfo().
 
 ```c++
-  typedef struct SDP_INFO {  /* SDP info associated with RTP payload, if any */
+typedef struct SDP_INFO {  /* SDP info associated with RTP payload, if any */
   
-     uint8_t      payload_type;
-     char*        fmtp;                           /* see extract_rtp_video.cpp for fmtp string examples */
+   uint8_t      payload_type;
+   char*        fmtp;                           /* see extract_rtp_video.cpp for fmtp string examples */
 
-  } SDP_INFO;
+} SDP_INFO;
 ```
 
 <a name="hellocodecExampleApp"></a>
