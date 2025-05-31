@@ -203,6 +203,8 @@ uFlags definitions
 ```
 uFlags definitions
 
+  * note that all uFlags defined below can be combined with DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG and/or DS_VOPLIB_SUPPRESS_INFO_MSG
+
 ```c++
     #define DS_CODEC_INFO_TYPE                        /* codec_param is interpreted as a codec_type enum (see codec type enums defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE are given. If both are given a codec_type enum is returned cast as an int */ 
     #define DS_CODEC_INFO_HANDLE                      /* codec_param is interpreted as an hCodec; i.e. codec instance handle created by prior call to DSCodecCreate() */ 
@@ -211,7 +213,6 @@ uFlags item flags, if used one flag should be combined with either DS_CODEC_INFO
   
   * if no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo should point to a CODEC_PARAMS struct
   * some item flags require the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
-  * note that all uFlags defined below can be combined with DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG and/or DS_VOPLIB_SUPPRESS_INFO_MSG
 
 ```c++
     #define DS_CODEC_INFO_MEDIA_FRAMESIZE             /* returns codec media frame size (i.e. prior to encode, after decode), in bytes. If DS_CODEC_INFO_HANDLE is not given, returns default media frame size for one ptime. For EVS, nInput1 should specify one of the four (4) EVS sampling rates (in Hz) */
@@ -239,9 +240,8 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
     #define DS_CODEC_INFO_SIZE_BITS                   /* indicates DS_CODEC_INFO_CODED_FRAMESIZE return value should be in size of bits (instead of bytes) */
 
     #define DS_CODEC_INFO_NAME_VERBOSE                /* if DS_CODEC_INFO_NAME_VERBOSE is combined with the DS_CODEC_INFO_NAME flag, additional information will be included in some codec names, for example "L16" becomes "L16 (linear 16-bit PCM)". When this flag is used the resulting codec name should not be used with the DS_CODEC_TYPE_FROM_NAME flag */
-
-    #define DS_CODEC_INFO_SUPPRESS_WARNING_MSG        /* suppress DSGetCodecInfo() warning messages */
 ```
+
 <a name="DSGetPayloadInfo"></a>
 ## DSGetPayloadInfo
 
@@ -294,11 +294,11 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 
     #define DS_PAYLOAD_INFO_IGNORE_DTMF               /* DSGetPayloadInfo() default behavior for voice and audio codecs is to recognize payload_size == 4 as a DTMF event (RFC 4733), set NumFrames to 1 and set fDTMF in payload_info, and immediately return 0 without reference to codec_param and payload. To override this behavior DS_PAYLOAD_INFO_IGNORE_DTMF can be given in uFlags */ 
 
-  #define DS_PAYLOAD_INFO_DEBUG_OUTPUT                /* ask for additional debug output in DSGetPayloadInfo() */ 
+    #define DS_PAYLOAD_INFO_DEBUG_OUTPUT                /* ask for additional debug output in DSGetPayloadInfo() */ 
 
-  #define DS_PAYLOAD_INFO_RESET_ID                    /* reset unique stream or thread identifier */ 
+    #define DS_PAYLOAD_INFO_RESET_ID                    /* reset unique stream or thread identifier */ 
 
-  #define DS_PAYLOAD_INFO_IGNORE_INBAND_XPS           /* default DSGetPayloadInfo() behavior for video RTP streams is to favor inband xps info within the stream, and if not found insert SDP xps info when sdp_info contains an fmtp string. The DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag can be applied to override this behavior and force sdp_info to be used regardless of inband xps info. For example VLC output streams may contain repeated SDP info fmtp xps fields, but no inband xps info, in which case the mediaMin reference application will supply SDP info when calling DSGetPayloadInfo() */
+    #define DS_PAYLOAD_INFO_IGNORE_INBAND_XPS           /* default DSGetPayloadInfo() behavior for video RTP streams is to favor inband xps info within the stream, and if not found insert SDP xps info when sdp_info contains an fmtp string. The DS_PAYLOAD_INFO_IGNORE_INBAND_XPS flag can be applied to override this behavior and force sdp_info to be used regardless of inband xps info. For example VLC output streams may contain repeated SDP info fmtp xps fields, but no inband xps info, in which case the mediaMin reference application will supply SDP info when calling DSGetPayloadInfo() */
 ```
 
 <a name="DSGetPayloadHeaderToC"></a>
