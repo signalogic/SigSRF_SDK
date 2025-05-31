@@ -355,7 +355,7 @@ mediaMin -cx86 -i../pcaps/pcmutest.pcap -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pc
 
 The screencap below shows mediaTest output after the second command line.
 
-![mediaMin pcap I/O command line example](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/mediatest_demo_screencap.png "mediaMin pcap I/O command line example")
+![mediaMin pcap I/O command line example](https://www.github.com/signalogic/SigSRF_SDK/blob/master/images/mediatest_demo_screencap.png "mediaMin pcap I/O command line example")
 
 <a name="MultipleRTPStreamsCmdLine"></a>
 ### Multiple RTP Streams (RFC 8108)
