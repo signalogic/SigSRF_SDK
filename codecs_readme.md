@@ -258,7 +258,7 @@ DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodec
                          unsigned int uFlags,         /* if uFlags specifies DS_CODEC_INFO_HANDLE, codec_param should be an HCODEC returned by a prior call to DSCodecCreate(), otherwise codec_param should be a DS_CODEC_XXX enum defined in shared_include/codec.h. uFlags may also include DS_PAYLOAD_INFO_SID_ONLY, DS_PAYLOAD_INFO_GENERIC, DS_PAYLOAD_INFO_IGNORE_DTMF, DS_PAYLOAD_INFO_DEBUG_OUTPUT, DS_PAYLOAD_INFO_RESET_ID, and DS_PAYLOAD_INFO_IGNORE_INBAND_XPS as defined below */
                          uint8_t* rtp_payload,        /* rtp_payload should point to an RTP payload in an IPv4 or IPv6 UDP packet */
                          int payload_size,            /* size of the RTP payload, in bytes */
-                         PAYLOAD_INFO* payload_info,  /* payload_info is an optional pointer to a <a href="https://github.com/signalogic/SIGSRF_SDK/master/codecs_readme.md#user-content-payloadinfo">PAYLOAD_INFO struct</a>). The following payload_info items are set or cleared:
+                         PAYLOAD_INFO* payload_info,  /* payload_info is an optional pointer to a <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-payloadinfo">PAYLOAD_INFO struct</a>. The following payload_info items are set or cleared:
 
                                                          -codec_type is set to the codec type interpreted from codec_param, as described above
                                                          -uFormat is set to a DS_PYLD_FMT_XXX payload format definition for applicable codecs (e.g. AMR, EVS, H.26x) as noted above
