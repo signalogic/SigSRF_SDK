@@ -252,8 +252,7 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 
 DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin and packet/media worker threads in pktlib. A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported
 
-<pre>
-<code>
+<pre><code>
     int DSGetPayloadInfo(int codec_param,             /* codec_param can be either a codec_type enum or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec_param as an DS_CODEC_XXX enum defined in shared_include/codec.h. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type enum cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
                          unsigned int uFlags,         /* if uFlags specifies DS_CODEC_INFO_HANDLE, codec_param should be an HCODEC returned by a prior call to DSCodecCreate(), otherwise codec_param should be a DS_CODEC_XXX enum defined in shared_include/codec.h. uFlags may also include DS_PAYLOAD_INFO_SID_ONLY, DS_PAYLOAD_INFO_GENERIC, DS_PAYLOAD_INFO_IGNORE_DTMF, DS_PAYLOAD_INFO_DEBUG_OUTPUT, DS_PAYLOAD_INFO_RESET_ID, and DS_PAYLOAD_INFO_IGNORE_INBAND_XPS as defined below */
                          uint8_t* rtp_payload,        /* rtp_payload should point to an RTP payload in an IPv4 or IPv6 UDP packet */
@@ -261,7 +260,7 @@ DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodec
                          PAYLOAD_INFO* payload_info,  /* payload_info is an optional pointer to a <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-payloadinfo">PAYLOAD_INFO struct</a>. The following payload_info items are set or cleared:
 
                                                          -codec_type is set to the codec type interpreted from codec_param, as described above
-                                                         -uFormat is set to a DS_PYLD_FMT_XXX payload format definition for applicable codecs (e.g. AMR, EVS, H.26x) as noted above
+                                                         -uFormat is set to a <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-payloadformatdefinitions">DS_PYLD_FMT_XXX payload format definition</a> for applicable codecs (e.g. AMR, EVS, H.26x) as noted above
                                                          -NumFrames is set to the number of frames in the payload
                                                          -FrameSize[] is set to the size of each frame in the payload if applicable to the codec type, set to zero otherwise
                                                          -BitRate[] is set to the codec bitrate corresponding to the frame size
@@ -273,13 +272,12 @@ DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodec
                                                          -only applicable to EVS, fAMRWB_IO_Mode is set true for an AMR-WB IO mode payload, false for a primary mode payload, and false for all other codec types
                                                          -for H.26x codecs NALU_Header and FU_Header are extracted from payload header values */
 
-                         SDP_INFO* sdp_info,          /* sdp_info is an optional pointer to an SDP_INFO struct associated with the RTP payload. For example a video stream may omit in-band vps, sps, or pps NAL units in which case DSGetPayloadInfo() can construct and insert that information from "fmtp" SDP info fields. If sdp_info is not NULL and the first RTP payload for a stream does not contain xps info, sdp_info will be scanned for sprop-vps, sprop-sps, and sprop-pps fields, converted from base64 into binary sequences, and inserted into the elementary bitstream */
+                         SDP_INFO* sdp_info,          /* sdp_info is an optional pointer to an <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-sdpinfo">SDP_INFO</a> struct associated with the RTP payload. For example a video stream may omit in-band vps, sps, or pps NAL units in which case DSGetPayloadInfo() can construct and insert that information from "fmtp" SDP info fields. If sdp_info is not NULL and the first RTP payload for a stream does not contain xps info, sdp_info will be scanned for sprop-vps, sprop-sps, and sprop-pps fields, converted from base64 into binary sequences, and inserted into the elementary bitstream */
                          int nId,                     /* nId is an optional unique thread or session identifier that should only used be for output bitstream extraction and/or file write. If not used a value of -1 should be given, otherwise saved state information may become confused between threads or sessions */
                          FILE* fp_out,                /* fp_out is an optional pointer to an open output binary file to append bitstream data extracted from payload contents per the relevant codec RTP payload specification */
                          void* pInfo                  /* pInfo is an optional pointer to a memory buffer to copy bitstream data extracted from payload contents per the relevant codec RTP payload specification */
                         );
-</code>
-</pre>
+</code></pre>
 
 uFlags definitions
 
