@@ -212,8 +212,8 @@ uFlags definitions
 ```
 uFlags item flags, if used one flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE
   
-  * if no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo should point to a CODEC_PARAMS struct
-  * some item flags require the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
+* if no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo should point to a CODEC_PARAMS struct
+* some item flags require the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
 
 ```c++
 #define DS_CODEC_INFO_MEDIA_FRAMESIZE                /* returns codec media frame size (i.e. prior to encode, after decode), in bytes. If DS_CODEC_INFO_HANDLE is not given, returns default media frame size for one ptime. For EVS, nInput1 should specify one of the four (4) EVS sampling rates (in Hz) */
@@ -250,7 +250,7 @@ DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodec
 
 A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported. Information returned or retrieved includes:
 
-* RTP payload format in the return value as a DS_PYLD_FMT_XXX payload definition for applicable codecs (e.g. AMR, EVS, H.26x), (ii) 0 for other codec types, (iii) number of bytes written to bitstream file or copied to memory buffer if fp_out or pInfo is not NULL, or (iv) < 0 for error conditions. See [Payload Format Definitions](#user-content-payloadformatdefinitions) below
+* return value is (i) a DS_PYLD_FMT_XXX payload format definition for applicable codecs (e.g. AMR, EVS, H.26x), (ii) 0 for other codec types, (iii) number of bytes written to bitstream file or copied to memory buffer if fp_out or pInfo is not NULL, or (iv) < 0 for error conditions. See [Payload Format Definitions](#user-content-payloadformatdefinitions) below
 * payload and extracted bitstream information in optional pointer params payload_info and pInfo
 
 Note that params labeled optional below should be given as NULL if not used.
