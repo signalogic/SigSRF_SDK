@@ -194,7 +194,7 @@ None
 DSCodecInfo() returns retrieves information for the specified codec into a pInfo pointer, returning > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions.
   
 ```c++
-int DSGetCodecInfo(int             codec_param,      /* codec_param can be either a codec instance handle (HCODEC) or a codec_type enum (a DS_CODEC_xxx enum defined in shared_include/codec.h), depending on uFlags.  If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default and codec_param is interpreted as a codec type. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
+int DSGetCodecInfo(int             codec_param,      /* codec_param can be either a codec instance handle (HCODEC) or a codec_type enum (a DS_CODEC_xxx enum defined in shared_include/codec.h), depending on uFlags.  If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type enum cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default and codec_param is interpreted as a codec type. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
                    unsigned int    uFlags,           /* if uFlags specifies DS_CODEC_INFO_TYPE, codec_param should be a DS_CODEC_XXX enum defined in shared_include/codec.h, and uFlags can also contain DS_CODEC_INFO_NAME, DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, or DS_CODEC_INFO_PARAMS. If uFlags specifies DS_CODEC_INFO_TYPE_FROM_NAME, pInfo should contain a standard codec name string. Standardized SigSRF codec names are given in shared_include/codec.h */
                    int             nInput1,          /* nInput1 is required for uFlags DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, DS_CODEC_INFO_CMR_BITRATE, or DS_CODEC_INFO_LIST_TO_CLASSIFICATION. Both nInput1 and nInput2 are required for uFlags DS_CODEC_INFO_BITRATE_TO_INDEX, DS_CODEC_INFO_INDEX_TO_BITRATE, or DS_CODEC_INFO_CODED_FRAMESIZE */
                    int             nInput2,
@@ -211,7 +211,7 @@ uFlags definitions
 #define DS_CODEC_INFO_HANDLE                         /* codec_param is interpreted as an hCodec; i.e. codec instance handle created by prior call to DSCodecCreate() */ 
 ```
 uFlags item flags, if used one flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE
-  
+
 * if no item flag is given, DS_CODEC_INFO_HANDLE should be specified and pInfo should point to a CODEC_PARAMS struct
 * some item flags require the DS_CODEC_INFO_HANDLE flag (see per-flag comments)
 
@@ -256,7 +256,7 @@ A full RTP payload parsing and inspection mode as well as generic and "lightweig
 Note that params labeled optional below should be given as NULL if not used.
 
 <pre><code>
-int DSGetPayloadInfo(int           codec_param,      /* codec_param can be either a codec_type enum or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec_param as an DS_CODEC_XXX enum defined in shared_include/codec.h. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type enum cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
+int DSGetPayloadInfo(int           codec_param,      /* codec_param can be either a codec_type enum or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec_param as an DS_CODEC_XXX enum defined in shared_include/codec.h. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
                      unsigned int  uFlags,           /* if uFlags specifies DS_CODEC_INFO_HANDLE, codec_param should be an HCODEC returned by a prior call to DSCodecCreate(), otherwise codec_param should be a DS_CODEC_XXX enum defined in shared_include/codec.h. uFlags may also include DS_PAYLOAD_INFO_SID_ONLY, DS_PAYLOAD_INFO_GENERIC, DS_PAYLOAD_INFO_IGNORE_DTMF, DS_PAYLOAD_INFO_DEBUG_OUTPUT, DS_PAYLOAD_INFO_RESET_ID, and DS_PAYLOAD_INFO_IGNORE_INBAND_XPS as defined below */
                      uint8_t*      rtp_payload,      /* rtp_payload should point to an RTP payload in an IPv4 or IPv6 UDP packet */
                      int           payload_size,     /* size of the RTP payload, in bytes */
@@ -310,7 +310,7 @@ Additional uFlags, if used one or more flag should be combined with either DS_CO
 <a name="DSGetPayloadHeaderToC"></a>
 ## DSGetPayloadHeaderToC
 
-DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. The returned ToC is normally one byte, including a 4-bit FT (frame type) field, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions. The return value is < 0 for error conditions.
+DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. The returned ToC is normally one byte, including a 4-bit FT (frame type) field, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions. A value < 0 is returned for error conditions.
 
 [//]: # (Note param alignment here is a few spaces more because of length of API name, JHB May 2025)
 
