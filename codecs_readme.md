@@ -312,9 +312,11 @@ Additional uFlags, if used one or more flag should be combined with either DS_CO
 
 DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. The returned ToC is normally one byte, including a 4-bit FT (frame type) field, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions. The return value is < 0 for error conditions.
 
+[//]: # (Note param alignment here is a few spaces more because of length of API name, JHB May 2025)
+
 ```c++
 int DSGetPayloadHeaderToC(codec_types codec_type,    /* a DS_CODEC_xxx enum defined in shared_include/codec.h */
-                          uint8_t*    payload,       /* payload should point to an RTP payload in an IPv4 or IPv6 UDP packet. For EVS payloads payload is only needed for "special case" payloads (see spec section A.2.1.3, Special case for 56 bit payload size (EVS Primary or EVS AMR-WB IO SID), otherwise it can be given as NULL. For AMR payloads, DSGetPayloadHeaderToC() calls DSGetPayloadInfo() internally as information in the payload is required to determine its (bandwidth-efficient vs octet-aligned), and in turn its ToC */
+                          uint8_t*    rtp_payload,   /* rtp_payload should point to an RTP payload in an IPv4 or IPv6 UDP packet. For EVS payloads payload is only needed for "special case" payloads (see spec section A.2.1.3, Special case for 56 bit payload size (EVS Primary or EVS AMR-WB IO SID), otherwise it can be given as NULL. For AMR payloads, DSGetPayloadHeaderToC() calls DSGetPayloadInfo() internally as information in the payload is required to determine its (bandwidth-efficient vs octet-aligned), and in turn its ToC */
                           int         payload_size,  /* size of the RTP payload, in bytes */
                          );
 ```
