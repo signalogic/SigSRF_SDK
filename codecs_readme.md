@@ -290,7 +290,8 @@ uFlags definitions
 #define DS_CODEC_INFO_TYPE                           /* codec_param is interpreted as a codec_type enum (defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE are given. If both are given a codec_type enum is returned cast as an int */ 
 #define DS_CODEC_INFO_HANDLE                         /* codec_param is interpreted as an hCodec; i.e. codec instance handle created by prior call to DSCodecCreate() */ 
 ```
-additional uFlags, if used one or more flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE
+
+Additional uFlags, if used one or more flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE
   
 ```c++
 #define DS_PAYLOAD_INFO_SID_ONLY                     /*  if DS_PAYLOAD_INFO_SID_ONLY is given in uFlags DSGetPayloadInfo() will make a quick check for a SID payload. codec_param should be a valid DS_CODEC_xxx enum (defined in shared_include/codec.h), uFlags must include DS_CODEC_INFO_TYPE, no error checking is performed, and fSID in payload_info will be set or cleared. If the payload contains multiple frames only the first frame is considered. Return values are a DS_PYLD_FMT_XXX value for a SID payload and -1 for not a SID payload */
