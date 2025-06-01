@@ -125,7 +125,7 @@ The following APIs and structs are defined in [voplib.h](https://www.github.com/
 <a name="DSCodecCreate"></a>
 ## DSCodecCreate
 
-DSCodecCreate() creates an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo, and returns an HCODEC (a codec instance handle) > 0 on success, 0 if no handle was created, and < 0 for an error condition.
+DSCodecCreate() creates an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo, returning an HCODEC (a codec instance handle) > 0 on success, 0 if no handle was created, and < 0 for an error condition.
 
 ```c++
 HCODEC DSCodecCreate(void* pCodecInfo,               /* pointer to CODEC_PARAMS struct or TERMINATION_INFO struct - see comments below */
@@ -148,7 +148,7 @@ For packet based applications (indirect codec usage), if the DS_CODEC_CREATE_USE
 <a name="DSCodecDecode"></a>
 ## DSCodecDecode
 
-DSCodecDecode() decodes one or more frames using one or more decoder instance handles, and returns length of decoded media frame(s) (in bytes).
+DSCodecDecode() decodes one or more frames using one or more decoder instance handles, returning amount of decoded media frame(s) (in bytes).
 
 ```c++
 int DSCodecDecode(HCODEC*          hCodec,           /* pointer to one or more codec instance handles, as specified by numChan */
@@ -170,7 +170,7 @@ uFlags definitions
 <a name="DSCodecEncode"></a>
 ## DSCodecEncode
 
-DSCodecEncode() encodes one or more frames using one or more encoder instance handles, and returns length of encoded bitstream frame(s) (in bytes).
+DSCodecEncode() encodes one or more frames using one or more encoder instance handles, returning amount of encoded bitstream frame(s) data (in bytes).
 
 ```c++
 int DSCodecEncode(HCODEC*          hCodec,           /* pointer to one or more codec instance handles, as specified by numChan */
@@ -191,7 +191,7 @@ None
 <a name="DSGetCodecInfo"></a>
 ## DSGetCodecInfo
 
-DSCodecInfo() returns and/or retrieves into a pInfo pointer information for the specified codec, and returns > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions.
+DSCodecInfo() returns and/or retrieves into a pInfo pointer information for the specified codec, returning > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions.
   
 ```c++
 int DSGetCodecInfo(int             codec_param,      /* codec_param can be either a codec instance handle (HCODEC) or a codec_type enum (a DS_CODEC_xxx enum defined in shared_include/codec.h), depending on uFlags.  If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default and codec_param is interpreted as a codec type. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
@@ -250,9 +250,8 @@ DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodec
 
 A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported. Information returned or retrieved includes:
 
-* RTP payload format in the return value
+* RTP payload format in the return value as a DS_PYLD_FMT_XXX payload definition for applicable codecs (e.g. AMR, EVS, H.26x), (ii) 0 for other codec types, (iii) number of bytes written to bitstream file or copied to memory buffer if fp_out or pInfo is not NULL, or (iv) < 0 for error conditions. See [Payload Format Definitions](#user-content-payloadformatdefinitions) below
 * payload and extracted bitstream information in optional pointer params payload_info and pInfo
-* return value is (i) a DS_PYLD_FMT_XXX payload definition for applicable codecs (e.g. AMR, EVS, H.26x), (ii) 0 for other codec types, (iii) number of bytes written to bitstream file or copied to memory buffer if fp_out or pInfo is not NULL, or (iv) < 0 for error conditions. See [Payload Format Definitions](#user-content-payloadformatdefinitions) below
 
 Note that params labeled optional below should be given as NULL if not used.
 
@@ -285,7 +284,7 @@ int DSGetPayloadInfo(int           codec_param,      /* codec_param can be eithe
 
 uFlags definitions
 
-  * note that all uFlags defined below can be combined with DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG and/or DS_VOPLIB_SUPPRESS_INFO_MSG
+* note that all uFlags defined below can be combined with DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG and/or DS_VOPLIB_SUPPRESS_INFO_MSG
 
 ```c++
 #define DS_CODEC_INFO_TYPE                           /* codec_param is interpreted as a codec_type enum (defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE are given. If both are given a codec_type enum is returned cast as an int */ 
@@ -322,7 +321,7 @@ int DSGetPayloadHeaderToC(codec_types codec_type,    /* a DS_CODEC_xxx enum defi
 <a name="DSCodecDelete"></a>
 ## DSCodecDelete
 
-DSCodecDelete() deletes an encoder or decoder instance, and returns > 0 on success, or < 0 on error condition.
+DSCodecDelete() deletes an encoder or decoder instance, returning > 0 on success or < 0 on error condition.
 
 ```c++
 int DSCodecDelete(HCODEC           hCodec,           /* handle of encoder or decoder instance to be deleted */
