@@ -246,11 +246,11 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 <a name="DSGetPayloadInfo"></a>
 ## DSGetPayloadInfo
 
-* returns information about an RTP payload in the return value and in optional pointer params including payload_info and pInfo
-* params labeled optional should be given as NULL if not used
-* return value is (i) a DS_PYLD_FMT_XXX payload definition for applicable codecs (e.g. AMR, EVS, H.26x), (ii) 0 for other codec types, (iii) number of bytes written to bitstream file or copied to memory buffer if fp_out or pInfo is not NULL, or (iv) < 0 for error conditions. See [Payload Format Definitions](#user-content-payloadformatdefinitions) below
+DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin and packet/media worker threads in pktlib. A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported. Information returned includes:
 
-DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin and packet/media worker threads in pktlib. A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported
+* RTP payload format in the return value and in optional pointer params including payload_info and pInfo
+* return value is (i) a DS_PYLD_FMT_XXX payload definition for applicable codecs (e.g. AMR, EVS, H.26x), (ii) 0 for other codec types, (iii) number of bytes written to bitstream file or copied to memory buffer if fp_out or pInfo is not NULL, or (iv) < 0 for error conditions. See [Payload Format Definitions](#user-content-payloadformatdefinitions) below
+* params labeled optional should be given as NULL if not used
 
 <pre><code>
 int DSGetPayloadInfo(int           codec_param,      /* codec_param can be either a codec_type enum or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec_param as an DS_CODEC_XXX enum defined in shared_include/codec.h. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type enum cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
