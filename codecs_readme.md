@@ -125,29 +125,30 @@ The following APIs and structs are defined in [voplib.h](https://www.github.com/
 <a name="DSCodecCreate"></a>
 ## DSCodecCreate
 
-  * creates an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo
-  * if pCodecInfo points to a CODEC_PARAMS struct, then either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct (or both) should be included in CODEC_PARAMS
-  * returns an HCODEC (codec instance handle) > 0, 0 if no handle was created, and < 0 for an error condition
+DSCodecCreate() creates an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo, and returns an HCODEC (a codec instance handle) > 0 on success, 0 if no handle was created, and < 0 for an error condition.
 
 ```c++
 HCODEC DSCodecCreate(void* pCodecInfo,               /* pointer to CODEC_PARAMS struct or TERMINATION_INFO struct - see comments below */
                      unsigned int uFlags             /* one or more DS_CODEC_CREATE_xxx flags, or general flags shown below */
                     );
 ```
-     uFlags definitions
+
+uFlags definitions
+
 ```c++
 #define DS_CODEC_CREATE_ENCODER                      /* create an encoder instance - may be combined with DS_CODEC_CREATE_DECODER */
 #define DS_CODEC_CREATE_DECODER                      /* create a decoder instance - may be combined with DS_CODCEC_CREATE_ENCODER */
 #define DS_CODEC_CREATE_USE_TERMINFO                 /* pCodecInfo points to a TERMINATION_INFO struct. The default (no flag) is a CODEC_PARAMS struct */
 ```
 
-For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see [mediaTest_proc.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/mediaTest_proc.c) or [hello_codec.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/hello_codec/hello_codec.c). For packet based applications (indirect codec usage), if the DS_CODEC_CREATE_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in [shared_include/session.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h)); for example usage see [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)
+For direct or "codec only" usage, pCodecInfo should point to a CODEC_PARAMS struct; for example usage see [mediaTest_proc.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/mediaTest_proc.c) or [hello_codec.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/hello_codec/hello_codec.c). In this case, either a CODEC_ENC_PARAMS or CODEC_DEC_PARAMS struct (or both) should be included in CODEC_PARAMS.
+
+For packet based applications (indirect codec usage), if the DS_CODEC_CREATE_USE_TERMINFO flag is given in uFlags, then pCodecInfo should point to a TERMINATION_INFO struct (defined in [shared_include/session.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h)); for example usage see [packet_flow_media_proc.c (packet/media thread processing)](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)
   
 <a name="DSCodecDecode"></a>
 ## DSCodecDecode
 
-* decodes one or more frames using one or more decoder instance handles
-* returns length of decoded media frame(s) (in bytes)
+DSCodecDecode() decodes one or more frames using one or more decoder instance handles, and returns length of decoded media frame(s) (in bytes).
 
 ```c++
 int DSCodecDecode(HCODEC*          hCodec,           /* pointer to one or more codec instance handles, as specified by numChan */
@@ -169,8 +170,7 @@ uFlags definitions
 <a name="DSCodecEncode"></a>
 ## DSCodecEncode
 
-* encodes one or more frames using one or more encoder instance handles
-* returns length of encoded bitstream frame(s) (in bytes)
+DSCodecEncode() encodes one or more frames using one or more encoder instance handles, and returns length of encoded bitstream frame(s) (in bytes).
 
 ```c++
 int DSCodecEncode(HCODEC*          hCodec,           /* pointer to one or more codec instance handles, as specified by numChan */
@@ -191,8 +191,7 @@ None
 <a name="DSGetCodecInfo"></a>
 ## DSGetCodecInfo
 
-* returns and/or retrieves into a pInfo pointer information for the specified codec
-* return value is > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions
+DSCodecInfo() returns and/or retrieves into a pInfo pointer information for the specified codec, and returns > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions.
   
 ```c++
 int DSGetCodecInfo(int             codec_param,      /* codec_param can be either a codec instance handle (HCODEC) or a codec_type enum (a DS_CODEC_xxx enum defined in shared_include/codec.h), depending on uFlags.  If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default and codec_param is interpreted as a codec type. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
@@ -202,9 +201,10 @@ int DSGetCodecInfo(int             codec_param,      /* codec_param can be eithe
                    void*           pInfo             /* retrieved info is copied into pInfo for uFlags DS_CODEC_INFO_NAME, DS_CODEC_INFO_PARAMS, or DS_CODEC_INFO_TYPE_FROM_NAME */
                   );
 ```
+
 uFlags definitions
 
-  * note that all uFlags defined below can be combined with DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG and/or DS_VOPLIB_SUPPRESS_INFO_MSG
+* note that all uFlags defined below can be combined with DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG and/or DS_VOPLIB_SUPPRESS_INFO_MSG
 
 ```c++
 #define DS_CODEC_INFO_TYPE                           /* codec_param is interpreted as a codec_type enum (see codec type enums defined in shared_include/codec.h). This is the default if neither DS_CODEC_INFO_HANDLE nor DS_CODEC_INFO_TYPE are given. If both are given a codec_type enum is returned cast as an int */ 
@@ -235,7 +235,7 @@ uFlags item flags, if used one flag should be combined with either DS_CODEC_INFO
 #define DS_CODEC_INFO_ITEM_MASK                      /* the item mask can be used to AND uFlags and extract an item value */
 ```
 
-additional uFlags, if used one or more flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE and an item flag
+Additional uFlags, if used one or more flag should be combined with either DS_CODEC_INFO_TYPE or CODEC_INFO_HANDLE and an item flag
 
 ```c++
 #define DS_CODEC_INFO_SIZE_BITS                      /* indicates DS_CODEC_INFO_CODED_FRAMESIZE return value should be in size of bits (instead of bytes) */
@@ -246,11 +246,15 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 <a name="DSGetPayloadInfo"></a>
 ## DSGetPayloadInfo
 
-DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin and packet/media worker threads in pktlib. A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported. Information returned includes:
+DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin and packet/media worker threads in pktlib (see [packet_flow_media_proc.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) and [mediaMin.cpp ](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp).
 
-* RTP payload format in the return value and in optional pointer params including payload_info and pInfo
+A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported. Information returned or retrieved includes:
+
+* RTP payload format in the return value
+* payload and extracted bitstream information in optional pointer params payload_info and pInfo
 * return value is (i) a DS_PYLD_FMT_XXX payload definition for applicable codecs (e.g. AMR, EVS, H.26x), (ii) 0 for other codec types, (iii) number of bytes written to bitstream file or copied to memory buffer if fp_out or pInfo is not NULL, or (iv) < 0 for error conditions. See [Payload Format Definitions](#user-content-payloadformatdefinitions) below
-* params labeled optional should be given as NULL if not used
+
+Note that params labeled optional below should be given as NULL if not used.
 
 <pre><code>
 int DSGetPayloadInfo(int           codec_param,      /* codec_param can be either a codec_type enum or a codec handle (an HCODEC returned by a prior call to DSCodecCreate()), depending on uFlags. In most cases uFlags should specify DS_CODEC_INFO_TYPE to interpret codec_param as an DS_CODEC_XXX enum defined in shared_include/codec.h. If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type enum cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
@@ -306,8 +310,7 @@ additional uFlags, if used one or more flag should be combined with either DS_CO
 <a name="DSGetPayloadHeaderToC"></a>
 ## DSGetPayloadHeaderToC
 
-  * returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. The returned ToC is normally one byte, including a 4-bit FT (frame type) field, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions
-  * return value is < 0 for error conditions
+DSGetPayloadHeaderToC() returns a nominal AMR or EVS payload header ToC based on payload size. For EVS, this API should be called *only* with non-collision ("protected") payload sizes. The returned ToC is normally one byte, including a 4-bit FT (frame type) field, so it's returned in the low byte of the return value, but could be larger for other codecs if supported. See the AMR and EVS specs for ToC bit fields definitions. The return value is < 0 for error conditions.
 
 ```c++
 int DSGetPayloadHeaderToC(codec_types codec_type,    /* a DS_CODEC_xxx enum defined in shared_include/codec.h */
@@ -319,8 +322,7 @@ int DSGetPayloadHeaderToC(codec_types codec_type,    /* a DS_CODEC_xxx enum defi
 <a name="DSCodecDelete"></a>
 ## DSCodecDelete
 
-  * deletes an encoder or decoder instance
-  * returns > 0 on success, or < 0 on error condition
+DSCodecDelete() deletes an encoder or decoder instance, and returns > 0 on success, or < 0 on error condition.
 
 ```c++
 int DSCodecDelete(HCODEC           hCodec,           /* handle of encoder or decoder instance to be deleted */
