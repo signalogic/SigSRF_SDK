@@ -685,7 +685,7 @@ Codec Regression Test Scripts below gives instructions and notes for running reg
 <a name="CodecRegressionTestScripts"></a>
 ## Codec Regression Test Scripts
 
-Below are regression test scripts used in Signalogic labs for testing EVS and AMR codecs.
+Below are regression test scripts used in Signalogic labs for testing EVS and AMR codecs. The latest version of these scripts are located at [evs_interop_test.sh](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/evs_interop_test.sh) and [amr_interop_test.sh](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/amr_interop_test.sh).
 
 Following is the basic test procedure:
 
