@@ -128,8 +128,8 @@ The following APIs and structs are defined in [voplib.h](https://www.github.com/
 DSCodecCreate() creates an encoder or decoder instance with parameters specified in a struct of type specified by uFlags and pointed to by pCodecInfo, returning an HCODEC (a codec instance handle) > 0 on success, 0 if no handle was created, and < 0 for an error condition.
 
 ```c++
-HCODEC DSCodecCreate(void* pCodecInfo,               /* pointer to CODEC_PARAMS struct or TERMINATION_INFO struct - see comments below */
-                     unsigned int uFlags             /* one or more DS_CODEC_CREATE_xxx flags, or general flags shown below */
+HCODEC DSCodecCreate(void*         pCodecInfo,       /* pointer to CODEC_PARAMS struct or TERMINATION_INFO struct - see comments below */
+                     unsigned int  uFlags            /* one or more DS_CODEC_CREATE_xxx flags, or general flags shown below */
                     );
 ```
 
