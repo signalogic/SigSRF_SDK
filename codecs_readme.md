@@ -191,7 +191,7 @@ None
 <a name="DSGetCodecInfo"></a>
 ## DSGetCodecInfo
 
-DSCodecInfo() returns and/or retrieves into a pInfo pointer information for the specified codec, returning > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions.
+DSCodecInfo() returns retrieves information for the specified codec into a pInfo pointer, returning > 0 for success, 0 if no information is available for the given uFlags, and < 0 for error conditions.
   
 ```c++
 int DSGetCodecInfo(int             codec_param,      /* codec_param can be either a codec instance handle (HCODEC) or a codec_type enum (a DS_CODEC_xxx enum defined in shared_include/codec.h), depending on uFlags.  If DS_CODEC_INFO_HANDLE is given in uFlags then codec_param is interpreted as an hCodec, returned by a previous call to DSCodecCreate(). If both DS_CODEC_INFO_HANDLE and DS_CODEC_INFO_TYPE flags are given, codec_param is interpreted as an hCodec and the return value is a codec_type cast as an int. If neither are given, DS_CODEC_INFO_TYPE is assumed as the default and codec_param is interpreted as a codec type. For examples of DS_CODEC_INFO_TYPE and DS_CODEC_INFO_HANDLE usage, see packet_flow_media_proc.c and mediaTest_proc.c */
