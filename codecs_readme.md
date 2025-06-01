@@ -246,7 +246,7 @@ Additional uFlags, if used one or more flag should be combined with either DS_CO
 <a name="DSGetPayloadInfo"></a>
 ## DSGetPayloadInfo
 
-DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin and packet/media worker threads in pktlib (see [packet_flow_media_proc.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) and [mediaMin.cpp ](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp).
+DSGetPayloadInfo() is a crucial SigSRF API, used by voplib internally in DSCodecDecode() and also by reference apps mediaTest and mediaMin and packet/media worker threads in pktlib (see [mediaMin.cpp ](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp) and [packet_flow_media_proc.c](https://www.github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c), respectively).
 
 A full RTP payload parsing and inspection mode as well as generic and "lightweight" modes are supported. Information returned or retrieved includes:
 
