@@ -103,7 +103,7 @@ extern "C" {
 
   Arguments - any marked "optional" should be NULL if not used, unless specified otherwise
 
-   - fp_out is an optional pointer to an elementary bitstream file. If fp_out is given it should point to should point to an open output binary file, otherwise it should be NULL
+   - fp_out is an optional pointer to an elementary bitstream file. If fp_out is given it should point to an open output binary file, otherwise it should be NULL
    - codec_type specifies the codec type (see definitions in shared_include/codec.h)
    - uFlags may contain DS_PAYLOAD_INFO_IGNORE_INBAND_XPS, DS_PAYLOAD_INFO_DEBUG_OUTPUT, DS_PAYLOAD_INFO_RESET_ID, DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, DS_VOPLIB_SUPPRESS_INFO_MSG, or a combination. DS_PAYLOAD_INFO_DEBUG_OUTPUT can be enabled/disabled at any time to control debug info visibility. All uFlags are defined in voplib.h
    - rtp_payload should point to an RTP payload
@@ -120,7 +120,8 @@ extern "C" {
 
   Notes
 
-   - any combination of fp_out, payload_info, pInfo may be given. If they are all NULL a warning message will be displayed but the API will continue to function, for example displaying debug information
+   - structs are defined in voplib.h
+   - any combination of fp_out, payload_info, and pInfo may be given. If they are all NULL a warning message will be displayed but the API will continue to function, for example displaying debug information
    - for any given stream, any sequence of calls with nId >= 0 and nId < 0 is supported. But to enable fragmented packet reassembly, packet and debug stats, duplicate detection, and other functionality that depends on prior input, nId should be >= 0
    - DSSaveDataFile() is a DirectCore API defined in directcore.h (hwlib.so)
    - LogRT() is an event-logging API defined in diagib.h (diaglib.so)
