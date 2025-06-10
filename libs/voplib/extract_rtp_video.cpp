@@ -105,8 +105,8 @@ extern "C" {
 
    - fp_out is an optional pointer to an elementary bitstream file. If fp_out is given it should point to should point to an open output binary file, otherwise it should be NULL
    - codec_type specifies the codec type (see definitions in shared_include/codec.h)
-   - uFlags may contain DS_PAYLOAD_INFO_IGNORE_INBAND_XPS, DS_PAYLOAD_INFO_DEBUG_OUTPUT, DS_PAYLOAD_INFO_RESET_ID, DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, DS_VOPLIB_SUPPRESS_INFO_MSG, or a combination. DS_PAYLOAD_INFO_DEBUG_OUTPUT can be enabled/disabled at any time to control debug info visibility
-   - rtp_payload should point to an RTP payload. All uFlags are defined in voplib.h
+   - uFlags may contain DS_PAYLOAD_INFO_IGNORE_INBAND_XPS, DS_PAYLOAD_INFO_DEBUG_OUTPUT, DS_PAYLOAD_INFO_RESET_ID, DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, DS_VOPLIB_SUPPRESS_INFO_MSG, or a combination. DS_PAYLOAD_INFO_DEBUG_OUTPUT can be enabled/disabled at any time to control debug info visibility. All uFlags are defined in voplib.h
+   - rtp_payload should point to an RTP payload
    - rtp_pyld_len should contain RTP payload length (in bytes)
    - payload_info is an optional pointer to a PAYLOAD_INFO struct to retrieve payload information, including NAL unit header type. PAYLOAD_INFO is defined in voplib.h
    - sdp_info is an optional pointer to an SDP_INFO struct containing an SDP info fmtp string with sprop-vps, sprop-sps, and/or sprop-pps "a=fmtp.." fields. An example is given below in comments after code ends. SDP_INFO is defined in voplib.h
@@ -198,6 +198,8 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
 
    if (!payload_info && !fp_out && !pInfo && !(uFlags & DS_VOPLIB_SUPPRESS_INFO_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() will process with payload_info, fp_out, and pInfo all NULL, uFlags = 0x%x \n", uFlags);  /* if payload_info, fp_out and pInfo are all NULL, continue without payload info parsing, file write, and mem retrieval; examples include checking for warnings and errors, and viewing debug information */
 
+/* check for malformed NAL payload header */
+
    uint16_t nal_pyld_hdr, nal_mask_value1, nal_mask_value2;
 
    if (codec_type == DS_CODEC_VIDEO_H265) {
@@ -212,8 +214,6 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
       nal_mask_value1 = 0x80;
       nal_mask_value2 = 0x1f;
    }
-
-/* check for malformed NAL payload header */
 
    if ((nal_pyld_hdr & nal_mask_value1) != 0 || (nal_pyld_hdr & nal_mask_value2) == 0) {  /* RFC 7798: check if F bit, LayerId, or TID are out of spec, RFC 6184: check if F bit or type is out of spec */
 
@@ -237,7 +237,7 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
       #endif
    }
 
-/* fill in payload_info if supplied by application caller. NumFrames is filled in depending on unit type */
+/* fill in payload_info if supplied by application caller. NumFrames is filled in later depending on unit type */
 
    if (payload_info) {
 

@@ -221,6 +221,9 @@
    Modified May 2025 JHB, in DSPullPackets() add one to strlen() inside malloc() to fix intermittent crash when closing output bitstream files
    Modified May 2025 JHB, in DSPullPackets() for video streams set a higher number packets pulled
    Modified May 2025 JHB, add output stats
+   Modified May 2025 JHB, fix minor issue with payload type error checking for video streams. See comments near CHECK_RTP_PAYLOAD_TYPE
+   Modified Jun 2025 JHB, update summary stats to show bit-exact checks (md5 sum, sha1 sum, etc) for all transcode and bitstream outputs, reorganize MediaOutputFileOps()
+
 */
 
 /* Linux header files */
@@ -279,7 +282,7 @@ static char prog_str[] = "mediaMin";
 #ifdef _MEDIAMIN_
 static char banner_str[] = "packet media streaming for analytics, telecom, and robotics applications on x86 and coCPU platforms";
 #endif
-static char version_str[] = "v3.8.12";
+static char version_str[] = "v3.8.13";
 static char copyright_str[] = "Copyright (C) Signalogic 2018-2025";
 
 //#define VALGRIND_DEBUG  /* enable when using Valgrind for debug */
@@ -307,14 +310,14 @@ bool          fStop = false;                /* "" 's' (stop). Stop prior to next
 unsigned int  num_app_threads = 1;          /* set to more than one if multiple mediaMin app threads are active. mediaTest supports a multiple app thread test mode option (cmd line "-Et -tn" options, where n is the number of app threads; see SigSRF Github documentation) */
 int           num_pktmed_threads = 0;       /* number of packet/media threads running */
 static int    log_level = 0;                /* set in LoggingSetup() */
-bool          fStressTest;                  /* determined from cmd line options, number of app threads, and session re-use */
+bool          fCreateDeleteTest;            /* legacy session create/delete and pcap reuse tests */
 static char   szSessionName[MAX_STREAMS][384] = {{ "" }};  /* set in LoggingSetup() which should always be called */
 static bool   fInputsAllFinite = true;      /* set to false if inputs include UDP port or USB audio. Default is true if all inputs are pcap or other file */
 static bool   fAutoQuit = false;            /* fAutoQuit determines whether program stops automatically. This is the default for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests */
 bool          fRepeatIndefinitely = false;  /* true if -R0 is given on the cmd line */
 bool          fNChannelWavOutput = false;   /* true if stream group N-channel wav output enabled; N-channel means a wav file with 2 or more channels (i.e. as many as needed for the stream group */
 bool          fUntimedMode = false;         /* true if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is the case with some old test scripts with -r0 push-pull rate (as fast as possible). Without analytics or telecom mode specified we call it "untimed mode" and leave it available for legacy testing, but it's not recommended for normal use */
-const char tabstr[] = "    ";               /* used for stats formatting */
+const char tabstr[] = "    ";               /* used for console output formatting; avoid using \t as some terminals might have different settings for tab length */
 
 codec_test_params_t codec_config_params = { 0 };  /* added to support non-standard codec configurations. Notes: use -C cmd line option to specify a codec config file name, (ii) works for both dynamic and static sessions, (iii) not sure yet if this should be made per-thread or per-session; currently it's a test/debug option that applies to all mediaMin threads, JHB Sep 2022 */
 
@@ -401,7 +404,7 @@ void TimerSetup();
 /* misc helpers */
 
 void cmdLine(int argc, char** argv);
-void MediaOutputFileOps(const char* szCmd, char* szResult, unsigned int uFlags, int thread_index);
+int MediaOutputFileOps(const std::string szCmd, char* szResult, unsigned int uFlags, int nOutput, int thread_index);
 
 /* mediaMin application entry point. Program and multithreading notes:
 
@@ -561,10 +564,10 @@ char tmpstr[MAX_APP_STR_LEN];  /* large temporary string used for various purpos
 
    if (isMasterThread(thread_index)) {
 
-      fStressTest = (Mode & CREATE_DELETE_TEST) || (Mode & CREATE_DELETE_TEST_PCAP);  /* set fStressTest if stress test options have been given */
+      fCreateDeleteTest = (Mode & CREATE_DELETE_TEST) || (Mode & CREATE_DELETE_TEST_PCAP);  /* set if session create/delete test cmd line options have been given */
       fCapacityTest = num_app_threads > 1 || nReuseInputs;  /* set fCapacityTest if load/capacity options have been given */
 
-      fAutoQuit = !(Mode & DISABLE_AUTOQUIT) && !fStressTest && !fRepeatIndefinitely && fInputsAllFinite;
+      fAutoQuit = !(Mode & DISABLE_AUTOQUIT) && !fCreateDeleteTest && !fRepeatIndefinitely && fInputsAllFinite;
 
    /* set up timer for session create/delete/repeat test mode (only needed for stress tests) */
 
@@ -1079,168 +1082,187 @@ cleanup:
 
 /* print final mediaMin stats - session summary, stream group output timing */
 
-   if (!fExitErrorCond && !fStressTest && !fCapacityTest) {
+   bool fLogTimeStampPrinted = false;  /* make sure only one event log timestamp is printed in the case of multiple stats strings (which should only happen with 100s of inputs during stress tests) */
 
-   /* note stats are concatenated into one string and one call to app_printf() prior to display and logging; this avoids console display fragments and mixing with other messages when multiple app threads and packet/media threads are running */
+   if (fExitErrorCond || fCreateDeleteTest || fCapacityTest) goto exit;  /* stats string is long -- in stress test modes it obscures the event log and may clog buffered I/O to remote terminals */
 
-      sprintf(tmpstr, "=== mediaMin stats");
-      if (num_app_threads > 1) sprintf(&tmpstr[strlen(tmpstr)], " (%d)", thread_index);
+/* note stats are concatenated into one string and one call to app_printf() for display and logging; when multiple app threads and packet/media threads are running this avoids text fragments and mixing with other messages. The string can be large, see MAX_APP_STR_LEN in mediaMin.h (currently set to 12000) */
 
-   /* display input stats */
+   sprintf(tmpstr, "=== mediaMin stats");
+   if (num_app_threads > 1) sprintf(&tmpstr[strlen(tmpstr)], " (%d)", thread_index);  /* show application thread if more than one. Show only once, on stats heading */
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\n%spackets [input]", tabstr);
+/* display input stats */
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%stotal%s", tabstr, tabstr, thread_info[thread_index].nInPcapFiles > 1 ? "s" : "");
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].packet_number[i]);
+   sprintf(&tmpstr[strlen(tmpstr)], "\n%spackets [input]", tabstr);
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sFragments =", tabstr, tabstr);
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_packets_fragmented[i]);
+   sprintf(&tmpstr[strlen(tmpstr)], "\n%s%stotal%s", tabstr, tabstr, thread_info[thread_index].nInPcapFiles > 1 ? "s" : "");
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].packet_number[i]);
 
-      sprintf(&tmpstr[strlen(tmpstr)], ", reassembled =");
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_packets_reassembled[i]);
+   sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sFragments =", tabstr, tabstr);
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_packets_fragmented[i]);
 
-      sprintf(&tmpstr[strlen(tmpstr)], ", orphans = ");
-      sprintf(&tmpstr[strlen(tmpstr)], "%u", nOrphansRemoved);
+   sprintf(&tmpstr[strlen(tmpstr)], ", reassembled =");
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_packets_reassembled[i]);
 
-      sprintf(&tmpstr[strlen(tmpstr)], ", max on list = ");
-      sprintf(&tmpstr[strlen(tmpstr)], "%u", nMaxListFragments);
+   sprintf(&tmpstr[strlen(tmpstr)], ", orphans = ");
+   sprintf(&tmpstr[strlen(tmpstr)], "%u", nOrphansRemoved);
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sOversize non-fragmented =", tabstr, tabstr);
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_oversize_nonfragmented_packets[i]);
+   sprintf(&tmpstr[strlen(tmpstr)], ", max on list = ");
+   sprintf(&tmpstr[strlen(tmpstr)], "%u", nMaxListFragments);
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sTCP =", tabstr, tabstr);
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_tcp_packets[i]);
+   sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sOversize non-fragmented =", tabstr, tabstr);
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_oversize_nonfragmented_packets[i]);
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sUDP =", tabstr, tabstr);
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_udp_packets[i]);
+   sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sTCP =", tabstr, tabstr);
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_tcp_packets[i]);
 
-      sprintf(&tmpstr[strlen(tmpstr)], ", encapsulated =");
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_packets_encapsulated[i]);
+   sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sUDP =", tabstr, tabstr);
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_udp_packets[i]);
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sRTP =", tabstr, tabstr);
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_rtp_packets[i]);
+   sprintf(&tmpstr[strlen(tmpstr)], ", encapsulated =");
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_packets_encapsulated[i]);
 
-      sprintf(&tmpstr[strlen(tmpstr)], ", RTCP =");
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_rtcp_packets[i]);
+   sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sRTP =", tabstr, tabstr);
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_rtp_packets[i]);
 
-      for (int fFirst=0,i=0; i<thread_info[thread_index].nInPcapFiles; i++) if (thread_info[thread_index].num_rtcp_custom_packets[i]) {
-         if (!fFirst) sprintf(&tmpstr[strlen(tmpstr)], ", Custom RTCP =");
-         sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_rtcp_custom_packets[i]);
-         fFirst = 1;
-      }
+   sprintf(&tmpstr[strlen(tmpstr)], ", RTCP =");
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_rtcp_packets[i]);
 
-      sprintf(&tmpstr[strlen(tmpstr)], ", Unhandled =");
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_unhandled_rtp_packets[i]);
+   for (int fFirst=0,i=0; i<thread_info[thread_index].nInPcapFiles; i++) if (thread_info[thread_index].num_rtcp_custom_packets[i]) {
+      if (!fFirst) sprintf(&tmpstr[strlen(tmpstr)], ", Custom RTCP =");
+      sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_rtcp_custom_packets[i]);
+      fFirst = 1;
+   }
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sRedundant discards TCP =", tabstr, tabstr);
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].tcp_redundant_discards[i]);  /* display/log number of redundant TCP retransmissions discarded, if any */
+   sprintf(&tmpstr[strlen(tmpstr)], ", Unhandled =");
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].num_unhandled_rtp_packets[i]);
 
-      sprintf(&tmpstr[strlen(tmpstr)], ", UDP =");
-      for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].udp_redundant_discards[i]);  /* display/log number of redundant UDP retransmissions discarded, if any */
+   sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sRedundant discards TCP =", tabstr, tabstr);
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].tcp_redundant_discards[i]);  /* display/log number of redundant TCP retransmissions discarded, if any */
+
+   sprintf(&tmpstr[strlen(tmpstr)], ", UDP =");
+   for (i=0; i<thread_info[thread_index].nInPcapFiles; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%u", i, thread_info[thread_index].udp_redundant_discards[i]);  /* display/log number of redundant UDP retransmissions discarded, if any */
+
+   strcat(tmpstr, "\n");
+
+/* if specified, display packet arrival stats, JHB Aug 2023 */
+
+   if (Mode & SHOW_PACKET_ARRIVAL_STATS) {
+
+      sprintf(&tmpstr[strlen(tmpstr)], "%sarrival timing [stream]", tabstr);
+
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sdelta avg/max (msec) =", tabstr, tabstr);
+      for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%4.2f/%4.2f", i, thread_info[thread_index].arrival_avg_delta[i]/thread_info[thread_index].num_arrival_stats_pkts[i], thread_info[thread_index].arrival_max_delta[i]);
+
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sdelta avg clock (msec) =", tabstr, tabstr);
+      for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%4.2f", i,  timeScale*thread_info[thread_index].arrival_avg_delta_clock[i]/thread_info[thread_index].num_arrival_stats_pkts[i]);
+
+      #ifdef RTP_TIMESTAMP_STATS  /* can be enabled in mediaMin.h for RTP timestamp stats and debug. Not normally used as timestamps are unlikely to be in correct order until processing by pktlib jitter buffer, JHB Mar 2025 */
+
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sdelta avg rtp_timestamp (msec) =", tabstr, tabstr);
+      for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%4.2f", i,  thread_info[thread_index].rtp_timestamp_avg_delta[i]/thread_info[thread_index].num_arrival_stats_pkts[i]);
+      #endif
+
+      sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sjitter avg/max (msec) =", tabstr, tabstr);
+      for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%4.2f/%4.2f", i, thread_info[thread_index].arrival_avg_jitter[i]/thread_info[thread_index].num_arrival_stats_pkts[i], thread_info[thread_index].arrival_max_jitter[i]);
 
       strcat(tmpstr, "\n");
+   }
 
-   /* display media output file md5 sum if --md5sum cmd line option is present, JHB Sep 2023. Expand to include --sha1sum and --sha512sum cmd line options, Aug 2024 */
+   sprintf(&tmpstr[strlen(tmpstr)], "%ssession [stream]\n", tabstr);
 
-      if (fShow_md5sum) MediaOutputFileOps("md5sum", tmpstr, STR_APPEND, thread_index);  /* STR_APPEND specifies appending command output to szResult (tmpstr) */
-      if (fShow_sha1sum) MediaOutputFileOps("sha1sum", tmpstr, STR_APPEND, thread_index);
-      if (fShow_sha512sum) MediaOutputFileOps("sha512sum", tmpstr, STR_APPEND, thread_index);
+   for (i=0; i<thread_info[thread_index].num_stream_stats; i++) {
 
-   /* if specified, display packet arrival stats, JHB Aug 2023 */
+      char szSessInfo[200], szTimestamp[200];
 
-      if (Mode & SHOW_PACKET_ARRIVAL_STATS) {
+      if (thread_info[thread_index].StreamStats[i].uFlags & STREAM_STAT_FIRST_PKT) DSGetLogTimestamp(szTimestamp, DS_EVENT_LOG_USER_TIMEVAL | DS_EVENT_LOG_UPTIME_TIMESTAMPS | DS_EVENT_LOG_TIMEVAL_PRECISION_USEC, sizeof(szTimestamp), timeScale*thread_info[thread_index].StreamStats[i].first_pkt_usec);  /* convert usec to timestamp string */
+      else strcpy(szTimestamp, "n/a");
 
-         sprintf(&tmpstr[strlen(tmpstr)], "%sarrival timing [stream]", tabstr);
+      sprintf(szSessInfo, "%s%s[%d] hSession %d %s, term %d, ch %d, codec %s, bitrate %d, payload type %d, ssrc 0x%x, first packet %s \n", tabstr, tabstr, i, thread_info[thread_index].StreamStats[i].hSession, thread_info[thread_index].StreamStats[i].uFlags & STREAM_STAT_DYNAMIC_SESSION ? "dynamic" : "static", thread_info[thread_index].StreamStats[i].term, thread_info[thread_index].StreamStats[i].chnum, thread_info[thread_index].StreamStats[i].codec_name, thread_info[thread_index].StreamStats[i].bitrate, thread_info[thread_index].StreamStats[i].payload_type, thread_info[thread_index].StreamStats[i].first_pkt_ssrc, szTimestamp);
 
-         sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sdelta avg/max (msec) =", tabstr, tabstr);
-         for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%4.2f/%4.2f", i, thread_info[thread_index].arrival_avg_delta[i]/thread_info[thread_index].num_arrival_stats_pkts[i], thread_info[thread_index].arrival_max_delta[i]);
-
-         sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sdelta avg clock (msec) =", tabstr, tabstr);
-         for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%4.2f", i,  timeScale*thread_info[thread_index].arrival_avg_delta_clock[i]/thread_info[thread_index].num_arrival_stats_pkts[i]);
-
-         #ifdef RTP_TIMESTAMP_STATS  /* can be enabled in mediaMin.h for RTP timestamp stats and debug. Not normally used as timestamps are unlikely to be in correct order until processing by pktlib jitter buffer, JHB Mar 2025 */
-
-         sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sdelta avg rtp_timestamp (msec) =", tabstr, tabstr);
-         for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%4.2f", i,  thread_info[thread_index].rtp_timestamp_avg_delta[i]/thread_info[thread_index].num_arrival_stats_pkts[i]);
-         #endif
-
-         sprintf(&tmpstr[strlen(tmpstr)], "\n%s%sjitter avg/max (msec) =", tabstr, tabstr);
-         for (i=0; i<thread_info[thread_index].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%4.2f/%4.2f", i, thread_info[thread_index].arrival_avg_jitter[i]/thread_info[thread_index].num_arrival_stats_pkts[i], thread_info[thread_index].arrival_max_jitter[i]);
-
-         strcat(tmpstr, "\n");
+      if (strlen(tmpstr) + strlen(szSessInfo) < sizeof(tmpstr)) sprintf(&tmpstr[strlen(tmpstr)], "%s", szSessInfo);  /* if enough sessions and/or repeats we need to split up printouts, JHB Jun 2020 */
+      else {
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_SAME_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), cur_time, thread_index, tmpstr);
+         app_printf(APP_PRINTF_EVENT_LOG | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, cur_time, thread_index, szSessInfo);  /* added a second app_printf() and fLogTimeStampPrinted to fix a bug in reporting multi-hundred count session summary stats that appeared during 2+ hr stress tests. Combining all summary stats per thread into one string would be optimal for multi-thread app operation, but they could potentially be really huge strings needing std::string (or malloc + realloc, whichever is faster). Also would need to deal with Log_RT() (called inside app_printf) which truncates around 4k. Not something to worry about for the time being, JHB Jan 2023 */
+         fLogTimeStampPrinted = true;
+         tmpstr[0] = (char)0;  /* start the string over */
       }
+   }
 
-      bool fLogTimeStampPrinted = false;  /* make sure only one event log timestamp is printed in the case of multiple strings */
+   /* display / log output stats */
 
-      sprintf(&tmpstr[strlen(tmpstr)], "%ssession [stream]\n", tabstr);
+   {
+      sprintf(&tmpstr[strlen(tmpstr)], "%spackets [output] \n", tabstr);
 
-      for (i=0; i<thread_info[thread_index].num_stream_stats; i++) {
+   /* determine if cmd line bit-exact checks are active */
 
-         char szSessInfo[200], szTimestamp[200];
+      std::string szCmd = "";
+      if (fShow_md5sum) szCmd = "md5sum";
+      if (fShow_sha1sum) szCmd = "sha1sum";
+      if (fShow_sha512sum) szCmd = "sha512sum";
 
-         if (thread_info[thread_index].StreamStats[i].uFlags & STREAM_STAT_FIRST_PKT) DSGetLogTimestamp(szTimestamp, DS_EVENT_LOG_USER_TIMEVAL | DS_EVENT_LOG_UPTIME_TIMESTAMPS | DS_EVENT_LOG_TIMEVAL_PRECISION_USEC, sizeof(szTimestamp), timeScale*thread_info[thread_index].StreamStats[i].first_pkt_usec);  /* convert usec to timestamp string */
-         else strcpy(szTimestamp, "n/a");
+      sprintf(&tmpstr[strlen(tmpstr)], "%s%sStream group =", tabstr, tabstr);
 
-         sprintf(szSessInfo, "%s%s[%d] hSession %d %s, term %d, ch %d, codec %s, bitrate %d, payload type %d, ssrc 0x%x, first packet %s \n", tabstr, tabstr, i, thread_info[thread_index].StreamStats[i].hSession, thread_info[thread_index].StreamStats[i].uFlags & STREAM_STAT_DYNAMIC_SESSION ? "dynamic" : "static", thread_info[thread_index].StreamStats[i].term, thread_info[thread_index].StreamStats[i].chnum, thread_info[thread_index].StreamStats[i].codec_name, thread_info[thread_index].StreamStats[i].bitrate, thread_info[thread_index].StreamStats[i].payload_type, thread_info[thread_index].StreamStats[i].first_pkt_ssrc, szTimestamp);
+      int num_streamgroup_outputs = 0;
+      for (i=0; i<thread_info[thread_index].nStreamGroups; i++) { sprintf(&tmpstr[strlen(tmpstr)], " [%d]%d", i, thread_info[thread_index].pkt_stream_group_pcap_out_ctr[i]); num_streamgroup_outputs++; }
+      if (!num_streamgroup_outputs) sprintf(&tmpstr[strlen(tmpstr)], " n/a");
+      strcat(tmpstr, " \n");
 
-         if (strlen(tmpstr) + strlen(szSessInfo) < sizeof(tmpstr)) sprintf(&tmpstr[strlen(tmpstr)], "%s", szSessInfo);  /* if enough sessions and/or repeats we need to split up printouts, JHB Jun 2020 */
-         else {
-            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_SAME_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), cur_time, thread_index, tmpstr);
-            app_printf(APP_PRINTF_EVENT_LOG | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, cur_time, thread_index, szSessInfo);  /* added a second app_printf() and fLogTimeStampPrinted to fix a bug in reporting multi-hundred count session summary stats that appeared during 2+ hr stress tests. Combining all summary stats per thread into one string would be optimal for multi-thread app operation, but they could potentially be really huge strings needing std::string (or malloc + realloc, whichever is faster). Also would need to deal with Log_RT() (called inside app_printf) which truncates around 4k. Not something to worry about for the time being, JHB Jan 2023 */
-            fLogTimeStampPrinted = true;
-            tmpstr[0] = (char)0;  /* start the string over */
-         }
-      }
+   /* display / log stream group overall stats */
 
-      if (strlen(tmpstr)) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), cur_time, thread_index, tmpstr);  /* display stats summary */
+      if (num_streamgroup_outputs && !isAFAPMode && !isFTRTMode) {  /* in "as fast as possible" (-r0 cmd line entry) and "faster than real-time" modes (-r0.N cmd line entry where 0 < 0.N < 1) we are currently not showing stream group output stats. This may change after extensive AFAP and FTRT mode testing, JHB May 2023 */
 
-      char threadstr[10] = "";
-      if (num_app_threads > 1) sprintf(threadstr, " (%d)", thread_index);
-
-   /* display / log stream group output stats */
-
-      if ((Mode & ENABLE_STREAM_GROUPS) && !isAFAPMode && !isFTRTMode) {  /* in "as fast as possible" (-r0 cmd line entry) and "faster than real-time" modes (-r0.N cmd line entry where 0 < 0.N < 1) we are currently not showing stream group output stats. This may change after extensive AFAP and FTRT mode testing, JHB May 2023 */
-
-         sprintf(tmpstr, "\tMissed stream group intervals = %d%s \n", thread_info[thread_index].group_interval_stats_index, threadstr);
+         sprintf(&tmpstr[strlen(tmpstr)], "%s%s%sMissed stream group intervals = %d \n", tabstr, tabstr, tabstr, thread_info[thread_index].group_interval_stats_index);
 
          for (i=0; i<thread_info[thread_index].group_interval_stats_index; i++) {
 
-            sprintf(&tmpstr[strlen(tmpstr)], "\t[%d] missed stream group interval = %d, hSession = %d", i, thread_info[thread_index].GroupIntervalStats[i].missed_interval, thread_info[thread_index].GroupIntervalStats[i].hSession);
+            sprintf(&tmpstr[strlen(tmpstr)], "%s%s%s%s[%d] missed stream group interval = %d, hSession = %d", tabstr, tabstr, tabstr, tabstr, i, thread_info[thread_index].GroupIntervalStats[i].missed_interval, thread_info[thread_index].GroupIntervalStats[i].hSession);
             if (thread_info[thread_index].GroupIntervalStats[i].repeats) sprintf(&tmpstr[strlen(tmpstr)], " %dx", thread_info[thread_index].GroupIntervalStats[i].repeats+1);
 
             strcat(tmpstr, " \n");
          }
 
-         sprintf(&tmpstr[strlen(tmpstr)], "\tMarginal stream group pulls = %d%s \n", thread_info[thread_index].group_pull_stats_index, threadstr);
+         sprintf(&tmpstr[strlen(tmpstr)], "%s%s%sMarginal stream group pulls = %d \n", tabstr, tabstr, tabstr, thread_info[thread_index].group_pull_stats_index);
 
-         for (i=0; i<thread_info[thread_index].group_pull_stats_index; i++) {
-
-            sprintf(&tmpstr[strlen(tmpstr)], "\t[%d] marginal stream group pull at %d, retries = %d, hSession = %d \n", i, thread_info[thread_index].GroupPullStats[i].retry_interval, thread_info[thread_index].GroupPullStats[i].num_retries, thread_info[thread_index].GroupPullStats[i].hSession);
-         }
+         for (i=0; i<thread_info[thread_index].group_pull_stats_index; i++) sprintf(&tmpstr[strlen(tmpstr)], "%s%s%s%s[%d] marginal stream group pull at %d, retries = %d, hSession = %d \n", tabstr, tabstr, tabstr, tabstr, i, thread_info[thread_index].GroupPullStats[i].retry_interval, thread_info[thread_index].GroupPullStats[i].num_retries, thread_info[thread_index].GroupPullStats[i].hSession);
       }
 
-   /* display / log output stats */
+   /* display media output file md5 sum if --md5sum cmd line option is present, JHB Sep 2023. Expand to include --sha1sum and --sha512sum cmd line options, Aug 2024 */
 
-      sprintf(&tmpstr[strlen(tmpstr)], "%spackets [output] \n", tabstr);
+      if (szCmd != "") for (i=0; i<num_streamgroup_outputs; i++) {
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\tStream group =");
-      for (i=0; i<thread_info[thread_index].nStreamGroups; i++) sprintf(&tmpstr[strlen(tmpstr)], " [%d]%d", i, thread_info[thread_index].pkt_stream_group_pcap_out_ctr[i]);
-      if (i == 0) sprintf(&tmpstr[strlen(tmpstr)], " n/a \n");
-      else sprintf(&tmpstr[strlen(tmpstr)], "%s \n", threadstr);
+         sprintf(&tmpstr[strlen(tmpstr)], "%s%s%s[%d] ", tabstr, tabstr, tabstr, i);
+         MediaOutputFileOps(szCmd, tmpstr, MOFO_STREAMGROUP_BITEXACT | MOFO_STR_APPEND, i, thread_index);  /* get bit-exact result for stream group output wav file. MOFO_STR_APPEND specifies appending command output to szResult (tmpstr) */
+         strcat (tmpstr, " \n");
+      }
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\tTranscode =");
-      int na = 0;
-      for (i=0; i<thread_info[thread_index].nOutFiles; i++) if (thread_info[thread_index].nOutputType[i] == PCAP) { sprintf(&tmpstr[strlen(tmpstr)], " [%d]%d", i, thread_info[thread_index].pkt_transcode_pcap_out_ctr[i]), na++; };
-      if (!na) sprintf(&tmpstr[strlen(tmpstr)], " n/a \n");
-      else sprintf(&tmpstr[strlen(tmpstr)], "%s \n", threadstr);
+      sprintf(&tmpstr[strlen(tmpstr)], "%s%sTranscode =", tabstr, tabstr);
 
-      sprintf(&tmpstr[strlen(tmpstr)], "\tBitstream =");
-      na = 0;
-      for (i=0; i<thread_info[thread_index].nOutFiles; i++) if (thread_info[thread_index].nOutputType[i] == ENCODED) { sprintf(&tmpstr[strlen(tmpstr)], " [%d]%d", i, thread_info[thread_index].pkt_bitstream_out_ctr[i]), na++; }
-      if (!na) sprintf(&tmpstr[strlen(tmpstr)], " n/a \n");
-      else sprintf(&tmpstr[strlen(tmpstr)], "%s \n", threadstr);
+      int num_transcode_outputs = 0;
+      for (i=0; i<thread_info[thread_index].nOutFiles; i++) if (thread_info[thread_index].nOutputType[i] == PCAP) { sprintf(&tmpstr[strlen(tmpstr)], " [%d]%d", i, thread_info[thread_index].pkt_transcode_pcap_out_ctr[i]), num_transcode_outputs++; };
+      if (!num_transcode_outputs) sprintf(&tmpstr[strlen(tmpstr)], " n/a");
+      strcat(tmpstr, " \n");
 
-      app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG | APP_PRINTF_EVENT_LOG_NO_TIMESTAMP, cur_time, thread_index, tmpstr);
+      if (szCmd != "" && num_transcode_outputs) for (i=0; i<thread_info[thread_index].nOutFiles; i++) if (thread_info[thread_index].nOutputType[i] == PCAP) {
+
+         sprintf(&tmpstr[strlen(tmpstr)], "%s%s%s[%d] ", tabstr, tabstr, tabstr, i);
+         MediaOutputFileOps(szCmd, tmpstr, MOFO_TRANSCODE_BITEXACT | MOFO_STR_APPEND, i, thread_index);  /* get bit-exact result for stream group output wav file. MOFO_STR_APPEND specifies appending command output to szResult (tmpstr) */
+         strcat(tmpstr, " \n");
+      }
+
+      sprintf(&tmpstr[strlen(tmpstr)], "%s%sBitstream =", tabstr, tabstr);
+
+      int num_bitstream_outputs = 0;
+      for (i=0; i<thread_info[thread_index].nOutFiles; i++) if (thread_info[thread_index].nOutputType[i] == ENCODED) { sprintf(&tmpstr[strlen(tmpstr)], " [%d]%d", i, thread_info[thread_index].pkt_bitstream_out_ctr[i]), num_bitstream_outputs++; }
+      if (!num_bitstream_outputs) sprintf(&tmpstr[strlen(tmpstr)], " n/a");
+      strcat(tmpstr, " \n");
+
+      if (szCmd != "" && num_bitstream_outputs) for (i=0; i<thread_info[thread_index].nOutFiles; i++) if (thread_info[thread_index].nOutputType[i] == ENCODED) {
+
+         sprintf(&tmpstr[strlen(tmpstr)], "%s%s%s[%d] ", tabstr, tabstr, tabstr, i);
+         MediaOutputFileOps(szCmd, tmpstr, MOFO_BITSTREAM_BITEXACT | MOFO_STR_APPEND, i, thread_index);  /* get bit-exact result for stream group output wav file. MOFO_STR_APPEND specifies appending command output to szResult (tmpstr) */
+         strcat(tmpstr, " \n");
+      }
    }
 
 /* show summary of repeat info if applicable, JHB Sep 2024 */
@@ -1249,9 +1271,12 @@ cleanup:
 
       char szNumCmdLineRepeats[20] = "";
       if (nRepeats > 0) sprintf(szNumCmdLineRepeats, "/%d", nRepeats);
-      sprintf(tmpstr, "   %d%s repeat%s completed, cumulative wàrnings = %u, èrrors = %u, crìtical èrrors = %u", nRepeatsCompleted[thread_index], szNumCmdLineRepeats, nRepeats > 0 ? "s" : (nRepeatsCompleted[thread_index] != 1 ? "s" : ""), __sync_fetch_and_add(&event_log_warnings, 0), __sync_fetch_and_add(&event_log_errors, 0), __sync_fetch_and_add(&event_log_critical_errors, 0));
-      app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, tmpstr);  /* note warning and error have slight "homoglyph" spelling differences to allow automated searches of event logs and console output for warnings and errors */ 
+      sprintf(&tmpstr[strlen(tmpstr)], "%s%d%s repeat%s completed, cumulative wàrnings = %u, èrrors = %u, crìtical èrrors = %u", tabstr, nRepeatsCompleted[thread_index], szNumCmdLineRepeats, nRepeats > 0 ? "s" : (nRepeatsCompleted[thread_index] != 1 ? "s" : ""), __sync_fetch_and_add(&event_log_warnings, 0), __sync_fetch_and_add(&event_log_errors, 0), __sync_fetch_and_add(&event_log_critical_errors, 0));  /* note warning and error have slight "homoglyph" spelling differences to allow automated searches of event logs and console output for "warning" and "error" */
    }
+
+   if (strlen(tmpstr)) app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG | (fLogTimeStampPrinted ? APP_PRINTF_EVENT_LOG_NO_TIMESTAMP : 0), cur_time, thread_index, tmpstr);  /* display stats summary */
+
+exit:
 
 /* clean up and exit */
 
@@ -2496,7 +2521,7 @@ err_msg:
       }
       else {  /* no, determine a unique group name (see notes below) */
 
-         if (!fStressTest && !fCapacityTest && (Mode & DYNAMIC_SESSIONS) && strlen(szSessionNameTemp)) {  /* set group id as session name, which will be used by packet/media threads for output wav files. Don't do this if (i) static session config or (ii) load/capacity or stress test options are active, JHB Jun 2019 */
+         if (!fCreateDeleteTest && !fCapacityTest && (Mode & DYNAMIC_SESSIONS) && strlen(szSessionNameTemp)) {  /* set group id as session name, which will be used by packet/media threads for output wav files. Don't do this if (i) static session config or (ii) load/capacity or stress test options are active, JHB Jun 2019 */
 
             strcpy(group_id, szSessionNameTemp);
          }
@@ -2525,7 +2550,7 @@ err_msg:
          strcpy(thread_info[thread_index].szGroupName[nStream], group_id);  /* keep track of stream group names, before non-input spec suffixes are added */
       }
 
-      if (!fStressTest && !fCapacityTest) {
+      if (!fCreateDeleteTest && !fCapacityTest) {
 
          sprintf(session->szSessionName, "%s%s", szStreamGroupWavOutputPath, thread_info[thread_index].szGroupName[nStream]);  /* set session->szSessionName for wav outputs. Note we currently don't allow wav outputs during capacity test */
       }
@@ -2729,7 +2754,7 @@ err_msg:
 
          session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_MERGED | STREAM_GROUP_WAV_OUT_STREAM_MONO;  /* specify mono and group output wav files. If merging is enabled, the group output wav file will contain all input streams merged (unified conversation) */
 
-         if (!fStressTest && !fCapacityTest && nRepeatsRemaining[thread_index] == -1) {  /* specify N-channel wav output. Disable if load/capacity or stress test options are active. Don't enable if repeat is active, otherwise thread preemption warnings will show up in the event log (because N-channel processing takes a while). nRepeatsRemaining is -1 if there is no -RN cmd line entry (because cmd_line_interface.c sets default value of nRepeats to -1), JHB Jun 2019 */
+         if (!fCreateDeleteTest && !fCapacityTest && nRepeatsRemaining[thread_index] == -1) {  /* specify N-channel wav output. Disable if load/capacity or stress test options are active. Don't enable if repeat is active, otherwise thread preemption warnings will show up in the event log (because N-channel processing takes a while). nRepeatsRemaining is -1 if there is no -RN cmd line entry (because cmd_line_interface.c sets default value of nRepeats to -1), JHB Jun 2019 */
 
             session->group_term.group_mode |= STREAM_GROUP_WAV_OUT_STREAM_MULTICHANNEL;
             fNChannelWavOutput = true;
@@ -2757,7 +2782,7 @@ err_msg:
            "Creation packet info: pkt #%u, IPv%d, ssrc = 0x%x, seq num = %d, payload type %d, pkt len %d, RTP payload size %d%s, cat 0x%x, rtp_pkt[0..2] 0x%x 0x%x 0x%x, src port %u, dst_port %u, input stream %d",
            thread_info[thread_index].packet_number[nStream], PktInfo.version, PktInfo.rtp_ssrc, PktInfo.rtp_seqnum, PktInfo.rtp_pyld_type, PktInfo.pkt_len, PktInfo.rtp_pyld_len, szOutOfSpecRTPPadding, cat, pkt[PktInfo.rtp_pyld_ofs], pkt[PktInfo.rtp_pyld_ofs+1], pkt[PktInfo.rtp_pyld_ofs+2], thread_info[thread_index].src_port[nStream], thread_info[thread_index].dst_port[nStream], nStream);
 
-   app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "^^^^^^^ %s\n\t%s", tmpstr, tmpstr2);
+   app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_THREAD_INDEX_SUFFIX | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "^^^^^^^ %s\n%s%s%s", tmpstr, tabstr, tabstr, tmpstr2);
    if (num_app_threads > 1) sprintf(&tmpstr2[strlen(tmpstr2)], " (%d)", thread_index);
    Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE, "mediaMin INFO: %s. %s", tmpstr, tmpstr2);
 
@@ -2799,7 +2824,7 @@ err_msg:
    }
 
 /* set up jitter buffer output for this session */
-  
+
    JitterBufferOutputSetup(hSessions, hSession, thread_index);
 
    if (!OutputSetup(hSessions, hSession, thread_index)) {  /* set up next matching output on cmd line, if any (e.g. transcoded audio, video bitstream), JHB Sep 2024 */
@@ -3725,7 +3750,7 @@ rtp_packet_processing:
             goto next_packet;
          }
 
-      /* call DSGetPayloadInfo() in generic form with no codec type (very limited payload inspection so very fast). In this form both DTMF and SID are determined based only payload size, JHB Nov 2024 */
+      /* call DSGetPayloadInfo() in generic form with no codec type (very limited payload inspection so very fast). In this form both DTMF and SID are determined based only payload size, JHB Nov 2024. Video streams don't carry SIDs or DTMF events, so later - when we know a codec type - we can corret this if needed (look for isVideoCodec() below). JHB May 2025 */
 
          PAYLOAD_INFO PayloadInfo;
 
@@ -3821,29 +3846,29 @@ check_for_duplicated_headers:
                chnum = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, pkt_buf, PktInfo.ip_hdr_len | DS_PKT_INFO_USE_IP_HDR_LEN, NULL, NULL);  /* get the stream's parent chnum (SSRC is ignored when matching parent channels). We have a valid packet and we know its IP header len (from previous DSGetPacketInfo() call with DS_PKT_INFO_PKTINFO flag to fill in a PKTINFO struct) so we can use the DS_PKT_INFO_USE_IP_HDR_LEN flag and improve DSGetPacketInfo() performance and avoid packet validation and header parsing, JHB Dec 2024 */
                #endif
 
-               #define CHECK_RTP_PAYLOAD_TYPE
-               #ifdef CHECK_RTP_PAYLOAD_TYPE  /* this is a special case useful for checking duplicated sessions that differ only in RTP payload type. It doesn't handle the general case of exactly duplicated sessions */
-               if (chnum >= 0 && !PayloadInfo.voice.fDTMF) {  /* DTMF packets need to match a session, but we don't error check their payload type. Note also that CreateDynamicSession() doesn't allow session creation on DTMF packets. Note that H.264 video streams might have 4-byte PPS NAL unit payloads, but it shouldn't matter as (i) they are typically not first in the stream and (ii) won't have a different payload type, JHB May 2025 */
+               if (chnum >= 0) {  /* if packet matches a stream (i.e. a term defined for a session), push to correct session queue. Note that SSRC is not included in the session match because DSGetPacketInfo() was called with DS_PKT_INFO_CHNUM_PARENT */
+
+                  #define CHECK_RTP_PAYLOAD_TYPE
+
+                  #ifdef CHECK_RTP_PAYLOAD_TYPE  /* this is useful for checking duplicated sessions that differ only in RTP payload type. It doesn't handle the general case of exactly duplicated sessions */
 
                   int rtp_pyld_type_term = -1;
+                  codec_types codec_type = DS_CODEC_NONE;
 
                   #if 0
                   rtp_pyld_type_term = DSGetSessionInfo(chnum, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_RTP_PAYLOAD_TYPE, DSGetSessionInfo(chnum, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM, 0, NULL), NULL);
                   #else  /* this way is faster and also demonstrates convenient use of SESSION_DATA structs after session creation */
                   int term = DSGetSessionInfo(chnum, DS_SESSION_INFO_CHNUM | DS_SESSION_INFO_TERM, 0, NULL);
-                  if (term == 1) rtp_pyld_type_term = session_data[i].term1.attr.voice.rtp_payload_type;
-                  else if (term == 2) rtp_pyld_type_term = session_data[i].term2.attr.voice.rtp_payload_type;
+                  if (term == 1) { rtp_pyld_type_term = session_data[i].term1.attr.voice.rtp_payload_type; codec_type = (codec_types)session_data[i].term1.codec_type; }
+                  else if (term == 2) { rtp_pyld_type_term = session_data[i].term2.attr.voice.rtp_payload_type; codec_type = (codec_types)session_data[i].term2.codec_type; }
                   #endif
 
-                  #if 0
-                  if (rtp_pyld_type_term != rtp_pyld_type) chnum = -1;  /* not a match if payload types are different */
-                  #else
-                  if (rtp_pyld_type_term != PktInfo.rtp_pyld_type) continue;  /* not a match if payload types are different */
-                  #endif
-               }
-               #endif
+                  if (!PayloadInfo.voice.fDTMF        /* DTMF packets need to match a session, but we don't error check their payload type. Note also that CreateDynamicSession() doesn't allow session creation on DTMF packets */
+                      || isVideoCodec(codec_type)) {  /* video streams don't carry SIDs or DTMF events so we always check (as a note, H.264 video streams might have 4-byte PPS NAL unit payloads, same size as audio stream DTMF events), JHB May 2025 */
 
-               if (chnum >= 0) {  /* if packet matches a stream (i.e. a term defined for a session), push to correct session queue. Note that SSRC is not included in the session match because DSGetPacketInfo() was called with DS_PKT_INFO_CHNUM_PARENT */
+                     if (rtp_pyld_type_term != PktInfo.rtp_pyld_type) continue;  /* not a match if payload types are different */
+                  }
+                  #endif  /* CHECK_RTP_PAYLOAD_TYPE */
 
                   if (nFirstSession == -1) nFirstSession = hSessions[i];
                   else app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "######### Two pushes for same packet, nFirstSession = %d, hSession = %d, chnum = %d", nFirstSession, hSessions[i], chnum);  /* this should not happen, if it does call attention to it. If it occurs, it means there are exactly duplicated sessions, including RTP payload type, and we need more information to differentiate */
@@ -3852,7 +3877,7 @@ check_for_duplicated_headers:
 
                   #ifdef FIRST_TIME_TIMING  /* reserved for timing debug purposes */
                   static bool fSync = false;
-                  if (!fSync && !fStressTest && !fCapacityTest) { PmThreadSync(thread_index); fSync = true; }  /* sync between app thread and master p/m thread. This removes any timing difference between starting time of application thread vs. p/m thread */
+                  if (!fSync && !fCreateDeleteTest && !fCapacityTest) { PmThreadSync(thread_index); fSync = true; }  /* sync between app thread and master p/m thread. This removes any timing difference between starting time of application thread vs. p/m thread */
 
                   static bool fOnce = false;
                   if (!fOnce) { printf("\n === time to first push %llu \n", (unsigned long long)((first_push_time = get_time(USE_CLOCK_GETTIME)) - base_time)); fOnce = true; }
@@ -4205,7 +4230,7 @@ pull_setup:
 
       if (uFlags == DS_PULLPACKETS_STREAM_GROUP && fp) {  /* for stats and possible retries, only check group owners */
 
-         if (!fStressTest && !fCapacityTest && (Mode & (USE_PACKET_ARRIVAL_TIMES | ANALYTICS_MODE))) {  /* note we did not add fUntimedMode check here as stream group timing would be unpredictable and there is likely no point in attempting retries, JHB Jan 2023 */
+         if (!fCreateDeleteTest && !fCapacityTest && (Mode & (USE_PACKET_ARRIVAL_TIMES | ANALYTICS_MODE))) {  /* note we did not add fUntimedMode check here as stream group timing would be unpredictable and there is likely no point in attempting retries, JHB Jan 2023 */
 
             if (!nPulledPackets) {  /* no packets pulled, check for retries */
 
@@ -4766,6 +4791,8 @@ int nOutputIndex = thread_info[thread_index].nOutFiles;  /* start with first cmd
             nOutputIndex++; continue;  /* look for next output spec on cmd line; we don't know in what order sessions will be created vs order user has entered on cmd line */
          }
 
+         strcpy(thread_info[thread_index].szTranscodeOutput[thread_info[thread_index].nOutFiles], filestr);  /* save copy of transcode output path, JHB Jun 2025 */
+
          thread_info[thread_index].nOutputType[thread_info[thread_index].nOutFiles] = PCAP;  /* set data type for use in PullPackets(). See io_data_type enums (mediaTest.h), JHB Sep 2024 */
       }
       else if (isVideoCodec(codec_type) &&  /* to-do: needs to be reverse strcasestr() */
@@ -5097,7 +5124,7 @@ uint64_t* queue_check_time = (uint64_t*)pQueueCheckTime;
 
             thread_info[thread_index].flush_state[i] = FINAL_FLUSH_STATE;  /* set session's flush state to final */
 
-            if (!fStressTest && !fCapacityTest && (Mode & DYNAMIC_SESSIONS) && !(Mode & COMBINE_INPUT_SPECS)) {  /* in static session and test modes, sessions are deleted at the end of the all inputs or end of test, either at the end or as app threads repeat */
+            if (!fCreateDeleteTest && !fCapacityTest && (Mode & DYNAMIC_SESSIONS) && !(Mode & COMBINE_INPUT_SPECS)) {  /* in static session and test modes, sessions are deleted at the end of the all inputs or end of test, either at the end or as app threads repeat */
 
                #define DELETE_SESSIONS_PER_INPUT_GROUP  /* if defined wait for all sessions associated with an input packet flow to reach final flush state, then delete together */ 
                #ifdef DELETE_SESSIONS_PER_INPUT_GROUP
@@ -5253,9 +5280,9 @@ char* p;
       dbg_cfg->uEventLogMode |= DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS;
 #endif
 
-      if (!fStressTest && !fCapacityTest) dbg_cfg->uEventLogMode |= LOG_SET_API_STATUS;  /* for functional tests, enable API status and error numbers */
+      if (!fCreateDeleteTest && !fCapacityTest) dbg_cfg->uEventLogMode |= LOG_SET_API_STATUS;  /* for functional tests, enable API status and error numbers */
 
-      if (!fStressTest && !fCapacityTest) {  /* in standard opearting mode, associate event log filename with first input pcap file found */
+      if (!fCreateDeleteTest && !fCapacityTest) {  /* in standard opearting mode, associate event log filename with first input pcap file found */
 
          #pragma GCC diagnostic push  /* suppress "address of var will never be NULL" warnings in gcc 12.2; safe-coding rules prevail, JHB May 2023 */
          #pragma GCC diagnostic ignored "-Waddress"
@@ -5289,7 +5316,7 @@ char* p;
 #else
       strcpy(dbg_cfg->szEventLogFilePath, szEventLogFile);  /* diaglib will create the log file, or if append mode is specified then open it for appending (see uEventLogMode enums in config.h) */
 //      dbg_cfg->uEventLogMode |= DS_EVENT_LOG_APPEND;  /* example showing append mode */
-      if (!fStressTest && !fCapacityTest) dbg_cfg->uEventLog_fflush_size = 1024;  /* set flush size for standard operating mode operation */
+      if (!fCreateDeleteTest && !fCapacityTest) dbg_cfg->uEventLog_fflush_size = 1024;  /* set flush size for standard operating mode operation */
 #endif
       #endif
 
@@ -5345,7 +5372,7 @@ char* p;
       -pktlib default behavior is to write run-time packet stats to the event log just prior to session deletion
    */
 
-      if (!fStressTest && !fCapacityTest) dbg_cfg->uPktStatsLogging |= DS_ENABLE_PACKET_TIME_STATS | DS_ENABLE_PACKET_LOSS_STATS;
+      if (!fCreateDeleteTest && !fCapacityTest) dbg_cfg->uPktStatsLogging |= DS_ENABLE_PACKET_TIME_STATS | DS_ENABLE_PACKET_LOSS_STATS;
    }
 }
 
@@ -5716,44 +5743,57 @@ char version_info[500], lib_info[500], banner_info[2048];
 }
 #endif
 
-/* MediaOutputFileOps() executes operations on media output files. Currently cleanup and stats code is calling this with hash commands (e.g. md5sum, sha1sum, etc), we might expand this in the future */
+/* MediaOutputFileOps() executes operations on media output files. Currently summary stats display/logging is calling this with hash commands (e.g. md5sum, sha1sum, etc), we might expand this in the future */
 
-void MediaOutputFileOps(const char* szCmd, char* szResult, unsigned int uFlags, int thread_index) {
+int MediaOutputFileOps(const std::string szCmd, char* szResult, unsigned int uFlags, int nOutput, int thread_index) {
 
+std::string labelstr = "";
 char szMediaFilename[2*CMDOPT_MAX_INPUT_LEN] = "", hashstr[2*CMDOPT_MAX_INPUT_LEN];
-bool fPrefix = false;
 
-/* determine wav, pcap, or video stream output file to operate on. For wav and pcap files with stream groups enabled we are currently limited to the first stream group; we need a way to specify for which (or all) stream group output pcap(s) stats are being shown */
+/* operate on output waveform depending on uFlags and output number (nOutput) */
 
-   for (int i=0; i<2; i++) {
-   
-      if (i == 0) {
+   if (uFlags & MOFO_STREAMGROUP_BITEXACT) {
+
+      if (Mode & ENABLE_TIMESTAMP_MATCH_MODE) {
       
-         if (Mode & ENABLE_TIMESTAMP_MATCH_MODE) DSGetStreamGroupInfo(0, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME, NULL, NULL, szMediaFilename);
-         else if (Mode & ENABLE_STREAM_GROUPS) {
+         DSGetStreamGroupInfo(nOutput, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME, NULL, NULL, szMediaFilename);
 
-            if (Mode & ENABLE_WAV_OUTPUT) DSGetStreamGroupInfo(0, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_MERGE_FILENAME, NULL, NULL, szMediaFilename);  /* stream group output wav filename to-do: specify group number */
-            else strcpy(szMediaFilename, thread_info[thread_index].szGroupPcap[0]);  /* stream group output pcap filename, to-do: specify group number */ 
-         }
+         if (strlen(szMediaFilename)) labelstr = "timestamp-match mode";
       }
-      else {
+      else if (Mode & ENABLE_STREAM_GROUPS) {
 
-         strcpy(szMediaFilename, thread_info[thread_index].szVideoStreamOutput[0]);  /* video output stream file, to-do: specify output index */
-      }
+         if (Mode & ENABLE_WAV_OUTPUT) DSGetStreamGroupInfo(0, DS_STREAMGROUP_INFO_HANDLE_IDX | DS_STREAMGROUP_INFO_MERGE_FILENAME, NULL, NULL, szMediaFilename);  /* stream group output wav filename to-do: specify group number */
+         else strcpy(szMediaFilename, thread_info[thread_index].szGroupPcap[nOutput]);  /* stream group output pcap filename */ 
 
-   /* execute console command on output file. DSConsoleCommand() is defined in diaglib.h  */
-  
-      if (strlen(szMediaFilename) > 0 && DSConsoleCommand(szCmd, szMediaFilename, hashstr, 1, sizeof(hashstr)) == 1) {  /* ask for one (first) result */
-
-         if (!fPrefix) { sprintf(&szResult[(uFlags & STR_APPEND) ? strlen(szResult) : 0], "%s%s\n", tabstr, szCmd); fPrefix = true; } /* initial output either copied or appended */
- 
-      /* append console command output and description */
-  
-         if (i == 1) sprintf(&szResult[strlen(szResult)], "%s%svideo output stream", tabstr, tabstr);
-         else if (Mode & ENABLE_TIMESTAMP_MATCH_MODE) sprintf(&szResult[strlen(szResult)], "%s%stimestamp-match mode", tabstr, tabstr);
-         else sprintf(&szResult[strlen(szResult)], "%s%s%s mode", tabstr, tabstr, isFTRTMode ? "FTRT" : (isAFAPMode ? "AFAP" : "real-time"));
-         sprintf(&szResult[strlen(szResult)], " %s %s", hashstr, szMediaFilename);
-         strcat(szResult, "\n");
+         if (strlen(szMediaFilename)) labelstr = (isFTRTMode ? "FTRT" : (isAFAPMode ? "AFAP" : "real-time")) + (std::string)" mode";
       }
    }
+   else if (uFlags & MOFO_TRANSCODE_BITEXACT) {
+
+      strcpy(szMediaFilename, thread_info[thread_index].szTranscodeOutput[nOutput]);  /* transcode output file */
+
+      if (strlen(szMediaFilename)) labelstr = "transcode";
+   }
+   else if (uFlags & MOFO_BITSTREAM_BITEXACT) {
+
+      strcpy(szMediaFilename, thread_info[thread_index].szVideoStreamOutput[nOutput]);  /* video stream output file */
+
+      if (strlen(szMediaFilename)) labelstr = "video output stream";
+   }
+
+   if (labelstr != "") {
+
+   /* execute console command on output file. DSConsoleCommand() is defined in diaglib.h  */
+
+      if (strlen(szMediaFilename) > 0 && DSConsoleCommand(szCmd.c_str(), szMediaFilename, hashstr, 1, sizeof(hashstr)) == 1) {  /* ask for first result string from cmd output */
+
+      /* format result string */
+
+         sprintf(&szResult[(uFlags & MOFO_STR_APPEND) ? strlen(szResult) : 0], "%s %s %s %s", szCmd.c_str(), labelstr.c_str(), hashstr, szMediaFilename);  /* command, label, result, filename (either copied or appended depending on uFlags) */
+      }
+
+      return szCmd.size() + labelstr.size() + strlen(hashstr) + strlen(szMediaFilename) + 3;  /* return length of formatted command output string */
+   }
+
+   return 0;
 }

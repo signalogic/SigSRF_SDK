@@ -68,8 +68,8 @@ using namespace std;
 
 extern HPLATFORM hPlatform;            /* initialized by DSAssignPlatform() API in DirectCore lib */
 extern APP_THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h */
-extern bool fStressTest;               /* determined from cmd line options, number of app threads, and session re-use */
-extern bool fCapacityTest;             /*    ""    ""   */
+extern bool fCreateDeleteTest;         /* determined from cmd line options */
+extern bool fCapacityTest;             /* set when number of app threads and/or input reuse is enabled */
 extern bool fNChannelWavOutput;
 extern bool fUntimedMode;              /* set if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is true of some old test scripts with -r0 push-pull rate (as fast as possible), which is why we call it "untimed" */
 extern int nRepeatsRemaining[];
@@ -395,7 +395,7 @@ bool fStreamGroup;
 
             session_data[i].group_term.group_mode |= STREAM_GROUP_WAV_OUT_MERGED | STREAM_GROUP_WAV_OUT_STREAM_MONO;  /* specify mono and group output wav files. If merging is enabled, the group output wav file will contain all input streams merged (unified conversation) */
 
-            if (!fStressTest && !fCapacityTest && nRepeatsRemaining[thread_index] == -1) {  /* specify N-channel wav output. Disable if load/capacity or stress test options are active. Don't enable if repeat is active, otherwise thread preemption warnings may show up in the event log (because N-channel processing takes a while), JHB Jun 2019 */
+            if (!fCreateDeleteTest && !fCapacityTest && nRepeatsRemaining[thread_index] == -1) {  /* specify N-channel wav output. Disable if load/capacity or stress test options are active. Don't enable if repeat is active, otherwise thread preemption warnings may show up in the event log (because N-channel processing takes a while), JHB Jun 2019 */
 
                session_data[i].group_term.group_mode |= STREAM_GROUP_WAV_OUT_STREAM_MULTICHANNEL;
                fNChannelWavOutput = true;

@@ -19,7 +19,7 @@
 
      -multiple RFC compliant packet flow, advanced jitter buffer, DTX handling, DTMF event handling, multichannel packets, ptime conversion, and more
      -measurements, including:
-       -x86 server performance
+       -server performance
        -verify bitexactness for codecs, measure audio quality. Interoperate at encoded bitstream level with 3GPP test vectors and reference codes
        -packet loss and other packet statistics
 
@@ -47,7 +47,6 @@
  Revision History
 
   Created Jul 2018 JHB, separated packet mode processing section from x86_mediaTest.c. See revision history in x86_mediaTest.c (note this file is renamed to mediaTest_proc.c)
-
   Modified Jun CKJ 2017, added support for simultaneously using input pcap files of different link layer types 
                          added support for ipv6 in pcap extract mode, added check to exit cleanly if internet layer is not ipv4 or ipv6
   Modified Jun 2017 JHB, added pcap to wav support, single exit point for success + most errors in pcap extract mode
@@ -185,7 +184,7 @@
   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, uFlags moved to second param in DSWritePacketStatsHistoryLog() and in all diaglib calls (e.g. DSPktStatsAddEntries, DSGetBacktrace)
   Modified Aug 2024 JHB, align input_pkts[] and pulled_pkts[] (PKT_STATS) arrays, part of effort to optimize packet logging
   Modified Sep 2024 JHB, remove uFlags_session() and replace with session_uFlags[hSession], also add term_uFlags[hSession][0]
-  Modified Sep 2024 JHB, implment TERM_DISABLE_OUTPUT_QUEUE_PACKETS (shared_include/session.h). Applications can set this flag in uFlags element of TERMINATION_INFO session structs to disable sending of output packets from packet/media threads and reduce thread processing time. mediaMin.cpp does this if no transcode or bitstream output files are given on the cmd line. Look for fOutputPacketProcessing
+  Modified Sep 2024 JHB, implement TERM_DISABLE_OUTPUT_QUEUE_PACKETS (shared_include/session.h). Applications can set this flag in uFlags element of TERMINATION_INFO session structs to disable sending of output packets from packet/media threads and reduce thread processing time. mediaMin.cpp does this if no transcode or bitstream output files are given on the cmd line. Look for fOutputPacketProcessing
   Modified Sep 2024 JHB, in DSLogRunTimeStats() allow mix of stream group member and non-member channels
   Modified Sep 2024 JHB, modify output packet flow (i.e. after jitter buffer) to handle video streams, call parse_H26x_bitstream() to create UDP-formatted bitstreams to send to application packet queues
   Modified Sep 2024 JHB, modify ManageSessions() to regularly update termination info flags (term_uFlags[][]). This allows uFlags modifications by apps of session uFlags and session TERMINATION_INFO struct uflags to take effect promptly (TERMINATION_INFO defined in shared_include/session.h)
@@ -643,7 +642,7 @@ void ThreadAbort(int, char*);
 
   1) If the -tN cmd line option specifies N > 1, then N-1 threads are started (in addition to main thread) that open / process N-1 additional sessions and/or pcaps
 
-  2) Currently the "core list" cmd line option (-mN, where N is a bitwise core list) is not active for x86 operation. This may be used at some future point for core pinning (aka processor affinity).
+  2) Currently the "core list" cmd line option (-mN, where N is a bitwise core list) is not active for x86/Arm operation. This may be used at some future point for core pinning (aka processor affinity).
      The core list option is used for high capacity coCPU operation (it's a required cmd line entry in that case)
   
   3) OLD_MULTITHREAD_OPERATION may be undefined to de-activte multithread code
@@ -921,7 +920,7 @@ void* packet_flow_media_proc(void* pExecuteMode) {
    sem_init(&pcap_write_sem, 0, 1);
    #endif
 
-   sprintf(tmpstr, "x86 pkt/media worker thread start sequence = ");
+   sprintf(tmpstr, "pkt/media worker thread start sequence = ");
 
 /* use backtrace() to show thread heritage (mediaTest, media command line, stress test mode, etc) JHB May 2024 */
 
@@ -3130,7 +3129,7 @@ pull:
 
                               numpkts = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_NUM_PKTS);
                               int nTargetDelay = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_TARGET_DELAY);
-                              if (isVideoCodec(codec_type)) nTargetDelay *= 8;  /* adjust for typical video streams with many chunks of duplicated timestamps. See also corresponding mod "mult" inside PullPackets() in mediaMin.cpp, JHB May 2025 */
+                              if (isVideoCodec(codec_type)) nTargetDelay *= 8;  /* adjust for typical video streams with many chunks of duplicated timestamps. See also corresponding "mult" mod inside PullPackets() in mediaMin.cpp, JHB May 2025 */
                               int nMaxDelay = DSGetJitterBufferInfo(ch[j], DS_JITTER_BUFFER_INFO_MAX_DELAY);
 
                               #ifdef ENABLE_GAP_RESYNC  /* change made due to tests with 4392.pcap; after a call-on-hold pause, the DS_GETORD_PKT_TIMESTAMP_GAP_RESYNC mod above is helpful but not enough. Otherwise it takes too long for ch 4 (in this example) cumulative and pull timestamps to catch up and re-align with other streams not affected by the pause, JHB Sep 2023 */
@@ -4160,10 +4159,13 @@ static int log_pkt_index = 0;
                            #endif
 
                            if (fOutputPacketProcessing) {
-                           
-                              DSSendPackets(&hSession, DS_SEND_PKT_QUEUE | DS_PULLPACKETS_OUTPUT /*| DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG */, pkt_out_buf, &packet_length, 1);  /* queue output packet to application. Note we are not checking for queue full here; external applications may or may not be de-queuing packets */
-                           
-            //if (chnum == 0 && SentCount >= 1306) printf("\n *** output sent packet #%d, num_data = %d \n", SentCount, num_data);  
+
+                              unsigned int uFlags_send = DS_SEND_PKT_QUEUE | DS_PULLPACKETS_OUTPUT;
+                              #if 0  /* application callers are now expected to apply TERM_DISABLE_OUTPUT_QUEUE_PACKETS in TERMINATION_INFO uFlags if they don't need output packets, so now we always check for queue full when fOutputPacketProcessing is active, JHB May 2025 */
+                              uFlags_send |= DS_SEND_PKT_SUPPRESS_QUEUE_FULL_MSG;
+                              #endif
+
+                              DSSendPackets(&hSession, uFlags_send, pkt_out_buf, &packet_length, 1);  /* queue output packet to application. Note we are not checking for queue full here; external applications may or may not be de-queuing packets */
                            }
 
                            if (fTimestampMatchModeL16Transcode) {
@@ -4543,7 +4545,7 @@ sync_exit:
       DSCloseLogging(0);  /* close logging (DSCloseLogging() is in diaglib) */
    }
 
-   sprintf(tmpstr, "x86 pkt/media%s end\n", num_pktmedia_threads ? " thread" : "");
+   sprintf(tmpstr, "pkt/media%s end \n", num_pktmedia_threads ? " thread" : "");
    sig_printf(tmpstr, PRN_LEVEL_INFO, thread_index);
 
    if (isMasterThread(thread_index)) fPMMasterThreadExit = 1;
@@ -6633,7 +6635,7 @@ organize_by_session:
             add_stats_str(pdflstr, MAX_STATS_STRLEN, " %d%c%d", c, ISL, pkt_pastdue_flush[c]);
             add_stats_str(lvflstr, MAX_STATS_STRLEN, " %d%c%d", c, ISL, pkt_level_flush[c]);
 
-            if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {  /* run-time packet loss stats can be disabled in pktlib in case they cause any issue, JHB Mar2020 */
+            if (lib_dbg_cfg.uPktStatsLogging & DS_ENABLE_PACKET_LOSS_STATS) {  /* run-time packet loss stats can be disabled in pktlib in case they cause any issue, JHB Mar 2020 */
 
                add_stats_str(missstr, MAX_STATS_STRLEN, " %d%c%d", c, ISL, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
                add_stats_str(consstr, MAX_STATS_STRLEN, " %d%c%d", c, ISL, DSGetJitterBufferInfo(c, DS_JITTER_BUFFER_INFO_MAX_CONSEC_MISSING_SEQ_NUM | DS_JITTER_BUFFER_INFO_ALLOW_DELETE_PENDING));
@@ -6830,7 +6832,7 @@ bool fNextLine = false;
 
    slen = strlen(prnstr);
 
-#if 0  /* I think this is actually incorrect, since .num_streams_active can be more than 1 within one p/m thread (for example due to child streams), plus it never decreases or resets ... JHB Mar2020 */
+#if 0  /* I think this is actually incorrect, since .num_streams_active can be more than 1 within one p/m thread (for example due to child streams), plus it never decreases or resets ... JHB Mar 2020 */
    int i, num_threads_active = 0;
    for (i=0; i < (int)__sync_fetch_and_add(&num_pktmedia_threads, 0); i++) if (packet_media_thread_info[i].num_streams_active) num_threads_active++;
 

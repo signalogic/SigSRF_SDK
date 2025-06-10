@@ -45,7 +45,7 @@
    Modified Jun 2024 JHB, add per-stream source and destination ports to APP_THREAD_INFO struct, which are set for most recent (i) non-fragmented packet or (ii) first segment of a fragmented packet
    Modified Jun 2024 JHB, add isPortAllowed() return definitions, sip_info_checksum (use to help find SDP info duplicates)
    Modified Jul 2024 JHB, update isMasterThread() macro
-   Modified Aug 2024 JHB, add uOneTimeConsoleQuitMessage item to APP_THREAD_INFO struct, add STR_APPEND definition
+   Modified Aug 2024 JHB, add uOneTimeConsoleQuitMessage item to APP_THREAD_INFO struct, add MOFO_STR_APPEND definition
    Modified Sep 2024 JHB, rename nPcapOutFiles to nOutFiles to include pcap, bitstream, and other format files
    Modified Sep 2024 JHB, add uInputType[], uOutputType[], and nSessionOutputIndex[] to APP_THREAD_INFO struct
    Modified Oct 2024 JHB, define INPUT_DATA_CACHE struct, add array of pointers to it in APP_THREAD_INFO struct. Rename fReseek to input_data_cache[].uFlags and define CACHE_XXX flags
@@ -60,6 +60,7 @@
    Modified Apr 2025 JHB, add num_rtcp_custom_packets[] stat
    Modified Apr 2025 JHB, simplify stream stats implementation, remove uStreamStatsState[]
    Modified May 2025 JHB, add output stats pkt_stream_group_pcap_out_ctr[], pkt_transcode_pcap_out_ctr[], and pkt_bitstream_out_ctr[]
+   Modified Jun 2025 JHB, add szTranscodeOutput[] to support bit-exact operations on transcode output files, define MOFO_XXX flags for use in MediaOutputFileOps()
 */
 
 #ifndef _MEDIAMIN_H_
@@ -97,8 +98,14 @@
 #define MAX_STREAMS_THREAD                  64  /* maximum number of streams per thread */
 #define MAX_SESSIONS_THREAD                 64  /* maximum number of sessions per thread */
 
-#define MAX_APP_STR_LEN                  12000
-#define STR_APPEND                           1
+#define MAX_APP_STR_LEN                  12000  /* size used for very large string ops like summary stats, when we have concerns about multi-thread operation breaking string output in console display and event log */
+
+/* MediaOutputFileOps() flag definitions */
+
+#define MOFO_STR_APPEND                      1
+#define MOFO_STREAMGROUP_BITEXACT        0x100
+#define MOFO_TRANSCODE_BITEXACT          0x200
+#define MOFO_BITSTREAM_BITEXACT          0x400
 
 #define SESSION_MARKED_AS_DELETED  0x80000000L  /* reserved mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
 
@@ -256,6 +263,7 @@ typedef struct {
   int16_t               group_interval_stats_index;
 
   char                  szVideoStreamOutput[MAX_STREAMS_THREAD][CMDOPT_MAX_INPUT_LEN];  /* added to support md5sum and other run-time summary operations on video output files, JHB Apr 2025 */
+  char                  szTranscodeOutput[MAX_STREAMS_THREAD][CMDOPT_MAX_INPUT_LEN];  /* added to support md5sum and other run-time summary operations on transcode output files, JHB Jun 2025 */
 
 /* stream stats */
 

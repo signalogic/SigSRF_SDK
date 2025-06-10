@@ -13,7 +13,7 @@
   
     Support for c66x coCPU card PCIe and ATCA blade SRIO interfaces
 
-  Copyright (C) Signalogic, Inc, 2016-2024
+  Copyright (C) Signalogic, Inc, 2016-2025
 
     Add APIs to (i) encapsulate c66x PCIe and SRIO interfaces, and (ii) support x86-only or combined x86 and c66x server usage.  APIs are consistent between all use cases
 
@@ -140,6 +140,9 @@
 
     Dec 2024 JHB
       -comments only
+
+    May 2025 JHB
+      -update comments in TERMINATION_INFO struct
 */
 
 #ifndef _SESSION_H_
@@ -398,6 +401,10 @@ typedef struct {
 
 #if defined(_X86) || defined(_ARM)
 
+  uint32_t sample_rate;                /* codec output sample rate */
+  uint32_t input_sample_rate;          /* codec input sample rate */
+  uint32_t buffer_depth;
+
 /* "uFlags" definitions */
 
   #define TERM_DTX_ENABLE                         1      /* enable DTX handling for termN */
@@ -412,10 +419,9 @@ typedef struct {
   #define TERM_ANALYTICS_MODE_PACKET_TIMING       0x200  /* analytics mode flag set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
   #define TERM_NO_PACKET_ARRIVAL_TIMESTAMPS       0x400  /* flag indicating input packets don't have arrival timestamps, set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
   #define TERM_DISABLE_OUTPUT_QUEUE_PACKETS       0x800  /* flag indicating packet output to application queue should be disabled. Packet/media threads check this in packet_flow_media_proc.c before transcoding and formatting audio packets or handling video packet outputs */
-  uint32_t sample_rate;                /* codec output sample rate */
-  uint32_t input_sample_rate;          /* codec input sample rate */
-  uint32_t buffer_depth;
+
   uint32_t uFlags;
+
   uint16_t ptime;                      /* in msec */
   float    input_buffer_interval;      /* in msec */
   int16_t  output_buffer_interval;     /* in msec */
