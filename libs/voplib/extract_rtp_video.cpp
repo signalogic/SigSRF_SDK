@@ -197,7 +197,7 @@ const char* sprop_xps[] = { "sprop-vps=", "sprop-sps=", "sprop-pps=" };
 
    if (fError) return -1;
 
-   if (!payload_info && !fp_out && !pInfo && !(uFlags & DS_VOPLIB_SUPPRESS_INFO_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() will process with payload_info, fp_out, and pInfo all NULL, uFlags = 0x%x \n", uFlags);  /* if payload_info, fp_out and pInfo are all NULL, continue without payload info parsing, file write, and mem retrieval; examples include checking for warnings and errors, and viewing debug information */
+   if (!payload_info && !fp_out && !pInfo && !(uFlags & DS_VOPLIB_SUPPRESS_INFO_MSG)) Log_RT(3, "WARNING: DSGetPayloadInfo() -> extract_rtp_video() will process with payload_info, fp_out, and pInfo all NULL, uFlags = 0x%x \n", uFlags);  /* if payload_info, fp_out and pInfo are all NULL, continue without payload info fill-in, file write, and mem retrieval; examples include checking for warnings and errors, and viewing debug information */
 
 /* check for malformed NAL payload header */
 
