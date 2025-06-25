@@ -2950,7 +2950,13 @@ In addition to the event log, mediaMin generates a number of outputs automatical
 > * stream group output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups<br/>
 > * stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
 
-In addition to outputs specified on the command line, jitter buffer output streams containing all re-ordering, DTX expansion, and packet loss / timestamp repairs, can be written to pcap files by applying in -dN command line options the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>. For example, in the above command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap will be generated if this flag is active.
+In addition to outputs specified on the command line, jitter buffer output streams containing all re-ordering, DTX expansion, and packet loss / timestamp repairs, can be written to pcap files by applying in -dN command line options the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>. For example, in the above command line, the files:
+
+> mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap
+> :
+> mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap
+
+will be generated if this flag is active.
 
 The mediaMin command line does need to contain an output option.
 
