@@ -2956,9 +2956,9 @@ mediaTest command lines should always contain at least one output; mediaMin comm
 mediaMin generates a number of "implied outputs" automatically:
 
 > * per stream [jitter buffer output pcaps](#user-content-jitterbufferoutputs) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag<br/>
-> * per [stream output wav files](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
-> * [stream group output pcaps](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS flag<br/>
-> * [stream group output wav files](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
+> * per [stream output wav files](#user-content-wavfileoutput) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
+> * [stream group output pcaps](#user-content-realtimepacketoutput) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS flag<br/>
+> * [stream group output wav files](#user-content-wavfileoutput) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
 
 These and other -dN flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>
 
