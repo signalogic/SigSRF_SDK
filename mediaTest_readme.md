@@ -2944,11 +2944,11 @@ in the above example the -oxxx_xcN.pcap files contain G711 RTP packets transcode
 
 in the above example sample_capture_test.h264 is an elementary bitstream file extracted from an H.264 RTP pcap.
 
-   mediaMin -c x86 -i ../test_files/audio_video.pcapng -L -d 0x06004000c11 -o ves_0.h265 -o ves_1.h265 -o ves_2.h265 -r20 -g /tmp/shared -l4 --md5sum --sha1sum
+    mediaMin -c x86 -i ../test_files/audio_video.pcapng -L -d 0x06004000c11 -o ves_0.h265 -o ves_1.h265 -o ves_2.h265 -r20 -g /tmp/shared -l4 --md5sum --sha1sum
 
 in the above example the ves_N.h265 files contain H.265 elementary bitstream files for the first three video streams found within incoming packet flow. Also, since the ENABLE_STREAM_GROUPS flag is given in -dN command line entry, .wav files for audio streams found within incoming packet flow will be generated as ["Implied Outputs"](#user-content-impliedoutputs).
 
-    mediaTest command lines should always contain at least one output; mediaMin command lines do not need an output option.
+mediaTest command lines should always contain at least one output; mediaMin command lines do not need an output option.
 
 <a name="ImpliedOutputs"></a>
 ### Implied Outputs
