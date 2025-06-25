@@ -2952,9 +2952,9 @@ In addition to the event log, mediaMin generates a number of outputs automatical
 
 In addition to outputs specified on the command line, jitter buffer output streams containing all re-ordering, DTX expansion, and packet loss / timestamp repairs, can be written to pcap files by applying in -dN command line options the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>. For example, in the above command line, the files:
 
-> mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap
-> :
-> mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap
+> mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap<br/>
+> :<br/>
+> mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap<br/>
 
 will be generated if this flag is active.
 
