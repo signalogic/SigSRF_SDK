@@ -2883,6 +2883,7 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
 Below are general command line notes, arguments, and options that apply to both mediaMin and mediaTest:
 
+> <br/>
 > * All command line options are case sensitive<br/>
 > <br/>
 > * Enter ./prog -h or ./prog -? to see a list of command line options (where "prog" = mediaMin or mediaTest). Mandatory command line options are shown with "!"<br/>
@@ -3110,7 +3111,7 @@ which specifies:
 <a name="mediaMinCommandLineOutputs"></a>
 ### Outputs
 
-If the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is set, then jitter buffer output stream pcaps are generated on the mediaMin app subfolder. For filename format when this flag is active, see [Outputs](#user-content-mediamincommandlineoutputs) under [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference).
+If the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is set, then jitter buffer output stream pcaps are generated on the mediaMin app subfolder. For filename format when this flag is active, see [Outputs](#user-content-mediamincommandlineoutputs) under [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference) above.
 
 ### Pcap Formats
 
