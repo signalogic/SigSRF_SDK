@@ -3108,10 +3108,7 @@ which specifies:
 > jitter buffer output stream pcaps enabled<br/>
 > stream group output wav file seek time alarm set to 10 msec<br/>
 
-<a name="mediaMinCommandLineOutputs"></a>
-### Outputs
-
-If the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is set, then jitter buffer output stream pcaps are generated on the mediaMin app subfolder. For filename format when this flag is active, see [Outputs](#user-content-mediamincommandlineoutputs) under [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference) above.
+If this flag is set, jitter buffer output stream pcaps are generated on the mediaMin app subfolder with "_jbN.pcap" filename suffixes as shown in [Outputs](#user-content-mediamincommandlineoutputs) under [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference) above.
 
 ### Pcap Formats
 
