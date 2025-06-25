@@ -523,7 +523,7 @@ The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps 
 
 There are also several wav files generated, including individual stream, merged, and N-channel, which can be opened with Windows Media Player, Audacity, Hypersignal, etc.
 
-Command line arguments in the above examples are explained in [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference).
+Command line arguments in the above examples are explained in [Command Line Quick-Reference](#user-content-commandlinequick-reference).
 
 Below are more command line examples, taken from pcaps found in the [the Brno University Nesfit repository](https://github.com/nesfit/Codecs/tree/master/PCAPs):
 
@@ -2902,18 +2902,6 @@ Below are command line arguments and options that apply to both mediaMin and med
 
 -MN specifies an optional operating mode N. -M0 is the default; currently for the Github .rar packages and Docker containers no operating mode should be given
 
-### Repeat
-
-The -RN command line argument enables "repeat mode", where mediaMin or mediaTest will repeat the operation or test specified in its command line. -RN enables N number of repeats, and -R0 enables indefinite repeat. <b><i>Caution -- if using indefinite repeat, output audio and pcap files can rapidly consume available disk space !</i></b>
-
-### Debug Stats
-
-The -dN option ENABLE_DEBUG_STATUS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) enables debug information and stats, including information and warning messages output by (i) mediaMin and mediaTest, (ii) packet/media threads, (iii) stream audio processing, and (iv) encapsulated stream decoding.
-
-### Memory Stats
-
-The -dN option ENABLE_MEM_STATS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) enables memory usage stats.
-
 <a name="CommandLineInputs"></a>
 ### Inputs
 
@@ -2935,7 +2923,7 @@ Both mediaTest and mediaMin require at least one input.
 <a name="CommandLineOutputs"></a>
 ### Outputs
 
-Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. mediaTest supports command line output file types including .wav, .pcap, .cod, and others. mediaMin supports command line output file types including .pcap, .wav, .h264, .h265, and others. mediaMin also generates implied outputs; i.e. not specified on the command line. For example, .wav outputs are generated when stream groups are enabled, and jitter buffer outputs are generated if the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is given in -dn command line entry. For more info on this see the following section, Implied Outputs.
+Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. mediaTest supports command line output file types including .wav, .pcap, .cod, and others. mediaMin supports command line output file types including .pcap, .wav, .h264, .h265, and others. mediaMin also generates [implied outputs](#user-content-impliedoutputs); i.e. not specified on the command line. For example, .wav outputs are generated when stream groups are enabled, and jitter buffer outputs are generated if the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is given in -dn command line entry. For more info on this see the following section, Implied Outputs.
 
 Here are some examples of mediaTest and mediaMin command lines with specified outputs:
 
@@ -2950,28 +2938,34 @@ in the above command line, mediaTest upsamples a 16 kHz .wav file to 48 kHz, enc
 
     mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
 
-in the above example the -oxxx_xcN.pcap files contain G711 RTP packets transcoded from first three (3) streams found within incoming packet flow.
+in the above example the -oxxx_xcN.pcap files contain G711 RTP packets transcoded from the first three (3) streams found within incoming packet flow.
 
-    mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x06004000c11 -r20 -g /tmp/shared --md5sum
+    mediaMin -c x86 -i ../pcaps/h264.pcap -o sample_capture_test.h264 -L -d 0x06004000c11 -r20 -g /tmp/shared --md5sum
 
-in the above example sample_capture_test.h265 is an elementary bitstream file extracted from an H.265 RTP pcap.
+in the above example sample_capture_test.h264 is an elementary bitstream file extracted from an H.264 RTP pcap.
+
+   mediaMin -c x86 -i ../test_files/audio_video.pcapng -L -d 0x06004000c11 -o ves_0.h265 -o ves_1.h265 -o ves_2.h265 -r20 -g /tmp/shared -l4 --md5sum --sha1sum
+
+in the above example the ves_N.h265 files contain H.265 elementary bitstream files for the first three video streams found within incoming packet flow. Also, since the ENABLE_STREAM_GROUPS flag is given in -dN command line entry, .wav files for audio streams found within incoming packet flow will be generated as ["Implied Outputs"](#user-content-impliedoutputs).
 
 mediaTest command lines should always contain an output; mediaMin command lines do not need to contain an output option.
 
+<a name="ImpliedOutputs"></a>
 ### Implied Outputs
 
 mediaMin generates a number of "implied outputs" automatically:
 
-> * per stream jitter buffer output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag<br/>
-> * per stream wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
-> * stream group output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) containes the ENABLE_STREAM_GROUPS flag<br/>
-> * stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
+> * per stream [jitter buffer output pcaps](#user-content-jitterbufferoutputs) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag<br/>
+> * per [stream output wav files](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
+> * [stream group output pcaps](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) containes the ENABLE_STREAM_GROUPS flag<br/>
+> * [stream group output wav files](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
 
 These and other -dN flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>
 
 mediaTest does not generate implied outputs.
 
-### Jitter Buffer Stream Outputs
+<a name="JitterBufferOutputs"></a>
+### Jitter Buffer Outputs
 
 If -dn command line entry contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag, jitter buffer output streams, including all re-ordering, DTX expansion, and packet loss / timestamp repairs, will be written to pcap files. For example, in this command line:
 
@@ -2984,6 +2978,18 @@ the files:
 > mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap<br/>
 
 will be generated.
+
+### Repeat
+
+The -RN command line argument enables "repeat mode", where mediaMin or mediaTest will repeat the operation or test specified in its command line. -RN enables N number of repeats, and -R0 enables indefinite repeat. <b><i>Caution -- if using indefinite repeat, output audio and pcap files can rapidly consume available disk space !</i></b>
+
+### Debug Stats
+
+The -dN option ENABLE_DEBUG_STATUS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) enables debug information and stats, including information and warning messages output by (i) mediaMin and mediaTest, (ii) packet/media threads, (iii) stream audio processing, and (iv) encapsulated stream decoding.
+
+### Memory Stats
+
+The -dN option ENABLE_MEM_STATS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) enables memory usage stats.
 
 <a name="mediaMinCommandLineQuick-Reference"></a>
 ## mediaMin Command Line Quick-Reference
