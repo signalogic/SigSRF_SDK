@@ -2878,8 +2878,8 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
     *Note: the above instructions apply to Wireshark version 2.2.6.*
 
-<a name="mediaMinCommandLineQuick-Reference"></a>
-# mediaMin Command Line Quick-Reference
+<a name="CommandLineQuick-Reference"></a>
+# Command Line Quick-Reference
 
 Below are general command line notes, arguments, and options that apply to both mediaMin and mediaTest:
 
@@ -2914,52 +2914,81 @@ The -dN option ENABLE_DEBUG_STATUS flag (defined in <a href="https://github.com/
 
 The -dN option ENABLE_MEM_STATS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) enables memory usage stats.
 
-<a name="mediaMinCommandLineQuick-Reference"></a>
-## mediaMin Command Line Quick-Reference
-
-Below is "quick-reference" mediaMin command line documentation:
-
+<a name="CommandLineInputs"></a>
 ### Inputs
 
-Inputs are given by one or more "<span style="font-family: 'Courier New';">-iInput</span>" options, where Input is a filename or UDP port. Supported file types include .pcap, .pcapng, and .wav. Here are some examples:
+Inputs are given by one or more "<span style="font-family: 'Courier New';">-iInput</span>" options, where Input is a filename or UDP port. mediaTest supports input file types including .wav, .au, .pcap, .cod, .amr, and many others. mediaMin supports input file types including .pcap, .pcapng, .rtpxx (.rtp, .rtpdump, etc), and .wav. Here are some command line input examples:
 
+> -i sounds.wav<br>
 > -imytestinput.pcap<br/>
 > <br/>
 > -i192.168.1.2:52000<br/>
 > <br/>
-> -ifd00:5d2::11:123:5222:52000<br/>
+> -i fd00:5d2::11:123:5222:52000<br/>
 > <br/>
 > -imytestinput1.pcap -imytestinput2.pcap<br/>
 > <br/>
-> -imytestinput1.pcap -imytestinput2.pcap -i192.168.1.2:52000<br/>
+> -i mytestinput1.pcap -imytestinput2.pcap -i192.168.1.2:52000<br/>
 
-Technically inputs are command line arguments, in the sense that mediaMin requires at least one input.
+Both mediaTest and mediaMin require at least one input.
 
-<a name="mediaMinCommandLineOutputs"></a>
+<a name="CommandLineOutputs"></a>
 ### Outputs
 
-Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. Currently mediaMin command line outputs are limited to pcap files containing transcoded outputs. For example in this command line:
+Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. mediaTest supports command line output file types including .wav, .pcap, .cod, and others. mediaMin supports command line output file types including .pcap, .wav, .h264, .h265, and others. mediaMin also generates implied outputs; i.e. not specified on the command line. For example, .wav outputs are generated when stream groups are enabled, and jitter buffer outputs are generated if the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is given in -dn command line entry. For more info on this see the following section, Implied Outputs.
+
+Here are some examples of mediaTest and mediaMin command lines with specified outputs:
+
+    mediaTest -cx86 -i test_files/stv16c.INP -o test_files/stv16c_amr_23850_16kHz_mime.pcap -C session_config/amrwb_codec_test_config
+    mediaTest -cx86 -i test_files/AAdefaultBusinessHoursGreeting.pcm -o test_files/stv16c_evs_16kHz_5900_full_header.pcap -C session_config/evs_16kHz_5900bps_full_header_config  
+
+in the above command lines, mediaTest encodes raw audio files to pcaps containing AMR 23.85 kbps and EVS VBR (average bitrate 5900 bps) RTP packets.
+
+    mediaTest -c x86 -i test_files/T_mode.wav -o test_files/T_mode_48kHz_13200.wav -C session_config/evs_48kHz_input_16kHz_13200bps_full_band_config --md5sum -Ec -t2
+
+in the above command line, mediaTest upsamples a 16 kHz .wav file to 48 kHz, encodes to EVS 13.2 kbps bitstream, then decodes and writes to an output .wav file.
 
     mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
 
-the -oxxx_xcN.pcap files are transcoded outputs of the first three (3) streams found in the incoming packet flow.
+in the above example the -oxxx_xcN.pcap files contain G711 RTP packets transcoded from first three (3) streams found within incoming packet flow.
 
-In addition to the event log, mediaMin generates a number of outputs automatically:
+    mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x06004000c11 -r20 -g /tmp/shared --md5sum
 
-> * per stream jitter buffer output pcap<br/>
-> * per stream wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
-> * stream group output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups<br/>
-> * stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
+in the above example sample_capture_test.h265 is an elementary bitstream file extracted from an H.265 RTP pcap.
 
-In addition to outputs specified on the command line, jitter buffer output streams containing all re-ordering, DTX expansion, and packet loss / timestamp repairs, can be written to pcap files by applying in -dN command line options the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>. For example, in the above command line, the files:
+mediaTest command lines should always contain an output; mediaMin command lines do not need to contain an output option.
+
+### Implied Outputs
+
+mediaMin generates a number of "implied outputs" automatically:
+
+> * per stream jitter buffer output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag<br/>
+> * per stream wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
+> * stream group output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) containes the ENABLE_STREAM_GROUPS flag<br/>
+> * stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
+
+These and other -dN flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>
+
+mediaTest does not generate implied outputs.
+
+### Jitter Buffer Stream Outputs
+
+If -dn command line entry contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag, jitter buffer output streams, including all re-ordering, DTX expansion, and packet loss / timestamp repairs, will be written to pcap files. For example, in this command line:
+
+    mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d0x08000c11 -r20
+
+the files:
 
 > mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap<br/>
 > :<br/>
 > mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap<br/>
 
-will be generated if this flag is active.
+will be generated.
 
-The mediaMin command line does need to contain an output option.
+<a name="mediaMinCommandLineQuick-Reference"></a>
+## mediaMin Command Line Quick-Reference
+
+Below is "quick-reference" mediaMin command line documentation:
 
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
@@ -3095,7 +3124,7 @@ When FLC Holdoffs are enabled streamlib will defer (hold off) action when it det
 
 In the best case the number of FLCs will be reduced or even eliminated, yielding the best possible live streaming output audio quality, in the worst case live streaming output may contain slightly detectable discontinuities where one or more extra FLCs were performed.
 
-#### Jitter Buffer pcap Output Enable
+#### Jitter Buffer Output Enable
 
 The -dN cmd line options ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set in the mediaMin -dN command line option, for example:
 
@@ -3108,7 +3137,7 @@ which specifies:
 > jitter buffer output stream pcaps enabled<br/>
 > stream group output wav file seek time alarm set to 10 msec<br/>
 
-If this flag is set, jitter buffer output stream pcaps are generated on the mediaMin app subfolder with "_jbN.pcap" filename suffixes as shown in [Outputs](#user-content-mediamincommandlineoutputs) under [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference) above.
+If this flag is set, jitter buffer output stream pcaps are generated on the mediaMin app subfolder with "_jbN.pcap" filename suffixes as shown in [Outputs](#user-content-commandlineoutputs) under [Command Line Quick-Reference](#user-content-commandlinequick-reference) above.
 
 ### Pcap Formats
 
