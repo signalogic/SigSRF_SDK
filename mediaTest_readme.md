@@ -295,7 +295,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
 ## [**_Command Line Quick-Reference_**](#user-content-commandlinequick-reference)<br/>
 &nbsp;&nbsp;&nbsp;[mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin Run-Time Key Commands](#user-content-runtimekeycommands)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin Run-Time Key Commands](#user-content-mediaminruntimekeycommands)<br/>
 &nbsp;&nbsp;&nbsp;[mediaTest Command Line Quick-Reference](#user-content-mediatestcommandlinequick-reference)<br/>
 
 
@@ -549,7 +549,7 @@ Below are example command lines for H.264 and H.265 auto-detection, dynamic sess
 
 Below is an example H.265 elementary bitstream extraction from an [HEVC pcapng on the Wireshark Samples Capture page](https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=1920x1080_H.265.pcapng#h265hevc):
 
-     mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x0600c000c11 -r20
+     mediaMin -c x86 -i ../pcaps/1920x1080_H.265.pcapng -o sample_capture_test.h265 -L -d 0x06004000c11 -r20
 
 The above command line example will auto-detect the H.265 RTP stream and create a dynamic session, as highlighted:
 
@@ -571,7 +571,7 @@ In the above HEVC ES Browser screen cap, the righthand pane is displaying the SP
 
 The next example extracts two (2) HEVC bitstreams from an RTP stream output by VLC and captured by Wireshark:
 
-    mediaMin -c x86 -i ../pcaps/VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng -o vlc_test_0.h265 -o vlc_test_1.h265 -L -d 0x0600c000c11 -r20
+    mediaMin -c x86 -i ../pcaps/VLC_HEVC_stream_raccoons_1920x1080_anon.pcapng -o vlc_test_0.h265 -o vlc_test_1.h265 -L -d 0x06004000c11 -r20
 
 As in the first command line example, a screencap for this example shows auto-detection of H.265 RTP packets and dynamic session creation (shown in the yellow highlighted areas), but in this case  destination IP address and UDP port are as specified in VLC streaming setup (shown in the pink highlighted areas):
 
@@ -598,7 +598,7 @@ A step-by-step procedure for generating RTP streams with VLC and capturing with 
 
 Below is an example H.264 elementary bitstream extraction from an [H.264 pcap online sample](https://github.com/saghul/sipp-scenarios/blob/master/h264.pcap):
 
-     mediaMin -c x86 -i ../pcaps/h264.pcap -o sample_capture_test.h264 -L -d 0x0600c000c11 -r20 -g /tmp/shared --md5sum
+     mediaMin -c x86 -i ../pcaps/h264.pcap -o sample_capture_test.h264 -L -d 0x06004000c11 -r20 -g /tmp/shared --md5sum
  
 The above command line example will auto-detect the H.264 RTP stream and create a dynamic session, as highlighted:
 
@@ -616,7 +616,7 @@ In the above screen cap SMPlayer is displaying the "Information" tab of its "Inf
 
 Below is a mediMin command line example that extracts H.264 elementary bitstreams from two (2) RTP streams in another [H.264 pcap online sample](https://gitlab.com/-/project/7898047/uploads/635e0cd5d6db6b8a3a303f5e1c20b9dd/h264-fua.pcap):
 
-    mediaMin -c x86 -i ../test_files/h264-fua.pcap -o sample_capture_test2.h264 -L -o sample_capture_test3.h264 -d 0x0600c000c11 -r20 -g /tmp/shared --md5sum
+    mediaMin -c x86 -i ../test_files/h264-fua.pcap -o sample_capture_test2.h264 -L -o sample_capture_test3.h264 -d 0x06004000c11 -r20 -g /tmp/shared --md5sum
 
 The resulting sample_capture_test2.h264 and sample_capture_test3.h264 files can be played in SMPlayer; the second one should show a color wave pattern:
 
@@ -1233,8 +1233,8 @@ To maintain bit-exact output reproducibility, for example call recording wav fil
 
 Here are command line examples with the ENABLE_TIMESTAMP_MATCH_MODE and ENABLE_WAV_OUTPUT flags applied, one at real-time rate, one at 40x faster-than-real-time (FTRT) rate:
 
-    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040811 -r20 --md5sum
-    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000008040811 -r0.5 --md5sum
+    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000000040811 -r20 --md5sum
+    mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0x580000000040811 -r0.5 --md5sum
 
 Note that both print identical MD5 sums in mediaMin summary stats:
 
@@ -1829,7 +1829,7 @@ mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -L -d0xc11 -r20
 
 mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r20
 ```
-The above command lines will work on any EVS pcap, regardless of header format, EVS primary or AMR-WB IO compatibility modes, bitrate, etc, thanks to mediaMin's RTP auto-detection and dynamic session creation capabilities. Output wav and G711 pcap files are produced on the mediaMin folder (cmd line options to control output file paths are given in mediaMin Command Line Quick-Reference below).
+The above command lines will work on any EVS pcap, regardless of header format, EVS primary or AMR-WB IO compatibility modes, bitrate, etc, thanks to mediaMin's RTP auto-detection and dynamic session creation capabilities. Output wav and G711 pcap files are produced on the mediaMin folder (cmd line options to control output file paths are given in [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference) below).
 
 To process pcaps faster than real-time, use a slight variation:
 ```shell
@@ -2314,7 +2314,7 @@ The screencaps below show run-time stats examples, with highlighting around the 
 
 In addition to run-time stats generated by packet/media worker threads, the mediaMin reference application also generates run-time stats. The key difference is that packet/media threads don't know about number and types of input streams, they just see sessions and channels. mediaMin, on the other hand, is aware of input stream sources. Here is a mediaMin command line example with a mixed audio and video input pcap, followed by run-time stats after the pcap is processed:
 
-    mediaMin -c x86 -i ../test_files/VIDEOCALL_EVS_H265.pcapng -L -d 0x0600c000c11 -r20 -g /tmp/shared -l4
+    mediaMin -c x86 -i ../test_files/VIDEOCALL_EVS_H265.pcapng -L -d 0x06004000c11 -r20 -g /tmp/shared -l4
 
 Note that mediaMin includes packet fragmentation and duplication stats, if applicable:
 
@@ -2878,8 +2878,8 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
     *Note: the above instructions apply to Wireshark version 2.2.6.*
 
-<a name="CommandLineQuick-Reference"></a>
-# Command Line Quick-Reference
+<a name="mediaMinCommandLineQuick-Reference"></a>
+# mediaMin Command Line Quick-Reference
 
 Below are general command line notes, arguments, and options that apply to both mediaMin and mediaTest:
 
@@ -2899,7 +2899,7 @@ Below are command line arguments and options that apply to both mediaMin and med
 
 -cXXX is an argument specifying a base platform. Currently for the Github .rar packages and Docker containers this argument should always be given as -cx86
 
--MN specifies an optional operating mode N. Currently for the Github .rar packages and Docker containers no operating mode should be given
+-MN specifies an optional operating mode N. -M0 is the default; currently for the Github .rar packages and Docker containers no operating mode should be given
 
 ### Repeat
 
@@ -2934,6 +2934,7 @@ Inputs are given by one or more "<span style="font-family: 'Courier New';">-iInp
 
 Technically inputs are command line arguments, in the sense that mediaMin requires at least one input.
 
+<a name="mediaMinCommandLineOutputs"></a>
 ### Outputs
 
 Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. Currently mediaMin command line outputs are limited to pcap files containing transcoded outputs. For example in this command line:
@@ -2949,7 +2950,7 @@ In addition to the event log, mediaMin generates a number of outputs automatical
 > * stream group output pcap if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups<br/>
 > * stream group output wav file if the [-dN command line argument](#user-content-mediamincommandlineoptions) enables stream groups and wav file output<br/>
 
-Auto-generated per stream jitter buffer output streams are re-ordered, DTX expanded, and packet loss / timestamp repaired as needed. For the above example command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap are generated. Jitter buffer output files can be disabled with the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>.
+In addition to outputs specified on the command line, jitter buffer output streams containing all re-ordering, DTX expansion, and packet loss / timestamp repairs, can be written to pcap files by applying in -dN command line options the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>. For example, in the above command line, the files mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb0.pcap thru mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap will be generated if this flag is active.
 
 The mediaMin command line does need to contain an output option.
 
@@ -2967,7 +2968,7 @@ The -dN command line argument specifies options and flags. Here are some of the 
 > 0x40000 (ANALYTICS_MODE) - operate in analytics mode. Telecom mode is the default<br/>
 > 0x80000 (ENABLE_AUTO_ADJUST_PUSH_RATE) - use a queue balancing algorithm for packet push rate. Typically applied when packet arrival timestamps can't be used<br/>
 > 0x4000000 (DISABLE_DORMANT_SESSION_DETECTION) - disable detection of sessions containing stream SSRCs that "take over", or re-use, another other stream SSRC, in which case mediaMin's default action is to flush the earlier stream's jitter buffer, considering it to be dormant. However in some applications it's expected that different streams will have the same SSRC, in which case flushing is unwanted and this flag should be applied. Examples include interception or call recording of the same stream at different points during its transmission<br/>
-> 0x8000000 (DISABLE_JITTER_BUFFER_OUTPUT_PCAPS) - disable xxx_jbN.pcap files generated by mediaMin, for example if they are not used or contributing to unwanted file space usage<br/>
+> 0x8000000 (ENABLE_JITTER_BUFFER_OUTPUT_PCAPS) - enable xxx_jbN.pcap files generated by mediaMin, for example if they are not used or contributing to unwanted file space usage<br/>
 > 0x100000000000000 (ENABLE_TIMESTAMP_MATCH_MODE) - enable timestamp-match mode, which depends only on input stream arrival and RTP timestamps, with no wall clock reference. This is useful for reprocibility / repeatability reasons, for example in bulk pcap processing modes. Note however that any timestamp inaccuracies -- such as clock drift, post-gap restart, wrong packet rates -- may cause incorrect output timing and lack of synchronization between streams</br>
 > 0x400000000000000 (SHOW_PACKET_ARRIVAL_STATS) - show packet arrival stats in mediaMin summary stats display, including average interval between packets and average packet jitter vs stream ptime. These stats differ somewhat from Wireshark, as they apply only to media packets and exclude SID and DTMF packets</br>
 
@@ -3087,9 +3088,9 @@ When FLC Holdoffs are enabled streamlib will defer (hold off) action when it det
 
 In the best case the number of FLCs will be reduced or even eliminated, yielding the best possible live streaming output audio quality, in the worst case live streaming output may contain slightly detectable discontinuities where one or more extra FLCs were performed.
 
-#### Intermediate pcap Output Disable
+#### Intermediate pcap Output Enable
 
-The -dN cmd line options DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set in the mediaMin -dN command line option, for example:
+The -dN cmd line options ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set in the mediaMin -dN command line option, for example:
 
     -d0x20008000c11
   
@@ -3097,10 +3098,13 @@ which specifies:
 
 > dynamic session creation<br/>
 > packet arrival timestamps are valid and should be used<br/>
-> intermediate jitter buffer output pcaps disabled<br/>
+> jitter buffer output stream pcaps enabled<br/>
 > stream group output wav file seek time alarm set to 10 msec<br/>
 
-If the DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is not set, then jitter buffer output pcaps are generated on the mediaMin app subfolder.
+<a name="mediaMinCommandLineOutputs"></a>
+### Outputs
+
+If the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is set, then jitter buffer output stream pcaps are generated on the mediaMin app subfolder. For filename format when this flag is active, see [Outputs](#user-content-mediamincommandlineoutputs) under [mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference).
 
 ### Pcap Formats
 
@@ -3123,7 +3127,7 @@ Below are are pcap format related command line options.
 
 The -dN cmd line options ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
 
-<a name="RunTimeKeyCommands"></a>
+<a name="mediaMinRunTimeKeyCommands"></a>
 ### mediaMin Run-Time Key Commands
 
 mediaMin supports run-time keyboard input. Here is a list of key commands:
