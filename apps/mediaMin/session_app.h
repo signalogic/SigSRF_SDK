@@ -26,6 +26,7 @@
    Created Apr 2021 JHB, split off from mediaMin.cpp
    Modified May 2023 JHB, changed SetIntervalTiming() to SetSessionTiming() and StaticSessionsCreate() to CreateStaticSessions()
    Modified Mar 2025 JHB, add cur_time param to CreateStaticSessions()
+   Modified Jun 2025 JHB, add CheckConfigFile()
 */
 #ifndef _SESSION_APP_H_
 #define _SESSION_APP_H_
@@ -39,5 +40,6 @@ int ReadCodecConfig(codec_test_params_t* codec_test_params, int thread_index);
 int CreateStaticSessions(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, uint64_t cur_time, int thread_index);
 void SetSessionTiming(SESSION_DATA session_data[]);
 unsigned int GetSessionFlags();
+int CheckConfigFile(char* config_file, int thread_index);
 
-#endif
+#endif  /*  _SESSION_APP_H_ */

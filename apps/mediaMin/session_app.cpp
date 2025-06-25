@@ -47,6 +47,8 @@
    Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS to MAX_STREAMS
    Modified Mar 2025 JHB, add cur_time param to CreateStaticSessions(), which gives it to app_printf()
    Modified Apr 2025 JHB, in CreateStaticSessions() update stream stats initialization per changes in mediaMin.h and mediaMin.cpp
+   Modified Jun 2025 JHB, in CreateStaticSessions[] update thread vars nSessionsCreated and total_sessions_created before calling JitterBufferOutputSetup() and OutputSetup(), which rely on GetSessionIndex() which references those thread vars. Test with legacy session config files merge_1613-1_1613-0_config_evs and multi_session_evs_merge_testing_config
+   Modified Jun 2025 JHB, rename check_config_file() to CheckConfigFile(), add to session_app.h, and change return value to be length of config file path found, if any
 */
 
 #include <algorithm>
@@ -68,7 +70,7 @@ using namespace std;
 
 extern HPLATFORM hPlatform;            /* initialized by DSAssignPlatform() API in DirectCore lib */
 extern APP_THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h */
-extern bool fCreateDeleteTest;         /* determined from cmd line options */
+extern bool fCreateDeleteTest;         /* determined from cmd line options (note - renamed from fStressTest, JHB Jun 2025) */
 extern bool fCapacityTest;             /* set when number of app threads and/or input reuse is enabled */
 extern bool fNChannelWavOutput;
 extern bool fUntimedMode;              /* set if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is true of some old test scripts with -r0 push-pull rate (as fast as possible), which is why we call it "untimed" */
@@ -84,7 +86,6 @@ void StreamGroupOutputSetup(HSESSION hSession, int nStream, int thread_index);  
 
 // #define STREAM_GROUP_BUFFER_TIME  1000  /* default stream group buffer time is 260 msec (2080 samples at 8 kHz sampling rate, 4160 samples at 16 kHz, etc). Uncommenting this define will set the buffer time, in this example to 1 sec */
 
-
 /* SetSessionTiming() notes:
 
    -set input and output buffer interval timing. Currently we are using term1.xx values for overall timing
@@ -96,8 +97,6 @@ void SetSessionTiming(SESSION_DATA* session_data) {
 
 /* set input buffer intervals */
 
-/* RealTimeInterval[] default value for no -rN cmd line entry is -1, which indicates to use session ptime, JHB May 2023 */
-  
    #if 0
    if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode, we set termN buffer_interval values to zero regardless of what they already are, and regardless of -rN cmd line entry */
 
@@ -113,7 +112,7 @@ void SetSessionTiming(SESSION_DATA* session_data) {
    }
    #else
    if (Mode & ANALYTICS_MODE) {  /* if -dN cmd line entry specifies analytics mode set TERM_ANALYTICS_MODE_TIMING flag. Note this decouples analytics mode from input_buffer_interval, which is needed for FTRT and AFAP modes, JHB May 2023 */
-   
+
       session_data->term1.uFlags |= TERM_ANALYTICS_MODE_PACKET_TIMING;
       session_data->term2.uFlags |= TERM_ANALYTICS_MODE_PACKET_TIMING;
    }
@@ -208,29 +207,36 @@ unsigned int GetSessionFlags() {
 }
 
 
-/* helper function used by ReadCodecConfig() and ReadSessionConfig() */
+/* helper function used by ReadCodecConfig() and ReadSessionConfig(). Also may be called near start of mediaMin.cpp, depending on -dN cmd line entry */
 
-int check_config_file(char* config_file, int thread_index) {
+int CheckConfigFile(char* config_file, int thread_index) {
 
 char tmpstr[1024] = "";
+int ret_val = -1;  /* default return value is error condition */
 
    (void)thread_index;  /* not currently used */
 
-   if (strlen(MediaParams[0].configFilename) == 0 || access(MediaParams[0].configFilename, F_OK) == -1) {
+   if (strlen(MediaParams[0].configFilename) == 0) { ret_val = 0; goto exit; }  /* return zero for config file path length. Indicates no -Cxxx entry on cmd line, but not an error condition */
 
-      if (strlen(MediaParams[0].configFilename) == 0) return -1;
+   if (access(MediaParams[0].configFilename, F_OK) == -1) {
 
-      strcpy(tmpstr, "../");  /* try up one subfolder, in case cmd user's line entry forgot the "../" prefix */
+      strcpy(tmpstr, "../");  /* try up one folder, in case cmd user's line entry forgot the "../" prefix */
       strcat(tmpstr, MediaParams[0].configFilename);
 
-      if (access(tmpstr, F_OK) == -1) return -1;
-      else strcpy(config_file, tmpstr);
+      if (access(tmpstr, F_OK) == -1) goto exit;  /* can't find config file path either on caller's current folder or up one folder */
+
+      if (config_file) strcpy(config_file, tmpstr);  /* file found */
+      ret_val = strlen(tmpstr);
    }
-   else strcpy(config_file, MediaParams[0].configFilename);
+   else {
 
-   if (!strlen(config_file)) return -1;
+      if (config_file) strcpy(config_file, MediaParams[0].configFilename);  /* file found */
+      ret_val = strlen(MediaParams[0].configFilename);
+   }
 
-   return 1;
+exit:
+
+   return ret_val;  /* return value is now length of config file path, if found, JHB Jun 2025 */
 }
 
 /* codec config files are valid for both dynamic and static session creation */
@@ -242,7 +248,7 @@ FILE* codec_cfg_fp = NULL;
 
    if (thread_info[thread_index].init_err) return 0;
 
-   if (check_config_file(codec_config_file, thread_index) < 0) return 0;  /* no error message if not found ... optional on mediaMin cmd line, JHB Sep 2022 */
+   if (CheckConfigFile(codec_config_file, thread_index) <= 0) return 0;  /* no error message if not found ... optional on mediaMin cmd line, JHB Sep 2022. Check for <= 0 as CheckConfigFile() return value is now length of config file path, if found, JHB Jun 2025 */
 
    printf("Opening codec config file: %s\n", codec_config_file);
 
@@ -269,7 +275,6 @@ FILE* codec_cfg_fp = NULL;
    return 1;
 }
 
-
 /* read session configuration file info needed to create static sessions. Note that static vs. dynamic session creation depends on -dN cmd line entry, see Mode var comments in mediaMin.h */
 
 int ReadSessionConfig(SESSION_DATA session_data[], int thread_index) {
@@ -281,7 +286,7 @@ int nSessionsConfigured = 0;
 
    if (thread_info[thread_index].init_err) return 0;
 
-   if (check_config_file(session_config_file, thread_index) < 0) {
+   if (CheckConfigFile(session_config_file, thread_index) <= 0) {  /* check for <= 0 as CheckConfigFile() return value is now length of config file path, if found, JHB Jun 2025 */
 
       printf("mediaMin Info: cannot find specified session config file: %s, using default file (%d)\n", MediaParams[0].configFilename, thread_index);
 
@@ -327,7 +332,6 @@ int CreateStaticSessions(HSESSION hSessions[], SESSION_DATA session_data[], int 
 
 int i, nSessionsCreated = 0;
 HSESSION hSession;
-bool fStreamGroup;
 
    for (i=0; i<nSessionsConfigured; i++) {
 
@@ -387,7 +391,7 @@ bool fStreamGroup;
       session_data[i].term1.RFC7198_lookback = uLookbackDepth;
       session_data[i].term2.RFC7198_lookback = uLookbackDepth;
 
-      if ((fStreamGroup = (Mode & ENABLE_STREAM_GROUPS) || session_data[i].group_term.group_mode > 0)) {  /* adjust stream group_mode if needed, prior to creating session */
+      if ((Mode & ENABLE_STREAM_GROUPS) || session_data[i].group_term.group_mode > 0) {  /* adjust stream group_mode if needed, prior to creating session */
 
          Mode |= ENABLE_STREAM_GROUPS;  /* in case stream groups were not enabled on cmd line, but they are for at least one session in the static session config file */
 
@@ -424,11 +428,15 @@ bool fStreamGroup;
 
       SetSessionTiming(&session_data[i]);  /* set termN.input_buffer_interval and termN.output_buffer_interval -- for user apps note it's important this be done */
 
-   /* call DSCreateSession() API (in pktlib) */
+   /* call DSCreateSession() API (defined in pktlib.h) */
 
       if ((hSession = DSCreateSession(hPlatform, GetSessionFlags(), NULL, &session_data[i])) >= 0) {
 
-         hSessions[nSessionsCreated++] = hSession;  /* valid session was handle returned from DSCreateSession(), add to hSessions[] */
+         hSessions[thread_info[thread_index].nSessionsCreated] = hSession;  /* valid session was handle returned from DSCreateSession(); add to hSessions[]. Note we append to any dynamic or static sessions already created */
+
+         thread_info[thread_index].nSessionsCreated++;  /* update per app thread vars. Note this needs to be done before calling JitterBufferOutputSetup() or OutputSetup(), which rely on GetSessionIndex(), JHB Jun 2025 */
+         thread_info[thread_index].total_sessions_created++;
+         nSessionsCreated++;  /* increment local count */
 
          #ifdef STREAM_GROUP_BUFFER_TIME
          DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_BUFFER_TIME, STREAM_GROUP_BUFFER_TIME, NULL);  /* if STREAM_GROUP_BUFFER_TIME defined above, set group buffer time to value other than 260 msec default */
@@ -447,15 +455,12 @@ bool fStreamGroup;
             }
          }
 
-         if (fStreamGroup) {
+         if (Mode & ENABLE_STREAM_GROUPS) {
 
             int nStream = 0;  /* default is first cmd line input */
             StreamGroupOutputSetup(hSession, nStream, thread_index);  /* set up stream group output if session is a group owner */
            // thread_info[thread_index].fGroupOwnerCreated[!(Mode & COMBINE_INPUT_SPECS) ? nStream : 0][nReuse] = true;  /* done in CreateDynamicSession(), not sure yet if this is needed for static sessions */
          }
-
-         thread_info[thread_index].nSessionsCreated++;  /* update per app thread vars */
-         thread_info[thread_index].total_sessions_created++;
 
       /* update stream stats, JHB Nov 2024 */
 
@@ -489,7 +494,8 @@ bool fStreamGroup;
          if (Mode & CREATE_DELETE_TEST_PCAP) break;
       }
       else app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_EVENT_LOG, cur_time, thread_index, "mediaMin INFO: Failed to create static session %d%s \n", i, i > 0 ? ", continuing test with already created sessions" : "");
-   }
+
+   }  /* nSessionsConfigured loop */
 
    if (nSessionsConfigured && !nSessionsCreated) {
 

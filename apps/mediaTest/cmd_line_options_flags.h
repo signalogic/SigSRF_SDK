@@ -36,6 +36,7 @@
    Modified Jul 2024 JHB, clarification of ENABLE_TIMESTAMP_MATCH_MODE and ENABLE_WAV_OUTPUT flags
    Modified Nov 2024 JHB, update comments
    Modified Mar 2025 JHB, update comments
+   Modified Jun 2025 JHB, change DISABLE_JITTER_BUFFER_OUTPUT_PCAPS to ENABLE_JITTER_BUFFER_OUTPUT_PCAPS. mediaMin no longer generates these by default
 */
 
 #ifndef _CMDLINEOPTIONSFLAGS_H_
@@ -86,7 +87,7 @@
 #define DISABLE_CONTRIB_PACKET_FLUSH                 0x1000000    /* m| group contributor streams are flushed from their jitter buffer when their contribution rate becomes slow, decreasing the need for FLC on stream group combined output. Enabled by default */
 #define ENABLE_FLC_HOLDOFFS                          0x2000000    /* m| enable FLC holdoffs to attempt to optimize audio quality in some cases (see documentation). Ignored if DISABLE_FLC flag is set. Disabled by default */
 #define DISABLE_DORMANT_SESSION_DETECTION            0x4000000    /* m| disable dormant session detection and flush. Dormant sessions are defined as a session with a channel SSRC that was in used, has not been in use for some time, and then that SSRC is "taken over" by another session / channel. In that case the dormant session is flushed and any remaining media is cleared from session state information and jitter buffers. In cases where multiple sessions "overload" an SSRC value (i.e. duplicated SSRCs by actually different sessions) it's advisable to disable dormant session detection to avoid unwanted flushing. Note this flag applies to all sessions handled by mediaMin; to disable on per-session basis see TERM_DISABLE_DORMANT_SESSION_DETECTION flag in shared_include/session.h */
-#define DISABLE_JITTER_BUFFER_OUTPUT_PCAPS           0x8000000    /* m| disable intermediate jitter buffer output pcap files. By default mediaMin pulls jitter buffer output packets from packet/media threads using DSPullPackets() with the DS_PULLPACKETS_JITTER_BUFFER flag, and writes to xx_jbN.pcap files. Filename formation (and the disable if active) is inside JitterBufferOutputSetup() in mediaMin.cpp */ 
+#define ENABLE_JITTER_BUFFER_OUTPUT_PCAPS            0x8000000    /* m| enable intermediate jitter buffer output pcap files. When specified mediaMin pulls jitter buffer output packets from packet/media threads using DSPullPackets() with the DS_PULLPACKETS_JITTER_BUFFER flag, and writes to xx_jbN.pcap files (for file formation details see JitterBufferOutputSetup() in mediaMin.cpp) */ 
 
 /* debug info: extra stats, mem stats, audio output alignment markers, intermediate pcap output, stream lag waveform curves for timestamp match mode */
 

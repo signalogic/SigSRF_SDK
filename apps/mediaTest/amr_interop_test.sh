@@ -17,6 +17,10 @@
 #   -mediaMin cmd lines use -r0.N to accelerate processing time. For detailed information on acceleration and bulk pcap handling, see
 #      https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#bulk-pcap-handling
 #
+# Revision History
+#   Created Nov 2023
+#   Revised Jun 2025, remove DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag from -dN entry. mediaMin no longer generates these by default (see cmd_line_options_flags.h) 
+#
 # Usage
 #
 #   cd /signalogic_software_installpath/sigsrf_sdk_demo/apps/mediaTest
@@ -93,117 +97,117 @@ mediaTest -cx86 -itest_files/stv8c.INP -o"${MEDIATEST_OUTPUTS}"/stv8c_amr_4750_o
 
 cd mediaMin
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23850_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23850_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23850_bw_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23850_oa_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23850_bw_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23850_oa_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23050_bw_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23050_oa_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23050_bw_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_23050_oa_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_19850_bw_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_19850_oa_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_19850_bw_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_19850_oa_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_18250_bw_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_18250_oa_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_18250_bw_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_18250_oa_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_15850_bw_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_15850_oa_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_15850_bw_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_15850_oa_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_14250_bw_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_14250_oa_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_14250_bw_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_14250_oa_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_12650_bw_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_12650_oa_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_12650_bw_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_12650_oa_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_8850_bw_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_8850_oa_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_8850_bw_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_8850_oa_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_6600_bw_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_6600_oa_16kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_6600_bw_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_amr_6600_oa_16kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_12200_bw_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_12200_oa_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_12200_bw_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_12200_oa_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_10200_bw_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_10200_oa_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_10200_bw_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_10200_oa_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_7950_bw_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_7950_oa_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_7950_bw_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_7950_oa_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_7400_bw_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_7400_oa_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_7400_bw_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_7400_oa_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_6700_bw_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_6700_oa_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_6700_bw_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_6700_oa_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_5900_bw_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_5900_oa_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_5900_bw_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_5900_oa_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_5150_bw_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_5150_oa_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_5150_bw_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_5150_oa_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_4750_bw_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
-mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_4750_oa_8kHz_mime.pcap -L -d0x08000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_4750_bw_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv8c_amr_4750_oa_8kHz_mime.pcap -L -d0x00000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # run mediaMin on various test cases
 
 # AMR-NB 12200 bandwidth-efficient md5 sum ending in 0012d2
-mediaMin -c x86 -i ../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d 0x580000008040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -c x86 -i ../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d 0x580000000040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 12200 octet-algined md5sum ending in c0dd1f
-mediaMin -cx86 -i../pcaps/AMR_MusixFile.pcap -L -d0x08040c11 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../pcaps/AMR_MusixFile.pcap -L -d0x00040c11 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -C../session_config/merge_testing_config_amrwb -i../pcaps/AMRWB.pcap -i../pcaps/pcmutest.pcap -L -d0x08040800 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -C../session_config/merge_testing_config_amrwb -i../pcaps/AMRWB.pcap -i../pcaps/pcmutest.pcap -L -d0x00040800 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR 23850 octet-aligned md5 sum ending in d689c8
-mediaMin -cx86 -i../pcaps/AMRWB.pcap -i../pcaps/pcmutest.pcap -L -d0x08040c10 -r0.9 -C../session_config/merge_testing_config_amrwb --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../pcaps/AMRWB.pcap -i../pcaps/pcmutest.pcap -L -d0x00040c10 -r0.9 -C../session_config/merge_testing_config_amrwb --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 23850 octet-aligned md5 sum ending in cd0e3d
-mediaMin -cx86 -i../pcaps/AMRWB.pcap -L -d0x08040c11 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../pcaps/AMRWB.pcap -L -d0x00040c11 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -C ../session_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -r0 -L -d0x08040800 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -C ../session_config/amrwb_packet_test_config_AMRWB-23.85kbps-20ms_bw -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -r0 -L -d0x00040800 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 23850 bps bandwidth efficient with ALLOW_OUTOFSPEC_RTP_PADDING flag set (pcap has extra 4 bytes at end of each RTP payload but its RTP headers do not specify RTP padding (maybe a leftover FCS, or frame check sequence ?)
-mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -r0 -L -d0x20000008040801 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -r0 -L -d0x20000000040801 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -r0.9 -L -d0x20000008040c01 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -r0.9 -L -d0x20000000040c01 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 23850 bandwidth-efficient md5 sum ending in 5365b0
-mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -r0.7 -L -d0x5a0000008040811 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i ../pcaps/AMRWB-23.85kbps-20ms_bw.pcap -r0.7 -L -d0x5a0000000040811 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
  
-mediaMin -cx86 -C../session_config/merge_testing_config_amr -i../pcaps/AMR_MusixFile.pcap -i../pcaps/PCMU.pcap -L -r0.5 -d0x08000c11 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -C../session_config/merge_testing_config_amr -i../pcaps/AMR_MusixFile.pcap -i../pcaps/PCMU.pcap -L -r0.5 -d0x00000c11 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 23850 bandwidth-efficient
-mediaMin -cx86 -C ../session_config/amrwb_packet_test_config_AMRWB_SID -i../pcaps/AMRWB_SID.pcap -r0.5 -L -d0x08040800 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -C ../session_config/amrwb_packet_test_config_AMRWB_SID -i../pcaps/AMRWB_SID.pcap -r0.5 -L -d0x00040800 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 12650 md5 sum ending in cb27d5
-mediaMin -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0x080c0c01 -r0.9 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0x000c0c01 -r0.9 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-NB 12200 bandwidth-efficient (21 streams) md5 sum ending in 629aff
-mediaMin -cx86 -i../test_files/crash1.pcap -L -d0x580000008040811 -r0.5 -l2 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../test_files/crash1.pcap -L -d0x580000000040811 -r0.5 -l2 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-NB 12200 bandwidth-efficient md5 sum ending in b6f504
-mediaMin -cx86 -i../test_files/tmpwpP7am.pcap -L -d0x580000008040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../test_files/tmpwpP7am.pcap -L -d0x580000000040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 23850 octet-aligned only 1 packet
-mediaMin -cx86 -i../test_files/amr-bw-efficient.pcap -L -d0x20018000c11 -r20 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../test_files/amr-bw-efficient.pcap -L -d0x20010000c11 -r20 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 23850 octet-aligned md5 sum ending in ebc64b
 mediaMin -c x86 -i ../test_files/codecs3-amr-wb.pcap -L -d 0x20018040c11 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-mediaMin -cx86 -i../test_files/codecs-amr-12.pcap -L -d0x20018000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../test_files/codecs-amr-12.pcap -L -d0x20010000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-NB 4750 bandwidth-efficient md5 sum ending in a023fb
-mediaMin -cx86 -i../test_files/81786.4289256.478164.pcap -L -d0x580000008040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../test_files/81786.4289256.478164.pcap -L -d0x580000000040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-NB 5900 bandwidth-efficient md5 sum ending in 3389db
-mediaMin -cx86 -i../test_files/85236.4284266.158664.pcap -L -d0x580000008040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../test_files/85236.4284266.158664.pcap -L -d0x580000000040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 6600 bandwidth-efficient md5 sum ending in 1d2bd2
-mediaMin -cx86 -i../test_files/65446.4425483.49980.pcap -L -d0x580000008040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../test_files/65446.4425483.49980.pcap -L -d0x580000000040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 6600 bandwidth-efficient md5 sum ending in ca6e94
-mediaMin -cx86 -i../test_files/6936.3576684.1144122.pcap -L -d0x580000008040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../test_files/6936.3576684.1144122.pcap -L -d0x580000000040811 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 cd ..

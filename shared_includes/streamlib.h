@@ -59,6 +59,7 @@
   Modified Dec 2024 JHB, comments only
   Modified Feb 2025 JHB, rename MAXSTREAMS to MAX_COCPU_STREAMS, move definition of MAX_STREAMS here from mediaTest.h
   Modified Mar 2025 JHB, add TIMESTAMP_MATCH_ENABLE_STREAM_SYNC and TIMESTAMP_MATCH_ENABLE_DEBUG_OUTPUT flags
+  Modified Jun 2025 JHB, add DS_STREAMGROUP_INFO_MERGE_TSM_PACKET_COUNT flag
 */
 
 #ifndef _STREAMLIB_H_
@@ -469,7 +470,8 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
   #define DS_STREAMGROUP_INFO_CHECK_ALLTERMS                                 3  /* try all terms, starting with group term, Retrieve group name in szInfo if specified */
   #define DS_STREAMGROUP_INFO_MERGE_FILENAME                                 4  /* retrieve stream group filename in szInfo. For a usage example see mediaMin.cpp */
   #define DS_STREAMGROUP_INFO_MERGE_TSM_FILENAME                             5  /* retrieve timestamp match mode stream group filename in szInfo */
-  #define DS_STREAMGROUP_INFO_OWNER_SESSION                                  6  /* retrieve group owner session when combined with DS_STREAMGROUP_INFO_HANDLE_IDX and handle is a valid idx */
+  #define DS_STREAMGROUP_INFO_MERGE_TSM_PACKET_COUNT                         6  /* return timestamp match mode packet count */
+  #define DS_STREAMGROUP_INFO_OWNER_SESSION                                  7  /* retrieve group owner session when combined with DS_STREAMGROUP_INFO_HANDLE_IDX and handle is a valid idx */
 
   #define DS_STREAMGROUP_INFO_ITEM_MASK                                   0xff
 

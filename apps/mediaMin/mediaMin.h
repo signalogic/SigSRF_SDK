@@ -60,7 +60,7 @@
    Modified Apr 2025 JHB, add num_rtcp_custom_packets[] stat
    Modified Apr 2025 JHB, simplify stream stats implementation, remove uStreamStatsState[]
    Modified May 2025 JHB, add output stats pkt_stream_group_pcap_out_ctr[], pkt_transcode_pcap_out_ctr[], and pkt_bitstream_out_ctr[]
-   Modified Jun 2025 JHB, add szTranscodeOutput[] to support bit-exact operations on transcode output files, define MOFO_XXX flags for use in MediaOutputFileOps()
+   Modified Jun 2025 JHB, add szTranscodeOutput[] to support bit-exact operations on transcode output files
 */
 
 #ifndef _MEDIAMIN_H_
@@ -72,6 +72,7 @@
 
 #include "pktlib.h"     /* pktlib */
 #include "voplib.h"     /* voice and video over packet library */
+#include "streamlib.h"  /* xx_STREAM_GROUPS_xx definitions */
 
 #ifndef HAVE_SDP
   #include <sdp/sdp.h>  /* include sdp.h if needed */
@@ -99,13 +100,6 @@
 #define MAX_SESSIONS_THREAD                 64  /* maximum number of sessions per thread */
 
 #define MAX_APP_STR_LEN                  12000  /* size used for very large string ops like summary stats, when we have concerns about multi-thread operation breaking string output in console display and event log */
-
-/* MediaOutputFileOps() flag definitions */
-
-#define MOFO_STR_APPEND                      1
-#define MOFO_STREAMGROUP_BITEXACT        0x100
-#define MOFO_TRANSCODE_BITEXACT          0x200
-#define MOFO_BITSTREAM_BITEXACT          0x400
 
 #define SESSION_MARKED_AS_DELETED  0x80000000L  /* reserved mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
 
@@ -360,7 +354,7 @@ typedef struct {
 #define MasterThread                  0
 #define NUM_PKTMEDIA_THREADS          3  /* typically mediaMin starts one packet/media thread. Given enough cmd line input specs it may start up to NUM_PKTMEDIA_THREADS packet/media threads */
 
-#define isAFAPMode                    (RealTimeInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
-#define isFTRTMode                    (RealTimeInterval[0] > 0 && RealTimeInterval[0] < 1)  /* macro for "faster than real-time" processing mode, evaluates as true for -rN cmd line entry where 0 < N < 1, JHB May 2023 */
+#define isAFAPMode()                  (RealTimeInterval[0] == 0)  /* macro for "as fast as possible" processing mode, evaluates as true for -r0 cmd line entry, JHB May 2023 */
+#define isFTRTMode()                  (RealTimeInterval[0] > 0 && RealTimeInterval[0] < 1)  /* macro for "faster than real-time" processing mode, evaluates as true for -rN cmd line entry where 0 < N < 1, JHB May 2023 */
 
 #endif  /* _MEDIAMIN_H_ */

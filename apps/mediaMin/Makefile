@@ -44,6 +44,7 @@
 #  Modified Jan 2025 JHB, add -Wno-error=implicit-fallthrough to CPPFLAGS for gcc 7.x and higher
 #  Modified Feb 2025 JHB, comments only
 #  Modified Apr 2025 JHB, add exception for gcc 9.3.1, the -Wno-error=implicit-fallthrough flag is not supported
+#  Modified Jun 2025 JHB, add stats.cpp and port_io.cpp to cpp_objects target
 
 # check make cmd line for "no_codecs" option
 
@@ -505,7 +506,7 @@ c_common_objects = keybd.o
 cpp_sdp_objects = types.o sdp.o utils.o reader.o writer.o
 c_crc_objects = crc32.o
 c_mediaTest_objects = transcoder_control.o cmd_line_interface.o
-cpp_objects = sdp_app.o session_app.o user_io.o mediaMin.o
+cpp_objects = sdp_app.o session_app.o user_io.o stats.o port_io.o mediaMin.o
 # add sources as needed for user defined processing. For example, adding audio_domain_processing.c will take precedence over the default version included in streamlib.so
 # c_objects += audio_domain_processing.o
 # c_objects += packet_media_flow_proc.o

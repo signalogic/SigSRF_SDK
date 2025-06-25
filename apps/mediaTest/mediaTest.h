@@ -60,6 +60,7 @@
    Modified Dec 2024 JHB, rename "header_format" to "payload_format" in codec_test_params_t struct
    Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS to MAX_STREAMS, which is defined in shared_include/streamlib.h. MAX_STREAMS specifies maximum streams available for reference applications and multithread / high capacity testing
    Modified Apr 2025 JHB, add isLinePreserve extern, change uLineCursorPos from uint8_t to unsigned int (to handle long console output lines)
+   Modified Jun 2025 JHB, include directcore.h
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -71,6 +72,7 @@
 
 /* SigSRF header files */
 
+#include "directcore.h"  /* DirectCore header required before filelib.h and cimlib.h */
 #include "filelib.h"  /* waveform file lib API */
 #include "cimlib.h"   /* CIM lib API, after definition of MAX_STREAMS */
 

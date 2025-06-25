@@ -6778,8 +6778,8 @@ organize_by_session:
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Avg stats calcs (ch%cnum)%s\n", ISL, calcstr);
 
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "  Codecs\n");
-      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Damaged frames (ch%cnum)%s\n", ISL, dmgfrmstr);
       add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Payload formats (ch%cnum) compact%s, headerfull%s, hf-only%s, AMR IO compatibility%s, bandwidth-efficient%s, octet-aligned%s, HEVC%s, H.264%s\n", ISL, cmpfrmstr, hffrmstr, hfofrmstr, amriomodefrmstr, bwefrmstr, octfrmstr, hevcfrmstr, h264frmstr);
+      add_stats_str(pkt_stats_str, MAX_PKT_STATS_STRLEN, "    Damaged frames (ch%cnum)%s\n", ISL, dmgfrmstr);
 
    /* include event log stats, to make it easier to see if anything happened to worry about, JHB May 2020 */
    

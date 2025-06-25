@@ -1,6 +1,6 @@
 # $Header: /install_path/apps/Signalogic/mediaTest/Makefile
 #
-# Copyright (C) Signalogic Inc. 2015-2024
+# Copyright (C) Signalogic Inc. 2015-2025
 #
 # Description: Makefile for "mediaTest" audio, transcoding, and streaming test and measurement program
 #
@@ -44,6 +44,10 @@
 #  Modified May 2024 JHB, add -rdynamic linker flag to include more symbols in executable output. This helps when backtrace_symbols() is used (which it is now by DSGetBacktrace() in diaglib)
 #  Modified May 2024 JHB, change x86_mediaTest.o to mediaTest_proc.o
 #  Modified Jun 2024 JHB, add crc32 object
+#  Modified Jun 2025 JHB, add stats.cpp and port_io.cpp to cpp_mediaMin_objects target
+#  Modified Jun 2025 JHB, update to match mediaMin Makefile:
+#                         -rename CFLAGS to CPPFLAGS
+#                         -add -Wno-error=implicit-fallthrough to CPPFLAGS for gcc 7.x and higher, with exception for gcc 9.3.1, which doesn't support the flag
 
 # check make cmd line for no_codecs, no_mediamin, no_pktlib, and codecs_only options
 
@@ -207,12 +211,25 @@ endif
 INCLUDES = -I./ -I$(INSTALLPATH)/DirectCore/include -I$(INSTALLPATH) -I$(INSTALLPATH)/shared_include -I$(INSTALLPATH)/DirectCore/apps/common
 
 # compile flags
-CFLAGS += $(INCLUDES) -Wall -g3 -O3 -pthread -std=c++0x
+CPPFLAGS += $(INCLUDES) -Wall -g3 -O3 -pthread -std=c++0x
 
-# get gcc version
+# get gcc major version
 GCC_VERSION := $(shell gcc -dumpversion | awk -F. '{print $$1}')
-ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # print only when target is not clean:
-  $(info GCC_VERSION=$(GCC_VERSION) found in Makefile)
+GCC_VERSION_FULL := $(shell gcc -dumpfullversion 2> /dev/null | awk '{print $$1}')
+ifeq ($(GCC_VERSION_FULL),)  # dumpfullversion can fail on older compilers
+  GCC_VERSION_FULL := $(shell gcc -dumpversion | awk '{print $$1}')
+endif
+ifeq (,$(findstring clean,$(MAKECMDGOALS)))  # don't print for "clean:" target
+  $(info GCC_VERSION=$(GCC_VERSION) major version found in Makefile)
+  $(info GCC_VERSION_FULL=$(GCC_VERSION_FULL) full version found in Makefile)
+endif
+
+# for gcc 7 and higher degrade switch-statement fall-through errors to warnings
+ifeq ($(shell expr $(GCC_VERSION) \> 6), 1)
+  # for whatever reason, gcc 9.3.1 is an exception and can't handle this flag, JHB Apr 2025
+  ifneq ($(GCC_VERSION_FULL), 9.3.1)
+    CPPFLAGS += -Wno-error=implicit-fallthrough
+  endif
 endif
 
 # get ldd version (should match GLIBC version)
@@ -224,7 +241,7 @@ ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.23" 'BEGIN{print(a==b)}'), 1)
 else ifeq ($(shell awk -v a="$(GLIBC_VERSION)" -v b="2.24" 'BEGIN{print(a==b)}'), 1)
 else ifneq ($(no_flto),1) # check for command line option; e.g. make all no_flto=1
   # add -flto to compile flags
-  CFLAGS += -flto
+  CPPFLAGS += -flto
 endif
 
 # add necessary defines
@@ -236,38 +253,38 @@ endif
 
 DEFINES += -D_FILE_OFFSET_BITS=64 -D_LINUX_ -D_USE_PCIE_ -D_SIGRT -D_X86 -D_MEDIATEST_
 
-CFLAGS += $(DEFINES)
+CPPFLAGS += $(DEFINES)
 
 ifeq ($(ALSA_INSTALLED),y)
-  CFLAGS += -D_ALSA_INSTALLED_
+  CPPFLAGS += -D_ALSA_INSTALLED_
 endif
 
 ifeq ($(MELPE_INSTALLED),y)
-  CFLAGS += -D_MELPE_INSTALLED_
+  CPPFLAGS += -D_MELPE_INSTALLED_
 endif
 
 ifeq ($(G729AB_INSTALLED),y)
-  CFLAGS += -D_G729AB_INSTALLED_
+  CPPFLAGS += -D_G729AB_INSTALLED_
 endif
 
 ifeq ($(G726_INSTALLED),y)
-  CFLAGS += -D_G726_INSTALLED_
+  CPPFLAGS += -D_G726_INSTALLED_
 endif
 
 ifeq ($(AMR_INSTALLED),y)
-  CFLAGS += -D_AMR_INSTALLED_
+  CPPFLAGS += -D_AMR_INSTALLED_
 endif
 
 ifeq ($(AMRWB_INSTALLED),y)
-  CFLAGS += -D_AMRWB_INSTALLED_
+  CPPFLAGS += -D_AMRWB_INSTALLED_
 endif
 
 ifeq ($(AMRWBPLUS_INSTALLED),y)
-  CFLAGS += -D_AMRWBPLUS_INSTALLED_
+  CPPFLAGS += -D_AMRWBPLUS_INSTALLED_
 endif
 
 ifeq ($(KALDIASR_INSTALLED),y)
-  CFLAGS += -D_KALDIASR_INSTALLED_
+  CPPFLAGS += -D_KALDIASR_INSTALLED_
 endif
 
 # linker search paths
@@ -522,7 +539,7 @@ c_crc_objects = crc32.o
 cpp_gpx_objects = gpxlib.o
 
 ifneq ($(no_mediamin),1)
-  cpp_mediaMin_objects = mediaMin.o sdp_app.o session_app.o user_io.o
+  cpp_mediaMin_objects = mediaMin.o sdp_app.o session_app.o user_io.o stats.o port_io.o
 endif
 
 c_objects = sigMRF_init.o control_thread_task.o codec_thread_task.o transcoder_control.o codec_test_control.o host_c66x_xfer_control.o dummy_packet.o mediaTest.o cmd_line_interface.o
@@ -537,25 +554,25 @@ c_objects += mediaTest_proc.o
 all: $(cpp_common_objects) $(cpp_sdp_objects) $(c_crc_objects) $(cpp_gpx_objects) $(c_common_objects) $(cpp_mediaMin_objects) $(c_objects) link
 
 $(cpp_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.cpp
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CPPFLAGS) -c $< -o $@ 
 
 $(cpp_sdp_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/sdp/%.cpp
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CPPFLAGS) -c $< -o $@ 
 
 $(c_crc_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/crc/%.c
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CPPFLAGS) -c $< -o $@ 
 
 $(cpp_gpx_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/gpx/%.cpp
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CPPFLAGS) -c $< -o $@ 
 
 $(c_common_objects): %.o: $(INSTALLPATH)/DirectCore/apps/common/%.c
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CPPFLAGS) -c $< -o $@ 
 
 $(cpp_mediaMin_objects): %.o: mediaMin/%.cpp
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CPPFLAGS) -c $< -o $@ 
 
 $(c_objects): %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CPPFLAGS) -c $< -o $@ 
 
 # link object files, essential libs, and cimlib which provides cmd line handling
 link:

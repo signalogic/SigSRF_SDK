@@ -39,6 +39,7 @@
   Modified Nov 2024 JHB, use IPvN_ADDR_XXX defined in pktlib.h
   Modified Dec 2024 JHB, add DS_FSCONV_SATURATE flag in DSConvertFs()
   Modified Mar 2025 JHB, minor changes to make compatible with g++ compiler and -std=gnu++11
+  Modified Jun 2025 JHB, comments only
 */
 
 #ifdef __cplusplus
@@ -434,7 +435,7 @@ HASRDECODER hASRDecoder;
                sem_post(&pcap_write_sem);
             }
          }
-         else {
+         else {  /* packet/media worker thread */
 
             //#define USE_SEND_RETRY
             #ifdef USE_SEND_RETRY
