@@ -2948,7 +2948,7 @@ in the above example sample_capture_test.h264 is an elementary bitstream file ex
 
 in the above example the ves_N.h265 files contain H.265 elementary bitstream files for the first three video streams found within incoming packet flow. Also, since the ENABLE_STREAM_GROUPS flag is given in -dN command line entry, .wav files for audio streams found within incoming packet flow will be generated as ["Implied Outputs"](#user-content-impliedoutputs).
 
-mediaTest command lines should always contain an output; mediaMin command lines do not need to contain an output option.
+    mediaTest command lines should always contain at least one output; mediaMin command lines do not need an output option.
 
 <a name="ImpliedOutputs"></a>
 ### Implied Outputs
@@ -2957,7 +2957,7 @@ mediaMin generates a number of "implied outputs" automatically:
 
 > * per stream [jitter buffer output pcaps](#user-content-jitterbufferoutputs) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag<br/>
 > * per [stream output wav files](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
-> * [stream group output pcaps](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) containes the ENABLE_STREAM_GROUPS flag<br/>
+> * [stream group output pcaps](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS flag<br/>
 > * [stream group output wav files](#user-content-streamgroups) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
 
 These and other -dN flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>
