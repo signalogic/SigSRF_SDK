@@ -334,7 +334,7 @@ See [User-Defined Signal Processing Insertion Points](#user-content-userdefineds
 <a name="DecodingAndTranscoding"></a>
 ### Decoding and Transcoding
 
-The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is intermediate pcap and [wav file output](#user-content-wavfileoutput) from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, [SDP Support](#user-content-sdpsupport), and more. A static session config file is optional.
+The mediaMin reference application decodes input packet streams in real-time (or at a specified rate) from network sockets and/or pcap files, and encodes output packet streams to network sockets stream and/or pcap files.  mediaMin relies on the pktlib and streamlib library modules for transcoding and transrating, including mismatched and variable ptimes between endpoints, DTX frames, DTMF events, sampling rate conversion, time-alignment of multiple streams in the same call group, and more. Numerous RFCs are supported (see [RFC List](#user-content-supportedrfcs) on this page), as is jitter buffer output and [wav file output](#user-content-wavfileoutput) from decoded endpoints. A simple command line format includes I/O, operating mode and options, packet and event logging, [SDP Support](#user-content-sdpsupport), and more. A static session config file is optional.
 
 Below are some transcoding command line examples. The first command does the following:
 
@@ -3095,7 +3095,7 @@ When FLC Holdoffs are enabled streamlib will defer (hold off) action when it det
 
 In the best case the number of FLCs will be reduced or even eliminated, yielding the best possible live streaming output audio quality, in the worst case live streaming output may contain slightly detectable discontinuities where one or more extra FLCs were performed.
 
-#### Intermediate pcap Output Enable
+#### Jitter Buffer pcap Output Enable
 
 The -dN cmd line options ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set in the mediaMin -dN command line option, for example:
 
