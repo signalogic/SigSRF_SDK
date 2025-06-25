@@ -2923,7 +2923,7 @@ Both mediaTest and mediaMin require at least one input.
 <a name="CommandLineOutputs"></a>
 ### Outputs
 
-Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. mediaTest supports command line output file types including .wav, .pcap, .cod, and others. mediaMin supports command line output file types including .pcap, .wav, .h264, .h265, and others. mediaMin also generates [implied outputs](#user-content-impliedoutputs); i.e. not specified on the command line. For example, .wav outputs are generated when stream groups are enabled, and jitter buffer outputs are generated if the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is given in -dn command line entry. For more info on this see the following section, Implied Outputs.
+Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. mediaTest supports command line output file types including .wav, .pcap, .cod, and others. mediaMin supports command line output file types including .pcap, .wav, .h264, .h265, and others. mediaMin also generates [implied outputs](#user-content-impliedoutputs); i.e. not specified on the command line. For example, .wav outputs and jitter buffer .pcap outputs are generated if the ENABLE_STREAM_GROUPS and ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flags, respectively, are given in -dn command line entry.
 
 Here are some examples of mediaTest and mediaMin command lines with specified outputs:
 
