@@ -2884,9 +2884,9 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 Below are general command line notes, arguments, and options that apply to both mediaMin and mediaTest:
 
 > * All command line options are case sensitive<br/>
->       <br/>
+><br/>
 > * Enter ./prog -h or ./prog -? to see a list of command line options (where "prog" = mediaMin or mediaTest). Mandatory command line options are shown with "!"<br/>
-> <br/>
+><br/>
 > * Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
 > <br/>
 > * mediaMin and mediaTest always generate an [event log](#user-content-eventlog); there is currently no command line argument or option that affects event logs. The default event log filename is name_event_log.txt, where "name" is the filename (without extension) of the first command line input. Event log filenames and all other event log options can be changed programmatically (as one example, look for LOG_EVENT_SETUP in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>).<br/>
