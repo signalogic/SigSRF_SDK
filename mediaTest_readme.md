@@ -2883,9 +2883,8 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
 Below are general command line notes, arguments, and options that apply to both mediaMin and mediaTest:
 
-> <br/>
 > * All command line options are case sensitive<br/>
-> <br/>
+>       <br/>
 > * Enter ./prog -h or ./prog -? to see a list of command line options (where "prog" = mediaMin or mediaTest). Mandatory command line options are shown with "!"<br/>
 > <br/>
 > * Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN options and flags (below) apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
