@@ -2898,16 +2898,16 @@ Below are command line arguments and options that apply to both mediaMin and med
 
 ### Platform and Operating Mode
 
--cXXX is an argument specifying a base platform. Currently for the Github .rar packages and Docker containers this argument should always be given as -cx86
-
--MN specifies an optional operating mode N. -M0 is the default; currently for the Github .rar packages and Docker containers no operating mode should be given
+> -cXXX is an argument specifying a base platform. Currently for the Github .rar packages and Docker containers this argument should always be given as -cx86<br/>
+> <br/>
+> -MN specifies an optional operating mode N. -M0 is the default; currently for the Github .rar packages and Docker containers no operating mode should be given<br/>
 
 <a name="CommandLineInputs"></a>
 ### Inputs
 
 Inputs are given by one or more "<span style="font-family: 'Courier New';">-iInput</span>" options, where Input is a filename or UDP port. mediaTest supports input file types including .wav, .au, .pcap, .cod, .amr, and many others. mediaMin supports input file types including .pcap, .pcapng, .rtpxx (.rtp, .rtpdump, etc), and .wav. Here are some command line input examples:
 
-> -i sounds.wav<br>
+> -i sounds.wav<br/>
 > -imytestinput.pcap<br/>
 > <br/>
 > -i192.168.1.2:52000<br/>
