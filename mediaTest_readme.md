@@ -2966,7 +2966,7 @@ mediaTest does not generate implied outputs.
 <a name="ConfigFiles"></a>
 ### Config Files
 
-Configuration files for static session and codec configuration can be specified with -Cfilepath command line argument. mediaTest supports codec configuration files; mediaMin supports both codec and session configuration files. The latter is known as "[static session configuration](#user-content-staticsessionconfig)" -- normally mediaMin operates with [dynamic sessions](#user-content-dynamicsessioncreation); i.e. it auto-detects and creates sessions found in packet flow. Static session configuration is supported for applications and test scenarios where session configuration must be specified in advance.
+Configuration files for static session and codec configuration can be specified with the -Cfilepath command line argument. mediaTest supports codec configuration files; mediaMin supports both codec and session configuration files. The latter is known as "[static session configuration](#user-content-staticsessionconfig)" -- normally mediaMin operates with [dynamic sessions](#user-content-dynamicsessioncreation); i.e. it auto-detects and creates sessions found in packet flow. Static session configuration is supported for applications and test scenarios where session configuration must be specified in advance.
 
 Here are some command line examples with codec or session configuration files:
 
