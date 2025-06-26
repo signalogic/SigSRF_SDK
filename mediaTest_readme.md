@@ -2925,6 +2925,7 @@ Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOu
 Here are some examples of mediaTest and mediaMin command lines with specified outputs:
 
     mediaTest -cx86 -i test_files/stv16c.INP -o test_files/stv16c_amr_23850_16kHz_mime.pcap -C session_config/amrwb_codec_test_config
+
     mediaTest -cx86 -i test_files/AAdefaultBusinessHoursGreeting.pcm -o test_files/stv16c_evs_16kHz_5900_full_header.pcap -C session_config/evs_16kHz_5900bps_full_header_config  
 
 in the above command lines, mediaTest encodes raw audio files to pcaps containing AMR 23.85 kbps and EVS VBR (average bitrate 5900 bps) RTP packets.
