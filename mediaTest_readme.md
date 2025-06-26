@@ -2927,7 +2927,7 @@ Here are some examples of mediaTest and mediaMin command lines with input and ou
 
     mediaTest -cx86 -i test_files/AAdefaultBusinessHoursGreeting.pcm -o test_files/stv16c_evs_16kHz_5900_full_header.pcap -C session_config/evs_16kHz_5900bps_full_header_config  
 
-in the above command lines, mediaTest encodes raw audio files to pcaps containing AMR 23.85 kbps and EVS VBR (average bitrate 5900 bps) RTP packets.
+in the above command lines, mediaTest encodes raw audio files to pcaps containing AMR-WB 23.85 kbps and EVS VBR (average bitrate 5900 bps) RTP packets.
 
     mediaTest -c x86 -i test_files/T_mode.wav -o test_files/T_mode_48kHz_13200.wav -C session_config/evs_48kHz_input_16kHz_13200bps_full_band_config --md5sum -Ec -t2
 
@@ -2966,13 +2966,13 @@ mediaTest does not generate implied outputs.
 <a name="ConfigFiles"></a>
 ### Config Files
 
-Configuration files for static session and codec configuration can be specified with -Cfilepath command line argument. mediaTest supports codec configuration files; mediaMin supports both codec and session configuration files. The latter is known as "static session configuration"; normally mediaMin operates with dynamic sessions; i.e. it auto-detects and creates sessions found in packet flow. Static session configuration is supported for applications and test scenarios where specific session configuration must be specified in advance.
+Configuration files for static session and codec configuration can be specified with -Cfilepath command line argument. mediaTest supports codec configuration files; mediaMin supports both codec and session configuration files. The latter is known as ["static session configuration"](#user-content-staticsessionconfig) -- normally mediaMin operates with [dynamic sessions](#user-content-dynamicsessioncreation); i.e. it auto-detects and creates sessions found in packet flow. Static session configuration is supported for applications and test scenarios where specific session configuration must be specified in advance.
 
 Here are some command line examples with codec or session configuration files:
 
     mediaMin -cx86 -i ../pcaps/evs_mixed_mode_mixed_rate.pcap -L -d0x140c0c01 -r20 -C ../session_config/EVS_AMR-WB_IO_mode_payload_shift -g /tmp/shared --md5sum
 
-in the above command line the EVS_AMR-WB_IO_mode_payload_shift file contains custom codec configuration information to handle an anomaly in EVS formats caused by a handset vendor that had a bug.
+in the above command line the EVS_AMR-WB_IO_mode_payload_shift config file contains custom codec configuration information to handle an anomaly in EVS formats caused by a handset vendor that had a bug.
 
     mediaTest -cx86 -i test_files/stv8c.INP -o test_files/stv8c_amr_4750_bw_8kHz_mime.pcap -C session_config/amr_8kHz_4750bps_bandwidth_efficient_config
 
@@ -2982,7 +2982,7 @@ in the above command lines the amr_8kHz_4750bps_bandwidth_efficient_config and a
 
     mediaMin -cx86 -C ../session_config/merge_testing_config_amrwb -i ../pcaps/AMRWB.pcap -i ../pcaps/pcmutest.pcap -oamr_wb_g711.pcap -L -d0x40800 -r20
 
-in the above command line the merge_testing_config_amrwb file is used to specify a session with bidirectional packet flow, transcoding, and stream group merging.
+in the above command line the merge_testing_config_amrwb config file is used to specify a session with bidirectional packet flow, transcoding, and stream group merging.
 
 <a name="JitterBufferOutputs"></a>
 ### Jitter Buffer Outputs
