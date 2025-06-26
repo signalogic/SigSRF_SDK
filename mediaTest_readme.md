@@ -298,7 +298,6 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin Run-Time Key Commands](#user-content-mediaminruntimekeycommands)<br/>
 &nbsp;&nbsp;&nbsp;[mediaTest Command Line Quick-Reference](#user-content-mediatestcommandlinequick-reference)<br/>
 
-
 <a name="mediaMin"></a>
 # mediaMin
 
@@ -2899,13 +2898,20 @@ Below are command line arguments and options that apply to both mediaMin and med
 > <br/>
 > -MN specifies an optional operating mode N. -M0 is the default; currently for the Github .rar packages and Docker containers no operating mode should be given<br/>
 
-<a name="CommandLineInputs"></a>
-### Inputs
+<a name="CommandLineIO"></a>
+### Inputs and Outputs
 
-Inputs are given by one or more "<span style="font-family: 'Courier New';">-iInput</span>" options, where Input is a filename or UDP port. mediaTest supports input file types including .wav, .au, .pcap, .cod, .amr, and many others. mediaMin supports input file types including .pcap, .pcapng, .rtpxx (.rtp, .rtpdump, etc), and .wav. Here are some command line input examples:
+Inputs and outputs are given by one or more "<span style="font-family: 'Courier New';">-i Input</span>" and "<span style="font-family: 'Courier New';">-o Output</span>" command line arguments, where Input and Output are file paths or UDP ports. mediaTest supports file types including .wav, .au, .pcap, .cod, .amr, and many others. mediaMin supports file types including .pcap, .pcapng, .rtpxx (.rtp, .rtpdump, etc), and .wav. Here are some command line input and output argument examples:
 
 > -i sounds.wav<br/>
-> -imytestinput.pcap<br/>
+> <br/>
+> -omytestoutput.pcap<br/>
+> <br/>
+> -o output_audio.wav<br/>
+> <br/>
+> -o output_audio_bitstream.cod<br/>
+> <br/>
+> -o output_video_bitstream.h265<br/>
 > <br/>
 > -i192.168.1.2:52000<br/>
 > <br/>
@@ -2915,14 +2921,7 @@ Inputs are given by one or more "<span style="font-family: 'Courier New';">-iInp
 > <br/>
 > -i mytestinput1.pcap -imytestinput2.pcap -i192.168.1.2:52000<br/>
 
-Both mediaTest and mediaMin require at least one input.
-
-<a name="CommandLineOutputs"></a>
-### Outputs
-
-Outputs are given by one or more "<span style="font-family: 'Courier New';">-oOutput</span>" options, where Output is a filename or UDP port. mediaTest supports command line output file types including .wav, .pcap, .cod, and others. mediaMin supports command line output file types including .pcap, .wav, .h264, .h265, and others. mediaMin also generates [implied outputs](#user-content-impliedoutputs); i.e. not specified on the command line. For example, .wav outputs and jitter buffer .pcap outputs are generated if the ENABLE_STREAM_GROUPS and ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flags, respectively, are given in -dN command line entry.
-
-Here are some examples of mediaTest and mediaMin command lines with specified outputs:
+Here are some examples of mediaTest and mediaMin command lines with input and output arguments:
 
     mediaTest -cx86 -i test_files/stv16c.INP -o test_files/stv16c_amr_23850_16kHz_mime.pcap -C session_config/amrwb_codec_test_config
 
@@ -2936,17 +2935,19 @@ in the above command line, mediaTest upsamples a 16 kHz .wav file to 48 kHz, enc
 
     mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o xcode0.pcap -o xcode1.pcap -o xcode2.pcap -L -d 0xc11 -r20
 
-in the above example the xcodeN.pcap files contain G711 RTP packets transcoded from the first three (3) streams found within incoming packet flow.
+in the above example the xcodeN.pcap files contain G711 RTP packets transcoded from the first three (3) streams found within incoming packet flow from a .pcapng file. Also, because the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags are set in the -dN argument, .wav files for audio streams found within incoming packet flow will be generated. The latter are [implied outputs](#user-content-impliedoutputs).
 
     mediaMin -c x86 -i ../pcaps/h264.pcap -o sample_capture_test.h264 -L -d 0x06004000c11 -r20 -g /tmp/shared --md5sum
 
 in the above example sample_capture_test.h264 is an elementary bitstream file extracted from an H.264 RTP pcap.
 
-    mediaMin -c x86 -i ../test_files/audio_video.pcapng -L -d 0x06004000c11 -o ves_0.h265 -o ves_1.h265 -o ves_2.h265 -r20 -g /tmp/shared -l4 --md5sum --sha1sum
+    mediaMin -c x86 -i ../test_files/audio_video.pcapng -L -d 0x06004000c11 -o es_0.h265 -o es_1.h265 -o es_2.h265 -r20 -g /tmp/shared -l4 --md5sum --sha1sum
 
-in the above example the ves_N.h265 files contain H.265 elementary bitstreams for the first three video streams found within incoming packet flow. Also, as the ENABLE_STREAM_GROUPS flag is given in -dN command line entry, .wav files for audio streams found within incoming packet flow will be generated as ["Implied Outputs"](#user-content-impliedoutputs).
+in the above example the es_N.h265 files contain H.265 elementary bitstreams for the first three video streams found within incoming packet flow. Also, because the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags are set in the -dN argument, .wav files for audio streams found within incoming packet flow will be generated. The latter are [implied outputs](#user-content-impliedoutputs).
 
-mediaTest command lines should always contain at least one output; mediaMin command lines do not need an output option.
+mediaMin also generates [implied outputs](#user-content-impliedoutputs); i.e. not specified on the command line. For example, .wav outputs and jitter buffer .pcap outputs are generated if the ENABLE_STREAM_GROUPS and ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flags, respectively, are given in -dN command line entry. Some of the above example command lines have the ENABLE_STREAM_GROUPS flag set, in which case .wav files for audio streams found within incoming packet flow will be generated.
+
+Both mediaTest and mediaMin require at least one input. mediaTest command lines should always contain at least one output; mediaMin command lines do not need an output option.
 
 <a name="ImpliedOutputs"></a>
 ### Implied Outputs
@@ -2961,6 +2962,27 @@ mediaMin generates a number of "implied outputs" automatically, depending on -dN
 These and other -dN flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>
 
 mediaTest does not generate implied outputs.
+
+<a name="ConfigFiles"></a>
+### Config Files
+
+Configuration files for static session and codec configuration can be specified with -Cfilepath command line argument. mediaTest supports codec configuration files; mediaMin supports both codec and session configuration files. The latter is known as "static session configuration"; normally mediaMin operates with dynamic sessions; i.e. it auto-detects and creates sessions found in packet flow. Static session configuration is supported for applications and test scenarios where specific session configuration must be specified in advance.
+
+Here are some command line examples with codec or session configuration files:
+
+    mediaMin -cx86 -i ../pcaps/evs_mixed_mode_mixed_rate.pcap -L -d0x140c0c01 -r20 -C ../session_config/EVS_AMR-WB_IO_mode_payload_shift -g /tmp/shared --md5sum
+
+in the above command line the EVS_AMR-WB_IO_mode_payload_shift file contains custom codec configuration information to handle an anomaly in EVS formats caused by a handset vendor that had a bug.
+
+    mediaTest -cx86 -i test_files/stv8c.INP -o test_files/stv8c_amr_4750_bw_8kHz_mime.pcap -C session_config/amr_8kHz_4750bps_bandwidth_efficient_config
+
+    mediaTest -cx86 -i test_files/stv8c.wav -o test_files/stv8c_amr_4750_oa_8kHz_mime.pcap -C session_config/amr_8kHz_4750bps_octet_align_config
+
+in the above command lines the amr_8kHz_4750bps_bandwidth_efficient_config and amr_8kHz_4750bps_octet_align_config files provide codec type, sampling rate, bitrate, payload format, and other instructions to mediaTest for generating AMR-NB RTP pcaps.
+
+    mediaMin -cx86 -C ../session_config/merge_testing_config_amrwb -i ../pcaps/AMRWB.pcap -i ../pcaps/pcmutest.pcap -oamr_wb_g711.pcap -L -d0x40800 -r20
+
+in the above command line the merge_testing_config_amrwb file is used to specify a session with bidirectional packet flow, transcoding, and stream group merging.
 
 <a name="JitterBufferOutputs"></a>
 ### Jitter Buffer Outputs
@@ -3141,7 +3163,7 @@ which specifies:
 > jitter buffer output stream pcaps enabled<br/>
 > stream group output wav file seek time alarm set to 10 msec<br/>
 
-If this flag is set, jitter buffer output stream pcaps are generated on the mediaMin app subfolder with "_jbN.pcap" filename suffixes as shown in [Outputs](#user-content-commandlineoutputs) under [Command Line Quick-Reference](#user-content-commandlinequick-reference) above.
+If this flag is set, jitter buffer output stream pcaps are generated on the mediaMin app subfolder with "_jbN.pcap" filename suffixes as shown in [Inputs and Outputs](#user-content-commandlineio) under [Command Line Quick-Reference](#user-content-commandlinequick-reference) above.
 
 ### Pcap Formats
 
