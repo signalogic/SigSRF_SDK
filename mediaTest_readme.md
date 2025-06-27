@@ -3246,7 +3246,7 @@ Below are command line examples:
 
     mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/evs_player_example_config2 -L -Ea
 
-in the above examples, mediaTest reads an EVS RTP pcaps, decodes, and writes out to output .wav files. Since application mode is the default, the "-Ea" argument can be omitted for these command lines.
+in the above examples, mediaTest reads EVS RTP pcaps, decodes, and writes out to output .wav files. Since application mode is the default, the "-Ea" argument can be omitted for these command lines.
 
     mediaTest -c x86 -i test_files/T_mode.wav -o test_files/T_mode_48kHz_13200.wav -C session_config/evs_48kHz_input_16kHz_13200bps_full_band_config --md5sum -Ec -t2
 
