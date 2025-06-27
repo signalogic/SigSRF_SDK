@@ -3215,9 +3215,16 @@ Below is a screen cap showing 'd' key debug display.
 
 Debug output is highlighted in red. Individual highlighted areas are described below:
 
+<!---
+  I tried this for color line, but didn't work
+  <hr style="border:2px solid red">
+-->
+
+<hr style="border:2px solid red">
+
 | Highlight | Description |
 |-----|-----|
-| <hr style="border:2px solid red"> | 1st #### application thread, 2nd #### packet/media thread. Packet/media thread "usage" figures are profiling measurements (in msec) |
+| Red underline | 1st #### application thread, 2nd #### packet/media thread. Packet/media thread "usage" figures are profiling measurements (in msec) |
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
@@ -3230,7 +3237,7 @@ Below are command line arguments supported by mediaTest and not mediaMin.
 <a name="ExecutionMode"></a>
 ### Execution Mode
 
-An -Emode command line argument specifies an execution mode, where mode one of the following single characters:
+An -Emode command line argument specifies an execution mode, where mode can be one of the following single characters:
 
 > a, application. This is the default mode for all testing other than codec tests
 > <br/>
@@ -3250,11 +3257,11 @@ in the above examples, mediaTest reads EVS RTP pcaps, decodes, and writes to out
 
     mediaTest -c x86 -i test_files/T_mode.wav -o test_files/T_mode_48kHz_13200.wav -C session_config/evs_48kHz_input_16kHz_13200bps_full_band_config --md5sum -Ec -t2
 
-in the above example, mediaTest combines the command line execution mode and [number of application threads argument](#user-content-numberofapplicationthreads) to start two (2) concurrent threads that upsample a 16 kHz .wav file to 48 kHz, encode to EVS 13.2 kbps bitstream, then decode and write to output .wav files. In this mode mediaTest adds "_N" suffixes to output files to denote which thread.
+in the above example, mediaTest combines the command line execution mode and [number of application threads argument](#user-content-numberofapplicationthreads) to start two (2) concurrent threads that upsample a 16 kHz .wav file to 48 kHz, encode to EVS 13.2 kbps bitstream, then decode and write to output .wav files. In this mode mediaTest adds "_N" suffixes to output filenames to denote which thread.
 
     mediaTest -cx86 -itest_files/testaf0824_EVS2EVScall8-tc41_tc90_onlyTC41.2922.0.pcap -L -d0x6cc11 -r20 -Et -t12 -n13 -R0
 
-in the above example, mediaTest combines the multiple application thread execution mode, number of threads argument, and input reuse argument to run a mediaMin capacity test. In this case 12 mediaMin application threads (hyperthreaded) with 42 sessions each (3 sessions in the input pcap multiplied by 14) are started, for a total of 504 concurrent sessions. As a side note, mediaMin starts 10 packet/media worker threads (non-hyperthreaded) to handle this.
+in the above example, mediaTest combines the multiple application thread execution mode, number of threads argument, and input reuse argument to run a mediaMin capacity test. In this case mediaTest starts 12 mediaMin application threads (hyperthreaded) with 42 sessions each (3 sessions in the input pcap multiplied by 14), for a total of 504 concurrent sessions. As a side note, mediaMin starts 10 packet/media worker threads (non-hyperthreaded) to handle this (look for StartPacketMediaThreads() in mediaMin.cpp).
 
 <a name="NumberOfApplicationThreads"></a>
 ### Number of Application Threads
