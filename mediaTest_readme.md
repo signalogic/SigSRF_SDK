@@ -3250,7 +3250,7 @@ in the above examples, mediaTest reads EVS RTP pcaps, decodes, and writes to out
 
     mediaTest -c x86 -i test_files/T_mode.wav -o test_files/T_mode_48kHz_13200.wav -C session_config/evs_48kHz_input_16kHz_13200bps_full_band_config --md5sum -Ec -t2
 
-in the above example, mediaTest combines the command line execution mode and [number of application threads argument](#user-content-numberofapplicationthreads) to start two (2) threads that concurrently upsample a 16 kHz .wav file to 48 kHz, encode to EVS 13.2 kbps bitstream, then decode and write to output .wav files.
+in the above example, mediaTest combines the command line execution mode and [number of application threads argument](#user-content-numberofapplicationthreads) to start two (2) concurrent threads that upsample a 16 kHz .wav file to 48 kHz, encode to EVS 13.2 kbps bitstream, then decode and write to output .wav files. In this mode mediaTest adds "_N" suffixes to output files to denote which thread.
 
     mediaTest -cx86 -itest_files/testaf0824_EVS2EVScall8-tc41_tc90_onlyTC41.2922.0.pcap -L -d0x6cc11 -r20 -Et -t12 -n13 -R0
 
