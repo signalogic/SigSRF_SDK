@@ -3259,7 +3259,7 @@ in the above example, mediaTest combines the command line execution mode and [nu
 
     mediaTest -cx86 -itest_files/testaf0824_EVS2EVScall8-tc41_tc90_onlyTC41.2922.0.pcap -L -d0x6cc11 -r20 -Et -t12 -n13 -R0
 
-in the above example, mediaTest combines the multiple application thread execution mode, number of threads argument, and input reuse argument to run a mediaMin capacity test. In this case mediaTest starts 12 mediaMin application threads (hyperthreaded) with 42 sessions each (3 sessions in the input pcap multiplied by 14), for a total of 504 concurrent sessions. As a side note, mediaMin starts 10 packet/media worker threads (non-hyperthreaded) to handle this (look for StartPacketMediaThreads() in mediaMin.cpp).
+in the above example, mediaTest combines the multiple application thread execution mode, number of threads argument, and input reuse argument to run a mediaMin capacity test. In this case mediaTest starts 12 mediaMin application threads (hyperthreaded) with 42 sessions each (3 sessions in the input pcap multiplied by 14), for a total of 504 concurrent sessions. As a side note, mediaMin starts 10 packet/media worker threads (non-hyperthreaded) to handle this (look for StartPacketMediaThreads() in  <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>).
 
 <a name="NumberOfApplicationThreads"></a>
 ### Number of Application Threads
@@ -3268,4 +3268,4 @@ A -tN argument can be used to specify a number of application threads. This argu
 
 ### Input Reuse
 
-An -nN argument can be used to specify input reuse, where N indicates the number of times each session found within input packet flow should be reused. Inputs are reused by slightly modifying UDP port and SSRC values to avoid session duplication (look for "nReuseInputs" in mediaMin.cpp). This argument should be combined with an -Emode argument (see [Execution Mode](#user-content-executionmode) command line examples above).
+An -nN argument can be used to specify input reuse, where N indicates the number of times each session found within input packet flow should be reused. Inputs are reused by slightly modifying UDP port and SSRC values to avoid session duplication (look for "nReuseInputs" in  <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). This argument should be combined with an -Emode argument (see [Execution Mode](#user-content-executionmode) command line examples above).
