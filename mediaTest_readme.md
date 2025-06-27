@@ -3216,11 +3216,9 @@ Below is a screen cap showing 'd' key debug display.
 Debug output is highlighted in red. Individual highlighted areas are described below:
 
 <!---
-  I tried this for color line, but didn't work
+  I tried this for color line, it works but without color
   <hr style="border:2px solid red">
 -->
-
-<hr style="border:2px solid red">
 
 | Highlight | Description |
 |-----|-----|
