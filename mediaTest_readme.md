@@ -2966,23 +2966,23 @@ mediaTest does not generate implied outputs.
 <a name="ConfigFiles"></a>
 ### Config Files
 
-Configuration files for static session and codec configuration can be specified with the -Cfilepath command line argument. mediaTest supports codec configuration files; mediaMin supports both codec and session configuration files. The latter is known as "[static session configuration](#user-content-staticsessionconfig)" -- normally mediaMin operates with [dynamic sessions](#user-content-dynamicsessioncreation); i.e. it auto-detects and creates sessions found in packet flow. Static session configuration is supported for applications and test scenarios where session configuration must be specified in advance.
+Configuration files for static session and codec configuration can be specified with a -Cconfig_filepath command line argument. mediaTest supports codec configuration files; mediaMin supports both codec and session configuration files. The latter is known as "[static session configuration](#user-content-staticsessionconfig)" -- normally mediaMin operates with [dynamic sessions](#user-content-dynamicsessioncreation); i.e. it auto-detects and creates sessions found in packet flow. Static session configuration is supported for applications and test scenarios where session configuration must be specified in advance.
 
 Here are some command line examples with codec or session configuration files:
 
     mediaMin -cx86 -i ../pcaps/evs_mixed_mode_mixed_rate.pcap -L -d0x140c0c01 -r20 -C ../session_config/EVS_AMR-WB_IO_mode_payload_shift -g /tmp/shared --md5sum
 
-in the above command line the EVS_AMR-WB_IO_mode_payload_shift config file contains custom codec configuration information to handle an anomaly in EVS formats caused by a handset vendor that had a bug.
+in the above example the EVS_AMR-WB_IO_mode_payload_shift config file contains custom codec configuration information to handle an anomaly in EVS formats caused by a handset vendor that had a bug.
 
     mediaTest -cx86 -i test_files/stv8c.INP -o test_files/stv8c_amr_4750_bw_8kHz_mime.pcap -C session_config/amr_8kHz_4750bps_bandwidth_efficient_config
 
     mediaTest -cx86 -i test_files/stv8c.wav -o test_files/stv8c_amr_4750_oa_8kHz_mime.pcap -C session_config/amr_8kHz_4750bps_octet_align_config
 
-in the above command lines the amr_8kHz_4750bps_bandwidth_efficient_config and amr_8kHz_4750bps_octet_align_config files provide codec type, sampling rate, bitrate, payload format, and other instructions to mediaTest for generating AMR-NB RTP pcaps.
+in the above examples the amr_8kHz_4750bps_bandwidth_efficient_config and amr_8kHz_4750bps_octet_align_config files provide codec type, sampling rate, bitrate, payload format, and other instructions to mediaTest for generating AMR-NB RTP pcaps.
 
     mediaMin -cx86 -C ../session_config/merge_testing_config_amrwb -i ../pcaps/AMRWB.pcap -i ../pcaps/pcmutest.pcap -oamr_wb_g711.pcap -L -d0x40800 -r20
 
-in the above command line the merge_testing_config_amrwb config file is used to specify a session with bidirectional packet flow, transcoding, and stream group merging.
+in the above example the merge_testing_config_amrwb config file is used to define a session with bidirectional packet flow, transcoding, and stream group merging.
 
 ### Repeat
 
@@ -3224,3 +3224,43 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
+
+Below are command line arguments supported by mediaTest and not mediaMin.
+
+<a name="ExecutionMode"></a>
+### Execution Mode
+
+An -Emode command line argument specifies an execution mode, where mode one of the following single characters:
+
+> a, application. This is the default mode for all testing other than codec tests
+> <br/>
+> c, command line
+> <br/>
+> t, multiple application thread
+> <br/>
+> p, process. This mode is reserved and currently not used
+
+Below are command line examples:
+
+    mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_IPv4.wav -Csession_config/evs_player_example_config -L -Ea
+
+    mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/evs_player_example_config2 -L -Ea
+
+in the above examples, mediaTest reads an EVS RTP pcaps, decodes, and writes out to output .wav files. Since application mode is the default, the "-Ea" argument can be omitted for these command lines.
+
+    mediaTest -c x86 -i test_files/T_mode.wav -o test_files/T_mode_48kHz_13200.wav -C session_config/evs_48kHz_input_16kHz_13200bps_full_band_config --md5sum -Ec -t2
+
+in the above example, mediaTest combines the command line execution mode and [number of application threads argument](#user-content-numberofapplicationthreads) to start two (2) threads that concurrently upsample a 16 kHz .wav file to 48 kHz, encode to EVS 13.2 kbps bitstream, then decode and write to output .wav files.
+
+    mediaTest -cx86 -itest_files/testaf0824_EVS2EVScall8-tc41_tc90_onlyTC41.2922.0.pcap -L -d0x6cc11 -r20 -Et -t12 -n13 -R0
+
+in the above example, mediaTest combines the multiple application thread execution mode, number of threads argument, and input reuse argument to run a mediaMin capacity test. In this case 12 mediaMin application threads (hyperthreaded) with 42 sessions each (3 sessions in the input pcap multiplied by 14) are started, for a total of 504 concurrent sessions. As a side note, mediaMin starts 10 packet/media worker threads (non-hyperthreaded) to handle this.
+
+<a name="NumberOfApplicationThreads"></a>
+### Number of Application Threads
+
+A -tN argument can be used to specify a number of application threads. This argument should be combined with an -Emode argument (see [Execution Mode](#user-content-executionmode) command line examples above).
+
+### Input Reuse
+
+An -nN argument can be used to specify input reuse, where N indicates the number of times each session found within input packet flow should be reused. Inputs are reused by slightly modifying UDP port and SSRC values to avoid session duplication (look for "nReuseInputs" in mediaMin.cpp). This argument should be combined with an -Emode argument (see [Execution Mode](#user-content-executionmode) command line examples above).
