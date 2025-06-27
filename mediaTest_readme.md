@@ -2945,7 +2945,7 @@ in the above example sample_capture_test.h264 is an elementary bitstream file ex
 
 in the above example the es_N.h265 files contain H.265 elementary bitstreams for the first three video streams found within incoming packet flow. Also, because the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags are set in the -dN argument, .wav files for audio streams found within incoming packet flow will be generated. The latter are [implied outputs](#user-content-impliedoutputs).
 
-mediaMin also generates [implied outputs](#user-content-impliedoutputs); i.e. not specified on the command line. For example, .wav outputs and jitter buffer .pcap outputs are generated if the ENABLE_STREAM_GROUPS and ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flags, respectively, are given in -dN command line entry. Some of the above example command lines have the ENABLE_STREAM_GROUPS flag set, in which case .wav files for audio streams found within incoming packet flow will be generated.
+In addition to outputs specified on the command line, depending on the operating mode and options determined by -dN command line entry, mediaMin generates [implied outputs](#user-content-impliedoutputs). For example, .wav outputs and jitter buffer .pcap outputs are generated if the ENABLE_STREAM_GROUPS and ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flags, respectively, are given in -dN command line entry. Some of the above example command lines have the ENABLE_STREAM_GROUPS flag set, in which case .wav files for audio streams found within incoming packet flow will be generated.
 
 Both mediaTest and mediaMin require at least one input. mediaTest command lines should always contain at least one output; mediaMin command lines do not need an output option.
 
