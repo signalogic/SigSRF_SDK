@@ -501,7 +501,7 @@ pktlib also detects and auto-corrects:
 > * Link Layer length for Null/Loopback protocols
 > * TCP Segmentation Offload (TSO/LSO) zero lengths
 
-<a "https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_pcap.cpp">pktlib_pcap.cpp</a> contains source code for .pcap and .pcapng file support.
+<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_pcap.cpp">pktlib_pcap.cpp</a> contains source code for .pcap and .pcapng file support.
 
 <a name="RTPFileSupport"></a>
 ### .rtp and .rtpdump File Support
@@ -524,7 +524,7 @@ Note that .rtp file format seems to only support one stream, with IPv4 addresses
 
 For .rtp files with incorrect or zero packet timestamp values, you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
-<a "https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_pcap.cpp">pktlib_pcap.cpp</a> contains source code for .rtpXXX file support.
+<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_pcap.cpp">pktlib_pcap.cpp</a> contains source code for .rtpXXX file support.
 
 <a name="FragmentationSupport"></a>
 ### Fragmentation Support
@@ -537,7 +537,7 @@ For .rtp files with incorrect or zero packet timestamp values, you can set media
 > * performance wise, the worst case is an app thread with a high number of streams each with large packets of size 4500 to 6000 bytes, in which case the thread's linked list length could grow to around N\*3 or N\*4, where N is number of streams
 > * "highest used location" (max_search_limit) is maintained to reduce search time for existing thread Ids. The search loop isn't doing much, just comparing 64-bit thread Id values
 
-<a "https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_RFC791_fragmentation.cpp">pktlib_RFC791_fragmentation.cpp</a> contains source code for fragmentation support.
+<a href="https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_RFC791_fragmentation.cpp">pktlib_RFC791_fragmentation.cpp</a> contains source code for fragmentation support.
 
 <a name="Sessions"></a>
 ## Sessions
