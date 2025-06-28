@@ -296,8 +296,8 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
 ## [**_Command Line Quick-Reference_**](#user-content-commandlinequick-reference)<br/>
 &nbsp;&nbsp;&nbsp;[mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[mediaMin Run-Time Key Commands](#user-content-mediaminruntimekeycommands)<br/>
 &nbsp;&nbsp;&nbsp;[mediaTest Command Line Quick-Reference](#user-content-mediatestcommandlinequick-reference)<br/>
+&nbsp;&nbsp;&nbsp;[mediaMin Run-Time Key Commands](#user-content-mediaminruntimekeycommands)<br/>
 
 <a name="mediaMin"></a>
 # mediaMin
@@ -3199,47 +3199,6 @@ In the best case the number of FLCs will be reduced or even eliminated, yielding
 
 The -dN command line argument ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
 
-<a name="mediaMinRunTimeKeyCommands"></a>
-### mediaMin Run-Time Key Commands
-
-mediaMin supports run-time keyboard input. Here is a list of key commands:
-
-| Key | Description |
-|-----|-----|
-| q | Quit |
-| d | Display debug output, including application threads, packet/media threads, and overall. See screen cap example below |
-| o | Disable packet/media thread display output. This command can be useful for remote terminal testing when slow network transmission affects application performance. Pressing again re-enables |
-| p | Pause processing. Pressing again resumes |
-| t | Display debug output for the current packet/media thread index (which by default starts with 0) |
-| s | Stop gracefully. Unlike the Quit command, which stops all packet/media and application threads immediately, a graceful stop waits for each application thread to finish processing inputs and flush sessions. Any remaining repeats specified on the command line are ignored |
-
-The following key commands set or change application and packet/media thread indexes:
-
-| Key | Description |
-|-----|-----|
-| 0-9 | Set the current packet/media thread index |
-| +, - | Change the current application thread index |
-
-The thread index commands do not change the current display before a subsequent 'd' or 't' command. All commands happen independently of ongoing processing. All key commands are case-insensitive.
-
-Below is a screen cap showing 'd' key debug display.
-
-![mediaMin run-time key command example, showing debug display](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/runtime_debug_output_screencap.png "mediaMin run-time key command example, showing debug display")
-
-Debug output is highlighted in red. Individual highlighted areas are described below:
-
-<!---
-  I tried this for color line, it works but without color
-  <hr style="border:2px solid red">
--->
-
-| Highlight | Description |
-|-----|-----|
-| Red underline | 1st #### application thread, 2nd #### packet/media thread. Packet/media thread "usage" figures are profiling measurements (in msec) |
-| Yellow | Session information, including values of all possible session handles. -1 indicates not used |
-| Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
-| Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
-
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
 
@@ -3282,3 +3241,44 @@ The -tN command lilne argument can be used to specify a number of application th
 ### Input Reuse
 
 The -nN command line argument can be used to specify input reuse, where N indicates the number of times each session found within input packet flow should be reused. Inputs are reused by slightly modifying UDP port and SSRC values to avoid session duplication (look for "nReuseInputs" in  <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). This argument should be combined with an -Emode argument (see [Execution Mode](#user-content-executionmode) command line examples above).
+
+<a name="mediaMinRunTimeKeyCommands"></a>
+## mediaMin Run-Time Key Commands
+
+mediaMin supports run-time keyboard input. Here is a list of key commands:
+
+| Key | Description |
+|-----|-----|
+| q | Quit |
+| d | Display debug output, including application threads, packet/media threads, and overall. See screen cap example below |
+| o | Disable packet/media thread display output. This command can be useful for remote terminal testing when slow network transmission affects application performance. Pressing again re-enables |
+| p | Pause processing. Pressing again resumes |
+| t | Display debug output for the current packet/media thread index (which by default starts with 0) |
+| s | Stop gracefully. Unlike the Quit command, which stops all packet/media and application threads immediately, a graceful stop waits for each application thread to finish processing inputs and flush sessions. Any remaining repeats specified on the command line are ignored |
+
+The following key commands set or change application and packet/media thread indexes:
+
+| Key | Description |
+|-----|-----|
+| 0-9 | Set the current packet/media thread index |
+| +, - | Change the current application thread index |
+
+The thread index commands do not change the current display before a subsequent 'd' or 't' command. All commands happen independently of ongoing processing. All key commands are case-insensitive.
+
+Below is a screen cap showing 'd' key debug display.
+
+![mediaMin run-time key command example, showing debug display](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/runtime_debug_output_screencap.png "mediaMin run-time key command example, showing debug display")
+
+Debug output is highlighted in red. Individual highlighted areas are described below:
+
+<!---
+  I tried this for color line, it works but without color
+  <hr style="border:2px solid red">
+-->
+
+| Highlight | Description |
+|-----|-----|
+| Red underline | 1st #### application thread, 2nd #### packet/media thread. Packet/media thread "usage" figures are profiling measurements (in msec) |
+| Yellow | Session information, including values of all possible session handles. -1 indicates not used |
+| Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
+| Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
