@@ -2495,6 +2495,8 @@ The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/di
 
 In example mediaMin command lines above, the -L entry activates packet logging, with the first output filename found taken as the log filename but replaced with a ".txt" extension.  If -Lxxx is given then xxx becomes the log filename.
 
+*Note: for both mediaMin and mediaTest reference applications, packet logs are generated only if the command line specifies input packet flow in some form; e.g. .pacp, .pcapng, or .rtpXXX files, UDP port(s), etc.*
+
 Packet statistics logged include packets dropped, out-of-order (ooo), missing, and duplicated. Statistics are calculated separately for each SSRC, with individual packet entries showing sequence number, timestamp, and type (bitstream payload, DTX, SID, SID CNG, DTMF Event, etc).
 
 Below is a packet stats log file excerpt:
@@ -2968,6 +2970,8 @@ mediaTest does not generate implied outputs.
 > * -L LogFile enables packet history logging with a filename of LogFile_pkt_log.txt<br/>
 > * omitting -L entry disables packet history logging<br/>
 > * -L-nopktlog or -L-nopacketlog disables packet history logging, functionally the same as omitting -L entry. This provides a visible way to see that packet logging is disabled, and leaves a convenient "placeholder"in the command line to re-enable packet logging as needed<br/>
+
+*Note: packet logs are generated only if the command line specifies input packet flow in some form; e.g. .pacp, .pcapng, or .rtpXXX files, UDP port(s), etc.*
 
 <a name="ConfigFiles"></a>
 ### Config Files
