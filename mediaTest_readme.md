@@ -257,7 +257,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Duplicated RTP Streams (RFC7198)**](#user-content-duplicatedrtpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[**Pcap and Pcapng File Support**](#user-content-pcapfilesupport)<br/>
 &nbsp;&nbsp;&nbsp;[**.rtp and .rtpdump File Support**](#user-content-rtpfilesupport)<br/>
-&nbsp;&nbsp;&nbsp;[**Fragementation Support**](#user-content-fragmentationupport)<br/>
+&nbsp;&nbsp;&nbsp;[**Fragmentation Support**](#user-content-fragmentationupport)<br/>
 
 ## [**_streamlib_**](#user-content-streamlib)<br/>
 
@@ -493,7 +493,6 @@ In addition to the above Link Layer types, pktlib supports the following Pcapng 
 
 > * IDB, NRB, statistics, and other known block types
 > * custom (unknown) block types
-> * detection and adjustment for 
 
 pktlib also detects and auto-corrects:
 
@@ -503,7 +502,7 @@ pktlib also detects and auto-corrects:
 <a name="RTPFileSupport"></a>
 ### .rtp and .rtpdump File Support
 
-mediaMin and mediaTestboth support .rtp and .rtpdump input files. Entry is the same as with .pcap or .pcapng files. Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
+pktlib supports .rtpXXX file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to support .rtp and .rtpdump input files (command line entry is the same as with .pcap or .pcapng files). Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
 
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf0.rtpdump -L -d 0xc11 -r20
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf1.rtpdump -L -d 0xc11 -r0.5
@@ -522,7 +521,7 @@ Note that .rtp file format seems to only support one stream, with IPv4 addresses
 For .rtp files with incorrect or zero packet timestamp values, you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
 <a name="FragmentationSupport"></a>
-### Fragmentation
+### Fragmentation Support
 
 pktlib supports packet fragmentation and re-assembly per RFC 791. Here are some implementation notes:
 
