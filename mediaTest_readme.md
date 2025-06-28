@@ -178,7 +178,6 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[.rtp and .rtpdump file format support](#user-content-rtpfilesupportmediamin)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
@@ -237,7 +236,6 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#user-content-convertingpcaps2wav)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[.rtpdump and .rtp file format support](#user-content-rtpfilesupportmediatest)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS Player](#user-content-evsplayer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Player](#user-content-amrplayer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Wav to Pcaps](#user-content-convertingwav2pcaps)<br/>
@@ -257,6 +255,9 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Packet Repair](#user-content-packetrepair)<br/>
 &nbsp;&nbsp;&nbsp;[**Multiple RTP Streams (RFC8108)**](#user-content-multiplertpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[**Duplicated RTP Streams (RFC7198)**](#user-content-duplicatedrtpstreams)<br/>
+&nbsp;&nbsp;&nbsp;[**Pcap and Pcapng File Support**](#user-content-pcapfilesupport)<br/>
+&nbsp;&nbsp;&nbsp;[**.rtp and .rtpdump File Support**](#user-content-rtpfilesupport)<br/>
+&nbsp;&nbsp;&nbsp;[**Fragementation Support**](#user-content-fragmentationupport)<br/>
 
 ## [**_streamlib_**](#user-content-streamlib)<br/>
 
@@ -472,10 +473,37 @@ Seq num 710              timestamp = 202080, rtp pyld len = 32 media
 
 Note the "ooo" packets in the ingress section of the packet log, which are corrected in jitter buffer output sections. Another packet log file example showing incoming DTMF event packets and how they are translated to buffer output packets is shown in [Packet Log](#user-content-packetlog) below.
 
-### .rtp and .rtpdump File Support
-<a name="RTPFileSupportMediaMin"></a>
+<a name="PcapFileSupport"></a>
+### Pcap and Pcapng File Support
 
-mediaMin and mediaTest command lines support .rtp and .rtpdump input files. Entry is the same as with .pcap or .pcapng files. Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
+pktlib supports Pcap and Pcapng formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to support input .pcap and .pcapng files. Currently the following Link Layer types are supported:
+
+| Link Layer Type     | Pcap Header Value | Length (bytes) | Comments |
+| ------------------- | ----------------- | -------------- | -------- |
+| LINKTYPE_ETHERNET   | 1                 | 14             | standard Ethernet header |
+| LINKTYPE_LINUX_SLL  | 113               | 16             | Linux "cooked" capture encapsulation |
+| LINKTYPE_RAW        | 101               | 0              | Raw IP |
+| LINKTYPE_RAW        | 12                | 0              | 12 seems to be an OpenBSD compatibility value for Raw IP |
+| LINKTYPE_IPV4       | 228               | 0              | Raw, frame starts with IPv4 packet |
+| LINKTYPE_IPV6       | 229               | 0              | Raw, frame starts with IPv6 packet |
+
+When additional headers are needed, please let the developers know.
+
+In addition to the above Link Layer types, pktlib supports the following Pcapng block types:
+
+> * IDB, NRB, statistics, and other known block types
+> * custom (unknown) block types
+> * detection and adjustment for 
+
+pktlib also detects and auto-corrects:
+
+> * Link Layer length for Null/Loopback protocols
+> * TCP Segmentation Offload (TSO/LSO) zero lengths
+
+<a name="RTPFileSupport"></a>
+### .rtp and .rtpdump File Support
+
+mediaMin and mediaTestboth support .rtp and .rtpdump input files. Entry is the same as with .pcap or .pcapng files. Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
 
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf0.rtpdump -L -d 0xc11 -r20
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf1.rtpdump -L -d 0xc11 -r0.5
@@ -493,6 +521,17 @@ Note that .rtp file format seems to only support one stream, with IPv4 addresses
 
 For .rtp files with incorrect or zero packet timestamp values, you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
+<a name="FragmentationSupport"></a>
+### Fragmentation
+
+pktlib supports packet fragmentation and re-assembly per RFC 791. Here are some implementation notes:
+
+> * fragments are managed as per application thread linked lists; a simple mem barrier lock coordinates critical section thread access and modification of App_Thread_Info[] (defined in mediaMin.h and declared in mediaMin.cpp). This method works as long as the caller has a unique thread Id; for example, p/m threads could also call DSGetPacketInfo() with fragmented packets
+> * each linked list fragment entry includes 3-way tuple info (protocol, IP src addr, IP dst addr), IP header identifier (Identification field), and fragment offset. See the PKT_FRAGMENT struct in pktlib.h
+> * each linked list entry also includes packet info: flags, identifier, fragment offset, and saved IP header and packet data
+> * performance wise, the worst case is an app thread with a high number of streams each with large packets of size 4500 to 6000 bytes, in which case the thread's linked list length could grow to around N*3 or N*4, where N is number of streams
+> * "highest used location" (max_search_limit) is maintained to reduce search time for existing thread Ids. The search loop isn't doing much, just comparing 64-bit thread Id values
+  
 <a name="Sessions"></a>
 ## Sessions
 
@@ -1815,11 +1854,6 @@ Simple mediaTest command lines can be used to convert pcaps containing one RTP s
 
 To convert pcaps containing multiple RTP streams with different codecs to wav files, see [Dynamic Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation) above, which includes mediaMin examples of dynamic session creation.  mediaMin generates wav files for each stream and also a "merged" stream wav file that combines all input streams. mediaMin uses pktlib packet processing APIs that handle jitter, packet loss/repair, child channels (RFC8108), etc, including very high amounts of packet ooo (out of order). Also mediaMin allows .sdp file input to override codec auto-detection and/or give specific streams to decode while ignoring others.
 
-### .rtp and .rtpdump File Support
-<a name="RTPFileSupportMediaTest"></a>
-
-mediaTest command lines support .rtp and .rtpdump input files. Entry is the same as with .pcap or .pcapng files.
-
 <a name="EVSPlayer"></a>
 ### EVS Player
 
@@ -1854,7 +1888,7 @@ mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/
 ```
 In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument). Other USB ports can be specified, depending on what is physically connected to the server.
 
-Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measurement](#user-content-codectestmeasurement) above), .pcap input, and .rtp input (or .rtpdump), this makes mediaTest a flexible "EVS player".
+Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measurement](#user-content-codectestmeasurement) above), .pcap, .pcapng, and .rtp input (or .rtpdump), this makes mediaTest a flexible "EVS player".
 
 ### Session Configuration File
 
@@ -3161,21 +3195,6 @@ The -dN command line argument ENABLE_FLC_HOLDOFFS flag (defined in <a href="http
 When FLC Holdoffs are enabled streamlib will defer (hold off) action when it detects a marginally late frame in live real-time streaming output. This may or may not be effective, as there is no way to tell if at some point "down the line" frame gaps will get worse and the prior holdoff will cause either (i) a slight discontinuity between two (2) output frames or (ii) two (2) consecutive frames to need repair.
 
 In the best case the number of FLCs will be reduced or even eliminated, yielding the best possible live streaming output audio quality, in the worst case live streaming output may contain slightly detectable discontinuities where one or more extra FLCs were performed.
-
-### Pcap Formats
-
-mediaMin and mediaTest both support .pcap and .pcapng formats.  Currently the following Link Layer types are supported:
-
-| Link Layer Type     | Pcap Header Value | Length (bytes) | Comments |
-| ------------------- | ----------------- | -------------- | -------- |
-| LINKTYPE_ETHERNET   | 1                 | 14             | standard Ethernet header |
-| LINKTYPE_LINUX_SLL  | 113               | 16             | Linux "cooked" capture encapsulation |
-| LINKTYPE_RAW        | 101               | 0              | Raw IP |
-| LINKTYPE_RAW        | 12                | 0              | 12 seems to be an OpenBSD compatibility value for Raw IP |
-| LINKTYPE_IPV4       | 228               | 0              | Raw, frame starts with IPv4 packet |
-| LINKTYPE_IPV6       | 229               | 0              | Raw, frame starts with IPv6 packet |
-
-When additional headers are needed, please let the developers know.
 
 #### Out-of-Spec RTP Padding
 
