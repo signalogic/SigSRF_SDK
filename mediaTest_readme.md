@@ -257,7 +257,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Duplicated RTP Streams (RFC7198)**](#user-content-duplicatedrtpstreams)<br/>
 &nbsp;&nbsp;&nbsp;[**Pcap and Pcapng File Support**](#user-content-pcapfilesupport)<br/>
 &nbsp;&nbsp;&nbsp;[**.rtp and .rtpdump File Support**](#user-content-rtpfilesupport)<br/>
-&nbsp;&nbsp;&nbsp;[**Fragmentation Support**](#user-content-fragmentationupport)<br/>
+&nbsp;&nbsp;&nbsp;[**Fragmentation Support**](#user-content-fragmentationsupport)<br/>
 
 ## [**_streamlib_**](#user-content-streamlib)<br/>
 
