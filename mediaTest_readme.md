@@ -2882,15 +2882,13 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 <a name="CommandLineQuick-Reference"></a>
 # Command Line Quick-Reference
 
-Below are general command line notes, arguments, and options that apply to both mediaMin and mediaTest:
+The command line quick-reference section covers all reference apps, followed by (i) a [section specific to mediaMin](#user-content-mediamincommandlinequick-reference) and (ii) a [section specific to mediaTest](#user-content-mediatestcommandlinequick-reference). Below are general command line notes, arguments, and options that apply to all reference apps, including mediaMin, mediaTest, and hello_codec:
 
 > * All command line options are case sensitive<br/>
 > * Enter ./prog -h or ./prog -? to see a list of command line options (where "prog" = mediaMin or mediaTest). Mandatory command line options are shown with "!"<br/>
 > * Application modes and functionality are controlled by -dN command line options, where N is a hex value containing up to 64 flags. These flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> and referenced throughout this documentation
 > * Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN flags apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
 > * mediaMin and mediaTest always generate an [event log](#user-content-eventlog); there is currently no command line argument or option that affects event logs. The default event log filename is name_event_log.txt, where "name" is the filename (without extension) of the first command line input. Event log filenames and all other event log options can be changed programmatically (as one example, look for LOG_EVENT_SETUP in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>)<br/>
-
-Below are command line arguments and options that apply to both mediaMin and mediaTest, followed by (i) a [section specific to mediaMin](#user-content-mediamincommandlinequick-reference) and (ii) a [section specific to mediaTest](#user-content-mediatestcommandlinequick-reference).
 
 ### Platform and Operating Mode
 
