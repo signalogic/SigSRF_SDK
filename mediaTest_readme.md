@@ -877,7 +877,7 @@ In telecom mode, mediaMin assumes packet arrival timestamps are reliable and mos
 	
 In analytics mode, mediaMin assumes packet arrival timestamps are only somewhat accurate or completely invalid, and uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval. As with telecom mode, analytics mode also uses the Real-Time Interval to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). Analytics mode is enabled if the [-dN command line argument](#user-content-mediamincommandlineoptions) ANALYTICS_MODE flag is set (flag value of 0x40000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
-For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by [Real-Time Interval](#user-content-realtimeinterval) command line entry. The following example command lines show FTRT mode vs real-time using SDK demo pcaps:
+For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by the [Real-Time Interval](#user-content-realtimeinterval) command line argument. The following example command lines show FTRT mode vs real-time using SDK demo pcaps:
 
     real-time:           mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
 
@@ -1032,13 +1032,13 @@ Below are some command line examples, both in real-time and accelerated time:
 
 In the first example, processing is 40 times faster, and in the second about 28 times faster. Acceleration is less in the latter example due to total number of streams, codec complexity and bitrates, and media content. Amount of acceleration is also dependent on host system CPU clock rate, number of cores, and storage configuration.  Additional performance information - and how to determine maximum acceleration without media quality degradation - is given in [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) below.
 
-In addition to FTRT mode, mediaMin also supports "as fast as possible" mode, or AFAP mode, which is enabled with -r0 [Real-Time Interval](#user-content-realtimeinterval) command line entry (i.e. a Real-Time Interval of zero). AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For more information see [Packet Push Rate Control](#user-content-packetpushratecontrol) above.
+In addition to FTRT mode, mediaMin also supports "as fast as possible" mode, or AFAP mode, which is enabled with -r0 [Real-Time Interval](#user-content-realtimeinterval) command line argument (i.e. a Real-Time Interval of zero). AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For more information see [Packet Push Rate Control](#user-content-packetpushratecontrol) above.
 
 ### FTRT and AFAP Mode Notes
 
 Code running in [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) doesn't know that time has been accelerated. For example, if you see a packet push alarm saying "stream X has pushed no packets for 15 seconds" in FTRT mode, you would see the same warning in real-time.
 
-Concurrently specifiying AFAP mode with Real-Time Interval -r0 command line entry and applying the USE_PACKET_ARRIVAL_TIMES flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in the [-dN command line argument](#user-content-mediamincommandlineoptions) will produce undefined behavior.
+Concurrently specifiying AFAP mode (with a -r0 [Real-Time Interval argument](#user-content-realtimeinterval)) and applying the USE_PACKET_ARRIVAL_TIMES flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in the [-dN command line argument](#user-content-mediamincommandlineoptions) will produce undefined behavior.
 
 <a name="Peformance"></a>
 ## Performance
@@ -1135,7 +1135,7 @@ You can apply the following guidelines to determine whether you are at the limit
 > * there should be no warning messages about thread pre-emption, wav file write time exceeded, or other timing-related conditions. Warning message examples are given in [Stream Group Output Wav Path](#user-content-streamgroupoutputwavpath) below
 > * the number of FLCs (Frame Loss Compensation) in stream group output should be the same or nearly the same as running the same pcap(s) in real-time. Look for "Underrun" in [mediaMin Run-Time Stats](#user-content-runtimestats)
 	
-The last indicator is the most reliable. An increase in FTRT mode FLCs indicates the system does not have enough processing capacity to keep up with acceleration specified in [Real-Time Interval](#user-content-realtimeinterval) -rN command line entry. Basically, the system is not able to maintain continuous stream group wav and pcap output without having to repair missed frames caused by lack of compute resources. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output wav files, limiting stream group audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc. might help.
+The last indicator is the most reliable. An increase in FTRT mode FLCs indicates the system does not have enough processing capacity to keep up with acceleration specified in the [Real-Time Interval](#user-content-realtimeinterval) -rN command line argument. Basically, the system is not able to maintain continuous stream group wav and pcap output without having to repair missed frames caused by lack of compute resources. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output wav files, limiting stream group audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc. might help.
 
 <a name="AudioQuality"><a/>
 ### Audio Quality
@@ -1846,7 +1846,7 @@ mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_
 
 mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/evs_player_example_config2 -L
 ```
-mediaTest also accepts "-rN" command line entry. If none is specified, the default is N=20 (20 msec) <sup>[1]</sup>.
+mediaTest also accepts the "-rN" command line argument. If none is specified, the default is N=20 (20 msec) <sup>[1]</sup>.
 
 mediaTest offers test and measurement features not available in mediaMin, including a wider variety of I/O formats and low-level EVS encoding control, such as RF (channel aware) settings, DTX enable/disable, ptime interval, and more. For example, the following command line will play an EVS pcap over USB audio:
 ```shell
@@ -2950,7 +2950,7 @@ Both mediaTest and mediaMin require at least one input. mediaTest command lines 
 <a name="ImpliedOutputs"></a>
 ### Implied Outputs
 
-In addition to outputs specified on the command line, depending on the operating mode and options determined by -dN command line entry, mediaMin generates [implied outputs](#user-content-impliedoutputs). For example, .wav outputs and jitter buffer .pcap outputs are generated if the ENABLE_STREAM_GROUPS and ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flags, respectively, are given in -dN command line entry. Some of the example command lines shown in [Inputs and Outputs](#user-content-commandlineio) above have the ENABLE_STREAM_GROUPS flag set, in which case .wav files for audio streams found within incoming packet flow will be generated. Here is a list of implied outputs:
+In addition to outputs specified on the command line, depending on the operating mode and options determined by the -dN command line argument, mediaMin generates [implied outputs](#user-content-impliedoutputs). For example, .wav outputs and jitter buffer .pcap outputs are generated if the ENABLE_STREAM_GROUPS and ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flags, respectively, are set in the -dN command line argument. Some of the example command lines shown in [Inputs and Outputs](#user-content-commandlineio) above have the ENABLE_STREAM_GROUPS flag set, in which case .wav files for audio streams found within incoming packet flow will be generated. Here is a list of implied outputs:
 
 > * per stream [jitter buffer output pcaps](#user-content-commandlinejitterbufferoutputs) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag<br/>
 > * per [stream output wav files](#user-content-wavfileoutput) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
@@ -3043,7 +3043,7 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 <a name="CommandLineJitterBufferOutputs"></a>
 #### Jitter Buffer Outputs
 
-If mediaMin -dN command line entry contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag (flag value of 0x8000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), jitter buffer output streams -- including all re-ordering, RFC 8108 SSRC changes, DTX expansion, and packet loss / timestamp repairs -- will be written to pcap files. For example, in this command line:
+If the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is set in the -dN command line argument (flag value of 0x8000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), jitter buffer output streams -- including all re-ordering, RFC 8108 SSRC changes, DTX expansion, and packet loss / timestamp repairs -- will be written to pcap files. For example, in this command line:
 
     mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d0x20008000c11 -r20
 
@@ -3114,7 +3114,7 @@ The -dN command line argument INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a h
 
 Applying the ENABLE_TIMESTAMP_MATCH_MODE flag enables a timestamp match mode designed for reproducible wav and pcap output results from run-to-run, regardless of Real-Time Interval. This mode relies wholly on arrival timestamps, regardless of amount of wav audio data generated, and with no wall clock references.
 
-Adding --md5sum command line entry will include output file md5 sum in mediaMin stats.
+Adding the --md5sum command line argument will include output file md5 sum in mediaMin stats.
 
 ### Performance Improvements
 
