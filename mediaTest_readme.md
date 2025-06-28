@@ -476,7 +476,7 @@ Note the "ooo" packets in the ingress section of the packet log, which are corre
 <a name="PcapFileSupport"></a>
 ### Pcap and Pcapng File Support
 
-pktlib supports Pcap and Pcapng formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to support input .pcap and .pcapng files. Currently the following Link Layer types are supported:
+[pktlib](#user-content-pktlib) supports Pcap and Pcapng file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to support input .pcap and .pcapng files. Currently the following Link Layer types are supported:
 
 | Link Layer Type     | Pcap Header Value | Length (bytes) | Comments |
 | ------------------- | ----------------- | -------------- | -------- |
@@ -502,7 +502,7 @@ pktlib also detects and auto-corrects:
 <a name="RTPFileSupport"></a>
 ### .rtp and .rtpdump File Support
 
-pktlib supports .rtpXXX file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to support .rtp and .rtpdump input files (command line entry is the same as with .pcap or .pcapng files). Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
+[pktlib](#user-content-pktlib) supports .rtpXXX file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to support .rtp and .rtpdump input files (command line entry is the same as with .pcap or .pcapng files). Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
 
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf0.rtpdump -L -d 0xc11 -r20
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf1.rtpdump -L -d 0xc11 -r0.5
@@ -523,12 +523,12 @@ For .rtp files with incorrect or zero packet timestamp values, you can set media
 <a name="FragmentationSupport"></a>
 ### Fragmentation Support
 
-pktlib supports packet fragmentation and re-assembly per RFC 791. Here are some implementation notes:
+[pktlib](#user-content-pktlib) supports packet fragmentation and re-assembly per RFC 791. Here are some implementation notes:
 
 > * fragments are managed as per application thread linked lists; a simple mem barrier lock coordinates critical section thread access and modification of App_Thread_Info[] (defined in mediaMin.h and declared in mediaMin.cpp). This method works as long as the caller has a unique thread Id; for example, p/m threads could also call DSGetPacketInfo() with fragmented packets
 > * each linked list fragment entry includes 3-way tuple info (protocol, IP src addr, IP dst addr), IP header identifier (Identification field), and fragment offset. See the PKT_FRAGMENT struct in pktlib.h
 > * each linked list entry also includes packet info: flags, identifier, fragment offset, and saved IP header and packet data
-> * performance wise, the worst case is an app thread with a high number of streams each with large packets of size 4500 to 6000 bytes, in which case the thread's linked list length could grow to around N*3 or N*4, where N is number of streams
+> * performance wise, the worst case is an app thread with a high number of streams each with large packets of size 4500 to 6000 bytes, in which case the thread's linked list length could grow to around N\*3 or N\*4, where N is number of streams
 > * "highest used location" (max_search_limit) is maintained to reduce search time for existing thread Ids. The search loop isn't doing much, just comparing 64-bit thread Id values
   
 <a name="Sessions"></a>
