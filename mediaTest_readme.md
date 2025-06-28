@@ -3085,7 +3085,7 @@ indicate non-consecutive packet duplication, which can be confirmed by examining
 <a name="CommandLineJitterBufferDepth"></a>
 #### Jitter Buffer Depth
 
-The -jN command line argument controls jitter buffer depth. Several command line examples are given in [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) above. *Note that N must be given as a hex value, as it contains multiple fields.*
+The -jN command line argument controls jitter buffer target and maximum depth. Several command line examples are given in [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) above. *Note that N must be given as a hex value, as it contains multiple fields.*
 
 <a name="CommandLinePortAllowList"></a>
 #### Port Allow List
