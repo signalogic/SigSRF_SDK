@@ -3092,9 +3092,9 @@ The -jN command line argument controls jitter buffer target and maximum depth. S
 
 The -pN command line argument specifies a UDP port to add to the "port allow list", a list of non-dynamic UDP ports (from 1 to 4095; see NON_DYNAMIC_UDP_PORT_RANGE definition in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/pktlib.h">pktlib.h</a>) that are normally treated as non-RTP ports by mediaMin when processing media streams. You can enter one or more ports to allow, for example:
 
-> -p 1234
+> -p 1234<br/>
 >  <br/>
-> -p3258 -p1019 -p2233
+> -p3258 -p1019 -p2233<br/>
 
 *Note that mediaMin will automatically discover media ports in SDP info and SIP Invite message packets, and if they are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082; see SIP_PORT_RANGE_LOWER and SIP_PORT_RANGE_UPPER definitions in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/pktlib.h">pktlib.h</a>), add them to the port allow list.*
 
@@ -3103,11 +3103,8 @@ The -pN command line argument specifies a UDP port to add to the "port allow lis
 The -dN command line argument INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) includes input pauses as silence in stream group and individual (mono) wav outputs. This applies when input of one or more streams in the group pauses, for example call-on-hold, packet push pause, etc. Input pauses are always accurately reflected in stream group RTP streaming output, but for wav output it's an option as pauses can become very large and increase file storage requirements. Notes:
 
 > * an "input pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps (i.e. missing sequence numbers) are handled by [pktlib](#user-content-pktlib) (packet repair, jitter buffer resync, etc) prior to [streamlib](#user-content-streamlib) processing. Lost packet gaps that can't be repaired by pktlib are handled in streamlib by FLC (Frame Loss Compensation), but only up to a limit (nominally around 180 msec)
-> <br/>
 > * silence zeros are written to wav output only when input resumes. In other words, silence is not added to an input that has stopped permanently
-> <br/>
 > * the INCLUDE_PAUSES_IN_WAV_OUTPUT flag has no affect on real-time output RTP streaming. Live output RTP streaming pauses for the duration of large pauses
-< <br />
 > * for large input pauses exceeding FLC limits, [streamlib](#user-content-streamlib) keeps track of pause size/duration, resuming merged outputs, live streaming output, and individual mono wav outputs (if enabled), always accurately reflecting input stream timing
 
 ### Reproducibility
