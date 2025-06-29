@@ -2,7 +2,8 @@
 Notes and revision history
 
 Modified JHB May 2025, images are using https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images instead of https:://github.com/signalogic/SigSRF_SDK/blob/master/images:
-  -the raw. method opens a new tab but returns cleanly to the original position on the main page
+  -on mobile devices both methods open within the same tab but the .raw method returns cleanly to the original position on the main page, the github.com method does not
+  -on desktop devices both methods open a new tab
   -for some time during 2Q25 the github.com method hung up completely and would not display the image (see https://github.com/orgs/community/discussions/158744 and https://github.com/orgs/community/discussions/158744) 
 
 Modified JHB Jun 2025, update command line documentation, add pktlib info on pcap/pcapng support, fragmentation
@@ -3299,9 +3300,10 @@ Below is a screen cap showing 'd' key debug display.
 
 Debug output is highlighted in red. Individual highlighted areas are described below:
 
-<!---
-  I tried this for color line, it works but without color
-  <hr style="border:2px solid red">
+<!--
+  I tried this for color lines, it works (fits in the table cell) but without color:
+  
+    <hr style="border:2px solid red">
 -->
 
 | Highlight | Description |
