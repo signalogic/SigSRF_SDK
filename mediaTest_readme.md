@@ -3,8 +3,8 @@ Notes and revision history
 
 Modified JHB May 2025, images are using https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images instead of https:://github.com/signalogic/SigSRF_SDK/blob/master/images:
   -on mobile devices both methods open within the same tab but the .raw method returns cleanly to the original position on the main page, the github.com method does not
-  -on desktop devices both methods open a new tab
-  -for some time during 2Q25 the github.com method hung up completely and would not display the image (see https://github.com/orgs/community/discussions/158744 and https://github.com/orgs/community/discussions/158744) 
+  -on desktops both methods open a new tab
+  -for some time during 2Q25 the github.com method hung up completely and would not display the image (see https://github.com/orgs/community/discussions/158744 and https://stackoverflow.com/questions/79618921/github-markdown-after-clicking-a-same-page-link-clicking-images-no-longer-works) 
 
 Modified JHB Jun 2025, update command line documentation, add pktlib info on pcap/pcapng support, fragmentation
 -->
