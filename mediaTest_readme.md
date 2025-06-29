@@ -517,7 +517,7 @@ pktlib also detects and auto-corrects:
 <a name="RTPFileSupport"></a>
 ### .rtp and .rtpdump File Support
 
-[pktlib](#user-content-pktlib) supports .rtpXXX file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to input.rtp and .rtpdump input (command line entry is the same as with .pcap or .pcapng files). Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
+[pktlib](#user-content-pktlib) supports .rtpXXX file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to input.rtp and .rtpdump files (command line entry is the same as with .pcap or .pcapng files). Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
 
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf0.rtpdump -L -d 0xc11 -r20
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf1.rtpdump -L -d 0xc11 -r0.5
@@ -527,11 +527,11 @@ pktlib also detects and auto-corrects:
 Here is a description of the above examples:
 
 1. rtp file containing EVS 5900 bps packets in compact header format
-2. same, but full header format, 40x real-time processing speed
-3. same as 1. but with stereo frames
-4. same as 2. but with stereo frames, 100x real-time processing speed
+2. same, but with mix of headerfull and hf-only formats, 40x real-time processing speed
+3. same as 1. but with mix of one and 2 frames per payload
+4. same as 2. but with mix of one and 2 frames per payload, 100x real-time processing speed
 
-Note that .rtp file format seems to only support one stream, with IPv4 addresses. Also .rtp file headers may contain zero values for source or destination IP address or port values; in that case the DSReadPcapRecord() API in pktlib will use generic local IP values instead of zero. If you have an .rtp format file with multiple streams and/or IPv6 addresses, please send to Signalogic and we can take a look at expanding .rtp support.
+Currently .rtp file format seems to only support one stream, with IPv4 addresses. Also .rtp file headers may contain zero values for source or destination IP address or port values; in that case the DSReadPcapRecord() API in pktlib will use generic local IP values instead of zero. If you have an .rtp format file with multiple streams and/or IPv6 addresses, please send to Signalogic and we can take a look at expanding .rtp support.
 
 For .rtp files with incorrect or zero packet timestamp values, you can set mediaMin options to use a queue-balancing algorithm to estimate correct packet push rate; see [Packet Push Rate Control](#user-content-packetpushratecontrol) below.
 
