@@ -181,16 +181,16 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 <a name="toc"></a>
 # Table of Contents
 
-## [**_mediaMin_**](#user-content-mediamin)<br/>
+## **_[mediaMin](#user-content-mediamin)_**<br/>
 
-&nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)<br/>
+&nbsp;&nbsp;&nbsp;**[Real-Time Streaming and Packet Flow](#user-content-realtimestreaming)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Sessions**](#user-content-sessions)<br/>
+&nbsp;&nbsp;&nbsp;**[Sessions](#user-content-sessions)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dynamic Session Creation](#user-content-dynamicsessioncreation)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Voice/Audio Command Line Examples](#user-content-voiceaudiocmdlineexamples)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Video Command Line Examples](#user-content-videocmdlineexamples)<br/>
@@ -204,18 +204,18 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Session Endpoint Flow Diagram](#user-content-sessionconfigdiagram)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SDP Support](#user-content-sdpsupport)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Packet Push Rate Control**](#user-content-packetpushratecontrol)<br/>
+&nbsp;&nbsp;&nbsp;**[Packet Push Rate Control](#user-content-packetpushratecontrol)**<br/>
 
-&nbsp;&nbsp;&nbsp;[**Minimum API Interface**](#user-content-minimumapiinterface)<br/>
+&nbsp;&nbsp;&nbsp;**[Minimum API Interface](#user-content-minimumapiinterface)**<br/>
 
-&nbsp;&nbsp;&nbsp;[**Stream Group Usage**](#user-content-streamgroupusage)<br/>
+&nbsp;&nbsp;&nbsp;**[Stream Group Usage](#user-content-streamgroupusage)**<br/>
 
-&nbsp;&nbsp;&nbsp;[**Encapsulated Streams**](#user-content-encapsulatedstreams)<br/>
+&nbsp;&nbsp;&nbsp;**[Encapsulated Streams](#user-content-encapsulatedstreams)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[HI2 and HI3 Stream and OpenLI Support](#user-content-hi2_hi3_stream_and_openli_support)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Bulk Pcap Handling**](#user-content-bulkpcaphandling)<br/>
+&nbsp;&nbsp;&nbsp;**[Bulk Pcap Handling](#user-content-bulkpcaphandling)**<br/>
 
-&nbsp;&nbsp;&nbsp;[**Performance**](#user-content-performance)<br/>
+&nbsp;&nbsp;&nbsp;**[Performance](#user-content-performance)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Remote Console](#user-content-remoteconsole)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity](#user-content-highcapacity)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Performance](#user-content-realtimeperformance)<br/>
@@ -223,17 +223,17 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality](#user-content-audioquality)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Building High Performance Applications](#user-content-buildinghighperformanceapplications)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Reproducibility**](#user-content-reproducibility)<br/>
+&nbsp;&nbsp;&nbsp;**[Reproducibility](#user-content-reproducibility)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Bulk Processing Mode Considersations](#user-content-bulkprocessingmodeconsiderations)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Hash Sums](#user-content-hashsums)<br/>
 
-&nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
+&nbsp;&nbsp;&nbsp;**[ASR (Automatic Speech Recognition)](#user-content-asr)**<br/>
 
-&nbsp;&nbsp;&nbsp;[**RTP Malware Detection**](#user-content-rtpmalwaredetection)<br/>
+&nbsp;&nbsp;&nbsp;**[RTP Malware Detection](#user-content-rtpmalwaredetection)**<br/>
 
-## [**_mediaTest_**](#user-content-mediatest)<br/>
+## **_[mediaTest](#user-content-mediatest)_**<br/>
 
-&nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
+&nbsp;&nbsp;&nbsp;**[Codec + Audio Mode](#user-content-codecaudiomode)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Test & Measurement](#user-content-codectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS](#user-content-codecevs)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR](#user-content-codecamr)<br/>
@@ -245,7 +245,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[coCPU Codec Test & Measurement](#user-content-cocpucodectestmeasurement)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Lab Audio Workstation with USB Audio](#user-content-labaudioworkstation)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Frame Mode**](#user-content-framemode)<br/>
+&nbsp;&nbsp;&nbsp;**[Frame Mode](#user-content-framemode)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Pcaps to Wav and Playing Pcaps](#user-content-convertingpcaps2wav)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS Player](#user-content-evsplayer)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Player](#user-content-amrplayer)<br/>
@@ -254,10 +254,10 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Pcap Generation](#user-content-amrpcapgenerator)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTX Handling](#user-content-dtxhandling)<br/>
 
-&nbsp;&nbsp;&nbsp;[**mediaTest Notes**](#user-content-mediatestnotes)<br/>
-&nbsp;&nbsp;&nbsp;[**hello codec**](#user-content-hellocodec)<br/>
+&nbsp;&nbsp;&nbsp;**[mediaTest Notes](#user-content-mediatestnotes)**<br/>
+&nbsp;&nbsp;&nbsp;**[hello codec](#user-content-hellocodec)**<br/>
 
-## [**_pktlib_**](#user-content-pktlib)<br/>
+## **_[pktlib](#user-content-pktlib)_**<br/>
 
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandlingpktlib)<br/>
@@ -270,25 +270,25 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**.rtp and .rtpdump File Support**](#user-content-rtpfilesupport)<br/>
 &nbsp;&nbsp;&nbsp;[**Fragmentation Support**](#user-content-fragmentationsupport)<br/>
 
-## [**_streamlib_**](#user-content-streamlib)<br/>
+## **_[streamlib](#user-content-streamlib)_**<br/>
 
-&nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
+&nbsp;&nbsp;&nbsp;**[Stream Groups](#user-content-streamgroups)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Packet Output](#user-content-realtimepacketoutput)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Wav File Output](#user-content-wavfileoutput)<br/>
-&nbsp;&nbsp;&nbsp;[**Stream Alignment**](#user-content-streamalignment)<br/>
-&nbsp;&nbsp;&nbsp;[**Audio Quality Processing**](#user-content-audioqualityprocessing)<br/>
+&nbsp;&nbsp;&nbsp;**[Stream Alignment](#user-content-streamalignment)**<br/>
+&nbsp;&nbsp;&nbsp;**[Audio Quality Processing](#user-content-audioqualityprocessing)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Frame Loss Concealment (FLC)](#user-content-framelossconcealment)<br/>
 
-## [**_voplib_**](#user-content-voplib)<br/>
+## **_[voplib](#user-content-voplib)_**<br/>
 
-&nbsp;&nbsp;&nbsp;[**Unified Codec Interface**](#user-content-unifiedcodecinterface)<br/>
-&nbsp;&nbsp;&nbsp;[**voplib API Interface**](#user-content-voplibapiinterface)<br/>
+&nbsp;&nbsp;&nbsp;**[Unified Codec Interface](#user-content-unifiedcodecinterface)**<br/>
+&nbsp;&nbsp;&nbsp;**[voplib API Interface](#user-content-voplibapiinterface)**<br/>
 
-## [**_Run-Time Stats_**](#user-content-runtimestats)<br/>
+## **_[Run-Time Stats](#user-content-runtimestats)_**<br/>
 
-&nbsp;&nbsp;&nbsp;[**mediaMin Run-Time Stats**](#user-content-mediaminruntimestats)<br/>
+&nbsp;&nbsp;&nbsp;**[mediaMin Run-Time Stats](#user-content-mediaminruntimestats)**<br/>
 
-## [**_Event Log_**](#user-content-eventlog)<br/>
+## **_[Event Log](#user-content-eventlog)_**<br/>
 &nbsp;&nbsp;&nbsp;[Verifying a Clean Event Log](#user-content-verifyingcleaneventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Packet Log Summary](#user-content-packetlogsummary)<br/>
 
