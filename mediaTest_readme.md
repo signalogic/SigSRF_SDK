@@ -298,11 +298,11 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 ## [***RFCs***](#user-content-rfcs_main)
 ## [***User-Defined Signal Processing Insertion Points***](#user-content-userdefinedsignalprocessinginsertionpoints_main)
 ## [***API Usage***](#user-content-apiusage_main)
-## [**SigSRF Codecs**](#user-content-sigsrfcodecs_main)
+## [***SigSRF Codecs***](#user-content-sigsrfcodecs_main)
 &nbsp;&nbsp;&nbsp;[**3GPP Reference Codes**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#user-content-verifyingevspcap)<br/>
-## [**Wireshark**](#user-content-wireshark_main)
+## [***Wireshark***](#user-content-wireshark_main)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
 ## [***Command Line Quick-Reference***](#user-content-commandlinequick-reference_main)
