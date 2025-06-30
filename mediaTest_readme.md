@@ -16,7 +16,7 @@ After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-
  - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs
  - high capacity transcoding, RTP stream merging, call recording, post-processing (e.g speech recognition), and audio and video enhancement processing
  - test and measurement, including codec audio and video quality and performance, media RFC verification, and transcoding
- - application examples, including source code, showing how to use [pktlib](#user-content-pktlib) and [voplib](#user-content-voplib) APIs (see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram">architecture diagram</a> on the SigSRF page)
+ - application examples, including source code, showing how to use [pktlib](#user-content-pktlib_main) and [voplib](#user-content-voplib_main) APIs (see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram">architecture diagram</a> on the SigSRF page)
 
 Input and output options include network I/O, pcap file, and audio file format files (raw audio, .au, and .wav). Example command lines below use pcap, wav, and cod (compressed bitstream format) files included with the [SigSRF SDK](https://github.com/signalogic/SigSRF_SDK). SDK capacity is limited to four (4) concurrent transcoding streams, and four (4) concurrent instances (one instance = console window), for a total of eight (8) streams. The commercial software has no limitations for concurrency or multiuser, bare metal, VM, container, or other platform limitations.
 
@@ -231,7 +231,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**RTP Malware Detection**](#user-content-rtpmalwaredetection)<br/>
 
-[**mediaTest**](#user-content-mediatest)<br/>
+## [***mediaTest***](#user-content-mediatest_main)
 
 &nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Test & Measurement](#user-content-codectestmeasurement)<br/>
@@ -257,7 +257,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**mediaTest Notes**](#user-content-mediatestnotes)<br/>
 &nbsp;&nbsp;&nbsp;[**hello codec**](#user-content-hellocodec)<br/>
 
-[**pktlib**](#user-content-pktlib)<br/>
+## [***pktlib***](#user-content-pktlib_main)
 
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandlingpktlib)<br/>
@@ -270,7 +270,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**.rtp and .rtpdump File Support**](#user-content-rtpfilesupport)<br/>
 &nbsp;&nbsp;&nbsp;[**Fragmentation Support**](#user-content-fragmentationsupport)<br/>
 
-[**streamlib**](#user-content-streamlib)<br/>
+## [***streamlib***](#user-content-streamlib_main)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Packet Output](#user-content-realtimepacketoutput)<br/>
@@ -279,43 +279,42 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Audio Quality Processing**](#user-content-audioqualityprocessing)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Frame Loss Concealment (FLC)](#user-content-framelossconcealment)<br/>
 
-[**voplib**](#user-content-voplib)<br/>
+## [***voplib***](#user-content-voplib_main)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Unified Codec Interface**](#user-content-unifiedcodecinterface)<br/>
 &nbsp;&nbsp;&nbsp;[**voplib API Interface**](#user-content-voplibapiinterface)<br/>
 
-[**Run-Time Stats**](#user-content-runtimestats)<br/>
+## [***Run-Time Stats***](#user-content-runtimestats_main)
 
-&nbsp;&nbsp;&nbsp;[**mediaMin Run-Time Stats**](#user-content-mediaminruntimestats)<br/>
+&nbsp;&nbsp;&nbsp;[**mediaMin Summary Stats**](#user-content-mediaminsummarystats)<br/>
 
-[**Event Log**](#user-content-eventlog)<br/>
+## [***Event Log***](#user-content-eventlog_main)
 &nbsp;&nbsp;&nbsp;[Verifying a Clean Event Log](#user-content-verifyingcleaneventlog)<br/>
 &nbsp;&nbsp;&nbsp;[Packet Log Summary](#user-content-packetlogsummary)<br/>
 
-[**Packet Log**](#user-content-packetlog)<br/>
+## [***Packet Log***](#user-content-packetlog_main)
 
-[**RFCs**](#user-content-supportedrfcs)<br/>
-[**User-Defined Signal Processing Insertion Points**](#user-content-userdefinedsignalprocessinginsertionpoints)<br/>
-[**API Usage**](#user-content-apiusage)<br/>
-[**Notes**](#user-content-notes)<br/>
-&nbsp;&nbsp;&nbsp;[**SigSRF Codecs**](#user-content-codecnotes)<br/>
+## [***RFCs***](#user-content-rfcs_main)
+## [***User-Defined Signal Processing Insertion Points***](#user-content-userdefinedsignalprocessinginsertionpoints_main)
+## [***API Usage***](#user-content-apiusage_main)
+## [**SigSRF Codecs**](#user-content-codecnotes_main)
 &nbsp;&nbsp;&nbsp;[**3GPP Reference Codes**](#user-content-3gppnotes)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Using the 3GPP Decoder](#user-content-using3gppdecoder)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Verifying an EVS pcap](#user-content-verifyingevspcap)<br/>
-&nbsp;&nbsp;&nbsp;[**Wireshark**](#user-content-wiresharknotes)<br/>
+## [**Wireshark**](#user-content-wireshark_main)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Saving Audio to File in Wireshark](#user-content-savingaudiowireshark)<br/>
-[**Command Line Quick-Reference**](#user-content-commandlinequick-reference)<br/>
+## [***Command Line Quick-Reference***](#user-content-commandlinequick-reference_main)
 &nbsp;&nbsp;&nbsp;[mediaMin Command Line Quick-Reference](#user-content-mediamincommandlinequick-reference)<br/>
 &nbsp;&nbsp;&nbsp;[mediaTest Command Line Quick-Reference](#user-content-mediatestcommandlinequick-reference)<br/>
 &nbsp;&nbsp;&nbsp;[mediaMin Run-Time Key Commands](#user-content-mediaminruntimekeycommands)<br/>
 
-<a name="mediaMin_Main"></a>
+<a name="mediaMin_main"></a>
 # mediaMin
 
 The mediaMin reference application runs optimized, high-capacity media packet streaming on x86 servers <sup>[1]</sup> used in bare-metal, VM, or container platforms. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams, with packet handling, DTX, media decoding, stream group processing, and event and packet logging and statistics.
 
-For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib) (packet handling and high-capacity media/packet worker threads), [voplib](#user-content-voplib) (voice-over-packet interface), [streamlib](#user-content-streamlib) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
+For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib_main) (packet handling and high-capacity media/packet worker threads), [voplib](#user-content-voplib) (voice-over-packet interface), [streamlib](#user-content-streamlib_main) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog) and [packet logging](#user-content-packetlog)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
 
 To provide a simple, ready-to-use interface, mediaMin provides additional functionality. mediaMin command line options instruct pktlib to operate in "analytics mode" (when packet timestamps are missing or problematic), "telecom mode", or a hybrid mode. Typical application examples include SBC transcoding in telecom mode and lawful interception in analytics mode. Signal processing may be applied to [stream groups](#user-content-streamgroupusage), which can be formed on the basis of input stream grouping or arbitrarily as needed. Stream group signal processing includes RTP stream merging, interstream alignment, audio quality enhancement, stream deduplication, speech recognition, and real-time encoded RTP packet output.
 
@@ -325,7 +324,7 @@ mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreatio
 
 <sup>1</sup> Capacity figures are spec'ed for Xeon E5 2660 servers running Ubuntu and CentOS, with no add-in hardware. Stress testing includes concurrent session counts up to 50 per x86 core, with sustained test durations over 1400 hrs.</br>
 </br>
-<sup>2</sup> [pktlib](#user-content-pktlib), [voplib](#user-content-voplib), and [streamlib](#user-content-streamlib) are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
+<sup>2</sup> [pktlib](#user-content-pktlib_main), [voplib](#user-content-voplib_main), and [streamlib](#user-content-streamlib_main) are SigSRF library modules, as shown in the <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram" target="_blank">SigSRF software architecture diagram</a>.
 
 <a name="RealTimeStreaming"></a>
 ## Real-Time Streaming and Packet Flow
@@ -371,7 +370,7 @@ The screencap below shows mediaTest output after the second command line.
 <a name="MultipleRTPStreamsCmdLine"></a>
 ### Multiple RTP Streams (RFC 8108)
 
-As explained in [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below, [pktlib](#user-content-pktlib) implements RFC8108, which specifies multiple RTP streams within a session, created and switching based on SSRC transitions. Below are mediaMin command line examples for testing multiple RTP streams:
+As explained in [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below, [pktlib](#user-content-pktlib_main) implements RFC8108, which specifies multiple RTP streams within a session, created and switching based on SSRC transitions. Below are mediaMin command line examples for testing multiple RTP streams:
 
     mediaMin -cx86 -i../pcaps/mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps.pcapng -L -d0x40c01 -r20
  
@@ -388,7 +387,7 @@ Packet stats and history log files produced by the above commands (mediaplayout_
 <a name="DuplicatedRTPStreamsCmdLine"></a>
 ### Duplicated RTP Streams (RFC 7198)
 
-As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams) below, [pktlib](#user-content-pktlib) implements RFC7198 in order to detect and deal withstreams with packets duplicated for redundancy. Below are mediaMin command line examples included in the SigSRF SDK for RFC7198:
+As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreams) below, [pktlib](#user-content-pktlib_main) implements RFC7198 in order to detect and deal withstreams with packets duplicated for redundancy. Below are mediaMin command line examples included in the SigSRF SDK for RFC7198:
 
     mediaMin -cx86 -i../pcaps/mediaplayout_RFC7198_EVS.pcapng -L -d0xc11 -r20
 
@@ -408,7 +407,7 @@ The [-jN command line argument](#user-content-commandlinejitterbufferdepth) can 
 <a name="DTMFHandlingmediaMin"></a>
 ### DTMF / RTP Event Handling
 
-mediaMin is aware of RTP Event packet groups and instructs [pktlib](#user-content-pktlib) to apply standard packet re-ordering and repair as needed. Below are command lines that demonstrate DTMF RTP event handling using pcaps included in the Rar Packages and Docker containers:
+mediaMin is aware of RTP Event packet groups and instructs [pktlib](#user-content-pktlib_main) to apply standard packet re-ordering and repair as needed. Below are command lines that demonstrate DTMF RTP event handling using pcaps included in the Rar Packages and Docker containers:
 
     mediaMin -cx86 -i../pcaps/dtmf_rtp_event_multiple_groups.pcapng -L -d0x00c11 -j0x2018 -r20
 
@@ -487,7 +486,7 @@ Note the "ooo" packets in the ingress section of the packet log, which are corre
 <a name="PcapFileSupport"></a>
 ### Pcap and Pcapng File Support
 
-[pktlib](#user-content-pktlib) supports Pcap and Pcapng file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to input .pcap and .pcapng files. Currently the following Link Layer types are supported:
+[pktlib](#user-content-pktlib_main) supports Pcap and Pcapng file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to input .pcap and .pcapng files. Currently the following Link Layer types are supported:
 
 | Link Layer Type     | Pcap Header Value | Length (bytes) | Comments |
 | ------------------- | ----------------- | -------------- | -------- |
@@ -517,7 +516,7 @@ pktlib also detects and auto-corrects:
 <a name="RTPFileSupport"></a>
 ### .rtp and .rtpdump File Support
 
-[pktlib](#user-content-pktlib) supports .rtpXXX file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to input.rtp and .rtpdump files (command line entry is the same as with .pcap or .pcapng files). Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
+[pktlib](#user-content-pktlib_main) supports .rtpXXX file formats, which allows user-defined applications, and reference apps mediaMin and mediaTest, to input.rtp and .rtpdump files (command line entry is the same as with .pcap or .pcapng files). Below are mediaMin command line examples using .rtpdump files included in the Rar packages and Docker containers:
 
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf0.rtpdump -L -d 0xc11 -r20
     mediaMin -c x86 -i ../pcaps/evs_5900_1_hf1.rtpdump -L -d 0xc11 -r0.5
@@ -540,7 +539,7 @@ For .rtp files with incorrect or zero packet timestamp values, you can set media
 <a name="FragmentationSupport"></a>
 ### Fragmentation Support
 
-[pktlib](#user-content-pktlib) supports packet fragmentation and re-assembly per RFC 791.
+[pktlib](#user-content-pktlib_main) supports packet fragmentation and re-assembly per RFC 791.
 
 Here is an example of mediaMin summary stats showing packet fragmentation and reassembly:
 
@@ -563,7 +562,7 @@ in this case fragmented packets were sent by VLC video streaming output, which w
 <a name="Sessions"></a>
 ## Sessions
 
-mediaMin supports dynamic and static sessions. Dynamic sessions are created "on the fly", by recognizing packet streams with unique combinations of IP/port/payload, auto-detecting the codec type, and creating [pktlib](#user-content-pktlib) sessions to process subsequent packet flow. Static sessions are created from configuration files specified on the command line that contain IP addresses and ports, codec types and bitrates, and other session info parameters.
+mediaMin supports dynamic and static sessions. Dynamic sessions are created "on the fly", by recognizing packet streams with unique combinations of IP/port/payload, auto-detecting the codec type, and creating [pktlib](#user-content-pktlib_main) sessions to process subsequent packet flow. Static sessions are created from configuration files specified on the command line that contain IP addresses and ports, codec types and bitrates, and other session info parameters.
 
 <a name="DynamicSessionCreation"></a>
 ### Dynamic Session Creation
@@ -766,7 +765,7 @@ To review or modify codec auto-detection, look for detect_codec_type_and_bitrate
 <a name="StaticSessionConfig"></a>
 ### Static Session Configuration
 
-Static session configuration can be handled programmatically using the [pktlib](#user-content-pktlib) DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or parsing a session configuration text file to set the struct elements. The latter method is implemented by both mediaTest and mediaMin (look for ReadSessionConfig() and StaticSessionCreate() inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
+Static session configuration can be handled programmatically using the [pktlib](#user-content-pktlib_main) DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or parsing a session configuration text file to set the struct elements. The latter method is implemented by both mediaTest and mediaMin (look for ReadSessionConfig() and StaticSessionCreate() inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
 
 Structs used in session related APIs are defined in shared_include/session.h, look for SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
 
@@ -819,7 +818,7 @@ Note that each session typically has one or two "terminations", or endpoints (te
 <a name="UserManagedSessions"></a>
 ### User Managed Sessions
 
-Whether sessions are created [dynamically "on-the-fly"](#user-content-dynamicsessioncreation) or [statically from a configuration file](#user-content-staticsessionconfig), mediaMin manages sessions for their duration, including session creation, updating or retrieving status info, and session deletion. This approach is known as user-managed sessions. CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> gives a detailed example of initializing SESSION_DATA and TERMINATION_INFO structs and then calling the DSCreateSession() API in [pktlib](#user-content-pktlib).
+Whether sessions are created [dynamically "on-the-fly"](#user-content-dynamicsessioncreation) or [statically from a configuration file](#user-content-staticsessionconfig), mediaMin manages sessions for their duration, including session creation, updating or retrieving status info, and session deletion. This approach is known as user-managed sessions. CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> gives a detailed example of initializing SESSION_DATA and TERMINATION_INFO structs and then calling the DSCreateSession() API in [pktlib](#user-content-pktlib_main).
 
 <a name="SessionConfigDiagram"></a>
 ### Session Endpoint Flow Diagram
@@ -940,9 +939,9 @@ a=ptime:20
 <a name="PacketPushRateControl"></a>
 ## Packet Push Rate Control
 
-In telecom mode, mediaMin assumes packet arrival timestamps are reliable and mostly accurate, and uses them to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib) DSPushPackets() API. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line argument (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs). Telecom mode is enabled if the [-dN command line argument](#user-content-mediamincommandlineoptions) USE_PACKET_ARRIVAL_TIMES flag is set (flag value 0x10 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
+In telecom mode, mediaMin assumes packet arrival timestamps are reliable and mostly accurate, and uses them to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib_main) DSPushPackets() API. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line argument (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs). Telecom mode is enabled if the [-dN command line argument](#user-content-mediamincommandlineoptions) USE_PACKET_ARRIVAL_TIMES flag is set (flag value 0x10 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 	
-In analytics mode, mediaMin assumes packet arrival timestamps are only somewhat accurate or completely invalid, and uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval. As with telecom mode, analytics mode also uses the Real-Time Interval to set processing intervals needed by [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib). Analytics mode is enabled if the [-dN command line argument](#user-content-mediamincommandlineoptions) ANALYTICS_MODE flag is set (flag value of 0x40000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
+In analytics mode, mediaMin assumes packet arrival timestamps are only somewhat accurate or completely invalid, and uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval. As with telecom mode, analytics mode also uses the Real-Time Interval to set processing intervals needed by [pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main). Analytics mode is enabled if the [-dN command line argument](#user-content-mediamincommandlineoptions) ANALYTICS_MODE flag is set (flag value of 0x40000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
 For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by the [Real-Time Interval](#user-content-realtimeinterval) command line argument. The following example command lines show FTRT mode vs real-time using SDK demo pcaps:
 
@@ -985,16 +984,16 @@ In the various command lines above, you might notice the same media content bein
 <a name="MinimumAPIInterface"></a>
 ## Minimum API Interface
 
-mediaMin uses a minimum number of high-level APIs to process media. In the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> source example below, PushPackets() and PullPackets() call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets() to queue and dequeue packets to/from packet/media threads that handle all packet processing (jitter buffer, DTX, etc). In turn, packet/media threads call [voplib](#user-content-voplib) APIs for media decoding and encoding, and [streamlib](#user-content-streamlib) APIs for audio processing, RTP stream merging, speech recognition, etc.
+mediaMin uses a minimum number of high-level APIs to process media. In the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> source example below, PushPackets() and PullPackets() call [pktlib](#user-content-pktlib_main) APIs DSPushPackets() and DSPullPackets() to queue and dequeue packets to/from packet/media threads that handle all packet processing (jitter buffer, DTX, etc). In turn, packet/media threads call [voplib](#user-content-voplib_main) APIs for media decoding and encoding, and [streamlib](#user-content-streamlib_main) APIs for audio processing, RTP stream merging, speech recognition, etc.
 
 ![SigSRF minimum API interface](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/minimum_api_interface_source_code_excerpt.png "Minimum API interface")
 
 The above example:
 
 > 1. implements a continuous push-pull loop
-> 2. calls PushPackets() and PullPackets(), which call [pktlib](#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
+> 2. calls PushPackets() and PullPackets(), which call [pktlib](#user-content-pktlib_main) APIs DSPushPackets() and DSPullPackets()
 > 3. reads input packet flow from pcaps and/or UDP ports inside PushPackets()
-> 4. creates sessions dynamically inside PushPackets(), which calls [pktlib](#user-content-pktlib) API DSCreateSession()
+> 4. creates sessions dynamically inside PushPackets(), which calls [pktlib](#user-content-pktlib_main) API DSCreateSession()
 > 5. saves (i) re-ordered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio streams to pcaps or UDP ports inside PullPackets()
 
 <a name="StreamGroupUsage"></a>
@@ -1022,7 +1021,7 @@ Note the above command line also enables [wav file outputs](#user-content-wavfil
 
 For a large number of stream groups, the WHOLE_GROUP_THREAD_ALLOCATE flag can be set in the -dN command line argument (defined as 0x8000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), which will prevent stream groups from splitting across packet/media threads. This avoids use of spinlocks (semaphores) for the stream group and improves performance.
 
-Screen captures below show [run-time stats](#user-content-runtimestats) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
+Screen captures below show [run-time stats](#user-content-runtimestats_main) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
 ![Multiple AMR-WB stream group run-time stats](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats.png "Multiple AMR-WB stream group run-time stats")
 
@@ -1054,11 +1053,11 @@ Here are some notes about the above command lines and what to look for when they
 
     ![OpenLI HI interception point_ID detection at mediaMin run-time](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/openli_HI_interception_point_ID_example_screen_cap.png "OpenLI HI interception point ID detection, mediaMin run-time stats")
 
-2) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats) screen capture below. In the [stream group](#user-content-streamgroupusage) output, there should be no underrun (labeled as FLC, or frame loss concealment, in the [run-time stats](#user-content-runtimestats)), [packet logs](#user-content-packetlog) should be clean, and with no [event log](#user-content-eventlog) warnings or errors (highlighted in green).
+2) Both examples above contain two (2) G711a streams, but in the second example the first stream generates two (2) child streams (per RFC8108, see [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreams) below), as highlighted in red in the mediaMin [run-time stats](#user-content-runtimestats_main) screen capture below. In the [stream group](#user-content-streamgroupusage) output, there should be no underrun (labeled as FLC, or frame loss concealment, in the [run-time stats](#user-content-)), [packet logs](#user-content-packetlog) should be clean, and with no [event log](#user-content-eventlog) warnings or errors (highlighted in green).
 
     ![OpenLI HI3 intercept processing, mediaMin run-time stats](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/openli_hi3_intercept_run-time_stats.png "OpenLI HI3 intercept processing, mediaMin run-time stats")
 
-3) For the first example [run-time stats](#user-content-runtimestats) should show a small amount of packet loss and repair (9 packets) in the second stream.
+3) For the first example [run-time stats](#user-content-runtimestats_main) should show a small amount of packet loss and repair (9 packets) in the second stream.
 
 4) In these OpenLI examples, DER encoded packet arrival timestamps do not increment at ptime intervals, so the above mediaMin command lines enable "analytics mode" (0xc0000 flags set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above examples) to dynamically determine packet push rates. *(Note - In both analytics and telecom modes, the pktlib and streamlib modules make use of RTP timestamps for packet repair and interstream alignment.)*
 
@@ -1078,7 +1077,7 @@ After loading stream group outputs in Wireshark (openli-voip-example_group0_am.p
 
 In the second example, the child streams contain early media (ring tones), which appear as "rectangular bursts" in the above waveform display. To play stream group output audio click on the :arrow_forward: button.
 
-In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF [pktlib](#user-content-pktlib) and  [streamlib](#user-content-streamlib) module processing prioritize stability of this metric, as well as accurate time-alignment of individual stream contributors relative to each other. For information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
+In the above displays, note the "Max Delta" stat. This is an indicator of both audio quality and real-time performance; any deviation from the specified ptime (in this case 20 msec) is problematic. SigSRF [pktlib](#user-content-pktlib_main) and  [streamlib](#user-content-streamlib_main) module processing prioritize stability of this metric, as well as accurate time-alignment of individual stream contributors relative to each other. For information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
 
 mediaMin also generates [stream group](#user-content-streamgroupusage) output .wav files and individual contributor .wav files, which may be needed depending on the application (but should not be used to authenticate audio quality, see [Audio Quality Notes](#user-content-audioqualitynotes) below).
 
@@ -1103,7 +1102,7 @@ In addition to FTRT mode, mediaMin also supports "as fast as possible" mode, or 
 
 ### FTRT and AFAP Mode Notes
 
-Code running in [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) doesn't know that time has been accelerated. For example, if you see a packet push alarm saying "stream X has pushed no packets for 15 seconds" in FTRT mode, you would see the same warning in real-time.
+Code running in [pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main) doesn't know that time has been accelerated. For example, if you see a packet push alarm saying "stream X has pushed no packets for 15 seconds" in FTRT mode, you would see the same warning in real-time.
 
 Concurrently specifiying AFAP mode (with a -r0 [Real-Time Interval argument](#user-content-realtimeinterval)) and applying the USE_PACKET_ARRIVAL_TIMES flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in the [-dN command line argument](#user-content-mediamincommandlineoptions) will produce undefined behavior.
 
@@ -1112,7 +1111,7 @@ Concurrently specifiying AFAP mode (with a -r0 [Real-Time Interval argument](#us
 
 From a general performance perspective, to achieve consistent high capacity, real-time performance, and audio quality, other applications and periodic Linux housekeeping operations (e.g. logging, network I/O, SQL, etc) should be limited to a minimum or even disabled during mediaMin operation. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (see examples below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting performance.
 
-From an audio quality perspective, it's important to note that mediaMin, [pktlib](#user-content-pktlib), and [streamlib](#user-content-streamlib) all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
+From an audio quality perspective, it's important to note that mediaMin, [pktlib](#user-content-pktlib_main), and [streamlib](#user-content-streamlib_main) all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
 
 The following sections give detailed information on achieving consistent high capacity, real-time performance, and best audio quality.
 
@@ -1167,7 +1166,7 @@ Here is a summary of important points in achieving and sustaining real-time perf
     
     To mitigate such cases, there are various methods to prioritize threads and minimize interaction with the OS, some of which SigSRF libraries utilize, and some of which are considered "out of the mainstream" and unlikely to be supported going forward.<sup> [1]</sup>
 
-    To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
+    To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib_main) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
 
     <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
 
@@ -1175,7 +1174,7 @@ Here is a summary of important points in achieving and sustaining real-time perf
 
 3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few concurrent sessions. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
 
-4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow system performance can cause packet delta stats to fluctuate even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both real-time performance and audio quality, and any deviation is considered problematic. SigSRF [pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
+4. Stream group output packet audio should consistently show "Max Delta" results close to the expected ptime (typically 20 msec). Slow system performance can cause packet delta stats to fluctuate even though packet/media thread preemption alarms have not triggered. Max Delta is an indicator of both real-time performance and audio quality, and any deviation is considered problematic. SigSRF [pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main) module processing prioritize stability of this metric. Below is a Wireshark screen capture highlighting the Max Delta stat:
 
     ![Wireshark Max Delta packet stat](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/wireshark_max_delta_packet_stat_screencap.png "Wireshark Max Delta packet stat")
 
@@ -1200,7 +1199,7 @@ If stream group processing is required, including correct wav and pcap file medi
 You can apply the following guidelines to determine whether you are at the limit of FTRT mode acceleration:
 	
 > * there should be no warning messages about thread pre-emption, wav file write time exceeded, or other timing-related conditions. Warning message examples are given in [Stream Group Output Wav Path](#user-content-streamgroupoutputwavpath) below
-> * the number of FLCs (Frame Loss Compensation) in stream group output should be the same or nearly the same as running the same pcap(s) in real-time. Look for "Underrun" in [mediaMin Run-Time Stats](#user-content-runtimestats)
+> * the number of FLCs (Frame Loss Compensation) in stream group output should be the same or nearly the same as running the same pcap(s) in real-time. Look for "Underrun" in [mediaMin Run-Time Stats](#user-content-runtimestats_main)
 	
 The last indicator is the most reliable. An increase in FTRT mode FLCs indicates the system does not have enough processing capacity to keep up with acceleration specified in the [Real-Time Interval](#user-content-realtimeinterval) -rN command line argument. Basically, the system is not able to maintain continuous stream group wav and pcap output without having to repair missed frames caused by lack of compute resources. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output wav files, limiting stream group audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc. might help.
 
@@ -1213,7 +1212,7 @@ Below are some items to keep in mind when measuring audio quality of both indivi
 
 2) When authenticating audio quality for a customer application in which it's important to know precisely which audio audio occurred when, wav files -- although convenient -- should not be used alone. Wav files assume a linear sampling rate and do not encode sampling points, and can thus obscure audio delays/gaps and interstream alignment issues. This is why real-time packet audio should always be included for audio quality authentication purposes. Real-time packet audio can be linear output, G711, or encoded with wideband codecs (e.g. AMR-WB, EVS) -- the key point is that sampling time is included in the analysis, preferably with a granularity of 10 to 40 msec. However, if you're using Wireshark then the codec type should be one that Wireshark "understands", which currently includes G711 u/a, AMR, and AMR-WB.
 
-    To help with time domain analysis, [streamlib](#user-content-streamlib) supports audio markers, which are inserted into [stream group](#user-content-streamgroupusage) output at regular intervals (default of 1 sec). Below is a screen capture showing audio markers in action:
+    To help with time domain analysis, [streamlib](#user-content-streamlib_main) supports audio markers, which are inserted into [stream group](#user-content-streamgroupusage) output at regular intervals (default of 1 sec). Below is a screen capture showing audio markers in action:
 
     ![Stream group output with 1 sec audio markers](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/DeepLI_1sec_timing_marker_example.png "Stream group output with 1 sec audio markers")
     
@@ -1221,7 +1220,7 @@ Below are some items to keep in mind when measuring audio quality of both indivi
     
     In the mediaMin command line, audio markers can be enabled with a 0x8000000 flag in the -dN options cmd line argument. For more information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
 
-3) Continuous, real-time packet repair is crucial to achieving high quality audio. Both missing (lost) SID and media packets must be repaired. [Pktlib](#user-content-pktlib) uses a variety of methods, including packet re-ordering (due to out-of-order, or ooo, packets), packet loss concealment, SID insertion, and more. To identify packet loss and ooo problems, pktlib looks at missing sequence numbers, mismatched timestamps, and packet delta (rate). When verifying / measuring audio quality, you can look at both [run-time stats](#user-content-runtimestats) and [packet logs](#user-content-packetlog) for anomalies that might indicate audio quality problems. Even issues that may not be perceptible when listening can be identified this way; for example, during long periods of silence or background noise there may be packet flow issues unidentifiable by listening.
+3) Continuous, real-time packet repair is crucial to achieving high quality audio. Both missing (lost) SID and media packets must be repaired. [Pktlib](#user-content-pktlib_main) uses a variety of methods, including packet re-ordering (due to out-of-order, or ooo, packets), packet loss concealment, SID insertion, and more. To identify packet loss and ooo problems, pktlib looks at missing sequence numbers, mismatched timestamps, and packet delta (rate). When verifying / measuring audio quality, you can look at both [run-time stats](#user-content-runtimestats_main) and [packet logs](#user-content-packetlog) for anomalies that might indicate audio quality problems. Even issues that may not be perceptible when listening can be identified this way; for example, during long periods of silence or background noise there may be packet flow issues unidentifiable by listening.
 
 4) Audio quality measurement should also include frequency domain analysis, as shown in the examples below taken from a customer case, in which one input stream contained embedded "chime markers" with very specific timing and tonal content.
 
@@ -1429,7 +1428,7 @@ RTP packet streams provide an opportunity for malware to hide payloads disguised
 	
 mediaMin provides an "audio content analysis" mode that writes event log messages when codec payload inconsistencies are detected that indicate deliberate manipulation of codec bitstream packet data.
 	
-<a name="mediaTest"></a>
+<a name="mediaTest_main"></a>
 # mediaTest
 
 mediaTest is a command line interface tool for codec testing and measurement, conversion between audio file formats and I/O (e.g USB audio), pcap generation, preparation of audio data for speech recognition training, and more. mediaTest supports a wide range of codecs, including G7xx, AMR, EVS, and MELPe.
@@ -1445,7 +1444,7 @@ Codec + audio mode allows testing with flexible and interchangeable audio I/O, i
 
 * a wide range of audio I/O, including waveform file formats, compressed bitstream file types, and USB audio
 
-Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and pktlib APIs are not used (for real-time streaming packet flow and transcoding, see [mediaMin](#user-content-mediamin) above).
+Codec tests perform encode and/or decode with audio I/O and codec type specified on the command line and/or in a codec config file.  The main objectives are to check for bit-exact results, measure audio quality, and measure performance.  Transcoding is not performed in a single command line (although it can be done with successive commands), and pktlib APIs are not used (for real-time streaming packet flow and transcoding, see [mediaMin](#user-content-mediamin_main) above).
 
 Codec + audio mode supports the following functionality:
 
@@ -1853,7 +1852,7 @@ The mediaTest command lines below show (i) USB audio acquisition of a stereo wav
 
     mediaTest -cx86 -iusb0 -ousb_codec_output.wav -Csession_config/evs_16kHz_13200bps_config
 
-Below are waveform displays for a 1.5 kHz sine wave from the HP 33120A function generator, sampled by the Focusrite 2i2 at 48 kHz, downsampled to 16 kHz using an alglib API, and run through an EVS 13200 bps [voplib](#user-content-voplib) encode API:
+Below are waveform displays for a 1.5 kHz sine wave from the HP 33120A function generator, sampled by the Focusrite 2i2 at 48 kHz, downsampled to 16 kHz using an alglib API, and run through an EVS 13200 bps [voplib](#user-content-voplib_main) encode API:
 
 ![USB audio input with codec processing, time domain waveform](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/usb_audio_evs_encoder_time_domain.png "Time domain waveform showing EVS encoded pure sine wave from an HP 33120A function generator")
 
@@ -1864,7 +1863,7 @@ Note that EVS -- unlike older codecs that rely only on a vocal tract model -- is
 <a name="FrameMode"></a>
 ## Frame Mode
 
-Frame mode performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  [voplib](#user-content-voplib) APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
+Frame mode performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  [voplib](#user-content-voplib_main) APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
 
     mediaTest -cx86 -M4 -Csession_config/frame_test_config -L
 
@@ -2012,7 +2011,7 @@ mediaTest -cx86 -itest_files/T018.wav -oasr_test.pcap -Csession_config/amrwb_16k
 
 mediaTest can perform transcoding by encoding from an audio input (see list above in "Codec + Audio Mode") to a compressed bitstream file, and decoding the bitstream file to an audio output. Two command lines are required, and framesize (e.g. 20 msec, 25 msec, etc) must match between codecs.
 
-[mediaMin](#user-content-mediamin) above describes real-time transcoding between input and output packet streams (either socket or pcap I/O).
+[mediaMin](#user-content-mediamin_main) above describes real-time transcoding between input and output packet streams (either socket or pcap I/O).
 
 <a name="mediaTestNotes"></a>
 ## mediaTest Notes
@@ -2059,7 +2058,7 @@ Here are some examples of running hello_codec
   
 Upon completion, hello_codec saves output in file codec_output_test.wav for convenient codec output audio quality testing.
 
-<a name="pktlib"></a>
+<a name="pktlib_main"></a>
 # pktlib
 
 Pktlib is a SigSRF library module providing high-capacity media/packet worker threads, analytics and telecom operating modes, jitter buffer, DTX (discontinuous transmission) and variable ptime handling, packet re-ordering and repair (both SID and media packets), packet formatting, and packet tracing and stats collection. Pktlib also interfaces to voplib for media decoding and encoding, and to streamlib for [stream group](#user-content-streamgroups) processing.
@@ -2102,7 +2101,7 @@ mediaMin -cx86 -C../session_config/g711_20ptime_g711_40ptime_test_config -i../pc
 mediaMin -cx86 -C../session_config/evs_20ptime_g711_40ptime_test_config -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ovptime_test1.pcap -L
 ```
 
-For the above command lines, note in the [run-time stats](#user-content-runtimestats) displayed by mediaMin, the number of transcoded frames is half of the number of buffered / pulled frames, because of the 20 to 40 msec ptime conversion.
+For the above command lines, note in the [run-time stats](#user-content-runtimestats_main) displayed by mediaMin, the number of transcoded frames is half of the number of buffered / pulled frames, because of the 20 to 40 msec ptime conversion.
 
 Here is a mediaMin command line that converts an incoming pcap with 240 msec ptime to 20 msec:
 
@@ -2138,7 +2137,7 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 <a name="JitterBufferDepthControl"></a>
 ### Jitter Buffer Depth Control
 
-The [pktlib](#user-content-pktlib) jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. Default values of target and max depth are 10 and 14 packets, respectively. However, these can be changed if necessary. mediaMin supports the [-jN command line argument](#user-content-commandlinejitterbufferdepth), where N specifies depth as number of packets. For example, using the [OpenLI](#user-content-hi2_hi3_stream_and_openli_support) example command line shown above, jitter buffer depth could be specified as less than default values, having max depth of 12 and target depth of 7:
+The [pktlib](#user-content-pktlib_main) jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. Default values of target and max depth are 10 and 14 packets, respectively. However, these can be changed if necessary. mediaMin supports the [-jN command line argument](#user-content-commandlinejitterbufferdepth), where N specifies depth as number of packets. For example, using the [OpenLI](#user-content-hi2_hi3_stream_and_openli_support) example command line shown above, jitter buffer depth could be specified as less than default values, having max depth of 12 and target depth of 7:
 
     mediaMin -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20 -j0x0c07
 
@@ -2159,23 +2158,23 @@ then increasing jitter buffer target and max depths should be helpful. In the ab
 <a name="PacketRepair"></a>
 ### Packet Repair
 
-[Pktlib](#user-content-pktlib) jitter buffer default behavior is to repair both media and SID packets, unless disabled by session configuration flags. Media packets are repaired using a packet loss concealment (PLC) algorithm based on interpolation, prior stream packet input history, and other factors. SID packets are repaired using a SID re-use algorithm. In both cases packet history, RTP timestamp, and packet re-ordering are factored into repairs.
+[Pktlib](#user-content-pktlib_main) jitter buffer default behavior is to repair both media and SID packets, unless disabled by session configuration flags. Media packets are repaired using a packet loss concealment (PLC) algorithm based on interpolation, prior stream packet input history, and other factors. SID packets are repaired using a SID re-use algorithm. In both cases packet history, RTP timestamp, and packet re-ordering are factored into repairs.
 
-The [packet history log](#user-content-packetlog) details exactly which packets were repaired, and also provides overall repair stats, organized by channel and SSRC. [Run-time stats](#user-content-runtimestats) also displays packet repair information; the screen capture below shows channel 4 (SSRC 0xd9913891) with one (1) instance of SID repair and channel 2 (SSRC 0x545d19db) with 63 timestamp repairs:
+The [packet history log](#user-content-packetlog) details exactly which packets were repaired, and also provides overall repair stats, organized by channel and SSRC. [Run-time stats](#user-content-runtimestats_main) also displays packet repair information; the screen capture below shows channel 4 (SSRC 0xd9913891) with one (1) instance of SID repair and channel 2 (SSRC 0x545d19db) with 63 timestamp repairs:
 
 ![Run-Time stats showing packet repairs](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps_run-time_stats_packet_repair.png "Run-time stats showing packet repairs")
 
 <a name="MultipleRTPStreams"></a>
 ## Multiple RTP Streams (RFC 8108)
 
-[pktlib](#user-content-pktlib) implements RFC8108, which although not yet ratified, is widely used to allow multiple RTP streams per session, based on SSRC value transitions. pktlib allows creation of new RTP streams on-the-fly (dynamically) and resumption of prior streams. When pktlib creates a new RTP stream, it also creates new media encoder and decoder instances, in order to maintain separate and contiguous content for each stream. This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
+[pktlib](#user-content-pktlib_main) implements RFC8108, which although not yet ratified, is widely used to allow multiple RTP streams per session, based on SSRC value transitions. pktlib allows creation of new RTP streams on-the-fly (dynamically) and resumption of prior streams. When pktlib creates a new RTP stream, it also creates new media encoder and decoder instances, in order to maintain separate and contiguous content for each stream. This is particularly important for advanced codecs such as EVS, which depend heavily on prior audio history for RF channel EDAC, noise modeling, and audio classification (e.g. voice vs. music).
 
 <a name="DuplicatedRTPStreams"></a>
 ## Duplicated RTP Streams (RFC 7198)
  
-[pktlib](#user-content-pktlib) implements RFC7198, a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Pktlib detects and unpacks streams with packets duplicated per RFC7198. [Run-time stats](#user-content-runtimestats) invoked and printed onscreen or in the event log by mediaMin or user-defined apps show duplicated packet counts in the "RFC7198 duplicates" field (under the "Packet Stats" subheading).
+[pktlib](#user-content-pktlib_main) implements RFC7198, a method to address packet loss that does not incur unbounded delay, by duplicating packets and sending as separate redundant RTP streams. Pktlib detects and unpacks streams with packets duplicated per RFC7198. [Run-time stats](#user-content-runtimestats_main) invoked and printed onscreen or in the event log by mediaMin or user-defined apps show duplicated packet counts in the "RFC7198 duplicates" field (under the "Packet Stats" subheading).
 
-<a name="streamlib"></a>
+<a name="streamlib_main"></a>
 # streamlib
 
 Streamlib is a SigSRF library module responsible for constructing, enhancing, and post-processing [stream groups](#user-content-streamgroups). Stream group construction includes:
@@ -2196,7 +2195,7 @@ Stream group output enhancement includes:
 Stream group output post-processing includes:
 
  - sampling rate conversion, if needed for encoding, speech recognition, or other post-processing
- - encoding, if specified (e.g. G711, AMR, EVS, etc. by making [voplib](#user-content-voplib) API calls), and formatting and queuing RTP packet output (by making pktlib API calls)
+ - encoding, if specified (e.g. G711, AMR, EVS, etc. by making [voplib](#user-content-voplib_main) API calls), and formatting and queuing RTP packet output (by making pktlib API calls)
  - speech recognition, if specified (by making inferlib API calls)
  - stream deduplication, if specified
  - user-defined signal processing
@@ -2227,14 +2226,14 @@ The above processing is shown in <a href="https://github.com/signalogic/SigSRF_S
 <a name="RealTimePacketOutput"></a>
 ### Real-Time Packet Output
 
-As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">SigSRF data flow diagrams</a>, [streamlib](#user-content-streamlib) default behavior is to generate G711 packet audio for stream group output. Other codecs can be used for encoding by customizing the SESSION_DATA struct "group_term.codec_type" element (and other related elements) in application source. To see use of SESSION_DATA, TERMINATION_INFO, and media attributes structs in the mediaMin reference app, look inside create_dynamic_session() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
+As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">SigSRF data flow diagrams</a>, [streamlib](#user-content-streamlib_main) default behavior is to generate G711 packet audio for stream group output. Other codecs can be used for encoding by customizing the SESSION_DATA struct "group_term.codec_type" element (and other related elements) in application source. To see use of SESSION_DATA, TERMINATION_INFO, and media attributes structs in the mediaMin reference app, look inside create_dynamic_session() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
 
 <a name="WavFileOutput"></a>
 ### Wav File Output
 
-Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag in the -dN options argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using [pktlib](#user-content-pktlib) session creation APIs, these wav file outputs can be specified separately or in combination, per application needs.
+Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag in the -dN options argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using [pktlib](#user-content-pktlib_main) session creation APIs, these wav file outputs can be specified separately or in combination, per application needs.
 
-Note that [streamlib](#user-content-streamlib) handles the mechanics of wav file output, which means packet/media threads are able to generate wav file output concurrently. This provides the best possible combination of audio quality and real-time performance.
+Note that [streamlib](#user-content-streamlib_main) handles the mechanics of wav file output, which means packet/media threads are able to generate wav file output concurrently. This provides the best possible combination of audio quality and real-time performance.
 
 <a name="StreamAlignment"></a>
 ## Stream Alignment
@@ -2258,9 +2257,9 @@ In addition to gap management and stream alignment mentioned above, streamlib co
 
 FLC occurs when, after all individual stream contributor management, merging, and other processing is complete, stream group ouptut will incur a gap and be unable to meet continuous real-time output requirements. Typically this occurs due to simultaneous packet loss in all stream group inputs, but not always, it can also happen due to anomalies in alignment between inputs. When an output gap is inevitable, streamlib applies an algorithm to conceal the frame gap, based on interpolation, prior stream group output history, and other factors.
 
-Note that FLC is similar, but not the same as PLC (Packet Loss Concealment), which is implemented by [pktlib](#user-content-pktlib) as part of [packet repair](#user-content-packetrepair), due to media or SID packet loss.
+Note that FLC is similar, but not the same as PLC (Packet Loss Concealment), which is implemented by [pktlib](#user-content-pktlib_main) as part of [packet repair](#user-content-packetrepair), due to media or SID packet loss.
 
-<a name="voplib"></a>
+<a name="voplib_main"></a>
 # voplib
 
 voplib is the voice-over-packet library used in SigSRF software. voplib is used by reference applications (e.g. mediaTest), other SigSRF libraries (e.g. pktlib), and user applications. The [codec readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) has a [software architecture diagram](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-codecsoftwarearchitecturediagram) showing voplib's location in the SigSRF architecture.
@@ -2275,10 +2274,10 @@ voplib provides a unified, documented interface to all codecs, and handles all m
 
 The [voplib API interface](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-apiinterface) DSCodecCreate() API supports two general types of structs, CODEC_PARAMS for user and reference applications, and TERMINATION_INFO for packet/media worker threads. See the [codec readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) for detailed information.
 
-<a name="RunTimeStats"></a>
+<a name="RunTimeStats_main"></a>
 # Run-Time Stats
 
-Pktlib packet/media worker threads display run-time stats onscreen and/or in the event log by calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib) API for a session or range of sessions from user-defined applications. Run-time stats are also displayed when:
+Pktlib packet/media worker threads display run-time stats onscreen and/or in the event log by calling the DSLogRunTimeStats() [pktlib](#user-content-pktlib_main) API for a session or range of sessions from user-defined applications. Run-time stats are also displayed when:
 
   * the last session of a stream group closes
   * stream groups are not active and a session closes
@@ -2372,10 +2371,10 @@ The screencaps below show run-time stats examples, with highlighting around the 
 
 <sup>1</sup> Dynamic bitrates occur when a stream's bitrate changes on-the-fly, due to a codec mode request (known as a CMR) or re-negotiation by transmit and receive endpoints. Dynamic bitrates also include DTX bitrates, for example for telecom codecs (not LBR codecs like MELPe) low values such as 1750 or 2400 bps are DTX rates
 
-<a name="MediaMinRunTimeStats"></a>
-## mediaMin Run-Time Stats
+<a name="MediaMinSummaryStats"></a>
+## mediaMin Summary Stats
 
-In addition to run-time stats generated by packet/media worker threads, the mediaMin reference application also generates run-time stats. The key difference is that packet/media threads don't know about number and types of input streams, they just see sessions and channels. mediaMin, on the other hand, is aware of input stream sources. Here is a mediaMin command line example with a mixed audio and video input pcap, followed by run-time stats after the pcap is processed:
+In addition to run-time stats generated by packet/media worker threads, the mediaMin reference application generates summary stats. The key difference is that packet/media threads don't know about number and types of input streams, they just see sessions and channels. mediaMin, on the other hand, is aware of input stream sources. Here is a mediaMin command line example with a mixed audio and video input pcap, followed by run-time stats after the pcap is processed:
 
     mediaMin -c x86 -i ../test_files/VIDEOCALL_EVS_H265.pcapng -L -d 0x06004000c11 -r20 -g /tmp/shared -l4
 
@@ -2403,10 +2402,10 @@ Note that mediaMin includes packet fragmentation and duplication stats, if appli
         Marginal stream group pulls = 0
 </console></pre>
 
-<a name="EventLog"></a>
+<a name="EventLog_main"></a>
 # Event Log
 
-The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by SigSRF libraries including [pktlib](#user-content-pktlib), [voplib](#user-content-voplib), and [streamlib](#user-content-streamlib), and also by mediaMin and mediaTest reference apps. All diaglib APIs are also available for user-defined applications.
+The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides event logging APIs, which are used by SigSRF libraries including [pktlib](#user-content-pktlib_main), [voplib](#user-content-voplib_main), and [streamlib](#user-content-streamlib_main), and also by mediaMin and mediaTest reference apps. All diaglib APIs are also available for user-defined applications.
 
 Event logs are .txt files, updated continuously by packet/media threads with informational events, status, warnings, and errors, with each entry prefixed by a timestamp (different timestamp formats may be specified, including absolute and relative time). Event log filenames use the following notation:
 
@@ -2463,7 +2462,7 @@ Below is an example event log.
 00:00:01.356.545 mediaMin INFO: Deleting 1 session [index] hSession/flush state [0] 0/3 
 00:00:01.356.598 INFO: Marking session 0 for deletion 
         :
-        :  run-time stats edited out, see [Run-Time Stats](#user-content-runtimestats) above
+        :  run-time stats edited out, see [Run-Time Stats](#user-content-runtimestats_main) above
         :
 00:00:01.357.337 INFO: Deleting session 0 
 00:00:01.357.403 INFO: DSDeleteSession() deleted group "", owner session = 0
@@ -2489,7 +2488,7 @@ Below is an example event log.
 	Marginal stream group pulls = 0 
 </pre>
 
-[pktlib](#user-content-pktlib), [voplib](#user-content-voplib), and [streamlib](#user-content-streamlib) event log entries follow a labeling convention:
+[pktlib](#user-content-pktlib_main), [voplib](#user-content-voplib_main), and [streamlib](#user-content-streamlib_main) event log entries follow a labeling convention:
 
 * "INFO" indicates normal operation events, progress, and status
 * "WARNING" indicates an unusual event, something that may be a problem and needs attention
@@ -2545,7 +2544,7 @@ In the [event log example](#user-content-eventlog) above, here is the packet log
 
 Note especially the "Packets dropped" and "Timestamp mismatches" stats, which should both be zero. If not there may be packet flow integrity issues that should be addressed.
 
-<a name="PacketLog"></a>
+<a name="PacketLog_main"></a>
 # Packet Log
 
 The SigSRF <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib library module</a> provides packet stats and history logging APIs, which are used by the mediaMin and mediaTest reference apps and also available for user-defined applications. Diaglib APIs include packet statistics and history logging for:
@@ -2752,8 +2751,8 @@ Debug flags:
 * DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from analysis and stats section
 * DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from analysis and stats section
 
-<a name="SupportedRFCs"></a>
-## RFCs
+<a name="RFCs_main"></a>
+# RFCs
 
 Some of the RFCs supported by pktlib and voplib include:
 
@@ -2768,10 +2767,10 @@ Some of the RFCs supported by pktlib and voplib include:
  
  <sup>1 </sup>In progress, not yet in the SigSRF SDK
 
-<a name="UserDefinedSignalProcessingInsertionPoints"></a>
-## User-Defined Signal Processing Insertion Points
+<a name="UserDefinedSignalProcessingInsertionPoints_main"></a>
+# User-Defined Signal Processing Insertion Points
 
-[Pktlib](#user-content-pktlib) and [streamlib](#user-content-streamlib) source codes in the SigSRF SDK include "user-defined code insert points" for signal processing and other algorithms to process media data, either or both (i) after extraction from ordered payloads and/or decoding, and (ii) after [stream group](#user-content-streamgroups) processing. For these two (2) locations, the specific source codes are:
+[Pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main) source codes in the SigSRF SDK include "user-defined code insert points" for signal processing and other algorithms to process media data, either or both (i) after extraction from ordered payloads and/or decoding, and (ii) after [stream group](#user-content-streamgroups) processing. For these two (2) locations, the specific source codes are:
 
 > 1) In packet/media thread processing, after decoding, but prior to sampling rate conversion and encoding, inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>
 > 
@@ -2783,8 +2782,8 @@ Examples of possible user-defined processing include advanced speech and sound r
 
 In addition to the above mentioned In SigSRF source codes, look also for the APIs DSSaveStreamData(), which saves ordered / extracted / decoded payload data, and DSGetStreamData(), which retrieves payload data. These APIs allow user-defined algorithms to control buffer timing between endpoints, depending on application objectives -- minimizing latency (real-time applications), maximizing bandwidth, matching or transrating endpoint timing, or otherwise as needed.
 
-<a name="APIUsage"></a>
-## API Usage
+<a name="APIUsage_main"></a>
+# API Usage
 
 Below is source code example showing a basic packet processing loop with push/pull APIs.  PushPackets() accepts both IP/UDP/RTP packets and TCP/IP [encapsulated streams](#user-content-encapsulatedstreams), for example HI3 intercept streams.
 
@@ -2821,11 +2820,8 @@ do {
 
    } while (!ProcessKeys(hSessions, cur_time, &dbg_cfg, thread_index));  /* handle user input or other loop control */
 ```
-<a name="Notes"></a>
-## Notes
-
-<a name="CodecNotes"></a>
-## SigSRF Codec Notes
+<a name="SigSRFCodecs_main"></a>
+# SigSRF Codecs
 
 [SigSRF codecs](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) are designed for concurrent, high capacity operation and implemented as Linux shared libs. These libs are:
 
@@ -2837,10 +2833,10 @@ do {
 
 XDAIS compliance allows SigSRF codecs to be implemented on coCPU targets with minimal code porting issues. In fact, several SigSRF codecs were first implemented on Texas Instruments multicore CPU devices. When TI failed to recognize the fundamental industry shift in CPU design towards AI and deep learning and <a href="https://www.linkedin.com/pulse/dsps-dead-jeff-brower/">prematurely purged their DSP core competence and expertise</a>, those codecs were then "back ported" to x86 with minimum hassle and high performance. Going forward, other vendors such as ARM clearly recognize the importance of adding low-power, small package size, high performance C code compatible cores to servers, and coCPU architecture considerations will continue to gain in importance.
 
-Application interface to SigSRF codecs is through [voplib](#user-content-voplib), which provides a generic [API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-apiinterface) for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
+Application interface to SigSRF codecs is through [voplib](#user-content-voplib_main), which provides a generic [API interface](https://github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-apiinterface) for media encoding and decoding, including DSCodecCreate(), DSCodecEncode(), DSCodecDecode(), and DSCodecDelete() APIs (see the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/voplib.h" target="_blank">voplib.h header file</a>). In SigSRF source code, these APIs are used by:
 
 1) mediaTest reference application (look for mediaTest_proc() in [apps/mediaTest/mediaTest_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/mediaTest_proc.c))
-2) packet/media thread processing ([packet_flow_media_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)), invoked indirectly by the [mediaMin reference application](#user-content-mediamin), via the [pktlib](#user-content-pktlib) shared lib
+2) packet/media thread processing ([packet_flow_media_proc.c](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c)), invoked indirectly by the [mediaMin reference application](#user-content-mediamin), via the [pktlib](#user-content-pktlib_main) shared lib
 
 The codec readme page has a [software architecture diagram](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md#user-content-codecsoftwarearchitecturediagram) that shows the relationship between reference applications, voplib, and codecs.
 
@@ -2880,11 +2876,11 @@ mediaTest -cx86 -iEVS_pcap_extracted1.cod -omediaTest_decoded_audio1.wav
 mediaTest -cx86 -iEVS_pcap_extracted2.cod -omediaTest_decoded_audio2.wav
 ```
 
-<a name="WiresharkNotes"></a>
-## Wireshark Notes
+<a name="Wireshark_main"></a>
+# Wireshark
 
 <a name="AnalyzingPacketMediaWireshark"></a>
-### Analyzing Packet Media in Wireshark
+## Analyzing Packet Media in Wireshark
 
 *Note -- comments in this section apply to packet audio, and not to wav file outputs generated by mediaMin and mediaTest. See [Audio Quality Notes](#user-content-audioqualitynotes) below for additional wav file discussion.*
 
@@ -2918,7 +2914,7 @@ As a quick reference, basic procedures for analyzing and playing packet audio fr
     For more detailed information on packet audio analysis and timing, see [Audio Quality Notes](#user-content-audioqualitynotes) and [Real-Time Performance](#user-content-realtimeperformance) below.
 
 <a name="SavingAudioWireshark"></a>
-### Saving Audio to File in Wireshark
+## Saving Audio to File in Wireshark
 
 The procedure for saving audio to file from G711 encoded pcaps is similar to playing audio as noted above. Here are additional instructions to save audio data to .au file format, and then use the Linux "sox" program to convert to .wav format.  Note that it's also possible to save to .raw file format (no file header), but that is not covered here.
 
@@ -2943,7 +2939,7 @@ The procedure for saving audio to file from G711 encoded pcaps is similar to pla
 
     *Note: the above instructions apply to Wireshark version 2.2.6.*
 
-<a name="CommandLineQuick-Reference"></a>
+<a name="CommandLineQuick-Reference_main"></a>
 # Command Line Quick-Reference
 
 The command line quick-reference section covers all reference apps, followed by (i) a [section specific to mediaMin](#user-content-mediamincommandlinequick-reference) and (ii) a [section specific to mediaTest](#user-content-mediatestcommandlinequick-reference). Below are general command line notes, arguments, and options that apply to all reference apps, including mediaMin, mediaTest, and hello_codec:
@@ -3095,7 +3091,7 @@ The -dN command line argument specifies options and flags. Here are some of the 
 <a name="RealTimeInterval"></a>
 #### Real-Time Interval
 
-The -rN command line argument specifies a "real-time interval" that mediaMin uses for a target packet push rate and [pktlib](#user-content-pktlib) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec RTP ptime (packet interval). Additional notes:
+The -rN command line argument specifies a "real-time interval" that mediaMin uses for a target packet push rate and [pktlib](#user-content-pktlib_main) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec RTP ptime (packet interval). Additional notes:
 
 > * -r0 specifies no intervals, or "as fast as possible" (AFAP) mode, where mediaMin will push and process packets as fast as possible without regard to media domain processing that require a nominal timing reference, such as stream alignment<br/>
 > * no entry is the same as -r0<br/>
@@ -3131,7 +3127,7 @@ Here is an explanation of each flag in the above example command line:
 The -lN (lower case L) command line argument specifies RTP packet de-duplication lookback depth. No entry sets N to 1, the default for compliance with RFC7198 temporal duplication. Additional notes:
 
 > * -l0 disables packet de-duplication<br/>
-> * -lN entry of N > 1 instructs [pktlib](#user-content-pktlib) to look further back in packet flow for "non-consecutive" duplicate RTP packets. N can be specified up to 8<br/>
+> * -lN entry of N > 1 instructs [pktlib](#user-content-pktlib_main) to look further back in packet flow for "non-consecutive" duplicate RTP packets. N can be specified up to 8<br/>
 
 mediaMin warning sequences like this:
 	
@@ -3164,10 +3160,10 @@ The -pN command line argument specifies a UDP port to add to the "port allow lis
 
 The -dN command line argument INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) includes input pauses as silence in stream group and individual (mono) wav outputs. This applies when input of one or more streams in the group pauses, for example call-on-hold, packet push pause, etc. Input pauses are always accurately reflected in stream group RTP streaming output, but for wav output it's an option as pauses can become very large and increase file storage requirements. Notes:
 
-> * an "input pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps (i.e. missing sequence numbers) are handled by [pktlib](#user-content-pktlib) (packet repair, jitter buffer resync, etc) prior to [streamlib](#user-content-streamlib) processing. Lost packet gaps that can't be repaired by pktlib are handled in streamlib by FLC (Frame Loss Compensation), but only up to a limit (nominally around 180 msec)
+> * an "input pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps (i.e. missing sequence numbers) are handled by [pktlib](#user-content-pktlib_main) (packet repair, jitter buffer resync, etc) prior to [streamlib](#user-content-streamlib_main) processing. Lost packet gaps that can't be repaired by pktlib are handled in streamlib by FLC (Frame Loss Compensation), but only up to a limit (nominally around 180 msec)
 > * silence zeros are written to wav output only when input resumes. In other words, silence is not added to an input that has stopped permanently
 > * the INCLUDE_PAUSES_IN_WAV_OUTPUT flag has no affect on real-time output RTP streaming. Live output RTP streaming pauses for the duration of large pauses
-> * for large input pauses exceeding FLC limits, [streamlib](#user-content-streamlib) keeps track of pause size/duration, resuming merged outputs, live streaming output, and individual mono wav outputs (if enabled), always accurately reflecting input stream timing
+> * for large input pauses exceeding FLC limits, [streamlib](#user-content-streamlib_main) keeps track of pause size/duration, resuming merged outputs, live streaming output, and individual mono wav outputs (if enabled), always accurately reflecting input stream timing
 
 ### Reproducibility
 
@@ -3218,7 +3214,7 @@ If -g is not entered, then wav files are generated on the mediaMin app subfolder
 
 #### FLC Holdoff Enable
 
-The -dN command line argument ENABLE_FLC_HOLDOFFS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) will enable FLC Holdoffs, which make the FLC (Frame Loss Compensation] algorithm in [streamlib](#user-content-streamlib) less conservative and may slightly improve audio quality in some cases.  Normally the FLC algorithm acts immediately on any indication of late or missing audio output, with objectives (i) maintain continuous live streaming output and (ii) spread out any media impairments over a wide range of frames.
+The -dN command line argument ENABLE_FLC_HOLDOFFS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) will enable FLC Holdoffs, which make the FLC (Frame Loss Compensation] algorithm in [streamlib](#user-content-streamlib_main) less conservative and may slightly improve audio quality in some cases.  Normally the FLC algorithm acts immediately on any indication of late or missing audio output, with objectives (i) maintain continuous live streaming output and (ii) spread out any media impairments over a wide range of frames.
 
 When FLC Holdoffs are enabled streamlib will defer (hold off) action when it detects a marginally late frame in live real-time streaming output. This may or may not be effective, as there is no way to tell if at some point "down the line" frame gaps will get worse and the prior holdoff will cause either (i) a slight discontinuity between two (2) output frames or (ii) two (2) consecutive frames to need repair.
 
