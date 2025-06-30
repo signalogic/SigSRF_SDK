@@ -181,7 +181,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 <a name="toc"></a>
 # Table of Contents
 
-## [***mediaMin&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.***](#user-content-mediamin)
+## [***mediaMin***](#user-content-mediamin_main)
 
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
@@ -310,7 +310,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[mediaTest Command Line Quick-Reference](#user-content-mediatestcommandlinequick-reference)<br/>
 &nbsp;&nbsp;&nbsp;[mediaMin Run-Time Key Commands](#user-content-mediaminruntimekeycommands)<br/>
 
-<a name="mediaMin"></a>
+<a name="mediaMin_Main"></a>
 # mediaMin
 
 The mediaMin reference application runs optimized, high-capacity media packet streaming on x86 servers <sup>[1]</sup> used in bare-metal, VM, or container platforms. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams, with packet handling, DTX, media decoding, stream group processing, and event and packet logging and statistics.
