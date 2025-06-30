@@ -181,7 +181,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 <a name="toc"></a>
 # Table of Contents
 
-## [mediaMin](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#mediamin)
+## **_mediaMin_**
 
 &nbsp;&nbsp;&nbsp;**[Real-Time Streaming and Packet Flow](#user-content-realtimestreaming)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
