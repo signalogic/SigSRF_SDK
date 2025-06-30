@@ -332,7 +332,7 @@ mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreatio
 
 SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
 
-Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#JitterBuffer)).
+Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](#user-content-jitterbuffer)).
 
 User-defined media processing can be inserted into packet/media data flow in two (2) places:
 
@@ -1880,7 +1880,7 @@ mediaTest -M4 -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps
 
 Simple mediaTest command lines can be used to convert pcaps containing one RTP stream to wav file, playout over USB audio, or both. This functionality is intended for testing codec functionality, audio quality, etc.
 
-To convert pcaps containing multiple RTP streams with different codecs to wav files, see [Dynamic Sessions](https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-dynamicsessioncreation) above, which includes mediaMin examples of dynamic session creation.  mediaMin generates wav files for each stream and also a "merged" stream wav file that combines all input streams. mediaMin uses pktlib packet processing APIs that handle jitter, packet loss/repair, child channels (RFC8108), etc, including very high amounts of packet ooo (out of order). Also mediaMin allows .sdp file input to override codec auto-detection and/or give specific streams to decode while ignoring others.
+To convert pcaps containing multiple RTP streams with different codecs to wav files, see [Dynamic Sessions](#user-content-dynamicsessioncreation) above, which includes mediaMin examples of dynamic session creation.  mediaMin generates wav files for each stream and also a "merged" stream wav file that combines all input streams. mediaMin uses pktlib packet processing APIs that handle jitter, packet loss/repair, child channels (RFC8108), etc, including very high amounts of packet ooo (out of order). Also mediaMin allows .sdp file input to override codec auto-detection and/or give specific streams to decode while ignoring others.
 
 <a name="EVSPlayer"></a>
 ### EVS Player
@@ -2064,7 +2064,7 @@ Upon completion, hello_codec saves output in file codec_output_test.wav for conv
 
 Pktlib is a SigSRF library module providing high-capacity media/packet worker threads, analytics and telecom operating modes, jitter buffer, DTX (discontinuous transmission) and variable ptime handling, packet re-ordering and repair (both SID and media packets), packet formatting, and packet tracing and stats collection. Pktlib also interfaces to voplib for media decoding and encoding, and to streamlib for [stream group](#user-content-streamgroups) processing.
 
-The [pktlib readme page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md) documents the [pktlib API interface](https://www.github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md#user-content-apiinterface).
+The [pktlib documentation page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md) documents the [pktlib API interface](https://www.github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md#user-content-apiinterface).
 
 <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">Source code for packet/media threads</a> is available for reference and application purposes. This source
 
@@ -2463,11 +2463,11 @@ Below is an example event log.
 00:00:01.356.545 mediaMin INFO: Deleting 1 session [index] hSession/flush state [0] 0/3 
 00:00:01.356.598 INFO: Marking session 0 for deletion 
         :
-        :  run-time stats edited out, see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-runtimestats">Run-Time Stats</a> above
+        :  run-time stats edited out, see [Run-Time Stats](#user-content-runtimestats) above
         :
 00:00:01.357.337 INFO: Deleting session 0 
 00:00:01.357.403 INFO: DSDeleteSession() deleted group "", owner session = 0
-00:00:01.357.566 INFO: purged 0 packets from jitter buffer for ch n deletion  (repeated for N <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-channels">channels</a>)
+00:00:01.357.566 INFO: purged 0 packets from jitter buffer for ch n deletion  (repeated for N [channels](#user-content-channels))
 00:00:01.360.665 INFO: Deleted session 0
 00:00:01.360.857 INFO: master p/m thread says writing input and jitter buffer output packet stats to packet log file EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt, streams found for all sessions = 3 (collate streams enabled), total input pkts = 1814, total jb pkts = 2162... 
 00:00:01.379.205 INFO: DSPktStatsWriteLogFile() says 3 input SSRC streams with 1814 total packets and 3 output SSRC streams with 2162 total packets logged in 17.9 msec, now analyzing...
