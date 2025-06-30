@@ -7,6 +7,7 @@ Modified JHB May 2025, images are using https://raw.githubusercontent.com/signal
   -for some time during 2Q25 the github.com method hung up completely and would not display the image (see https://github.com/orgs/community/discussions/158744 and https://stackoverflow.com/questions/79618921/github-markdown-after-clicking-a-same-page-link-clicking-images-no-longer-works) 
 
 Modified JHB Jun 2025, update command line documentation, add pktlib info on pcap/pcapng support, fragmentation
+Modified JHB Jun 2025, add "_main" suffix to level 1 header link targets, to differentiate ToC and main text links (e.g. mediaMin and mediaMin_main). Otherwise the Github markdown processor only sees the first link
 -->
 
 # mediaMin and mediaTest Reference Apps
@@ -329,7 +330,7 @@ mediaMin supports [dynamic session creation](#user-content-dynamicsessioncreatio
 <a name="RealTimeStreaming"></a>
 ## Real-Time Streaming and Packet Flow
 
-SigSRF software processes streams from/to network sockets or pcap files, applying required RFCs, media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
+SigSRF software processes streams from/to network sockets or pcap files, applying required [RFCs](#user-content-rfcs_main), media options, and encoding, decoding, or transcoding in real-time (or at a specified rate). Multiple concurrent streams with arbitrary endpoints, RFCs, and media processing requirements are handled and all processing is multithreaded and designed to be scaled up to high capacity, or scaled down to IoT or Edge embedded targets (see [SigSRF Overview](https://github.com/signalogic/SigSRF_SDK#Overview)).
 
 Buffering ("backpressure" in data analytics terminology) is handled using an advanced jitter buffer with several user-controllable options (see [Jitter Buffer](#user-content-jitterbuffer)).
 
@@ -2750,6 +2751,8 @@ Debug flags:
 
 * DS_PKTSTATS_LOG_LIST_ALL_INPUT_PKTS, list all current buffer input entries separately from analysis and stats section
 * DS_PKTSTATS_LOG_LIST_ALL_OUTPUT_PKTS, list all current buffer output entries separately from analysis and stats section
+
+&nbsp;
 
 <a name="RFCs_main"></a>
 # RFCs
