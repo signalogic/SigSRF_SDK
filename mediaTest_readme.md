@@ -181,7 +181,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 <a name="toc"></a>
 # Table of Contents
 
-[***mediaMin***](#user-content-mediamin)<br/>
+[**_mediaMin_**](#user-content-mediamin)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
@@ -231,7 +231,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**RTP Malware Detection**](#user-content-rtpmalwaredetection)<br/>
 
-[***mediaTest***](#user-content-mediatest)<br/>
+[**_mediaTest_**](#user-content-mediatest)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Codec + Audio Mode**](#user-content-codecaudiomode)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x86 Codec Test & Measurement](#user-content-codectestmeasurement)<br/>
@@ -257,7 +257,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**mediaTest Notes**](#user-content-mediatestnotes)<br/>
 &nbsp;&nbsp;&nbsp;[**hello codec**](#user-content-hellocodec)<br/>
 
-[***pktlib***](#user-content-pktlib)<br/>
+[**_pktlib_**](#user-content-pktlib)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandlingpktlib)<br/>
@@ -270,7 +270,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**.rtp and .rtpdump File Support**](#user-content-rtpfilesupport)<br/>
 &nbsp;&nbsp;&nbsp;[**Fragmentation Support**](#user-content-fragmentationsupport)<br/>
 
-[***streamlib***](#user-content-streamlib)<br/>
+[**_streamlib_**](#user-content-streamlib)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Stream Groups**](#user-content-streamgroups)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Packet Output](#user-content-realtimepacketoutput)<br/>
