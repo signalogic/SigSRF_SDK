@@ -181,7 +181,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 <a name="toc"></a>
 # Table of Contents
 
-## [**mediaMin**](#user-content-mediamin)<br/>
+## [mediaMin](#user-content-mediamin)<br/>
 
 &nbsp;&nbsp;&nbsp;**[Real-Time Streaming and Packet Flow](#user-content-realtimestreaming)**<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
