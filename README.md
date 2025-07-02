@@ -112,7 +112,7 @@ Telecom mode is defined as direct handling of IP/UDP/RTP traffic.  This mode is 
 
 Analytics mode is defined as indirect handling of IP/UDP/RTP traffic, where traffic is encapsulated or "one step removed", having been captured, copied, or relayed from direct traffic for additional processing.  This mode is sometimes also referred to as data driven or “clockless” mode, the latter description referring to jitter buffer packet processing either wholly or partially without a wall clock reference.  In general, analytics mode applications operate after real-time traffic has already occurred, although it may be incorrect to say "non-real-time" as they may need to reproduce or emulate the original real-time behavior.  Examples of analytics mode include Lawful Intercept (LI) and web IT data analytics such as speaker identification and automatic speech recognition (ASR).
 
-Applications include user-defined apps and the mediaMin and mediaTest reference apps described on the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin / mediaTest page</a>.
+Applications include user-defined apps and the mediaMin and mediaTest reference apps described on the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md" target="_blank">mediaMin and mediaTest page</a>.
 
 <a name="AnalyticsModeDataFlowDiagram"></a>
 ### Analytics Mode Data Flow Diagram
@@ -133,6 +133,7 @@ Some notes about the above example:
 > 1. PushPackets() and PullPackets() call [pktlib](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-pktlib) APIs DSPushPackets() and DSPullPackets()
 > 2. Sessions are created dynamically inside PushPackets()
 > 3. PullPackets() saves (i) de-jittered and repaired packet streams and (ii) transcoded streams to local pcap files, and writes continuous merged audio to pcap or UDP port
+> 4. mediaMin source code is located on the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/mediaMin">apps/mediaMin folder</a>
 
 <a name="StreamGroups"></a>
 ## Stream Groups
@@ -198,17 +199,17 @@ In addition to customer production testing, stress tests are always ongoing in S
 <a name="LiveStreaming"></a>
 ### Live Streaming
 
-The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) generates live streaming output, including real-time RTP audio, wav file output, and video elementary bitstream. RTP audio can be directed to a UDP port or pcap file. wav files include individual input streams, merged streams, and N-channel wav file.
+The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin_main) generates live streaming output, including real-time RTP audio, wav file output, and video elementary bitstream. RTP audio can be directed to a UDP port or pcap file. wav files include individual input streams, merged streams, and N-channel wav file.
 
 <a name="AcceleratedModeBulkPcapProcessing"></a>
 ### Accelerated Mode (Bulk Pcap Processing)
 
-The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) includes a "faster than real-time" accelerated processing mode, which supports [bulk pcap processing](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-bulkpcaphandling). Depending on CPU type and clock rate, processing can be typically be accelerated between 20 and 50 times.
+The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin_main) includes a "faster than real-time" accelerated processing mode, which supports [bulk pcap processing](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-bulkpcaphandling). Depending on CPU type and clock rate, processing can be typically be accelerated between 20 and 50 times.
 
 <a name="Reproducibility"></a>
 ### Reproducibility
 
-The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin) includes a timestamp matching option that relies on [Analytics Mode](#user-content-analyticsmode), with no references to wall clocks, to generate bit-exact repeatable RTP audio, wav output, and video bitstream, independent of other parameters (such as accelerated processing mode). This can be useful for call recording applications. The [reproducibility section](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-reproducibility) on the mediaMin page has a detailed discussion of this option. 
+The [mediaMin reference app](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-mediamin_main) includes a timestamp matching option that relies on [Analytics Mode](#user-content-analyticsmode), with no references to wall clocks, to generate bit-exact repeatable RTP audio, wav output, and video bitstream, independent of other parameters (such as accelerated processing mode). This can be useful for call recording applications. The [reproducibility section](https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md#user-content-reproducibility) on the mediaMin page has a detailed discussion of this option. 
 
 <a name="SoftwareArchitectureDiagram"></a>
 ## SigSRF Software and I/O Architecture Diagram
@@ -220,9 +221,9 @@ Below is a SigSRF software and I/O architecture diagram.
 <a name="PacketMediaThreadDataFlowDiagram"></a>
 ## SigSRF Packet and Media Processing Data Flow Diagram
 
-Below is a SigSRF software streaming packet and media processing data flow diagram.  This is an expansion of the telecom mode and analytics mode data flow diagrams above, including shared library APIs used within a packet/media thread.
+Below is a SigSRF software streaming packet and media processing data flow diagram. This is an expansion of the telecom mode and analytics mode data flow diagrams above, including shared library APIs used within a packet/media thread.
 
-In addition to the APIs referenced below, SigSRF offers a simplified set of APIs that minimize user applications to session create/delete and packet push/pull.  mediaMin and mediaTest are the reference applications for the minimum API level and more detailed level, respectively.  Source code is published for both.
+In addition to the APIs referenced below, SigSRF offers a simplified set of APIs that minimize user applications to session create/delete and packet push/pull. mediaMin and mediaTest are the reference applications for the minimum API level and more detailed level, respectively.  Source code is published for both.
 
 ![SigSRF streaming packet and media processing data flow diagram](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/Streaming_packet_and_media_processing_data_flow_RevA4.png "SigSRF streaming packet and media processing data flow diagram")
 
