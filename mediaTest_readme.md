@@ -1552,7 +1552,7 @@ Audio output can be raw audio file, .wav, .au, or USB audio.
 
 For AMR coded data, it's recommended to stick with file extensions .amr and .awb. Other extensions, such as .cod (used with EVS codecs) might work for AMR command lines, as mediaTest knows the codec type due to the codec configuration file, but are not supported at this time. Theoretically .wav files can support coded data types also, although not widely used. There is some functionality supporting coded data .wav files in mediaTest; if you need that and find it's not working correctly, please create an issue on the SigSRF_SDK repository.
 
-<a name="mediaTest_melpe"></a>
+<a name="mediaTest_MELPe"></a>
 <a name="CodecMELPe"></a>
 #### MELPe
 
