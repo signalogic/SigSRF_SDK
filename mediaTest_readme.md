@@ -678,7 +678,7 @@ The resulting sample_capture_test.h264 file can be played in SMPlayer, and shoul
 
 ![SMPlayer playback of mediaMin H.264 RTP extraction output](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/SMPlayer_playback_of_H264_mediamin_output.png "SMPlayer playback of mediaMin H.264 RTP extraction output")
 
-In the above screen cap SMPlayer is displaying the "Information" tab of its "Information and Properties" dialog, which shows the codec format as "H264", resolution 640x480, and frame rate 25 fps. SMPlayer is used here as .h264 bitstream files cannot be displayed in v3 VLC (this appears to be is fixed in v4 VLC).
+In the above screen cap SMPlayer is displaying the "Information" tab of its "Information and Properties" dialog, which shows the codec format as "H264", resolution 640x480, and frame rate 25 fps. SMPlayer is used here as .h264 bitstream files cannot be displayed in v3 VLC (this appears to be fixed in v4 VLC).
 
 Below is a mediMin command line example that extracts H.264 elementary bitstreams from two (2) RTP streams in another [H.264 pcap online sample](https://gitlab.com/-/project/7898047/uploads/635e0cd5d6db6b8a3a303f5e1c20b9dd/h264-fua.pcap):
 
@@ -688,7 +688,7 @@ The resulting sample_capture_test2.h264 and sample_capture_test3.h264 files can 
 
 ![SMPlayer playback of mediaMin H.264 dual stream RTP extraction output](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/SMPlayer_playback_of_H264_mediaMin_output_color_wave_pattern.png "SMPlayer playback of mediaMin H.264 dual stream RTP extraction output")
 
-SMPlayer is used here as .h264 bitstream files cannot be displayed in v3 VLC (this appears to be is fixed in v4 VLC).
+SMPlayer is used here as .h264 bitstream files cannot be displayed in v3 VLC (this appears to be fixed in v4 VLC).
 
 <a name="InBandOutofBandParameterSets"></a>
 ##### Inband vs Out-of-Band Parameter Sets
