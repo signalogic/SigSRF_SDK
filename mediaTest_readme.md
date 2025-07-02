@@ -512,6 +512,10 @@ pktlib also detects and auto-corrects:
 > * Link Layer length for Null/Loopback protocols
 > * TCP Segmentation Offload (TSO/LSO) zero lengths
 
+Below is a screen cap showing a pktlib info message indicating a TSO zero length fix:
+
+![pktlib TSO zero length fix info message screencap](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/pktlb_TSO_packet_info_msg_screencap.png "pktlib TSO zero length fix info message")
+
 <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_pcap.cpp">pktlib_pcap.cpp</a> contains source code for .pcap and .pcapng file support.
 
 <a name="RTPFileSupport"></a>
