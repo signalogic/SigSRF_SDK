@@ -259,7 +259,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 ## [***pktlib***](#user-content-pktlib_main)
 
-&nbsp;&nbsp;&nbsp;[**DTX Handling**](#user-content-dtxhandlingpktlib)<br/>
+&nbsp;&nbsp;&nbsp;[**DTX Handling**](#user-content-dtxhandling)<br/>
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandlingpktlib)<br/>
 &nbsp;&nbsp;&nbsp;[**Jitter Buffer**](#user-content-jitterbuffer)<br/>
@@ -401,6 +401,8 @@ The default RFC7198 packet duplication "lookback" depth is one (1) packet. By sp
 <a name="JitterBufferControl"></a>
 ### Jitter Buffer Control
 
+By default mediaMin instructs [pktlib](#user-content-pktlib_main) packet/media worker threads to apply dynamic packet re-ordering and repair.
+
 See [Jitter Buffer](#user-content-jitterbuffer) below for information on underlying jitter buffer operation and functionality.
 
 The [-jN command line argument](#user-content-commandlinejitterbufferdepth) can be used to control jitter buffer target and maximum depths.
@@ -408,7 +410,7 @@ The [-jN command line argument](#user-content-commandlinejitterbufferdepth) can 
 <a name="DTMFHandlingmediaMin"></a>
 ### DTMF / RTP Event Handling
 
-mediaMin is aware of RTP Event packet groups and instructs [pktlib](#user-content-pktlib_main) to apply standard packet re-ordering and repair as needed. Below are command lines that demonstrate DTMF RTP event handling using pcaps included in the Rar Packages and Docker containers:
+By default mediaMin instructs [pktlib](#user-content-pktlib_main) packet/media worker threads to enable RTP Event packet handling as needed. Below are command lines that demonstrate DTMF RTP event handling using pcaps included in the Rar Packages and Docker containers:
 
     mediaMin -cx86 -i../pcaps/dtmf_rtp_event_multiple_groups.pcapng -L -d0x00c11 -j0x2018 -r20
 
@@ -2121,13 +2123,13 @@ Note however that 240 msec is a very large ptime more suited to unidirectional m
 <a name ="DTMFHandlingPktlib"></a>
 ## DTMF Handling
 
-DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the Pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  Complete DTMF handling examples are shown in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>.
+DTMF event handling can be enabled/disabled on per session basis, and is enabled by default (see comments in the above session config file example).  When enabled, DTMF events are interpreted by the pktlib DSGetOrderedPackets() API according to the format specified in RFC 4733.  Applications can look at the "packet info" returned for each packet and determine if a DTMF event packet is available, and if so call the DSGetDTMFInfo() API to learn the event ID, duration, and volume.  Complete DTMF handling examples are shown in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c" target="_blank">packet/media thread source code</a>.
 
 mediaMin command line examples that process pcaps containing DTMF RTP event packets are given in [DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin) above.
 
 Packet log file examples showing incoming DTMF event packets and how they are translated to buffer output packets are included both in [DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin) above and [Packet Log](#user-content-packetlog_main) below.
 
-DTMF handling is enabled by default and DTMF events are fully automated in pktlib packet/media worker threads; user applications do not need to call APIs or make any other intervention.
+DTMF handling is enabled by default and DTMF RTP event groups are fully automated in pktlib packet/media worker threads; user applications do not need to call APIs or make any other intervention.
 
 <a name="JitterBuffer"></a>
 ## Jitter Buffer
