@@ -505,7 +505,7 @@ In addition to the above Link Layer types, pktlib supports the following Pcapng 
 > * IDB, NRB, statistics, and other known block types
 > * custom (unknown) block types
 
-pktlib reads and parses these block types but does not otherwise interpreted or act on their data. Below is a screencap showing interface statistics blocks (ISB) info messages:
+pktlib reads and parses these block types but does not otherwise interpret or act on their data. Below is a screencap showing interface statistics blocks (ISB) info messages:
 
 ![pktlib interface statistics block info message screencap](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/pktlib_statistics_block_info_msg_screencap.png "pktlib interface statistics block info messages")
 
