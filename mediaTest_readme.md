@@ -253,13 +253,13 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Converting Wav to Pcaps](#user-content-convertingwav2pcaps)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[EVS Pcap Generation](#user-content-evspcapgenerator)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[AMR Pcap Generation](#user-content-amrpcapgenerator)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTX Handling](#user-content-dtxhandling)<br/>
 
 &nbsp;&nbsp;&nbsp;[**mediaTest Notes**](#user-content-mediatestnotes)<br/>
 &nbsp;&nbsp;&nbsp;[**hello codec**](#user-content-hellocodec)<br/>
 
 ## [***pktlib***](#user-content-pktlib_main)
 
+&nbsp;&nbsp;&nbsp;[**DTX Handling**](#user-content-dtxhandlingpktlib)<br/>
 &nbsp;&nbsp;&nbsp;[**Variable Ptimes**](#user-content-variableptimes)<br/>
 &nbsp;&nbsp;&nbsp;[**DTMF Handling**](#user-content-dtmfhandlingpktlib)<br/>
 &nbsp;&nbsp;&nbsp;[**Jitter Buffer**](#user-content-jitterbuffer)<br/>
@@ -1870,7 +1870,7 @@ Note that EVS -- unlike older codecs that rely only on a vocal tract model -- is
 <a name="FrameMode"></a>
 ## Frame Mode
 
-Frame mode performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  [voplib](#user-content-voplib_main) APIs in mediaTest source code examples include codec instance creation, encode, and decode.  The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
+Frame mode performs encode, decode, or transcoding based on specifications in a "configuration file" given in the command line (see notes below).  [voplib](#user-content-voplib_main) APIs in mediaTest source code examples include codec instance creation, encode, and decode. The main objectives are to check for bit-exact results, measure audio quality, and measure basic transcoding performance, including sampling rate conversion.  The following examples use the EVS codec. 
 
     mediaTest -cx86 -M4 -Csession_config/frame_test_config -L
 
@@ -1926,7 +1926,7 @@ Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measu
 
 ### Session Configuration File
 
-Unlike mediaMin, mediaTest always expects a session configuration file in its command line, using the [-Cconfig_file_path command line argument](#user-content-commandlineconfigfile). Session config files require remote and local IP address and port info that matches pcap contents. Depending on the application, this may be inconvenient but gives control over low-level session information. Click here
+Unlike mediaMin, mediaTest does not [perform dynamic session creation](#user-content-dynamicsessioncreation) and expects a session configuration file with remote and local IP address and port info that matches pcap contents, specified on the command line with the [-Cconfig_file_path command line argument](#user-content-commandlineconfigfile).
 
 <details>
 <summary>Example Session Config File</summary>
