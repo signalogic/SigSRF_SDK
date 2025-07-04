@@ -505,7 +505,9 @@ In addition to the above Link Layer types, pktlib supports the following Pcapng 
 > * IDB, NRB, statistics, and other known block types
 > * custom (unknown) block types
 
-These block types are reported but otherwise not interpreted or acted on.
+pktlib reads and parses these block types but does not otherwise interpreted or act on their data. Below is a screencap showing interface statistics blocks (ISB) info messages:
+
+![pktlib interface statistics block info message screencap](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/pktlib_statistics_block_info_msg_screencap.png "pktlib interface statistics block info messages")
 
 pktlib also detects and auto-corrects:
 
@@ -514,7 +516,7 @@ pktlib also detects and auto-corrects:
 
 pktlib will report TSO zero length fixes if the DS_READ_PCAP_REPORT_TSO_LENGTH_FIX flag is set in the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/pktlib_readme.md#user-content-dsreadpcap">DSReadPcap() API</a>, as shown in the screen cap below:
 
-![pktlib TSO zero length fix info message screencap](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/pktlb_TSO_packet_info_msg_screencap.png "pktlib TSO zero length fix info message")
+![pktlib TSO zero length fix info message screencap](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/pktlib_TSO_fix_packet_info_msg_screencap.png "pktlib TSO zero length fix info messages")
 
 <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_pcap.cpp">pktlib_pcap.cpp</a> contains source code for .pcap and .pcapng file support.
 
