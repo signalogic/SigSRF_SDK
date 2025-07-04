@@ -2091,7 +2091,7 @@ From this point, the media encoder specified for the session can be used normall
 
 A log file example showing incoming SID packets and buffer output DTX expansion is included in [Packet Log](#user-content-packetlog_main) below.
 
-If DTX handling is enabled with the SigSRF background process, then the user program does not need to call APIs or make any other intervention.
+DTX handling is enabled by default in pktlib packet/media work threads; user applications do not need to call APIs or make any other intervention.
 
 <a name="VariablePtimes"></a>
 ## Variable Ptimes
@@ -2127,7 +2127,7 @@ mediaMin command line examples that process pcaps containing DTMF RTP event pack
 
 Packet log file examples showing incoming DTMF event packets and how they are translated to buffer output packets are included both in [DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin) above and [Packet Log](#user-content-packetlog_main) below.
 
-If DTMF handling is enabled with the SigSRF background process, then DTMF events are fully automated and the user program does not need to call APIs or make any other intervention.
+DTMF handling is enabled by default and DTMF events are fully automated in pktlib packet/media worker threads; user applications do not need to call APIs or make any other intervention.
 
 <a name="JitterBuffer"></a>
 ## Jitter Buffer
