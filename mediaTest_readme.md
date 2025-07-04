@@ -1926,7 +1926,7 @@ Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measu
 
 ### Session Configuration File
 
-Unlike mediaMin, mediaTest does not [perform dynamic session creation](#user-content-dynamicsessioncreation) on input pcap files. Instead mediaTest expects a session configuration file, specified on the command line with the [-Cconfig_file_path command line argument](#user-content-commandlineconfigfile), containing remote and local IP address and port info that match pcap file contents. Click on the small right arrow to see an example session config file for the above EVS Player examples:
+Unlike mediaMin, mediaTest does not perform [dynamic session creation](#user-content-dynamicsessioncreation) on input pcap files. Instead mediaTest expects a session configuration file, specified on the command line with the [-Cconfig_file_path command line argument](#user-content-commandlineconfigfile), containing remote and local IP address and port info that match pcap file contents. Click on the small right arrow to see an example session config file for the above EVS Player examples:
 
 <details>
 <summary>Example Session Config File</summary>
