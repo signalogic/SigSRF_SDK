@@ -30,7 +30,7 @@
 
 &nbsp;&nbsp;&nbsp;[**General Pcap API Flags**](#user-content-generalpcapapiflags)<br/>
 
-[**_Minimum Push/Pull API Interface_**](#user-content-minimumapiinterface)<br/>
+[**_Push/Pull API Interface_**](#user-content-pushpullapiinterface)<br/>
 
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPushPackets**](#user-content-dspushpackets)<br/>
@@ -72,7 +72,7 @@ The pktlib API is large, so here it's divided into the following groups:
 
   * [Packet API Interface](#user-content-packetapiinterface)
   * [Pcap API Interface](#user-content-pcapapiinterface)
-  * [Minimum Push/Pull Interface](#user-content-minimumapiinterface)
+  * [Push/Pull Interface](#user-content-pushpullapiinterface)
 
 <a name="PacketAPIInterface"></a>
 # Packet API Interface
@@ -379,10 +379,12 @@ Following are general definitions and flags used by pktlib APIs.
   #define LINKTYPE_IPV6                               /* Raw IPv6 */
 #endif
 ```
-<a name="MininumAPIInterface"></a>
-# Minimum Push/Pull API Interface
+<a name="PushPullAPIInterface"></a>
+# Push/Pull API Interface
 
-The pktlib minimum API interface supports application level "push" and "pull" to/from packet queues, from which packet/media worker threads receive/send packets for RTP jitter buffer, packet repair, RTP decoding, media domain, and other processing.
+pktlib supports application level "push" and "pull" to/from packet queues, from which packet/media worker threads receive/send packets for RTP jitter buffer, packet repair, RTP decoding, media domain, and other processing.
+
+The DSPushPackets() and DSPullPackets() APIs form a "minimum touch" interface for applications to input packets from application-specific sources (UDP ports, pcap files, etc) foward them for processing, retrieved processed packets, and output as needed.
 
 <a name="GeneralPktlibAPIFlags"</a>
 # General Pktlib API Flags
