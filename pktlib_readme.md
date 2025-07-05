@@ -104,11 +104,11 @@ int DSGetPacketInfo(HSESSION      sessionHandle,
         -a [TERMINATION_INFO](https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h) or [SESSION_DATA struct](https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h) if uFlags includes a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag
   * chnum, if not NULL, will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given in uFlags. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned
 
-_Return Value_
+<ins>Return Value</ins>
 
 The return value is (i) packet item(s) as specified, (ii) PKT_INFO_RETURN_xxx flags if uFlags includes DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx, (iii) packet length for reassembled packets, or (iv) < 0 for an error condition (note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int).
 
-_uFlags Definitions_
+<ins>uFlags Definitions</ins>
 
 ```c++
 #define DS_BUFFER_PKT_IP_PACKET                       /* indicates pkt_buf points to full IP header followed by TCP or UDP packet data */
@@ -223,7 +223,7 @@ int DSOpenPcap(const char*   pcap_file,
 
 On success, DSOpenPcap() reads or writes the file's header(s) and leaves file fp_pcap pointing at the first pcap record.
 
-_Return Value_
+<ins>Return Value</ins>
 
 The return value is a 32-bit int formatted as:<br>
       &nbsp;<br>
@@ -235,7 +235,7 @@ When the DS_OPEN_PCAP_READ flag is given, the full return value should be saved 
 
 A return value < 0 indicates an error.
 
-_uFlags Definitions_
+<ins>uFlags Definitions</ins>
 
 ```c++
 #define DS_OPEN_PCAP_READ                             /* open pcap, pcapng, or rtp/rtpdump file for reading */
@@ -277,11 +277,11 @@ int DSReadPcap(FILE*           fp_pcap,
 
 On success pkt_buf contains packet data from the pcap, pcapng, or rtpXXX file.
 
-_Return Value_
+<ins>Return Value</ins>
 
 The return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition.
 
-_uFlags Definitions_
+<ins>uFlags Definitions</ins>
 
 ```c++
 #define DS_READ_PCAP_COPY                             /* copy pcap record(s) only, don't advance file pointer */
@@ -319,11 +319,11 @@ int DSWritePcap(FILE*           fp_pcap,
   * p_eth_hdr, if supplied, should point to an ethhdr struct (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) containing pcap file header information such as link layer type. NULL indicates not supplied
 
-_Return Value_
+<ins>Return Value</ins>
 
 The return value is the length of the amount of data written (in bytes) or < 0 for an error condition.
 
-_uFlags Definitions_
+<ins>uFlags Definitions</ins>
 
 ```c++
 #define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK         /* use wall clock to set packet record header timestamp (this is the arrival timestamp in Wireshark) */
@@ -343,11 +343,11 @@ int DSClosePcap(FILE*         fp_pcap,
   * fp_pcap is the file handle of the pcap file to close
   * uFlags may be one or more DS_CLOSE_PCAP_XXX flags listed below
 
-_Return Value_
+<ins>Return Value</ins>
 
 The return value is the return value of fclose() (as defined in stdio.h Linux header file) called internally in pktlib.
 
-_uFlags Definitions_
+<ins>uFlags Definitions</ins>
 
 #define DS_CLOSE_PCAP_QUIET DS_OPEN_PCAP_QUIET        /* suppress status and progress messages */
 
