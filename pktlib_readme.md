@@ -11,6 +11,7 @@
 
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSGetPacketInfo**](#user-content-dsgetpacketinfo)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Packet Info Flags**](#user-content-packetinfoflags)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSBufferPackets**](#user-content-dsbufferpackets)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSGetOrderedPackets**](#user-content-dsgetorderedpackets)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFormatPacket**](#user-content-dsformatpacket)<br/>
@@ -27,12 +28,16 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSClosePcap**](#user-content-dsclosepcap)<br/>
 </sup></sub>
 
+&nbsp;&nbsp;&nbsp;[**General Pcap API Flags**](#user-content-GeneralPcapAPIFlags)<br/>
+
 [**_Minimum Push/Pull API Interface_**](#user-content-minimumapiinterface)<br/>
 
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPushPackets**](#user-content-dspushpackets)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPullPackets**](#user-content-dspullpackets)<br/>
 </sup></sub>
+
+&nbsp;&nbsp;&nbsp;[**General Pktlib API Flags**](#user-content-GeneralPktlibAPIFlags)<br/>
 
 &nbsp;&nbsp;&nbsp;[**Structs**](#user-content-structs)<br/>
 
@@ -50,8 +55,6 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**VLAN Header Struct**](#user-content-vlanheaderstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**FORMAT_PKT Struct**](#user-content-formatpktstruct)<br/>
 </sup></sub>
-
-&nbsp;&nbsp;&nbsp;[**General Pktlib API Flags**](#user-content-GeneralPktlibAPIFlags)<br/>
 
 <a name="Overview"></a>
 # Overview
@@ -118,25 +121,35 @@ int DSGetPacketInfo(HSESSION      sessionHandle,  /* additional sessionHandle no
                    );
 ```
 
-<a name="PacketInfoFlags"></a>
-# Packet Info Flags
-
-Below are flags that can be used in the uFlags param of DSGetPacketInfo()
+uFlags Definitions
 
 ```c++
-/* DSGetPacketInfo() index item uFlags definitions */
+#define DS_BUFFER_PKT_IP_PACKET               /* indicates pkt_buf points to full IP header followed by TCP or UDP packet data */
+#define DS_BUFFER_PKT_UDP_PACKET              /* indicates pkt_buf points to a UDP header followed by a UDP payload (for example, a UDP defined protocol such as RTP, GTP, etc) */
+#define DS_BUFFER_PKT_RTP_PACKET              /* incdicates pkt_buf points to an RTP header followed by an RTP payload */
+```
 
-#define DS_PKT_INFO_CODEC                     /* these flags specify struct pointer for pInfo arg, either a TERMINATION_INFO struct or a SESSION_DATA struct */
-#define DS_PKT_INFO_CODEC_LINK
-#define DS_PKT_INFO_SESSION
-#define DS_PKT_INFO_CHNUM
-#define DS_PKT_INFO_CHNUM_PARENT
-#define DS_PKT_INFO_CODEC_TYPE
-#define DS_PKT_INFO_CODEC_TYPE_LINK
+The following flags are "session and stream items"; i.e. they apply to packets that match previously created sessions. As noted above, pInfo is an optional arg that may specify a pointer to a TERMINATION_INFO struct or a SESSION_DATA struct.
+
+```c++
+#define DS_PKT_INFO_CODEC                     /* indicates sessionHandle is a voplib codec handle, previously created by a DSCodecCreate() API call */
+#define DS_PKT_INFO_CODEC_LINK                /* same as DS_PKT_INFO_CODEC, but for the local codec handle in a bidirectional session (DS_PKT_INFO_CODEC is the remote codec handle) */
+#define DS_PKT_INFO_SESSION                   /* indicates sessionHandle is a session handle */
+#define DS_PKT_INFO_CHNUM                     /* indicates sessionHandle is a channel number */
+#define DS_PKT_INFO_CHNUM_PARENT              /* same as DS_PKT_INFO_CHNUM, but if sessionHandle indicates a child channel number its parent channel number will be used */
+#define DS_PKT_INFO_CODEC_TYPE                /* indicates sessionHandle is a codec type */
+#define DS_PKT_INFO_CODEC_TYPE_LINK           /* same as DS_PKT_INFO_CODEC, but for the local codec type in a bidirectional session */
+#define DS_PKT_INFO_PYLD_CONTENT              /* returns a DS_PKT_PYLD_CONTENT_XXX type. If pInfo is not NULL, on return it will point to a PAYLOAD_INFO struct (filled by calling DSGetPayloadInfo() in voplib) */
 
 #define DS_PKT_INFO_INDEX_MASK                /* mask value to isolate above DS_PKT_INFO_xxx index item flags */
+```
 
-/* DSGetPacketInfo() RTP item uFlags definitions */
+<a name="PacketInfoFlags"></a>
+### Packet Info Flags
+
+Below are RTP item flags that can be used in the uFlags param of DSGetPacketInfo().
+
+```c++
 
 #define DS_PKT_INFO_RTP_VERSION
 #define DS_PKT_INFO_RTP_PYLDTYPE
@@ -154,9 +167,11 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo()
 #define DS_PKT_INFO_RTP_ITEM_MASK             /* mask value to isolate above DS_PKT_INFO_RTP_xxx item flags */
 
 #define DS_PKT_INFO_RTP_HEADER                /* returns whole RTP header in void* pInfo arg */
+```
 
-/* DSGetPacketInfo() IP header item uFlags definitions */
+Below are IP header item flags that can be used in the uFlags param of DSGetPacketInfo().
 
+```c++
 #define DS_PKT_INFO_HDRLEN                    /* returns length of IP address headers (valid for IPv4 and IPv6) */
 #define DS_PKT_INFO_PKTLEN                    /* returns total packet length, including IP, UDP, and RTP headers, and payload */
 #define DS_PKT_INFO_SRC_PORT
@@ -169,9 +184,11 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo()
 #define DS_PKT_INFO_DST_ADDR
 
 #define DS_PKT_INFO_ITEM_MASK                 /* mask value to isolate above DS_PKT_INFO_xxx item flags */
+```
 
-/* DSGetPacketInfo() PKTINFO struct related uFlags definitions */
+Below are PKTINFO struct related flags that can be used in the uFlags param of DSGetPacketInfo().
 
+```c++
 #define DS_PKT_INFO_PKTINFO                   /* stores a PKTINFO struct in pInfo (if specified) with a return value of 1 on success, 2 if a fully re-assembled packet is available, and -1 on error condition. This API is intended to minimize packet processing overhead if several packet items are needed. See PKTINFO struct definition above, containing TCP, UDP, and RTP items */
 
 #define DS_PKT_INFO_PKTINFO_EXCLUDE_RTP
@@ -180,9 +197,11 @@ Below are flags that can be used in the uFlags param of DSGetPacketInfo()
 #define DS_PKT_INFO_FRAGMENT_SAVE             /* if packet IP header contains fragmentation info save fragment to pktlib internal fragment list using header's Identification field */
 #define DS_PKT_INFO_FRAGMENT_REMOVE           /* if packet IP header contains fragmentation info remove fragment from pktlib internal list using header's Identification field */
 #define DS_PKT_INFO_REASSEMBLY_GET_PACKET     /* retrieve fully reassembled packet in pInfo and return the reassembled packet's length. This flag should only be specified if a previous call to DSGetPacketInfo() with DS_PKT_INFO_FRAGMENT_SAVE has returned a DS_PKT_INFO_RETURN_XXX value indicating a fully re-assembled packet is available */
+```
 
-/* the following flags are returned by DSGetPacketInfo() when uFlags contains DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags */
+The following flags are returned by DSGetPacketInfo() when uFlags contains DS_PKT_INFO_PKTINFO or DS_PKT_INFO_FRAGMENT_xxx flags.
 
+```c++
 #define DS_PKT_INFO_RETURN_OK                            /* PktInfo struct filled successfully */
 #define DS_PKT_INFO_RETURN_FRAGMENT                      /* packet is a fragment */
 #define DS_PKT_INFO_RETURN_FRAGMENT_SAVED                /* fragment was saved to pktlib internal list */
@@ -223,6 +242,18 @@ int DSOpenPcap(const char*   pcap_file,
   * note - for file read, the full return value should be saved and then supplied as the link_layer_info param in DSReadPcap() and DSFilterPacket()
   * a return value < 0 indicates an error
 
+uFlags Definitions
+
+```c++
+#define DS_OPEN_PCAP_READ                      /* open pcap, pcapng, or rtp/rtpdump file for reading */
+#define DS_OPEN_PCAP_WRITE                     /* open pcap, pcapng, or rtp/rtpdump file for writing. If the path/file does not exist, create */
+#define DS_OPEN_PCAP_DONT_READ_HEADER          /* don't read file header */
+#define DS_OPEN_PCAP_DONT_WRITE_HEADER         /* don't write file header */
+#define DS_OPEN_PCAP_QUIET                     /* suppress status and progress messages */
+#define DS_OPEN_PCAP_RESET                     /* seek to start of pcap file; assumes a valid (already open) file handle supplied to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ */
+#define DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT      /* info returned in pcap_file_hdr will be in pcap (libpcap) file format, even if the file being opened is in pcapng format */
+```
+
 <a name="DSReadPcap"></a>
 ## DSReadPcap
 
@@ -235,18 +266,37 @@ int DSReadPcap(FILE*           fp_pcap,
                pcaprec_hdr_t*  pcap_pkt_hdr,
                int             link_layer_info,
                uint16_t*       p_eth_hdr_type,
-               pcap_hdr_t*     pcap_file_hdr);
+               pcap_hdr_t*     pcap_file_hdr,
+               unsigned int    uPktNumber,
+               const char*     szUserMsgString);
 ```
 
   * fp_pcap is the file handle of the pcap file to read
   * uFlags may be one or more DS_READ_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
   * pkt_buf should point to a sufficiently large buffer to contain returned packet data
-  * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, including arrival timestamp. NULL indicates not supplied
+  * pcap_pkt_hdr, if not NULL, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, including arrival timestamp. NULL indicates not supplied
   * link_layer_info should be supplied from a prior DSOpenPcap() call return value. See DSOpenPcap() comments above
-  * p_eth_hdr_type, if supplied, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
-  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call. NULL indicates not supplied
+  * p_eth_hdr_type, if not NULL, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
+  * pcap_file_hdr, if not NULL, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call. NULL indicates not supplied
+  * uPktNumber, if non-zero, will be included at the end of warning, error, and/or information messages. For messages concerning Interface Description, Interface Statistics, Journal, Decryption, or other block types the text "last transmitted data " is added and uPktNumber-1 is displayed, as these block types do not contain actual transmitted packet data. Applications are expected to keep track of packet numbers, for example to match accurately with Wireshark, even if they perform non-sequential file access
+  * szUserMsgString, if not NULL, should point to a user-defined text string that will be displayed at the end of warning, error, and/or information messages
 
   * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
+
+uFlags Definitions
+
+```c++
+#define DS_READ_PCAP_COPY                                     /* copy pcap record(s) only, don't advance file pointer */
+
+#define DS_READ_PCAP_DISABLE_NULL_LOOPBACK_PROTOCOL   0x0200  /* by default DSReadPcap() looks for packets with "Null/Loopback" link layers produced by Wireshark capture. To disable this behavior the DS_READ_PCAP_DISABLE_NULL_LOOPBACK_PROTOCOL flag can be applied; note however that disabling may cause "malformed packet" warnings */
+
+#define DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX           0x0400  /* by default DSReadPcap() fixes TCP Segment Offload (TSO) packets with "zero length", and sets packet length inside returned packet data to what's in the pcap/pcapng record (typically labeled as "captured" length). Currently this is done only for block types PCAP_PB_TYPE, PCAPNG_EPB_TYPE, and PCAPNG_SPB_TYPE, and for IPv4 TCP packets. Note that Wireshark will label these as "length reported as 0, presumed to be because of TCP segmentation offload (TSO)". To disable this behavior the DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX flag can be applied, although this may cause "malformed packet" warnings */
+
+#define DS_READ_PCAP_REPORT_TSO_LENGTH_FIX            0x0800  /* by default DSReadPcap() does not report TSO packet zero length fixes. The DS_READ_PCAP_REPORT_TSO_LENGTH_FIX flag can be applied if these should be reported with information messages */
+  
+#define DS_READ_PCAP_SUPPRESS_WARNING_ERROR_MSG       DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG
+#define DS_READ_PCAP_SUPPRESS_INFO_MSG                DS_PKTLIB_SUPPRESS_INFO_MSG
+```
 
 <a name="DSWritePcap"></a>
 ## DSWritePcap
@@ -272,6 +322,12 @@ int DSWritePcap(FILE*           fp_pcap,
 
   * return value is the length of the amount of data written (in bytes) or < 0 for an error condition
 
+uFlags Definitions
+
+```c++
+#define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK         0x0100  /* use wall clock to set packet record header timestamp (this is the arrival timestamp in Wireshark) */
+```
+
 <a name="DSClosePcap"></a>
 ## DSClosePcap
 
@@ -287,10 +343,14 @@ int DSClosePcap(FILE*         fp_pcap,
 
   * return value is the return value of fclose() (as defined in stdio.h Linux header file) called internally in pktlib
 
-<a name="PcapAPIFlags"></a>
-# Pcap API Definitions & Flags
+uFlags Definitions
 
-Following are definitions and flags used by pktlib pcap APIs
+#define DS_CLOSE_PCAP_QUIET DS_OPEN_PCAP_QUIET /* suppress status and progress messages */
+
+<a name="GeneralPcapAPIFlags"></a>
+# General Pcap API Definitions & Flags
+
+Following are general definitions and flags used by pktlib pcap APIs
 
 ```c++
 #define PCAP_TYPE_LIBPCAP                      /* PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered */
@@ -312,20 +372,6 @@ Following are definitions and flags used by pktlib pcap APIs
   #define LINKTYPE_IPV4                        /* Raw IPv4 */
   #define LINKTYPE_IPV6                        /* Raw IPv6 */
 #endif
-
-#define DS_OPEN_PCAP_READ                      /* open pcap, pcapng, or rtp/rtpdump file for reading */
-#define DS_OPEN_PCAP_WRITE                     /* open pcap, pcapng, or rtp/rtpdump file writing. If the path/file does not exist, create */
-#define DS_OPEN_PCAP_DONT_READ_HEADER          /* don't read file header */
-#define DS_OPEN_PCAP_DONT_WRITE_HEADER         /* don't write file header */
-#define DS_OPEN_PCAP_QUIET                     /* suppress status and progress messages */
-#define DS_OPEN_PCAP_RESET                     /* seek to start of pcap; assumes a valid (already open) file handle supplied to DSOpenPcap(). Must be combined with DS_OPEN_PCAP_READ */
-#define DS_OPEN_PCAP_FILE_HDR_PCAP_FORMAT      /* info returned in pcap_file_hdr will be in pcap (libpcap) file format, even if the file being opened is in pcapng format */
-
-#define DS_READ_PCAP_COPY                      /* copy pcap record(s) only, don't advance file pointer */
-
-#define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK  /* use the wall clock to set packet record header timestamp (arrival timestamp in Wireshark) */
-
-#define DS_CLOSE_PCAP_QUIET DS_OPEN_PCAP_QUIET /* suppress status and progress messages */
 ```
 <a name="MininumAPIInterface"></a>
 # Minimum Push/Pull API Interface
