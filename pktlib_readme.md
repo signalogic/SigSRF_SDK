@@ -389,13 +389,24 @@ The DSPushPackets() and DSPullPackets() APIs form a "minimum touch" interface fo
 <a name="GeneralPktlibAPIFlags"></a>
 # General Pktlib API Flags
 
-Below are general pktlib API flags, for use with uFlags argument in all pktlib APIs. The DS_PKTLIB_XXX_BYTE_ORDER flags are not applicable to Pcap APIs.
+Below are general pktlib API flags applicable to multiple APIs.
+
+The following flags can be given in uFlags for DSGetPacketInfo(), DSPushPackets(), and DSPullPackets() APIs.
 
 ```c++
+#define DS_BUFFER_PKT_IP_PACKET                       /* indicates pkt_buf points to full IP header followed by TCP or UDP packet data */
+#define DS_BUFFER_PKT_UDP_PACKET                      /* indicates pkt_buf points to a UDP header followed by a UDP payload (for example, a UDP defined protocol such as RTP, GTP, etc) */
+#define DS_BUFFER_PKT_RTP_PACKET                      /* indicates pkt_buf points to an RTP header followed by an RTP payload */
+
 #define DS_PKTLIB_NETWORK_BYTE_ORDER                  /* indicates packet header data is in network byte order. The byte order flags apply only to headers, not payload contents. This flag is zero as the default (no flag) is network byte order, and is defined here only for documentation purposes */
 #define DS_PKTLIB_HOST_BYTE_ORDER                     /* indicates packet header data is in host byte order. The byte order flags apply only to headers, not payload contents. Default (no flag) is network byte order */
+```
+
+The following flags can be given in uFlags for all pktlib APIs.
+
+```c++
 #define DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG          /* suppress general packet format error messages; e.g. malformed packet, invalid IP version, invalid IP header, etc */
-#define DS_PKTLIB_SUPPRESS_INFO_MSG                   /* suppress info messages, many are RTP related */
+#define DS_PKTLIB_SUPPRESS_INFO_MSG                   /* suppress info messages, including RTP related */
 #define DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG      /* suppress RTP related error and warning messages, e.g. incorrect RTP version, RTP header extension mismatch, RTP padding mismatch, etc. Note RTP related warnings and errors are treated separately from general pktlib API warning and error messages */
 ```
 
@@ -643,20 +654,4 @@ typedef struct pcaprec_hdr_s {    /* pcap packet (record) header */
   uint16_t   ptime;
 
 } FORMAT_PKT;
-```
-
-<a name="General Pktlib API Flags"></a>
-# General Pktlib API Flags
-
-Below are general pktlib API flags, for use with the uFlags param in DSGetPacketInfo(), DSFormatPacket(), DSBufferPackets(), and DSGetOrderedPackets(). API specific flags are included in their API descriptions.
-
-```c++
-#define DS_BUFFER_PKT_IP_PACKET                   /* indicates pkt_buf points to full IP header followed by TCP or UDP packet data */
-#define DS_BUFFER_PKT_UDP_PACKET                  /* indicates pkt_buf points to a UDP header followed by a UDP payload (for example, a UDP defined protocol such as RTP, GTP, etc) */
-#define DS_BUFFER_PKT_RTP_PACKET                  /* incdicates pkt_buf points to an RTP header followed by an RTP payload */
-
-#define DS_PKTLIB_NETWORK_BYTE_ORDER              /* indicates packet header data is in network byte order. The byte order flags apply only to headers, not payload contents. This flag is zero as the default (no flag) is network byte order, and is defined here only for documentation purposes */
-#define DS_PKTLIB_HOST_BYTE_ORDER                 /* indicates packet header data is in host byte order. The byte order flags apply only to headers, not payload contents. Default (no flag) is network byte order */
-#define DS_PKTLIB_SUPPRESS_ERROR_MSG              /* suppress general packet format error messages */
-#define DS_PKTLIB_SUPPRESS_RTP_ERROR_MSG          /* suppress RTP related error messages */
 ```
