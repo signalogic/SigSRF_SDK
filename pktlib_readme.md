@@ -88,7 +88,8 @@ int DSGetPacketInfo(HSESSION      sessionHandle,
                     uint8_t*      pkt_buf,
                     int           pkt_len,
                     void*         pInfo,
-                    int*          chnum);
+                    int*          chnum
+                   );
 ```
 
   * sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. See additional sessionHandle notes below
@@ -234,15 +235,17 @@ int DSOpenPcap(const char*   pcap_file,
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that will on return contain header information about the file. NULL indicates not supplied
   * errstr, if supplied, should point to an error information string to be included in warning or error messages. NULL indicates not supplied
 
-On success, DSOpenPcap() reads or writes the file's header(s) and leaves file fp_pcap pointing at the first pcap record. The return value is a 32-bit int formatted as:<br>
+On success, DSOpenPcap() reads or writes the file's header(s) and leaves file fp_pcap pointing at the first pcap record.
+
+_Return Value_
+
+The return value is a 32-bit int formatted as:<br>
       &nbsp;<br>
       &nbsp;&nbsp;&nbsp;&nbsp;(link_type << 20) | (file_type << 16) | link_layer_length<br>
       &nbsp;<br>
     where link_type is one of the LINKTYPE_XXX definitions below, file_type is one of the PCAP_TYPE_XXX definitions below, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14)
 
-_Return Value_
-
-For file read (when the DS_OPEN_PCAP_READ flag is given), the full return value should be saved and then supplied as the link_layer_info param in DSReadPcap() and DSFilterPacket().
+When the DS_OPEN_PCAP_READ flag is given, the full return value should be saved and then supplied as the link_layer_info param in DSReadPcap() and DSFilterPacket().
 
 A return value < 0 indicates an error.
 
@@ -272,11 +275,12 @@ int DSReadPcap(FILE*           fp_pcap,
                uint16_t*       p_eth_hdr_type,
                pcap_hdr_t*     pcap_file_hdr,
                unsigned int    uPktNumber,
-               const char*     szUserMsgString);
+               const char*     szUserMsgString
+              );
 ```
 
   * fp_pcap is the file handle of the pcap file to read
-  * uFlags may be one or more DS_READ_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
+  * uFlags may be one or more DS_READ_PCAP_XXX flags listed below
   * pkt_buf should point to a sufficiently large buffer to contain returned packet data
   * pcap_pkt_hdr, if not NULL, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, including arrival timestamp. NULL indicates not supplied
   * link_layer_info should be supplied from a prior DSOpenPcap() call return value. See DSOpenPcap() comments above
@@ -285,7 +289,11 @@ int DSReadPcap(FILE*           fp_pcap,
   * uPktNumber, if non-zero, will be included at the end of warning, error, and/or information messages. For messages concerning Interface Description, Interface Statistics, Journal, Decryption, or other block types the text "last transmitted data " is added and uPktNumber-1 is displayed, as these block types do not contain actual transmitted packet data. Applications are expected to keep track of packet numbers, for example to match accurately with Wireshark, even if they perform non-sequential file access
   * szUserMsgString, if not NULL, should point to a user-defined text string that will be displayed at the end of warning, error, and/or information messages
 
-  * return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition
+On success pkt_buf contains packet data from the pcap, pcapng, or rtpXXX file.
+
+_Return Value_
+
+The return value is the length of the packet read (in bytes), zero if file end has been reached, or < 0 for an error condition.
 
 _uFlags Definitions_
 
@@ -319,18 +327,20 @@ int DSWritePcap(FILE*           fp_pcap,
 ```
 
   * fp_pcap is the file handle of the pcap file to write
-  * uFlags may be one or more DS_WRITE_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
+  * uFlags may be one or more DS_WRITE_PCAP_XXX flags listed below
   * pkt_buf should point to a a buffer containing pkt_buf_len amount (in bytes) of packet data to be written
   * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) containing packet record info, including arrival timestamp. NULL indicates not supplied
   * p_eth_hdr, if supplied, should point to an ethhdr struct (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) containing pcap file header information such as link layer type. NULL indicates not supplied
 
-  * return value is the length of the amount of data written (in bytes) or < 0 for an error condition
+_Return Value_
+
+The return value is the length of the amount of data written (in bytes) or < 0 for an error condition.
 
 _uFlags Definitions_
 
 ```c++
-#define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK         0x0100  /* use wall clock to set packet record header timestamp (this is the arrival timestamp in Wireshark) */
+#define DS_WRITE_PCAP_SET_TIMESTAMP_WALLCLOCK         /* use wall clock to set packet record header timestamp (this is the arrival timestamp in Wireshark) */
 ```
 
 <a name="DSClosePcap"></a>
@@ -340,17 +350,20 @@ DSClosePcap() closes a pcap file opened previously for reading or writing.
 
 ```c++  
 int DSClosePcap(FILE*         fp_pcap,
-                unsigned int  uFlags);
+                unsigned int  uFlags
+               );
 ```
 
   * fp_pcap is the file handle of the pcap file to close
-  * uFlags may be one or more DS_CLOSE_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below)
+  * uFlags may be one or more DS_CLOSE_PCAP_XXX flags listed below
 
-  * return value is the return value of fclose() (as defined in stdio.h Linux header file) called internally in pktlib
+_Return Value_
+
+The return value is the return value of fclose() (as defined in stdio.h Linux header file) called internally in pktlib.
 
 _uFlags Definitions_
 
-#define DS_CLOSE_PCAP_QUIET DS_OPEN_PCAP_QUIET /* suppress status and progress messages */
+#define DS_CLOSE_PCAP_QUIET DS_OPEN_PCAP_QUIET        /* suppress status and progress messages */
 
 <a name="GeneralPcapAPIFlags"></a>
 # General Pcap API Definitions & Flags
