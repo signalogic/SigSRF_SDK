@@ -37,9 +37,9 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPullPackets**](#user-content-dspullpackets)<br/>
 </sup></sub>
 
-[**General Pktlib API Flags**](#user-content-generalpktlibapiflags)<br/>
+[**_General Pktlib API Flags_**](#user-content-generalpktlibapiflags)<br/>
 
-[**Structs**](#user-content-structs)<br/>
+[**_Structs_**](#user-content-structs)<br/>
 
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**TCP Header Struct**](#user-content-tcpheaderstruct)<br/>
