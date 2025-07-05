@@ -250,7 +250,7 @@ A return value < 0 indicates an error.
 <a name="DSReadPcap"></a>
 ## DSReadPcap
 
-DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcap record structs (see [Pcap Record Structs](#user-content-pcaprechdrt) below). DSReadPcap() navigates each record it reads, including data link layer and VLAN headers (if any), and fills in packet record structs with packet data, timestamp, and length, and other information.
+DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcap record structs (see [Pcap Record Structs](#user-content-pcaprechdrt) below). DSReadPcap() fully parses each record it reads, including data link layer and VLAN headers (if any), and fills in packet record structs with packet data, timestamp, and length, and other information.
 
 ```c++  
 int DSReadPcap(FILE*           fp_pcap,
