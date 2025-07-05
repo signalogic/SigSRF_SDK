@@ -11,7 +11,7 @@
 
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSGetPacketInfo**](#user-content-dsgetpacketinfo)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Packet Info Flags**](#user-content-packetinfoflags)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Packet Info Flags**](#user-content-packetinfoflags)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSBufferPackets**](#user-content-dsbufferpackets)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSGetOrderedPackets**](#user-content-dsgetorderedpackets)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFormatPacket**](#user-content-dsformatpacket)<br/>
@@ -28,7 +28,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSClosePcap**](#user-content-dsclosepcap)<br/>
 </sup></sub>
 
-&nbsp;&nbsp;&nbsp;[**General Pcap API Flags**](#user-content-GeneralPcapAPIFlags)<br/>
+&nbsp;&nbsp;&nbsp;[**General Pcap API Flags**](#user-content-generalpcapapiflags)<br/>
 
 [**_Minimum Push/Pull API Interface_**](#user-content-minimumapiinterface)<br/>
 
@@ -37,9 +37,9 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPullPackets**](#user-content-dspullpackets)<br/>
 </sup></sub>
 
-&nbsp;&nbsp;&nbsp;[**General Pktlib API Flags**](#user-content-GeneralPktlibAPIFlags)<br/>
+[**General Pktlib API Flags**](#user-content-generalpktlibapiflags)<br/>
 
-&nbsp;&nbsp;&nbsp;[**Structs**](#user-content-structs)<br/>
+[**Structs**](#user-content-structs)<br/>
 
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**TCP Header Struct**](#user-content-tcpheaderstruct)<br/>
@@ -229,7 +229,7 @@ The return value is a 32-bit int formatted as:<br>
       &nbsp;<br>
       &nbsp;&nbsp;&nbsp;&nbsp;(link_type << 20) | (file_type << 16) | link_layer_length<br>
       &nbsp;<br>
-    where link_type is one of the LINKTYPE_XXX definitions below, file_type is one of the PCAP_TYPE_XXX definitions below, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14)
+    where link_type is one of the LINKTYPE_XXX definitions below, file_type is one of the PCAP_TYPE_XXX definitions below, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14).
 
 When the DS_OPEN_PCAP_READ flag is given, the full return value should be saved and then supplied as the link_layer_info param in DSReadPcap() and DSFilterPacket().
 
@@ -356,33 +356,46 @@ The return value is the return value of fclose() (as defined in stdio.h Linux he
 <a name="GeneralPcapAPIFlags"></a>
 # General Pcap API Definitions & Flags
 
-Following are general definitions and flags used by pktlib pcap APIs
+Following are general definitions and flags used by pktlib APIs.
 
 ```c++
-#define PCAP_TYPE_LIBPCAP                      /* PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered */
+#define PCAP_TYPE_LIBPCAP                             /* PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered */
 #define PCAP_TYPE_PCAPNG
-#define PCAP_TYPE_BER                          /* PCAP_TYPE_BER and PCAP_TYPE_HI3 are used by mediaMin for intermediate packet output */
+#define PCAP_TYPE_BER                                 /* PCAP_TYPE_BER and PCAP_TYPE_HI3 are used by mediaMin for intermediate packet output */
 #define PCAP_TYPE_HI3
 #define PCAP_TYPE_RTP
 
-#define PCAP_LINK_LAYER_LEN_MASK               /* return value of DSOpenPcap() contains link type in bits 27-20, file type in bits 19-16, and link layer length in lower 16 bits */
+#define PCAP_LINK_LAYER_LEN_MASK                      /* return value of DSOpenPcap() contains link type in bits 27-20, file type in bits 19-16, and link layer length in lower 16 bits */
 #define PCAP_LINK_LAYER_FILE_TYPE_MASK
 #define PCAP_LINK_LAYER_LINK_TYPE_MASK
 
-#ifndef LINKTYPE_ETHERNET                      /* define pcap file link types if needed. We don't require libpcap to be installed */
+#ifndef LINKTYPE_ETHERNET                             /* define pcap file link types if needed. pktlib does not require libpcap to be installed */
 
-  #define LINKTYPE_ETHERNET                    /* standard Ethernet Link Layer */
-  #define LINKTYPE_LINUX_SLL                   /* Linux "cooked" capture encapsulation */
-  #define LINKTYPE_RAW_BSD                     /* Raw IP, OpenBSD compatibility value */
-  #define LINKTYPE_RAW                         /* Raw IP */
-  #define LINKTYPE_IPV4                        /* Raw IPv4 */
-  #define LINKTYPE_IPV6                        /* Raw IPv6 */
+  #define LINKTYPE_ETHERNET                           /* standard Ethernet Link Layer */
+  #define LINKTYPE_LINUX_SLL                          /* Linux "cooked" capture encapsulation */
+  #define LINKTYPE_RAW_BSD                            /* Raw IP, OpenBSD compatibility value */
+  #define LINKTYPE_RAW                                /* Raw IP */
+  #define LINKTYPE_IPV4                               /* Raw IPv4 */
+  #define LINKTYPE_IPV6                               /* Raw IPv6 */
 #endif
 ```
 <a name="MininumAPIInterface"></a>
 # Minimum Push/Pull API Interface
 
 The pktlib minimum API interface supports application level "push" and "pull" to/from packet queues, from which packet/media worker threads receive/send packets for RTP jitter buffer, packet repair, RTP decoding, media domain, and other processing.
+
+<a name="GeneralPktlibAPIFlags"</a>
+# General Pktlib API Flags
+
+Below are general pktlib API flags, for use with uFlags argument in all pktlib APIs. The DS_PKTLIB_XXX_BYTE_ORDER flags are not applicable to Pcap APIs.
+
+```c++
+#define DS_PKTLIB_NETWORK_BYTE_ORDER                  /* indicates packet header data is in network byte order. The byte order flags apply only to headers, not payload contents. This flag is zero as the default (no flag) is network byte order, and is defined here only for documentation purposes */
+#define DS_PKTLIB_HOST_BYTE_ORDER                     /* indicates packet header data is in host byte order. The byte order flags apply only to headers, not payload contents. Default (no flag) is network byte order */
+#define DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG          /* suppress general packet format error messages; e.g. malformed packet, invalid IP version, invalid IP header, etc */
+#define DS_PKTLIB_SUPPRESS_INFO_MSG                   /* suppress info messages, many are RTP related */
+#define DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG      /* suppress RTP related error and warning messages, e.g. incorrect RTP version, RTP header extension mismatch, RTP padding mismatch, etc. Note RTP related warnings and errors are treated separately from general pktlib API warning and error messages */
+```
 
 <a name="Structs"></a>
 # Structs
