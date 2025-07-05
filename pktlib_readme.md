@@ -386,7 +386,7 @@ pktlib supports application level "push" and "pull" to/from packet queues, from 
 
 The DSPushPackets() and DSPullPackets() APIs form a "minimum touch" interface for applications to input packets from application-specific sources (UDP ports, pcap files, etc) foward them for processing, retrieved processed packets, and output as needed.
 
-<a name="GeneralPktlibAPIFlags"</a>
+<a name="GeneralPktlibAPIFlags"></a>
 # General Pktlib API Flags
 
 Below are general pktlib API flags, for use with uFlags argument in all pktlib APIs. The DS_PKTLIB_XXX_BYTE_ORDER flags are not applicable to Pcap APIs.
@@ -443,7 +443,7 @@ UDP header struct
 <a name="RTPHeaderStruct"></a>
 ## RTP Header
 
-RTP header struct
+Below is the RTP header struct used in DSFormatPacket() and DSGetPacketInfo() APIs.
 
 ```c++
 typedef struct {
@@ -455,25 +455,25 @@ typedef struct {
  */
 
 /* 1st byte of RTP header */
-  uint8_t   CC        : 4;   /* CSRC count */
-  uint8_t   ExtHeader : 1;   /* Extension header */
-  uint8_t   Padding   : 1;   /* Padding */
-  uint8_t   Version   : 2;   /* RTP version */
+  uint8_t   CC        : 4;     /* CSRC count */
+  uint8_t   ExtHeader : 1;     /* Extension header */
+  uint8_t   Padding   : 1;     /* Padding */
+  uint8_t   Version   : 2;     /* RTP version */
 /* 2nd byte of RTP header */
-  uint8_t   PyldType  : 7;   /* Payload type */
-  uint8_t   Marker    : 1;   /* Marker bit */
+  uint8_t   PyldType  : 7;     /* Payload type */
+  uint8_t   Marker    : 1;     /* Marker bit */
 
-  uint16_t  Sequence;        /* Sequence number */
-  uint32_t  Timestamp;       /* Timestamp */
-  uint32_t  SSRC;            /* SSRC */
-  uint32_t  CSRC[1];         /* remainder of header, depending on CSRC count and extension header */
+  uint16_t  Sequence;          /* Sequence number */
+  uint32_t  Timestamp;         /* Timestamp */
+  uint32_t  SSRC;              /* SSRC */
+  uint32_t  CSRC[1];           /* remainder of header, depending on CSRC count and extension header */
 
 } RTPHeader;
 ```
 <a name="PKTINFOStruct"></a>
 ## PKTINFO Struct
 
-Following is the PKTINFO struct used in DSGetPacketInfo()
+Following is the PKTINFO struct used in DSGetPacketInfo().
 
 ```c++
   typedef struct {
@@ -518,7 +518,7 @@ Following is the PKTINFO struct used in DSGetPacketInfo()
 <a name="PcapAPIStructs"></a>
 ## Pcap API Structs
 
-Following are DSOpenPcap() and DSReadPcap() structs
+Following are pcap file and record header structs used in DSOpenPcap(), DSReadPcap(),and DSWritePcap() APIs.
 
 <a name="pcaphdrtStruct"></a>
 ```c++
