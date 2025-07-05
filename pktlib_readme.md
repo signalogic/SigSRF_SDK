@@ -384,7 +384,7 @@ Following are general definitions and flags used by pktlib APIs.
 
 pktlib supports application level "push" and "pull" to/from packet queues, from which packet/media worker threads receive/send packets for RTP jitter buffer, packet repair, RTP decoding, media domain, and other processing.
 
-The DSPushPackets() and DSPullPackets() APIs form a "minimum touch" interface for applications to input packets from application-specific sources (UDP ports, pcap files, etc) foward them for processing, retrieved processed packets, and output as needed.
+The DSPushPackets() and DSPullPackets() APIs form a "minimum touch" interface for applications to input packets from application-specific sources (UDP ports, pcap files, etc) forward them for processing, retrieved processed packets, and output as needed.
 
 <a name="GeneralPktlibAPIFlags"></a>
 # General Pktlib API Flags
