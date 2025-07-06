@@ -602,8 +602,8 @@ typedef struct pcapng_block_header_s {
 
 typedef struct pcapng_hdr_s {
 
-  uint32_t magic_number;          /* magic number */
-  uint32_t block_length;
+  struct pcapng_block_header_s block_header;
+
   uint32_t byte_order_magic;
   uint16_t version_major;         /* major version number */
   uint16_t version_minor;         /* minor version number */
@@ -619,8 +619,8 @@ typedef struct pcapng_hdr_s {
 
 typedef struct pcapng_idb_s {
 
-  uint32_t block_type;
-  uint32_t block_length;
+  struct pcapng_block_header_s block_header;
+
   uint16_t link_type;
   uint16_t reserved;
   uint32_t snaplen;
@@ -636,6 +636,7 @@ typedef struct pcapng_idb_s {
 typedef struct pcapng_spb_s {
   
   struct pcapng_block_header_s block_header;
+
   uint32_t original_pkt_len;
 
 } pcapng_spb_t;
@@ -649,6 +650,7 @@ typedef struct pcapng_spb_s {
 typedef struct pcapng_epb_s {
 
   struct pcapng_block_header_s block_header;
+
   uint32_t interface_id;
   uint32_t timestamp_hi;
   uint32_t timestamp_lo;
