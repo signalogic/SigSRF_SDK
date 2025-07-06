@@ -561,7 +561,7 @@ typedef struct pcap_hdr_s {       /* header for standard libpcap file format, al
       uint32_t src_ip_addr;
       uint16_t src_port;
       uint16_t padding;
-    } rtp;
+    };
   };
 
 } pcap_hdr_t;
@@ -590,6 +590,7 @@ typedef struct pcapng_block_header_s {
     uint32_t block_type;
     uint32_t magic_number;  /* for section header blocks (SHBs) the block type is 0x0a0d0d0a, aka pcapng file magic number */
   };
+
   uint32_t block_length;
 
 } pcapng_block_header_t;
