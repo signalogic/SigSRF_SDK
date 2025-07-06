@@ -47,11 +47,13 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**RTP Header Struct**](#user-content-rtpheaderstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**PKTINFO Struct**](#user-content-pktinfostruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap API Structs**](#user-content-pcapapistructs)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap File Header Struct**](#user-content-pcaphdrtstruct)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng File Header Struct**](#user-content-pcapnghdrtstruct)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap Record Struct**](#user-content-pcaprechdrtstruct)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng IDB Struct**](#user-content-pcapngidbtstruct)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng EPB Struct**](#user-content-pcapngepbtstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap File Header Struct**](#user-content-pcapfilehdrstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcap Record Struct**](#user-content-pcaprechdrstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng File Header Struct**](#user-content-pcapngfilehdrstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng Block Header Struct**](#user-content-pcapngblockhdrstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng IDB Struct**](#user-content-pcapngidbstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng EPB Struct**](#user-content-pcapngepbstruct)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Pcapng SPB Struct**](#user-content-pcapngspbstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**VLAN Header Struct**](#user-content-vlanheaderstruct)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**FORMAT_PKT Struct**](#user-content-formatpktstruct)<br/>
 </sup></sub>
@@ -238,7 +240,7 @@ A return value < 0 indicates an error.
 <ins>uFlags Definitions</ins>
 
 ```c++
-#define DS_OPEN_PCAP_READ                             /* open pcap, pcapng, or rtp/rtpdump file for reading */
+#define DS_OPEN_PCAP_READ                             /* open pcap, pcapng, or rtp/rtpdump file for reading. This is the default if neither DS_OPEN_PCAP_READ nor DS_OPEN_PCAP_WRITE are given */
 #define DS_OPEN_PCAP_WRITE                            /* open pcap, pcapng, or rtp/rtpdump file for writing. If the path/file does not exist, create */
 #define DS_OPEN_PCAP_DONT_READ_HEADER                 /* don't read file header */
 #define DS_OPEN_PCAP_DONT_WRITE_HEADER                /* don't write file header */
@@ -531,13 +533,13 @@ Following is the PKTINFO struct used in DSGetPacketInfo().
 
 Following are pcap file and record header structs used in DSOpenPcap(), DSReadPcap(),and DSWritePcap() APIs.
 
-<a name="pcaphdrtStruct"></a>
+<a name="pcapfilehdrStruct"></a>
 ```c++
-typedef struct pcap_hdr_s {       /* header for standard libpcap format, also for .rtp (.rtpdump) format */
+typedef struct pcap_hdr_s {       /* header for standard libpcap file format, also for .rtp (.rtpdump) format */
 
   union {
 
-    struct {                      /* pcap and pcapng format, the default */
+    struct {                      /* pcap format, the default */
 
       uint32_t magic_number;      /* magic number */
       uint16_t version_major;     /* major version number */
@@ -564,9 +566,41 @@ typedef struct pcap_hdr_s {       /* header for standard libpcap format, also fo
 
 } pcap_hdr_t;
 ```
-<a name="pcapnghdrtStruct"></a>
+
+<a name="pcaprechdrStruct"></a>
 ```c++
-typedef struct pcapng_hdr_s {     /* section header block (SHB) for pcapng format */
+typedef struct pcaprec_hdr_s {    /* pcap packet (record) header */
+
+  uint32_t ts_sec;                /* timestamp seconds */
+  uint32_t ts_usec;               /* timestamp microseconds */
+  uint32_t incl_len;              /* number of octets of packet record */
+  uint32_t orig_len;              /* actual length of packet */
+
+} pcaprec_hdr_t;
+```
+
+<a name="pcapngblockhdrStruct"></a>
+```c++
+
+/* basic header present in all pcapng block types */
+
+typedef struct pcapng_block_header_s {
+
+  union {
+    uint32_t block_type;
+    uint32_t magic_number;  /* for section header blocks (SHBs) the block type is 0x0a0d0d0a, aka pcapng file magic number */
+  };
+  uint32_t block_length;
+
+} pcapng_block_header_t;
+```
+
+<a name="pcapngfilehdrStruct"></a>
+```c++
+
+/* pcapng format section header block (SHB). pcapng files can have multiple SHBs, so the first SHB is effectively the pcapng file header  */
+
+typedef struct pcapng_hdr_s {
 
   uint32_t magic_number;          /* magic number */
   uint32_t block_length;
@@ -577,9 +611,13 @@ typedef struct pcapng_hdr_s {     /* section header block (SHB) for pcapng forma
 
 } pcapng_hdr_t;
 ```
-<a name="pcapngidbtStruct"></a>
+
+<a name="pcapngidbStruct"></a>
 ```c++
-typedef struct pcapng_idb_s {     /* interface description block (IDB) for pcapng format */
+
+/* interface description block (IDB) for pcapng format, if present typically occurs after the SHB and before packet blocks */
+
+typedef struct pcapng_idb_s {
 
   uint32_t block_type;
   uint32_t block_length;
@@ -589,23 +627,28 @@ typedef struct pcapng_idb_s {     /* interface description block (IDB) for pcapn
 
 } pcapng_idb_t;
 ```
-<a name="pcaprechdrtStruct"></a>
+
+<a name="pcapngspbStruct"></a>
 ```c++
-typedef struct pcaprec_hdr_s {    /* pcap packet (record) header */
 
-  uint32_t ts_sec;                /* timestamp seconds */
-  uint32_t ts_usec;               /* timestamp microseconds */
-  uint32_t incl_len;              /* number of octets of packet saved in file */
-  uint32_t orig_len;              /* actual length of packet */
+/* pcapng format simple packet block */
 
-} pcaprec_hdr_t;
+typedef struct pcapng_spb_s {
+  
+  struct pcapng_block_header_s block_header;
+  uint32_t original_pkt_len;
+
+} pcapng_spb_t;
 ```
-<a name="pcapngepbtStruct"></a>
-```c++
-typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng format */
 
-  uint32_t block_type;
-  uint32_t block_length;
+<a name="pcapngepbStruct"></a>
+```c++
+
+/* pcapng format enhanced packet block (EPB) */
+
+typedef struct pcapng_epb_s {
+
+  struct pcapng_block_header_s block_header;
   uint32_t interface_id;
   uint32_t timestamp_hi;
   uint32_t timestamp_lo;
@@ -614,6 +657,7 @@ typedef struct pcapng_epb_s {     /* enhanced packet block (EPB) for pcapng form
 
 } pcapng_epb_t;
 ```
+
 <a name="VLANHeaderStruct"></a>
 ```c++
 typedef struct {                  /* pcap record vlan header */
