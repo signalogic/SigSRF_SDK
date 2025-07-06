@@ -531,7 +531,7 @@ Following is the PKTINFO struct used in DSGetPacketInfo().
 <a name="PcapAPIStructs"></a>
 ## Pcap API Structs
 
-Following are pcap file and record header structs used in DSOpenPcap(), DSReadPcap(),and DSWritePcap() APIs.
+Following are pcap and pcapng file and record header structs used in DSOpenPcap(), DSReadPcap(),and DSWritePcap() APIs.
 
 <a name="pcapfilehdrStruct"></a>
 ```c++
@@ -550,7 +550,7 @@ typedef struct pcap_hdr_s {       /* header for standard libpcap file format, al
       uint32_t link_type;         /* data link type */
     };
 
-    struct {                      /* add rtp format as a union (https://formats.kaitai.io/rtpdump) */
+    struct {                      /* include rtp format as a union (https://formats.kaitai.io/rtpdump) */
 
       char     shebang[12];
       char     space[1];
