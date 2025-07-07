@@ -379,7 +379,9 @@ The return value is the return value of fclose() (as defined in stdio.h Linux he
 
 <ins>uFlags Definitions</ins>
 
+```c++
 #define DS_CLOSE_PCAP_QUIET DS_OPEN_PCAP_QUIET        /* suppress status and progress messages */
+```
 
 <a name="GeneralPcapAPIFlags"></a>
 # General Pcap API Definitions & Flags
