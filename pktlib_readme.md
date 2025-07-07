@@ -203,10 +203,10 @@ The following flags are returned by DSGetPacketInfo() when uFlags contains DS_PK
 #define DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE  /* a fully re-assembled packet is available using DS_PKT_INFO_GET_REASSEMBLED_PACKET in a subsequent DSGetPacketInfo() call */
 ```
 
-<a name="PacketMediaThreadAPIInterface"></a>
-# Packet/Media Worker Thread API Interface
+<a name="JitterBufferAPIInterface"></a>
+# Jitter Buffer API Interface
 
-Normally apps should use the pktlib [Push/Pull API Interface](#user-content-pushpullapiinterface) to automate packet processing. In some cases it may be necessary to interact directly with packet/media worker threads, in which case the APIs described in this section can be used.
+Normally apps should use the pktlib [Push/Pull API Interface](#user-content-pushpullapiinterface) to automate packet processing. In some cases it may be necessary to interact directly with stream jitter buffers, in which case the APIs described in this section can be used. pktlib [packet/media worker thread source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) shows examples of jitter buffer API usage.
 
 <a name="DSBufferPackets"></a>
 ## DSBufferPackets
