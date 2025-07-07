@@ -15,6 +15,13 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFormatPacket**](#user-content-dsformatpacket)<br/>
 </sup></sub>
 
+[**_Push/Pull API Interface_**](#user-content-pushpullapiinterface)<br/>
+
+<sub><sup>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPushPackets**](#user-content-dspushpackets)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPullPackets**](#user-content-dspullpackets)<br/>
+</sup></sub>
+
 [**_Jitter Buffer API Interface_**](#user-content-jitterbufferapiinterface)<br/>
 
 <sub><sup>
@@ -34,13 +41,6 @@
 </sup></sub>
 
 &nbsp;&nbsp;&nbsp;[**General Pcap API Flags**](#user-content-generalpcapapiflags)<br/>
-
-[**_Push/Pull API Interface_**](#user-content-pushpullapiinterface)<br/>
-
-<sub><sup>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPushPackets**](#user-content-dspushpackets)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPullPackets**](#user-content-dspullpackets)<br/>
-</sup></sub>
 
 [**_General Pktlib API Flags_**](#user-content-generalpktlibapiflags)<br/>
 
@@ -202,6 +202,16 @@ The following flags are returned by DSGetPacketInfo() when uFlags contains DS_PK
 #define DS_PKT_INFO_RETURN_FRAGMENT_REMOVED              /* fragment was removed from pktlib internal list */
 #define DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE  /* a fully re-assembled packet is available using DS_PKT_INFO_GET_REASSEMBLED_PACKET in a subsequent DSGetPacketInfo() call */
 ```
+
+<a name="DSFormatPacket"></a>
+## DSFormatPacket
+
+<a name="PushPullAPIInterface"></a>
+# Push/Pull API Interface
+
+pktlib supports application level "push" and "pull" to/from packet queues, from which packet/media worker threads receive/send packets for RTP jitter buffer, packet repair, RTP decoding, media domain, and other processing.
+
+The DSPushPackets() and DSPullPackets() APIs form a "minimum touch" interface for applications to input packets from application-specific sources (UDP ports, pcap files, etc) forward them for processing, retrieved processed packets, and output as needed.
 
 <a name="JitterBufferAPIInterface"></a>
 # Jitter Buffer API Interface
@@ -397,12 +407,6 @@ Following are general definitions and flags used by pktlib APIs.
   #define LINKTYPE_IPV6                               /* Raw IPv6 */
 #endif
 ```
-<a name="PushPullAPIInterface"></a>
-# Push/Pull API Interface
-
-pktlib supports application level "push" and "pull" to/from packet queues, from which packet/media worker threads receive/send packets for RTP jitter buffer, packet repair, RTP decoding, media domain, and other processing.
-
-The DSPushPackets() and DSPullPackets() APIs form a "minimum touch" interface for applications to input packets from application-specific sources (UDP ports, pcap files, etc) forward them for processing, retrieved processed packets, and output as needed.
 
 <a name="GeneralPktlibAPIFlags"></a>
 # General Pktlib API Flags
