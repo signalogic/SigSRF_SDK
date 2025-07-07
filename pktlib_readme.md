@@ -249,7 +249,7 @@ int DSOpenPcap(const char*   pcap_file,
   * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that will on return contain header information about the file. NULL indicates not supplied
   * errstr, if supplied, should point to an error information string to be included in warning or error messages. NULL indicates not supplied
 
-On success, DSOpenPcap() reads or writes the file's header(s) and leaves fp_pcap pointing at the first pcap record. For pcapng files the first SHB and IDB have been read and fp_pcap is pointing at the first EPB.
+On success, DSOpenPcap() reads or writes the file's header(s) and leaves fp_pcap pointing at the first pcap record. For pcapng files the first SHB and IDB (if present) have been read and fp_pcap is pointing at the first packet block.
 
 <ins>Return Value</ins>
 
