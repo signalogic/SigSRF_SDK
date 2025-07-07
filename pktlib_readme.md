@@ -22,7 +22,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSPullPackets**](#user-content-dspullpackets)<br/>
 </sup></sub>
 
-[**_Jitter Buffer API Interface_**](#user-content-jitterbufferapiinterface)<br/>
+[**_Packet Buffer API Interface_**](#user-content-packetbufferapiinterface)<br/>
 
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSBufferPackets**](#user-content-dsbufferpackets)<br/>
@@ -213,10 +213,10 @@ pktlib supports application level "push" and "pull" to/from packet queues, from 
 
 The DSPushPackets() and DSPullPackets() APIs form a "minimum touch" interface for applications to input packets from application-specific sources (UDP ports, pcap files, etc) forward them for processing, retrieved processed packets, and output as needed.
 
-<a name="JitterBufferAPIInterface"></a>
-# Jitter Buffer API Interface
+<a name="PacketBufferAPIInterface"></a>
+# Packet Buffer API Interface
 
-Normally apps should use the pktlib [Push/Pull API Interface](#user-content-pushpullapiinterface) to automate packet processing. In some cases it may be necessary to interact directly with stream jitter buffers, in which case the APIs described in this section can be used. pktlib [packet/media worker thread source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) shows examples of jitter buffer API usage.
+Normally apps should use the pktlib [Push/Pull API Interface](#user-content-pushpullapiinterface) to automate packet processing. In some cases it may be necessary to interact directly with stream buffers, in which case the APIs described in this section can be used. pktlib buffering performs jitter buffer functions for media streams, but is also capable of very long buffer, "clockless", and backpressure handling necessary in data analytics applications. pktlib [packet/media worker thread source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) shows examples of jitter buffer API usage.
 
 <a name="DSBufferPackets"></a>
 ## DSBufferPackets
