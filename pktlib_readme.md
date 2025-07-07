@@ -12,9 +12,14 @@
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSGetPacketInfo**](#user-content-dsgetpacketinfo)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**Packet Info Flags**](#user-content-packetinfoflags)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFormatPacket**](#user-content-dsformatpacket)<br/>
+</sup></sub>
+
+[**_Packet/Media Worker Thread API Interface_**](#user-content-packetmediathreadapiinterface)<br/>
+
+<sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSBufferPackets**](#user-content-dsbufferpackets)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSGetOrderedPackets**](#user-content-dsgetorderedpackets)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFormatPacket**](#user-content-dsformatpacket)<br/>
 </sup></sub>
 
 [**_Pcap API Interface_**](#user-content-pcapapiinterface)<br/>
@@ -197,6 +202,17 @@ The following flags are returned by DSGetPacketInfo() when uFlags contains DS_PK
 #define DS_PKT_INFO_RETURN_FRAGMENT_REMOVED              /* fragment was removed from pktlib internal list */
 #define DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE  /* a fully re-assembled packet is available using DS_PKT_INFO_GET_REASSEMBLED_PACKET in a subsequent DSGetPacketInfo() call */
 ```
+
+<a name="PacketMediaThreadAPIInterface"></a>
+# Packet/Media Worker Thread API Interface
+
+Normally apps should use the pktlib [Push/Pull API Interface](#user-content-pushpullapiinterface) to automate packet processing. In some cases it may be necessary to interact directly with packet/media worker threads, in which case the APIs described in this section can be used.
+
+<a name="DSBufferPackets"></a>
+## DSBufferPackets
+
+<a name="DSGetOrderedPackets"></a>
+## DSGetOrderedPackets
 
 <a name="PcapAPIInterface"></a>
 # Pcap API Interface
