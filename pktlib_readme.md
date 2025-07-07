@@ -15,7 +15,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSFormatPacket**](#user-content-dsformatpacket)<br/>
 </sup></sub>
 
-[**_Packet/Media Worker Thread API Interface_**](#user-content-packetmediathreadapiinterface)<br/>
+[**_Jitter Buffer API Interface_**](#user-content-jitterbufferapiinterface)<br/>
 
 <sub><sup>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[**DSBufferPackets**](#user-content-dsbufferpackets)<br/>
