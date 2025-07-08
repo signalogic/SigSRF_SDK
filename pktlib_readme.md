@@ -100,7 +100,7 @@ int DSGetPacketInfo(HSESSION      sessionHandle,
 ```
 
   * sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. Additional notes: (i) if both sessionHandle is -1 and uFlags contains DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, DS_PKT_INFO_CHNUM_xxx flags, then all existing sessions will be searched. (ii) SigSRF documentation refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession()
-  * uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If DS_BUFFER_PKT_IP_PACKET is given the packet should start with an IP header; if DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default if no flag is given. Use DS_PKT_INFO_HOST_BYTE_ORDER if packet headers are in host byte order. Network byte order is the default if no flag (or DS_PKT_INFO_NETWORK_BYTE_ORDER) is given. Byte order flags apply only to headers, not payload contents. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. If DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1
+  * uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If DS_BUFFER_PKT_IP_PACKET is given the packet should start with an IP header; if DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default if no flag is given. Use DS_PKT_INFO_HOST_BYTE_ORDER if packet headers are in host byte order. Network byte order is the default if no flag is given. Byte order flags apply only to headers, not payload contents. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. If DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1
   * pkt_buf should point to a packet, and pkt_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap, pcapng, and rtp/rtpdump files. The DSFormatPacket() API can be used to help construct a packet
   * pkt_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_len can be given as -1. Note that pkt_len *does not* specify the overall length of the packet data buffer, which is assumed to be sufficiently large enough to contain all packet data, including reassembled packet data if DS_PKT_INFO_REASSEMBLY_GET_PACKET is given
   * pInfo, if not NULL, on return will contain<br>
@@ -244,10 +244,10 @@ int DSOpenPcap(const char*   pcap_file,
 ```
 
   * pcap_file should contain a null-terminated path and/or filename of the pcap, pcapng, or rtp/rtpdump file to open
-  * uFlags may be one or more DS_OPEN_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below). Typically DS_OPEN_PCAP_READ is used for reading and DS_OPEN_PCAP_WRITE for writing
+  * uFlags may be one or more DS_OPEN_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below). Typically DS_OPEN_PCAP_READ is used for reading and DS_OPEN_PCAP_WRITE for writing. If neither are given the default is DS_OPEN_PCAP_READ
   * fp_pcap should point to a FILE* (defined in stdio.h) that on return will contain the new file handle
-  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that on return will contain header information about the file. NULL indicates not supplied
-  * errstr, if supplied, should point to an error information string to be included in warning or error messages. NULL indicates not supplied
+  * pcap_file_hdr, if not NULL should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that on return will contain header information about the file
+  * errstr, if not NULL, should point to an error information string to be included in warning or error messages
 
 On success, DSOpenPcap() reads or writes the file's header(s) and leaves fp_pcap pointing at the first pcap record. For pcapng files the first SHB and IDB (if present) have been read and fp_pcap is pointing at the first packet block.
 
@@ -259,7 +259,7 @@ The return value is a 32-bit int formatted as:<br>
       &nbsp;<br>
     where link_type is one of the LINKTYPE_XXX definitions below, file_type is one of the PCAP_TYPE_XXX definitions below, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14).
 
-When the DS_OPEN_PCAP_READ flag is given, the full return value should be saved and then supplied as the link_layer_info param in DSReadPcap() and DSFilterPacket().
+When DS_OPEN_PCAP_READ flag is in effect, the full return value should be saved and then supplied as the link_layer_info param in DSReadPcap() and DSFilterPacket().
 
 A return value < 0 indicates an error.
 
@@ -297,11 +297,11 @@ int DSReadPcap(FILE*           fp_pcap,
   * fp_pcap is the file handle of the pcap file to read
   * uFlags may be one or more DS_READ_PCAP_XXX flags listed below
   * pkt_buf should point to a sufficiently large buffer to contain returned packet data
-  * pcap_pkt_hdr, if not NULL, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, including arrival timestamp. NULL indicates not supplied
+  * pcap_pkt_hdr, if not NULL, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, including arrival timestamp
   * link_layer_info should be supplied from a prior DSOpenPcap() call return value. See DSOpenPcap() comments above
-  * p_eth_protocol, if not NULL, should point to a 16-bit unsigned int that on return will contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
-  * p_block_type, if not NULL, should point to a 16-bit unsigned int that on return will contain one or more PCAP_XXX_TYPE or PCAPNG_XXX_TYPE flags (as defined in [pktlib.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/includes/pktlib.h)). When reading pcap or .rtpxxx files, PCAP_PB_TYPE or RTP_PB_TYPE is returned. NULL indicates not used
-  * pcap_file_hdr, if not NULL, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call. NULL indicates not supplied
+  * p_eth_protocol, if not NULL, should point to a 16-bit unsigned int that on return will contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file)
+  * p_block_type, if not NULL, should point to a 16-bit unsigned int that on return will contain one or more PCAP_XXX_TYPE or PCAPNG_XXX_TYPE flags (as defined in [pktlib.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/includes/pktlib.h)). When reading pcap or .rtpxxx files, PCAP_PB_TYPE or RTP_PB_TYPE is returned
+  * pcap_file_hdr, if not NULL, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call
   * uPktNumber, if non-zero, will be included at the end of warning, error, and/or information messages. For messages concerning Interface Description, Interface Statistics, Journal, Decryption, or other block types the text "last transmitted data " is added and uPktNumber-1 is displayed, as these block types do not contain actual transmitted packet data. Applications are expected to keep track of packet numbers, for example to match accurately with Wireshark, even if they perform non-sequential file access
   * szUserMsgString, if not NULL, should point to a user-defined text string that will be displayed at the end of warning, error, and/or information messages
 
@@ -345,9 +345,9 @@ int DSWritePcap(FILE*           fp_pcap,
   * fp_pcap is the file handle of the pcap file to write
   * uFlags may be one or more DS_WRITE_PCAP_XXX flags listed below
   * pkt_buf should point to a a buffer containing pkt_buf_len amount (in bytes) of packet data to be written
-  * pcap_pkt_hdr, if supplied, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) containing packet record info, including arrival timestamp. NULL indicates not supplied
-  * p_eth_hdr, if supplied, should point to an ethhdr struct (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
-  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) containing pcap file header information such as link layer type. NULL indicates not supplied
+  * pcap_pkt_hdr, if not NULL, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) containing packet record info, including arrival timestamp
+  * p_eth_hdr, if not NULL, should point to an ethhdr struct (as defined in netinet/if_ether.h Linux header file)
+  * pcap_file_hdr, if not NULL, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) containing pcap file header information such as link layer type
 
 On success data pkt_buf_len bytes of data contained in in pkt_buf has been written to the pcap file specified by fp_pcap.
 
@@ -424,7 +424,7 @@ The following flags can be given in uFlags for DSGetPacketInfo(), DSPushPackets(
 #define DS_BUFFER_PKT_UDP_PACKET                      /* indicates pkt_buf points to a UDP header followed by a UDP payload (for example, a UDP defined protocol such as RTP, GTP, etc) */
 #define DS_BUFFER_PKT_RTP_PACKET                      /* indicates pkt_buf points to an RTP header followed by an RTP payload */
 
-#define DS_PKTLIB_NETWORK_BYTE_ORDER                  /* indicates packet header data is in network byte order. The byte order flags apply only to headers, not payload contents. This flag is zero as the default (no flag) is network byte order, and is defined here only for documentation purposes */
+#define DS_PKTLIB_NETWORK_BYTE_ORDER                  /* indicates packet header data is in network byte order. The byte order flags apply only to headers, not payload contents. The value of this flag is zero as the default (no flag) is network byte order, and is defined here only for documentation purposes */
 #define DS_PKTLIB_HOST_BYTE_ORDER                     /* indicates packet header data is in host byte order. The byte order flags apply only to headers, not payload contents. Default (no flag) is network byte order */
 ```
 
