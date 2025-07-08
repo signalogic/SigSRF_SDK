@@ -246,7 +246,7 @@ int DSOpenPcap(const char*   pcap_file,
   * pcap_file should contain a null-terminated path and/or filename of the pcap, pcapng, or rtp/rtpdump file to open
   * uFlags may be one or more DS_OPEN_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below). Typically DS_OPEN_PCAP_READ is used for reading and DS_OPEN_PCAP_WRITE for writing
   * fp_pcap should point to a FILE* (defined in stdio.h) that on return will contain the new file handle
-  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that will on return contain header information about the file. NULL indicates not supplied
+  * pcap_file_hdr, if supplied, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that on return will contain header information about the file. NULL indicates not supplied
   * errstr, if supplied, should point to an error information string to be included in warning or error messages. NULL indicates not supplied
 
 On success, DSOpenPcap() reads or writes the file's header(s) and leaves fp_pcap pointing at the first pcap record. For pcapng files the first SHB and IDB (if present) have been read and fp_pcap is pointing at the first packet block.
@@ -286,7 +286,8 @@ int DSReadPcap(FILE*           fp_pcap,
                uint8_t*        pkt_buf,
                pcaprec_hdr_t*  pcap_pkt_hdr,
                int             link_layer_info,
-               uint16_t*       p_eth_hdr_type,
+               uint16_t*       p_eth_protocol,
+               uint16_t*       p_block_type,
                pcap_hdr_t*     pcap_file_hdr,
                unsigned int    uPktNumber,
                const char*     szUserMsgString
@@ -298,7 +299,8 @@ int DSReadPcap(FILE*           fp_pcap,
   * pkt_buf should point to a sufficiently large buffer to contain returned packet data
   * pcap_pkt_hdr, if not NULL, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, including arrival timestamp. NULL indicates not supplied
   * link_layer_info should be supplied from a prior DSOpenPcap() call return value. See DSOpenPcap() comments above
-  * p_eth_hdr_type, if not NULL, should point to a 16-bit unsigned int that will on return contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
+  * p_eth_protocol, if not NULL, should point to a 16-bit unsigned int that on return will contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file). NULL indicates not supplied
+  * p_block_type, if not NULL, should point to a 16-bt unsigned int that on return will contain one or more PCAP_XXX_TYPE or PCAPNG_XXX_TYPE flags (as defined in [pktlib.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/includes/pktlib.h)). When reading pcap or .rtpxxx files, PCAP_PB_TYPE or RTP_PB_TYPE is returned. NULL indicates not used
   * pcap_file_hdr, if not NULL, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call. NULL indicates not supplied
   * uPktNumber, if non-zero, will be included at the end of warning, error, and/or information messages. For messages concerning Interface Description, Interface Statistics, Journal, Decryption, or other block types the text "last transmitted data " is added and uPktNumber-1 is displayed, as these block types do not contain actual transmitted packet data. Applications are expected to keep track of packet numbers, for example to match accurately with Wireshark, even if they perform non-sequential file access
   * szUserMsgString, if not NULL, should point to a user-defined text string that will be displayed at the end of warning, error, and/or information messages
@@ -714,7 +716,7 @@ typedef struct pcaprec_hdr_s {    /* pcap packet (record) header */
   uint8_t    NextHeader;          /* Next header type */
   uint8_t    SrcAddr[16];         /* IPv4 or IPv6 source addr */
   uint8_t    DstAddr[16];         /* IPv4 or IPv6 dest addr */
-  uint32_t   IP_Version;          /* either IPv4 or IPv6 constants defined in pktlib.h or DS_IPV4 or DS_IPV6 enums defined in shared_include/session.h */
+  uint32_t   IP_Version;          /* either IPv4 or IPv6 constants defined in pktlib.h or IPV4 or IPV6 enums defined in shared_include/session.h (both sets of definitions have identical values) */
 
   UDPHeader  udpHeader;
   RTPHeader  rtpHeader;
