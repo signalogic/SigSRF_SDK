@@ -278,7 +278,7 @@ A return value < 0 indicates an error.
 <a name="DSReadPcap"></a>
 ## DSReadPcap
 
-DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcap record structs (see [Pcap Record Structs](#user-content-pcaprechdrt) below). DSReadPcap() fully parses each record it reads, including data link layer and VLAN headers (if any), and fills in packet record structs with packet data, timestamp, and length, and other information.
+DSReadPcap() reads one or more pcap, pcapng, or rtpXXX file records at the current file position of fp_pcap into pkt_buf, and fills in one or more record structs (see [Pcap Record Structs](#user-content-pcaprechdrt) below). DSReadPcap() fully parses each record it reads, including data link layer and VLAN headers (if any), and fills in packet record structs with packet data, timestamp, and length, and other information.
 
 ```c++  
 int DSReadPcap(FILE*           fp_pcap,
@@ -294,7 +294,7 @@ int DSReadPcap(FILE*           fp_pcap,
               );
 ```
 
-  * fp_pcap is the file handle of the pcap file to read
+  * fp_pcap is the file handle of the pcap, pcapng, or rtpXXX file to read
   * uFlags may be one or more DS_READ_PCAP_XXX flags listed below
   * pkt_buf should point to a sufficiently large buffer to contain returned packet data
   * pcap_pkt_hdr, if not NULL, should point to a [pcap packet record struct](#user-content-pcaprechdrtstruct) that on return will contain packet record info, including arrival timestamp
@@ -353,7 +353,7 @@ On success data pkt_buf_len bytes of data contained in in pkt_buf has been writt
 
 <ins>Return Value</ins>
 
-The return value is the length of the amount of data written (in bytes) or < 0 for an error condition.
+The return value is the length of the amount of data written (in bytes), or < 0 for an error condition.
 
 <ins>uFlags Definitions</ins>
 
