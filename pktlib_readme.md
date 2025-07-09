@@ -78,8 +78,9 @@ The following APIs and structs are defined in [pktlib.h](https://www.github.com/
 The pktlib API is large, so here it's divided into the following groups:
 
   * [Packet API Interface](#user-content-packetapiinterface)
-  * [Pcap API Interface](#user-content-pcapapiinterface)
   * [Push/Pull Interface](#user-content-pushpullapiinterface)
+  * [Packet Buffer API Interface](#user-content-packetbufferapiinterface)
+  * [Pcap API Interface](#user-content-pcapapiinterface)
 
 <a name="PacketAPIInterface"></a>
 # Packet API Interface
