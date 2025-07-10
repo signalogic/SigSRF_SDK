@@ -103,14 +103,14 @@ int DSGetPacketInfo(HSESSION      sessionHandle,
   * sessionHandle should contain a session handle if uFlags contains a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag, which require the packet be verified as matching with sessionHandle as a valid existing session. Otherwise sessionHandle should be set to -1, for any general packet. Additional notes: (i) if both sessionHandle is -1 and uFlags contains DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, DS_PKT_INFO_CHNUM_xxx flags, then all existing sessions will be searched. (ii) SigSRF documentation refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession()
   * uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If DS_BUFFER_PKT_IP_PACKET is given the packet should start with an IP header; if DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET are given the packet should start with a UDP or RTP header. DS_BUFFER_PKT_IP_PACKET is the default if no flag is given. Use DS_PKT_INFO_HOST_BYTE_ORDER if packet headers are in host byte order. Network byte order is the default if no flag is given. Byte order flags apply only to headers, not payload contents. If a DS_PKT_INFO_RTP_xxx flag is given, the corresponding RTP header item is returned. If DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flags are given, packet headers (plus session handle if user managed sessions are active) are used to match an existing session, after which a codec handle or channel number is returned and associated struct data is copied to pInfo as a TERMINATION_INFO or SESSION_DATA struct if pInfo is not NULL. If non-session-related, general information should be retrieved from the packet, sessionHandle should be given as -1
   * pkt_buf should point to a packet, and pkt_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap, pcapng, and rtp/rtpdump files. The DSFormatPacket() API can be used to help construct a packet
-  * pkt_len should contain the length of the packet, in bytes. If a packet length is unknown, pkt_len can be given as -1. Note that pkt_len *does not* specify the overall length of the packet data buffer, which is assumed to be sufficiently large enough to contain all packet data, including reassembled packet data if DS_PKT_INFO_REASSEMBLY_GET_PACKET is given
+  * pkt_len should contain the length of the packet, in bytes. If the packet length is unknown, pkt_len can be given as -1. Note that pkt_len *does not* specify the overall length of the packet data buffer, which is assumed to be sufficiently large enough to contain all packet data, including reassembled packet data if DS_PKT_INFO_REASSEMBLY_GET_PACKET is given
   * pInfo, if not NULL, on return will contain<br>
         &nbsp;<br>
         -a [PKTINFO struct](#user-content-pktinfostruct) if uFlags includes DS_PKT_INFO_PKTINFO<br>
         -an [RTPHeader struct](#user-content-rtpheaderstruct) if uFlags includes DS_PKT_INFO_RTP_HEADER<br>
         -a fully re-assembled packet if uFlags includes DS_PKT_INFO_REASSEMBLY_GET_PACKET<br>
         -a [TERMINATION_INFO struct](https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h) or [SESSION_DATA struct](https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h) if uFlags includes a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag
-  * chnum, if not NULL, will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given in uFlags. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned
+  * chnum, if not NULL, on return will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given in uFlags. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned
 
 <ins>Return Value</ins>
 
@@ -217,7 +217,7 @@ The DSPushPackets() and DSPullPackets() APIs form a "minimum touch" interface fo
 <a name="PacketBufferAPIInterface"></a>
 # Packet Buffer API Interface
 
-Normally apps should use the pktlib [Push/Pull API Interface](#user-content-pushpullapiinterface) to automate packet processing. In some cases it may be necessary to interact directly with stream buffers, in which case the APIs described in this section can be used. pktlib buffering performs jitter buffer functions for media streams, but is also capable of very long buffer, "clockless", and backpressure handling necessary in data analytics applications. pktlib [packet/media worker thread source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) shows examples of jitter buffer API usage.
+Normally apps should use the pktlib [Push/Pull API Interface](#user-content-pushpullapiinterface) to automate packet processing. In some cases it may be necessary to interact directly with packet buffers, in which case the APIs described in this section can be used. pktlib buffering performs jitter buffer functions for media streams, but is also capable of handling very long buffers, "clockless" timing, and backpressure management necessary in data analytics applications. pktlib [packet/media worker thread source code](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/packet_flow_media_proc.c) shows examples of packet buffer API usage.
 
 <a name="DSBufferPackets"></a>
 ## DSBufferPackets
@@ -228,7 +228,7 @@ Normally apps should use the pktlib [Push/Pull API Interface](#user-content-push
 <a name="PcapAPIInterface"></a>
 # Pcap API Interface
 
-The pktlib pcap API interface supports read/write to pcap, pcapng, and rtp files.  [pcap API source code](https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_pcap.cpp) is available if behavior should be modified or improved. 
+The pktlib pcap API interface supports read/write from/to pcap, pcapng, and rtp files. [pcap API source code](https://github.com/signalogic/SigSRF_SDK/blob/master/libs/pktlib/pktlib_pcap.cpp) is available if behavior should be modified. 
 
 <a name="DSOpenPcap"></a>
 ## DSOpenPcap
@@ -236,7 +236,7 @@ The pktlib pcap API interface supports read/write to pcap, pcapng, and rtp files
 DSOpenPcap() opens a pcap, pcapng, or rtp/rtpdump file for reading or writing. When reading, DSOpenPcap() fills in an optional file header struct (see [Pcap API Structs](#user-content-pcapapistructs) below), performing basic verification on magic number and supported link layer types.
 
 ```c++
-int DSOpenPcap(const char*   pcap_file,
+int DSOpenPcap(const char*   pcap_path,
                unsigned int  uFlags,
                FILE**        fp_pcap,
                pcap_hdr_t*   pcap_file_hdr,
@@ -244,7 +244,7 @@ int DSOpenPcap(const char*   pcap_file,
               );
 ```
 
-  * pcap_file should contain a null-terminated path and/or filename of the pcap, pcapng, or rtp/rtpdump file to open
+  * pcap_path should contain a null-terminated path and/or filename of the pcap, pcapng, or rtp/rtpdump file to open
   * uFlags may be one or more DS_OPEN_PCAP_XXX flags (see [Pcap API Definitions & Flags](#user-content-pcapapiflags) below). Typically DS_OPEN_PCAP_READ is used for reading and DS_OPEN_PCAP_WRITE for writing. If neither are given the default is DS_OPEN_PCAP_READ
   * fp_pcap should point to a FILE* (defined in stdio.h) that on return will contain the new file handle
   * pcap_file_hdr, if not NULL should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that on return will contain header information about the file
@@ -262,7 +262,7 @@ The return value is a 32-bit int formatted as:<br>
 
 When DS_OPEN_PCAP_READ flag is in effect, the full return value should be saved and then supplied as the link_layer_info param in DSReadPcap() and DSFilterPacket().
 
-A return value < 0 indicates an error.
+A return value < 0 indicates an error. If the pcap file was opened successfully before an error occurs, fp_pcap will contain the file handle and the application is responsible for either closing the file or reacting to the error message and continuing to use the file handle.
 
 <ins>uFlags Definitions</ins>
 
