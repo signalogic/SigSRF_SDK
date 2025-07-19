@@ -3130,6 +3130,8 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 > * -rN entry of 0 < N < 1 specifies "faster than real-time" (FTRT) mode, or 1/N faster than a nominal 10-20 msec ptime interval. Accurate timing for media domain processing, including stream alignment, is maintained depending on stream content, codec types, bitrates, and system / server CPU clockrate and number of cores. See [Bulk Pcap Handling](#user-content-bulkpcaphandling) for information and examples<br/>
 > * entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above)<br/>
 
+&nbsp;
+
 <a name="CommandLineDormantSessions"></a>
 #### Dormant Sessions
 
