@@ -387,7 +387,7 @@ Below is a screen capture showing output for the second command line above, with
 
 Packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Log](#user-content-packetlog_main) below.
 
-<a name=SSRCReplicationandReuse"></a>
+<a name="SSRCReplicationandReuse"></a>
 ### SSRC Replication and Reuse]
 
 Packet/media worker threads allow multiple sessions to "overload" or "replicate" an SSRC in sessions with different endpoints, assuming correct interleaving of the same SSRC. mediaMin defaults to this behavior, but also allows the [ENABLE_DORMANT_SESSIONS flag](#user-content-commandlinedormantsessions) to be set in the -dN command line argument to designate a session and channel that has been "taken over" as a "dormant session". In such cases the dormant session is flushed and any remaining media is cleared from its session state information and jitter buffers.
@@ -3135,7 +3135,7 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 
 If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that "overload" or "replicate" an SSRC in another session with different endpoints cause the session that was "taken over" to be designated as dormant, and its remaining media cleared from session state information and jitter buffers.
 
-For more information see [SSRC Replication and Reuse](#user-content-ssrcreplicationandreuse).
+For more information and run-time stats screen capture examples, see [SSRC Replication and Reuse](#user-content-ssrcreplicationandreuse).
 
 <a name="CommandLineJitterBufferOutputs"></a>
 #### Jitter Buffer Outputs
