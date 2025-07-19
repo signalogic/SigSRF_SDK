@@ -388,19 +388,19 @@ Below is a screen capture showing output for the second command line above, with
 Packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Log](#user-content-packetlog_main) below.
 
 <a name="SSRCReplicationandReuse"></a>
-### SSRC Replication and Reuse]
+### SSRC Replication and Reuse
 
 Packet/media worker threads allow multiple sessions to "overload" or "replicate" an SSRC in sessions with different endpoints, assuming correct interleaving of the same SSRC. mediaMin defaults to this behavior, but also allows the [ENABLE_DORMANT_SESSIONS flag](#user-content-commandlinedormantsessions) to be set in the -dN command line argument to designate a session and channel that has been "taken over" as a "dormant session". In such cases the dormant session is flushed and any remaining media is cleared from its session state information and jitter buffers.
 
-To provide insight on SSRC usage and endpoint behavior, packet/media worker threads keep track of SSRC replication and reuse, and include these stats in run-time stats. Below is a screen cap showing an SSRC replication:
+To provide insight into SSRC usage and endpoint behavior, packet/media worker threads keep track of SSRC replication and reuse, and include these stats in run-time stats. Below is a screen cap showing an SSRC replication, where session 0, channel 4 takes over the SSRC being used by session 1, channel 2 (highlighted in red):
 
 ![single SSRC replication](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_runtime_stats_screencap.png "SSRC replication mediaMin run-time stats example")
 
-In the above case it's advisable to set ENABLE_DORMANT_SESSIONS. Below is a screen cap showing numerous SSRC replications and reuses:
+In the above case the take over is clean, and it's advisable to set ENABLE_DORMANT_SESSIONS. Below is a screen cap showing numerous SSRC replications and reuses, highlighted in red:
 
 ![multiple SSRC replication and reuse](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_runtime_stats_screencap2.png "multiple SSRC replication and reuse mediaMin run-time stats example")
 
-In the above case, setting ENABLE_DORMANT_SESSIONS is not advisable as there would be frequent "flipping back and forth" between sessions using the same SSRC, with intermittent packet flushing, which is likely to impact audio quality and result in an unclean packet log.
+In the above case, there is frequent "flipping back and forth" between sessions using the same SSRCs, and it's not advisable to set ENABLE_DORMANT_SESSIONS which would lead to intermittent jitter buffer flushing likely to impact audio quality and result in an unclean packet log.
 
 To enable on per-session basis see TERM_ENABLE_DORMANT_SESSION flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/session.h</a>.
 
