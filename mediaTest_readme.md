@@ -31,6 +31,7 @@ Use case improvements
 
  - H.264 RTP auto-detect and elementary bitstream extraction
  - improved oversized packet handling (e.g. TSO/LSO or other packets captured or inserted at software level, before the NIC)
+ - detection of remote terminal connectivity loss and avoidance of impact on performance and results of long-running operations (e.g. long call recordings, regression tests, high capacity) 
 
 Bug fixes
 
@@ -187,6 +188,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreamscmdline)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SSRC Replication and Reuse](#user-content-ssrcreplicationandreuse)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin)<br/>
@@ -384,6 +386,23 @@ Below is a screen capture showing output for the second command line above, with
 ![mediaMin multiple RTP streams example](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/mediaTest_multiple_ssrc_screencap.png "mediaMin multiple RTP streams example")
 
 Packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Log](#user-content-packetlog_main) below.
+
+<a name=SSRCReplicationandReuse"></a>
+### SSRC Replication and Reuse]
+
+Packet/media worker threads allow multiple sessions to "overload" or "replicate" an SSRC in sessions with different endpoints, assuming correct interleaving of the same SSRC. mediaMin defaults to this behavior, but also allows the [ENABLE_DORMANT_SESSIONS flag](#user-content-commandlinedormantsessions) to be set in the -dN command line argument to designate a session and channel that has been "taken over" as a "dormant session". In such cases the dormant session is flushed and any remaining media is cleared from its session state information and jitter buffers.
+
+To provide insight on SSRC usage and endpoint behavior, packet/media worker threads keep track of SSRC replication and reuse, and include these stats in run-time stats. Below is a screen cap showing an SSRC replication:
+
+![single SSRC replication](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_runtime_stats_screencap.png "SSRC replication mediaMin run-time stats example")
+
+In the above case it's advisable to set ENABLE_DORMANT_SESSIONS. Below is a screen cap showing numerous SSRC replications and reuses:
+
+![multiple SSRC replication and reuse](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_runtime_stats_screencap2.png "multiple SSRC replication and reuse mediaMin run-time stats example")
+
+In the above case, setting ENABLE_DORMANT_SESSIONS is not advisable as there would be frequent "flipping back and forth" between sessions using the same SSRC, with intermittent packet flushing, which is likely to impact audio quality and result in an unclean packet log.
+
+To enable on per-session basis see TERM_ENABLE_DORMANT_SESSION flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/session.h</a>.
 
 <a name="DuplicatedRTPStreamsCmdLine"></a>
 ### Duplicated RTP Streams (RFC 7198)
@@ -774,9 +793,9 @@ To review or modify codec auto-detection, look for detect_codec_type_and_bitrate
 <a name="StaticSessionConfig"></a>
 ### Static Session Configuration
 
-Static session configuration can be handled programmatically using the [pktlib](#user-content-pktlib_main) DSCreateSession() API, after setting elements of structs defined in shared_include/session.h, or parsing a session configuration text file to set the struct elements. The latter method is implemented by both mediaTest and mediaMin (look for ReadSessionConfig() and StaticSessionCreate() inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
+Static session configuration can be handled programmatically using the [pktlib](#user-content-pktlib_main) DSCreateSession() API, after setting elements of structs defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/session.h</a>, or parsing a session configuration text file to set the struct elements. The latter method is implemented by both mediaTest and mediaMin (look for ReadSessionConfig() and StaticSessionCreate() inside <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). For existing sessions, the DSGetSessionInfo() and DSSetSessionInfo() APIs can be used to retrieve and modify session options.
 
-Structs used in session related APIs are defined in shared_include/session.h, look for SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
+Structs used in session related APIs are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/session.h</a>, look for SESSION_DATA, TERMINATION_INFO, voice_attributes, and video_attributes.
 
 Here is a look inside a typical session configuration file, similar to those used in the example command lines shown on this page:
 
@@ -3083,7 +3102,7 @@ The -dN option ENABLE_MEM_STATS flag (defined in <a href="https://github.com/sig
 
 Below is "quick-reference" mediaMin command line documentation:
 
-<a name="mediaMinCommandLineOptions"></a>
+<a name="In such cases, if ENABLE_DORMANT_SESSION is active, the dormant session is flushed and any remaining media is cleared from session state information and jitter buffers"></a>
 ### Options and Flags
 
 The -dN command line argument specifies options and flags. Here are some of the key flags, including command line value, a brief description, and the <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> flag name given in (). Many use cases require flags to be combined together:
@@ -3096,7 +3115,7 @@ The -dN command line argument specifies options and flags. Here are some of the 
 > 0x1000 (ENABLE_DER_STREAM_DECODE) - enable DER stream decode. Enables decoding of [encapsulated streams](#user-content-encapsulatedstreams) (e.g. UDP/RTP encapsulated in TCP/IP)<br/>
 > 0x40000 (ANALYTICS_MODE) - operate in analytics mode. Telecom mode is the default<br/>
 > 0x80000 (ENABLE_AUTO_ADJUST_PUSH_RATE) - use a queue balancing algorithm for packet push rate. Typically applied when packet arrival timestamps can't be used<br/>
-> 0x4000000 (DISABLE_DORMANT_SESSION_DETECTION) - disable detection of sessions containing stream SSRCs that "take over", or re-use, another other stream SSRC, in which case mediaMin's default action is to flush the earlier stream's jitter buffer, considering it to be dormant. However in some applications it's expected that different streams will have the same SSRC, in which case flushing is unwanted and this flag should be applied. Examples include interception or call recording of the same stream at different points during its transmission<br/>
+> 0x4000000 (ENABLE_DORMANT_SESSIONS) - enable dormant sessions. Dormant sessions are defined as a session with a channel SSRC in use which is then "taken over" by another session / channel. In such cases, if ENABLE_DORMANT_SESSIONS is active, the dormant session is flushed and any remaining media is cleared from session state information and jitter buffers. mediaMin default behavior is to allow multiple sessions to "overload" or "replicate" an SSRC in sessions with different endpoints, assuming correct interleaving of the same SSRC. Examples might include interception or call recording of the same stream at different points during its transmission. To enable on per-session basis see TERM_ENABLE_DORMANT_SESSION flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/session.h</a><br/>
 > 0x8000000 (ENABLE_JITTER_BUFFER_OUTPUT_PCAPS) - enable per-stream jitter buffer output pcaps if they should be needed for media quality analysis or other packet inspection. If enabled mediaMin will write out xxx_jbN.pcap files as shown in [Jitter Buffer Outputs](#user-content-jitterbufferoutputs). Otherwise the default is disabled to avoid unnecessary file space usage<br/>
 > 0x100000000000000 (ENABLE_TIMESTAMP_MATCH_MODE) - enable timestamp-match mode, which depends only on input stream arrival and RTP timestamps, with no wall clock reference. This is useful for reprocibility / repeatability reasons, for example in bulk pcap processing modes. Note however that any timestamp inaccuracies -- such as clock drift, post-gap restart, wrong packet rates -- may cause incorrect output timing and lack of synchronization between streams</br>
 > 0x400000000000000 (SHOW_PACKET_ARRIVAL_STATS) - show packet arrival stats in mediaMin summary stats display, including average interval between packets and average packet jitter vs stream ptime. These stats differ somewhat from Wireshark, as they apply only to media packets and exclude SID and DTMF packets</br>
@@ -3110,6 +3129,13 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 > * no entry is the same as -r0<br/>
 > * -rN entry of 0 < N < 1 specifies "faster than real-time" (FTRT) mode, or 1/N faster than a nominal 10-20 msec ptime interval. Accurate timing for media domain processing, including stream alignment, is maintained depending on stream content, codec types, bitrates, and system / server CPU clockrate and number of cores. See [Bulk Pcap Handling](#user-content-bulkpcaphandling) for information and examples<br/>
 > * entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above)<br/>
+
+<a name="CommandLineDormantSessions"></a>
+#### Dormant Sessions
+
+If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that "overload" or "replicate" an SSRC in another session with different endpoints cause the session that was "taken over" to be designated as dormant, and its remaining media cleared from session state information and jitter buffers.
+
+For more information see [SSRC Replication and Reuse](#user-content-ssrcreplicationandreuse).
 
 <a name="CommandLineJitterBufferOutputs"></a>
 #### Jitter Buffer Outputs
@@ -3207,7 +3233,7 @@ the above -dN entry specifies dynamic session creation, packet arrival timestamp
 
     WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
 
-then it's clear that wav file write seek times are an issue. To change the write time alarm threshold, look for uStreamGroupOutputWavFileSeekTimeAlarmThreshold in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> (a member of the DEBUG_CONFIG struct defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/config.h</a>).
+then it's clear that wav file write seek times are an issue. To change the write time alarm threshold, look for uStreamGroupOutputWavFileSeekTimeAlarmThreshold in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> (a member of the DEBUG_CONFIG struct defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/config.h" target = "_blank">shared_include/config.h</a>).
 
 Note that additional example of event log pre-emption warning messages are given in [Real-Time Performance]("user-content-realtimeperformance") above.
 
