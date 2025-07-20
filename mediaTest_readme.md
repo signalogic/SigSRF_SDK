@@ -390,7 +390,7 @@ Packet stats and history log files produced by the above commands (mediaplayout_
 <a name="SSRCReplicationandReuse"></a>
 ### SSRC Replication and Reuse
 
-Packet/media worker threads recognize and handle sessions that "overload" or "replicate" SSRCs in other sessions (i.e. with different endpoints), assuming correct interleaving of the same SSRC. mediaMin defaults to this behavior, but also allows the [ENABLE_DORMANT_SESSIONS flag](#user-content-commandlinedormantsessions) to be set in the -dN command line argument to designate sessions that have been "taken over" as "dormant sessions". In such cases each dormant session is flushed and any remaining media is cleared from its session state information and jitter buffers.
+[pktlib](#user-content-pktlib_main) packet/media worker threads recognize and handle sessions that "overload" or "replicate" SSRCs in other sessions (i.e. with different endpoints), assuming correct interleaving of the same SSRC. mediaMin defaults to this behavior, but also allows the [ENABLE_DORMANT_SESSIONS flag](#user-content-commandlinedormantsessions) to be set in the -dN command line argument to designate sessions that have been "taken over" as "dormant sessions". In such cases each dormant session is flushed and any remaining media is cleared from its session state information and jitter buffers.
 
 To provide insight into SSRC usage and endpoint behavior, packet/media worker threads keep track of SSRC replication and reuse, and include these stats in run-time stats. Below is a screen cap showing an SSRC replication, where session 0, channel 4 takes over the SSRC being used by session 1, channel 2 (highlighted in red):
 
@@ -608,7 +608,7 @@ Below are some voice and audio dynamic session command line examples:
 
     mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc11 -r20
 
-    mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0xc11 -r20
+    mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o4894.ws_xc0.pcap -o4894.ws_xc1.pcap -o4894.ws_xc2.pcap -L -d0x04000c11 -r20
 
 The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps streams, the second has two (2) AMR-NB 12200 bps streams and the third has two (2) EVS 13200 bps streams and three (3) AMR-WB 12650 bps streams (one of the AMR-WB streams is an RFC8108, or "child" channel). Below is a Wireshark screencap of what the first example output looks like:
 
@@ -3023,7 +3023,7 @@ in the above command lines, mediaTest encodes raw audio files to pcaps containin
 
 in the above command line, mediaTest upsamples a 16 kHz .wav file to 48 kHz, encodes to EVS 13.2 kbps bitstream, then decodes and writes to an output .wav file.
 
-    mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o xcode0.pcap -o xcode1.pcap -o xcode2.pcap -L -d 0xc11 -r20
+    mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o xcode0.pcap -o xcode1.pcap -o xcode2.pcap -L -d 0x04000c11 -r20
 
 in the above example the xcodeN.pcap files contain G711 RTP packets transcoded from the first three (3) streams found within incoming packet flow from a .pcapng file. Also, because the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags are set in the -dN argument, .wav files for audio streams found within incoming packet flow will be generated. The latter are [implied outputs](#user-content-impliedoutputs).
 
@@ -3135,7 +3135,13 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 <a name="CommandLineDormantSessions"></a>
 #### Dormant Sessions
 
-If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that "overload" or "replicate" an SSRC in another session with different endpoints cause the session that was "taken over" to be designated as dormant, and its remaining media cleared from session state information and jitter buffers.
+If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that "overload" or "replicate" an SSRC in another session with different endpoints cause the session that was "taken over" to be designated as dormant, and its remaining media cleared from session state information and jitter buffers. In this example with the ENABLE_DORMANT_SESSIONS FLAG set in the -dN command line argument:
+
+    mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d 0x04000c11 -r20
+
+run-time stats show session 4, channel 6 replicating the SSRC value in session 0, channel 0, upon which session 0 will be flushed and considered dormant, as shown in the following screen cap (highlighted in red):
+
+![SSRC replication and dormant session](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_dormant_session_screencap.png "SSRC replication and dormant session example")
 
 For more information and run-time stats screen capture examples, see [SSRC Replication and Reuse](#user-content-ssrcreplicationandreuse).
 
@@ -3144,7 +3150,7 @@ For more information and run-time stats screen capture examples, see [SSRC Repli
 
 If the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is set in the -dN command line argument (flag value of 0x8000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), jitter buffer output streams -- including all re-ordering, RFC 8108 SSRC changes, DTX expansion, and packet loss / timestamp repairs -- will be written to pcap files. For example, in this command line:
 
-    mediaMin -cx86 -i../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d0x20008000c11 -r20
+    mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d 0x08000c11 -r20
 
 the files:
 
