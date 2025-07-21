@@ -188,7 +188,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Real-Time Streaming and Packet Flow**](#user-content-realtimestreaming)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Decoding and Transcoding](#user-content-decodingandtranscoding)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Multiple RTP Streams (RFC8108)](#user-content-multiplertpstreamscmdline)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SSRC Replication and Reuse](#user-content-ssrcreplicationandreuse)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SSRC Duplication and Reuse](#user-content-ssrcduplicationandreuse)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpstreamscmdline)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Jitter Buffer Control](#user-content-jitterbuffercontrol)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[DTMF / RTP Event Handling](#user-content-dtmfhandlingmediamin)<br/>
@@ -387,20 +387,20 @@ Below is a screen capture showing output for the second command line above, with
 
 Packet stats and history log files produced by the above commands (mediaplayout_multipleRFC8108withresume_3xEVS_notimestamps_pkt_log_am.txt and EVS_16khz_13200bps_CH_RFC8108_IPv6_pkt_log_am.txt) show packet history grouped and collated by SSRC, ooo (out-of-order) packets re-ordered in the jitter buffer output section vs. the input section, and SID packet stats (as a result of DTX handling). For a packet log file excerpt, see [Packet Log](#user-content-packetlog_main) below.
 
-<a name="SSRCReplicationandReuse"></a>
-### SSRC Replication and Reuse
+<a name="SSRCDuplicationandReuse"></a>
+### SSRC Duplication and Reuse
 
-[pktlib](#user-content-pktlib_main) packet/media worker threads recognize and handle sessions that "overload" or "replicate" SSRCs in other sessions (i.e. with different endpoints), assuming correct interleaving of the same SSRC. mediaMin defaults to this behavior, but also allows the [ENABLE_DORMANT_SESSIONS flag](#user-content-commandlinedormantsessions) in the -dN command line argument to designate the original session as "dormant". In such cases each dormant session channel is flushed and any remaining media is cleared from its state information and jitter buffers.
+[pktlib](#user-content-pktlib_main) packet/media worker threads recognize and handle sessions that duplicate SSRCs in other sessions and reuse their previous SSRCs, assuming there is a valid reason for interleaving the same SSRC values betweeen sessions. Duplication happens when a new session uses the same SSRC as an existing session, and reuse happens when a session reuses its previous SSRC value. mediaMin defaults to this behavior, but also allows the [ENABLE_DORMANT_SESSIONS flag](#user-content-commandlinedormantsessions) in the -dN command line argument to designate the original session as "dormant", implying a (possibly long) pause in the original channel. In such cases each dormant session channel is flushed and any remaining media is cleared from its state information and jitter buffers.
 
-To provide insight into SSRC usage and endpoint behavior, packet/media worker threads keep track of SSRC replication and reuse, and include these stats in run-time stats. Below is a screen cap showing an SSRC replication, where session 0, channel 4 takes over the SSRC being used by session 1, channel 2 (highlighted in red):
+To provide insight into SSRC usage and endpoint behavior, packet/media worker threads keep track of SSRC duplication and reuse, and include these stats in run-time stats. Below is a screen cap showing an SSRC duplication, where session 0, channel 4 duplicates the SSRC being used by session 1, channel 2 (highlighted in red):
 
-![single SSRC replication](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_runtime_stats_screencap.png "SSRC replication mediaMin run-time stats example")
+![single SSRC duplication](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_duplication_and_reuse_runtime_stats_screencap.png "SSRC duplication mediaMin run-time stats example")
 
-In the above case the transition is clean, and it's advisable to set the ENABLE_DORMANT_SESSIONS flag. Below is a screen cap showing numerous SSRC replications and reuses, highlighted in red:
+In the above case the transition is clean, and it's advisable to set the ENABLE_DORMANT_SESSIONS flag. Below is a screen cap showing numerous SSRC duplications and reuses, highlighted in red:
 
-![multiple SSRC replication and reuse](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_runtime_stats_screencap2.png "multiple SSRC replication and reuse mediaMin run-time stats example")
+![multiple SSRC duplication and reuse](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_duplication_and_reuse_runtime_stats_screencap2.png "multiple SSRC duplication and reuse mediaMin run-time stats example")
 
-In the above case, there is frequent "flipping back and forth" between sessions using the same SSRCs, and it's not advisable to enable ENABLE_DORMANT_SESSIONS, which would lead to intermittent jitter buffer flushing likely to impact audio quality and result in an unclean packet log.
+In the above case, there is frequent "flipping back and forth" between sessions using the same SSRCs, possibly due to call-waiting or other normal operation, and it's not advisable to enable ENABLE_DORMANT_SESSIONS, which would lead to intermittent jitter buffer flushing likely to impact audio quality and result in an unclean packet log.
 
 To enable on per-session basis see TERM_ENABLE_DORMANT_SESSION flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/session.h</a>.
 
@@ -3115,7 +3115,7 @@ The -dN command line argument specifies options and flags. Here are some of the 
 > 0x1000 (ENABLE_DER_STREAM_DECODE) - enable DER stream decode. Enables decoding of [encapsulated streams](#user-content-encapsulatedstreams) (e.g. UDP/RTP encapsulated in TCP/IP)<br/>
 > 0x40000 (ANALYTICS_MODE) - operate in analytics mode. Telecom mode is the default<br/>
 > 0x80000 (ENABLE_AUTO_ADJUST_PUSH_RATE) - use a queue balancing algorithm for packet push rate. Typically applied when packet arrival timestamps can't be used<br/>
-> 0x4000000 (ENABLE_DORMANT_SESSIONS) - enable dormant sessions. Dormant sessions are defined as a session with a channel SSRC in use which is then "taken over" by another session / channel. In such cases the dormant session channel is flushed and any remaining media is cleared from its state information and jitter buffers. mediaMin default behavior is to allow multiple sessions to "overload" or "replicate" an SSRC in sessions with different endpoints, assuming correct interleaving of the same SSRC. Examples might include interception or call recording of the same stream at different points during its transmission. To enable on per-session basis see TERM_ENABLE_DORMANT_SESSION flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/session.h</a>. For more information see [Dormant Sessions](#user-content-commandlinedormantsessions) below<br/>
+> 0x4000000 (ENABLE_DORMANT_SESSIONS) - enable dormant sessions. Dormant sessions are defined as a session with a channel SSRC that is duplicated by another session / channel, implying a (possibly long) pause in the original channel. In such cases the dormant session channel is flushed and any remaining media is cleared from its state information and jitter buffers. mediaMin default behavior is to allow multiple sessions to duplicate an SSRC in sessions with different endpoints, assuming correct interleaving of the same SSRC. Examples might include interception or call recording of the same stream at different points during its transmission. To enable on per-session basis see TERM_ENABLE_DORMANT_SESSION flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/session.h</a>. For more information see [Dormant Sessions](#user-content-commandlinedormantsessions) below<br/>
 > 0x8000000 (ENABLE_JITTER_BUFFER_OUTPUT_PCAPS) - enable per-stream jitter buffer output pcaps if they should be needed for media quality analysis or other packet inspection. If enabled mediaMin will write out xxx_jbN.pcap files as shown in [Jitter Buffer Outputs](#user-content-jitterbufferoutputs). Otherwise the default is disabled to avoid unnecessary file space usage<br/>
 > 0x100000000000000 (ENABLE_TIMESTAMP_MATCH_MODE) - enable timestamp-match mode, which depends only on input stream arrival and RTP timestamps, with no wall clock reference. This is useful for reprocibility / repeatability reasons, for example in bulk pcap processing modes. Note however that any timestamp inaccuracies -- such as clock drift, post-gap restart, wrong packet rates -- may cause incorrect output timing and lack of synchronization between streams</br>
 > 0x400000000000000 (SHOW_PACKET_ARRIVAL_STATS) - show packet arrival stats in mediaMin summary stats display, including average interval between packets and average packet jitter vs stream ptime. These stats differ somewhat from Wireshark, as they apply only to media packets and exclude SID and DTMF packets</br>
@@ -3135,15 +3135,15 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 <a name="CommandLineDormantSessions"></a>
 #### Dormant Sessions
 
-If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that "overload" or "replicate" an SSRC in another session with different endpoints cause the session that was "taken over" to be designated as dormant, and its remaining media cleared from session state information and jitter buffers. In this example with the ENABLE_DORMANT_SESSIONS FLAG set in the -dN command line argument:
+If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that duplicate an SSRC in another session with different endpoints cause the session that was duplicated" to be designated as dormant, and its remaining media cleared from session state information and jitter buffers. In this example with the ENABLE_DORMANT_SESSIONS FLAG set in the -dN command line argument:
 
     mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d 0x04000c11 -r20
 
-run-time stats show session 4, channel 6 replicating the SSRC value in session 0, channel 0, which is then flushed and considered dormant, as shown in the following screen cap (highlighted in red):
+run-time stats show session 4, channel 6 duplicating the SSRC value in session 0, channel 0, which is then flushed and considered dormant, as shown in the following screen cap (highlighted in red):
 
-![SSRC replication and dormant session](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_dormant_session_screencap.png "SSRC replication and dormant session example")
+![SSRC duplication and dormant session](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_duplication_and_reuse_dormant_session_screencap.png "SSRC duplication and dormant session example")
 
-For more information and run-time stats screen capture examples, see [SSRC Replication and Reuse](#user-content-ssrcreplicationandreuse).
+For more information and run-time stats screen capture examples, see [SSRC Duplication and Reuse](#user-content-ssrcduplicationandreuse).
 
 <a name="CommandLineJitterBufferOutputs"></a>
 #### Jitter Buffer Outputs
