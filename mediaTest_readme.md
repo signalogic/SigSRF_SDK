@@ -3135,7 +3135,7 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 <a name="CommandLineDormantSessions"></a>
 #### Dormant Sessions
 
-If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that duplicate an SSRC in another session with different endpoints cause the session that was duplicated" to be designated as dormant, and its remaining media cleared from session state information and jitter buffers. In this example with the ENABLE_DORMANT_SESSIONS FLAG set in the -dN command line argument:
+If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that duplicate an SSRC in another session cause the session that was duplicated to be designated as dormant, and its remaining media cleared from session state information and jitter buffers. Doing this assumes a valid reason for the original session to pause or halt its use of the SSRC value, for example call-waiting or other normal operation. In this example with the ENABLE_DORMANT_SESSIONS FLAG set in the -dN command line argument:
 
     mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d 0x04000c11 -r20
 
