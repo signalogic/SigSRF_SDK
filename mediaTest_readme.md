@@ -400,7 +400,7 @@ In the above case the transition is clean, and it's advisable to set the ENABLE_
 
 ![multiple SSRC duplication and reuse](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_duplication_and_reuse_runtime_stats_screencap2.png "multiple SSRC duplication and reuse mediaMin run-time stats example")
 
-In the above case, there is frequent "flipping back and forth" between sessions using the same SSRCs, possibly due to call-waiting or other normal operation, and it's not advisable to enable ENABLE_DORMANT_SESSIONS, which would lead to intermittent jitter buffer flushing likely to impact audio quality and result in an unclean packet log.
+In the above case, there is frequent "flipping back and forth" between sessions using the same SSRCs, possibly due to call-waiting or other normal operation, and it's not advisable to set the ENABLE_DORMANT_SESSIONS flag, which would lead to intermittent jitter buffer flushing likely to impact audio quality and result in an unclean packet log.
 
 To enable on per-session basis see TERM_ENABLE_DORMANT_SESSION flag in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h" target = "_blank">shared_include/session.h</a>.
 
@@ -3135,7 +3135,7 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 <a name="CommandLineDormantSessions"></a>
 #### Dormant Sessions
 
-If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that duplicate an SSRC in another session cause the session that was duplicated to be designated as dormant, and its remaining media cleared from session state information and jitter buffers. Doing this assumes a valid reason for the original session to pause or halt its use of the SSRC value, for example call-waiting or other normal operation. In this example with the ENABLE_DORMANT_SESSIONS FLAG set in the -dN command line argument:
+If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that duplicate an SSRC in another session cause the session that was duplicated to be designated as dormant, and its remaining media cleared from session state information and jitter buffers. Doing this assumes a valid reason for the original session to pause or halt its use of the SSRC value, for example call-waiting or other normal operation. In this example with the ENABLE_DORMANT_SESSIONS flag set in the -dN command line argument:
 
     mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d 0x04000c11 -r20
 
