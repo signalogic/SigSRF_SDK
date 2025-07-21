@@ -396,7 +396,7 @@ To provide insight into SSRC usage and endpoint behavior, packet/media worker th
 
 ![single SSRC replication](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_runtime_stats_screencap.png "SSRC replication mediaMin run-time stats example")
 
-In the above case the transition is clean, and it's advisable to enable ENABLE_DORMANT_SESSIONS. Below is a screen cap showing numerous SSRC replications and reuses, highlighted in red:
+In the above case the transition is clean, and it's advisable to set the ENABLE_DORMANT_SESSIONS flag. Below is a screen cap showing numerous SSRC replications and reuses, highlighted in red:
 
 ![multiple SSRC replication and reuse](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/ssrc_replication_and_reuse_runtime_stats_screencap2.png "multiple SSRC replication and reuse mediaMin run-time stats example")
 
