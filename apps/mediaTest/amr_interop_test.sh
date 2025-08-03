@@ -194,7 +194,7 @@ mediaMin -cx86 -i../test_files/tmpwpP7am.pcap -L -d0x580000000040811 -r0.5 --md5
 mediaMin -cx86 -i../test_files/amr-bw-efficient.pcap -L -d0x20010000c11 -r20 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 23850 octet-aligned md5 sum ending in ebc64b
-mediaMin -c x86 -i ../test_files/codecs3-amr-wb.pcap -L -d 0x20018040c11 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -c x86 -i ../test_files/codecs3-amr-wb.pcap -L -d 0x20010040c11 -r0.5 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 mediaMin -cx86 -i../test_files/codecs-amr-12.pcap -L -d0x20010000c11 -r0.5 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 

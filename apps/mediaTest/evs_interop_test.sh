@@ -20,6 +20,7 @@
 # Revision History
 #   Created Nov 2023
 #   Revised Jun 2025, remove DISABLE_JITTER_BUFFER_OUTPUT_PCAPS flag from -dN entry. mediaMin no longer generates these by default (see cmd_line_options_flags.h) 
+#   Revised Jul 2025, remove ENABLE_DORMANT_SESSIONS flag in -dN entry for evs_mixed_mode_mixed_rate.pcap (after flag definition change in cmd_line_options_flags.h)
 #
 # Usage
 #
@@ -84,7 +85,7 @@ mediaMin -cx86 -i../"${MEDIATEST_OUTPUTS}"/stv16c_evs_16kHz_6600_compact_header.
 
 # mixed modes and mixed rates, including AMR-WB IO mode with bit shifted payloads
 #
-mediaMin -cx86 -i../pcaps/evs_mixed_mode_mixed_rate.pcap -L -d0x040c0c01 -r0.9 -C../session_config/EVS_AMR-WB_IO_mode_payload_shift "${MEDIAMIN_WAV_OUTPUTS}" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../pcaps/evs_mixed_mode_mixed_rate.pcap -L -d0x000c0c01 -r0.9 -C../session_config/EVS_AMR-WB_IO_mode_payload_shift "${MEDIAMIN_WAV_OUTPUTS}" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 cd ..
 
 # VBR 5900 bps mode tests

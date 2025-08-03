@@ -117,7 +117,7 @@
   Modified Dec 2024 JHB, add DSGetPacketInfo() flags DS_PKT_INFO_USE_IP_HDR_LEN and DS_PKT_INFO_COPY_IP_HDR_LEN_IN_PINFO, these can be used to minimize number of DSGetPacketInfo() calls and overhead per call; see comments
   Modified Jan 2025 JHB, add isRTCPPacket() macro
   Modified Feb 2025 JHB, mods needed to support improved pcapng format handling in pktlib
-                         -pktlib improvements include full block type handling for simple packet blocks, IDB blocks, other known blocks (e.g. NRB, statistics, etc), and custom (unknown) blocks
+                         -pktlib improvements include full block type handling for simple packet blocks, IDB blocks, other known blocks (e.g. NRB, interface statistics, etc), and custom (unknown) blocks
                          -add p_block_type param to DSReadPcap()
                          -re-factor pcapng structs, break out pcapng_block_header struct separately. Add struct for simple packet blocks
   Modified Feb 2025 JHB, add DSReadPcap() flags DS_READ_PCAP_DISABLE_NULL_LOOPBACK_PROTOCOL and DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX, see comments
@@ -126,6 +126,8 @@
   Modified Apr 2025 JHB, add DS_PKT_INFO_PINFO_CONTAINS_ETH_PROTOCOL flag to support rudimentary non-IP packet handling in DSGetPacketInfo(). An ethernet protocol can be given in pInfo and this flag applied. For example usage see GetInputData() in mediaMin.cpp
   Modified Apr 2025 JHB, add rtcp_pyld_type field to PKTINFO struct, add isRTCPCustomPacket() macro. See comments
   Modified May 2025 JHB, add DS_PKT_PYLD_CONTENT_IGNORE_PTIME flag
+  Modified Jun 2025 JHB, add DS_READ_PCAP_REPORT_TSO_LENGTH_FIX flag
+  Modified Jun 2025 JHB, add uPktNumber and szUserMsgString params to DSReadPcap(). See comments
 */
 
 #ifndef _PKTLIB_H_
@@ -338,7 +340,7 @@ extern "C" {
     uint8_t    NextHeader;      /* Next header type */
     uint8_t    SrcAddr[16];     /* IPv4 or IPv6 source addr */
     uint8_t    DstAddr[16];     /* IPv4 or IPv6 dest addr */
-    uint32_t   IP_Version;      /* accepts either IPv4 or IPv6 constants defined below or DS_IPV4 or DS_IPV6 enums defined in shared_include/session.h */
+    uint32_t   IP_Version;      /* accepts either IPv4 or IPv6 constants defined below or IPV4 or IPV6 enums defined in shared_include/session.h (both sets of definitions have identical values) */
 
     UDPHeader  udpHeader;
     RTPHeader  rtpHeader;
@@ -871,7 +873,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
     union {
 
-      struct {  /* pcap and pcapng format, the default */
+      struct {  /* pcap format, the default */
 
         uint32_t magic_number;   /* magic number */
         uint16_t version_major;  /* major version number */
@@ -882,7 +884,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
         uint32_t link_type;      /* data link type */
       };
 
-      struct {  /* add rtp format as a union (https://formats.kaitai.io/rtpdump), JHB Nov 2023 */
+      struct {  /* include rtp format as a union (https://formats.kaitai.io/rtpdump), JHB Nov 2023 */
 
         char     shebang[12];
         char     space[1];
@@ -904,15 +906,26 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
     uint32_t ts_sec;         /* timestamp seconds */
     uint32_t ts_usec;        /* timestamp microseconds */
-    uint32_t incl_len;       /* number of octets of packet saved in file */
+    uint32_t incl_len;       /* number of octets of packet record */
     uint32_t orig_len;       /* actual length of packet */
 
   } pcaprec_hdr_t;
 
-  typedef struct pcapng_hdr_s {  /* pcapng format section header block (SHB) */
+  typedef struct pcapng_block_header_s {  /* basic header present in all pcapng block types */
 
-    uint32_t magic_number;    /* magic number */
+    union {
+      uint32_t block_type;
+      uint32_t magic_number;  /* for section header blocks (SHBs) the block type is 0x0a0d0d0a, aka pcapng file magic number */
+    };
+
     uint32_t block_length;
+
+  } pcapng_block_header_t;
+
+  typedef struct pcapng_hdr_s {  /* pcapng format section header block (SHB). pcapng files can have multiple SHBs, so the first SHB is effectively the pcapng file header */
+
+    struct pcapng_block_header_s block_header;
+
     uint32_t byte_order_magic;
     uint16_t version_major;   /* major version number */
     uint16_t version_minor;   /* minor version number */
@@ -920,16 +933,20 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
   } pcapng_hdr_t;
 
-  typedef struct pcapng_block_header_s {  /* basic header present in all pcapng block types */
+  typedef struct pcapng_idb_s {  /* pcapng format interface description block (IDB) */
 
-    uint32_t block_type;
-    uint32_t block_length;
+    struct pcapng_block_header_s block_header;
 
-  } pcapng_block_header_t;
+    uint16_t link_type;
+    uint16_t reserved;
+    uint32_t snaplen;
+
+  } pcapng_idb_t;
 
   typedef struct pcapng_spb_s {  /* pcapng format simple packet block */
   
     struct pcapng_block_header_s block_header;
+
     uint32_t original_pkt_len;
 
   } pcapng_spb_t;
@@ -937,6 +954,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
   typedef struct pcapng_epb_s {  /* pcapng format enhanced packet block (EPB) */
 
     struct pcapng_block_header_s block_header;
+
     uint32_t interface_id;
     uint32_t timestamp_hi;
     uint32_t timestamp_lo;
@@ -944,15 +962,6 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
     uint32_t original_pkt_len;
 
   } pcapng_epb_t;
-
-  typedef struct pcapng_idb_s {  /* pcapng format interface description block (IDB) */
-
-    struct pcapng_block_header_s block_header;
-    uint16_t link_type;
-    uint16_t reserved;
-    uint32_t snaplen;
-
-  } pcapng_idb_t;
 
   typedef struct {  /* pcap record vlan header */
 
@@ -1027,17 +1036,20 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
 /* DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (see above definition). Notes:
 
+   -fp_pcap should point to a pcap, pcapng, or rtpXXX file previously opened by DSOpenPcap()
+   -uFlags are given in DS_READ_PCAP_XXX definitions below
    -pkt_buf should point to a sufficiently large memory area to contain returned packet data
    -link_layer_info should be supplied from a prior DSOpenPcap() call. See comments above
    -if an optional p_eth_protocol pointer is supplied, one or more ETH_P_XXX ethernet protocol flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
    -if an optional p_block_type pointer is supplied, one or more PCAP_XXX_TYPE or PCAPNG_XXX_TYPE flags will be returned (as defined above). When reading pcap or .rtpxxx files, PCAP_PB_TYPE or RTP_PB_TYPE is returned. NULL indicates not used
    -if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition)
-   -uFlags are given in DS_READ_PCAP_XXX definitions below
+   -if a non-zero uPktNumber is supplied, warning, error, and/or information messages displayed will include this number at the end of the message. For messages concerning Interface Description, Interface Statistics, Journal, Decryption, or other block types the text "last transmitted data " is prefixed and uPktNumber-1 is displayed, as these block types do not contain actual transmitted packet data. Applications are expected to keep track of packet numbers, for example to match accurately with Wireshark, even if they perform non-sequential file access
+   -if an optional szUserMsgString pointer is supplied, warning, error, and/or information messages displayed will include this string at the end of the message
 
    -return value is the length of the packet, zero if file end has been reached, or < 0 for an error condition
 */
 
-  int DSReadPcap(FILE* fp_pcap, unsigned int uFlags, uint8_t* pkt_buf, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* p_eth_protocol, uint16_t* p_block_type, pcap_hdr_t* pcap_file_hdr);
+  int DSReadPcap(FILE* fp_pcap, unsigned int uFlags, uint8_t* pkt_buf, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* p_eth_protocol, uint16_t* p_block_type, pcap_hdr_t* pcap_file_hdr, unsigned int uPktNumber, const char* szUserMsgString);
 
   #define DS_READ_PCAP_COPY                             0x0100  /* copy pcap record(s) only, don't advance file pointer */
 
@@ -1045,6 +1057,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 
   #define DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX           0x0400  /* by default DSReadPcap() fixes TCP Segment Offload (TSO) packets with "zero length", and sets packet length inside returned packet data to what's in the pcap/pcapng record (typically labeled as "captured" length). Currently this is done only for block types PCAP_PB_TYPE, PCAPNG_EPB_TYPE, and PCAPNG_SPB_TYPE, and for IPv4 TCP packets. Note that Wireshark will label these as "length reported as 0, presumed to be because of TCP segmentation offload (TSO)". To disable this behavior the DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX flag can be applied, although this may cause "malformed packet" warnings */
 
+  #define DS_READ_PCAP_REPORT_TSO_LENGTH_FIX            0x0800  /* by default DSReadPcap() does not report TSO packet zero length fixes. The DS_READ_PCAP_REPORT_TSO_LENGTH_FIX flag can be applied if these should be reported with information messages */
+  
   #define DS_READ_PCAP_SUPPRESS_WARNING_ERROR_MSG       DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG
   #define DS_READ_PCAP_SUPPRESS_INFO_MSG                DS_PKTLIB_SUPPRESS_INFO_MSG
 
@@ -1226,6 +1240,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_BUFFER_PKT_ENABLE_RFC7198_DEDUP              0x8000  /* legacy method of handling RFC7198 temporal de-duplication, should not be used unless needed in a specific case. New method is to apply the DS_RECV_PKT_ENABLE_RFC7198_DEDUP flag to packets being received from a per session queue */
 #define DS_BUFFER_PKT_ENABLE_DYNAMIC_ADJUST            0x10000  /* enable dynamic jitter buffer; i.e. target delay is adjusted dynamically based on measured incoming packet delays */
 #define DS_BUFFER_PKT_EXTENDED_SESSION_SEARCH  DS_PKT_INFO_EXTENDED_SESSION_SEARCH  /* enable extended session search to allow packet buffering for mix of user-managed sessions and process-managed sessions */
+#define DS_BUFFER_PKT_EXCLUDE_PAYLOAD_TYPE             0x20000
 
 #define DS_GETORD_PKT_SESSION                            0x100
 #define DS_GETORD_PKT_CHNUM                              0x200
@@ -1675,9 +1690,14 @@ extern SESSION_INFO_THREAD session_info_thread[];  /* added Jan 2021, JHB */
 
 /* function to determine if current thread is an application thread (i.e. pktlib API is being called from a user app, not from a packet/media thread). Returns true for app threads */
   
-static inline bool isPmThreadInline(HSESSION hSession, int* pThreadIndex) {
+inline bool isPmThreadInline(HSESSION hSession, int* pThreadIndex) {
 
   #include "isPmThread.c"  /* include isPmThread() source */
+}
+
+static inline uint32_t get_session_thread_index(HSESSION hSession) {  /* called by set_session_last_push_time() in packet_flow_media_proc.c (DSPushPackets() calls  set_session_last_push_time()), JHB Jun 2023. Moved here from pktlib.c, JHB Jul 2025 */
+
+  return sessions[hSession].thread_index;
 }
 
 #ifdef __cplusplus
@@ -2268,16 +2288,16 @@ error:
       case DS_SESSION_INFO_RTP_PAYLOAD_TYPE:
 
          if (uFlags & DS_SESSION_INFO_HANDLE) {
-            if (term_id == 1) ret_val = sessions[sessionHandle].session_data.term1.attr.voice.rtp_payload_type;
-            else if (term_id == 2) ret_val = sessions[sessionHandle].session_data.term2.attr.voice.rtp_payload_type;
+            if (term_id == 1) ret_val = sessions[sessionHandle].session_data.term1.voice.rtp_payload_type;
+            else if (term_id == 2) ret_val = sessions[sessionHandle].session_data.term2.voice.rtp_payload_type;
          }
          else if (uFlags & DS_SESSION_INFO_CHNUM) {
 
             if (n == -1) goto check_n;
 
             if (no_term_id_arg) term_id = 1;
-            if (term_id == 1 && ChanInfo_Core[n].term && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].term->attr.voice.rtp_payload_type;
-            else if (term_id == 2 && ChanInfo_Core[n].link && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].link->term->attr.voice.rtp_payload_type;
+            if (term_id == 1 && ChanInfo_Core[n].term && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].term->voice.rtp_payload_type;
+            else if (term_id == 2 && ChanInfo_Core[n].link && ChanInfo_Core[n].chan_exists) ret_val = ChanInfo_Core[n].link->term->voice.rtp_payload_type;
          }
 
          break;

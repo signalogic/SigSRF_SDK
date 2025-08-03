@@ -27,7 +27,9 @@
    Modified May 2023 JHB, changed SetIntervalTiming() to SetSessionTiming() and StaticSessionsCreate() to CreateStaticSessions()
    Modified Mar 2025 JHB, add cur_time param to CreateStaticSessions()
    Modified Jun 2025 JHB, add CheckConfigFile()
+   Modified Jul 2025 JHB, add FindStream(), RemoveLastStreamKey(), and ResetStreamKeys() after moving these functions to session_app.cpp
 */
+
 #ifndef _SESSION_APP_H_
 #define _SESSION_APP_H_
 
@@ -35,11 +37,21 @@
 
 /* functions in session_app.cpp */
 
+int FindStream(uint8_t* pkt, int ip_hdr_len, uint8_t rtp_pyld_type, uint32_t ssrc, bool fDTMF, unsigned int* pStreamFlags, int thread_index);
+void RemoveLastStreamKey(int thread_index);
+void ResetStreamKeys(int thread_index);
+
 int ReadSessionConfig(SESSION_DATA session_data[], int thread_index);
 int ReadCodecConfig(codec_test_params_t* codec_test_params, int thread_index);
 int CreateStaticSessions(HSESSION hSessions[], SESSION_DATA session_data[], int nSessionsConfigured, uint64_t cur_time, int thread_index);
 void SetSessionTiming(SESSION_DATA session_data[]);
 unsigned int GetSessionFlags();
 int CheckConfigFile(char* config_file, int thread_index);
+
+/* FindStream() pStreamFlags definitions */
+
+#define FIND_STREAM_SSRC_MATCH                  1
+#define FIND_STREAM_PAYLOAD_TYPE_UNMATCHED      2
+#define FIND_STREAM_RTCP_PACKET             0x100
 
 #endif  /*  _SESSION_APP_H_ */

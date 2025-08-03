@@ -41,7 +41,6 @@ using namespace std;
 #include <stdarg.h>
 
 #include "mediaTest.h"  /* uPortList[], CMDOPT_MAX_INPUT_LEN, MAX_APP_THREADS, etc */
-
 #include "mediaMin.h"
 #include "user_io.h"    /* app_printf() */
 

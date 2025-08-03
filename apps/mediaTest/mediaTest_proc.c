@@ -125,6 +125,8 @@ Revision History
   Modified Jan 2025 JHB, add typecast for codec_types typedef usage (codec_types is defined in shared_include/codec.h)
   Modified Feb 2025 JHB, add sdp_info, nId and fp_out params to DSGetPayloadInfo(), per changes in voplib.h. Currently these are only used for video bitstream extraction, otherwise set to NULL and/or zero (unused)
   Modified Mar 2025 JHB, per changes in pktlib.h to standardize with other SigSRF libs, adjust references to DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG flag
+  Modified Jun 2025 JHB, add zero and NULL params in call to DSReadPcap() per change in pktlib.h
+  Modified Jun 2025 JHB, for ip_addr, voice_attributes, and TERMINATION_INFO structs, remove "u" and "attr" intermediate addressing for unions and address individual structs directly
 */
 
 /* Linux header files */
@@ -1432,13 +1434,13 @@ char tmpstr[1024] = "";
             #if 0
             term_info.local_ip.type = DS_IPV6;
             term_info.remote_ip.type = DS_IPV6;
-            memcpy(&term_info.local_ip.u.ipv6, xxx, IPV6_ADDR_LEN);  /* IPVn_ADDR_LEN defined in pktlib.h */
-            memcpy(&term_info.remote_ip.u.ipv6, xxx, IPV6_ADDR_LEN);
+            memcpy(&term_info.local_ip.ipv6, xxx, IPV6_ADDR_LEN);  /* IPVn_ADDR_LEN defined in pktlib.h */
+            memcpy(&term_info.remote_ip.ipv6, xxx, IPV6_ADDR_LEN);
             #else
             term_info.local_ip.type = IPV4;  /* default: use source/dest IP addr and port and payload type values compatible with "pcap_file_test_config" config file, which is referred to in several mediaTest demo command lines. IPv6 and user-specified IP addr and UDP port can be added later */
             term_info.remote_ip.type = IPV4;
-            term_info.local_ip.u.ipv4_uint32 = htonl(0xC0A80003);  /* 192.168.0.3 */
-            term_info.remote_ip.u.ipv4_uint32 = htonl(0xC0A80001);  /* 192.168.0.1 */
+            term_info.local_ip.uIpv4 = htonl(0xC0A80003);  /* 192.168.0.3 */
+            term_info.remote_ip.uIpv4 = htonl(0xC0A80001);  /* 192.168.0.1 */
             #endif
 
             term_info.local_port = 0x0228;  /* 10242, network byte order */
@@ -1448,34 +1450,34 @@ char tmpstr[1024] = "";
 
                case DS_CODEC_VOICE_G711_ULAW:
                case DS_CODEC_VOICE_G711_WB_ULAW:
-                  term_info.attr.voice.rtp_payload_type = 0;
+                  term_info.voice.rtp_payload_type = 0;
                   break;
                case DS_CODEC_VOICE_G711_ALAW:
                case DS_CODEC_VOICE_G711_WB_ALAW:
-                  term_info.attr.voice.rtp_payload_type = 8;
+                  term_info.voice.rtp_payload_type = 8;
                   break;
                case DS_CODEC_VOICE_G723:
-                  term_info.attr.voice.rtp_payload_type = 4;
+                  term_info.voice.rtp_payload_type = 4;
                   break;
                case DS_CODEC_VOICE_G726:
-                  term_info.attr.voice.rtp_payload_type = 2;
+                  term_info.voice.rtp_payload_type = 2;
                   break;
                case DS_CODEC_VOICE_G729AB:
-                  term_info.attr.voice.rtp_payload_type = 18;
+                  term_info.voice.rtp_payload_type = 18;
                   break;
                default:  /* use a different dynamic payload type for different codecs to make regression test analysis and debug a tad easier, JHB Dec 2024 */
-                  term_info.attr.voice.rtp_payload_type = 106 + codec_test_params.codec_type;
+                  term_info.voice.rtp_payload_type = 106 + codec_test_params.codec_type;
             }
 
-            memcpy(&format_pkt.SrcAddr, &term_info.local_ip.u, IPV4_ADDR_LEN);  /* IPVn_ADDR_LEN defined in pktlib.h */
-            memcpy(&format_pkt.DstAddr, &term_info.remote_ip.u, IPV4_ADDR_LEN);
+            memcpy(&format_pkt.SrcAddr, &term_info.local_ip.ipv4, IPV4_ADDR_LEN);  /* IPVn_ADDR_LEN defined in pktlib.h */
+            memcpy(&format_pkt.DstAddr, &term_info.remote_ip.ipv4, IPV4_ADDR_LEN);
             format_pkt.IP_Version = term_info.local_ip.type;
             format_pkt.udpHeader.SrcPort = term_info.local_port;
             format_pkt.udpHeader.DstPort = term_info.remote_port;
             #if 0
-            format_pkt.rtpHeader.BitFields = term_info.attr.voice.rtp_payload_type;  /* set payload type (BitFields is 16-bit so we use network byte order. An alternative is to apply DS_FMT_PKT_HOST_BYTE_ORDER flag) */
+            format_pkt.rtpHeader.BitFields = term_info.voice.rtp_payload_type;  /* set payload type (BitFields is 16-bit so we use network byte order. An alternative is to apply DS_FMT_PKT_HOST_BYTE_ORDER flag) */
             #else
-            format_pkt.rtpHeader.PyldType = term_info.attr.voice.rtp_payload_type;  /* set payload type */
+            format_pkt.rtpHeader.PyldType = term_info.voice.rtp_payload_type;  /* set payload type */
             #endif
 
             clock_gettime(CLOCK_REALTIME, &ts_pcap);
@@ -2773,7 +2775,7 @@ codec_test_cleanup:
 
          uint16_t eth_hdr_type;
 
-         if (!(packet_length = DSReadPcap(fp_in, 0, pkt_buffer, &pcap_pkt_hdr, link_layer_info, &eth_hdr_type, NULL, NULL))) break;  /* read pcap, save packet header in pcap_pkt_hdr in case needed for DSPcapWrite(). On end of file, break out of main while loop, JHB Jul 2024 */
+         if (!(packet_length = DSReadPcap(fp_in, 0, pkt_buffer, &pcap_pkt_hdr, link_layer_info, &eth_hdr_type, NULL, NULL, 0, NULL))) break;  /* read pcap, save packet header in pcap_pkt_hdr in case needed for DSPcapWrite(). On end of file, break out of main while loop, JHB Jul 2024 */
 
          frame_count++;
          if (outFileType == ENCODED) printf("\rExtracting pcap payload %d", frame_count);

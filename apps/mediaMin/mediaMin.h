@@ -61,6 +61,7 @@
    Modified Apr 2025 JHB, simplify stream stats implementation, remove uStreamStatsState[]
    Modified May 2025 JHB, add output stats pkt_stream_group_pcap_out_ctr[], pkt_transcode_pcap_out_ctr[], and pkt_bitstream_out_ctr[]
    Modified Jun 2025 JHB, add szTranscodeOutput[] to support bit-exact operations on transcode output files
+   Modified Jun 2025 JHB, add session joining flags (session_join_flags[])
 */
 
 #ifndef _MEDIAMIN_H_
@@ -268,10 +269,16 @@ typedef struct {
 
   uint32_t              pkt_stream_group_pcap_out_ctr[MAX_STREAMS_THREAD], pkt_transcode_pcap_out_ctr[MAX_STREAMS_THREAD], pkt_bitstream_out_ctr[MAX_STREAMS_THREAD];  /* output stats */
 
+/* stream flush */
+
   int8_t                flush_state[MAX_SESSIONS_THREAD];
   uint32_t              flush_count;
 
   bool                  fDynamicSessions;
+
+/* session joining */
+
+  uint8_t               session_join_flags[MAX_SESSIONS_THREAD];
 
   uint64_t              pkt_base_timestamp[MAX_STREAMS_THREAD];  /* arrival timestamp of first packet in a stream, in msec */
   uint64_t              first_pkt_time[MAX_STREAMS_THREAD];      /* time of first packet processed to be in a stream, in msec */
@@ -288,7 +295,7 @@ typedef struct {
   uint16_t                 num_fmtps[MAX_STREAMS_THREAD];
   vector<sdp::Attribute*>  fmtps[MAX_STREAMS_THREAD];
 
-/* misc stream strangenesses we can keep track of */
+/* misc stream strangeness we can keep track of */
 
   uint32_t              uNoDataFrame[MAX_STREAMS_THREAD];
   bool                  fUnmatchedPyldTypeMsg[MAX_DYN_PYLD_TYPES][MAX_STREAMS_THREAD];

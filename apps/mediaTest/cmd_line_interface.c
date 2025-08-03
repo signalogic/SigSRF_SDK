@@ -67,6 +67,7 @@
    Modified Feb 2025 JHB, change references to MAX_INPUT_STREAMS and MAX_CONCURRENT_STREAMS to MAX_STREAMS, defined in shared_include/streamlib.h. All libs and reference apps are now using the same definition
    Modified Mar 2025 JHB, remove debug print flag from cimGetCmdLine() uFlags for mediaMin and mediaTest apps
    Modified Apr 2025 JHB, comments only
+   Modified Jul 2025 JHB, add fShow_stdout_ready_profile to support --profile_stdout_ready command line option, add fExclude_payload_type_from_key to support --exclude_payload_type_from_key command line option
 */
 
 #ifdef __cplusplus
@@ -141,6 +142,8 @@ bool             fGroupOutputNoCopy = false;
 int              nRandomBitErrorPercentage = 0;
 bool             fShow_sha1sum = false;
 bool             fShow_sha512sum = false;
+bool             fShow_stdout_ready_profile = false;
+bool             fExclude_payload_type_from_key = false;
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 
@@ -328,6 +331,10 @@ int i;
    if (userIfs.CmdLineFlags.sha512sum) fShow_sha512sum = true;
 
    if (userIfs.CmdLineFlags.show_audio_classification) fShow_audio_classification = true;
+
+   if (userIfs.CmdLineFlags.stdout_ready_profile) fShow_stdout_ready_profile = true;
+
+   if (userIfs.CmdLineFlags.exclude_payload_type_from_key) fExclude_payload_type_from_key = true;
 
    for (i=0; i<MAX_STREAMS; i++) {
    

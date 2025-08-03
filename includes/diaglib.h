@@ -66,6 +66,7 @@
   Modified Feb 2025 JHB, move isFileDeleted() here as static inline from event_logging.cpp, add static inline getFilePathFromFilePointer()
   Modified Apr 2025 JHB, change DS_LOG_LEVEL_TIMEVAL_PRECISE flag to DS_LOG_LEVEL_TIMEVAL_PRECISION_USEC and add DS_LOG__LEVEL_TIMEVAL_PRECISION_MSEC flag. See DSGetLogTimestamp() in diaglib_util.cpp
   Modified Apr 2025 JHB, fix C89 and C90 gcc build warnings in getFilePathFromFilePointer(): ensure all comments ar C-style, ifdef out altogether unless __STDC_VERSION__ or __cplusplus is defined (mixed declarations and code warning). This came up when building 3GPP reference codecs, which tend to have several years old C code and Makefiles
+  Modified Jul 2025 JHB, add isStdoutReady(), SetStdoutNonBlock(), and console_out(). See comments in diaglib_util.cpp
 */
 
 #ifndef _DIAGLIB_H_
@@ -78,6 +79,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <unistd.h>  /* STDOUT_FILENO */
 
 #include "shared_include/config.h"  /* config.h provides DEBUG_CONFIG struct definition used in DSInitLogging() and DSConfigLogging(); only includes Linux headers */
 
@@ -114,6 +116,7 @@ int Log_RT(uint32_t loglevel, const char* fmt, ...);
 int DSInitLogging(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags);  /* initialize event logging. Note that DSInitLogging() should not be called twice without a matching DSCloseLogging() call, as it increments a semaphore count to track multithread usage */
 
 #define DS_INIT_LOGGING_RESET_WARNINGS_ERRORS           1  /* reset warning and error counters, otherwise they continue to accumulate if DSInitLogging() is called more than once */
+#define DS_INIT_LOGGING_ENABLE_STDOUT_READY_PROFILING   2
 
 unsigned int DSConfigLogging(unsigned int action, unsigned int uFlags, DEBUG_CONFIG* pDebugConfig);  /* configure event logging */
 
@@ -408,7 +411,7 @@ int fd;
    return fRet;
 }
 
-#if defined(__STDC_VERSION__) || defined(__cplusplus)
+#if defined(__STDC_VERSION__) || defined(__cplusplus)  /* some media codec source codes use old and plain C to support embedded systems, these prototypes are likely to cause build errors */
 
 static inline char* getFilePathFromFilePointer(FILE *file) {  /* get file path from file pointer. Caller must free returned path if not NULL, JHB Feb 2025 */
 
@@ -445,7 +448,34 @@ static inline char* getFilePathFromFilePointer(FILE *file) {  /* get file path f
    return resolved_path;
 }
 
+extern uint32_t stdout_not_ready;  /* global stats maintained when STDOUT_READY_RECORD_STATS is given in uFlags param of isStdoutReadyEx() */
+extern uint32_t stdout_error;
+extern uint32_t stdout_timeout;
+extern uint64_t stdout_max_wait_time_total;  /* set when STDOUT_READY_PROFILE is given in uFlags param of isStdoutReadyEx() */
+extern uint64_t stdout_max_wait_time_timeout;
+extern uint64_t stdout_max_wait_time_notimeout;
+
+extern bool fEnableStdoutReadyProfiling;  /* apps can set this to enable stdout readiness profiling, but it's recommended to use instead DSInitLogging() with uFlags DS_INIT_LOGGING_ENABLE_STDOUT_READY_PROFILING */
+
+int isStdoutReady();  /* in diaglib_util.cpp */
+int isStdoutReadyEx(unsigned int uFlags);
+
+/* uFlags definitions for isStdoutReadyEx() */
+
+#define STDOUT_READY_RECORD_STATS  1  /* record stdout ready stats, see comments near stdout_xxx global vars above */
+#define STDOUT_READY_PROFILING     2  /* profile stdout ready wait time */
+
+static inline void SetStdoutNonBlock() {
+
+   int flags = fcntl(STDOUT_FILENO, F_GETFL);
+   if (!(flags & O_NONBLOCK)) fcntl(STDOUT_FILENO, F_SETFL, flags | O_NONBLOCK);
+}
+
 #endif  /* defined(__STDC_VERSION__) || defined(__cplusplus) */
+
+/* console output - output string to console, with some optional params. See comments in diaglib_util.cpp */
+
+int console_out(int std_type, int loglevel, bool fNewLine, char* szOutput);
 
 #ifdef __cplusplus
 }

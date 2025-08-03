@@ -7,10 +7,10 @@ Description
 
 Notes
 
-  -fully multithreaded, no locks, no semaphore
   -called by DSBufferPackets() pktlib API
+  -fully multithreaded, no locks, no semaphore
   -may call Log_RT() API in diaglib
-  -must be linked with pktlib and voplib. No dependencies on other SigSRF libs
+  -should be linked with pktlib and voplib, the latter because of call to DSGetPayloadInfo(). No dependencies on other SigSRF libs
  
 Projects
 
@@ -25,7 +25,8 @@ License
 Revision History
 
   Created Dec 2024 JHB, separated and moved here from pktlib source
-  Revised Feb 2025 JHB, add nID and output file param in DSGetPayloadInfo() (NULL indicates not used)
+  Modified Feb 2025 JHB, add nID and output file param in DSGetPayloadInfo() (NULL indicates not used)
+  Modified Jun 2025 JHB, comments only
 */
 
 /* Linux and/or other OS includes */

@@ -30,6 +30,7 @@
    Modified Jul 2024 JHB, add --group_pcap_nocopy and --random_bit_error cmd line options
    Modified Aug 2024 JHB, add --sha1sum and --sha512sum cmd line options
    Modified Mar 2025 JHB, handle ALLOW_XX attributes defined in cmdLineOpt.h for overloaded options, for example -rN can accept N either int or float and fInvalidFormat is not set if the option can't be converted to a valid integer
+   Modified Jul 2025 JHB, add --profile_stdout_ready and --exclude_payload_type_from_key cmd line options
 */
 
 #include <stdint.h>
@@ -50,7 +51,9 @@ using namespace std;
 
 /* used when calling getopt_long(), JHB Jul 2023 */
 
-static const struct option long_options[] = { { "version", no_argument, NULL, (char)128 }, { "cut", required_argument, NULL, (char)129 }, { "group_pcap", required_argument, NULL, (char)130 }, { "group_pcap_nocopy", required_argument, NULL, (char)131 }, { "md5sum", no_argument, NULL, (char)132 }, { "sha1sum", no_argument, NULL, (char)133 }, { "sha512sum", no_argument, NULL, (char)134 }, { "show_aud_clas", no_argument, NULL, (char)135 }, { "random_bit_error", required_argument, NULL, (char)136 }, /* insert additional options here */ {NULL, 0, NULL, 0 } };
+#define requires_argument required_argument  /* convenient definition to fix grammar in getopt_long() definitions */
+
+static const struct option long_options[] = { { "version", no_argument, NULL, (char)128 }, { "cut", requires_argument, NULL, (char)129 }, { "group_pcap", requires_argument, NULL, (char)130 }, { "group_pcap_nocopy", requires_argument, NULL, (char)131 }, { "md5sum", no_argument, NULL, (char)132 }, { "sha1sum", no_argument, NULL, (char)133 }, { "sha512sum", no_argument, NULL, (char)134 }, { "show_aud_clas", no_argument, NULL, (char)135 }, { "random_bit_error", requires_argument, NULL, (char)136 },  { "profile_stdout_ready", no_argument, NULL, (char)137 }, { "exclude_payload_type_from_key", no_argument, NULL, (char)138 }, /* insert additional options here */ {NULL, 0, NULL, 0 } };
 
 //
 // CmdLineOpt - Default constructor.
@@ -411,7 +414,7 @@ int long_option_index = -1;  /* index of long option, if found */
             if ((long_index = (unsigned char)this->options[i].option - 128) >= 0 && strlen(cmdoptstr) > 2 && !strcmp(&cmdoptstr[2], long_options[long_index].name)) {  /* check for long arguments that need an argument. The strcmp() is a sanity check because we already matched options[i].option */
 
                if (long_options[long_index].has_arg == no_argument) fNoArgument = true;
-               else if (long_options[long_index].has_arg == required_argument) fNeedsArgument = true;
+               else if (long_options[long_index].has_arg == requires_argument) fNeedsArgument = true;
                break;
             }
          }

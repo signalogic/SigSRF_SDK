@@ -39,7 +39,7 @@
   Modified Nov 2024 JHB, use IPvN_ADDR_XXX defined in pktlib.h
   Modified Dec 2024 JHB, add DS_FSCONV_SATURATE flag in DSConvertFs()
   Modified Mar 2025 JHB, minor changes to make compatible with g++ compiler and -std=gnu++11
-  Modified Jun 2025 JHB, comments only
+  Modified Jun 2025 JHB, for ip_addr, voice_attributes, and TERMINATION_INFO structs, remove "u" and "attr" intermediate addressing for unions and address individual structs directly
 */
 
 #ifdef __cplusplus
@@ -221,11 +221,11 @@ HASRDECODER hASRDecoder;
 
       /* default is to send audio output packets back to remote sender */
 
-         memcpy(groupFormatPkt.DstAddr, &output_term.remote_ip.u, len);  /* copy from ip.u, a union for both IPv4 and IPv6 addresses (see ip_addr struct in shared_include/session.h), JHB Nov 2024 */
-         memcpy(groupFormatPkt.SrcAddr, &output_term.local_ip.u, len);
+         memcpy(groupFormatPkt.DstAddr, &output_term.remote_ip.addr, len);  /* copy from ip.addr, a union for both IPv4 and IPv6 addresses (see ip_addr struct in shared_include/session.h), JHB Nov 2024 */
+         memcpy(groupFormatPkt.SrcAddr, &output_term.local_ip.addr, len);
          groupFormatPkt.udpHeader.SrcPort = output_term.local_port;
          groupFormatPkt.udpHeader.DstPort = output_term.remote_port;
-         groupFormatPkt.rtpHeader.PyldType = output_term.attr.voice.rtp_payload_type;  /* set payload type */
+         groupFormatPkt.rtpHeader.PyldType = output_term.voice.rtp_payload_type;  /* set payload type */
 
       /* check if there is a call on-hold or call waiting timestamp gap that needs to be accumulated, notes JHB Nov2019:
 

@@ -33,6 +33,7 @@
    Modified Sep 2024 JHB, adjust placement of OutputSetup(), StreamGroupOutputSetup(), and JitterBufferOutputSetup(), which have been restructured and now operate per-session
    Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
    Modified Nov 2024 JHB, in CreateStaticSessions() add stream stats entries for created sessions (was already supported for dynamic sessions in mediaMin.cpp)
+   Modified Nov 2024 JHB, modify FindStream() to use correct IPv6 header length
    Modified Dec 2024 JHB, set some term2 items that were left out from previous updates. This fixes issues with static session regression test, for example this cmd line:
 
                              mediaMin -cx86 -i../pcaps/AMRWB.pcap -i../pcaps/pcmutest.pcap -L -d0x08000c10 -r20 -g /tmp/shared -C../session_config/merge_testing_config_amrwb
@@ -49,6 +50,8 @@
    Modified Apr 2025 JHB, in CreateStaticSessions() update stream stats initialization per changes in mediaMin.h and mediaMin.cpp
    Modified Jun 2025 JHB, in CreateStaticSessions[] update thread vars nSessionsCreated and total_sessions_created before calling JitterBufferOutputSetup() and OutputSetup(), which rely on GetSessionIndex() which references those thread vars. Test with legacy session config files merge_1613-1_1613-0_config_evs and multi_session_evs_merge_testing_config
    Modified Jun 2025 JHB, rename check_config_file() to CheckConfigFile(), add to session_app.h, and change return value to be length of config file path found, if any
+   Modified Jun 2025 JHB, fix bug in stream group wav output naming (szSessionName[] was not included)
+   Modified Jul 2025 JHB, move FindStream() here from mediaMin.cpp
 */
 
 #include <algorithm>
@@ -58,15 +61,14 @@ using namespace std;
 
 /* SigSRF includes */
 
-#include "directcore.h"  /* DirectCore APIs */
 #include "pktlib.h"      /* DSGetPacketInfo() */
 
 /* app support header files */
 
 #include "mediaTest.h"   /* bring in constants needed by mediaMin.h */
-
 #include "mediaMin.h"    /* bring in THREAD_INFO struct typedef */
 #include "user_io.h"     /* bring in app_printf() */
+#include "session_app.h"
 
 extern HPLATFORM hPlatform;            /* initialized by DSAssignPlatform() API in DirectCore lib */
 extern APP_THREAD_INFO thread_info[];  /* THREAD_INFO struct defined in mediaMin.h */
@@ -75,6 +77,7 @@ extern bool fCapacityTest;             /* set when number of app threads and/or 
 extern bool fNChannelWavOutput;
 extern bool fUntimedMode;              /* set if neither ANALYTICS_MODE nor USE_PACKET_ARRIVAL_TIMES (telecom mode) flags are set in -dN options. This is true of some old test scripts with -r0 push-pull rate (as fast as possible), which is why we call it "untimed" */
 extern int nRepeatsRemaining[];
+extern char szSessionName[][384];      /* initialized in LoggingSetup() in mediaMin.cpp */
 
 /* functions currently in mediaMin.cpp */
 
@@ -82,9 +85,118 @@ void JitterBufferOutputSetup(HSESSION hSessions[], HSESSION hSession, int thread
 int OutputSetup(HSESSION hSessions[], HSESSION hSession, int thread_index);  /* set up application packet/media packet output */
 void StreamGroupOutputSetup(HSESSION hSession, int nStream, int thread_index);  /* set up stream group output */
 
-#define ENABLE_MANAGED_SESSIONS  /* managed sessions are defined by default. See GetSessionFlags() below */
 
-// #define STREAM_GROUP_BUFFER_TIME  1000  /* default stream group buffer time is 260 msec (2080 samples at 8 kHz sampling rate, 4160 samples at 16 kHz, etc). Uncommenting this define will set the buffer time, in this example to 1 sec */
+/* FindStream() examines an IP/UDP packet for a new stream. Callers can use results to determine if a new session should be created "on the fly" (i.e. dynamic session creation). Notes:
+
+  -a new stream is determined by (i) new IP addr:port header and/or (ii) new RTP payload type. This info is combined into a "key" that defines the stream and is saved to compare with existing streams
+  -SSRC is not normally included in the key, in order to maintain RFC8108 compliance (multiple RTP streams within the same initial stream). However, if the ENABLE_SSRC_STREAM_JOINING flag in the -dN command line argument is active then only SSRCs are used to match streams from different endpoints; in this case 0 is returned to indicate an existing stream and FIND_STREAM_SSRC_MATCH is set in pStreamFlags. This is a limited mode for specific applications
+  -DTMF packets must match an existing stream excluding payload type; i.e. they will not cause a new key to be created
+  -each application thread has its own set of keys to avoid semaphores / locks. Duplicated streams across multiple inputs / threads are currently not detected, although PushPackets() does look for pcaps repeated on the cmd line (and deals with it by slightly altering duplicated inputs to make them unique, look for fDuplicatedHeaders). This could be addressed by including additional info in the key (e.g. stream, thread)
+
+  -return value is zero for an existing stream, total streams found so far for a new stream, or -1 for an error condition
+*/
+
+#define MAX_KEYS 512  /* increased from 128, JHB Jun 2024 */
+
+/* keys are unique per stream (they are not hashes). No run-time locks are needed */ 
+
+#define KEY_LENGTH 37  /* each key is up to 37 bytes (ipv6 address size (2*16) + udp port size (2*2)) + RTP payload type (1) */
+
+static uint8_t keys[MAX_APP_THREADS][MAX_KEYS][KEY_LENGTH] = {{{ 0 }}};
+static uint32_t ssrcs[MAX_APP_THREADS][MAX_KEYS] = {{ 0 }};
+static int nKeys[MAX_APP_THREADS] = { 0 };
+
+int FindStream(uint8_t* pkt, int ip_hdr_len, uint8_t rtp_pyld_type, uint32_t ssrc, bool fDTMF, unsigned int* pStreamFlags, int thread_index) {
+
+int version, len;
+uint8_t key[KEY_LENGTH] = { 0 };
+unsigned int uStreamFlags = 0;
+bool fPayloadTypeInKey = false, fExistingStream = false;
+
+   if (!pkt) { Log_RT(2, "mediaMin ERROR: FindStream() says pkt is NULL \n"); return -1; }
+
+   if (isRTCPPacket(rtp_pyld_type)) { if (pStreamFlags) *pStreamFlags = FIND_STREAM_RTCP_PACKET; return -1; }  /* RTCP packets not accepted for creating / comparing streams */
+
+/* form key from IP addresses and ports */
+
+   version = pkt[0] >> 4;
+   memcpy(key, &pkt[version == IPv4 ? IPV4_ADDR_OFS : IPV6_ADDR_OFS], (len = 2*(version == IPv4 ? IPV4_ADDR_LEN : IPV6_ADDR_LEN)));  /* copy src and dst IP addresses to key */
+   memcpy(&key[len], &pkt[ip_hdr_len], 2*sizeof(unsigned short int));  /* copy src and dst UDP ports to key */
+   len += 2*sizeof(unsigned short int);
+
+/* copy RTP payload type to key (but not for DTMF packets, which must match an existing stream, JHB May 2019) */
+
+   if (!fDTMF && !fExclude_payload_type_from_key) { fPayloadTypeInKey = true; key[len++] = rtp_pyld_type; }  /* also check if --exclude_payload_type_from key is on the command line, JHB Jul 2025 */
+
+/* see if we already know about this stream */
+
+   for (int i=0; i<nKeys[thread_index]; i++) if (!memcmp(&keys[thread_index][i], key, len)) { fExistingStream = true; break; }  /* matches existing stream */
+
+/* possible new stream */
+
+   if (!fExistingStream && (Mode & ENABLE_SSRC_STREAM_JOINING)) for (int i=0; i<nKeys[thread_index]; i++) if (ssrc == ssrcs[thread_index][i]) {  /* if SSRC stream joining is enabled then look for existing stream with same SSRC, JHB Jul 2025 */
+
+   /* report in stream flags that stream matches existing stream with same SSRC */
+
+      uStreamFlags |= FIND_STREAM_SSRC_MATCH;
+
+      if (fPayloadTypeInKey && rtp_pyld_type != keys[thread_index][i][len-1]) uStreamFlags |= FIND_STREAM_PAYLOAD_TYPE_UNMATCHED;  /* advise caller if payload type does not match (different payload types imply different codecs, something to consider) */
+
+      #if 0
+      static bool fOnce[10] = { false };
+      if (!fOnce[i]) { fOnce[i] = true; printf("\n *** pkt#%u joining stream SSRC = 0x%x, i = %d, nKeys = %d \n", thread_info[thread_index].packet_number[0], ssrc, i, nKeys[thread_index]); }
+      #endif
+
+      fExistingStream = true;  /* existing stream */
+      break;
+   }
+   
+   if (!fExistingStream) {  /* if no match create a new stream key */
+
+      if (nKeys[thread_index] >= MAX_KEYS) {  /* return error condition if not enough space for a new key */
+         Log_RT(2, "mediaMin ERROR: FindStream() exceeds %d allowable stream keys \n", MAX_KEYS);
+         return -1;
+      }
+
+      memcpy(&keys[thread_index][nKeys[thread_index]], key, len);  /* store key */
+      ssrcs[thread_index][nKeys[thread_index]] = ssrc;  /* store SSRC */
+
+      #if 0
+      printf("\n *** pkt#%u storing ssrc = 0x%x, nKeys = %d, len = %d \n", thread_info[thread_index].packet_number[0], ssrcs[thread_index][nKeys[thread_index]], nKeys[thread_index], len);
+      #endif
+
+      nKeys[thread_index]++;
+   }
+
+   #if 0
+   static int cnt = 0;
+   printf("check_for_new_sesion: cnt = %d, ret_val = %d, nKeys = %d, len = %d\n", cnt++, ret_val, nKeys[thread_index], len);
+   printf("key value: ");
+   for (i = 0; i < KEY_LENGTH; i++) printf("%02x ", key[thread_index][i]);
+   printf("\n");
+   #endif
+
+   if (pStreamFlags) *pStreamFlags = uStreamFlags;
+
+   return fExistingStream ? 0 : nKeys[thread_index];
+}
+
+void RemoveLastStreamKey(int thread_index) {
+
+   if (nKeys[thread_index] > 0) {
+
+      nKeys[thread_index]--;
+      memset(&keys[thread_index][nKeys[thread_index]], 0, KEY_LENGTH);
+      ssrcs[thread_index][nKeys[thread_index]] = 0;
+   }
+}
+
+void ResetStreamKeys(int thread_index) {
+
+   nKeys[thread_index] = 0;
+   memset(&keys[thread_index], 0, MAX_KEYS*KEY_LENGTH*sizeof(uint8_t));
+   memset(&ssrcs[thread_index], 0, MAX_KEYS*sizeof(ssrcs[0][0]));
+}
 
 /* SetSessionTiming() notes:
 
@@ -181,6 +293,8 @@ void SetSessionTiming(SESSION_DATA* session_data) {
    -called by StaticSessionCreate() below and create_dynamic_session() in mediaMin.cpp
    -DS_SESSION_MODE_IP_PACKET is in shared_include/session_cmd.h, other flags in pktlib.h
 */
+
+#define ENABLE_MANAGED_SESSIONS  /* managed sessions are defined by default */
 
 unsigned int GetSessionFlags() {
 
@@ -402,6 +516,13 @@ HSESSION hSession;
             if (!fCreateDeleteTest && !fCapacityTest && nRepeatsRemaining[thread_index] == -1) {  /* specify N-channel wav output. Disable if load/capacity or stress test options are active. Don't enable if repeat is active, otherwise thread preemption warnings may show up in the event log (because N-channel processing takes a while), JHB Jun 2019 */
 
                session_data[i].group_term.group_mode |= STREAM_GROUP_WAV_OUT_STREAM_MULTICHANNEL;
+
+            /* set session_data[].szSessionName for wav outputs, JHB Jun 2025 */
+
+               int nStream = 0;
+               strcpy(thread_info[thread_index].szGroupName[nStream], szSessionName[nStream]);
+               sprintf(session_data[i].szSessionName, "%s%s", szStreamGroupWavOutputPath, thread_info[thread_index].szGroupName[nStream]);
+
                fNChannelWavOutput = true;
             }
          }
@@ -438,6 +559,8 @@ HSESSION hSession;
          thread_info[thread_index].total_sessions_created++;
          nSessionsCreated++;  /* increment local count */
 
+        // #define STREAM_GROUP_BUFFER_TIME  1000  /* default stream group buffer time is 260 msec (2080 samples at 8 kHz sampling rate, 4160 samples at 16 kHz, etc). Uncommenting this define will set the buffer time, in this example to 1 sec */
+
          #ifdef STREAM_GROUP_BUFFER_TIME
          DSSetSessionInfo(hSession, DS_SESSION_INFO_HANDLE | DS_SESSION_INFO_GROUP_BUFFER_TIME, STREAM_GROUP_BUFFER_TIME, NULL);  /* if STREAM_GROUP_BUFFER_TIME defined above, set group buffer time to value other than 260 msec default */
          #endif
@@ -458,7 +581,9 @@ HSESSION hSession;
          if (Mode & ENABLE_STREAM_GROUPS) {
 
             int nStream = 0;  /* default is first cmd line input */
+
             StreamGroupOutputSetup(hSession, nStream, thread_index);  /* set up stream group output if session is a group owner */
+
            // thread_info[thread_index].fGroupOwnerCreated[!(Mode & COMBINE_INPUT_SPECS) ? nStream : 0][nReuse] = true;  /* done in CreateDynamicSession(), not sure yet if this is needed for static sessions */
          }
 
@@ -482,7 +607,7 @@ HSESSION hSession;
                   if (DSGetCodecInfo(termInfo.codec_type, DS_CODEC_INFO_NAME, 0, 0, codec_name) >= 0) strcpy(thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].codec_name, codec_name);
 
                   thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].bitrate = termInfo.bitrate;
-                  thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].payload_type = termInfo.attr.voice.rtp_payload_type;
+                  thread_info[thread_index].StreamStats[thread_info[thread_index].num_stream_stats].payload_type = termInfo.voice.rtp_payload_type;
 
                   thread_info[thread_index].num_stream_stats++;
                }

@@ -143,6 +143,16 @@
 
     May 2025 JHB
       -update comments in TERMINATION_INFO struct
+
+    Jun 2025 JHB
+      -remove "u" and "attr" union names in ip_addr, voice_attributes, and TERMINATION_INFO structs. Simplified source code can address individual structs directly
+      -in ip_addr struct:
+        -add generic "addr" array to the union
+        -rename ipv4_uint32 to uIpv4
+      -add TERM_SSRC_SESSION_MATCHING flag (TERMINATION_INFO struct uFlags)
+
+    Jul 2025 JHB
+      -change TERM_DISABLE_DORMANT_SESSION_DETECTION flag name to TERM_ENABLE_DORMANT_SESSION. packet/media flow worker threads continue to detect and report sessions with replicated/overloaded SSRCs, but no longer enable dormant session functionality by default, only if TERM_ENABLE_DORMANT_SESSION is set. See comments in packet_flow_media_proc.c
 */
 
 #ifndef _SESSION_H_
@@ -171,7 +181,7 @@
 
                                 /*  Notes:
 
-                                    1) Currently the mode field is processed but no mode values are being used.  Functionality originally provided by the "dont care" mode value has been replaced by a more flexible "user managed" session operating mode.  See comments on this in pktlib.c and mediaTest_proc.c
+                                    1) Currently the mode field is processed but no mode values are being used. Functionality originally provided by the "dont care" mode value has been replaced by a more flexible "user managed" session operating mode.  See comments on this in pktlib.c and mediaTest_proc.c
 
                                     2) For reference, the "don't care" mode allows termN session config remote/local IP addr:port values to be designated as "don't care", for example term2 IP addr:port is a don't care because the user app is listening only, with no receive and transmit on term2 side
                                 */
@@ -259,7 +269,7 @@ struct voice_attributes {
       {
          uint32_t codec_flags;        /* see melpe_codec_flags */
       } melpe;
-  } u;
+  };
 };
 
 #if DECLARE_LEGACY_DEFINES
@@ -300,10 +310,11 @@ struct ip_addr {
 
   union
   {
-     uint32_t ipv4_uint32;  /* allow IPv4 address assignment without memcpy, JHB Nov 2024 */
+     uint32_t uIpv4;  /* allow IPv4 address assignment without memcpy, JHB Nov 2024 */
      uint8_t ipv4[IPV4_ADDR_LEN];
      uint8_t ipv6[IPV6_ADDR_LEN];
-  } u;
+     uint8_t addr[IPV6_ADDR_LEN];  /* generic name for variable length memcpy's, JHB Jun 2025 */
+  };
 };
 
 #ifdef DYNAMIC_JITTER_ENABLE
@@ -389,12 +400,12 @@ typedef struct {
   union {
      struct voice_attributes voice;
      struct video_attributes video;
-  } attr;
+  };
 
 #ifdef ENABLE_TERM_MODE_FIELD
 
-  #define TERMINATION_MODE_DEFAULT           0  /* termN mode uFlags values can be OR'd together in application code and session config files */
-  #define TERMINATION_MODE_IP_PORT_DONTCARE  1
+  #define TERMINATION_MODE_DEFAULT                0  /* termN mode uFlags values can be OR'd together in application code and session config files */
+  #define TERMINATION_MODE_IP_PORT_DONTCARE       1
 
   uint32_t mode;
 #endif
@@ -407,18 +418,20 @@ typedef struct {
 
 /* "uFlags" definitions */
 
-  #define TERM_DTX_ENABLE                         1      /* enable DTX handling for termN */
-  #define TERM_SID_REPAIR_ENABLE                  2      /* enable SID repair for termN: correct SID packet loss when possible */
-  #define TERM_PKT_REPAIR_ENABLE                  4      /* enable packet repair for termN:  correct media packet loss when possible */
-  #define TERM_OVERRUN_SYNC_ENABLE                8      /* enable overrun synchronization in streamlib */
-  #define TERM_EXPECT_BIDIRECTIONAL_TRAFFIC       0x10   /* applications should set this flag for telecom mode applications. If not set, packet/media thread receive queue handling performance is increased for unidirectional traffic (analytics mode) */
-  #define TERM_IGNORE_ARRIVAL_PACKET_TIMING       0x20   /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
-  #define TERM_OOO_HOLDOFF_ENABLE                 0x40   /* see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF comments in pktlib.h */
-  #define TERM_DISABLE_DORMANT_SESSION_DETECTION  0x80   /* see comments in mediaTest/cmd_line_options_flags.h */
-  #define TERM_DYNAMIC_SESSION                    0x100  /* flag set by mediaMin in term1 and term2 structs when creating dynamic sessions. This is an "informational only" flag, useful only for status and information during a session lifespan, JHB Jan 2023 */
-  #define TERM_ANALYTICS_MODE_PACKET_TIMING       0x200  /* analytics mode flag set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
-  #define TERM_NO_PACKET_ARRIVAL_TIMESTAMPS       0x400  /* flag indicating input packets don't have arrival timestamps, set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
-  #define TERM_DISABLE_OUTPUT_QUEUE_PACKETS       0x800  /* flag indicating packet output to application queue should be disabled. Packet/media threads check this in packet_flow_media_proc.c before transcoding and formatting audio packets or handling video packet outputs */
+  #define TERM_DTX_ENABLE                         1  /* enable DTX handling for termN */
+  #define TERM_SID_REPAIR_ENABLE                  2  /* enable SID repair for termN: correct SID packet loss when possible */
+  #define TERM_PKT_REPAIR_ENABLE                  4  /* enable packet repair for termN:  correct media packet loss when possible */
+  #define TERM_OVERRUN_SYNC_ENABLE                8  /* enable overrun synchronization in streamlib */
+  #define TERM_EXPECT_BIDIRECTIONAL_TRAFFIC    0x10  /* applications should set this flag for telecom mode applications. If not set, packet/media thread receive queue handling performance is increased for unidirectional traffic (analytics mode) */
+  #define TERM_IGNORE_ARRIVAL_PACKET_TIMING    0x20  /* set this if packet arrival timing is not accurate, for example pcaps without packet arrival timestamps, analytics mode sending packets faster than real-time, etc */
+  #define TERM_OOO_HOLDOFF_ENABLE              0x40  /* see DS_GETORD_PKT_ENABLE_OOO_HOLDOFF comments in pktlib.h */
+  #define TERM_ENABLE_DORMANT_SESSION          0x80  /* see comments in mediaTest/cmd_line_options_flags.h */
+  #define TERM_DYNAMIC_SESSION                0x100  /* flag set by mediaMin in term1 and term2 structs when creating dynamic sessions. This is an "informational only" flag, useful only for status and information during a session lifespan, JHB Jan 2023 */
+  #define TERM_ANALYTICS_MODE_PACKET_TIMING   0x200  /* analytics mode flag set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
+  #define TERM_NO_PACKET_ARRIVAL_TIMESTAMPS   0x400  /* indicates input packets don't have arrival timestamps, set by applications in term1 and term2 structs when creating sessions. mediaMin does this in SetSessionTiming() in session_app.cpp, JHB May 2023 */
+  #define TERM_DISABLE_OUTPUT_QUEUE_PACKETS   0x800  /* disable packet output to application queues. Packet/media threads check this in packet_flow_media_proc.c before transcoding and formatting audio packets or handling video packet outputs */
+  #define TERM_ENABLE_SSRC_SESSION_MATCHING  0x1000  /* indicates SSRC session matching is enabled. See ENABLE_SSRC_SESSION_JOINING in mediaMin.cpp, JHB Jun 2025 */
+  #define TERM_EXCLUDE_RTP_PAYLOAD_TYPE      0x2000
 
   uint32_t uFlags;
 

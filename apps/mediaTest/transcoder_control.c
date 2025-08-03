@@ -9,7 +9,7 @@ Description:
     - session tear down
     - additional control plane message passing
 
- Copyright (C) Signalogic Inc. 2015-2024
+ Copyright (C) Signalogic Inc. 2015-2025
 
  Revision History
  
@@ -45,6 +45,7 @@ Description:
   Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files), use IPvN_ADDR_XXX definitions in pktlib.h
   Modified Dec 2024 JHB, change "header_format" to "payload_format" due to renaming in codec_test_params_t struct in mediaTest.h 
   Modified Dec 2024 JHB, include <algorithm> and use std namespace if __cplusplus defined
+  Modified Jun 2025 JHB, for ip_addr, voice_attributes, and TERMINATION_INFO structs, remove "u" and "attr" intermediate addressing for unions and address individual structs directly
 */
 
 /* Linux includes */
@@ -240,33 +241,33 @@ char tmpstr[30];
          if (uFlags & DS_GROUP_TERM) {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               ((session_params_t*)params)->session_data.group_term.local_ip.u.ipv4_uint32 = ipv4_addr;  /* per Linux doc, inet_pton() with AF_INET will return an error condition if input string has invalid format or more than 4 digits, JHB May2017 */
+               ((session_params_t*)params)->session_data.group_term.local_ip.uIpv4 = ipv4_addr;  /* per Linux doc, inet_pton() with AF_INET will return an error condition if input string has invalid format or more than 4 digits, JHB May2017 */
                ((session_params_t*)params)->session_data.group_term.local_ip.type = IPV4;
             }
             else {
-               ((SESSION_DATA*)params)->group_term.local_ip.u.ipv4_uint32 = ipv4_addr;
+               ((SESSION_DATA*)params)->group_term.local_ip.uIpv4 = ipv4_addr;
                ((SESSION_DATA*)params)->group_term.local_ip.type = IPV4;
             }
          }
          else if (uFlags & DS_TERM2) {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               ((session_params_t*)params)->session_data.term2.local_ip.u.ipv4_uint32 = ipv4_addr;  /* per Linux doc, inet_pton() with AF_INET will return an error condition if input string has invalid format or more than 4 digits, JHB May2017 */
+               ((session_params_t*)params)->session_data.term2.local_ip.uIpv4 = ipv4_addr;  /* per Linux doc, inet_pton() with AF_INET will return an error condition if input string has invalid format or more than 4 digits, JHB May2017 */
                ((session_params_t*)params)->session_data.term2.local_ip.type = IPV4;
             }
             else {
-               ((SESSION_DATA*)params)->term2.local_ip.u.ipv4_uint32 = ipv4_addr;
+               ((SESSION_DATA*)params)->term2.local_ip.uIpv4 = ipv4_addr;
                ((SESSION_DATA*)params)->term2.local_ip.type = IPV4;
             }
          }
          else {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               ((session_params_t*)params)->session_data.term1.local_ip.u.ipv4_uint32 = ipv4_addr;
+               ((session_params_t*)params)->session_data.term1.local_ip.uIpv4 = ipv4_addr;
                ((session_params_t*)params)->session_data.term1.local_ip.type = IPV4;
             }
             else {
-               ((SESSION_DATA*)params)->term1.local_ip.u.ipv4_uint32 = ipv4_addr;
+               ((SESSION_DATA*)params)->term1.local_ip.uIpv4 = ipv4_addr;
                ((SESSION_DATA*)params)->term1.local_ip.type = IPV4;
             }
          }
@@ -276,33 +277,33 @@ char tmpstr[30];
          if (uFlags & DS_GROUP_TERM) {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               ((session_params_t*)params)->session_data.group_term.remote_ip.u.ipv4_uint32 = ipv4_addr;
+               ((session_params_t*)params)->session_data.group_term.remote_ip.uIpv4 = ipv4_addr;
                ((session_params_t*)params)->session_data.group_term.remote_ip.type = IPV4;
             }
             else {
-               ((SESSION_DATA*)params)->group_term.remote_ip.u.ipv4_uint32 = ipv4_addr;
+               ((SESSION_DATA*)params)->group_term.remote_ip.uIpv4 = ipv4_addr;
                ((SESSION_DATA*)params)->group_term.remote_ip.type = IPV4;
             }
          }
          else if (uFlags & DS_TERM2) {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               ((session_params_t*)params)->session_data.term2.remote_ip.u.ipv4_uint32 = ipv4_addr;
+               ((session_params_t*)params)->session_data.term2.remote_ip.uIpv4 = ipv4_addr;
                ((session_params_t*)params)->session_data.term2.remote_ip.type = IPV4;
             }
             else {
-               ((SESSION_DATA*)params)->term2.remote_ip.u.ipv4_uint32 = ipv4_addr;
+               ((SESSION_DATA*)params)->term2.remote_ip.uIpv4 = ipv4_addr;
                ((SESSION_DATA*)params)->term2.remote_ip.type = IPV4;
             }
          }
          else {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               ((session_params_t*)params)->session_data.term1.remote_ip.u.ipv4_uint32 = ipv4_addr;
+               ((session_params_t*)params)->session_data.term1.remote_ip.uIpv4 = ipv4_addr;
                ((session_params_t*)params)->session_data.term1.remote_ip.type = IPV4;
             }
             else {
-               ((SESSION_DATA*)params)->term1.remote_ip.u.ipv4_uint32 = ipv4_addr;
+               ((SESSION_DATA*)params)->term1.remote_ip.uIpv4 = ipv4_addr;
                ((SESSION_DATA*)params)->term1.remote_ip.type = IPV4;
             }
          }
@@ -315,32 +316,32 @@ char tmpstr[30];
          if (uFlags & DS_GROUP_TERM) {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               memcpy(&((session_params_t*)params)->session_data.group_term.local_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((session_params_t*)params)->session_data.group_term.local_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((session_params_t*)params)->session_data.group_term.local_ip.type = IPV6;
             }
             else {
-               memcpy(&((SESSION_DATA*)params)->group_term.local_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((SESSION_DATA*)params)->group_term.local_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((SESSION_DATA*)params)->group_term.local_ip.type = IPV6;
             }
          }
          else if (uFlags & DS_TERM2) {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               memcpy(&((session_params_t*)params)->session_data.term2.local_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((session_params_t*)params)->session_data.term2.local_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((session_params_t*)params)->session_data.term2.local_ip.type = IPV6;
             }
             else {
-               memcpy(&((SESSION_DATA*)params)->term2.local_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((SESSION_DATA*)params)->term2.local_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((SESSION_DATA*)params)->term2.local_ip.type = IPV6;
             }
          }
          else {
             if (uFlags & DS_SESSION_PARAMS_T) {
-               memcpy(&((session_params_t*)params)->session_data.term1.local_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((session_params_t*)params)->session_data.term1.local_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((session_params_t*)params)->session_data.term1.local_ip.type = IPV6;
             }
             else {
-               memcpy(&((SESSION_DATA*)params)->term1.local_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((SESSION_DATA*)params)->term1.local_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((SESSION_DATA*)params)->term1.local_ip.type = IPV6;
             }
          }
@@ -350,33 +351,33 @@ char tmpstr[30];
          if (uFlags & DS_GROUP_TERM) {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               memcpy(&((session_params_t*)params)->session_data.group_term.remote_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((session_params_t*)params)->session_data.group_term.remote_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((session_params_t*)params)->session_data.group_term.remote_ip.type = IPV6;
             }
             else {
-               memcpy(&((SESSION_DATA*)params)->group_term.remote_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((SESSION_DATA*)params)->group_term.remote_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((SESSION_DATA*)params)->group_term.remote_ip.type = IPV6;
             }
          }
          else if (uFlags & DS_TERM2) {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               memcpy(&((session_params_t*)params)->session_data.term2.remote_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((session_params_t*)params)->session_data.term2.remote_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((session_params_t*)params)->session_data.term2.remote_ip.type = IPV6;
             }
             else {
-               memcpy(&((SESSION_DATA*)params)->term2.remote_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((SESSION_DATA*)params)->term2.remote_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((SESSION_DATA*)params)->term2.remote_ip.type = IPV6;
             }
          }
          else {
 
             if (uFlags & DS_SESSION_PARAMS_T) {
-               memcpy(&((session_params_t*)params)->session_data.term1.remote_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((session_params_t*)params)->session_data.term1.remote_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((session_params_t*)params)->session_data.term1.remote_ip.type = IPV6;
             }
             else {
-               memcpy(&((SESSION_DATA*)params)->term1.remote_ip.u.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
+               memcpy(&((SESSION_DATA*)params)->term1.remote_ip.ipv6, &ipv6_addr, IPV6_ADDR_LEN);
                ((SESSION_DATA*)params)->term1.remote_ip.type = IPV6;
             }
          }
@@ -408,7 +409,7 @@ char tmpstr[256];
    if (strstr(name, "term1.local_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->term1.local_ip.u.ipv4_uint32 = inet_addr(value);
+      params->term1.local_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_TERM1 | DS_LOCAL_IP_ADDR | DS_SESSION_DATA) < 0) return -1;
 #endif
@@ -416,7 +417,7 @@ char tmpstr[256];
    else if (strstr(name, "term1.remote_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->term1.remote_ip.u.ipv4_uint32 = inet_addr(value);
+      params->term1.remote_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_TERM1 | DS_REMOTE_IP_ADDR | DS_SESSION_DATA) < 0) return -1;
 #endif
@@ -437,7 +438,7 @@ char tmpstr[256];
       params->term1.bitrate = atoi(value);
    else if (strstr(name, "term1.ptime")) {
 
-      params->term1.attr.voice.ptime = atoi(value);
+      params->term1.voice.ptime = atoi(value);
       params->term1.ptime = atoi(value);
    }
 #if defined(_X86) || defined(_ARM)
@@ -447,31 +448,31 @@ char tmpstr[256];
       params->term1.output_buffer_interval = atoi(value);
 #endif
    else if (strstr(name, "term1.rtp_payload_type"))
-      params->term1.attr.voice.rtp_payload_type = atoi(value);
+      params->term1.voice.rtp_payload_type = atoi(value);
    else if (strstr(name, "term1.dtmf_type"))
-      params->term1.attr.voice.dtmf_mode = dtmf_type(value);
+      params->term1.voice.dtmf_mode = dtmf_type(value);
    else if (strstr(name, "term1.dtmf_payload_type"))
-      params->term1.attr.voice.dtmf_payload_type = atoi(value);
+      params->term1.voice.dtmf_payload_type = atoi(value);
    else if (strstr(name, "term1.ec"))
-      params->term1.attr.voice.ec = ec_type(value);
+      params->term1.voice.ec = ec_type(value);
    else if (strstr(name, "term1.octet_align"))
-      params->term1.attr.voice.u.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
+      params->term1.voice.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
    else if (strstr(name, "term1.evrc_format"))
-      params->term1.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
+      params->term1.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
    else if (strstr(name, "term1.evrc_bitrate"))
-      params->term1.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
+      params->term1.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
    else if (strstr(name, "term1.evrc_mode"))
-      params->term1.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
+      params->term1.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
    else if (strstr(name, "term1.opus_max_bitrate"))
-      params->term1.attr.voice.u.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
+      params->term1.voice.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
    else if (strstr(name, "term1.opus_max_playback_rate"))
-      params->term1.attr.voice.u.opus.max_playback_rate = atoi(value);
+      params->term1.voice.opus.max_playback_rate = atoi(value);
    else if (strstr(name, "term1.opus_sprop_max_playback_rate"))
-      params->term1.attr.voice.u.opus.sprop_max_capture_rate = atoi(value);
+      params->term1.voice.opus.sprop_max_capture_rate = atoi(value);
    else if (strstr(name, "term1.opus_fec"))
-      params->term1.attr.voice.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
+      params->term1.voice.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name, "term1.vad"))
-      params->term1.attr.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
+      params->term1.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
 #if defined(_X86) || defined(_ARM)
    else if (strstr(name, "term1.buffer_depth")) {
       strcpy(tmpstr, value);
@@ -497,12 +498,12 @@ char tmpstr[256];
 #endif      
       if (params->term1.codec_type == DS_CODEC_VOICE_EVS)
       {
-         if (atoi(value) > 3) params->term1.attr.voice.u.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
-         else if (atoi(value) >= 0) params->term1.attr.voice.u.evs.codec_flags |= atoi(value);
+         if (atoi(value) > 3) params->term1.voice.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
+         else if (atoi(value) >= 0) params->term1.voice.evs.codec_flags |= atoi(value);
       }
    }
    else if (strstr(name, "term1.evs_header_full") || strstr(name, "term1.header_format") || strstr(name, "term1.payload_format"))
-      params->term1.attr.voice.u.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
+      params->term1.voice.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
 #ifdef ENABLE_TERM_MODE_FIELD
    else if (strstr(name, "term1.mode"))
       params->term1.mode = (atoi(value) ? TERMINATION_MODE_IP_PORT_DONTCARE : 0);
@@ -518,7 +519,7 @@ char tmpstr[256];
    else if (strstr(name, "term2.local_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->term2.local_ip.u.ipv4_uint32 = inet_addr(value);
+      params->term2.local_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_TERM2 | DS_LOCAL_IP_ADDR | DS_SESSION_DATA) < 0) return -1;
 #endif
@@ -526,7 +527,7 @@ char tmpstr[256];
    else if (strstr(name, "term2.remote_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->term2.remote_ip.u.ipv4_uint32 = inet_addr(value);
+      params->term2.remote_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_TERM2 | DS_REMOTE_IP_ADDR | DS_SESSION_DATA) < 0) return -1;
 #endif
@@ -547,7 +548,7 @@ char tmpstr[256];
       params->term2.bitrate = atoi(value);
    else if (strstr(name, "term2.ptime")) {
 
-      params->term2.attr.voice.ptime = atoi(value);
+      params->term2.voice.ptime = atoi(value);
       params->term2.ptime = atoi(value);
    }
 #if defined(_X86) || defined(_ARM)
@@ -557,31 +558,31 @@ char tmpstr[256];
       params->term2.output_buffer_interval = atoi(value);
 #endif
    else if (strstr(name, "term2.rtp_payload_type"))
-      params->term2.attr.voice.rtp_payload_type = atoi(value);
+      params->term2.voice.rtp_payload_type = atoi(value);
    else if (strstr(name, "term2.dtmf_type"))
-      params->term2.attr.voice.dtmf_mode = dtmf_type(value);
+      params->term2.voice.dtmf_mode = dtmf_type(value);
    else if (strstr(name, "term2.dtmf_payload_type"))
-      params->term2.attr.voice.dtmf_payload_type = atoi(value);
+      params->term2.voice.dtmf_payload_type = atoi(value);
    else if (strstr(name, "term2.ec"))
-      params->term2.attr.voice.ec = ec_type(value);
+      params->term2.voice.ec = ec_type(value);
    else if (strstr(name, "term2.octet_align"))
-      params->term2.attr.voice.u.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
+      params->term2.voice.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
    else if (strstr(name, "term2.evrc_format"))
-      params->term2.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
+      params->term2.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
    else if (strstr(name, "term2.evrc_bitrate"))
-      params->term2.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
+      params->term2.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
    else if (strstr(name, "term2.evrc_mode"))
-      params->term2.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
+      params->term2.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
    else if (strstr(name, "term2.opus_max_bitrate"))
-      params->term2.attr.voice.u.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
+      params->term2.voice.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
    else if (strstr(name, "term2.opus_max_playback_rate"))
-      params->term2.attr.voice.u.opus.max_playback_rate = atoi(value);
+      params->term2.voice.opus.max_playback_rate = atoi(value);
    else if (strstr(name, "term2.opus_sprop_max_playback_rate"))
-      params->term2.attr.voice.u.opus.sprop_max_capture_rate = atoi(value);
+      params->term2.voice.opus.sprop_max_capture_rate = atoi(value);
    else if (strstr(name, "term2.opus_fec"))
-      params->term2.attr.voice.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
+      params->term2.voice.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name, "term2.vad"))
-      params->term2.attr.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
+      params->term2.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
 #if defined(_X86) || defined(_ARM)
    else if (strstr(name, "term2.buffer_depth")) {
       strcpy(tmpstr, value);
@@ -608,12 +609,12 @@ char tmpstr[256];
       
       if (params->term2.codec_type == DS_CODEC_VOICE_EVS)
       {
-         if (atoi(value) > 3) params->term2.attr.voice.u.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term2.codec_type, which shd be parsed in a first pass */
-         else if (atoi(value) >= 0) params->term2.attr.voice.u.evs.codec_flags |= atoi(value);
+         if (atoi(value) > 3) params->term2.voice.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term2.codec_type, which shd be parsed in a first pass */
+         else if (atoi(value) >= 0) params->term2.voice.evs.codec_flags |= atoi(value);
       }
    }
    else if (strstr(name, "term2.evs_header_full") || strstr(name, "term2.header_format") || strstr(name, "term2.payload_format"))
-      params->term2.attr.voice.u.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
+      params->term2.voice.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
 #ifdef ENABLE_TERM_MODE_FIELD
    else if (strstr(name, "term2.mode"))
       params->term2.mode = (atoi(value) ? TERMINATION_MODE_IP_PORT_DONTCARE : 0);
@@ -629,7 +630,7 @@ char tmpstr[256];
    else if (strstr(name, "merge_term.local_ip") || strstr(name, "group_term.local_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->group_term.local_ip.u.ipv4_uint32 = inet_addr(value);
+      params->group_term.local_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_GROUP_TERM | DS_LOCAL_IP_ADDR | DS_SESSION_DATA) < 0) return -1;
 #endif
@@ -637,7 +638,7 @@ char tmpstr[256];
    else if (strstr(name, "merge_term.remote_ip") || strstr(name, "group_term.remote_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->group_term.remote_ip.u.ipv4_uint32 = inet_addr(value);
+      params->group_term.remote_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_GROUP_TERM | DS_REMOTE_IP_ADDR | DS_SESSION_DATA) < 0) return -1;
 #endif
@@ -658,7 +659,7 @@ char tmpstr[256];
       params->group_term.bitrate = atoi(value);
    else if (strstr(name, "merge_term.ptime") || strstr(name, "group_term.ptime")) {
 
-      params->group_term.attr.voice.ptime = atoi(value);
+      params->group_term.voice.ptime = atoi(value);
       params->group_term.ptime = atoi(value);
    }
 #if defined(_X86) || defined(_ARM)
@@ -668,31 +669,31 @@ char tmpstr[256];
       params->group_term.output_buffer_interval = atoi(value);
 #endif
    else if (strstr(name, "merge_term.rtp_payload_type") || strstr(name, "group_term.rtp_payload_type"))
-      params->group_term.attr.voice.rtp_payload_type = atoi(value);
+      params->group_term.voice.rtp_payload_type = atoi(value);
    else if (strstr(name, "merge_term.dtmf_type") || strstr(name, "group_term.dtmf_type"))
-      params->group_term.attr.voice.dtmf_mode = dtmf_type(value);
+      params->group_term.voice.dtmf_mode = dtmf_type(value);
    else if (strstr(name, "merge_term.dtmf_payload_type") || strstr(name, "group_term.dtmf_payload_type"))
-      params->group_term.attr.voice.dtmf_payload_type = atoi(value);
+      params->group_term.voice.dtmf_payload_type = atoi(value);
    else if (strstr(name, "merge_term.ec") || strstr(name, "group_term.ec"))
-      params->group_term.attr.voice.ec = ec_type(value);
+      params->group_term.voice.ec = ec_type(value);
    else if (strstr(name, "merge_term.octet_align"))
-      params->group_term.attr.voice.u.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
+      params->group_term.voice.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
    else if (strstr(name, "merge_term.evrc_format") || strstr(name, "group_term.evrc_format"))
-      params->group_term.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
+      params->group_term.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
    else if (strstr(name, "merge_term.evrc_bitrate") || strstr(name, "group_term.evrc_bitrate"))
-      params->group_term.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
+      params->group_term.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
    else if (strstr(name, "merge_term.evrc_mode") || strstr(name, "group_term.evrc_mode"))
-      params->group_term.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
+      params->group_term.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
    else if (strstr(name, "merge_term.opus_max_bitrate") || strstr(name, "group_term.opus_max_bitrate"))
-      params->group_term.attr.voice.u.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
+      params->group_term.voice.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
    else if (strstr(name, "merge_term.opus_max_playback_rate") || strstr(name, "group_term.opus_max_playback_rate"))
-      params->group_term.attr.voice.u.opus.max_playback_rate = atoi(value);
+      params->group_term.voice.opus.max_playback_rate = atoi(value);
    else if (strstr(name, "merge_term.opus_sprop_max_playback_rate") || strstr(name, "group_term.opus_sprop_max_playback_rate"))
-      params->group_term.attr.voice.u.opus.sprop_max_capture_rate = atoi(value);
+      params->group_term.voice.opus.sprop_max_capture_rate = atoi(value);
    else if (strstr(name, "merge_term.opus_fec") || strstr(name, "group_term.opus_fec"))
-      params->group_term.attr.voice.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
+      params->group_term.voice.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name, "merge_term.vad") || strstr(name, "group_term.vad"))
-      params->group_term.attr.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
+      params->group_term.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
 #if defined(_X86) || defined(_ARM)
    else if (strstr(name, "merge_term.buffer_depth") || strstr(name, "group_term.buffer_depth")) {
       strcpy(tmpstr, value);
@@ -719,12 +720,12 @@ char tmpstr[256];
       
       if (params->group_term.codec_type == DS_CODEC_VOICE_EVS)
       {
-         if (atoi(value) > 3) params->group_term.attr.voice.u.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->group_term.codec_type, which shd be parsed in a first pass */
-         else if (atoi(value) >= 0) params->group_term.attr.voice.u.evs.codec_flags |= atoi(value);
+         if (atoi(value) > 3) params->group_term.voice.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->group_term.codec_type, which shd be parsed in a first pass */
+         else if (atoi(value) >= 0) params->group_term.voice.evs.codec_flags |= atoi(value);
       }
    }
    else if (strstr(name, "merge_term.evs_header_full") || strstr(name, "merge_term.header_format") || strstr(name, "group_term.header_format"))
-      params->group_term.attr.voice.u.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
+      params->group_term.voice.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
 #ifdef ENABLE_TERM_MODE_FIELD
    else if (strstr(name, "merge_term.mode") || strstr(name, "group_term.mode"))
       params->group_term.mode = (atoi(value) ? TERMINATION_MODE_IP_PORT_DONTCARE : 0);
@@ -822,7 +823,7 @@ static int parse_term_data(char *name, char *value, FRAME_TEST_INFO *info)
       info->term.bitrate = atoi(value);
    else if (strcasestr(name, "ptime")) {
 
-      info->term.attr.voice.ptime = atoi(value);
+      info->term.voice.ptime = atoi(value);
       info->term.ptime = atoi(value);
    }
 #if defined(_X86) || defined(_ARM)
@@ -832,32 +833,32 @@ static int parse_term_data(char *name, char *value, FRAME_TEST_INFO *info)
       info->term.output_buffer_interval = atoi(value);
 #endif
    else if (strcasestr(name, "ec") == 0)
-      info->term.attr.voice.ec = ec_type(value);
+      info->term.voice.ec = ec_type(value);
    else if (strcasestr(name, "octet_align"))
-      info->term.attr.voice.u.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
+      info->term.voice.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
    else if (strcasestr(name, "evrc_format"))
-      info->term.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
+      info->term.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
    else if (strcasestr(name, "evrc_bitrate"))
-      info->term.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
+      info->term.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
    else if (strcasestr(name, "evrc_mode"))
-      info->term.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
+      info->term.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
    else if (strcasestr(name, "opus_max_bitrate"))
-      info->term.attr.voice.u.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
+      info->term.voice.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
    else if (strcasestr(name, "opus_max_playback_rate"))
-      info->term.attr.voice.u.opus.max_playback_rate = atoi(value);
+      info->term.voice.opus.max_playback_rate = atoi(value);
    else if (strcasestr(name, "opus_sprop_max_playback_rate"))
-      info->term.attr.voice.u.opus.sprop_max_capture_rate = atoi(value);
+      info->term.voice.opus.sprop_max_capture_rate = atoi(value);
    else if (strcasestr(name, "opus_fec"))
-      info->term.attr.voice.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
+      info->term.voice.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strcasestr(name, "vad"))
-      info->term.attr.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
+      info->term.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
    else if (strcasestr(name, "evs_sample_rate") || strcasestr(name, "sample_rate"))
    {
 #if defined(_X86) || defined(_ARM)
       info->term.sample_rate = atoi(value);
 #endif
-      if (atoi(value) > 3) info->term.attr.voice.u.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
-      else if (atoi(value) >= 0) info->term.attr.voice.u.evs.codec_flags |= atoi(value);
+      if (atoi(value) > 3) info->term.voice.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
+      else if (atoi(value) >= 0) info->term.voice.evs.codec_flags |= atoi(value);
    }
    else if (strcasestr(name, "evs_header_full") || strcasestr(name, "header_format") || strcasestr(name, "payload_format") || strcasestr(name, "format")) {
 
@@ -870,7 +871,7 @@ static int parse_term_data(char *name, char *value, FRAME_TEST_INFO *info)
       else if (strcasestr(value, "hf-only")) val = 2;
       else val = atoi(value);
 
-      info->term.attr.voice.u.evs.codec_flags |= (val ? DS_EVS_PACKET_FORMAT : 0);
+      info->term.voice.evs.codec_flags |= (val ? DS_EVS_PACKET_FORMAT : 0);
    }
    else if (strcasestr(name, "encoder_file"))
    {
@@ -1099,7 +1100,7 @@ char tmpstr[256];
    if (strstr(name, "term1.local_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->session_data.term1.local_ip.u.ipv4_uint32 = inet_addr(value);
+      params->session_data.term1.local_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_TERM1 | DS_LOCAL_IP_ADDR | DS_SESSION_PARAMS_T) < 0) return -1;
 #endif
@@ -1107,7 +1108,7 @@ char tmpstr[256];
    else if (strstr(name, "term1.remote_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->session_data.term1.remote_ip.u.ipv4_uint32 = inet_addr(value);
+      params->session_data.term1.remote_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_TERM1 | DS_REMOTE_IP_ADDR | DS_SESSION_PARAMS_T) < 0) return -1;
 #endif
@@ -1128,7 +1129,7 @@ char tmpstr[256];
       params->session_data.term1.bitrate = atoi(value);
    else if (strstr(name, "term1.ptime")) {
 
-      params->session_data.term1.attr.voice.ptime = atoi(value);
+      params->session_data.term1.voice.ptime = atoi(value);
       params->session_data.term1.ptime = atoi(value);
    }
 #if defined(_X86) || defined(_ARM)
@@ -1138,31 +1139,31 @@ char tmpstr[256];
       params->session_data.term1.output_buffer_interval = atoi(value);
 #endif
    else if (strstr(name, "term1.rtp_payload_type"))
-      params->session_data.term1.attr.voice.rtp_payload_type = atoi(value);
+      params->session_data.term1.voice.rtp_payload_type = atoi(value);
    else if (strstr(name, "term1.dtmf_type"))
-      params->session_data.term1.attr.voice.dtmf_mode = dtmf_type(value);
+      params->session_data.term1.voice.dtmf_mode = dtmf_type(value);
    else if (strstr(name, "term1.dtmf_payload_type"))
-      params->session_data.term1.attr.voice.dtmf_payload_type = atoi(value);
+      params->session_data.term1.voice.dtmf_payload_type = atoi(value);
    else if (strstr(name, "term1.ec"))
-      params->session_data.term1.attr.voice.ec = ec_type(value);
+      params->session_data.term1.voice.ec = ec_type(value);
    else if (strstr(name, "term1.octet_align"))
-      params->session_data.term1.attr.voice.u.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
+      params->session_data.term1.voice.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
    else if (strstr(name, "term1.evrc_format"))
-      params->session_data.term1.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
+      params->session_data.term1.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
    else if (strstr(name, "term1.evrc_bitrate"))
-      params->session_data.term1.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
+      params->session_data.term1.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
    else if (strstr(name, "term1.evrc_mode"))
-      params->session_data.term1.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
+      params->session_data.term1.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
    else if (strstr(name, "term1.opus_max_bitrate"))
-      params->session_data.term1.attr.voice.u.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
+      params->session_data.term1.voice.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
    else if (strstr(name, "term1.opus_max_playback_rate"))
-      params->session_data.term1.attr.voice.u.opus.max_playback_rate = atoi(value);
+      params->session_data.term1.voice.opus.max_playback_rate = atoi(value);
    else if (strstr(name, "term1.opus_sprop_max_playback_rate"))
-      params->session_data.term1.attr.voice.u.opus.sprop_max_capture_rate = atoi(value);
+      params->session_data.term1.voice.opus.sprop_max_capture_rate = atoi(value);
    else if (strstr(name, "term1.opus_fec"))
-      params->session_data.term1.attr.voice.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
+      params->session_data.term1.voice.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name, "term1.vad"))
-      params->session_data.term1.attr.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
+      params->session_data.term1.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
 #if defined(_X86) || defined(_ARM)
    else if (strstr(name, "term1.buffer_depth")) {
       strcpy(tmpstr, value);
@@ -1186,16 +1187,16 @@ char tmpstr[256];
 #if defined(_X86) || defined(_ARM)
       params->session_data.term1.sample_rate = atoi(value);
 #endif
-      if (atoi(value) > 3) params->session_data.term1.attr.voice.u.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
-      else if (atoi(value) >= 0) params->session_data.term1.attr.voice.u.evs.codec_flags |= atoi(value);
+      if (atoi(value) > 3) params->session_data.term1.voice.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
+      else if (atoi(value) >= 0) params->session_data.term1.voice.evs.codec_flags |= atoi(value);
    }
    else if (strstr(name, "term1.evs_header_full") || strstr(name, "term1.header_format") || strstr(name, "term1.payload_format"))
-      params->session_data.term1.attr.voice.u.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
+      params->session_data.term1.voice.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
 
    else if (strstr(name, "term2.local_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->session_data.term2.local_ip.u.ipv4_uint32 = inet_addr(value);
+      params->session_data.term2.local_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_TERM2 | DS_LOCAL_IP_ADDR | DS_SESSION_PARAMS_T) < 0) return -1;
 #endif
@@ -1203,7 +1204,7 @@ char tmpstr[256];
    else if (strstr(name, "term2.remote_ip"))
    {
 #ifndef ALLOW_IPV6
-      params->session_data.term2.remote_ip.u.ipv4_uint32 = inet_addr(value);
+      params->session_data.term2.remote_ip.uIpv4 = inet_addr(value);
 #else
       if (inet_pton_ex(name, value, (void*)params, DS_TERM2 | DS_REMOTE_IP_ADDR | DS_SESSION_PARAMS_T) < 0) return -1;
 #endif
@@ -1224,7 +1225,7 @@ char tmpstr[256];
       params->session_data.term2.bitrate = atoi(value);
    else if (strstr(name, "term2.ptime")) {
 
-      params->session_data.term2.attr.voice.ptime = atoi(value);
+      params->session_data.term2.voice.ptime = atoi(value);
       params->session_data.term2.ptime = atoi(value);
    }
 #if defined(_X86) || defined(_ARM)
@@ -1234,31 +1235,31 @@ char tmpstr[256];
       params->session_data.term2.output_buffer_interval = atoi(value);
 #endif
    else if (strstr(name, "term2.rtp_payload_type"))
-      params->session_data.term2.attr.voice.rtp_payload_type = atoi(value);
+      params->session_data.term2.voice.rtp_payload_type = atoi(value);
    else if (strstr(name, "term2.dtmf_type"))
-      params->session_data.term2.attr.voice.dtmf_mode = dtmf_type(value);
+      params->session_data.term2.voice.dtmf_mode = dtmf_type(value);
    else if (strstr(name, "term2.dtmf_payload_type"))
-      params->session_data.term2.attr.voice.dtmf_payload_type = atoi(value);
+      params->session_data.term2.voice.dtmf_payload_type = atoi(value);
    else if (strstr(name, "term2.ec"))
-      params->session_data.term2.attr.voice.ec = ec_type(value);
+      params->session_data.term2.voice.ec = ec_type(value);
    else if (strstr(name, "term2.octet_align"))
-      params->session_data.term2.attr.voice.u.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
+      params->session_data.term2.voice.amr.codec_flags = (atoi(value) ? DS_AMR_OCTET_ALIGN : 0);
    else if (strstr(name, "term2.evrc_format"))
-      params->session_data.term2.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
+      params->session_data.term2.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_PACKET_FORMAT_SHIFT;
    else if (strstr(name, "term2.evrc_bitrate"))
-      params->session_data.term2.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
+      params->session_data.term2.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_BITRATE_SHIFT;
    else if (strstr(name, "term2.evrc_mode"))
-      params->session_data.term2.attr.voice.u.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
+      params->session_data.term2.voice.evrc.codec_flags |= atoi(value) << DS_EVRC_MODE_SHIFT;
    else if (strstr(name, "term2.opus_max_bitrate"))
-      params->session_data.term2.attr.voice.u.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
+      params->session_data.term2.voice.opus.codec_flags |= (atoi(value) & DS_OPUS_MAX_AVG_BITRATE);
    else if (strstr(name, "term2.opus_max_playback_rate"))
-      params->session_data.term2.attr.voice.u.opus.max_playback_rate = atoi(value);
+      params->session_data.term2.voice.opus.max_playback_rate = atoi(value);
    else if (strstr(name, "term2.opus_sprop_max_playback_rate"))
-      params->session_data.term2.attr.voice.u.opus.sprop_max_capture_rate = atoi(value);
+      params->session_data.term2.voice.opus.sprop_max_capture_rate = atoi(value);
    else if (strstr(name, "term2.opus_fec"))
-      params->session_data.term2.attr.voice.u.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
+      params->session_data.term2.voice.opus.codec_flags |= (atoi(value) ? (~0 & DS_OPUS_FEC) : 0);
    else if (strstr(name, "term2.vad"))
-      params->session_data.term2.attr.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
+      params->session_data.term2.voice.flag = (atoi(value) ? VOICE_ATTR_FLAG_VAD : 0);
 #if defined(_X86) || defined(_ARM)
    else if (strstr(name, "term2.buffer_depth")) {
       strcpy(tmpstr, value);
@@ -1282,11 +1283,11 @@ char tmpstr[256];
 #if defined(_X86) || defined(_ARM)
       params->session_data.term2.sample_rate = atoi(value);
 #endif
-      if (atoi(value) > 3) params->session_data.term2.attr.voice.u.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
-      else if (atoi(value) >= 0) params->session_data.term2.attr.voice.u.evs.codec_flags |= atoi(value);
+      if (atoi(value) > 3) params->session_data.term2.voice.evs.codec_flags |= DSGetCodecInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_CODEC_INFO_VOICE_ATTR_SAMPLERATE, atoi(value), 0, NULL);  /* note -- codec_type should be replaced by params->term1.codec_type, which shd be parsed in a first pass */
+      else if (atoi(value) >= 0) params->session_data.term2.voice.evs.codec_flags |= atoi(value);
    }
    else if (strstr(name, "term2.evs_header_full") || strstr(name, "term2.header_format") || strstr(name, "term2.payload_format"))
-      params->session_data.term2.attr.voice.u.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
+      params->session_data.term2.voice.evs.codec_flags |= ((atoi(value)) ? DS_EVS_PACKET_FORMAT : 0);
 
    else if (strstr(name, "node_id"))
       params->node_id = atoi(value);
@@ -1360,24 +1361,24 @@ static int prepare_session_creation(char *buffer, uint32_t session_id, session_p
    create_session_data->session_data.term1.codec_type = params.session_data.term1.codec_type;
    create_session_data->session_data.term1.bitrate = params.session_data.term1.bitrate;
    create_session_data->session_data.term1.remote_ip.type = IPV4;
-   create_session_data->session_data.term1.remote_ip.u.ipv4_uint32 = params.session_data.term1.remote_ip.u.ipv4_uint32;
+   create_session_data->session_data.term1.remote_ip.uIpv4 = params.session_data.term1.remote_ip.uIpv4;
    create_session_data->session_data.term1.local_ip.type = IPV4;
-   create_session_data->session_data.term1.local_ip.u.ipv4_uint32 = params.session_data.term1.local_ip.u.ipv4_uint32;
+   create_session_data->session_data.term1.local_ip.uIpv4 = params.session_data.term1.local_ip.uIpv4;
    create_session_data->session_data.term1.remote_port = htons(params.session_data.term1.remote_port);
    create_session_data->session_data.term1.local_port = htons(params.session_data.term1.local_port);
-   memcpy(&create_session_data->session_data.term1.attr.voice, &params.session_data.term1.attr.voice, sizeof(struct voice_attributes));
+   memcpy(&create_session_data->session_data.term1.voice, &params.session_data.term1.voice, sizeof(struct voice_attributes));
 
    create_session_data->session_data.term2.term_id = 2;
    create_session_data->session_data.term2.media_type = params.session_data.term2.media_type;
    create_session_data->session_data.term2.codec_type = params.session_data.term2.codec_type;
    create_session_data->session_data.term2.bitrate = params.session_data.term2.bitrate;
    create_session_data->session_data.term2.remote_ip.type = IPV4;
-   create_session_data->session_data.term2.remote_ip.u.ipv4_uint32 = params.session_data.term2.remote_ip.u.ipv4_uint32;
+   create_session_data->session_data.term2.remote_ip.uIpv4 = params.session_data.term2.remote_ip.uIpv4;
    create_session_data->session_data.term2.local_ip.type = IPV4;
-   create_session_data->session_data.term2.local_ip.u.ipv4_uint32 = params.session_data.term2.local_ip.u.ipv4_uint32;
+   create_session_data->session_data.term2.local_ip.uIpv4 = params.session_data.term2.local_ip.uIpv4;
    create_session_data->session_data.term2.remote_port = htons(params.session_data.term2.remote_port);
    create_session_data->session_data.term2.local_port = htons(params.session_data.term2.local_port);
-   memcpy(&create_session_data->session_data.term2.attr.voice, &params.session_data.term2.attr.voice, sizeof(struct voice_attributes));
+   memcpy(&create_session_data->session_data.term2.voice, &params.session_data.term2.voice, sizeof(struct voice_attributes));
 
    return (sizeof(struct cmd_hdr) + sizeof(struct cmd_create_session));
 }
@@ -1438,13 +1439,13 @@ int transcode_init(void)
       hdr.len = sizeof(struct cmd_configure_ip);
       ip_cfg.flag = 0xf;
       ip_cfg.physical_ip.type = IPV4;
-      ip_cfg.physical_ip.u.ipv4_uint32 = 0x0a0001d2;//10.0.1.210
+      ip_cfg.physical_ip.uIpv4 = 0x0a0001d2;//10.0.1.210
       ip_cfg.virtual_ip.type = IPV4;
-      ip_cfg.virtual_ip.u.ipv4_uint32 = 0x0a0001d3;//10.0.1.211
+      ip_cfg.virtual_ip.uIpv4 = 0x0a0001d3;//10.0.1.211
       ip_cfg.subnet_mask.type = IPV4;
-      ip_cfg.subnet_mask.u.ipv4_uint32 = 0xffffff00;
+      ip_cfg.subnet_mask.uIpv4 = 0xffffff00;
       ip_cfg.gateway.type = IPV4;
-      ip_cfg.gateway.u.ipv4_uint32 = 0x0a000101;
+      ip_cfg.gateway.uIpv4 = 0x0a000101;
       //ip_cfg.port_start = 10240;
       //ip_cfg.num_ports = 2048;
       memcpy(ip_cfg_buffer, &hdr, sizeof(struct cmd_hdr));
@@ -1478,8 +1479,8 @@ int transcode_init(void)
             }
             printf("configure ip command sent to chip %d\n", i);
             
-            ip_cfg.physical_ip.u.ipv4_uint32 += 2;
-            ip_cfg.virtual_ip.u.ipv4_uint32 += 2;
+            ip_cfg.physical_ip.uIpv4 += 2;
+            ip_cfg.virtual_ip.uIpv4 += 2;
             memcpy(ip_cfg_buffer + sizeof(struct cmd_hdr), &ip_cfg, sizeof(struct cmd_configure_ip)); 
          }
       }

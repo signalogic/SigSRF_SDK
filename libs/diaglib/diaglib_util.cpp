@@ -25,6 +25,8 @@
   Modified Nov 2024 JHB, DSGetLogTimestamp() returns timestamp in usec if timestamp param is NULL
   Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
   Modified Apr 2025 JHB, in DSGetLogTimestamp() convert DS_EVENT_LOG_TIMEVAL_PRECISE flag to DS_EVENT_LOG_TIMEVAL_PRECISION_USEC and add DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC flag
+  Modified Jul 2025 JHB, add isStdoutReady() to check if stdout is ready for output. There are various reasons why it might not be, including error, but what we're most interested in is if printf() might block due to a stdout problem, for example due to slow connectivity to remote terminals
+  Modified Jul 2025 JHB, add console_out()
 */
 
 /* Linux and/or other OS includes */
@@ -51,6 +53,8 @@
 #include <time.h>      /* struct tm, time(), localtime_r() */
 #include <sys/time.h>  /* gettimeofday() */
 #include <execinfo.h>  /* backtrace() */
+#include <poll.h>
+#include <unistd.h>  /* STDOUT_FILENO */
 
 // #define DEBUG_OUTPUT  /* enable if needed */
 #ifdef DEBUG_OUTPUT
@@ -268,4 +272,200 @@ bool fTopLevelRepeat = false;
    free(strings);
 
    return nptrs;
+}
+
+/* check if stdout is ready for output. There are various reasons why it might not be, including error, but what we're most interested in is if printf() might block due to a stdout problem, for example due to slow connectivity to remote terminals (e.g. stdout is redirected over SSH and thus depends on network conditions), JHB Jul 2025 */
+
+int isStdoutReady() {
+
+struct pollfd pfd;
+int ret_val;
+
+   pfd.fd = STDOUT_FILENO;
+   pfd.events = POLLOUT;
+   pfd.revents = 0;
+
+   if ((ret_val = poll(&pfd, 1, 1)) > 0) {  /* timeout (in msec) is 3rd param; if set to zero will return immediately */
+\
+      if (!(pfd.revents & POLLOUT)) return 0;  /* if POLLOUT not set then stdout not ready for writing */
+
+      if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) return -1;  /* handle errors or hang-ups */
+   }
+   else if (ret_val < 0) return -1;  /* error value:  EINVAL, EAGAIN, EINTR */
+   else return 0;  /* poll() return value zero is a time-out */
+
+   return 1;  /* stdout ready for writing */
+}
+
+/* extended version of isStdoutReady() with stats update, timeout option, and debug points. Notes:
+
+  -called by console_out(), purpose is to verify stdout is ready and printf() will not block, for example if stdout is redirected over SSH to a remote terminal, and is thus affected by network conditions
+  -to emulate a terminal connectivity problem, run mediaMin command lines in a Putty window and hold the scrollbar for 30 sec or more. This will block console output, after releasing the scrollbar output will continue but missing what was discarded during the blocked period
+  -poll() normally returns immediately but sometimes takes longer, see comments below about context switching
+*/
+
+uint32_t stdout_not_ready = 0;  /* global stats maintained when STDOUT_READY_RECORD_STATS is given in uFlags param of isStdoutReadyEx() */
+uint32_t stdout_error = 0;
+uint32_t stdout_timeout = 0;
+uint64_t stdout_max_wait_time_total = 0;  /* set when STDOUT_READY_PROFILE is given in uFlags param of isStdoutReadyEx() */
+uint64_t stdout_max_wait_time_timeout = 0;
+uint64_t stdout_max_wait_time_notimeout = 0;
+bool fEnableStdoutReadyProfiling = false;
+
+int isStdoutReadyEx(unsigned int uFlags) {
+
+struct pollfd pfd;
+int ret_val = 1;  /* assume stdout is ready */
+uint64_t start_time = 0, stop_time;
+
+#define ZERO_TIMEOUT  /* calling poll() with a zero timeout gives highest performance, notes:
+
+                         -profiling shows a typical max wait time around 20 usec when stdout is not ready
+                         -problem is that sometmes poll() will initially return zero (timeout) even when stdout is ready, possibly due to context switching, so some number of empirical retries is required to discover that stdout is in fact ready (in this case max time is around 10-20 usec)
+                         -profile times on Xeon 2660 2.2 GHz 
+                      */
+
+#ifdef ZERO_TIMEOUT
+   #define TIMEOUT_RETRIES  100
+   #define BASE_TIMEOUT     100  /* (in usec) */
+
+   int retries = 0, timeout = 0;  /* no timeout */
+   uint64_t start_time_timeout = 0;
+
+   struct timespec ts;
+   clock_gettime(CLOCK_MONOTONIC, &ts);
+   start_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+   start_time_timeout = start_time;
+
+poll:
+#else
+   int timeout = 1;  /* 1 msec timeout */
+
+   if (uFlags & STDOUT_READY_PROFILING) {
+
+      struct timespec ts;
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      start_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+   }
+#endif
+
+   pfd.fd = STDOUT_FILENO;
+   pfd.events = POLLOUT;
+   pfd.revents = 0;
+
+   if (poll(&pfd, 1, timeout) > 0) {  /* timeout is 3rd param; if set to zero poll() will return immediately */
+
+      if (!(pfd.revents & POLLOUT)) {  /* if POLLOUT not set then stdout not ready for writing */
+
+         if (uFlags & STDOUT_READY_RECORD_STATS) __sync_add_and_fetch(&stdout_not_ready, 1);
+         ret_val = 0;
+      }
+      else if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {  /* handle errors or hang-ups */
+
+         if (uFlags & STDOUT_READY_RECORD_STATS) __sync_add_and_fetch(&stdout_error, 1);
+         ret_val = -1;
+      }
+
+      struct timespec ts;
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      stop_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+      stdout_max_wait_time_notimeout = max(stdout_max_wait_time_notimeout, stop_time - start_time);
+   }
+   else if (ret_val < 0) {  /* error value:  EINVAL, EAGAIN, EINTR */
+
+      if (uFlags & STDOUT_READY_RECORD_STATS) __sync_add_and_fetch(&stdout_error, 1);
+      #ifdef ENABLE_POLL_DEBUG
+      printf("\n *** poll() error ret_val = %d \n", ret_val);
+      #endif
+      ret_val = -1;
+   }
+   else {  /* poll() return value zero is a time-out, which seems to happen infrequently even with timeout param value zero */
+
+   /* empirical retries value allows "normal" timeouts, apparently due to context switches after critical sections, to be differientiated from sustained loss of remote terminal connectivity. Notes:
+
+      -pfd.revents is always zero, so no help there
+      -test with mediaMin -cx86 -i../test_files/20200131_Vt-V_Ingress_NB-SWB.37327.0.ws.pcap -L -d0x580000004040811 -r0.9 -g /tmp/shared --md5sum, a typical "normal" timeout occurs after critical section in DSCreateSession(), just before Log_RT() message starting with " INFO: DSCreateSession() has assigned ..."
+    */
+
+      struct timespec ts;
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      stop_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+      stdout_max_wait_time_timeout = max(stdout_max_wait_time_timeout, stop_time - start_time_timeout);
+      start_time_timeout = stop_time;
+
+      #ifdef ZERO_TIMEOUT
+      if (retries < TIMEOUT_RETRIES) { retries++; goto poll; }
+
+   /* after retries we start checking total wait time, based on system-dependent timeout data we have collected during retries. This combination handles a range of CPU and system speeds; tested on Xeon 2660 and Atom 2358 */
+
+      if (stop_time - start_time < BASE_TIMEOUT + max(stdout_max_wait_time_timeout, stdout_max_wait_time_notimeout)*TIMEOUT_RETRIES) goto poll;  /* wait for base timeout + worst-case timeouts, which are basically a measure of overall CPU + mem + I/O system speed */
+
+      #if 0
+      printf("\n *** max wait timeout = %llu, max wait no timeout = %llu \n", (long long unsigned int)stdout_max_wait_time_timeout, (long long unsigned int)stdout_max_wait_time_notimeout);
+      #endif
+
+      #endif
+
+      #ifdef ENABLE_POLL_DEBUG
+      printf("\n *** poll() timeout ret_val = %d \n", ret_val);  // debug, but only works for false-positives. For actual loss of connectivity situation it will block */
+      #endif
+      if (uFlags & STDOUT_READY_RECORD_STATS) __sync_add_and_fetch(&stdout_timeout, 1);
+
+      ret_val = 0;
+   }
+
+   if (uFlags & STDOUT_READY_PROFILING) {
+
+      struct timespec ts;
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      stop_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+
+      stdout_max_wait_time_total = max(stdout_max_wait_time_total, stop_time - start_time);
+   }
+
+   return ret_val;
+}
+
+/* console output - output string to console, with some optional params
+
+   -std_type - from 0-3 (0 = printf() (buffered), 1 = fprintf(stdout), 2 = fprintf(stderr), 3 = none), default is buffered output
+   -loglevel - 1 critical error, 2 error, 3 warning, 4 and above informational
+   -fNewLine - true if leading '\n\ should be prefixed to force a new line
+   -szOutput - pointer to output string
+
+   -Notes:
+     -called from event logging, application threads (app_printf() user_io.cpp), and packet/media worker threads (sig_printf() in packet_media_flow_proc.c)
+     -global stats stdout_error and stdout_not_ready are updated
+*/
+
+int console_out(int std_type, int loglevel, bool fNewLine, char* szOutput) {
+
+int ret_val = -1;
+
+#define POLL_STDOUT
+
+   #ifdef POLL_STDOUT
+
+   unsigned int uFlags = STDOUT_READY_RECORD_STATS;
+   if (fEnableStdoutReadyProfiling) uFlags |= STDOUT_READY_PROFILING;
+
+   if (isStdoutReadyEx(uFlags) > 0)  /* poll stdout and avoid printf() if not ready (or blocking due to full buffers), JHB Jul 2025 */
+
+   #else
+
+   SetStdoutNonBlock();  /* setting stdout to non-blocking should be more efficient than polling. Note however this affects the entire process and currently we make no attempt to un-do it or use a critical section; the polling method avoids affecting stdout in any way (SetStdoutNonBlock() is in diaglib.h) */
+   #endif
+   {
+
+   /* std_type (screen output type):  0 = printf() (buffered, default), 1 = fprintf(stdout), 2 = fprintf(stderr), 3 = none */
+
+      if ((loglevel & DS_LOG_LEVEL_USE_STDERR) || std_type == 2) ret_val = fprintf(stderr, "%s%s%s%s", loglevel < 3 ? "\033[31m" : (loglevel == 3 ? "\033[33m" : ""), fNewLine ? "\n" : "", szOutput, loglevel <= 3 ? "\033[0m" : "");  /* check for user-specified stderr output, JHB Mar 2024 */
+      else if (std_type == 1) ret_val = fprintf(stdout, "%s%s%s%s", loglevel < 3 ? "\033[31m" : (loglevel == 3 ? "\033[33m" : ""), fNewLine ? "\n" : "", szOutput, loglevel <= 3 ? "\033[0m" : "");
+      else if (std_type != 3) ret_val = printf("%s%s%s%s", loglevel < 3 ? "\033[31m" : (loglevel == 3 ? "\033[33m" : ""), fNewLine ? "\n" : "", szOutput, loglevel <= 3 ? "\033[0m" : "");  /* default is buffered output, JHB Mar 2024. Use red for errors/critical errors, yellow for warnings; restore to white at end of string, JHB Jul 2025 */
+
+      if (ret_val < 0) __sync_add_and_fetch(&stdout_error, 1);
+      else if (ret_val == 0) __sync_add_and_fetch(&stdout_not_ready, 1);
+   }
+
+   return ret_val;
 }

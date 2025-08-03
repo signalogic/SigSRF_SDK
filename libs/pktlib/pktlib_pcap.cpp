@@ -57,12 +57,19 @@ Revision History
   Modified Dec 2024 JHB, add DS_PKTLIB_SUPPRESS_INFO_MSG flag in DSGetPacketInfo() call with DS_PKT_INFO_PKTINFO
   Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
   Modified Feb 2025 JHB, DSReadPcap() improvements:
-                           -handle pcapng format IDB blocks, other known blocks (e.g. NRB, statistics, etc), and custom (unknown) blocks
+                           -handle pcapng format IDB blocks, other known blocks (e.g. NRB, interface statistics, etc), and custom (unknown) blocks
                            -detect and adjust link layer length for Null/Loopback protocol
                            -detect and fix and TCP Segmentation Offload (TSO) zero lengths
                            -comprehensive error handling
   Modified Mar 2025 JHB, per changes in pktlib.h to standardize with other SigSRF libs, adjust references to DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, DS_PKTLIB_SUPPRESS_INFO_MSG, and DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG flags
-  Modified Apr 2025 JHB, per updates in pktlib.h, rename p_eth_hdr_type to p_eth_protocol 
+  Modified Apr 2025 JHB, per updates in pktlib.h, rename p_eth_hdr_type to p_eth_protocol
+  Modified Jun 2025 JHB, add uPktNumber and szUserMsgString params to DSReadPcap(). See comments
+  Modified Jun 2025 JHB, add reporting for:
+                         -TSO/LSO packets (implement DS_READ_PCAP_REPORT_TSO_LENGTH_FIX flag)
+                         -interface description blocks (IDB). See comments near IDB
+                         -interface statistics blocks (ISB). See comments near ISB
+  Modified Jun 2025 JHB, add support for multiple SHBs. Currently when encountering a 2nd or more SHB we read the block, discard data, and report it with an info message
+  Modified Jun 2025 JHB, allow possibility that pcapng file doesn't have initial IDB; i.e. first block after SHB is an EPB or SPB
 */
 
 /* Linux and/or other OS includes */
@@ -96,6 +103,15 @@ int link_layer_length = -1;
     link_layer_length = 0;
 
    return link_layer_length;
+}
+
+/* block seek */
+
+static inline int bseek(FILE* fp_pcap, int length) {  /* replacement for fseek() to give standard negative return value in case of error */
+
+   if (!fseek(fp_pcap, length, SEEK_CUR)) return 1;
+
+   return -1;
 }
 
 //#define DEBUG_PCAPNG  /* enable for pcapng format debug, JHB Oct 2020 */
@@ -230,8 +246,10 @@ wr_ret:
             sprintf(tmpstr, "WARNING: failed to read%s%s file header in file: %s", errstr, extstr, pcap_file ? pcap_file : "");
             Log_RT(3, tmpstr);
 
+            #if 0  /* let app close the file on error. Maybe it's doing something where it expects there might be an error, JHB Jun 2025 */
             fclose(*fp_pcap);
             *fp_pcap = NULL;
+            #endif
             ret_val = -1;
             goto rd_ret;
          }
@@ -242,7 +260,7 @@ wr_ret:
 
             p_file_hdr_ng = (pcapng_hdr_t*)p_file_hdr;
 
-            printf("\n *** inside pcap open, pcapng format header magic number = 0x%x, version major = %u, version minor = %u, block length = %u, byte order magic = 0x%x, section length = %lld \n", p_file_hdr_ng->magic_number, p_file_hdr_ng->version_major, p_file_hdr_ng->version_minor, p_file_hdr_ng->block_length, p_file_hdr_ng->byte_order_magic, (long long int)p_file_hdr_ng->section_length);
+            printf("\n *** inside pcap open, pcapng format header magic number = 0x%x, version major = %u, version minor = %u, block length = %u, byte order magic = 0x%x, section length = %lld \n", p_file_hdr_ng->magic_number, p_file_hdr_ng->version_major, p_file_hdr_ng->version_minor, p_file_hdr_ng->block_header.block_length, p_file_hdr_ng->byte_order_magic, (long long int)p_file_hdr_ng->section_length);
             #endif
 
             char szShebang[sizeof_field(pcap_hdr_t, rtp.shebang)+1] = "";
@@ -264,8 +282,10 @@ wr_ret:
                   sprintf(tmpstr, "WARNING: Failed to read %srtp file header in file: %s", errstr, pcap_file ? pcap_file : "");
                   Log_RT(3, tmpstr);
 
+                  #if 0  /* let app close the file on error. Maybe it's doing something where it expects there might be an error, JHB Jun 2025 */
                   fclose(*fp_pcap);
                   *fp_pcap = NULL;
+                  #endif
                   ret_val = -1;
                   goto rd_ret;
                }
@@ -336,7 +356,7 @@ wr_ret:
                goto rd_ret;
             }
 
-            if (p_file_hdr->magic_number != 0xa1b2c3d4 && p_file_hdr->magic_number != 0xa0d0d0a) {  /* check for (i) libpcap format and (ii) pcapng format magic numbers, JHB Oct 2020 */
+            if (p_file_hdr->magic_number != 0xa1b2c3d4 && p_file_hdr->magic_number != 0x0a0d0d0a) {  /* check for (i) libpcap format and (ii) pcapng format magic numbers, JHB Oct 2020 */
 
                if (p_file_hdr->magic_number == 0x6f6f6e73)
                   sprintf(tmpstr, "%spcap file: %s, \"Snoop\" file format magic number found but not supported, try opening in Wireshark and re-saving as pcap format", errstr, pcap_file ? pcap_file : "");
@@ -345,26 +365,47 @@ wr_ret:
 
                Log_RT(3, tmpstr);
 
+               #if 0  /* let app close the file on error. Maybe it's doing something where it expects there might be an error, JHB Jun 2025 */
                fclose(*fp_pcap);
                *fp_pcap = NULL;
+               #endif
                ret_val = -1;
                goto rd_ret;
             }
 
-            if (p_file_hdr->magic_number == 0xa0d0d0a) {  /* pcapng handling, JHB Oct 2020 */
+            if (p_file_hdr->magic_number == 0x0a0d0d0a) {  /* pcapng handling, JHB Oct 2020 */
 
                p_file_hdr_ng = (pcapng_hdr_t*)p_file_hdr;
 
-               int i, num_int32 = (p_file_hdr_ng->block_length - SIZEOF_PCAP_HDR_T)/4;  /* subtract amount we've already read */
-               uint32_t dummy_uint32;
-               for (i=0; i<num_int32; i++) ret_val = fread(&dummy_uint32, sizeof(uint32_t), 1, *fp_pcap);  /* read past options, if any, and duplicated block length */
+               bseek(*fp_pcap, max(p_file_hdr_ng->block_header.block_length - SIZEOF_PCAP_HDR_T, 0));  /* seek to end of SHB block */
 
+               #if 0  /* no longer assume an IDB immediately follows the first SHB, JHB Jun 2025 */
                ret_val = fread(&file_idb_pcapng, sizeof(pcapng_idb_t), 1, *fp_pcap);  /* read interface description block */
-
-               num_int32 = (file_idb_pcapng.block_header.block_length - sizeof(pcapng_idb_t))/4;
-               for (i=0; i<num_int32; i++) ret_val = fread(&dummy_uint32, sizeof(uint32_t), 1, *fp_pcap);  /* read past options, if any, and duplicated block length */
-
                link_type = file_idb_pcapng.link_type;
+               #else
+               ret_val = fread(&file_idb_pcapng, sizeof(pcapng_block_header_t), 1, *fp_pcap);  /* read next block header */
+
+               if (file_idb_pcapng.block_header.block_type == PCAPNG_IDB_TYPE) {  /* if block is an IDB, read remaining block header and save link type */
+
+                  ret_val = fread((void*)((uint8_t*)&file_idb_pcapng + sizeof(pcapng_block_header_t)), sizeof(pcapng_idb_t) - sizeof(pcapng_block_header_t), 1, *fp_pcap);
+
+                  link_type = file_idb_pcapng.link_type;
+
+                  bseek(*fp_pcap, max(file_idb_pcapng.block_header.block_length - sizeof(pcapng_idb_t), 0));  /* seek to end of IDB block */
+               }
+               else {
+
+                  bseek(*fp_pcap, -sizeof(pcapng_block_header_t));  /* otherwise seek back to start of block */
+
+                  link_type = LINKTYPE_ETHERNET;  /* set link type to default -- this may be wrong, so we issue a warning message */
+
+                  char* p = NULL, *szFilepath = getFilePathFromFilePointer(*fp_pcap);  /* in diaglib.h */
+                  if (szFilepath) { p = strrchr(szFilepath, '/'); if (!p) p = szFilepath; else p++; }
+
+                  Log_RT(3, "WARNING: DSOpenPcap() says %s does not have IDB after first SHB; assuming Ethernet link type, block type found = %d, block len = %d, uFlags = 0x%x \n",  p ? p : "error in getFilePathFromFilePointer()", file_idb_pcapng.block_header.block_type, file_idb_pcapng.block_header.block_length, uFlags);
+                  if (szFilepath) free(szFilepath);
+               }
+               #endif
 
                file_type = PCAP_TYPE_PCAPNG;
 
@@ -388,7 +429,7 @@ wr_ret:
                }
 
                #ifdef DEBUG_PCAPNG
-               printf(" section length = %llx, section block length = %u, interface block type = %u, interface block length = %u, link_type = %u \n", (unsigned long long)p_file_hdr_ng->section_length, p_file_hdr_ng->block_length, file_idb_pcapng.block_type, file_idb_pcapng.block_length, file_idb_pcapng.link_type);
+               printf(" section length = %llx, section block length = %u, interface block type = %u, interface block length = %u, link_type = %u \n", (unsigned long long)p_file_hdr_ng->section_length, p_file_hdr_ng->block_header.block_length, file_idb_pcapng.block_type, file_idb_pcapng.block_header.block_length, file_idb_pcapng.link_type);
                /*
                fclose(*fp_pcap);
                *fp_pcap = NULL;
@@ -408,8 +449,10 @@ wr_ret:
                sprintf(tmpstr, "%spcap file: %s, unsupported data link type: %d", errstr, pcap_file ? pcap_file : "", link_type);
                Log_RT(3, tmpstr);
 
+               #if 0  /* let app close the file on error. Maybe it's doing something where it expects there might be an error, JHB Jun 2025 */
                fclose(*fp_pcap);
                *fp_pcap = NULL;
+               #endif
                ret_val = -1;
                goto rd_ret;
             }
@@ -443,9 +486,22 @@ typedef struct {
 
 #endif
 
-/* read a pcap record */
+/* DSReadPcap() reads one or more pcap records at the current file position of fp_pcap into pkt_buf, and fills in one or more pcaprec_hdr_t structs (defined in pktlib.h). Notes:
 
-int DSReadPcap(FILE* fp_in, unsigned int uFlags, uint8_t* pkt_buffer, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* p_eth_protocol, uint16_t* p_block_type, pcap_hdr_t* pcap_file_hdr) {
+   -fp_pcap should point to a pcap, pcapng, or rtpXXX file previously opened by DSOpenPcap()
+   -uFlags are given in DS_READ_PCAP_XXX definitions below
+   -pkt_buf should point to a sufficiently large memory area to contain returned packet data
+   -link_layer_info should be supplied from a prior DSOpenPcap() call. See comments above
+   -if an optional p_eth_protocol pointer is supplied, one or more ETH_P_XXX ethernet protocol flags will be returned (as defined in linux/if_ether.h). NULL indicates not used
+   -if an optional p_block_type pointer is supplied, one or more PCAP_XXX_TYPE or PCAPNG_XXX_TYPE flags will be returned (as defined above). When reading pcap or .rtpxxx files, PCAP_PB_TYPE or RTP_PB_TYPE is returned. NULL indicates not used
+   -if an optional pcap_file_hdr pointer is supplied, the file header will be copied to this pointer (see pcap_hdr_t struct definition)
+   -if a non-zero uPktNumber is supplied, warning, error, and/or information messages displayed will include this number at the end of the message. For messages concerning Interface Description, Interface Statistics, Journal, Decryption, or other block types the text "last transmitted data " is prefixed and uPktNumber-1 is displayed, as these block types do not contain actual transmitted packet data. Applications are expected to keep track of packet numbers, for example to match accurately with Wireshark, even if they perform non-sequential file access
+   -if an optional szUserMsgString pointer is supplied, warning, error, and/or information messages displayed will include this string at the end of the message
+
+   -return value is the length of the packet, zero if file end has been reached, or < 0 for an error condition
+*/
+
+int DSReadPcap(FILE* fp_pcap, unsigned int uFlags, uint8_t* pkt_buffer, pcaprec_hdr_t* pcap_pkt_hdr, int link_layer_info, uint16_t* p_eth_protocol, uint16_t* p_block_type, pcap_hdr_t* pcap_file_hdr, unsigned int uPktNumber, const char* szUserMsgString) {
 
 pcaprec_hdr_t pcap_pkt_hdr_local;  /* defined in pktlib.h */
 pcaprec_hdr_t* p_pkt_hdr;
@@ -463,6 +519,7 @@ uint16_t eth_protocol = 0, file_type, link_len, link_type, padding = 0;
 uint16_t rtp_len = 0, record_len = 0;  /* rtp file format items */
 char errstr[1024] = "";
 bool fUnusedBlockType = false;
+char szPktNumber[30] = "";
 
 uint16_t block_type_local = 0;  /* use this for intermediate results if user gives p_block_type as NULL */
 
@@ -476,9 +533,9 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 #define ETH_P_ARP	0x0806		// Address Resolution packet
 */
 
-   if (!fp_in) return -1;  /* error condition */
+   if (!fp_pcap) return -1;  /* error condition */
 
-   if (feof(fp_in)) return 0;  /* check for invalid file handle or eof */
+   if (feof(fp_pcap)) return 0;  /* check for invalid file handle or eof */
 
    if (!pcap_pkt_hdr) p_pkt_hdr = &pcap_pkt_hdr_local;
    else p_pkt_hdr = pcap_pkt_hdr;
@@ -488,9 +545,11 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
    if (!p_block_type) p_block_type = &block_type_local;
 
+   if (uPktNumber) sprintf(szPktNumber, ", pkt#%u", uPktNumber);
+
 /* read pcap or rtp record header, link layer header, packet data */
 
-   if (uFlags & DS_READ_PCAP_COPY) fp_save = ftell(fp_in);
+   if (uFlags & DS_READ_PCAP_COPY) fp_save = ftell(fp_pcap);
 
    file_type = (link_layer_info & PCAP_LINK_LAYER_FILE_TYPE_MASK) >> 16;
    link_type = (link_layer_info & PCAP_LINK_LAYER_LINK_TYPE_MASK) >> 20;
@@ -504,15 +563,15 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
       *p_block_type = RTP_PB_TYPE;  /* return block type */
 
-      if (fread(&record_len, sizeof(record_len), 1, fp_in) != 1) { sprintf(errstr, "unable to read rtp record header"); goto pcap_read_error; };
+      if (fread(&record_len, sizeof(record_len), 1, fp_pcap) != 1) { sprintf(errstr, "unable to read rtp record header"); goto pcap_read_error; };
       record_len = (record_len >> 8) | (record_len << 8);  /* .rtp format has big-endian items. Is this always true ? I haven't found any documentation yet on this, JHB Nov 2023 */
 
-      if (fread(&rtp_len, sizeof(rtp_len), 1, fp_in) != 1) { sprintf(errstr, "unable to read rtp record data"); goto pcap_read_error; };;
+      if (fread(&rtp_len, sizeof(rtp_len), 1, fp_pcap) != 1) { sprintf(errstr, "unable to read rtp record data"); goto pcap_read_error; };;
       rtp_len = (rtp_len >> 8) | (rtp_len << 8);
 
-      if ((int)record_len - (int)rtp_len != 8) Log_RT(3, "WARNING: DSReadPcap() says rtp format record header fails sanity check, record_len = %u, rtp_len = %u \n", record_len, rtp_len);
+      if ((int)record_len - (int)rtp_len != 8) Log_RT(3, "WARNING: DSReadPcap() says rtp format record header fails sanity check, record_len = %u, rtp_len = %u%s%s%s \n", record_len, rtp_len, szUserMsgString ? ", " : "", szUserMsgString ? szUserMsgString : "", szPktNumber);
 
-      if (fread(&timestamp, sizeof(timestamp), 1, fp_in) != 1) return 0;
+      if (fread(&timestamp, sizeof(timestamp), 1, fp_pcap) != 1) return 0;
       timestamp = (timestamp >> 24) | ((timestamp & 0x00ff0000) >> 8) | ((timestamp & 0x0000ff00) << 8) | (timestamp << 24);  /* .rtp format has big-endian items. Is this always true ? I haven't found any documentation yet on this, JHB Nov 2023 */
 
       #if 0
@@ -532,7 +591,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
       *p_block_type = PCAP_PB_TYPE;  /* return block type */
 
-      if (fread(p_pkt_hdr, sizeof(pcaprec_hdr_t), 1, fp_in) != 1) { sprintf(errstr, "unable to read packet record header"); goto pcap_read_error; } /* read block header */
+      if (fread(p_pkt_hdr, sizeof(pcaprec_hdr_t), 1, fp_pcap) != 1) { sprintf(errstr, "unable to read packet record header"); goto pcap_read_error; } /* read block header */
    }
    else {  /* pcapng format */
 
@@ -540,7 +599,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
       int ret_val;
 
-      if ((ret_val = fread(&pcapng_block_header, sizeof(pcapng_block_header), 1, fp_in)) != 1) { /* read block header */
+      if ((ret_val = fread(&pcapng_block_header, sizeof(pcapng_block_header), 1, fp_pcap)) != 1) { /* read block header */
 
          sprintf(errstr, "unable to read pcapng block header, %d bytes left in file", (int)(sizeof(pcapng_block_header) - ret_val));
          goto pcap_read_error;
@@ -550,17 +609,17 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
       *p_block_type = pcapng_block_header.block_type;  /* return block type */
 
-      if (pcapng_block_header.block_type == PCAPNG_SPB_TYPE) {  /* read simple block (used in sustained packet capture and other cases where performance and reduced packet storage are critical). Test with capture_testNN.pcapng from Wireshark capture, JHB Feb 2025 */
+      if (pcapng_block_header.block_type == PCAPNG_SPB_TYPE) {  /* read simple block (used in sustained packet capture and other cases where performance and reduced packet storage are critical), JHB Feb 2025 */
 
          static bool fOnce = false;  /* so far no SPB test cases, in case it happens in the wild we can find out */
          if (!fOnce) { fOnce = true; fprintf(stderr, "\n *** inside pcapng read spb \n"); }
 
          memcpy(&pcapng_spb.block_header, &pcapng_block_header, sizeof(pcapng_block_header_t));
 
-         if (fread(&pcapng_spb.original_pkt_len, sizeof(pcapng_spb_t)-sizeof(pcapng_block_header_t), 1, fp_in) != 1) { sprintf(errstr, "unable to read simple block packet length"); goto pcap_read_error; }
+         if (fread(&pcapng_spb.original_pkt_len, sizeof(pcapng_spb_t)-sizeof(pcapng_block_header_t), 1, fp_pcap) != 1) { sprintf(errstr, "unable to read simple block packet length"); goto pcap_read_error; }
          p_pkt_hdr->orig_len = p_pkt_hdr->incl_len = pcapng_spb.original_pkt_len;
 
-         p_pkt_hdr->ts_sec = 0;  /* simple blocks don't have timestamps, so we set to zero and let calling application do something about it */
+         p_pkt_hdr->ts_sec = 0;  /* simple blocks don't have timestamps, so we set to zero and let calling application do something about it. mediaMin can handle this using auto-ajust packet push */
          p_pkt_hdr->ts_usec = 0;
       }
       else if (pcapng_block_header.block_type == PCAPNG_EPB_TYPE) {  /* read enhanced block */
@@ -569,7 +628,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
          memcpy(&pcapng_epb.block_header, &pcapng_block_header, sizeof(pcapng_block_header_t));
 
-         if (fread(&pcapng_epb.interface_id, sizeof(pcapng_epb_t)-sizeof(pcapng_block_header_t), 1, fp_in) != 1) { sprintf(errstr, "unable to read enhanced block data"); goto pcap_read_error; }
+         if (fread(&pcapng_epb.interface_id, sizeof(pcapng_epb_t)-sizeof(pcapng_block_header_t), 1, fp_pcap) != 1) { sprintf(errstr, "unable to read enhanced block data"); goto pcap_read_error; }
 
          p_pkt_hdr->incl_len = pcapng_epb.captured_pkt_len;
          p_pkt_hdr->orig_len = pcapng_epb.original_pkt_len;
@@ -577,11 +636,11 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
          p_pkt_hdr->ts_sec = ((usec = (((uint64_t)pcapng_epb.timestamp_hi << 32) | pcapng_epb.timestamp_lo))) / 1000000L;
          p_pkt_hdr->ts_usec = usec - 1000000L * p_pkt_hdr->ts_sec;
       }
-      else if (pcapng_block_header.block_type == PCAPNG_IDB_TYPE) {  /* read interface description block */
+      else if (pcapng_block_header.block_type == PCAPNG_IDB_TYPE) {  /* read interface description block (IDB) */
 
          memcpy(&pcapng_idb.block_header, &pcapng_block_header, sizeof(pcapng_block_header_t));
 
-         if (fread(&pcapng_idb.link_type, sizeof(pcapng_idb_t)-sizeof(pcapng_block_header_t), 1, fp_in) != 1) { sprintf(errstr, "unable to read interface description block data"); goto pcap_read_error; }
+         if (fread(&pcapng_idb.link_type, sizeof(pcapng_idb_t)-sizeof(pcapng_block_header_t), 1, fp_pcap) != 1) { sprintf(errstr, "unable to read interface description block data"); goto pcap_read_error; }
 
          #if 0  /* snaplen produces a huge value of 262,144, test with capture_test2.pcapng, JHB Feb 2025 */
          p_pkt_hdr->incl_len = pcapng_idb.snaplen;
@@ -589,19 +648,63 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
          p_pkt_hdr->incl_len = pcapng_block_header.block_length - sizeof(pcapng_idb_t) - 4;  /* duplicated block length field is handled together with padding below */
          #endif
 
- //printf("\n *** inside idb, reading %d struct data, p_pkt_hdr->incl_len = %d \n", (int)(sizeof(pcapng_idb_t)-sizeof(pcapng_block_header_t)), p_pkt_hdr->incl_len);
+      /* report basic IDB info, JHB Jun 2025 */
+
+         int block_len = p_pkt_hdr->incl_len - link_len;
+         char szPktNumber[50] = "";
+         if (uPktNumber > 1) sprintf(szPktNumber, ", last transmitted data pkt#%u", uPktNumber-1);
+
+         if (!(uFlags & DS_READ_PCAP_SUPPRESS_INFO_MSG)) {
+
+            char* p = NULL, *szFilepath = getFilePathFromFilePointer(fp_pcap);  /* in diaglib.h */
+            if (szFilepath) { p = strrchr(szFilepath, '/'); if (!p) p = szFilepath; else p++; }
+
+            Log_RT(4, "INFO: DSReadPcap() says reading interface description block (type = %d)%s%s, ignoring data, block len = %d, link len = %d, uFlags = 0x%x%s%s%s \n", pcapng_block_header.block_type, p ? " in " : "", p ? p : "error in getFilePathFromFilePointer()", block_len, link_len, uFlags, szUserMsgString ? ", " : "", szUserMsgString ? szUserMsgString : "", szPktNumber);
+            if (szFilepath) free(szFilepath);
+         }
+
+         #if 0
+         printf("\n *** inside idb, reading %d struct data, p_pkt_hdr->incl_len = %d \n", (int)(sizeof(pcapng_idb_t)-sizeof(pcapng_block_header_t)), p_pkt_hdr->incl_len);
+         #endif
+      }
+      else if (pcapng_block_header.magic_number == 0x0a0d0d0a) {
+
+         bseek(fp_pcap, max(pcapng_block_header.block_length - sizeof(pcapng_hdr_t), 0));  /* seek to end of SHB block and continue. Currently we are not differentiating packets read from multiple pcapng sections */
+
+      /* report pcap has multiple SHBs, notes JHB Jun 2025:
+
+         -currently there is nothing in the SHB block format (https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html#name-section-header-block) we can use to identify which SHB; i.e. no "SHB Id" or SHB count
+         -I opened a pcapng spec Github issue (https://github.com/IETF-OPSAWG-WG/draft-ietf-opsawg-pcap/issues/186) to see if there might be a way, answer was no
+         -we could keep our own count but that would require per-app / per-thread persistent state information
+      */
+
+         if (!(uFlags & DS_READ_PCAP_SUPPRESS_INFO_MSG)) {
+
+            char* p = NULL, *szFilepath = getFilePathFromFilePointer(fp_pcap);  /* in diaglib.h */
+            if (szFilepath) { p = strrchr(szFilepath, '/'); if (!p) p = szFilepath; else p++; }
+            int block_len = p_pkt_hdr->incl_len - link_len;
+            char szPktNumber[50] = "";
+            if (uPktNumber > 1) sprintf(szPktNumber, ", last transmitted data pkt#%u", uPktNumber-1);  /* for non-packet blocks we show the last packet block number. Applications should not increment packet numbers for non-packet blocks, otherwise their packet numbering won't match Wireshark */
+
+            Log_RT(4, "INFO: DSReadPcap() says reading 2 or more SHBs (type = 0x%x)%s%s, ignoring data, block len = %d, link len = %d, uFlags = 0x%x%s%s%s \n", pcapng_block_header.block_type, p ? " in " : "", p ? p : "error in getFilePathFromFilePointer()", block_len, link_len, uFlags, szUserMsgString ? ", " : "", szUserMsgString ? szUserMsgString : "", szPktNumber);
+            if (szFilepath) free(szFilepath);
+         }
       }
       else {  /* unused or unknown block type */
 
       /* unused/unknown block type notes:
 
-         1) First we don't read block data, instead seek past it
+         1) Currently we don't read block data, instead seek past it
 
-         2) Second we force link_len to zero even if link type is Ethernet, Linux SLL, etc. This assumes that non-packet blocks have no Ethernet header stored after block header and before block data. I assume pcapng spec guys thought about this but I don't see a mention in the spec (https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html, 2021 is latest I can find, no RFC number assigned yet)
+         2) We force link_len to zero even if link type is Ethernet, Linux SLL, etc. This assumes that non-packet blocks have no Ethernet header stored after block header and before block data. I assume pcapng spec guys thought about this but I don't see a mention in the spec (https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html, 2021 is latest I can find, no RFC number assigned yet)
 
-         3) Testing with capture_test2.png shows 2 statistics blocks at tail end of the pcap, both appear to read ok with no errors. mediaMin does not increment its per-stream packet number for non-packet blocks, and correctly shows the last packet in the pcap as 5041. That also includes ignoring an IDB at start of the pcap (i.e. not incrementing its packet number)
+         3) Testing with capture_test2.pcapng shows 2 interface statistics blocks at tail end of the pcap, 1920x1080_H.265.pcapng shows 1
+            -Wireshark stores a statistics block for each interface captured
+            -for capture_test2.png Wireshark "Statistics -> Capture File Properties" shows the two interfaces as "Wi-Fi" and "\Device\NPF_Loopback", 1920x1080_H.265.pcapng shows 1 interface ("\Device\NPF_{E5D1F3BD-2748-4AB0-8C89-8ADD3B34E991}")
 
-         4) Any other test cases with unused block types should be listed here
+         4) mediaMin does not increment per-stream packet numbers for non-packet blocks (that includes IDB blocks typically found at start of a capture pcap)
+
+         5) Additional test cases with unused block types can be listed here
       */
 
          p_pkt_hdr->incl_len = pcapng_block_header.block_length - sizeof(pcapng_block_header_t) - 4;  /* duplicated block length field is handled together with padding below */
@@ -610,36 +713,59 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
          int link_len_save = link_len;
          link_len = 0;
 
-      /* inform if NRB, statistics, journal, or decryption block; warn on unknown block */
+      /* report some basic block type info, JHB Jun 2025 */
 
-         if (pcapng_block_header.block_type == 4 || pcapng_block_header.block_type == 5 || pcapng_block_header.block_type == 9 || pcapng_block_header.block_type == 10) {
+         int block_len = p_pkt_hdr->incl_len - link_len;
+         char blkstr[50] = "";
+         bool fWarn = false;
 
-            char blkstr[20];
-            switch (pcapng_block_header.block_type) {
-               case 4:
-                  strcpy(blkstr, "NRB");
-                  break;
-               case 5:
-                  strcpy(blkstr, "statistics");  /* test with 1920x1080_H.265.pcapng */
-                  break;
-               case 9:
-                  strcpy(blkstr, "journal");
-                  break;
-               case 10:
-                  strcpy(blkstr, "decryption");
-                  break;
-            }
+         char szPktNumber[50] = "";
+         if (uPktNumber > 1) sprintf(szPktNumber, ", last transmitted data pkt#%u", uPktNumber-1);  /* for non-packet blocks we show the last packet block number. Applications should not increment packet numbers for non-packet blocks, otherwise their packet numbering won't match Wireshark */
 
-            if (!(uFlags & DS_READ_PCAP_SUPPRESS_INFO_MSG)) Log_RT(4, "INFO: DSReadPcap() says reading unused %s block (type = %d), ignoring data, link len = %d, uFlags = 0x%x \n", blkstr, pcapng_block_header.block_type, link_len_save, uFlags);
+         switch (pcapng_block_header.block_type) {
+
+            case 4:
+               strcpy(blkstr, "name resolution");
+               break;
+
+            case 5:  /* interface statistics block (ISB) */
+               uint32_t InterfaceId;
+               if (fread(&InterfaceId, sizeof(InterfaceId), 1, fp_pcap) != 1) { sprintf(errstr, "unable to read statistics block interface Id"); goto pcap_read_error; }
+               fseek(fp_pcap, -sizeof(InterfaceId), SEEK_CUR);
+               sprintf(blkstr, "interface #%u statistics", InterfaceId);  /* include the Interface Id in report info, JHB Jun 2025 */
+               break;
+
+             case 9:
+               strcpy(blkstr, "journal");
+               break;
+
+            case 10:
+               strcpy(blkstr, "decryption");
+               break;
+
+            default:
+               strcpy(blkstr, "unknown / custom");
+               fWarn = true;  /* warning message instead of information message for unknown or custom block. If there are many custom blocks that may not be correct thing to do (DS_READ_PCAP_SUPPRESS_WARNING_ERROR_MSG flag can be applied if needed), JHB Jun 2025 */
+               break;
          }
-         else if (!(uFlags & DS_READ_PCAP_SUPPRESS_WARNING_ERROR_MSG)) Log_RT(3, "WARNING: DSReadPcap() says reading unknown block type %d, ignoring data, link_len = %d, uFlags = 0x%x \n", pcapng_block_header.block_type, link_len_save, uFlags);
+
+      /* display and write to event log */
+
+         if (!(uFlags & (fWarn ? DS_READ_PCAP_SUPPRESS_WARNING_ERROR_MSG : DS_READ_PCAP_SUPPRESS_INFO_MSG))) {
+
+            char* p = NULL, *szFilepath = getFilePathFromFilePointer(fp_pcap);  /* in diaglib.h */
+            if (szFilepath) { p = strrchr(szFilepath, '/'); if (!p) p = szFilepath; else p++; }
+
+            Log_RT(fWarn ? 3 : 4, "%s: DSReadPcap() says reading %s block (type = %d)%s%s, ignoring data, block len = %d, link len = %d, uFlags = 0x%x%s%s%s \n", fWarn ? "WARNING" : "INFO", blkstr, pcapng_block_header.block_type, p ? " in " : "", p ? p : " error in getFilePathFromFilePointer()", block_len, link_len_save, uFlags, szUserMsgString ? ", " : "", szUserMsgString ? szUserMsgString : "", szPktNumber);
+            if (szFilepath) free(szFilepath);
+         }
       }
    }
 
    #ifdef DEBUG_PCAPNG  /* seems to no longer apply since block_type is error checked above, JHB Feb 2025 */
    static int count = 0;
    if (count < 1000 /*5*/ || (file_type == PCAP_TYPE_PCAPNG && pcapng_epb.block_type != 6)) {
-      printf(" pkt count = %d, epb type = %d, block length = %d, usec = %llu, ts_sec = %u, ts_usec = %u \n", count, pcapng_epb.block_type, pcapng_epb.block_length, (unsigned long long)usec, p_pkt_hdr->ts_sec, p_pkt_hdr->ts_usec);
+      printf(" pkt count = %d, epb type = %d, block length = %d, usec = %llu, ts_sec = %u, ts_usec = %u \n", count, pcapng_epb.block_type, pcapng_epb.block_header.block_length, (unsigned long long)usec, p_pkt_hdr->ts_sec, p_pkt_hdr->ts_usec);
       count++;
    }
    #endif
@@ -662,7 +788,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
       #define PRE_ETH_HDR_READ        6
       #define NULL_LOOPBACK_LINK_LEN  4
 
-      if (fread(&eth_hdr, PRE_ETH_HDR_READ, 1, fp_in) != 1) { sprintf(errstr, "unable to read link layer %d bytes", PRE_ETH_HDR_READ); goto pcap_read_error; }  /* read link_len bytes */
+      if (fread(&eth_hdr, PRE_ETH_HDR_READ, 1, fp_pcap) != 1) { sprintf(errstr, "unable to read link layer %d bytes", PRE_ETH_HDR_READ); goto pcap_read_error; }  /* read link_len bytes */
 
       uint32_t null_loopback_af_inet = *((uint32_t*)(&eth_hdr));  /* first 4 bytes of link layer could be Null/Loopback protocol ID */
 
@@ -677,7 +803,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
          printf("\n *** inside null/loopback af_inet = 2, incl_len = %d, orig_len = %d, first pkt byte = 0x%x \n", p_pkt_hdr->incl_len, p_pkt_hdr->orig_len, pkt[NULL_LOOPBACK_LINK_LEN]);
          #endif
 
-         fseek(fp_in, NULL_LOOPBACK_LINK_LEN - PRE_ETH_HDR_READ, SEEK_CUR);
+         fseek(fp_pcap, NULL_LOOPBACK_LINK_LEN - PRE_ETH_HDR_READ, SEEK_CUR);
       }
       else if (!(uFlags & DS_READ_PCAP_DISABLE_NULL_LOOPBACK_PROTOCOL) && (null_loopback_af_inet == 24 || null_loopback_af_inet == 28 || null_loopback_af_inet == 30)) {
 
@@ -687,17 +813,17 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
          link_len = NULL_LOOPBACK_LINK_LEN;
          eth_protocol = ETH_P_IPV6;
 
-         fseek(fp_in, NULL_LOOPBACK_LINK_LEN - PRE_ETH_HDR_READ, SEEK_CUR);
+         fseek(fp_pcap, NULL_LOOPBACK_LINK_LEN - PRE_ETH_HDR_READ, SEEK_CUR);
       }
       else {  /* read remainder of Ethernet header */
 
-         if (fread((uint8_t*)&eth_hdr + PRE_ETH_HDR_READ, link_len - PRE_ETH_HDR_READ, 1, fp_in) != 1) { sprintf(errstr, "unable to read link layer %d bytes", link_len-PRE_ETH_HDR_READ); goto pcap_read_error; }  /* read link_len bytes */
+         if (fread((uint8_t*)&eth_hdr + PRE_ETH_HDR_READ, link_len - PRE_ETH_HDR_READ, 1, fp_pcap) != 1) { sprintf(errstr, "unable to read link layer %d bytes", link_len-PRE_ETH_HDR_READ); goto pcap_read_error; }  /* read link_len bytes */
 
          eth_protocol = ((eth_hdr.h_proto & 0xff) << 8) | ((eth_hdr.h_proto & 0xff00) >> 8);  /* stored in file as big-endian */
 
          if (eth_protocol == ETH_P_8021Q) {  /* check for VLAN header type. Note if there is "double-tagging" (stacked VLAN) we need to add a little more code here */
 
-            if (fread(&vlan_hdr, sizeof(vlan_hdr), 1, fp_in) != 1) return 0;  /* read vlan header */
+            if (fread(&vlan_hdr, sizeof(vlan_hdr), 1, fp_pcap) != 1) return 0;  /* read vlan header */
 
             link_len += sizeof(vlan_hdr);  /* adjust amount read, so packet_length below is calculated correctly. This fixes a bug where mediaMin got the wrong timestamp (and stopped pushing packets because it calculated negative time) after the first packet when reading AMRWB_SID.pcap, and presumably other pcaps with VLAN headers, JHB Jan 2021 */
          }
@@ -709,21 +835,21 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
    }
    else if (link_len == LINKTYPE_LINUX_SLL_LINK_LEN) {  /* parse Linux SLL format, JHB Feb 2025, test with AMR_MusixFile.pcap and AMRWB_SID.pcap */
 
-      fseek(fp_in, sizeof(ethhdr), SEEK_CUR);  /* skip first 14 bytes (12 bytes MAC addresses, 2 unused bytes, per  https://stackoverflow.com/questions/37889179/converting-pcap-format-from-linktype-linux-ssl-to-linktype-ethernet) */
+      fseek(fp_pcap, sizeof(ethhdr), SEEK_CUR);  /* skip first 14 bytes (12 bytes MAC addresses, 2 unused bytes, per  https://stackoverflow.com/questions/37889179/converting-pcap-format-from-linktype-linux-ssl-to-linktype-ethernet) */
 
-      if (fread(&eth_protocol, sizeof(eth_protocol), 1, fp_in) != 1) { sprintf(errstr, "unable to read Linux SLL link layer ethernet header type %d bytes", (int)sizeof(eth_protocol)); goto pcap_read_error; }  /* read ethernet header type */
+      if (fread(&eth_protocol, sizeof(eth_protocol), 1, fp_pcap) != 1) { sprintf(errstr, "unable to read Linux SLL link layer ethernet header type %d bytes", (int)sizeof(eth_protocol)); goto pcap_read_error; }  /* read ethernet header type */
 
       eth_protocol = ((eth_protocol & 0xff) << 8) | ((eth_protocol & 0xff00) >> 8);  /* stored in file as big-endian */
    }
    else {
 
-      fseek(fp_in, link_len, SEEK_CUR);  /* seek forward (wrt to current file position) ethernet header (i.e. link_len number of bytes) */
+      fseek(fp_pcap, link_len, SEEK_CUR);  /* seek forward (wrt to current file position) ethernet header (i.e. link_len number of bytes) */
 
    /* warn on Ethernet header lengths that don't match expected value associated with link type, JHB Sep 2022 */
   
       if (get_link_layer_len(link_type) < 0) {
 
-         Log_RT(3, "WARNING: DSReadPcap() says unexpected link type = %d, file_type = %d, link_len = %d \n", link_type, file_type, link_len);
+         Log_RT(3, "WARNING: DSReadPcap() says unexpected link type = %d, file_type = %d, link_len = %d%s%s%s \n", link_type, file_type, link_len, szUserMsgString ? ", " : "", szUserMsgString ? szUserMsgString : "", szPktNumber);
 
          #ifdef DEBUG_SUBHEADERS
          static bool fOnce = false; if (!fOnce) { printf("link_len %d does not equal sizeof(eth_hdr) = %d, file_type = %d, link_type = %d \n", link_len, (int)sizeof(eth_hdr), file_type, link_type); fOnce = true; }
@@ -742,15 +868,15 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
    if (file_type != PCAP_TYPE_RTP) {  /* for pcap formats we read whole packet data from each record */
 
       if (!fUnusedBlockType) {
-         if (fread(pkt_ptr, packet_length, 1, fp_in) != 1) { sprintf(errstr, "unable to read packet length %d bytes", packet_length); goto pcap_read_error; }
+         if (fread(pkt_ptr, packet_length, 1, fp_pcap) != 1) { sprintf(errstr, "unable to read packet length %d bytes", packet_length); goto pcap_read_error; }
       }
-      else fseek(fp_in, packet_length, SEEK_CUR);  /* for unused block type data might exceed what we allow for maximum packet size, so we don't attempt and seek over it instead */
+      else fseek(fp_pcap, packet_length, SEEK_CUR);  /* unused block type data might exceed what we allow for maximum packet size, so we don't attempt and seek over it instead */
    }
    else {  /* for rtp format we read only rtp data from each record (i.e. each .rtp record includes only RTP header and payload), and then create IPv4 packet header */
 
       uint8_t rtp_data[8000];  /* size constant 8000 from https://github.com/irtlab/rtptools/blob/master/rtpdump.h */
 
-      if (fread(rtp_data, rtp_len, 1, fp_in) != 1) { sprintf(errstr, "unable to read block length %d bytes", rtp_len); goto pcap_read_error; }
+      if (fread(rtp_data, rtp_len, 1, fp_pcap) != 1) { sprintf(errstr, "unable to read block length %d bytes", rtp_len); goto pcap_read_error; }
 
       p_pkt_hdr->incl_len = packet_length = rtp_len + IPV4_HEADER_LEN + UDP_HEADER_LEN;
       p_pkt_hdr->orig_len = p_pkt_hdr->incl_len;
@@ -808,10 +934,10 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
       printf("\n *** p_pkt_hdr->incl_len = %u, packet_length = %u, pkt_len_fmt = %u, rtp_len = %u, timestamp = %u.%u sec, pktlib info: pkt len = %d, udp len = %d, rtp pyld len = %d, rtp timestamp = %u \n", p_pkt_hdr->incl_len, packet_length, pkt_len_fmt, rtp_len, p_pkt_hdr->ts_sec, p_pkt_hdr->ts_usec/1000, pktlen, udplen, rtplen, rtp_timestamp);
       #endif
 
-      if (pkt_len_fmt != p_pkt_hdr->incl_len) Log_RT(3, "WARNING: DSReadPcap() says packet len after format %u not matching file record len %u \n", pkt_len_fmt, p_pkt_hdr->incl_len);
+      if (pkt_len_fmt != p_pkt_hdr->incl_len) Log_RT(3, "WARNING: DSReadPcap() says packet len after format %u not matching file record len %u%s%s%s \n", pkt_len_fmt, p_pkt_hdr->incl_len, szUserMsgString ? ", " : "", szUserMsgString ? szUserMsgString : "", szPktNumber);
    }
 
-/* if specified by uFlags, apply TSO "zero length" fix and set packet length to what was captured. Note that Wireshark will label these as "length reported as 0, presumed to be because of TCP segmentation offload (TSO)", test with capture_test2.png, JHB Feb 2025 */
+/* if not disabled by uFlags, apply TSO "zero length" fix and set packet length to what was captured. Note that Wireshark will label these as "length reported as 0, presumed to be because of TCP segmentation offload (TSO)", test with capture_test2.png, JHB Feb 2025 */
 
    if (!(uFlags & DS_READ_PCAP_DISABLE_TSO_LENGTH_FIX) && (*p_block_type == PCAP_PB_TYPE || *p_block_type == RTP_PB_TYPE || *p_block_type == PCAPNG_EPB_TYPE || *p_block_type == PCAPNG_SPB_TYPE) && (pkt_ptr[0] >> 4) == IPV4 && pkt_ptr[9] == TCP) {  /* to-do: handle IPv6 */
 
@@ -819,6 +945,15 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
          pkt_ptr[2] = p_pkt_hdr->incl_len >> 8;
          pkt_ptr[3] = p_pkt_hdr->incl_len & 0xff;
+
+         if ((uFlags & DS_READ_PCAP_REPORT_TSO_LENGTH_FIX) && !(uFlags & DS_READ_PCAP_SUPPRESS_INFO_MSG)) {
+
+            char* p = NULL, *szFilepath = getFilePathFromFilePointer(fp_pcap);  /* in diaglib.h */
+            if (szFilepath) { p = strrchr(szFilepath, '/'); if (!p) p = szFilepath; else p++; }
+
+            Log_RT(4, "INFO: DSReadPcap() says TSO zero length fixed to %d for file %s, uFlags = 0x%x%s%s%s \n",  (pkt_ptr[2] << 8) | pkt_ptr[3], p ? p : "error in getFilePathFromFilePointer()", uFlags, szUserMsgString ? ", " : "", szUserMsgString ? szUserMsgString : "", szPktNumber);
+            if (szFilepath) free(szFilepath);
+         }
          #ifdef TSO_LENGTH_FIX_DEBUG
          printf("\n *** applying TSO length fix, inserting pkt len = %d \n", (pkt_ptr[2] << 8) | pkt_ptr[3]);
          #endif
@@ -827,18 +962,19 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
    if (file_type == PCAP_TYPE_PCAPNG) {
 
-      int ret_val, i, num_int32 = 0;
       uint32_t dummy_uint32;
-      (void)ret_val;
       padding = (4 - (p_pkt_hdr->incl_len & 3)) & 3;
-      ret_val = fread(&dummy_uint32, padding, 1, fp_in);  /* pcapng format pads packet data to 32 bits */
+      int ret_val = fread(&dummy_uint32, padding, 1, fp_pcap);  /* pcapng format pads packet data to 32 bits */
+      (void)ret_val;
 
-      if (pcapng_block_header.block_type == PCAPNG_EPB_TYPE) num_int32 = (pcapng_block_header.block_length - sizeof(pcapng_epb_t) - p_pkt_hdr->incl_len - padding)/4;
-      else if (pcapng_block_header.block_type == PCAPNG_SPB_TYPE) num_int32 = (pcapng_block_header.block_length - sizeof(pcapng_spb_t) - p_pkt_hdr->incl_len - padding)/4;
-      else if (pcapng_block_header.block_type == PCAPNG_IDB_TYPE) num_int32 = (pcapng_block_header.block_length - sizeof(pcapng_idb_t) - p_pkt_hdr->incl_len - padding)/4;
-      else num_int32 = (pcapng_block_header.block_length - sizeof(pcapng_block_header_t) - p_pkt_hdr->incl_len - padding)/4;
+      int remaining_bytes;
 
-      for (i=0; i<num_int32; i++) ret_val = fread(&dummy_uint32, sizeof(uint32_t), 1, fp_in);  /* read past options, if any, and duplicated block length field */
+      if (pcapng_block_header.block_type == PCAPNG_EPB_TYPE) remaining_bytes = pcapng_block_header.block_length - sizeof(pcapng_epb_t) - p_pkt_hdr->incl_len - padding;
+      else if (pcapng_block_header.block_type == PCAPNG_SPB_TYPE) remaining_bytes = pcapng_block_header.block_length - sizeof(pcapng_spb_t) - p_pkt_hdr->incl_len - padding;
+      else if (pcapng_block_header.block_type == PCAPNG_IDB_TYPE) remaining_bytes = pcapng_block_header.block_length - sizeof(pcapng_idb_t) - p_pkt_hdr->incl_len - padding;
+      else remaining_bytes = pcapng_block_header.block_length - sizeof(pcapng_block_header_t) - p_pkt_hdr->incl_len - padding;
+      
+      bseek(fp_pcap, max(remaining_bytes, 0));
    }
 
    #ifdef DEBUG_PCAPNG
@@ -849,7 +985,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
    }
    #endif
 
-   if (uFlags & DS_READ_PCAP_COPY) fseek(fp_in, fp_save, SEEK_SET);  /* restore filepos if needed */
+   if (uFlags & DS_READ_PCAP_COPY) fseek(fp_pcap, fp_save, SEEK_SET);  /* restore filepos if needed */
 
    return packet_length;
 
@@ -859,17 +995,20 @@ pcap_read_error:
 
    if (!strlen(errstr)) fprintf(stderr, "\n *** code bug: inside DSReadPcap() error handler but errstr len is zero \n");  /* errstr should have non-zero length for error condition */
 
-   if (feof(fp_in)) return 0;  /* we already checked feof() on entry, but sometimes fread() returns 0 bytes even if not feof, then checking feof again shows true. I have no idea why, but for now let it be, JHB Feb 2025 */ 
+   if (feof(fp_pcap)) return 0;  /* we already checked feof() on entry, but sometimes fread() returns 0 bytes even if not feof, then checking feof again shows true. I have no idea why, but for now let it be, JHB Feb 2025 */ 
 
-   char* file_path = getFilePathFromFilePointer(fp_in);
-   Log_RT(2, "ERROR: DSReadPcap() says %s from file %s, uFlags = 0x%x \n", errstr, file_path ? file_path : "error in getFilePathFromPointer()", uFlags);
-   if (file_path) free(file_path);
+   char* p = NULL, *szFilepath = getFilePathFromFilePointer(fp_pcap);
+   if (szFilepath) { p = strrchr(szFilepath, '/'); if (!p) p = szFilepath; else p++; }
+
+   Log_RT(2, "ERROR: DSReadPcap() says %s from file %s, uFlags = 0x%x%s%s%s \n", errstr, p ? p : "error in getFilePathFromPointer()", uFlags, szUserMsgString ? ", " : "", szUserMsgString ? szUserMsgString : "", szPktNumber);
+   if (szFilepath) free(szFilepath);
+
    return -1;  /* return error condition */
 }
 
 /* write a pcap record */
 
-int DSWritePcap(FILE* fp_out, unsigned int uFlags, uint8_t* pkt_buffer, int packet_length, pcaprec_hdr_t* pcap_pkt_hdr, struct ethhdr* eth_hdr, pcap_hdr_t* pcap_file_hdr
+int DSWritePcap(FILE* fp_pcap, unsigned int uFlags, uint8_t* pkt_buffer, int packet_length, pcaprec_hdr_t* pcap_pkt_hdr, struct ethhdr* eth_hdr, pcap_hdr_t* pcap_file_hdr
 #ifdef USE_LEGACY_PARAMS  /* remove pTermInfo and timespec params, JHB Jul 2024 */
 , TERMINATION_INFO* pTermInfo
 ,  struct timespec* ts
@@ -957,9 +1096,9 @@ struct timespec       ts = { 0 };
       }
    }
 
-   int num_bytes_written = fwrite(p_pkt_hdr, sizeof(pcaprec_hdr_t), 1, fp_out) * sizeof(pcaprec_hdr_t);
-   if (fWriteEthHdr) num_bytes_written += fwrite(p_eth_hdr, sizeof(eth_hdr_local), 1, fp_out) * sizeof(eth_hdr_local);
-   num_bytes_written += fwrite(pkt_buffer, packet_length, 1, fp_out) * packet_length;
+   int num_bytes_written = fwrite(p_pkt_hdr, sizeof(pcaprec_hdr_t), 1, fp_pcap) * sizeof(pcaprec_hdr_t);
+   if (fWriteEthHdr) num_bytes_written += fwrite(p_eth_hdr, sizeof(eth_hdr_local), 1, fp_pcap) * sizeof(eth_hdr_local);
+   num_bytes_written += fwrite(pkt_buffer, packet_length, 1, fp_pcap) * packet_length;
 
    return num_bytes_written;
 }
@@ -1012,7 +1151,7 @@ read_packet:
 
       if (fp) {  /* if a file handle given, we read packet and length from the file. Otherwise we assume pktbuf and pktlen params are valid */
 
-         pktlen = DSReadPcap(fp, uFlags, pkt_in_buf, p_pkt_hdr, link_layer_info, &pkt_type, &block_type, NULL);
+         pktlen = DSReadPcap(fp, uFlags, pkt_in_buf, p_pkt_hdr, link_layer_info, &pkt_type, &block_type, NULL, 0, NULL);
 
          if (uFlags & DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET) {
 
@@ -1152,7 +1291,7 @@ int ret_val = 0;
             }
             else {
 
-               ret_val = DSReadPcap(fp_pcap, uFlags, NULL, NULL, link_layer_info, NULL, NULL, NULL);
+               ret_val = DSReadPcap(fp_pcap, uFlags, NULL, NULL, link_layer_info, NULL, NULL, NULL, 0, NULL);
                num_read = 1;  /* num_read is in records */
             }
          }

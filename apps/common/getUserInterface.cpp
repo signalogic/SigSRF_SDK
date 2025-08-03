@@ -45,6 +45,7 @@
    Modified Jul 2024 JHB, add --group_pcap_nocopy and --random_bit_error cmd line options, integrate userInfo.h CmdLineFlags_t struct with 1-bit flags. Look for CmdLineFlags.xxx
    Modified Aug 2024 JHB, add --sha1sum and --sha512sum cmd line options, used by mediaMin and mediaTest apps
    Modified Mar 2025 JHB, use ALLOW_XX attributes defined in cmdLineOpt.h for overloaded options, for example -rN can accept N either int or float
+   Modified Jul 2025 JHB, handle --profile_stdout_ready and --exclude_payload_type_from_key command line options
 */
 
 #include <stdlib.h>
@@ -128,7 +129,7 @@ static CmdLineOpt::Record options[] = {
 	{'s', CmdLineOpt::STRING, NOTMANDATORY,
           (char *)"sdp file input for mediaMin" },
 	{'r', CmdLineOpt::FLOAT, NOTMANDATORY,
-          (char *)"Frame rate in frames per sec (default is 30 fps), or buffer add interval in msec (default is 20 msec)", {{(void*)-1}} },  /* changed to -1.  cimlib will set the default to 30 for streamTest and iaTest, JHB Sep2017 */
+          (char *)"Frame rate in frames per sec (default is 30 fps), or buffer add interval in msec (default is 20 msec)", {{(void*)-1}} },  /* changed to -1.  cimlib will set the default to 30 for streamTest and iaTest, JHB Sep 2017 */
    {'D', CmdLineOpt::IPADDR, NOTMANDATORY,
           (char *)"Destination IP addr and port, in format aa.bb.cc.dd[:port][:mm-mm-mm-mm-mm-mm]", {{(void*)0}}, {0}, {0} },
    {'S', CmdLineOpt::IPADDR, NOTMANDATORY,
@@ -174,7 +175,7 @@ static CmdLineOpt::Record options[] = {
 	{'d', CmdLineOpt::INT64, NOTMANDATORY,
           (char *)"Debug mode for most programs (enter as -dN, where N is mode value). dkLen parameter for Scrypt Algorithm test program", {{(void*)-1}} },
 
-/* long options. The command definitions are in long_options[] in cmdLineOpt.cpp, JHB Jul 2023 */
+/* long options. The command syntax and definitions are in long_options[] in cmdLineOpt.cpp, JHB Jul 2023 */
 
    {(char)128, CmdLineOpt::STRING, NOTMANDATORY,
           (char *)"show version info", {{(void*)0}} },  /* --version */
@@ -193,7 +194,11 @@ static CmdLineOpt::Record options[] = {
    {(char)135, CmdLineOpt::BOOLEAN, NOTMANDATORY,
           (char *)"show per-channel audio classification", {{(void*)0}} },  /* --show_aud_clas, JHB Feb 2024 */
    {(char)136, CmdLineOpt::INTEGER, NOTMANDATORY,
-          (char *)"insert N% random bit errors per frame", {{(void*)0}} }  /* --random_bit_error, JHB Jul 2024 */
+          (char *)"insert N% random bit errors per frame", {{(void*)0}} },  /* --random_bit_error, JHB Jul 2024 */
+   {(char)137, CmdLineOpt::INTEGER, NOTMANDATORY,
+          (char *)"profile stdout ready wait time", {{(void*)0}} },  /* --stdout_ready_profile, JHB Jul 2025 */
+   {(char)138, CmdLineOpt::INTEGER, NOTMANDATORY,
+          (char *)"exclude RTP payload type from session creation key", {{(void*)0}} }  /* --exclude_payload_type_from_key, JHB Jul 2025 */
 };
 
 /* global storage of cmd line options */
@@ -424,7 +429,11 @@ char clkstr[100];
 
          userIfs->CmdLineFlags.show_audio_classification = (cmdOpts.nInstances((char)135) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --show_aud_clas cmd line option. Added for mediaMin and mediaTest output waveforms, JHB Feb 2024 */
 
-         if (cmdOpts.nInstances((char)136) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST))) userIfs->nRandomBitErrorPercentage = cmdOpts.getInt((char)134, 0, 0);  /* look for --random_bit_error cmd line option. Added for mediaTest payload/packet impairment operations, JHB Jul 2024 */
+         if (cmdOpts.nInstances((char)136) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST))) userIfs->nRandomBitErrorPercentage = cmdOpts.getInt((char)136, 0, 0);  /* look for --random_bit_error cmd line option. Added for mediaTest payload/packet impairment operations, JHB Jul 2024 */
+
+         userIfs->CmdLineFlags.stdout_ready_profile = (cmdOpts.nInstances((char)137) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --profile_stdout_ready cmd line option, JHB Jul 2025 */
+
+         userIfs->CmdLineFlags.exclude_payload_type_from_key = (cmdOpts.nInstances((char)138) != 0 && (uFlags & CLI_MEDIA_APPS_MEDIAMIN));  /* look for --exclude_payload_type_from_key cmd line option, JHB Jul 2025 */
 
          if (userIfs->programMode >= 0) {
 

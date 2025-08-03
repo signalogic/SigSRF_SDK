@@ -37,6 +37,8 @@
    Modified Nov 2024 JHB, update comments
    Modified Mar 2025 JHB, update comments
    Modified Jun 2025 JHB, change DISABLE_JITTER_BUFFER_OUTPUT_PCAPS to ENABLE_JITTER_BUFFER_OUTPUT_PCAPS. mediaMin no longer generates these by default
+   Modified Jun 2025 JHB, add ENABLE_SSRC_STREAM_JOINING flag
+   Modified Jul 2025 JHB, change DISABLE_DORMANT_SESSION_DETECTION to ENABLE_DORMANT_SESSIONS. packet/media flow worker threads continue to detect and report sessions with duplicated and reused SSRCs, but no longer enable dormant session functionality by default. When ENABLE_DORMANT_SESSIONS is set mediaMin will in turn set the appropriate session uFlags in CreateDynamicSession()
 */
 
 #ifndef _CMDLINEOPTIONSFLAGS_H_
@@ -57,6 +59,7 @@
 #define ENABLE_STREAM_GROUP_DEDUPLICATION                    4    /* m| applies a deduplication algorithm, which looks for similar content between stream group contributors and attempts to align similar streams. The objective is to reduce perceived reverb/echo due to duplicated streams. A typical scenario is a multipath (duplicated) endpoint with different latencies */
 #define ENABLE_STREAM_GROUP_ASR                              8    /* m| enable ASR processing on stream group output */
 #define ENABLE_DER_STREAM_DECODE                        0x1000
+#define ENABLE_SSRC_STREAM_JOINING                      0x2000    /* m| enable SSRC stream joining, which allows streams with different IP addrs/ports to be joined with an existing stream if their SSRCs match. This flag should only be applied when DYNAMIC_SESSIONS is enabled */
 
 #define USE_PACKET_ARRIVAL_TIMES                          0x10    /* m| use arrival times (packet timestamps) in pcap records to control push timing. hould not be specified concurrently with AUTO_ADJUST_PUSH_TIMING */
 
@@ -86,7 +89,7 @@
 #define DISABLE_PACKET_REPAIR                         0x800000    /* m| packet repair enabled by default. Missing SID and media packets (detected by sequence number and timestamp discontinuities after packet re-ordering) are repaired */
 #define DISABLE_CONTRIB_PACKET_FLUSH                 0x1000000    /* m| group contributor streams are flushed from their jitter buffer when their contribution rate becomes slow, decreasing the need for FLC on stream group combined output. Enabled by default */
 #define ENABLE_FLC_HOLDOFFS                          0x2000000    /* m| enable FLC holdoffs to attempt to optimize audio quality in some cases (see documentation). Ignored if DISABLE_FLC flag is set. Disabled by default */
-#define DISABLE_DORMANT_SESSION_DETECTION            0x4000000    /* m| disable dormant session detection and flush. Dormant sessions are defined as a session with a channel SSRC that was in used, has not been in use for some time, and then that SSRC is "taken over" by another session / channel. In that case the dormant session is flushed and any remaining media is cleared from session state information and jitter buffers. In cases where multiple sessions "overload" an SSRC value (i.e. duplicated SSRCs by actually different sessions) it's advisable to disable dormant session detection to avoid unwanted flushing. Note this flag applies to all sessions handled by mediaMin; to disable on per-session basis see TERM_DISABLE_DORMANT_SESSION_DETECTION flag in shared_include/session.h */
+#define ENABLE_DORMANT_SESSIONS                      0x4000000    /* m| enable dormant sessions. Dormant sessions are defined as a session with a channel SSRC that is duplicated by another session / channel, implying a pause or halt in the the original channel. In such cases, if ENABLE_DORMANT_SESSION is active, the dormant channel is flushed and any remaining media is cleared from its state information and jitter buffers. mediaMin default behavior is to allow sessions to duplicate SSRCs in other sessions. To enable on per-session basis see TERM_ENABLE_DORMANT_SESSION flag in shared_include/session.h */
 #define ENABLE_JITTER_BUFFER_OUTPUT_PCAPS            0x8000000    /* m| enable intermediate jitter buffer output pcap files. When specified mediaMin pulls jitter buffer output packets from packet/media threads using DSPullPackets() with the DS_PULLPACKETS_JITTER_BUFFER flag, and writes to xx_jbN.pcap files (for file formation details see JitterBufferOutputSetup() in mediaMin.cpp) */ 
 
 /* debug info: extra stats, mem stats, audio output alignment markers, intermediate pcap output, stream lag waveform curves for timestamp match mode */
@@ -120,7 +123,7 @@
 
 #define DISABLE_AUTOQUIT                      0x10000000000000LL  /* m| disable automatic quit for cmd lines with (i) all inputs are files (i.e. no UDP or USB audio inputs) and (ii) no repeating stress or capacity tests. Automatic quit is enabled by default */
 #define ALLOW_OUTOFSPEC_RTP_PADDING           0x20000000000000LL  /* mm| allow out-of-spec RTP padding. Suppresses error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in mediaMin.cpp */
-#define SLOW_DORMANT_SESSION_DETECTION        0x40000000000000LL  /* mm| extend dormant session detection time. See usage in CreateDynamicSession() in mediaMin.cpp */ 
+#define SLOW_DORMANT_SESSION_FLUSH            0x40000000000000LL  /* mm| extend time after dormant session detection and before flush. See usage in CreateDynamicSession() in mediaMin.cpp. Must be combined with ENABLE_DORMANT_SESSION_FLUSH to take effect */ 
 #define INCLUDE_PAUSES_IN_WAV_OUTPUT          0x80000000000000LL  /* m| include input pauses as silence in stream group and individual (mono) wav outputs. This applies when one or more streams in the group pause input, for example call-on-hold, pause in packet push, etc. Note that pauses are always accurately reflected in stream group RTP streaming output, but for wav outputs it's an option as pauses can become very large and increase file storage requirements */
 
 #define ENABLE_TIMESTAMP_MATCH_MODE          0x100000000000000LL  /* m| generate timestamp-matched wav output, which depends only on input stream arrival and RTP timestamps, with no reference to a wall clock. This is useful for repeatability reasons, especially in accelerated processing modes. However, any timestamp inaccuracies -- such as clock drift, post-gap restart, wrong packet rates -- will cause incorrect wav timing and lack of synchronization between streams. Recommend to not enable concurrently with ENABLE_STREAM_GROUPS flag */ 

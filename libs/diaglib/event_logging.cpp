@@ -44,6 +44,8 @@
   Modified Feb 2025 JHB, move isFileDeleted() to diaglib.h as static inline
   Modified Apr 2025 JHB, add isLinePreserve, change uLineCursorPos from uint8_t to unsigned int (to handle very long console display lines)
   Modified Apr 2025 JHB, in Log_RT() fixes and simplification to updating line cursor position, mid-line check, and isLinePreserve
+  Modified Jul 2025 JHB, in Log_RT() add color printout for console warnings (yellow) and errors/critical errors (red)
+  Modified Jul 2025 JHB, in Log_RT() call console_out(), which calls isStdoutReady() before printf() to avoid blocking if stdout has loss of connectivity
 */
 
 /* Linux and/or other OS includes */
@@ -393,6 +395,8 @@ static uint8_t lock = 0;
       fLogFileRelatedFlags = false;
    }
 
+   if (uFlags & DS_INIT_LOGGING_ENABLE_STDOUT_READY_PROFILING) fEnableStdoutReadyProfiling = true;
+
    if (!dbg_cfg && !fLogFileRelatedFlags) ret_val = diaglib_sem_init == 2 ? 1 : 0;  /* handle initialization status request (dbg_cfg NULL and uFlags zero):  if any thread has made it past this point then at least one full initialization has happened */
    else ret_val = open_log_file(true, false);
 
@@ -733,12 +737,8 @@ create_log_file_if_needed:
             __sync_val_compare_and_swap(&isCursorMidLine, uLineCursorPos == 0, uLineCursorPos != 0);  /* if uLineCursorPos > 0 set to 1, otherwise set to 0 */
             isLinePreserve = false;
 
-         /* screen output method:  0 = printf() (buffered, default), 1 = fprintf(stdout), 2 = fprintf(stderr), 3 = none */
-
-            if ((loglevel & DS_LOG_LEVEL_USE_STDERR) || lib_dbg_cfg.uPrintfControl == 2) fprintf(stderr, "%s%s", fNextLine ? "\n" : "", log_string);  /* check for user-specified stderr output, JHB Mar 2024 */
-            else if (lib_dbg_cfg.uPrintfControl == 1) fprintf(stdout, "%s%s", fNextLine ? "\n" : "", log_string);
-            else /* if (lib_dbg_cfg.uPrintfControl == 0) */ printf("%s%s", fNextLine ? "\n" : "", log_string);  /* make default action non-buffered output, JHB Mar 2024 */
-
+            console_out(lib_dbg_cfg.uPrintfControl, loglevel, fNextLine, log_string);  /* write to console: type of output, log level, optional leading next line (console_out() is in diaglib_util.cpp), JHB Jul 2025 */
+ 
             if (thread_index >= 0) __sync_and_and_fetch(&pm_thread_printf, ~(1 << thread_index));  /* clear corresponding p/m thread bit */
          }
 #endif

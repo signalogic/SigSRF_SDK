@@ -41,6 +41,8 @@
    Modified Mar 2025 JHB, in app_printf() update thread_info[].most_recent_console_output, add cur_time param in app_printf() and UpdateCounters()
    Modified Apr 2025 JHB, in app_printf() implement APP_PRINTF_SAME_LINE_PRESERVE, fix bug with slen not being incremented when \n or \r inserted at output string reserved zeroth location
    Modified Apr 2025 JHB, in app_printf() fixes and simplification to updating line cursor position, mid-line check, and isLinePreserve
+   Modified Jul 2025 JHB, in app_printf() call console_out(), which calls isStdoutReady() before printf() to avoid blocking if stdout has loss of connectivity
+   Modified Jul 2025 JHB, in ProcessKeys() replace remaining printf() with app_printf()
 */
 
 #include <algorithm>
@@ -49,12 +51,15 @@ using namespace std;
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "directcore.h"  /* DirectCore APIs */
+/* SigSRF includes */
+
 #include "diaglib.h"    /* bring in Log_RT() definition */
 #include "pktlib.h"
 
 #include "shared_include/session.h"    /* session management structs and definitions */
 #include "shared_include/config.h"     /* configuration structs and definitions */
+
+/* app support header files */
 
 #include "mediaTest.h"  /* bring in constants needed by mediaMin.h */
 #include "mediaMin.h"
@@ -166,7 +171,7 @@ static bool fSetStdoutNonBuffered = false;
          else if (fCtrl_C_pressed) sprintf(&tmpstr[strlen(tmpstr)], "Ctrl-C entered");
 
          sprintf(&tmpstr[strlen(tmpstr)], ", exiting mediaMin");
-         app_printf(APP_PRINTF_NEW_LINE, cur_time, thread_index, tmpstr);
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, tmpstr);
 
          fQuit = true;
          return true;
@@ -217,11 +222,11 @@ static bool fSetStdoutNonBuffered = false;
          if (!fRepeatIndefinitely && nRepeatsRemaining[thread_index] >= 0) sprintf(repeatstr, ", repeats remaining = %d", nRepeatsRemaining[thread_index]);  /* if cmd line entry includes -RN with N >= 0, nRepeatsRemaining will be > 0 for repeat operation, JHB Jan2020 */
          else if (nRepeatsRemaining[thread_index] == -1) strcpy(repeatstr, ", no repeats");  /* nRepeat is -1 if cmd line has no -RN entry (no repeats). For cmd line entry -R0, fRepeatIndefinitely will be set */
 
-         printf("%s#### (App Thread) %sDebug info for app thread %d, run = %d%s, command line %s \n", uLineCursorPos ? "\n" : "", tmpstr, app_thread_index_debug, pm_run, fRepeatIndefinitely ? ", repeating indefinitely" : repeatstr, szAppFullCmdLine);
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "#### (App Thread) %sDebug info for app thread %d, run = %d%s, command line %s", tmpstr, app_thread_index_debug, pm_run, fRepeatIndefinitely ? ", repeating indefinitely" : repeatstr, szAppFullCmdLine);
 
          strcpy(tmpstr, "");
          for (i=0; i<thread_info[app_thread_index_debug].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " %d", thread_info[app_thread_index_debug].flush_state[i]);
-         printf("flush state =%s, flush_count = %d, nSessionsCreated = %d, push cnt = %d, jb pull cnt = %d, xcode pull cnt = %d \n", tmpstr, thread_info[app_thread_index_debug].flush_count, thread_info[app_thread_index_debug].nSessionsCreated, thread_info[app_thread_index_debug].pkt_push_ctr, thread_info[app_thread_index_debug].pkt_pull_jb_ctr, thread_info[app_thread_index_debug].pkt_pull_output_ctr);
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "flush state =%s, flush_count = %d, nSessionsCreated = %d, push cnt = %d, jb pull cnt = %d, xcode pull cnt = %d", tmpstr, thread_info[app_thread_index_debug].flush_count, thread_info[app_thread_index_debug].nSessionsCreated, thread_info[app_thread_index_debug].pkt_push_ctr, thread_info[app_thread_index_debug].pkt_pull_jb_ctr, thread_info[app_thread_index_debug].pkt_pull_output_ctr);
 
          if (hSessions) {
 
@@ -240,7 +245,7 @@ static bool fSetStdoutNonBuffered = false;
                sprintf(&tmpstr[strlen(tmpstr)], " %d", thread_info[app_thread_index_debug].pcap_in[i] != NULL);
             }
  
-            printf("%s \n", tmpstr);
+            app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, tmpstr);
 
 #if 0  /* deprecated, don't use this method */
             pm_run = 2;
@@ -254,8 +259,8 @@ static bool fSetStdoutNonBuffered = false;
       if (key == 't') {  /* print packet/media thread info, some of which is redundant with the 'd' command above. This is mainly an example of using the DSGetThreadInfo() API. The PACKETMEDIATHREADINFO struct is defined in pktlib.h */
 
          DSGetThreadInfo(pm_thread_index_debug, 0, &PacketMediaThreadInfo);
-         printf("\n##### debug info for packet/media thread %d \n", pm_thread_index_debug);
-         printf("thread id = 0x%llx, uFlags = 0x%x, niceness = %d, max inactivity time (sec) = %d\n", (unsigned long long)PacketMediaThreadInfo.threadid, PacketMediaThreadInfo.uFlags, PacketMediaThreadInfo.niceness, (int)(PacketMediaThreadInfo.max_inactivity_time/1000000L));
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "\n##### debug info for packet/media thread %d", pm_thread_index_debug);
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "thread id = 0x%llx, uFlags = 0x%x, niceness = %d, max inactivity time (sec) = %d", (unsigned long long)PacketMediaThreadInfo.threadid, PacketMediaThreadInfo.uFlags, PacketMediaThreadInfo.niceness, (int)(PacketMediaThreadInfo.max_inactivity_time/1000000L));
 
          int num_counted = 0;
          uint64_t cpu_time_sum = 0;
@@ -269,7 +274,7 @@ static bool fSetStdoutNonBuffered = false;
             }
          }
 
-         printf("CPU time (msec): avg %2.2f, max %2.2f\n", 1.0*cpu_time_sum/max(num_counted, 1)/1000, 1.0*PacketMediaThreadInfo.CPU_time_max/1000);
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "CPU time (msec): avg %2.2f, max %2.2f", 1.0*cpu_time_sum/max(num_counted, 1)/1000, 1.0*PacketMediaThreadInfo.CPU_time_max/1000);
       }
 
       if (key == 'z') {  /* do not use -- reserved for Linux / system stall simulation (p/m thread "zap" function, hehe) */
@@ -335,9 +340,10 @@ int slen;
       __sync_val_compare_and_swap(&isCursorMidLine, uLineCursorPos == 0, uLineCursorPos != 0);  /* if uLineCursorPos > 0 set to 1, otherwise set to 0 */
       #endif
 
-      printf("%s", p);  /* use buffered output */
+      if (console_out(0, 4, false, p) > 0) {  /* write to console: buffered output (printf), log level 4 (errors and warnings are 0..3), no next line (console_out() is in diaglib_util.cpp), JHB Jul 2025 */
 
-      if (cur_time) thread_info[thread_index].most_recent_console_output = cur_time;  /* update time of most recent console output, JHB Mar 2025 */
+         if (cur_time) thread_info[thread_index].most_recent_console_output = cur_time;  /* update time of most recent console output, JHB Mar 2025 */
+      }
 
       if ((uFlags & APP_PRINTF_EVENT_LOG) || (uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP)) {
 
@@ -350,7 +356,7 @@ int slen;
             if (fEndLF) *(p+strlen(p)-1) = '\n';  /* restore end LF */
          }
 
-         Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE | ((uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP) ? DS_LOG_LEVEL_NO_TIMESTAMP : 0), p);  /* if specified also print to event log */
+         Log_RT(4 | DS_LOG_LEVEL_OUTPUT_FILE | ((uFlags & APP_PRINTF_EVENT_LOG_NO_TIMESTAMP) ? DS_LOG_LEVEL_NO_TIMESTAMP : 0), p);  /* if specified also write to event log */
       }
    }
 }

@@ -44,6 +44,7 @@ Revision History
   Modified Nov 2024 JHB, update comments
   Modified Dec 2024 JHB, include <algorithm> and use std namespace; minmax.h no longer defines min-max if __cplusplus defined
   Modified Apr 2025 JHB, add check for UDP SIP duplicates in DSIsPacketDuplicate(). See comments about differentiating UDP and RTP payloads
+  Modified Jun 2025 JHB, in DSIsReservedPort() use XXX_PORT definitions
 */
 
 /* Linux and/or other OS includes */
@@ -460,20 +461,23 @@ uint16_t identifier = 0;
 
 int DSIsReservedUDP(uint16_t port) {
 
-   switch (port) {
+   switch (port) {  /* XXX_PORT definitions in pktlib.h */
 
-      case 137:
-      case 138:   /* NetBIOS */
+      case NetBIOS_PORT:
+      case NetBIOS_PORT+1:   /* NetBIOS */
          return true;
 
-      case 9009:  /* pichat */
+      case PICHAT_PORT:  /* pichat */
          return true;
 
-      case 547:   /* DHCPv6 */
+      case DHCPv6_PORT:   /* DHCPv6 */
          return true;
 
       case GTP_PORT:
          return true;
+
+      default:
+         return false;
    }
    
    return false;
