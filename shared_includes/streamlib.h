@@ -60,6 +60,7 @@
   Modified Feb 2025 JHB, rename MAXSTREAMS to MAX_COCPU_STREAMS, move definition of MAX_STREAMS here from mediaTest.h
   Modified Mar 2025 JHB, add TIMESTAMP_MATCH_ENABLE_STREAM_SYNC and TIMESTAMP_MATCH_ENABLE_DEBUG_OUTPUT flags
   Modified Jun 2025 JHB, add DS_STREAMGROUP_INFO_MERGE_TSM_PACKET_COUNT flag
+  Modified Aug 2025 JHB, add thread_index parameter to DSProcessStreamGroupContributorsTSM()
 */
 
 #ifndef _STREAMLIB_H_
@@ -512,7 +513,7 @@ int WriteStream(unsigned int uMode, unsigned char* inputBuf, unsigned int numByt
 
 /* DSProcessStreamGroupContributorsTSM() handles timestamp-matched wav output, for all contributor and merged wav files */
 
-  int DSProcessStreamGroupContributorsTSM(HSESSION hSession, uint8_t* pktbuf, int pktlen[], int numpkts, const char* szInputStream, const char* szOutputPath, unsigned int uTimestampMatchMode);
+  int DSProcessStreamGroupContributorsTSM(HSESSION hSession, uint8_t* pktbuf, int pktlen[], int numpkts, const char* szInputStream, const char* szOutputPath, unsigned int uTimestampMatchMode, int thread_index);
 
 /* flags for DSProcessStreamGroupContributorsTSM(). In packet_flow_media_proc.c and mediaMin.cpp, look for uTimestampMatchMode to see flag usage, JHB Aug 2023 */
 

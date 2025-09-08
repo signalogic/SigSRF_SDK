@@ -7,29 +7,29 @@
 
  License
 
-  Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
+   Use and distribution of this source code is subject to terms and conditions of the Github SigSRF License v1.1, published at https://github.com/signalogic/SigSRF_SDK/blob/master/LICENSE.md. Absolutely prohibited for AI language or programming model training use
  
  Description
 
-  packet diagnostic library with APIs for:
+   packet diagnostic library with APIs for:
 
-  -packet tracing and history logging
-  -packet statistics, including ooo (out-of-order), DTX, packet loss and gaps, timestamp integrity, etc.
-  -packet analysis, including input vs. jitter buffer output analysis
+   -packet tracing and history logging
+   -packet statistics, including ooo (out-of-order), DTX, packet loss and gaps, timestamp integrity, etc.
+   -packet analysis, including input vs. jitter buffer output analysis
 
- Project
+ Projects
 
- DirectCore, SigSRF
+   DirectCore, SigSRF
 
  Documentation
 
-  https://github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediamin
+   https://github.com/signalogic/SigSRF_SDK/tree/master/mediaTest_readme.md#user-content-mediamin
 
-  Older documentation links:
+   Older documentation links:
   
-   after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
+     after Oct 2019: https://signalogic.com/documentation/SigSRF/SigSRF_Software_Documentation_R1-8.pdf)
 
-   before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
+     before Oct 2019: ftp://ftp.signalogic.com/documentation/SigSRF
 
  Revision History
   
@@ -83,6 +83,8 @@
   Modified Nov 2024 JHB, change hwlib.h include to directcore.h
   Modified Dec 2024 JHB, comments only
   Modified May 2025 JHB, remove "DTX" packet labeling which was based only on payload size. No assumptions should be based only on payload size, we need to go by DS_PKT_PYLD_CONTENT_XXX flags only
+  Modified Aug 2025 JHB, fix bug where all media packet types were not checked for repair flag
+  Modified Aug 2025 JHB, add uPktNumber param to DSGetPacketInfo() calls per mod in pktlib.h
 */
 
 /* Linux includes */
@@ -138,10 +140,10 @@ unsigned int offset = 0;
 
    /* note we are not applying DS_PKTLIB_SUPPRESS_XXX flags here, as we assume caller is providing already-error-checked packets */
 
-      pkt_stats->rtp_seqnum = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SEQNUM | uFlags, pkt_buffer + offset, len, NULL, NULL);
-      pkt_stats->rtp_timestamp = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_TIMESTAMP | uFlags, pkt_buffer + offset, len, NULL, NULL);
-      pkt_stats->rtp_ssrc = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SSRC | uFlags, pkt_buffer + offset, len, NULL, NULL);
-      pkt_stats->rtp_pyldlen = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDLEN | uFlags, pkt_buffer + offset, len, NULL, NULL);
+      pkt_stats->rtp_seqnum = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SEQNUM | uFlags, pkt_buffer + offset, len, NULL, NULL, 0);
+      pkt_stats->rtp_timestamp = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_TIMESTAMP | uFlags, pkt_buffer + offset, len, NULL, NULL, 0);
+      pkt_stats->rtp_ssrc = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_SSRC | uFlags, pkt_buffer + offset, len, NULL, NULL, 0);
+      pkt_stats->rtp_pyldlen = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDLEN | uFlags, pkt_buffer + offset, len, NULL, NULL, 0);
 
       if (pkt_info) {
 
@@ -149,12 +151,12 @@ unsigned int offset = 0;
 
          if ((pkt_stats->content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK) == DS_PKT_PYLD_CONTENT_DTMF) {
 
-            unsigned int rtp_pyld_ofs = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags, pkt_buffer + offset, len, NULL, NULL);
+            unsigned int rtp_pyld_ofs = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags, pkt_buffer + offset, len, NULL, NULL, 0);
             if (pkt_buffer[offset + rtp_pyld_ofs + 1] & 0x80) pkt_stats->content_flags |= DS_PKT_PYLD_CONTENT_DTMF_END;
          }
       }
 
-      if (len <= 0) len = DSGetPacketInfo(-1, DS_PKT_INFO_PKTLEN | uFlags, pkt_buffer + offset, -1, NULL, NULL);
+      if (len <= 0) len = DSGetPacketInfo(-1, DS_PKT_INFO_PKTLEN | uFlags, pkt_buffer + offset, -1, NULL, NULL, 0);
 
       offset += max(0, len);
 
@@ -659,7 +661,9 @@ char          szLastSeq[100];
 
             if (pkts[j].content_flags & DS_PKT_PYLD_CONTENT_REPAIR) {
 
-               if ((pkts[j].content_flags & ~DS_PKT_PYLD_CONTENT_REPAIR) == DS_PKT_PYLD_CONTENT_MEDIA) StreamStats[i].numMediaRepair++;
+               unsigned int uContent = pkts[j].content_flags & DS_PKT_PYLD_CONTENT_ITEM_MASK;
+
+               if (uContent == DS_PKT_PYLD_CONTENT_MEDIA || uContent == DS_PKT_PYLD_CONTENT_MEDIA_REUSE) StreamStats[i].numMediaRepair++;  /* check all media content types for repair flag, JHB Aug 2025 */
                else StreamStats[i].numSIDRepair++;
 
                sprintf(&tmpstr[strlen(tmpstr)], ", repaired");

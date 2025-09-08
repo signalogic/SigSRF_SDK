@@ -432,6 +432,7 @@ typedef struct {
   #define TERM_DISABLE_OUTPUT_QUEUE_PACKETS   0x800  /* disable packet output to application queues. Packet/media threads check this in packet_flow_media_proc.c before transcoding and formatting audio packets or handling video packet outputs */
   #define TERM_ENABLE_SSRC_SESSION_MATCHING  0x1000  /* indicates SSRC session matching is enabled. See ENABLE_SSRC_SESSION_JOINING in mediaMin.cpp, JHB Jun 2025 */
   #define TERM_EXCLUDE_RTP_PAYLOAD_TYPE      0x2000
+  #define TERM_DISABLE_CODEC_FLC             0x4000
 
   uint32_t uFlags;
 

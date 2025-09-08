@@ -40,18 +40,18 @@
   Modified Dec 2019 JHB, add hSession and idx to PKT_STATS struct, see comments
   Modified Jan 2020 JHB, implement DS_PKTSTATS_LOG_SHOW_WRAPPED_SEQNUMS flag
   Modified Feb 2020 JHB, add DS_PKTSTATS_LOG_EVENT_LOG_SUMMARY flag
-  Modified Apr 2020 JHB, add DSGetLogTimeStamp() API. Initially this is used in mediaMin interactive keyboard debug info printouts, to make it easy to see uptime of ongoing tests that are not printing onscreen log output
+  Modified Apr 2020 JHB, add DSGetTimeStamp() API. Initially this is used in mediaMin interactive keyboard debug info printouts, to make it easy to see uptime of ongoing tests that are not printing onscreen log output
   Modified May 2020 JHB, in PKT_STREAM_STATS struct, rename numRepair to numSIDRepair and add numMediaRepair
   Modified Jan 2021 JHB, change loglevel param in Log_RT() from uint16_t to uint32_t
   Modified Dec 2022 JHB, add DSInitLogging() and DSCloseLogging() APIs to simplify application and multithread interface to diaglib
   Modified Jan 2023 JHB, per-thread support for DSGetAPIStatus()
   Modified Jan 2023 JHB, implement DSConfigLogging() to allow apps to (i) configure packet logging and (ii) set/retrieve mid-operation data and flags. One example is ability to abort DSPktStatsWriteLogFile() and other potentially time-consuming APIs
-  Modified Feb 2024 JHB, add optional user-specified time value to DSGetLogTimeStamp(), which will use this value instead of wallclock time or uptime if DS_LOG_LEVEL_USER_TIMEVAL flag is given
+  Modified Feb 2024 JHB, add optional user-specified time value to DSGetTimeStamp(), which will use this value instead of wallclock time or uptime if DS_LOG_LEVEL_USER_TIMEVAL flag is given
   Modified Feb 2024 JHB, add DSGetMD5Sum() API
   Modified Mar 2024 JHB, change default LOG_SCREEN_FILE definition to zero, add number of chars written return value to Log_RT(). Part of continuing effort to make event logging and Log_RT() easier to use for a wide range of applications
   Modified Mar 2024 JHB, remove alias.h include
   Modified Apr 2024 JHB, deprecate DS_LOG_LEVEL_UPTIME_TIMESTAMP flag and DS_EVENT_LOG_UPTIME_TIMESTAMPS (shared_include/config.h) flags, the default (no flag) is now uptime timestamps
-  Modified Apr 2024 JHB, DSGetLogTimestamp() now returns length of timestamp string
+  Modified Apr 2024 JHB, DSGetTimestamp() now returns length of timestamp string
   Modified Apr 2024 JHB, add numMediaReuse to PKT_STREAM_STATS struct
   Modified May 2024 JHB, add DSGetBacktrace() API
   Modified May 2024 JHB, update documentation for DSPktStatsAddEntries()
@@ -62,11 +62,13 @@
   Modified Aug 2024 JHB, rename DSGetMD5Sum() to DSConsoleCommand() and make into generic console command execution API. See comments
   Modified Sep 2024 JHB, update comments for DS_PKTSTATS_ORGANIZE_BY_xx flags, add DS_INIT_LOGGING_RESET_WARNINGS_ERRORS flag
   Modified Nov 2024 JHB, rename STREAM_STATS to PKT_STREAM_STATS
-  Modified Nov 2024 JHB, DSGetLogTimestamp() now returns timestamp value in usec if timestamp param is NULL
+  Modified Nov 2024 JHB, DSGetTimestamp() now returns timestamp value in usec if timestamp param is NULL
   Modified Feb 2025 JHB, move isFileDeleted() here as static inline from event_logging.cpp, add static inline getFilePathFromFilePointer()
-  Modified Apr 2025 JHB, change DS_LOG_LEVEL_TIMEVAL_PRECISE flag to DS_LOG_LEVEL_TIMEVAL_PRECISION_USEC and add DS_LOG__LEVEL_TIMEVAL_PRECISION_MSEC flag. See DSGetLogTimestamp() in diaglib_util.cpp
+  Modified Apr 2025 JHB, change DS_LOG_LEVEL_TIMEVAL_PRECISE flag to DS_LOG_LEVEL_TIMEVAL_PRECISION_USEC and add DS_LOG__LEVEL_TIMEVAL_PRECISION_MSEC flag. See DSGetTimestamp() in diaglib_util.cpp
   Modified Apr 2025 JHB, fix C89 and C90 gcc build warnings in getFilePathFromFilePointer(): ensure all comments ar C-style, ifdef out altogether unless __STDC_VERSION__ or __cplusplus is defined (mixed declarations and code warning). This came up when building 3GPP reference codecs, which tend to have several years old C code and Makefiles
   Modified Jul 2025 JHB, add isStdoutReady(), SetStdoutNonBlock(), and console_out(). See comments in diaglib_util.cpp
+  Modified Aug 2025 JHB, update DSGetTimestamp() flag names
+  Modified Aug 2025 JHB, add SetStdoutMode()
 */
 
 #ifndef _DIAGLIB_H_
@@ -97,7 +99,7 @@ extern const char DIAGLIB_VERSION[256];
 
   -loglevel is a log level combined with optional flags; messages with a log level < uLogLevel in a DEBUG_CONFIG struct passed to DSInitLogging() will be displayed and/or logged. Typical log levels are 1 for a critical error, 2 for an error, 3 for a warning, and 4 for information
   -fmt supports all printf() functionality
-  -loglevel can be combined with DS_LOG_LEVEL_xxx flags defined below for DSGetLogTimestamp(), and also DS_EVENT_LOG_XXX_TIMESTAMPS flags, defined in shared_include/config.h
+  -loglevel can be combined with DS_LOG_LEVEL_xxx flags defined below for DSGetTimestamp(), and also DS_EVENT_LOG_XXX_TIMESTAMPS flags, defined in shared_include/config.h
   -event log output to display, file, or both is controlled by DS_LOG_LEVEL_OUTPUT_XXX flags in shared_include/config.h
   -in addition to DSInitLogging(), other APIs that control log level include DSUpdateLogConfig(), DSConfigPktlib(), DSConfigVoplib(), and DSConfigStreamlib()
 */
@@ -344,19 +346,20 @@ int DSPktStatsWriteLogFile(const char* szLogFilename, unsigned int uFlags, PKT_S
 
 /* diaglib utility APIs */
 
-uint64_t DSGetLogTimestamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval);
+uint64_t DSGetTimestamp(char* timestamp, unsigned int uFlags, int max_str_len, uint64_t user_timeval);
 
-/* timestamp flags for DSGetLogTimeStamp() and Log_RT(). DS_EVENT_LOG_XXX are defined in shared_include/config.h */
+/* timestamp flags for DSGetTimeStamp() and Log_RT(). DS_EVENT_LOG_XXX are defined in shared_include/config.h */
 
 #if 0 /* flag deprecated, the default (no flag) is now uptime timestamps. DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp, JHB Apr 2024 */
-#define DS_LOG_LEVEL_UPTIME_TIMESTAMP                   DS_EVENT_LOG_UPTIME_TIMESTAMPS  /* relative timestamp since process start */
+#define DS_UPTIME_TIMESTAMP                    DS_EVENT_LOG_UPTIME_TIMESTAMPS  /* relative timestamp since process start */
 #else
-#define DS_LOG_LEVEL_UPTIME_TIMESTAMP                   0  /* still available for readability purposes, but doesn't do anything */
+#define DS_UPTIME_TIMESTAMP                    0  /* still available for readability purposes, but doesn't do anything */
 #endif
-#define DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP                DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS  /* current timestamp */
-#define DS_LOG_LEVEL_USER_TIMEVAL                       DS_EVENT_LOG_USER_TIMEVAL
-#define DS_LOG_LEVEL_TIMEVAL_PRECISION_MSEC             DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC
-#define DS_LOG_LEVEL_TIMEVAL_PRECISION_USEC             DS_EVENT_LOG_TIMEVAL_PRECISION_USEC
+#define DS_NO_TIMESTAMP                        DS_LOG_LEVEL_NO_TIMESTAMP
+#define DS_WALLCLOCK_TIMESTAMP                 DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS    /* current wallclock time */
+#define DS_USER_TIMEVAL                        DS_EVENT_LOG_USER_TIMEVAL            /* apply formatting and precision to user-specified time (in usec) */
+#define DS_TIMEVAL_PRECISION_MSEC              DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC
+#define DS_TIMEVAL_PRECISION_USEC              DS_EVENT_LOG_TIMEVAL_PRECISION_USEC
 
 int DSGetAPIStatus(unsigned int uFlags);  /* get per-thread API status */
 
@@ -456,6 +459,7 @@ extern uint64_t stdout_max_wait_time_timeout;
 extern uint64_t stdout_max_wait_time_notimeout;
 
 extern bool fEnableStdoutReadyProfiling;  /* apps can set this to enable stdout readiness profiling, but it's recommended to use instead DSInitLogging() with uFlags DS_INIT_LOGGING_ENABLE_STDOUT_READY_PROFILING */
+extern uint8_t uStdoutMode;
 
 int isStdoutReady();  /* in diaglib_util.cpp */
 int isStdoutReadyEx(unsigned int uFlags);
@@ -465,10 +469,18 @@ int isStdoutReadyEx(unsigned int uFlags);
 #define STDOUT_READY_RECORD_STATS  1  /* record stdout ready stats, see comments near stdout_xxx global vars above */
 #define STDOUT_READY_PROFILING     2  /* profile stdout ready wait time */
 
-static inline void SetStdoutNonBlock() {
+/* set stdout mode: 0 = non-blocking, 1 = poll stdout before printf() calls, 2 = no action. 0 is the default mode */
+
+static inline void SetStdoutMode(uint8_t mode) {
 
    int flags = fcntl(STDOUT_FILENO, F_GETFL);
-   if (!(flags & O_NONBLOCK)) fcntl(STDOUT_FILENO, F_SETFL, flags | O_NONBLOCK);
+
+   if (mode == 0) {
+      if (!(flags & O_NONBLOCK)) fcntl(STDOUT_FILENO, F_SETFL, flags | O_NONBLOCK);
+   }
+   else if (flags & O_NONBLOCK) fcntl(STDOUT_FILENO, F_SETFL, flags & ~O_NONBLOCK);
+   
+   uStdoutMode = mode;
 }
 
 #endif  /* defined(__STDC_VERSION__) || defined(__cplusplus) */

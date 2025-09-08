@@ -62,6 +62,7 @@
    Modified May 2025 JHB, add output stats pkt_stream_group_pcap_out_ctr[], pkt_transcode_pcap_out_ctr[], and pkt_bitstream_out_ctr[]
    Modified Jun 2025 JHB, add szTranscodeOutput[] to support bit-exact operations on transcode output files
    Modified Jun 2025 JHB, add session joining flags (session_join_flags[])
+   Modified Aug 2025 JHB, add PktInfo_Reassembled[]
 */
 
 #ifndef _MEDIAMIN_H_
@@ -317,6 +318,7 @@ typedef struct {
  /* items used in PushPackets() */
 
   PKTINFO               PktInfo[MAX_STREAMS_THREAD];                 /* saved copy of PktInfo, can be used to compare current and previous packets */ 
+  PKTINFO               PktInfo_Reassembled[MAX_STREAMS_THREAD];     /* saved copy of PktInfo from reassembled packets */ 
   unsigned int          tcp_redundant_discards[MAX_STREAMS_THREAD];  /* count of discarded TCP redundant retransmissions */
   unsigned int          udp_redundant_discards[MAX_STREAMS_THREAD];  /* count of discarded UDP redundant retransmissions, JHB Jun 2024 */
 

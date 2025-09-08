@@ -30,7 +30,8 @@
    Modified Jul 2024 JHB, add --group_pcap_nocopy and --random_bit_error cmd line options
    Modified Aug 2024 JHB, add --sha1sum and --sha512sum cmd line options
    Modified Mar 2025 JHB, handle ALLOW_XX attributes defined in cmdLineOpt.h for overloaded options, for example -rN can accept N either int or float and fInvalidFormat is not set if the option can't be converted to a valid integer
-   Modified Jul 2025 JHB, add --profile_stdout_ready and --exclude_payload_type_from_key cmd line options
+   Modified Jul 2025 JHB, add --profile_stdout_ready and --exclude_payload_type_from_key command line options
+   Modified Aug 2025 JHB, add --stdout_mode command line option
 */
 
 #include <stdint.h>
@@ -53,7 +54,7 @@ using namespace std;
 
 #define requires_argument required_argument  /* convenient definition to fix grammar in getopt_long() definitions */
 
-static const struct option long_options[] = { { "version", no_argument, NULL, (char)128 }, { "cut", requires_argument, NULL, (char)129 }, { "group_pcap", requires_argument, NULL, (char)130 }, { "group_pcap_nocopy", requires_argument, NULL, (char)131 }, { "md5sum", no_argument, NULL, (char)132 }, { "sha1sum", no_argument, NULL, (char)133 }, { "sha512sum", no_argument, NULL, (char)134 }, { "show_aud_clas", no_argument, NULL, (char)135 }, { "random_bit_error", requires_argument, NULL, (char)136 },  { "profile_stdout_ready", no_argument, NULL, (char)137 }, { "exclude_payload_type_from_key", no_argument, NULL, (char)138 }, /* insert additional options here */ {NULL, 0, NULL, 0 } };
+static const struct option long_options[] = { { "version", no_argument, NULL, (char)128 }, { "cut", requires_argument, NULL, (char)129 }, { "group_pcap", requires_argument, NULL, (char)130 }, { "group_pcap_nocopy", requires_argument, NULL, (char)131 }, { "md5sum", no_argument, NULL, (char)132 }, { "sha1sum", no_argument, NULL, (char)133 }, { "sha512sum", no_argument, NULL, (char)134 }, { "show_aud_clas", no_argument, NULL, (char)135 }, { "random_bit_error", requires_argument, NULL, (char)136 },  { "profile_stdout_ready", no_argument, NULL, (char)137 }, { "exclude_payload_type_from_key", no_argument, NULL, (char)138 }, { "disable_codec_flc", no_argument, NULL, (char)139 },  { "stdout_mode", requires_argument, NULL, (char)140 }, /* insert additional options here */ {NULL, 0, NULL, 0 } };
 
 //
 // CmdLineOpt - Default constructor.

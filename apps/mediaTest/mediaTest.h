@@ -62,6 +62,7 @@
    Modified Apr 2025 JHB, add isLinePreserve extern, change uLineCursorPos from uint8_t to unsigned int (to handle long console output lines)
    Modified Jun 2025 JHB, include directcore.h
    Modified Jul 2025 JHB, add fShow_stdout_ready_profile to support --profile_stdout_ready command line option, add fExclude_payload_type_from_key to support --exclude_payload_type_from_key command line option
+   Modified Aug 2025 JHB, add uStdoutMode to support --stdout_mode command line option
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -269,6 +270,8 @@ extern bool              fShow_sha1sum;  /* command line --sha1sum */
 extern bool              fShow_sha512sum;  /* command line --sha512sum */
 extern bool              fShow_stdout_ready_profile;  /* command line --stdout_ready_profile */
 extern bool              fExclude_payload_type_from_key;  /* command line --exclude_payload_type_from_key */
+extern bool              fDisable_codec_flc;
+extern uint8_t           uStdoutMode_apps;
 
 #define szAppFullCmdLine (((const char*)full_cmd_line))  /* szAppFullCmdLine is what apps should use. full_cmd_line should not be modified so this is a half-attempt to remind user apps that it should be treated as const char* */
 

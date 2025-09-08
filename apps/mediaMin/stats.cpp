@@ -36,6 +36,8 @@
 
    Created Jun 2025 JHB, split off from mediaMin.cpp
    Modified Jul 2025 JHB, add max_buffer_size param and replace sprintf() with snprintf(). Also replace sizeof(tmpstr) with max_buffer_size (it was ok when code was in mediaMin.cpp but doing that here is always size of a pointer)
+   Modified Aug 2025 JHB, update DSGetTimestamp() flag names per changes in diaglib.h
+   Modified Aug 2025 JHB, add IPv6 fragment header NULL param in call to DSPktRemoveFragment() per change in pktlib.h
 */
 
 #include <algorithm>
@@ -141,7 +143,7 @@ unsigned int nOrphansRemoved, nMaxListFragments;
 
    if (!tmpstr || max_buffer_size <= 0) return -1;
 
-   nOrphansRemoved = DSPktRemoveFragment(NULL, 0, &nMaxListFragments);
+   nOrphansRemoved = DSPktRemoveFragment(NULL, NULL, 0, &nMaxListFragments);
 
    bool fLogTimeStampPrinted = false;  /* make sure only one event log timestamp is printed in the case of multiple stats strings (which should only happen with 100s of inputs during stress tests) */
   
@@ -234,7 +236,7 @@ unsigned int nOrphansRemoved, nMaxListFragments;
 
       char szSessInfo[200], szTimestamp[200];
 
-      if (thread_info[thread_index].StreamStats[i].uFlags & STREAM_STAT_FIRST_PKT) DSGetLogTimestamp(szTimestamp, DS_EVENT_LOG_USER_TIMEVAL | DS_EVENT_LOG_UPTIME_TIMESTAMPS | DS_EVENT_LOG_TIMEVAL_PRECISION_USEC, sizeof(szTimestamp), timeScale*thread_info[thread_index].StreamStats[i].first_pkt_usec);  /* convert usec to timestamp string */
+      if (thread_info[thread_index].StreamStats[i].uFlags & STREAM_STAT_FIRST_PKT) DSGetTimestamp(szTimestamp, DS_USER_TIMEVAL | DS_UPTIME_TIMESTAMP | DS_TIMEVAL_PRECISION_USEC, sizeof(szTimestamp), timeScale*thread_info[thread_index].StreamStats[i].first_pkt_usec);  /* convert usec to timestamp string */
       else strcpy(szTimestamp, "n/a");
 
       sprintf(szSessInfo, "%s%s[%d] hSession %d %s, term %d, ch %d, codec %s, bitrate %d, payload type %d, ssrc 0x%x, first packet %s \n", tabstr, tabstr, i, thread_info[thread_index].StreamStats[i].hSession, thread_info[thread_index].StreamStats[i].uFlags & STREAM_STAT_DYNAMIC_SESSION ? "dynamic" : "static", thread_info[thread_index].StreamStats[i].term, thread_info[thread_index].StreamStats[i].chnum, thread_info[thread_index].StreamStats[i].codec_name, thread_info[thread_index].StreamStats[i].bitrate, thread_info[thread_index].StreamStats[i].payload_type, thread_info[thread_index].StreamStats[i].first_pkt_ssrc, szTimestamp);

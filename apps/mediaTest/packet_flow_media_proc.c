@@ -211,13 +211,14 @@
   Modified May 2025 JHB, adjust loss and level flush for video streams in logic after DSGetOrderedPackets()
   Modified Jun 2025 JHB, add zero and NULL params in calls to DSReadPcap() per change in pktlib.h
   Modified Jun 2025 JHB, for ip_addr, voice_attributes, and TERMINATION_INFO structs, remove "u" and "attr" intermediate addressing for unions and address individual structs directly
-  Modified Jul 2025 JHB, export term_uFlags[][] for use in pktlib SSRC session matching. See comments in mediaMin.cpp and shared_include/session.h near TERM_ENABLE_SSRC_SESSION_MATCHING flag
   Modified Jul 2025 JHB, remove get_session_thread_index() reference (now in pktlib.h)
   Modified Jul 2025 JHB, in sig_printf() call console_out(), which calls isStdoutReady() before printf() to avoid blocking if stdout has loss of connectivity
   Modified Jul 2025 JHB, overhaul "dormant session" functionality
                          -the new terminology is "duplication and reuse" of channel SSRCs, which are always detected and notified with console and event log messages
                          -action is only taken if TERM_ENABLE_DORMANT_SESSION session flag is set, in which case the prior session channel using the SSRC is considered "dormant", implying a pause or halt and actions taken such as jitter buffer flush, and the new session channel using the SSRC is considered "live"
                          -mediaMin, based on the ENABLE_DORMANT_SESSIONS flag in its -dN cmd line entry, sets TERM_ENABLE_DORMANT_SESSION in TERMINATION_INFO struct uFlags in CreateDynamicSession() (look here for term_uFlags[][])
+  Modified Aug 2025 JHB, add thread_index parameter to DSProcessStreamGroupContributorsTSM()
+  Modified Aug 2025 JHB, add uPktNumber param to DSGetPacketInfo() calls per mod in pktlib.h
 */
 
 /* Linux header files */
@@ -702,7 +703,7 @@ static int nSSRCDuplicationDetection[NCORECHAN] = { 0 };
 #if 0
 static float input_buffer_interval[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 #else
-extern unsigned int term_uFlags[MAX_SESSIONS][MAX_TERMS];  /* declared in pktlib.c */
+static unsigned int term_uFlags[MAX_SESSIONS][MAX_TERMS] = {{ 0 }};
 static unsigned int session_uFlags[MAX_SESSIONS] = { 0 };
 #endif
 extern bool fTermFlagsUpdate[MAX_SESSIONS];  /* declared in pktlib.c, set in DSSessionInfo(DS_SESSION_INFO_TERM_FLAGS), JHB Jul 2025 */
@@ -1797,7 +1798,7 @@ run_loop:
 
          elapsed_thread_time = cur_time - prev_thread_CPU_time;
 
-         if (pm_run && !packet_media_thread_info[thread_index].nChannelWavProc && packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled) {  /* N channel wav file processing is post-processing, not real-time, so we don't include this in preemption checks */
+         if (pm_run && !packet_media_thread_info[thread_index].nChannelWavProc && !packet_media_thread_info[thread_index].uTimestamp_mode_record_search && packet_media_thread_info[thread_index].fPreEmptionMonitorEnabled) {  /* N channel wav file processing is post-processing, not real-time, so we don't include this in preemption checks */
 
             if (elapsed_thread_time > (uint64_t)pktlib_gbl_cfg.uThreadPreemptionElapsedTimeAlarm*1000*timeScale) {  /* anything more than warning limit (default is 40 msec) we consider that Linux may have pre-empted the thread. Not good, but we need to know, JHB Jan 2020 */
 
@@ -1831,7 +1832,11 @@ run_loop:
             }
 #endif
          }
-         else packet_media_thread_info[thread_index].nChannelWavProc = 0;
+         else {
+         
+            packet_media_thread_info[thread_index].nChannelWavProc = 0;
+            packet_media_thread_info[thread_index].uTimestamp_mode_record_search = 0;
+         }
 
          if (!fPreemptAlarm && fThreadInputActive && fAllSessionsDataAvailable && !fDebugPass) {
 
@@ -1941,7 +1946,7 @@ run_loop:
                #if 0  /* no longer needed, done by DSRecvPackets() when DS_RECV_PKT_FILTER_RTCP flag is applied (see below) */
                if (pkt_len[0] > 0) {
 
-                  uint8_t rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_in_buf, pkt_len[0], NULL, NULL);
+                  uint8_t rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_in_buf, pkt_len[0], NULL, NULL, 0);
 
                   if (isRTCPPacket(rtp_pyld_type)) continue;  /* filter RTCP packets. isRTCPPacket() macro is defined in pktlib.h */
                }
@@ -1956,7 +1961,7 @@ run_loop:
 #ifdef PERFORMANCE_MEASUREMENT
 get_pkt_info:
 #endif
-                     chnum_parent = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, pkt_in_buf, pkt_len[0], NULL, NULL);
+                     chnum_parent = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, pkt_in_buf, pkt_len[0], NULL, NULL, 0);
 
                      if (chnum_parent >= 0) {  /* push packet to session queue, assigned thread will pull the packet and process it */
 
@@ -2186,7 +2191,7 @@ get_pkt_info:
                uFlags_pkt_info &= ~DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG;  /* enable all warning/error messages */
                #endif
 
-               chnums_lookahead[j] = DSGetPacketInfo(hSession_param, uFlags_pkt_info | DS_PKT_INFO_CHNUM_PARENT, pkt_ptr, pkt_len[j], NULL, &chnums[j]);
+               chnums_lookahead[j] = DSGetPacketInfo(hSession_param, uFlags_pkt_info | DS_PKT_INFO_CHNUM_PARENT, pkt_ptr, pkt_len[j], NULL, &chnums[j], 0);
 
                #ifdef TEST_EXTENDED_CHAN_SEARCH
                extern SESSION_CONTROL sessions[];
@@ -2286,7 +2291,7 @@ get_pkt_info:
 
                #ifndef DONT_USE_IPHDRLEN_INFO
                int ip_hdr_len;
-               uint8_t rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE | DS_PKT_INFO_COPY_IP_HDR_LEN_IN_PINFO, pkt_ptr, pkt_len[j], &ip_hdr_len, NULL);
+               uint8_t rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE | DS_PKT_INFO_COPY_IP_HDR_LEN_IN_PINFO, pkt_ptr, pkt_len[j], &ip_hdr_len, NULL, 0);
                #endif
 
                if (j < numPkts_matched) {
@@ -2302,9 +2307,9 @@ get_pkt_info:
                   #endif
 
                   #ifdef DONT_USE_IPHDRLEN_INFO
-                  chnum_parent = DSGetPacketInfo(hSession_param, uFlags_pkt_info | DS_PKT_INFO_CHNUM_PARENT, pkt_ptr, pkt_len[j], NULL, &chnum);
+                  chnum_parent = DSGetPacketInfo(hSession_param, uFlags_pkt_info | DS_PKT_INFO_CHNUM_PARENT, pkt_ptr, pkt_len[j], NULL, &chnum, 0);
                   #else
-                  chnum_parent = DSGetPacketInfo(hSession_param, uFlags_pkt_info | DS_PKT_INFO_CHNUM_PARENT, pkt_ptr, ip_hdr_len | DS_PKT_INFO_USE_IP_HDR_LEN, NULL, &chnum);
+                  chnum_parent = DSGetPacketInfo(hSession_param, uFlags_pkt_info | DS_PKT_INFO_CHNUM_PARENT, pkt_ptr, ip_hdr_len | DS_PKT_INFO_USE_IP_HDR_LEN, NULL, &chnum, 0);
                   #endif
 
                   #ifdef TEST_EXTENDED_CHAN_SEARCH
@@ -2315,7 +2320,7 @@ get_pkt_info:
                if (lib_dbg_cfg.uEnablePktTracing & DS_PACKET_TRACE_RECEIVE) DSLogPktTrace(hSession_param, pkt_ptr, pkt_len[j], thread_index, (lib_dbg_cfg.uEnablePktTracing & ~DS_PACKET_TRACE_MASK) | DS_PACKET_TRACE_RECEIVE);
 
                #ifdef DONT_USE_IPHDRLEN_INFO
-               uint8_t rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_ptr, pkt_len[j], NULL, NULL);
+               uint8_t rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_ptr, pkt_len[j], NULL, NULL, 0);
                #endif
 
 #ifdef DEBUGINPUTPACKETS  /* chnum-to-session mapping trace that can be very helpful in debugging multistream issues in analytics mode */
@@ -2533,7 +2538,7 @@ static int log_pkt_in_index = 0;
                         uFlags_buffer_pkts = 0;  /* avoid compiler warning */
                         pkts_read[i] += 1;
                         packet_len[j] = pkt_len[j];
-                        pkt_info[j] = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLD_CONTENT, pkt_ptr, pkt_len[j], NULL, NULL);
+                        pkt_info[j] = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLD_CONTENT, pkt_ptr, pkt_len[j], NULL, NULL, 0);
 
                         ret_val = 1;  /* ok to check for SSRC change and log packet */
                      }
@@ -3296,7 +3301,7 @@ pull:
      uint8_t* p = pkt_ptr;
      for (k=0; k<num_pkts; k++) {
    
-        int rtp_seqnum = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SEQNUM, p, -1, NULL, NULL);
+        int rtp_seqnum = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SEQNUM, p, -1, NULL, NULL, 0);
         sprintf(&tmpstr[strlen(tmpstr)], " %d", rtp_seqnum);
         p += packet_len[k];
      }
@@ -3359,7 +3364,7 @@ pull:
                   for (j=0; j<num_pkts; j++) {
 
                      #if 0  /* packet integrity sanity check */
-                     int pktlen_hdr = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN, pkt_ptr, -1, NULL, NULL);
+                     int pktlen_hdr = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN, pkt_ptr, -1, NULL, NULL, 0);
                      if (pktlen_hdr != packet_len[j]) printf("\n *** inside post-packet loop #1 pkt header len = %d mismatches pkt len %d, j = %d, num_pkts = %d \n", pktlen_hdr, packet_len[j], j, num_pkts);
                      #endif
 
@@ -3368,7 +3373,7 @@ pull:
                      #ifndef DONT_USE_PKTINFO
                      PKTINFO PktInfo;  /* fill in PKTINFO struct and avoid any further DSGetPacketInfo() calls except session/stream related (chnum, parent chnum, etc), and for those we can use DS_PKT_INFO_USE_IP_HDR_LEN flag for minimal overhead, JHB Dec 2024 */
 
-                     if (DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_ptr, packet_len[j], &PktInfo, NULL) < 0 || PktInfo.rtp_pyld_ofs < 0) {  /* notes: (i) checking RTP pyld ofs is a legacy error check, I kept it here, (ii) packets have already been error-checked by an app using DSGetPacketInfo() and/or DSBufferPackets() so not worried about errors but we can suppress RTP info messages, JHB Dec 2024 */
+                     if (DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_ptr, packet_len[j], &PktInfo, NULL, 0) < 0 || PktInfo.rtp_pyld_ofs < 0) {  /* notes: (i) checking RTP pyld ofs is a legacy error check, I kept it here, (ii) packets have already been error-checked by an app using DSGetPacketInfo() and/or DSBufferPackets() so not worried about errors but we can suppress RTP info messages, JHB Dec 2024 */
 
                         Log_RT(2, "ERROR: p/m thread %d says invalid packet pointer or length given to DSGetPacketInfo(), packet len = %d, num pkts = %d\n", thread_index, packet_len[j], num_pkts);
                         break;
@@ -3380,9 +3385,9 @@ pull:
                   /* find the channel number matching the buffer output packet (could be parent or child), and error check */
 
                      #ifdef DONT_USE_PKTINFO
-                     if ((chnum = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, packet_len[j], NULL, NULL)) < 0)
+                     if ((chnum = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, packet_len[j], NULL, NULL, 0)) < 0)
                      #else
-                     if ((chnum = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, PktInfo.ip_hdr_len | DS_PKT_INFO_USE_IP_HDR_LEN, NULL, NULL)) < 0)
+                     if ((chnum = DSGetPacketInfo(hSession_param, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, PktInfo.ip_hdr_len | DS_PKT_INFO_USE_IP_HDR_LEN, NULL, NULL, 0)) < 0)
                      #endif
                      {
 
@@ -3393,7 +3398,7 @@ pull:
                      if (pkt_info[j] != DS_PKT_PYLD_CONTENT_PROBATION) {
 
                         #ifdef DONT_USE_PKTINFO
-                        int rtp_pyld_ofs = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags_info, pkt_ptr, packet_len[j], NULL, NULL);
+                        int rtp_pyld_ofs = DSGetPacketInfo(-1, DS_PKT_INFO_RTP_PYLDOFS | uFlags_info, pkt_ptr, packet_len[j], NULL, NULL, 0);
 
                         if (rtp_pyld_ofs < 0) {
                            Log_RT(2, "ERROR: p/m thread %d says invalid packet pointer or length given to DSGetPacketInfo(), packet len = %d, num pkts = %d\n", thread_index, packet_len[j], num_pkts);
@@ -3458,9 +3463,9 @@ pull:
             //if (chnum == 0 && ++SentCount >= 1306) printf("\n *** jb sent packet #%d \n", SentCount);  
 
                               #ifdef DONT_USE_PKTINFO
-                              rtp_timestamp[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_TIMESTAMP, pkt_ptr, packet_len[j], NULL, NULL);  /* save packet timestamp and ssrc */
-                              rtp_ssrc[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_SSRC, pkt_ptr, packet_len[j], NULL, NULL);
-                              rtp_pyld_type[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_PYLDTYPE, pkt_ptr, packet_len[j], NULL, NULL);
+                              rtp_timestamp[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_TIMESTAMP, pkt_ptr, packet_len[j], NULL, NULL, 0);  /* save packet timestamp and ssrc */
+                              rtp_ssrc[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_SSRC, pkt_ptr, packet_len[j], NULL, NULL, 0);
+                              rtp_pyld_type[j] = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_PYLDTYPE, pkt_ptr, packet_len[j], NULL, NULL, 0);
                               #else
                               rtp_timestamp[j] = PktInfo.rtp_timestamp;  /* save packet timestamp and ssrc */
                               rtp_ssrc[j] = PktInfo.rtp_ssrc;
@@ -3471,7 +3476,7 @@ pull:
 
                         #ifdef DONT_USE_PKTINFO
                         rtp_pyld_ptr = pkt_ptr + rtp_pyld_ofs;
-                        rtp_pyld_len = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_PYLDLEN, pkt_ptr, packet_len[j], NULL, NULL);
+                        rtp_pyld_len = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_PYLDLEN, pkt_ptr, packet_len[j], NULL, NULL, 0);
                         #else
                         rtp_pyld_ptr = pkt_ptr + PktInfo.rtp_pyld_ofs;
                         #endif
@@ -3541,7 +3546,7 @@ pull:
 
                               strcat(tmpstr, ", End of Event");
 
-                              DSSetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_UNDERRUN_RESYNC_WARNING, 1);  /* avoid underrun resync warning when media packets resume, JHB Jun2019 */
+                              DSSetJitterBufferInfo(chnum, DS_JITTER_BUFFER_INFO_UNDERRUN_RESYNC_WARNING, 1);  /* avoid underrun resync warning when media packets resume, JHB Jun 2019 */
                               uDTMFState[hSession][term] = 0;  /* we clear DTMF state on first end-of-event, although there may be several end-of-events, JHB May 2023 */
                               nStatsDisplayPause = 0;  /* clear stats pause, which could be faster than stats display count down, for example in FTRT and AFAP modes, JHB May 2023 */
                            }
@@ -3609,7 +3614,7 @@ pull:
 
                            if (isVoiceCodec(termInfo.codec_type) || isAudioCodec(termInfo.codec_type)) {  /* voice or audio (isXxxCodec() macros are in shared_include/codec.h) */
 
-                              media_data_len = DSCodecDecode(&hCodec, 0, rtp_pyld_ptr, media_data_buffer, rtp_pyld_len, 1, NULL, &OutArgs);  /* call voplib decoder */
+                              media_data_len = DSCodecDecode(&hCodec, 0, rtp_pyld_ptr, media_data_buffer, rtp_pyld_len, 1, NULL, &OutArgs);  /* call voplib decoder, return value is media length in bytes */
                            }
                            else if (isVideoCodec(termInfo.codec_type)) {  /* video */
 
@@ -4195,7 +4200,7 @@ static int log_pkt_index = 0;
                               uint8_t pyld_type_sav = pkt_out_buf[IPV4_HEADER_LEN+UDP_HEADER_LEN+1];
                               pkt_out_buf[IPV4_HEADER_LEN+UDP_HEADER_LEN+1] = rtp_pyld_type[j];  /* temporarily set payload type corresponding to input, needed in timestamp match mode, Feb 2024 */
 
-                              DSProcessStreamGroupContributorsTSM(hSession, pkt_out_buf, &packet_length, 1, MediaParams[0].Media.inputFilename, szStreamGroupWavOutputPath, uTimestampMatchMode);
+                              DSProcessStreamGroupContributorsTSM(hSession, pkt_out_buf, &packet_length, 1, MediaParams[0].Media.inputFilename, szStreamGroupWavOutputPath, uTimestampMatchMode, thread_index);
 
                               pkt_out_buf[IPV4_HEADER_LEN+UDP_HEADER_LEN+1] = pyld_type_sav;
                            }
@@ -4231,7 +4236,7 @@ static int log_pkt_index = 0;
 
                         /* don't send packet if term2 IP:port values for this packet have been defined as don't care */
 
-                           int hSession_index = DSGetPacketInfo(hSession, DS_PKT_INFO_SESSION, pkt_out_buf, packet_length, &termInfo_link, NULL);  /* get session index and term2 info associated with the packet */
+                           int hSession_index = DSGetPacketInfo(hSession, DS_PKT_INFO_SESSION, pkt_out_buf, packet_length, &termInfo_link, NULL, 0);  /* get session index and term2 info associated with the packet */
 
                            if (!(termInfo_link.mode & TERMINATION_MODE_IP_PORT_DONTCARE))
                            #endif
@@ -4814,7 +4819,7 @@ char szSSRCStatus[200];
    for (j=0; j<num_pkts; j++) {
 
 #if 0
-      chnum = DSGetPacketInfo((uFlags_session & DS_SESSION_USER_MANAGED) ? hSession : -1, uFlags_info | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, pkt_in_buf + offset, packet_len[j], NULL, NULL);
+      chnum = DSGetPacketInfo((uFlags_session & DS_SESSION_USER_MANAGED) ? hSession : -1, uFlags_info | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, pkt_in_buf + offset, packet_len[j], NULL, NULL, 0);
       if (chnum == -1) return -1;  /* error condition */
 #endif
 
@@ -4824,7 +4829,7 @@ char szSSRCStatus[200];
 
    /* look for an SSRC change, if so set a flag that can be acted on when pulling packets, for example to "get all deliverable" packets for the previous SSRC stream before the new stream starts */
 
-      rtp_ssrc = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_SSRC, pkt_in_buf + offset, packet_len[j], NULL, NULL);
+      rtp_ssrc = DSGetPacketInfo(-1, uFlags_info | DS_PKT_INFO_RTP_SSRC, pkt_in_buf + offset, packet_len[j], NULL, NULL, 0);
 
       offset += packet_len[j];
 
@@ -6149,10 +6154,10 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
             if (uFlags_get & DS_PKTLIB_HOST_BYTE_ORDER) uFlags_info |= DS_PKTLIB_HOST_BYTE_ORDER;
             #endif
 
-            rtp_pyld_ptr = pkt_ptr + DSGetPacketInfo(hSession, uFlags_info | DS_PKT_INFO_RTP_PYLDOFS, pkt_ptr, packet_length, NULL, NULL);
-            pyld_len = DSGetPacketInfo(hSession, uFlags_info | DS_PKT_INFO_RTP_PYLDLEN, pkt_ptr, packet_length, NULL, NULL);
+            rtp_pyld_ptr = pkt_ptr + DSGetPacketInfo(hSession, uFlags_info | DS_PKT_INFO_RTP_PYLDOFS, pkt_ptr, packet_length, NULL, NULL, 0);
+            pyld_len = DSGetPacketInfo(hSession, uFlags_info | DS_PKT_INFO_RTP_PYLDLEN, pkt_ptr, packet_length, NULL, NULL, 0);
 
-            if ((hCodec = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CODEC, pkt_ptr, packet_length, &termInfo, NULL)) < 0)
+            if ((hCodec = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CODEC, pkt_ptr, packet_length, &termInfo, NULL, 0)) < 0)
             {
                fprintf(stderr, "Multithread test thread id = %d, failed to get decode codec info\n", threadid);
                break;
@@ -6160,7 +6165,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
             media_data_len = DSCodecDecode(&hCodec, 0, rtp_pyld_ptr, media_data_buffer, pyld_len, 1, NULL, NULL);
 
-            if ((chnum = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, packet_length, &termInfo, NULL)) < 0)
+            if ((chnum = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM, pkt_ptr, packet_length, &termInfo, NULL, 0)) < 0)
             {
                fprintf(stderr, "Multithread test thread id = %d, failed to get chnum\n", threadid);
                break;
@@ -6168,7 +6173,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
             out_media_data_len = DSConvertFsPacket(chnum, (int16_t*)media_data_buffer, media_data_len);
 
-            if ((hCodec_link = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CODEC_LINK, pkt_ptr, packet_length, &termInfo_link, NULL)) < 0)
+            if ((hCodec_link = DSGetPacketInfo(hSession, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CODEC_LINK, pkt_ptr, packet_length, &termInfo_link, NULL, 0)) < 0)
             {
                fprintf(stderr, "Multithread test thread id = %d, failed to get encode codec info\n", threadid);
                break;
@@ -6211,7 +6216,7 @@ HSESSION          hSessions_t[MAX_SESSIONS] = { 0 };
 
             /* don't send packet if term2 IP:port values for this packet have been defined as don't care */
 
-               int hSession_index = DSGetPacketInfo(hSession, DS_PKT_INFO_SESSION, pkt_buffer, packet_length, &termInfo_link, NULL);  /* get session index and term2 info associated with the packet */
+               int hSession_index = DSGetPacketInfo(hSession, DS_PKT_INFO_SESSION, pkt_buffer, packet_length, &termInfo_link, NULL, 0);  /* get session index and term2 info associated with the packet */
 
                if (!(termInfo_link.mode & TERMINATION_MODE_IP_PORT_DONTCARE))
                #endif
@@ -6285,11 +6290,11 @@ struct udphdr *udp_hdr;
    }
 
    #if 0
-   udp_hdr = (struct udphdr *)&pkt_buffer[DSGetPacketInfo(hSession, DS_PKT_INFO_HDRLEN | DS_BUFFER_PKT_IP_PACKET, pkt_buffer, packet_length, NULL, NULL)];
+   udp_hdr = (struct udphdr *)&pkt_buffer[DSGetPacketInfo(hSession, DS_PKT_INFO_HDRLEN | DS_BUFFER_PKT_IP_PACKET, pkt_buffer, packet_length, NULL, NULL, 0)];
    udp_hdr->source = session_data->term1.remote_port;
    udp_hdr->dest = session_data->term1.local_port;
    #else
-   int ip_hdr_len = DSGetPacketInfo(hSession, DS_PKT_INFO_HDRLEN | DS_BUFFER_PKT_IP_PACKET, pkt_buffer, packet_length, NULL, NULL);
+   int ip_hdr_len = DSGetPacketInfo(hSession, DS_PKT_INFO_HDRLEN | DS_BUFFER_PKT_IP_PACKET, pkt_buffer, packet_length, NULL, NULL, 0);
    *(unsigned short int*)&pkt_buffer[ip_hdr_len] = session_data->term1.remote_port;
    *(unsigned short int*)&pkt_buffer[ip_hdr_len+sizeof(unsigned short int)] = session_data->term1.local_port;
    #endif
@@ -6377,7 +6382,7 @@ int idx;
 
    if (uFlags == PACKET_TIME_STATS_INPUT) {
 
-      rtp_timestamp = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_TIMESTAMP, pkt, pkt_len, NULL, NULL);
+      rtp_timestamp = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_TIMESTAMP, pkt, pkt_len, NULL, NULL, 0);
 
       if (last_rtp_timestamp[chnum]) {  /* note that input RTP timestamps may be ooo, so we use int calculations here and allow negative values. They will still add up correctly, JHB Jan 2020 */
 
@@ -6431,7 +6436,7 @@ int idx;
    }
    else if (uFlags == PACKET_TIME_STATS_PULL) {
 
-      rtp_timestamp = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_TIMESTAMP, pkt, pkt_len, NULL, NULL);
+      rtp_timestamp = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_TIMESTAMP, pkt, pkt_len, NULL, NULL, 0);
 
       if (last_rtp_timestamp_pull[chnum]) {
 

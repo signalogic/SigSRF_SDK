@@ -59,6 +59,7 @@
    Modified Mar 2025 JHB, improve display of SDP info originating from .sdp files (i) implement SDP_PARSE_ALLOW_ZERO_ORIGIN flag, (i) leave comments occurring later on the same line as SDP info text, (iii) remove whitespace lines (e.g. all spaces then a CRLF)
    Modified Apr 2025 JHB, improve SIP message detection and display, add SESSION_CONTROL_FOUND_SIP_TCP_OTHER and SESSION_CONTROL_FOUND_SIP_UDP_OTHER flags, add port exclude and text exclude to avoid MySQL messages with similar keywords as SIP or messages with conflicting keywords
    Modified Apr 2025 JHB, fix bug in find_keyword() case-insensitive search, return value is offset relative to buffer input param, not tmpstr
+   Modified Aug 2025 JHB, add uPktNumber param to DSGetPacketInfo() calls per mod in pktlib.h
 */
 
 #include <algorithm>  /* bring in std::min and std::max */
@@ -593,7 +594,7 @@ int ProcessSessionControl(uint8_t* pkt_buf, unsigned int uFlags, int nStream, in
 PKTINFO PktInfo;
 bool fFragmentData = false;
 
-   DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKT_INFO_PKTINFO_EXCLUDE_RTP, pkt_buf, -1, &PktInfo, NULL);  /* get packet info excluding RTP items, JHB Jun 2024 */
+   DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKT_INFO_PKTINFO_EXCLUDE_RTP, pkt_buf, -1, &PktInfo, NULL, 0);  /* get packet info excluding RTP items, JHB Jun 2024 */
 
    int pyld_len = PktInfo.pyld_len;
    int pyld_ofs = PktInfo.pyld_ofs;

@@ -37,6 +37,8 @@
   Modified Jun 2023 JHB, add local buffer in DSDecodeDerStream() to make it non-destructive on input pkt_in_buf. Also add buffer size checks and warning messages, and error check on UDP length calculation in IPv6 candidate checksum
   Modified Jul 2024 JHB, per change in pktlib.h, edit DSGetPacketInfo() calls to make uFlags second param
   Modified Mar 2025 JHB, per changes in pktlib.h to standardize with other SigSRF libs, adjust references to DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG flag
+  Modified Apr 2025 JHB, bump release version number due to changes in PKTINFO struct in pktlib
+  Modified Aug 2025 JHB, add uPktNumber param to DSGetPacketInfo() calls per mod in pktlib.h
 */
 
 /* Linux includes */
@@ -63,7 +65,7 @@
 
 #include "shared_include/config.h"  /* configuration structs and definitions */
 
-const char DERLIB_VERSION[256] = "1.3.0";
+const char DERLIB_VERSION[256] = "1.3.1";
 
 typedef struct {
 
@@ -465,18 +467,18 @@ bool fProcessASN = true;
 
    /* get packet dest port, payload length and offset */
 
-      if ((int)(dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, p, -1, NULL, NULL)) <= 0) {
+      if ((int)(dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, p, -1, NULL, NULL, 0)) <= 0) {
 
          Log_RT(2, "ERROR: DSDecodeDerFields() says input packet has invalid destination port, uFlags = 0x%x \n", uFlags);
          return -1;
       }
 
-      if ((pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, p, -1, NULL, NULL)) <= 0) {
+      if ((pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, p, -1, NULL, NULL, 0)) <= 0) {
          Log_RT(2, "ERROR: DSDecodeDerFields() says input packet invalid payload length, uFlags = 0x%x \n", uFlags);
          return -1;
       }
 
-      ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, p, -1, NULL, NULL);
+      ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, p, -1, NULL, NULL, 0);
 
       plen = min(plen, pyld_len);  /* don't exceed payload size */
 
@@ -648,11 +650,11 @@ char szAuthCountryIdentifier[128] = "";
 static bool fOnce = false;
 #endif
 
-   if (pkt_in_buf && DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL) == TCP_PROTOCOL) {
+   if (pkt_in_buf && DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL, 0) == TCP_PROTOCOL) {
 
    /* get packet's dest port */
 
-      if ((int)(dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL)) <= 0) return 0;
+      if ((int)(dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL, 0)) <= 0) return 0;
 
    /* if caller provides port list and packet matches a port already on the list then nothing to do. Ports are listed once an interception point ID is found; see ret_val below */
  
@@ -660,8 +662,8 @@ static bool fOnce = false;
 
    /* get packet's payload length and offset */
  
-      if (!(pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL))) return 0;
-      pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL);
+      if (!(pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL, 0))) return 0;
+      pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL, 0);
 
    /* decode asn and write to file if requested */
 
@@ -879,9 +881,9 @@ uint8_t* pkt_in_buf_local = NULL;
 
    if (!derlib_sem_init) return -1;  /* we don't need the derlib semaphore when decoding, but the app should not be attempting decode unless derlib has been initialized first, so we return an error condition */
 
-   if (DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL) != TCP_PROTOCOL) return -1;
+   if (DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL, 0) != TCP_PROTOCOL) return -1;
 
-   if ((int)(pkt_dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL)) <= 0) return -1;
+   if ((int)(pkt_dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL, 0)) <= 0) return -1;
 
 /* verify packet dest port is on list of ports previously determined from IRI info */
 
@@ -896,7 +898,7 @@ uint8_t* pkt_in_buf_local = NULL;
    #if 0  /* ASN processing not ready for this yet, HI3 streams can have 10-20 or more consecutive max size packets */
    if (hFile_asn_output) {
    
-      int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL);
+      int pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL, 0);
       DSDecodeDerFields(pkt_in_buf, DS_DER_DECODEFIELDS_PACKET | DS_DER_DECODEFIELDS_OUTPUT_ASN, pyld_len, hFile_asn_output, "decode gen asn");
    }
    #else
@@ -911,7 +913,7 @@ uint8_t* pkt_in_buf_local = NULL;
 
    if (der_streams[hDerStream].asn_index == 0) {
 
-      if ((pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL)) == 0) {
+      if ((pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL, 0)) == 0) {
 
          if (uFlags & DS_DECODE_DER_PRINT_DEBUG_INFO) {
             printf("HI3 port %d NULL packet", dest_port);
@@ -925,8 +927,8 @@ uint8_t* pkt_in_buf_local = NULL;
 
    {  // extra scope level in case we need it
 
-      int pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL);  /* input packet buffer can be TCP or UDP */
-      if (pyld_len == -1) pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL);
+      int pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL, 0);  /* input packet buffer can be TCP or UDP */
+      if (pyld_len == -1) pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL, 0);
 
       int save_len = der_streams[hDerStream].save_len;  /* packet aggregation: get amount of data saved from previous packet, if any */
 
@@ -1210,11 +1212,11 @@ uint8_t* pkt_in_buf_local = NULL;
                if ((uint16_t)~checksum_candidate == checksum) {  /* compare checksums, 1's complement */
 
                   uint8_t* p2 = &p[asn_index];
-                  int pktlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, p2, -1, NULL, NULL);
+                  int pktlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, p2, -1, NULL, NULL, 0);
 
                   if (pktlen < 0) goto next_byte;  /* if packet header values are bad, assume checksum hash matched wrong data. Happens every so often with IPv4 */
 
-                  int rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, p2, -1, NULL, NULL);
+                  int rtp_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, p2, -1, NULL, NULL, 0);
 
                   if (uFlags & DS_DECODE_DER_PRINT_DEBUG_INFO) {
                      printf(", found IP header, asn_index = %d, tag = 0x%x, len = %d, pkt len = %d, RTP pyld type = %d", asn_index, p2[-2], p2[-1], pktlen, rtp_pyld_type);

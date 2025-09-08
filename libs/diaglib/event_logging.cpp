@@ -33,7 +33,7 @@
   Modified Jan 2023 JHB, add DSConfigLogging() to allow apps to abort DSPktStatsWriteLogFile() and other potentially time-consuming APIs if needed
   Modified Feb 2024 JHB, Makefile now defines NO_PKTLIB, NO_HWLIB, and STANDALONE if standalone=1 given on command line
   Modified Feb 2024 JHB, increase MAX_STR_SIZE and adjust max string size in vsnprintf() due to user-reported crash running pcap where one session had 20+ RFC8108 dynamic channel changes (evidently cell tower handoffs) and the run-time stats summary became very large
-  Modified May 2024 JHB, convert to cpp, move DSGetLogTimestamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs to diaglib_util.cpp
+  Modified May 2024 JHB, convert to cpp, move DSGetTimestamp(), DSGetMD5Sum(), and DSGetBacktrace() APIs to diaglib_util.cpp
   Modified May 2024 JHB, remove references to NO_PKTLIB, NO_HWLIB, and STANDALONE. DSInitLogging() now uses dlsym() run-time checks for pktlib and hwlib APIs to eliminate need for a separate stand-alone version of diaglib. Makefile no longer recognizes standalone=1
   Modified Jun 2024 JHB, change last param in in DSConfigLogging() from void* to DEBUG_CONFIG*
   Modified Jun 2024 JHB, some var and struct renaming and comment updates to improve readability
@@ -46,6 +46,7 @@
   Modified Apr 2025 JHB, in Log_RT() fixes and simplification to updating line cursor position, mid-line check, and isLinePreserve
   Modified Jul 2025 JHB, in Log_RT() add color printout for console warnings (yellow) and errors/critical errors (red)
   Modified Jul 2025 JHB, in Log_RT() call console_out(), which calls isStdoutReady() before printf() to avoid blocking if stdout has loss of connectivity
+  Modified Aug 2025 JHB, in DSInitLogging() add terminal color initialization (white)
 */
 
 /* Linux and/or other OS includes */
@@ -82,7 +83,7 @@ using namespace std;
 #include "diaglib_priv.h"
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.9.9";
+const char DIAGLIB_VERSION[256] = "1.9.10";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 
@@ -404,6 +405,8 @@ static uint8_t lock = 0;
 
    sem_post(&diaglib_sem);
 
+   console_out(2, 4, false, (char*)"\033[0m");  /* set terminal text color to white in case for any reason it's something else. console_out() is in diaglib_util.cpp */
+
    return ret_val;
 }
 
@@ -496,7 +499,7 @@ int slen = 0, fmt_start = 0;
 
    if ((lib_dbg_cfg.uEventLogMode & DS_EVENT_LOG_WARN_ERROR_ONLY) && (loglevel & DS_LOG_LEVEL_MASK) > 3) return 0;  /* event log warn and error output only (temporarily) */
 
-/* set a memory barrier, prevent multiple uncoordinated threads from initializing usec_base more than once. Note this same lock also protects usec_base initialization in DSGetLogTimestamp() (in diaglib_util.cpp), JHB May 2024 */
+/* set a memory barrier, prevent multiple uncoordinated threads from initializing usec_base more than once. Note this same lock also protects usec_base initialization in DSGetTimestamp() (in diaglib_util.cpp), JHB May 2024 */
 
    while (__sync_lock_test_and_set(&usec_init_lock, 1) != 0);  /* wait until the lock is zero then write 1 to it. While waiting keep writing a 1 */
 
@@ -528,7 +531,7 @@ int slen = 0, fmt_start = 0;
 
       if (!(loglevel & DS_LOG_LEVEL_NO_TIMESTAMP)) {
 
-         if (DSGetLogTimestamp(&log_string[fmt_start], (unsigned int)lib_dbg_cfg.uEventLogMode, sizeof(log_string), 0)) strcat(log_string, " ");  /* DSGetLogTimestamp() returns length of timestamp, JHB Apr 2024 */
+         if (DSGetTimestamp(&log_string[fmt_start], (unsigned int)lib_dbg_cfg.uEventLogMode, sizeof(log_string), 0)) strcat(log_string, " ");  /* DSGetTimestamp() returns length of timestamp string, JHB Apr 2024 */
       }
 
       int ts_str_len = strlen(log_string);  /* zero or length of timestamp */

@@ -38,7 +38,9 @@ Revision History
   Modified Jan 2021 JHB, fix bug in DSReadPcapRecord() when pcap has VLAN headers (see comments)
   Modified Dec 2021 JHB, modify DSOpenPcap to return packet type (based on EtherType). This allows ARP, LLC frames, etc to be differentiated
   Modified Sep 2022 JHB, adjust warning in DSOpenPcap() for link layer lengths other than standard Ethernet 14 bytes. Add get_link_layer_len() function
+  Modified Sep 2023 JHB, add DSFilterPacket() and DSFindPcapPacket() APIs to support timestamp-matching mode. Currently both are called by DSProcessStreamGroupContributorsTSM() in streamlib.c
   Modified Nov 2023 JHB, modify DSOpenPcap() and DSReadPcapRecord() to handle .rtp (.rtpdump) format
+  Modified Feb 2024 JHB, add start and end optional params to DSFindPcapPacket(), add optional amount read param to DSFilterPacket(), add DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET flag (applicable to both DSFindPcapPacket() and DSFilterPacket()) to specify seek based search vs record based and greatly improve performance of these APIs
   Modified May 2024 JHB, add optional pcap_hdr_t* param to DSOpenReadPcap() so it can reference the file header from a prior DSOpenPcap() call. In DSReadPcapRecord() for .rtp format, use file header values for src/dst IP addr and port to extent possible, instead of hard-coded generic values
   Modified Jun 2024 JHB, rename DSReadPcapRecord() to DSReadPcap(), DSWritePcapRecord() to DSWritePcap(), and DS_READ_PCAP_RECORD_COPY to DS_READ_PCAP_COPY
   Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap(), move pkt_buf_len to fourth param and add uFlags param in DSWritePcap()
@@ -70,6 +72,9 @@ Revision History
                          -interface statistics blocks (ISB). See comments near ISB
   Modified Jun 2025 JHB, add support for multiple SHBs. Currently when encountering a 2nd or more SHB we read the block, discard data, and report it with an info message
   Modified Jun 2025 JHB, allow possibility that pcapng file doesn't have initial IDB; i.e. first block after SHB is an EPB or SPB
+  Modified Aug 2025 JHB, add profiling build-time option for DSFilterPacket() and DSFindPcapPacket(), some simplifications in DSFilterPacket()
+  Modified Aug 2025 JHB, remove hardcoded DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG and DS_PKTLIB_SUPPRESS_INFO_MSG flags from pktlib calls inside DSFindPcapPacket() and DSFilterPacket(), let caller control these
+  Modified Aug 2025 JHB, add uPktNumber param to DSGetPacketInfo() calls per mod in pktlib.h
 */
 
 /* Linux and/or other OS includes */
@@ -545,7 +550,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
    if (!p_block_type) p_block_type = &block_type_local;
 
-   if (uPktNumber) sprintf(szPktNumber, ", pkt#%u", uPktNumber);
+   if (uPktNumber) sprintf(szPktNumber, ", pkt# %u", uPktNumber);
 
 /* read pcap or rtp record header, link layer header, packet data */
 
@@ -652,7 +657,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
 
          int block_len = p_pkt_hdr->incl_len - link_len;
          char szPktNumber[50] = "";
-         if (uPktNumber > 1) sprintf(szPktNumber, ", last transmitted data pkt#%u", uPktNumber-1);
+         if (uPktNumber > 1) sprintf(szPktNumber, ", last transmitted data pkt# %u", uPktNumber-1);
 
          if (!(uFlags & DS_READ_PCAP_SUPPRESS_INFO_MSG)) {
 
@@ -684,7 +689,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
             if (szFilepath) { p = strrchr(szFilepath, '/'); if (!p) p = szFilepath; else p++; }
             int block_len = p_pkt_hdr->incl_len - link_len;
             char szPktNumber[50] = "";
-            if (uPktNumber > 1) sprintf(szPktNumber, ", last transmitted data pkt#%u", uPktNumber-1);  /* for non-packet blocks we show the last packet block number. Applications should not increment packet numbers for non-packet blocks, otherwise their packet numbering won't match Wireshark */
+            if (uPktNumber > 1) sprintf(szPktNumber, ", last transmitted data pkt# %u", uPktNumber-1);  /* for non-packet blocks we show the last packet block number. Applications should not increment packet numbers for non-packet blocks, otherwise their packet numbering won't match Wireshark */
 
             Log_RT(4, "INFO: DSReadPcap() says reading 2 or more SHBs (type = 0x%x)%s%s, ignoring data, block len = %d, link len = %d, uFlags = 0x%x%s%s%s \n", pcapng_block_header.block_type, p ? " in " : "", p ? p : "error in getFilePathFromFilePointer()", block_len, link_len, uFlags, szUserMsgString ? ", " : "", szUserMsgString ? szUserMsgString : "", szPktNumber);
             if (szFilepath) free(szFilepath);
@@ -720,7 +725,7 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
          bool fWarn = false;
 
          char szPktNumber[50] = "";
-         if (uPktNumber > 1) sprintf(szPktNumber, ", last transmitted data pkt#%u", uPktNumber-1);  /* for non-packet blocks we show the last packet block number. Applications should not increment packet numbers for non-packet blocks, otherwise their packet numbering won't match Wireshark */
+         if (uPktNumber > 1) sprintf(szPktNumber, ", last transmitted data pkt# %u", uPktNumber-1);  /* for non-packet blocks we show the last packet block number. Applications should not increment packet numbers for non-packet blocks, otherwise their packet numbering won't match Wireshark */
 
          switch (pcapng_block_header.block_type) {
 
@@ -926,10 +931,10 @@ a few useful constants from if_ether.h (one copy here https://github.com/spotify
       uint32_t pkt_len_fmt = DSFormatPacket(-1, DS_FMT_PKT_STANDALONE | DS_FMT_PKT_USER_HDRALL | DS_FMT_PKT_USER_UDP_PAYLOAD, rtp_data, rtp_len, &format_pkt, pkt_buffer);
 
       #if 0  /* additional .rtp format sanity checks - verify all payload sub lengths match after submitting packet to DSPacketInfo(), JHB Oct 2024 */
-      int pktlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN, pkt_buffer, -1, NULL, NULL);
-      int udplen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_buffer, -1, NULL, NULL);
+      int pktlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN, pkt_buffer, -1, NULL, NULL, 0);
+      int udplen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_buffer, -1, NULL, NULL, 0);
       int rtplen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDLEN, pkt_buffer, -1, NULL, NULL);
-      uint32_t rtp_timestamp = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_TIMESTAMP, pkt_buffer, -1, NULL, NULL);
+      uint32_t rtp_timestamp = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_TIMESTAMP, pkt_buffer, -1, NULL, NULL, 0);
 
       printf("\n *** p_pkt_hdr->incl_len = %u, packet_length = %u, pkt_len_fmt = %u, rtp_len = %u, timestamp = %u.%u sec, pktlib info: pkt len = %d, udp len = %d, rtp pyld len = %d, rtp timestamp = %u \n", p_pkt_hdr->incl_len, packet_length, pkt_len_fmt, rtp_len, p_pkt_hdr->ts_sec, p_pkt_hdr->ts_usec/1000, pktlen, udplen, rtplen, rtp_timestamp);
       #endif
@@ -1105,12 +1110,20 @@ struct timespec       ts = { 0 };
 
 /* DSFilterPcapRecord() reads a pcap file to find the next occurrence of a desired packet type. Notes JHB Sep 2023:
 
-  -currently searches for next RTP packet, filtering out packets specified by DS_FILTER_PKT_xxx flags. To-do: add flags to search for other types
+  -filters out packets specified by DS_FILTER_PKT_xxx flags and continues searching record-by-record. To-do: add flags to search for other types
   -link_layer_info must be given from a prior DSOpenPcap(). Maybe at some point we can get this using only fp (DSOpenPcap() would need to keep track)
   -fills a packet buffer if both fp and pktbuf are given. If pktbuf is given but not pktlen then we get pktlen using DSGetPacketInfo() 
   -fills in a PKTINFO struct with packet info, if specified
+  -pNumRead is returned in records or in bytes if DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET is given in uFlags
+
   -returns packet length if packet search succeeds, 0 if not, or < 0 for error condition
 */
+
+//#define PROFILE  /* enable profiling for DSFilterPacket() and DSFindPcapPacket(). Results are printf'd at end of DSFindPcapPacket(), including main filter time inside filter loop, secondary filter time, pcap per-record read time, DSGetPacketInfo() time, and total number of loops in DSFindPcapPacket(), JHB Aug 2025 */
+
+#ifdef PROFILE
+uint64_t pktinfo_time = 0, pcapread_time = 0;
+#endif
 
 int DSFilterPacket(FILE* fp, unsigned int uFlags, int link_layer_info, pcaprec_hdr_t* p_pcap_rec_hdr, uint8_t* pktbuf, int pktlen, PKTINFO* PktInfo, uint64_t* pNumRead) {
 
@@ -1118,7 +1131,6 @@ int ret_val = -1;
 uint64_t num_read = 0;
 
 PKTINFO PktInfo_local;
-PKTINFO* pPktInfo;
 
 pcaprec_hdr_t pcap_pkt_hdr_local;  /* defined in pktlib.h */
 pcaprec_hdr_t* p_pkt_hdr;
@@ -1132,8 +1144,7 @@ uint64_t cur_pos = 0;
       return -1;
    }
 
-   if (PktInfo) pPktInfo = PktInfo;
-   else pPktInfo = &PktInfo_local;
+   if (!PktInfo) PktInfo = &PktInfo_local;
 
    if (p_pcap_rec_hdr) p_pkt_hdr = p_pcap_rec_hdr;
    else p_pkt_hdr = &pcap_pkt_hdr_local;
@@ -1143,27 +1154,42 @@ uint64_t cur_pos = 0;
    
    uint16_t pkt_type, block_type, input_type = (link_layer_info & PCAP_LINK_LAYER_FILE_TYPE_MASK) >> 16;
 
-   if (input_type == PCAP_TYPE_LIBPCAP || input_type == PCAP_TYPE_PCAPNG) {
+   #ifdef PROFILE
+   uint64_t start_time = 0;
+   struct timespec ts;
+   #endif
 
-   if (fp && (uFlags & DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET)) cur_pos = ftell(fp);
+   if (input_type == PCAP_TYPE_LIBPCAP || input_type == PCAP_TYPE_PCAPNG) {  /* .rtpXXX format files not supported */
+
+      if (fp && (uFlags & DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET)) cur_pos = ftell(fp);
 
 read_packet:
 
       if (fp) {  /* if a file handle given, we read packet and length from the file. Otherwise we assume pktbuf and pktlen params are valid */
 
+         #ifdef PROFILE
+         clock_gettime(CLOCK_MONOTONIC, &ts);
+         start_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+         #endif
+
          pktlen = DSReadPcap(fp, uFlags, pkt_in_buf, p_pkt_hdr, link_layer_info, &pkt_type, &block_type, NULL, 0, NULL);
+
+         #ifdef PROFILE
+         clock_gettime(CLOCK_MONOTONIC, &ts);
+         pcapread_time += ts.tv_sec * 1000000L + ts.tv_nsec/1000 - start_time;
+         #endif
 
          if (uFlags & DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET) {
 
             uint64_t new_pos = ftell(fp);
-            num_read += new_pos - cur_pos;
+            num_read += new_pos - cur_pos;  /* increment by bytes read */
             cur_pos = new_pos;
          }
-         else num_read++;
+         else num_read++;  /* increment by records read */
       }
-      else if (!pktlen) pktlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN, pkt_in_buf, -1, NULL, NULL);
+      else if (!pktlen) pktlen = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTLEN | (uFlags & (DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG | DS_PKTLIB_SUPPRESS_INFO_MSG)), pkt_in_buf, -1, NULL, NULL, 0);  /* get packet length, apply message suppression as specified by caller */
 
-      if (pktlen > 0) {  /* add non IP packet handing, JHB Dec 2021 */
+      if (pktlen > 0) {
 
          if (block_type != PCAP_PB_TYPE && block_type != PCAPNG_EPB_TYPE && block_type != PCAPNG_SPB_TYPE) {  /* ignore IDB, NRB, and other non-packet data block types. See definitions in pktlib.h */
 
@@ -1189,7 +1215,12 @@ read_packet:
 
       /* fill in PktInfo struct with IP, UDP, and RTP header items */
  
-         ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_in_buf, -1, pPktInfo, NULL);  /* note - if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 and a warning message will be printed by DSGetPacketInfo(). We use the DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG and DS_PKTLIB_SUPPRESS_INFO_MSG flags to suppress RTP related warning messages as the packet type is unknown at this point */
+         #ifdef PROFILE
+         clock_gettime(CLOCK_MONOTONIC, &ts);
+         start_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+         #endif
+
+         ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | (uFlags & (DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG | DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG | DS_PKTLIB_SUPPRESS_INFO_MSG)), pkt_in_buf, -1, PktInfo, NULL, 0);  /* fill PktInfo struct, apply message suppression as specified by caller. If packets have not yet been input and/or vetted and there is a chance that packets are malformed (invalid IP version, incorrect header, mismatching length, etc), the message suppression flags should not be given, otherwise return value is < 0 and a warning message will be printed by DSGetPacketInfo() */
 
          if (ret_val < 0) {
             #ifdef PKT_DISCARD_DEBUG
@@ -1204,23 +1235,27 @@ read_packet:
          if ((uFlags & DS_FILTER_PKT_TCP) && protocol == TCP_PROTOCOL) {
             if (fp) goto read_packet;
             else ret_val = -1;
-         } 
+         }
 
          if ((uFlags & DS_FILTER_PKT_UDP) && protocol == UDP_PROTOCOL) {
             if (fp) goto read_packet;
             else ret_val = -1;
-         } 
+         }
 
          if ((uFlags & DS_FILTER_PKT_UDP_SIP) && protocol == UDP_PROTOCOL) {
 
-            uint16_t dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, pPktInfo, NULL);
-            uint16_t src_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_SRC_PORT, pkt_in_buf, -1, pPktInfo, NULL);
+            #if 0  /* use PktInfo, avoid additional DSGetPacketInfo() calls, JHB Aug 2025 */
+            uint16_t dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, pPktInfo, NULL, 0);
+            uint16_t src_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_SRC_PORT, pkt_in_buf, -1, pPktInfo, NULL, 0);
 
             if (dst_port == SIP_PORT || src_port == SIP_PORT) {
+            #else
+            if (PktInfo->dst_port == SIP_PORT || PktInfo->src_port == SIP_PORT) {
+            #endif
                if (fp) goto read_packet;
                else ret_val = -1;
             }
-         } 
+         }
 
          if (protocol != UDP_PROTOCOL && protocol != TCP_PROTOCOL) { /* ignore ICMP and various other protocols */
             #ifdef PKT_DISCARD_DEBUG
@@ -1230,22 +1265,29 @@ read_packet:
             else ret_val = -1;
          }
 
-         if ((uFlags & DS_FILTER_PKT_RTCP) && protocol == UDP_PROTOCOL && (PktInfo->rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && PktInfo->rtp_pyld_type <= RTCP_PYLD_TYPE_MAX)) {
+         if ((uFlags & DS_FILTER_PKT_RTCP) && protocol == UDP_PROTOCOL && (PktInfo->rtp_pyld_type >= RTCP_PYLD_TYPE_MIN && PktInfo->rtp_pyld_type <= RTCP_PYLD_TYPE_MAX)) {  /* skip over RTCP */
 
             if (fp) goto read_packet;
             else ret_val = -1;
          }
- 
-      /* packet has met filter specs, leave num_read pointing at matching packet, return */ 
 
- //printf("\n *** file pos end of filter packet = %llu \n", (unsigned long long)ftell(fp));
+         #ifdef PROFILE
+         clock_gettime(CLOCK_MONOTONIC, &ts);
+         pktinfo_time += ts.tv_sec * 1000000L + ts.tv_nsec/1000 - start_time;
+         #endif
+
+         #if 0
+         printf("\n *** file pos end of filter packet = %llu \n", (unsigned long long)ftell(fp));
+         #endif
+ 
+      /* packet has met filter specs, leave num_read pointing at matching packet, return packet length */ 
 
          ret_val = pktlen;
       }
       else if (pktlen == 0) ret_val = 0;
    }
 
-   if (pNumRead) *pNumRead = num_read;
+   if (pNumRead) *pNumRead = num_read;  /* return records or bytes read */
 
    return ret_val;
 }
@@ -1260,18 +1302,42 @@ pcaprec_hdr_t pcap_pkt_hdr;
 PKTINFO PktInfo_pcap;
 int link_layer_info;
 uint64_t packet_time = 0, offset_count = 0, num_read = 0;
+bool fUseSeek, fFindFirstMatch;
+unsigned int uFlags_filter;
 int ret_val = 0;
 
    if (error_cond) *error_cond = 1;  /* initialize error condition to no error */
 
+   #ifdef PROFILE
+   uint64_t start_time = 0, read_time = 0, filter_time = 0, filter_time2 = 0;
+   struct timespec ts;
+   int num_loops = 0;
+   pktinfo_time = 0;
+   pcapread_time = 0;
+   #endif
+
+   fUseSeek = uFlags & DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET;
+   fFindFirstMatch = uFlags & DS_FIND_PCAP_PACKET_FIRST_MATCHING;
+   uFlags_filter = uFlags | DS_FILTER_PKT_ARP | DS_FILTER_PKT_802 | DS_FILTER_PKT_TCP | DS_FILTER_PKT_UDP_SIP | DS_FILTER_PKT_RTCP;
+
    if ((link_layer_info = DSOpenPcap(szInputPcap, DS_READ | DS_OPEN_PCAP_QUIET, &fp_pcap, NULL, "")) > 0 && fp_pcap) {
+
+      bool fMatchSSRC = false, fMatchTimestamp = false, fMatchSeqnum = false, fMatchPyldType = false;
+      uint32_t rtp_ssrc, rtp_timestamp;
+      uint16_t rtp_seqnum;
+      uint8_t rtp_pyld_type = 0;
+
+      if (uFlags & DS_FIND_PCAP_PACKET_RTP_SSRC) { fMatchSSRC = true; rtp_ssrc = PktInfo->rtp_ssrc; }
+      if (uFlags & DS_FIND_PCAP_PACKET_RTP_TIMESTAMP) { fMatchTimestamp = true; rtp_timestamp = PktInfo->rtp_timestamp; }
+      if (uFlags & DS_FIND_PCAP_PACKET_SEQNUM) { fMatchSeqnum = true; rtp_seqnum = PktInfo->seqnum; }
+      if (uFlags & DS_FIND_PCAP_PACKET_RTP_PYLDTYPE) { fMatchPyldType = true; rtp_pyld_type = PktInfo->rtp_pyld_type; }
 
       uint64_t base_time = 0;
       #ifdef PACKET_TIME_DEBUG
       uint32_t last_rtp_time = 0;
       #endif
 
-      if ((uFlags & DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET) && !offset_start) offset_count = ftell(fp_pcap);  /* account for pcap header read by DSOpenPcap(). The first action inside the loop will overwrite num_read so we use offset_count */
+      if (fUseSeek && !offset_start) offset_count = ftell(fp_pcap);  /* account for pcap header read by DSOpenPcap(). The first action inside the loop will overwrite num_read so we use offset_count */
 
       bool fFound = false;
       #ifdef SEEK_DEBUG
@@ -1280,10 +1346,15 @@ int ret_val = 0;
 
       do {  /* use DSFilterPacket() to read packets and filter for unwanted packet types */
 
+         #ifdef PROFILE
+         clock_gettime(CLOCK_MONOTONIC, &ts);
+         start_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+         #endif
+
          if (offset_end && offset_count > offset_end) break;  /* break out of while loop if we exceed offset_end, JHB Feb 2024 */
          else if (offset_count < offset_start) {  /* skip-over (seek past) or ignore (read) packets already consumed (indicated by offset_start), JHB Feb 2024 */
 
-            if (uFlags & DS_FIND_PCAP_PACKET_USE_SEEK_OFFSET)  {
+            if (fUseSeek)  {
 
                ret_val = 1;  /* ret_val must be > 0 to stay in while loop */
                fseek(fp_pcap, offset_start, SEEK_SET);
@@ -1295,43 +1366,61 @@ int ret_val = 0;
                num_read = 1;  /* num_read is in records */
             }
          }
-         else
-         #ifdef SEEK_DEBUG
-         {
+         else {
+
+            #ifdef SEEK_DEBUG
             if (count == 0) printf("\n *** find packet before first filter packet, ftell = %llu, offset start = %llu, offset_end = %llu, offset_count = %llu, num_read = %llu ", (unsigned long long)ftell(fp_pcap), (unsigned long long)offset_start, (unsigned long long)offset_end, (unsigned long long)offset_count, (unsigned long long)num_read);
             count++;
-         #endif
-
-            if ((ret_val = DSFilterPacket(fp_pcap, uFlags | DS_FILTER_PKT_ARP | DS_FILTER_PKT_802 | DS_FILTER_PKT_TCP | DS_FILTER_PKT_UDP_SIP | DS_FILTER_PKT_RTCP, link_layer_info, &pcap_pkt_hdr, NULL, 0, &PktInfo_pcap, &num_read)) > 0) {
-
-            if (!base_time) base_time = (uint64_t)pcap_pkt_hdr.ts_sec*1000000L + pcap_pkt_hdr.ts_usec;  /* save base time of first RTP packet, regardless of which stream. This is not super accurate depending on the user's capture / network setup, and subject to jitter, but best we can do and still maintain repeatability */
-
-            bool uMatch = true;  /* nested matching logic: start with true, any condition not matching makes it false */
-
-            if ((uFlags & DS_FIND_PCAP_PACKET_RTP_SSRC) && PktInfo_pcap.rtp_ssrc != PktInfo->rtp_ssrc) uMatch = false;
-            if ((uFlags & DS_FIND_PCAP_PACKET_RTP_PYLDTYPE) && PktInfo_pcap.rtp_pyld_type != PktInfo->rtp_pyld_type) uMatch = false;
-            if ((uFlags & DS_FIND_PCAP_PACKET_RTP_TIMESTAMP) && PktInfo_pcap.rtp_timestamp != PktInfo->rtp_timestamp) uMatch = false;
-            if ((uFlags & DS_FIND_PCAP_PACKET_SEQNUM) && PktInfo_pcap.seqnum != PktInfo->seqnum) uMatch = false;
-
-            if (uMatch) {
-
-               packet_time = (uint64_t)pcap_pkt_hdr.ts_sec*1000000L + pcap_pkt_hdr.ts_usec - base_time;  /* continue until we match a packet with required RTP params */
-
-            /* for first matching packet we terminate the loop as soon as one is found. For last matching packet we continue to update packet_time until the pcap is fully read */
-
-               if (uFlags & DS_FIND_PCAP_PACKET_FIRST_MATCHING) fFound = true;  /* done if first match specified */
-
-               if (pFoundOffset) *pFoundOffset = offset_count + num_read;  /* update offset of matching record, JHB Feb 2024 */
-            }
-
-            #ifdef PACKET_TIME_DEBUG
-            else if (last_rtp_time) rtp_time_sum += PktInfo_pcap.rtp_timestamp - last_rtp_time;  /* rtp_time_sum not viable for streams > 2, especially if stream shows up much later or after a pause, then it's unclear how to count total rtp time for multiple earlier streams */
-
-            last_rtp_time = PktInfo_pcap.rtp_timestamp;
             #endif
+
+            #ifdef PROFILE
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+            uint64_t temp_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+            read_time += temp_time - start_time;
+            start_time = temp_time;
+            #endif
+
+            if ((ret_val = DSFilterPacket(fp_pcap, uFlags_filter, link_layer_info, &pcap_pkt_hdr, NULL, 0, &PktInfo_pcap, &num_read)) > 0) {
+
+               #ifdef PROFILE
+               clock_gettime(CLOCK_MONOTONIC, &ts);
+               temp_time = ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+               filter_time += temp_time - start_time;
+               start_time = temp_time;
+               #endif
+
+               if (!base_time) base_time = (uint64_t)pcap_pkt_hdr.ts_sec*1000000L + pcap_pkt_hdr.ts_usec;  /* save base time of first RTP packet, regardless of which stream. This is not super accurate depending on the user's capture / network setup, and subject to jitter, but best we can do and still maintain repeatability */
+
+            /* all conditions must match; continue until we match a packet with required RTP params */
+
+               if (fMatchSSRC && PktInfo_pcap.rtp_ssrc != rtp_ssrc) {}
+               else if (fMatchTimestamp && PktInfo_pcap.rtp_timestamp != rtp_timestamp) {}
+               else if (fMatchSeqnum && PktInfo_pcap.seqnum != rtp_seqnum) {}
+               else if (fMatchPyldType && PktInfo_pcap.rtp_pyld_type != rtp_pyld_type) {}
+
+               else {  /* match found */
+
+                  packet_time = (uint64_t)pcap_pkt_hdr.ts_sec*1000000L + pcap_pkt_hdr.ts_usec - base_time;
+
+               /* if DS_FIND_PCAP_PACKET_FIRST_MATCHING uFlag we are finished. For last matching packet we continue to update packet_time until the pcap is fully read */
+
+                  if (fFindFirstMatch) fFound = true;  /* done if first match specified */
+
+                  if (pFoundOffset) *pFoundOffset = offset_count + num_read;  /* update offset of matching record, JHB Feb 2024 */
+               }
+
+               #ifdef PACKET_TIME_DEBUG
+               else if (last_rtp_time) rtp_time_sum += PktInfo_pcap.rtp_timestamp - last_rtp_time;  /* rtp_time_sum not viable for streams > 2, especially if stream shows up much later or after a pause, then it's unclear how to count total rtp time for multiple earlier streams */
+
+               last_rtp_time = PktInfo_pcap.rtp_timestamp;
+               #endif
+            }
          }
-         #ifdef SEEK_DEBUG
-         }
+
+         #ifdef PROFILE
+         clock_gettime(CLOCK_MONOTONIC, &ts);
+         filter_time2 += ts.tv_sec * 1000000L + ts.tv_nsec/1000 - start_time;
+         num_loops++;
          #endif
 
          offset_count += num_read;
@@ -1349,6 +1438,10 @@ int ret_val = 0;
    if (error_cond && (!fp_pcap || ret_val < 0)) *error_cond = -1;  /* indicate error condition */
 
    if (fp_pcap) DSClosePcap(fp_pcap, DS_CLOSE_PCAP_QUIET);
+
+   #ifdef PROFILE
+   printf("\n *** findpcap read_time = %llu, filter_time = %llu, filter_time2 = %llu, pcapread_time = %llu, pktinfo_time = %llu, num_loops = %d \n", (long long unsigned)read_time, (long long unsigned)filter_time, (long long unsigned)filter_time2, (long long unsigned)pcapread_time, (long long unsigned)pktinfo_time, num_loops);
+   #endif
    
    return packet_time;
 }

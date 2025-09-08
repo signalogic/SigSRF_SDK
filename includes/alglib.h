@@ -98,12 +98,12 @@ int DSConvertFs(void* pData,         /* pointer to input and output data (proces
                 unsigned int uFlags  /* flags */
                );
 
-#define DS_FSCONV_FLOATING_POINT      0x100  /* if the DS_FSCONV_FLOATING_POINT flag is given then input/output data, delay values, and filter coefficient are single precision (32-bit) floating point, otherwise (no flag, which is the defaut) they are integer (16-bit) fixed point. Note - floating-point is in process of being added, JHB Feb2022 */
-#define DS_FSCONV_NO_INTERPOLATE      0x200  /* don't do interpolation (ignore up factor) */
-#define DS_FSCONV_NO_DECIMATE         0x400  /* dont do decimation (ignore down factor) */
-#define DS_FSCONV_NO_FILTER           0x800  /* don't perform filtering */
+#define DS_FSCONV_FLOATING_POINT        0x100  /* if the DS_FSCONV_FLOATING_POINT flag is given then input/output data, delay values, and filter coefficient are single precision (32-bit) floating point, otherwise (no flag, which is the defaut) they are integer (16-bit) fixed point. Note - floating-point is in process of being added, JHB Feb2022 */
+#define DS_FSCONV_NO_INTERPOLATE        0x200  /* don't do interpolation (ignore up factor) */
+#define DS_FSCONV_NO_DECIMATE           0x400  /* dont do decimation (ignore down factor) */
+#define DS_FSCONV_NO_FILTER             0x800  /* don't perform filtering */
 
-#define DS_FSCONV_SATURATE          0x10000  /* saturate result (avoid wrapping in output integer data) */
+#define DS_FSCONV_SATURATE            0x10000  /* saturate result (avoid wrapping in output integer data) */
 
 #define DS_FSCONV_DEBUG_SHOW_SATURATION_OCCURRENCES  0x100000
 
@@ -128,57 +128,61 @@ int DSMergeStreamAudio(unsigned int chnum, int16_t *x1, float x1_scale, int16_t 
 
 int DSMergeStreamAudioEx(unsigned int chnum, unsigned int num_vec, int16_t *x, float* scale, int16_t *y, unsigned int uFlags, int vec_len);
 
-#define DS_AUDIO_MERGE_NONE             0         /* no action */
+#define DS_AUDIO_MERGE_NONE                 0     /* no action */
 #define DS_AUDIO_MERGE_ADD              0x100     /* default operation */
 #define DS_AUDIO_MERGE_ADD_AGC          0x200     /* enable AGC */
 #define DS_AUDIO_MERGE_ADD_SCALING      0x400
 #define DS_AUDIO_MERGE_ADD_COMPRESSION  0x800
 
-#define DS_AUDIO_MERGE_LOUDEST_TALKER   0x1000    /* add only loudest talkers (applies to 3 or more input streams).  This flag may be combined with DS_AUDIO_MERGE_ADD and DS_AUDIO_MERGE_ADD_WITH_AGC flags */
+#define DS_AUDIO_MERGE_LOUDEST_TALKER  0x1000    /* add only loudest talkers (applies to 3 or more input streams).  This flag may be combined with DS_AUDIO_MERGE_ADD and DS_AUDIO_MERGE_ADD_WITH_AGC flags */
 
 void* memadd(void* dst, const void* src, size_t len);
 
 int isArrayZero(uint8_t*, int);
 int isArrayLess(short int* array, int len, int thresh);
+int ScaleArray(short int* array, unsigned int uFlags, int len, float scale_or_limit);
+
+#define DS_SCALE_ARRAY_LIMIT                1
+#define DS_SCALE_ARRAY_SCALE                2
 
 /* convert from one data type to another */
 
 int DSConvertDataFormat(void *in, void *out, uint32_t uFlags, int length);
 
 /* flags for DSConvertDataFormat */
-#define DS_CONVERTDATA_CHAR            0x01
-#define DS_CONVERTDATA_SHORT           0x02
-#define DS_CONVERTDATA_INT             0x03
-#define DS_CONVERTDATA_FLOAT           0x04
-#define DS_CONVERTDATA_DOUBLE          0x05
+#define DS_CONVERTDATA_CHAR              0x01
+#define DS_CONVERTDATA_SHORT             0x02
+#define DS_CONVERTDATA_INT               0x03
+#define DS_CONVERTDATA_FLOAT             0x04
+#define DS_CONVERTDATA_DOUBLE            0x05
 
 /* audio segmentation and strip flags (value of N in -sN mediaTest command line option) */
 
-#define DS_SEGMENT_AUDIO               0x01      /* segment audio input into intervals based on audio content.  Notes:
+#define DS_SEGMENT_AUDIO                 0x01      /* segment audio input into intervals based on audio content.  Notes:
 
                                                     -if DS_SEGMENT_ADJUST is given, minimum target interval duration is given by command line interval entry -IN (N is in msec).  If no cmd line interval entry is given, default minimum interval is 250 msec
                                                     -if DS_SEGMENT_ADJUST is not given, segmentation is done strictly by interval. If no cmd line interval entry is given, default maximum interval is 2000 msec
                                                  */
 
-#define DS_SEGMENT_ADJUST              0x02      /* adjust intervals to be on non-speech boundaries, based on DS_STRIP_xxx flags below (ignored if no DS_STRIP_xxx flags are given) */
+#define DS_SEGMENT_ADJUST                0x02      /* adjust intervals to be on non-speech boundaries, based on DS_STRIP_xxx flags below (ignored if no DS_STRIP_xxx flags are given) */
 
-#define DS_SEGMENT_TRIM                0x04      /* trim silence and/or sounds from segment ends, but not within segments, based on DS_STRIP_xxx flags below (ignored if no DS_STRIP_xxx flags are given) */
+#define DS_SEGMENT_TRIM                  0x04      /* trim silence and/or sounds from segment ends, but not within segments, based on DS_STRIP_xxx flags below (ignored if no DS_STRIP_xxx flags are given) */
 
-#define DS_SEGMENT_TIMESTAMPS_TEXT     0x08      /* write interval timestamps to text file.  The text filename is the same as the input audio file (e.g. wav file) suffixed with _seg_ts.txt */
-#define DS_SEGMENT_TIMESTAMPS_SCREEN   0x10      /* print to screen interval timestamps */
+#define DS_SEGMENT_TIMESTAMPS_TEXT       0x08      /* write interval timestamps to text file.  The text filename is the same as the input audio file (e.g. wav file) suffixed with _seg_ts.txt */
+#define DS_SEGMENT_TIMESTAMPS_SCREEN     0x10      /* print to screen interval timestamps */
 
 /* following constants specify generation of additional audio output files, which can be utilized as needed or overlaid on the input audio to analyze segmentation quality */
 
-#define DS_SEGMENT_OUTPUT_CONCATENATE  0x20      /* create audio file with segments concatenated.  The output filename is the input name with suffix "concat" */
-#define DS_SEGMENT_OUTPUT_STRIPPED     0x40      /* create audio file showing content that was stripped.  The output filename is the input name with suffix "stripped" */
-#define DS_SEGMENT_ADD_MARKERS         0x80      /* may be used with OUTPUT_CONCATENATE and OUTPUT_STRIPPED flags to show markers at segment boundaries.  Markers are 2 samples, one max negative and one max positive */
+#define DS_SEGMENT_OUTPUT_CONCATENATE    0x20      /* create audio file with segments concatenated.  The output filename is the input name with suffix "concat" */
+#define DS_SEGMENT_OUTPUT_STRIPPED       0x40      /* create audio file showing content that was stripped.  The output filename is the input name with suffix "stripped" */
+#define DS_SEGMENT_ADD_MARKERS           0x80      /* may be used with OUTPUT_CONCATENATE and OUTPUT_STRIPPED flags to show markers at segment boundaries.  Markers are 2 samples, one max negative and one max positive */
 
 /* audio strip flags, may be used with / without segmentation */
 
 #define DS_STRIP_SILENCE               0x1000    /* strip silence and background noise from audio input */
 #define DS_STRIP_SOUNDS                0x2000    /* strip sounds from audio input (i.e. non-voice sounds music, tones, etc) */
 
-#define DS_SEGMENT_DEBUG_INFO          0x100000  /* display additional segmentation debug info */
+#define DS_SEGMENT_DEBUG_INFO        0x100000  /* display additional segmentation debug info */
 
 
 /* APIs to be moved here from c66x and other lib source code dating prior to 2010:

@@ -68,6 +68,7 @@
    Modified Mar 2025 JHB, remove debug print flag from cimGetCmdLine() uFlags for mediaMin and mediaTest apps
    Modified Apr 2025 JHB, comments only
    Modified Jul 2025 JHB, add fShow_stdout_ready_profile to support --profile_stdout_ready command line option, add fExclude_payload_type_from_key to support --exclude_payload_type_from_key command line option
+   Modified Aug 2025 JHB, add uStdoutMode to support --stdout_mode command line option
 */
 
 #ifdef __cplusplus
@@ -144,6 +145,8 @@ bool             fShow_sha1sum = false;
 bool             fShow_sha512sum = false;
 bool             fShow_stdout_ready_profile = false;
 bool             fExclude_payload_type_from_key = false;
+bool             fDisable_codec_flc = false;
+uint8_t          uStdoutMode_apps = 0;
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 
@@ -335,6 +338,10 @@ int i;
    if (userIfs.CmdLineFlags.stdout_ready_profile) fShow_stdout_ready_profile = true;
 
    if (userIfs.CmdLineFlags.exclude_payload_type_from_key) fExclude_payload_type_from_key = true;
+
+   if (userIfs.CmdLineFlags.disable_codec_flc) fDisable_codec_flc = true;
+
+   uStdoutMode_apps = userIfs.CmdLineFlags.stdout_mode;
 
    for (i=0; i<MAX_STREAMS; i++) {
    

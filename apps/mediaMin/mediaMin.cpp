@@ -170,7 +170,7 @@
    Modified Jul 2024 JHB, set DS_PKTSTATS_ORGANIZE_COMBINE_SSRC_CHNUM packet logging flag in DSWritePacketStatsHistoryLog() uFlags if DISABLE_DORMANT_SESSION_DETECTION cmd line option is set (see diaglib.h for flag info)
    Modified Jul 2024 JHB, mods to isDuplicatePacket() and isReservedUDP() after regression test
    Modified Jul 2024 JHB, per changes in pktlib.h due to documentation review, DS_OPEN_PCAP_READ_HEADER and DS_OPEN_PCAP_WRITE_HEADER flags are no longer required in DSOpenPcap() calls, move uFlags to second param in DSReadPcap() and DSConfigMediaService(), add uFlags param and move pkt buffer len to fourth param in DSWritePcap()
-   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, move uFlags to second param in calls to DSGetLogTimestamp() and DSWritePacketStatsHistoryLog(), support --group_ccap_nocopy command line option
+   Modified Jul 2024 JHB, per changes in diaglib.h due to documentation review, move uFlags to second param in calls to DSGetTimestamp() and DSWritePacketStatsHistoryLog(), support --group_ccap_nocopy command line option
    Modified Jul 2024 JHB, modify calls to DSWritePcap() to add pcap_hdr_t*, remove timestamp (struct timespec*) and TERMINFO_INFO* params (the packet record header param now supplies a timestamp, if any, and IP type is read from packet data in pkt_buf). See pktlib.h comments
    Modified Jul 2024 JHB, improve detection for EVS AMR IO modes 23.05 and 23.85 kbps
    Modified Jul 2024 JHB, clarify usage of ENABLE_WAV_OUTPUT and ENABLE_TIMESTAMP_MATCH_MODE flag
@@ -216,6 +216,9 @@
    Modified Jun 2025 JHB, implement ENABLE_SSRC_STREAM_JOINING flag, which allows a session with different IP addrs/ports to be joined with previous sessions if their SSRCs match. This flag should only be applied when DYNAMIC_SESSIONS is enabled. FindStream() reworked and moved to session_app.cpp to support this
    Modified Jun 2025 JHB, pass packet number to DSReadPcap() for warning/info message reporting
    Modified Jul 2025 JHB, change DISABLE_DORMANT_SESSION_DETECTION to ENABLE_DORMANT_SESSIONS. packet/media flow worker threads continue to detect and report sessions with duplicated and reused SSRCs, but not dormant session functionality by default. If ENABLE_DORMANT_SESSIONS is set in -dN cmd line input then CreateDynamicSessions() sets TERM_ENABLE_DORMANT_SESSIONS in session uFlags
+   Modified Aug 2025 JHB, add uPktNumber param to DSGetPacketInfo() calls per mod in pktlib.h
+   Modified Aug 2025 JHB, call SetStdoutMode() before DSInitLogging(). See comments in console_out() in diaglib_util.cpp
+   Modified Aug 2025 JHB, improvements in redundant packet detecton - check for duplicate packets in both input flow, reassembled flow, and vs each other. See instances of calls to DSIsPacketDuplicate()
 */
 
 /* Linux header files */
@@ -577,6 +580,8 @@ char tmpstr[MAX_APP_STR_LEN];  /* large temporary string used for various purpos
       if (Mode & CREATE_DELETE_TEST_PCAP) TimerSetup();
 
    /* logging, library init, and config */
+
+      SetStdoutMode(uStdoutMode_apps);  /* default stdout mode 0 is non-blocking, other modes are 1 for stdout polling, and 2 for blocking and no polling. Can be set with --stdout_mode command line option (no entry is mode 0), JHB Aug 2025 */
 
       LoggingSetup(&dbg_cfg, LOG_EVENT_SETUP);  /* set up library event logging, dbg_cfg struct is defined in shared_include/config.h */
 
@@ -1356,7 +1361,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
          case 33:
             if (rtp_pyld_len == 33 && rtp_pkt[0] == 0xf4) {  /* check possible exception to cat 1 entry: 13200 EVS compact header, JHB Jul 2024 */
 
-               PAYLOAD_INFO PayloadInfo_EVS = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+               PAYLOAD_INFO PayloadInfo_EVS = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
                DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS, NULL, -1, NULL, NULL);
 
                if (!PayloadInfo_EVS.voice.CMR && !PayloadInfo_EVS.voice.fAMRWB_IO_Mode) goto cat4;
@@ -1377,7 +1382,7 @@ int detect_codec_type_and_bitrate(uint8_t* rtp_pkt, uint32_t rtp_pyld_len, unsig
          case 31:  /* 31 is probably a cat 1 error. AMR 12200 bandwidth efficient mode is 32, octet aligned is 33 */
          case 32:
 
-            PAYLOAD_INFO PayloadInfo_EVS = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_EVS = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (rtp_pyld_len == 32) DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS, NULL, -1, NULL, NULL);
 
             if ((!PayloadInfo_EVS.voice.fAMRWB_IO_Mode || PayloadInfo_EVS.voice.CMR) && (rtp_pkt[0] & 0xf) == 3 && (rtp_pkt[1] & 0xc0) == 0xc0 && (rtp_pkt[rtp_pyld_len-1] & 3) == 0 && (!codec_type || codec_type == AMR_NB)) {  /* additional checks for bandwidth efficient mode, JHB Jul 2024 */
@@ -1417,7 +1422,7 @@ cat4:
          {
          /* check for valid EVS and AMR SIDs by calling DSGetPayloadInfo() API in voplib, which does an exact and thorough check, including EVS AMR-WB IO mode. If not found, then we fall through to non-SID detection case statements, JHB Jun 2023 */
 
-            PAYLOAD_INFO PayloadInfo_EVS = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_EVS = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS, NULL, -1, NULL, NULL);
 
             if (PayloadInfo_EVS.voice.fSID || codec_type == EVS) {
@@ -1472,7 +1477,7 @@ cat4:
       case 9:
          if (!codec_type || codec_type == EVS) {
 
-            PAYLOAD_INFO PayloadInfo_EVS = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_EVS = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             DSGetPayloadInfo(DS_CODEC_VOICE_EVS, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_EVS, NULL, -1, NULL, NULL);
 
             if (!PayloadInfo_EVS.voice.fAMRWB_IO_Mode && !PayloadInfo_EVS.voice.fSID && (rtp_pkt[0] & 0x80) && rtp_pkt[1] == 0) {
@@ -1513,7 +1518,7 @@ cat4:
 
          /* next look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
                if ((rtp_pyld_len == 15 && PayloadInfo_AMR.BitRate[0] == 5150) || codec_type == AMR_NB) {
@@ -1559,7 +1564,7 @@ cat4:
          {
          /* first look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
                if (((rtp_pyld_len == 18 || rtp_pyld_len == 19) && PayloadInfo_AMR.BitRate[0] == 6600) || codec_type == AMR_WB) {
@@ -1597,7 +1602,7 @@ cat4:
          {
          /* first look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
                if (((rtp_pyld_len == 20 || rtp_pyld_len == 21) && PayloadInfo_AMR.BitRate[0] == 7400) || codec_type == AMR_NB) {
@@ -1615,7 +1620,7 @@ cat4:
          {
          /* look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
                if ((rtp_pyld_len == 22 && PayloadInfo_AMR.BitRate[0] == 7950) || codec_type == AMR_NB) {
@@ -1631,7 +1636,7 @@ cat4:
          {
          /* first look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
                if (((rtp_pyld_len == 24 || rtp_pyld_len == 25) && PayloadInfo_AMR.BitRate[0] == 8850) || codec_type == AMR_WB) {
@@ -1661,7 +1666,7 @@ cat4:
          {
          /* first look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_NB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
                if (((rtp_pyld_len == 27 || rtp_pyld_len == 28) && PayloadInfo_AMR.BitRate[0] == 10200) || codec_type == AMR_NB) {
@@ -1691,7 +1696,7 @@ cat4:
             }
          }
 
-      case 33:  /* EVS 13200 bps, 33 for compact header format, 34 for full header format, 35 for full header with CMR byte */
+      case 33:  /* 1) EVS 13200 bps, 33 for compact header format, 34 for full header format, 35 for full header with CMR byte, or 2) AMR-WB 12650 bandwidth efficient */
 
          if ((!codec_type || codec_type == AMR_NB) && !(rtp_pkt[0] & 0x80) && !(rtp_pkt[0] & 0x0f) && rtp_pyld_len > 6) {  /* look for AMR 12200 octet-aligned with CMR byte, last 4 bits of first byte must be zero. Note for octet-aligned AMR SID RTP payload size must be > 6, JHB Jan 2023 */
             *bitrate = 12200;
@@ -1699,12 +1704,12 @@ cat4:
          }
       case 34:
          {
-         /* first look for AMR octet-aligned, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
+         /* first look for AMR (both bandwidth efficient and octet-aligned), it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
-               if ((rtp_pyld_len == 34 && PayloadInfo_AMR.BitRate[0] == 12650) || codec_type == AMR_WB) {
+               if (((rtp_pyld_len == 33 || rtp_pyld_len == 34) && PayloadInfo_AMR.BitRate[0] == 12650) || codec_type == AMR_WB) {  /* note - AMR-WB bandwidth efficient is checked also under category 1, which can occasionally fail, Aug 2025 */
                   *bitrate = 12650;
                   return AMR_WB;
                }
@@ -1727,7 +1732,7 @@ cat4:
          {
          /* look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
                if (((rtp_pyld_len == 37 || rtp_pyld_len == 38) && PayloadInfo_AMR.BitRate[0] == 14250) || codec_type == AMR_WB) {
@@ -1771,7 +1776,7 @@ cat4:
          {
          /* look for AMR, it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
                if (((rtp_pyld_len == 47 || rtp_pyld_len == 48) && PayloadInfo_AMR.BitRate[0] == 18250) || codec_type == AMR_WB) {
@@ -1794,7 +1799,7 @@ cat4:
 
          /* look for AMR first as it's highly unlikely DSGetPayloadInfo() finds an error-free payload header and size and the payload header ToC FT field indicates correct bitrate. See PAYLOAD_INFO struct in voplib.h for more info, JHB Dec 2024 */
 
-            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+            PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
             if (DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, rtp_pkt, rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL) >= 0) {
 
                if (((rtp_pyld_len == 59 || rtp_pyld_len == 60) && PayloadInfo_AMR.BitRate[0] == 23050) || codec_type == AMR_WB) {
@@ -2065,7 +2070,7 @@ char szOutOfSpecRTPPadding[100] = "";
 
       if (PktInfo.rtp_pyld_len == 2) {
 
-         PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typdef */
+         PAYLOAD_INFO PayloadInfo_AMR = {};  /* use aggregate initialization as PAYLOAD_INFO contains a typedef */
          PAYLOAD_INFO PayloadInfo_EVS = {};
 
          DSGetPayloadInfo(DS_CODEC_VOICE_AMR_WB, DS_CODEC_INFO_TYPE | DS_VOPLIB_SUPPRESS_WARNING_ERROR_MSG, &pkt[PktInfo.rtp_pyld_ofs], PktInfo.rtp_pyld_len, &PayloadInfo_AMR, NULL, -1, NULL, NULL);
@@ -2241,6 +2246,7 @@ err_msg:
    if (Mode & ENABLE_DORMANT_SESSIONS) session->term1.uFlags |= TERM_ENABLE_DORMANT_SESSION;
    if (Mode & ENABLE_SSRC_STREAM_JOINING) session->term1.uFlags |= TERM_ENABLE_SSRC_SESSION_MATCHING;
    if (fExclude_payload_type_from_key) session->term1.uFlags |= TERM_EXCLUDE_RTP_PAYLOAD_TYPE;
+   if (fDisable_codec_flc) session->term1.uFlags |= TERM_DISABLE_CODEC_FLC;
 
    session->term1.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
    session->term1.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets() (see usage example in packet_flow_media_proc.c). Default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
@@ -2450,6 +2456,7 @@ err_msg:
    if (Mode & ENABLE_DORMANT_SESSIONS) session->term2.uFlags |= TERM_ENABLE_DORMANT_SESSION;
    if (Mode & ENABLE_SSRC_STREAM_JOINING) session->term2.uFlags |= TERM_ENABLE_SSRC_SESSION_MATCHING;
    if (fExclude_payload_type_from_key) session->term2.uFlags |= TERM_EXCLUDE_RTP_PAYLOAD_TYPE;
+   if (fDisable_codec_flc) session->term2.uFlags |= TERM_DISABLE_CODEC_FLC;
 
    session->term2.uFlags |= TERM_DYNAMIC_SESSION;  /* set for informational purposes. Applications should apply this flag for dynamically created sessions in order to see correct stats reported by packet/media threads, although functionality is not affected if the flag is omitted. See also comments in shared_include/session.h */
    session->term2.RFC7198_lookback = uLookbackDepth;  /* number of packets to lookback for RFC7198 de-duplication in DSRecvPackets() (see packet_media_flow_proc.c for usage example). Default is 1 if no entry on cmd line (see getUserInfo() in get_user_interface.cpp). Zero entry (-l0) disables. Max allowed is 8, JHB May 2023 */
@@ -2786,7 +2793,7 @@ next_packet:  /* next packet input */
 
                   thread_info[tId].packet_number[j]++;
 
-               /* non-IP packet handling. Standard Ethernet protocols are ETH_P_IP and ETH_P_IPV6 (defined in if_ether.h Linux header file) but several others are common enough we look for them and ignore if found, JHB Dec 2021. Note that DSGetPacketInfo() now has rudimentary non-IP packet handling; the ethernet protocol can be given in pInfo and the DS_PKT_INFO_PINFO_CONTAINS_ETH_PROTOCOL flag applied, GetInputData() uses this, JHB Apr 2025 */
+               /* non-IP packet handling. Standard Ethernet protocols are ETH_P_IP and ETH_P_IPV6 (defined in if_ether.h Linux header file) but several others are common enough we look for them and ignore if found, JHB Dec 2021. Note that DSGetPacketInfo() now has rudimentary non-IP packet handling; an ethernet protocol can be given in pInfo and the DS_PKT_INFO_PINFO_CONTAINS_ETH_PROTOCOL flag applied (see GetInputData() for example usage), JHB Apr 2025 */
 
                   if (isNonIPPacket(eth_protocol)) goto next_packet;
 
@@ -2795,7 +2802,15 @@ next_packet:  /* next packet input */
 
             /* fill in PktInfo struct with IP items. UDP and RTP header items are also filled, depending on IP protocol(s) found in the packet. See the PKTINFO struct in pktlib.h */
 
-               pkt_info_ret_val = DSGetPacketInfo(-1, uFlags, pkt_buf, -1, &PktInfo, NULL);  /* if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 */
+               pkt_info_ret_val = DSGetPacketInfo(-1, uFlags, pkt_buf, -1, &PktInfo, NULL, thread_info[tId].packet_number[j]);
+
+               if (pkt_info_ret_val < 0) {  /* if packet is malformed (invalid IP version, incorrect header, mismatching length, etc) return value is < 0 and we don't handle the packet any further */
+
+                  #ifdef PKT_DISCARD_DEBUG
+                  printf("************* invalid IP version or malformed packet, pkt type = %d, pkt len = %d \n", eth_protocol, pkt_len);
+                  #endif
+                  goto next_packet;
+               }
 
                #if 0  // debug
                if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) printf("\n *** mediaMin packet fragment added, protocol = %d, pkt# %u, pkt info ret val = 0x%x \n", PktInfo.protocol, thread_info[tId].packet_number[j], pkt_info_ret_val);
@@ -2809,14 +2824,6 @@ next_packet:  /* next packet input */
                   goto protocol_based_processing;
                }
 
-               if (pkt_info_ret_val < 0) {
-
-                  #ifdef PKT_DISCARD_DEBUG
-                  printf("************* invalid IP version or malformed packet, pkt type = %d, pkt len = %d \n", eth_protocol, pkt_len);
-                  #endif
-                  goto next_packet;
-               }
-
                if (PktInfo.protocol != UDP && PktInfo.protocol != TCP) { /* ignore ICMP, ESP encrypted payloads, VRRP, and various other protocols. Contact Signalogic if you need help implementing a new protocol or have protocol-related suggestions for the developers. Examples might include new encapsulation protocols, new media codecs, etc. */
 
                   #ifdef PKT_DISCARD_DEBUG
@@ -2825,24 +2832,34 @@ next_packet:  /* next packet input */
 
                /* remove any saved fragments for protocols that we're not going to process; e.g. ESP (protocol == ENCAPSULATING_SECURITY_PAYLOAD in pktlib.h) */
 
-                  if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) pkt_info_ret_val = DSGetPacketInfo(-1, (uFlags & ~DS_PKT_INFO_FRAGMENT_SAVE) | DS_PKT_INFO_FRAGMENT_REMOVE, pkt_buf, -1, NULL, NULL);
+                  if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) pkt_info_ret_val = DSGetPacketInfo(-1, (uFlags & ~DS_PKT_INFO_FRAGMENT_SAVE) | DS_PKT_INFO_FRAGMENT_REMOVE, pkt_buf, -1, NULL, NULL, thread_info[tId].packet_number[j]);
 
                   goto next_packet;
                }
 
-            /* check for duplicated packets */
+            /* check for duplicate packets, notes:
 
-               if (DSIsPacketDuplicate((unsigned int)0, &PktInfo, &thread_info[tId].PktInfo[j], &thread_info[tId].packet_number[j])) {
+               -we check both input packet flow and reassembled packet flow for duplicates. For example a reassembled packet might be a duplicate of previous TSO/LSO packet, or vice-versa. One test case of this is k..ip6only.pcap
+               -packet fragments can be duplicates, for example an endpoint might send every fragment twice (or more than that) for redundancy purposes. For clean packet reassembly it's important to remove redundant fragments
+               -DSIsPacketDuplicate() first checks things like packet size, version, and protocol, so typically it's very quick
+               -DSIsPacketDuplicate() is in pktlib_RFC791_fragmentation.cpp
+             */
+
+               if (DSIsPacketDuplicate((unsigned int)0, &PktInfo, &thread_info[tId].PktInfo[j], &thread_info[tId].packet_number[j]) ||
+                   DSIsPacketDuplicate((unsigned int)0, &PktInfo, &thread_info[tId].PktInfo_Reassembled[j], &thread_info[tId].packet_number[j])
+                  ) {
 
                   if (PktInfo.protocol == TCP) thread_info[tId].tcp_redundant_discards[j]++;  /* increment number of redundant TCP transmissions discarded for input stream */
                   else thread_info[tId].udp_redundant_discards[j]++;  /* increment number of redundant UDP packets discarded for input stream */
 
                /* remove any duplicate saved packet fragments */
 
-                  if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) pkt_info_ret_val = DSGetPacketInfo(-1, (uFlags & ~DS_PKT_INFO_FRAGMENT_SAVE) | DS_PKT_INFO_FRAGMENT_REMOVE, pkt_buf, -1, NULL, NULL);
+                  if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) pkt_info_ret_val = DSGetPacketInfo(-1, (uFlags & ~DS_PKT_INFO_FRAGMENT_SAVE) | DS_PKT_INFO_FRAGMENT_REMOVE, pkt_buf, -1, NULL, NULL, thread_info[tId].packet_number[j]);
 
                   goto next_packet;  /* discard duplicated / redundant packets */
                }
+
+            /* not a duplicate, continue processing */
 
                if (pkt_info_ret_val & DS_PKT_INFO_RETURN_FRAGMENT_SAVED) thread_info[tId].num_packets_fragmented[j]++;
 
@@ -2879,7 +2896,7 @@ next_packet:  /* next packet input */
 
 #if 0  /* another debug example showing how to find/filter packet(s) for stream manipulation  */
     __uint128_t src_ip_addr = 0;
-   DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_SRC_ADDR, pkt_buf, -1, &src_ip_addr, NULL);
+   DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_SRC_ADDR, pkt_buf, -1, &src_ip_addr, NULL, 0);
    if (/*src_ip_addr == 0xc0a88615 || src_ip_addr == 0x0a0e0742 || */ rtp_ssrc == 0xbbf51b9c && (/*rtp_pyld_len == 63 || rtp_pyld_len == 35 || */ PktInfo.rtp_pyld_len == 8)) {  /* 0xc0a88615 -> 192.168.134.21 */
 
       printf(" filtering packet with src ip addr 0x%llx != 192.168.134.21 or rtp ssrc 0x%x \n", (long long unsigned int)src_ip_addr, PktInfo.rtp_ssrc);
@@ -2948,7 +2965,7 @@ next_packet:  /* next packet input */
             if (pkt_len > 0 && (Mode & ENABLE_INTERMEDIATE_PCAP)) {  /* format BER data into TCP/IP packet and generate pcap output if specified in cmd line flags, JHB Dec 2021*/
 
                PacketActions(ber_data, pkt_buf, (PktInfo.protocol = TCP), &pkt_len, PCAP_TYPE_BER);
-               pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO, pkt_buf, -1, &PktInfo, NULL);  /* update PktInfo */
+               pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO, pkt_buf, -1, &PktInfo, NULL, 0);  /* update PktInfo */
             }
 
          }  /* end of input_type checks */
@@ -3010,11 +3027,11 @@ next_packet:  /* next packet input */
                if (isAFAPMode() || isFTRTMode()) strcpy(descripstr, "processing");
                unsigned int uFlags = DS_EVENT_LOG_USER_TIMEVAL;
                if (thread_info[tId].total_pkt_time[j] < 60*1000000) uFlags |= DS_EVENT_LOG_TIMEVAL_PRECISION_MSEC;  /* use msec precision if time is under 60 sec, JHB Apr 2025 */
-               DSGetLogTimestamp(proctimestr, uFlags, sizeof(proctimestr), thread_info[tId].total_pkt_time[j]);  /* apply DSGetLogTimestamp() to user-specified time value to format as hours:min:sec (hours not shown if not > 0), JHB Feb 2024 */
+               DSGetTimestamp(proctimestr, uFlags, sizeof(proctimestr), thread_info[tId].total_pkt_time[j]);  /* apply DSGetTimestamp() to user-specified time value to format as hours:min:sec (hours not shown if not > 0), JHB Feb 2024 */
                sprintf(tmpstr, "=== mediaMin INFO: %sinput pcap[%d] %s time %s", !(Mode & USE_PACKET_ARRIVAL_TIMES) ? "estimated " : "", j, descripstr, proctimestr);
 
                if (isFTRTMode()) {  /* show both processing and media time in FTRT mode */
-                  DSGetLogTimestamp(mediatimestr, DS_EVENT_LOG_USER_TIMEVAL, sizeof(mediatimestr), thread_info[tId].total_pkt_time[j]*timeScale);
+                  DSGetTimestamp(mediatimestr, DS_EVENT_LOG_USER_TIMEVAL, sizeof(mediatimestr), thread_info[tId].total_pkt_time[j]*timeScale);
                   sprintf(&tmpstr[strlen(tmpstr)], ", media time %s", mediatimestr);
                }
 
@@ -3102,7 +3119,7 @@ protocol_based_processing:
 
                if (fFoundEncapsulatedCCPkt) {  /* CC UDP packet found, set protocol to UDP/RTP, update PktInfo */
 
-                  pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_buf, -1, &PktInfo, NULL);  /* note we suppress info messages (like extended RTP header length, etc) but we allow error messages because we expect UDP/RTP and we'd like to know if that's not the case ... might need to change this, JHB Jan 2023 */
+                  pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_buf, -1, &PktInfo, NULL, thread_info[tId].packet_number[j]);  /* note we suppress info messages (like extended RTP header length, etc) but we allow error messages because we expect UDP/RTP and we'd like to know if that's not the case ... might need to change this, JHB Jan 2023 */
 
                   if (PktInfo.protocol != UDP) Log_RT(3, "mediaMin WARNING: DER decoded packet not UDP format \n");
                   else thread_info[tId].num_packets_encapsulated[j]++;
@@ -3203,12 +3220,30 @@ protocol_based_processing:
 
             if (pkt_info_ret_val & DS_PKT_INFO_RETURN_REASSEMBLED_PACKET_AVAILABLE) {  /* if a fully reassembled packet is available then read whole packet into pkt_buf and update pkt_len and PktInfo */
 
-               pkt_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKT_INFO_REASSEMBLY_GET_PACKET | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_buf, -1, &PktInfo, NULL);  /* notes - (i) pkt_buf will be overwritten with reassembled packet data so it can be much larger than MTU size at this point, (ii) PktInfo fields pkt len, UDP len, and RTP payload len will be updated */
+               pkt_info_ret_val = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PKTINFO | DS_PKT_INFO_REASSEMBLY_GET_PACKET | DS_PKTLIB_SUPPRESS_INFO_MSG, pkt_buf, -1, &PktInfo, NULL, thread_info[tId].packet_number[j]);  /* notes - (i) pkt_buf will be overwritten with reassembled packet data so it can be much larger than MTU size at this point, (ii) PktInfo fields pkt len, UDP len, and RTP payload len will be updated */
 
-               if (pkt_len > 0) thread_info[tId].num_packets_reassembled[j]++;
+               if (pkt_info_ret_val < 0) continue;
 
-               #if 0
-               printf("\n *** mediaMin reassembled pkt# %u length = %d, src port = %d, dst port = %d \n", thread_info[tId].packet_number[j], pkt_len, thread_info[tId].src_port[j], thread_info[tId].dst_port[j]);
+               pkt_len = PktInfo.pkt_len;
+               thread_info[tId].num_packets_reassembled[j]++;
+
+            /* check if the reassembled packet is a duplicate of a previous packet, either in the input flow or the reassembled flow. See duplicate packet notes above */
+  
+               if (DSIsPacketDuplicate((unsigned int)0, &PktInfo, &thread_info[tId].PktInfo[j], &thread_info[tId].packet_number[j]) ||
+                   DSIsPacketDuplicate((unsigned int)0, &PktInfo, &thread_info[tId].PktInfo_Reassembled[j], &thread_info[tId].packet_number[j])
+                  ) {
+
+                  if (PktInfo.protocol == TCP) thread_info[tId].tcp_redundant_discards[j]++;  /* increment number of redundant TCP transmissions discarded for input stream */
+                  else thread_info[tId].udp_redundant_discards[j]++;  /* increment number of redundant UDP packets discarded for input stream */
+
+                  continue;  /* discard duplicated / redundant packets */
+               }
+
+               thread_info[tId].PktInfo_Reassembled[j] = PktInfo;  /* save packet info for duplicate packet comparison. To-do: check reassembled packets with previously reassembled packets for duplicates (we would probably need to add a separate .PktInfoReassembled[] to thread_info), JHB Aug 2025 */
+
+               #ifdef REASSEMBLE_DEBUG  /* define to show packet reassembly info for first few packets */
+               static int count = 0;
+               if (count < 5) printf("\n *** mediaMin debug: input pkt# %d is reassembled in PushPackets(), count %d, IP version = %d, protocol = %d, pkt len = %d, src_port = %hu, dst_port = %hu \n", thread_info[tId].packet_number[j], ++count, PktInfo.version, PktInfo.protocol, pkt_len, PktInfo.src_port, PktInfo.dst_port);
                #endif
             }
 
@@ -3469,7 +3504,7 @@ rtp_packet_processing:
          if (isRTCPPacket(PktInfo.rtp_pyld_type) && RealTimeInterval[0] > 1 && !(Mode & USE_PACKET_ARRIVAL_TIMES)) goto next_packet;  /* move on to next packet. isRTCPPacket() macro is defined in pktlib.h */
          #endif
 
-         if (PktInfo.rtp_pyld_len <= 0 || PktInfo.rtp_version != 2) {
+         if (PktInfo.rtp_pyld_len < 0 || PktInfo.rtp_version != 2) {  /* note that we allow RTP payload size zero, for example audio codec packets following a SID with no content but with valid sequence numbers and timestamps */
 
             bool fShowUnhandled = false, isCustomRTCP = isRTCPCustomPacket(PktInfo.rtcp_pyld_type);  /* isRTCPCustomPacket() macro is defined in pktlib.h */
             char errstr[100] = "";
@@ -3479,7 +3514,7 @@ rtp_packet_processing:
             #endif
 
             if (fShowUnhandled || (fShowWarnings && !isCustomRTCP)) {
-               if (PktInfo.rtp_pyld_len <= 0) sprintf(errstr, "invalid RTP payload size %d", PktInfo.rtp_pyld_len);
+               if (PktInfo.rtp_pyld_len < 0) sprintf(errstr, "invalid RTP payload size %d", PktInfo.rtp_pyld_len);
                if (PktInfo.rtp_version != 2) sprintf(&errstr[strlen(errstr)], "%sinvalid RTP version %u", strlen(errstr) ? ", " : "", PktInfo.rtp_version);
             }
 
@@ -3521,7 +3556,7 @@ check_for_duplicated_headers:
                                                                        2) also increment SSRC to avoid "duplicated SSRC" notifications in packet/media worker threads (SSRC is not part of key that mediaMin uses to keep track of unique sessions)
                                                                     */
 
-               unsigned int src_udp_port, dst_udp_port, ip_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN, pkt_buf, pkt_len, NULL, NULL);
+               unsigned int src_udp_port, dst_udp_port, ip_hdr_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_HDRLEN, pkt_buf, pkt_len, NULL, NULL, 0);
 
                memcpy(&src_udp_port, &pkt_buf[ip_hdr_len], 2);
                memcpy(&dst_udp_port, &pkt_buf[ip_hdr_len+2], 2);
@@ -3530,7 +3565,7 @@ check_for_duplicated_headers:
                memcpy(&pkt_buf[ip_hdr_len], &src_udp_port, 2);
                memcpy(&pkt_buf[ip_hdr_len+2], &dst_udp_port, 2);
 
-               unsigned int rtp_hdr_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_HDROFS, pkt_buf, pkt_len, NULL, NULL);
+               unsigned int rtp_hdr_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_HDROFS, pkt_buf, pkt_len, NULL, NULL, 0);
                unsigned int ssrc = ((unsigned int)pkt_buf[rtp_hdr_ofs+11] << 24 | (unsigned int)pkt_buf[rtp_hdr_ofs+10] << 16 | (unsigned int)pkt_buf[rtp_hdr_ofs+9] << 8 | pkt_buf[rtp_hdr_ofs+8]);
                ssrc++;
                pkt_buf[rtp_hdr_ofs+11] = ssrc >> 24; pkt_buf[rtp_hdr_ofs+10] = (ssrc >> 16) & 0xff; pkt_buf[rtp_hdr_ofs+9] = (ssrc >> 8) & 0xff; pkt_buf[rtp_hdr_ofs+8] = ssrc & 0xff;
@@ -3590,15 +3625,15 @@ check_for_duplicated_headers:
 
                if (hSessions[i] & SESSION_MARKED_AS_DELETED) continue;  /* hSessions[] entry may be marked as already deleted, if so ignore */
 
-  //if (PktInfo.rtp_ssrc == 0xe13d7318) printf("\n *** pkt#%u before get pkt info, hSession = %d, ssrc = 0x%x \n", thread_info[thread_index].packet_number[j], hSessions[i], PktInfo.rtp_ssrc);
+  //if (PktInfo.rtp_ssrc == 0xe13d7318) printf("\n *** pkt# %u before get pkt info, hSession = %d, ssrc = 0x%x \n", thread_info[thread_index].packet_number[j], hSessions[i], PktInfo.rtp_ssrc);
 
                #if 0
-               chnum = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, pkt_buf, pkt_len, NULL, NULL);  /* get the stream's parent chnum (ignore SSRC) */
+               chnum = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, pkt_buf, pkt_len, NULL, NULL, 0);  /* get the stream's parent chnum (ignore SSRC) */
                #else
-               chnum = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, pkt_buf, PktInfo.ip_hdr_len | DS_PKT_INFO_USE_IP_HDR_LEN, NULL, NULL);  /* get the stream's parent chnum (SSRC is ignored when matching parent channels). We have a valid packet and we know its IP header len (from previous DSGetPacketInfo() call with DS_PKT_INFO_PKTINFO flag to fill in a PKTINFO struct) so we can use the DS_PKT_INFO_USE_IP_HDR_LEN flag and improve DSGetPacketInfo() performance and avoid packet validation and header parsing, JHB Dec 2024 */
+               chnum = DSGetPacketInfo(hSessions[i], DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_CHNUM_PARENT | DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG, pkt_buf, PktInfo.ip_hdr_len | DS_PKT_INFO_USE_IP_HDR_LEN, NULL, NULL, 0);  /* get the stream's parent chnum (SSRC is ignored when matching parent channels). We have a valid packet and we know its IP header len (from previous DSGetPacketInfo() call with DS_PKT_INFO_PKTINFO flag to fill in a PKTINFO struct) so we can use the DS_PKT_INFO_USE_IP_HDR_LEN flag and improve DSGetPacketInfo() performance and avoid packet validation and header parsing, JHB Dec 2024 */
                #endif
 
-  //if (PktInfo.rtp_ssrc == 0xe13d7318) printf("\n *** pkt#%u after get pkt info hSession = %d, chnum = %d, ssrc = 0x%x \n", thread_info[thread_index].packet_number[j], hSessions[i], chnum, PktInfo.rtp_ssrc);
+  //if (PktInfo.rtp_ssrc == 0xe13d7318) printf("\n *** pkt# %u after get pkt info hSession = %d, chnum = %d, ssrc = 0x%x \n", thread_info[thread_index].packet_number[j], hSessions[i], chnum, PktInfo.rtp_ssrc);
 
                if (chnum >= 0) {  /* if packet matches a stream (i.e. a term defined for a session), push to correct session queue. Note that SSRC is not included in the session match because DSGetPacketInfo() was called with DS_PKT_INFO_CHNUM_PARENT */
 
@@ -3664,7 +3699,7 @@ check_for_duplicated_headers:
 
 push:
         #ifdef VLC_CAPTURE_DEBUG
-        int rtp_seqnum = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SEQNUM, pkt_buf, -1, NULL, NULL);
+        int rtp_seqnum = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_SEQNUM, pkt_buf, -1, NULL, NULL, 0);
         if (rtp_seqnum > 37810 && rtp_seqnum < 37825) printf("\n *** pushing rtp seqnum %d \n", rtp_seqnum);
         #endif
 
@@ -3708,7 +3743,7 @@ push:
                         if (!(thread_info[tId].StreamStats[k].uFlags & STREAM_STAT_FIRST_PKT)) {
 
                            thread_info[tId].StreamStats[k].first_pkt_ssrc = PktInfo.rtp_ssrc;  /* get first packet RTP SSRC */
-                           thread_info[tId].StreamStats[k].first_pkt_usec = DSGetLogTimestamp(NULL, DS_EVENT_LOG_UPTIME_TIMESTAMPS, 0, 0);  /* get usec since app thread start */
+                           thread_info[tId].StreamStats[k].first_pkt_usec = DSGetTimestamp(NULL, DS_EVENT_LOG_UPTIME_TIMESTAMPS, 0, 0);  /* get usec since app thread start */
 
                            #if 0  /* debug */
                            printf("\n *** stream stat %d, updating ch %d, hSessions[%d] = %d, term = %d, ssrc = 0x%x, usec = %llu \n", k, chnum, i, hSessions[i], thread_info[tId].StreamStats[k].term, thread_info[tId].StreamStats[k].first_pkt_ssrc, (long long unsigned int)thread_info[tId].StreamStats[k].first_pkt_usec);
@@ -4110,7 +4145,7 @@ pull_setup:
 
                static uint8_t VideoExtractStatus[MAX_SESSIONS_THREAD] = { 0 };
 
-               int nStream, rtp_pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDOFS, pkt_out_ptr, -1, NULL, NULL), rtp_pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDLEN, pkt_out_ptr, -1, NULL, NULL);
+               int nStream, rtp_pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDOFS, pkt_out_ptr, -1, NULL, NULL, 0), rtp_pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDLEN, pkt_out_ptr, -1, NULL, NULL, 0);
                uint8_t* rtp_pyld = pkt_out_ptr + rtp_pyld_ofs;
                unsigned int uFlags = 0;  /* any flags for DSGetPayloadInfo() add here */
                SDP_INFO sdp_info = { 0 };
@@ -4121,7 +4156,7 @@ pull_setup:
 
                   nStream = GetStreamFromSession(hSessions, hSession, GET_STREAM_FROM_SESSION_HANDLE, thread_index); if (nStream >= 0) {  /* find stream for this session */
 
-                     int session_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_out_ptr, -1, NULL, NULL);
+                     int session_pyld_type = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_RTP_PYLDTYPE, pkt_out_ptr, -1, NULL, NULL, 0);
 
                      for (int k=0; k<thread_info[thread_index].num_fmtps[nStream]; k++) {
 
@@ -4326,13 +4361,13 @@ unsigned int uFlags = (Mode & ENABLE_DEBUG_STATS) ? DS_READ_PCAP_REPORT_TSO_LENG
 
          pInfoBuffer[0] = *p_eth_protocol;
 
-         nProtocol = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PINFO_CONTAINS_ETH_PROTOCOL | DS_PKT_INFO_PROTOCOL, pkt_buf, -1, pInfoBuffer, NULL);  /* call DSGetPacketInfo() and get type and name of IP packet protocol (and IPv6 extension protocol if applicable). The ethernet protocol is included in the call in case of non-IP packets, which is not expected but if it happens we can report some info about it. See link layer and IP packet protocol definitions in pktlib.h */
+         nProtocol = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PINFO_CONTAINS_ETH_PROTOCOL | DS_PKT_INFO_PROTOCOL, pkt_buf, -1, pInfoBuffer, NULL, thread_info[tId].packet_number[nStream]);  /* call DSGetPacketInfo() and get type and name of IP packet protocol (and IPv6 extension protocol if applicable). The ethernet protocol is included in the call in case of non-IP packets, which is not expected but if it happens we can report some info about it. See link layer and IP packet protocol definitions in pktlib.h */
   
          if (nProtocol > 0) {
 
             strcpy(szProtocol, (char*)pInfoBuffer); pInfoBuffer[0] = *p_eth_protocol;
 
-            nIPver = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PINFO_CONTAINS_ETH_PROTOCOL | DS_PKT_INFO_IP_VERSION, pkt_buf, -1, pInfoBuffer, NULL); 
+            nIPver = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PINFO_CONTAINS_ETH_PROTOCOL | DS_PKT_INFO_IP_VERSION, pkt_buf, -1, pInfoBuffer, NULL, thread_info[tId].packet_number[nStream]); 
 
             sprintf(szIPver, "%d", nIPver);
 
@@ -5050,7 +5085,7 @@ char* p;
 
       dbg_cfg->uEventLogMode = LOG_OUTPUT | DS_EVENT_LOG_UPTIME_TIMESTAMPS;  /* enable event log output and timestamps. See LOG_OUTPUT definition at top, which has default definition LOG_CONSOLE_FILE, specifying output to both event log file and to console. LOG_CONSOLE_FILE, LOG_FILE, and LOG_CONSOLE are defined in diaglib.h */
 
-#if 0  /* define to enable wall clock date/timestamps (i.e. system time). The default is relative, or "up time", timestamps; the DS_LOG_LEVEL_NO_TIMESTAMP can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp, JHB Apr 2024 */
+#if 0  /* define to enable wall clock date/timestamps (i.e. system time). The default is relative, or "up time", timestamps; the DS_LOG_LEVEL_NO_TIMESTAMP flag can be combined with log_level (i.e. Log_RT(log_level, ...) to specify no timestamp, JHB Apr 2024 */
       dbg_cfg->uEventLogMode |= DS_EVENT_LOG_WALLCLOCK_TIMESTAMPS;
 #endif
 

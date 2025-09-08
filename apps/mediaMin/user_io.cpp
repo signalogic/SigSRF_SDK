@@ -28,13 +28,13 @@
    Modified Jan 2023 JHB, add handling of "fCtrl_C_pressed" var in ProcessKeys() (see comments in mediaTest/see cmd_line_interface.c)
    Modified Jan 2023 JHB, add command line to interactive 'd' key command (real-time debug output)
    Modified Feb 2023 JHB, one-time set stdout to non-buffered in ProcessKeys(). See comments
-   Modified Feb 2024 JHB, update usage of DSGetLogTimestamp() per changes in diaglib.h
+   Modified Feb 2024 JHB, update usage of DSGetTimestamp() per changes in diaglib.h
    Modified Apr 2024 JHB, remove DS_CP_DEBUGCONFIG and DS_LOG_LEVEL_UPTIME_TIMESTAMP flags, which are now deprecated (for the latter uptime timestamps are the default). See comments in pktlib.h and diaglib.h
    Modified Jun 2024 JHB, include '\r' in updating isCursorMidLine and uLineCursorPos
    Modified Jul 2024 JHB, update reference to isMasterThread()
    Modified Aug 2024 JHB, slight mod to quit key console display
    Modified Sep 2024 JHB, change DS_PULLPACKETS_TRANSCODED to DS_PULLPACKETS_OUTPUT per flag rename in pktlib.h
-   Modified Oct 2024 JHB, fix bug in param passing order in DSGetLogTimestamp()
+   Modified Oct 2024 JHB, fix bug in param passing order in DSGetTimestamp()
    Modified Nov 2024 JHB, include directcore.h (no longer implicitly included in other header files)
    Modified Dec 2024 JHB, include <algorithm> and use std namespace
    Modified Jan 2025 JHB, some comments added after AI tools source code review
@@ -43,6 +43,7 @@
    Modified Apr 2025 JHB, in app_printf() fixes and simplification to updating line cursor position, mid-line check, and isLinePreserve
    Modified Jul 2025 JHB, in app_printf() call console_out(), which calls isStdoutReady() before printf() to avoid blocking if stdout has loss of connectivity
    Modified Jul 2025 JHB, in ProcessKeys() replace remaining printf() with app_printf()
+   Modified Aug 2025 JHB, update DSGetTimestamp() flag names per changes in diaglib.h
 */
 
 #include <algorithm>
@@ -215,8 +216,8 @@ static bool fSetStdoutNonBuffered = false;
 
       if (key == 'd' || fDisp) {  /* display debug output */
 
-         DSGetLogTimestamp(tmpstr, DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP, sizeof(tmpstr), 0);  /* set additional user timeval param to zero (not used), JHB Feb 2024. Remove DS_LOG_LEVEL_UPTIME_TIMESTAMP flag, which is now deprecated (uptime timestamps are the default), JHB Apr 2024. Move DS_LOG_LEVEL_WALLCLOCK_TIMESTAMP flag to 2nd param, per change in diaglib.h, JHB Oct 2024 */
-         strcat(tmpstr, " ");  /* DSGetLogTimestamp() no appends trailing space, JHB Feb 2024 */
+         DSGetTimestamp(tmpstr, DS_WALLCLOCK_TIMESTAMP, sizeof(tmpstr), 0);  /* set additional user timeval param to zero (not used), JHB Feb 2024. Remove DS_UPTIME_TIMESTAMP flag, which is now deprecated (uptime timestamps are the default), JHB Apr 2024. Move DS_WALLCLOCK_TIMESTAMP flag to 2nd param, per change in diaglib.h, JHB Oct 2024 */
+         strcat(tmpstr, " ");  /* append trailing space to timestamp string, JHB Feb 2024 */
 
          char repeatstr[50];
          if (!fRepeatIndefinitely && nRepeatsRemaining[thread_index] >= 0) sprintf(repeatstr, ", repeats remaining = %d", nRepeatsRemaining[thread_index]);  /* if cmd line entry includes -RN with N >= 0, nRepeatsRemaining will be > 0 for repeat operation, JHB Jan2020 */

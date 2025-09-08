@@ -182,9 +182,9 @@ mediaMin -cx86 -C../session_config/merge_testing_config_amr -i../pcaps/AMR_Musix
 mediaMin -cx86 -C ../session_config/amrwb_packet_test_config_AMRWB_SID -i../pcaps/AMRWB_SID.pcap -r0.5 -L -d0x00040800 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-WB 12650 md5 sum ending in cb27d5
-mediaMin -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0x000c0c01 -r0.9 "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
+mediaMin -cx86 -i../pcaps/mediaplayout_music_1malespeaker_5xAMRWB_notimestamps.pcapng -L -d0x000c0c01 -r0.9 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
-# AMR-NB 12200 bandwidth-efficient (21 streams) md5 sum ending in 629aff
+# AMR-NB 12200 bandwidth-efficient (21 streams) md5 sum ending in 78bb59
 mediaMin -cx86 -i../test_files/crash1.pcap -L -d0x580000000040811 -r0.5 -l2 --md5sum "$MEDIAMIN_WAV_OUTPUTS" "${MEDIAMIN_PCAP_OUTPUTS% *}" "${MEDIAMIN_PCAP_OUTPUTS#* }"
 
 # AMR-NB 12200 bandwidth-efficient md5 sum ending in b6f504

@@ -128,6 +128,8 @@
   Modified May 2025 JHB, add DS_PKT_PYLD_CONTENT_IGNORE_PTIME flag
   Modified Jun 2025 JHB, add DS_READ_PCAP_REPORT_TSO_LENGTH_FIX flag
   Modified Jun 2025 JHB, add uPktNumber and szUserMsgString params to DSReadPcap(). See comments
+  Modified Aug 2025 JHB, add uTimestamp_mode_record_search to PACKETMEDIAINFO struct. See usage in packet_flow_media_proc()
+  Modified Aug 2025 JHB, add uPktNumber param in DSGetPacketInfo()
 */
 
 #ifndef _PKTLIB_H_
@@ -165,12 +167,16 @@
 #define IPV6_ADDR_OFS                   8
 
 #define IPV4_ADDR_LEN                   4   /* IP address lengths (in bytes) */
+#define IPv4_ADDR_LEN                   IPV4_ADDR_LEN
 #define IPV6_ADDR_LEN                   16
-  
+#define IPv6_ADDR_LEN                   IPV6_ADDR_LEN
+
 /* basic IP, UDP, and RTP header lengths (in bytes) */
 
 #define IPV4_HEADER_LEN                 (IPV4_ADDR_OFS + 2*IPV4_ADDR_LEN)
+#define IPv4_HEADER_LEN                 IPV4_HEADER_LEN
 #define IPV6_HEADER_LEN                 (IPV6_ADDR_OFS + 2*IPV6_ADDR_LEN)  /* minimum, excluding extensions */
+#define IPv6_HEADER_LEN                 IPV6_HEADER_LEN
 #define UDP_HEADER_LEN                  8
 #define RTP_HEADER_LEN                  12  /* minimum, excluding extensions */
 
@@ -356,7 +362,7 @@ extern "C" {
 
     uint8_t   flags;            /* fragment flags */
     uint16_t  offset;           /* fragment offset */
-    uint16_t  identifier;       /* identification field */
+    uint32_t  identifier;       /* identification field */
 
   /* 3-way tuple defines the stream connection */
 
@@ -454,6 +460,7 @@ extern "C" {
     uint8_t    decode_time_index;
     uint8_t    encode_time_index;
     uint8_t    stream_group_time_index;
+    uint8_t    uTimestamp_mode_record_search;
 
   } PACKETMEDIATHREADINFO;
 
@@ -726,6 +733,8 @@ extern "C" {
 
         -SigSRF documentation often refers to "user managed sessions", which implies that user applications will store and maintain session handles created by DSCreateSession()
 
+      -uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If DS_BUFFER_PKT_IP_PACKET is given the packet should start with an IP header; if the DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET are given the packet should start with a UDP or RTP header (DS_BUFFER_PKT_IP_PACKET is the default if no flag is given). Use the DS_PKT_INFO_HOST_BYTE_ORDER flag if packet headers are in host byte order (network byte order is the default if no flag is given, or DS_PKTLIB_NETWORK_BYTE_ORDER can be given for readability). Byte order flags apply only to headers, not payload contents
+
       -pkt_buf should point to a packet, and len should contain the length of the packet (size in bytes). If a packet length is unknown, len can be given as -1. Packets may be provided from socket APIs, pcap files, or other sources. The DSOpenPcap() and DSReadPcap() APIs can be used for pcap and pcapng files. The DSFormatPacket() API can be used to help construct a packet
 
       -if a DS_PKT_INFO_RTP_xxx flag is given in uFlags, the corresponding RTP header item is returned
@@ -743,14 +752,14 @@ extern "C" {
 
       -chnum, if not NULL, will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned
 
-      -uFlags should contain one DS_BUFFER_PKT_xxx_PACKET flag and one or more DS_PKT_INFO_xxx flags, defined below. If DS_BUFFER_PKT_IP_PACKET is given the packet should start with an IP header; if the DS_BUFFER_PKT_UDP_PACKET or DS_BUFFER_PKT_RTP_PACKET are given the packet should start with a UDP or RTP header (DS_BUFFER_PKT_IP_PACKET is the default if no flag is given). Use the DS_PKT_INFO_HOST_BYTE_ORDER flag if packet headers are in host byte order (network byte order is the default if no flag is given, or DS_PKTLIB_NETWORK_BYTE_ORDER can be given for readability). Byte order flags apply only to headers, not payload contents
+      -uPktNumber, if not zero, should give an input or other reference packet number that will be included in warning and error messages, if any
 
       -return value is < 0 for an error condition, or as specified in the above notes. Note that some RTP items, such as SSRC, may have legitimate values < 0 when interpreted as a 32-bit int
 
       -both mediaMin.cpp and packet_flow_media_proc.c contain many examples of DSGetPacketInfo() usage
  */
 
-  typedef int (DSGetPacketInfo_t)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int len, void* pInfo, int* chnum);
+  typedef int (DSGetPacketInfo_t)(HSESSION sessionHandle, unsigned int uFlags, uint8_t* pkt_buf, int len, void* pInfo, int* chnum, unsigned int uPktNumber);
 
   #ifndef GET_PKT_INFO_TYPEDEF_ONLY  /* app or lib can specify no prototype for DSGetPacketInfo() if it will be doing its own dlsym() lookup, JHB May 2024 */
   DSGetPacketInfo_t DSGetPacketInfo;
@@ -806,7 +815,7 @@ int DSIsPacketDuplicate(unsigned int uFlags, PKTINFO* PktInfo1, PKTINFO* PktInfo
 
 int DSIsReservedUDP(uint16_t port);
 
-int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max_list_fragments);  /* Reserved API: currently undocumented */
+int DSPktRemoveFragment(uint8_t* pkt_buf, uint8_t* pFragHdrIPv6, unsigned int uFlags, unsigned int* max_list_fragments);  /* Reserved API: currently undocumented */
 
 /* media processing related APIs:
    
@@ -1362,6 +1371,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_PKT_INFO_PYLDLEN                             0x8000  /* returns size of packet payload. For UDP packets this is the UDP header "Length" field excluding the UDP header size (to include the UDP header add the DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR flag). For TCP packets this is packet length excluding IP and TCP headers */
 #define DS_PKT_INFO_SRC_ADDR                            0x9000  /* requires pInfo to point to array of sufficient size, returns IP version */
 #define DS_PKT_INFO_DST_ADDR                            0xa000
+#define DS_PKT_INFO_EXT_HDRLEN                          0xb000  /* length of extension headers, applicable only to IPv6 packets */
 
 #define DS_PKT_INFO_PKTINFO                             0xf000  /* stores a PKTINFO struct in pInfo (if specified) with a return value of 1 on success, 2 if a fully re-assembled packet is available, and -1 on error condition. This API is intended to minimize packet processing overhead if several packet items are needed. See PKTINFO struct definition above, containing TCP, UDP, and RTP items */
 
@@ -1370,8 +1380,8 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_PKT_INFO_PKTINFO_EXCLUDE_RTP                0x10000
 #define DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR    0x20000
 
-#define DS_PKT_INFO_FRAGMENT_SAVE                      0x40000  /* if packet IP header contains fragmentation info save fragment to pktlib internal fragment list using header's Identification field */
-#define DS_PKT_INFO_FRAGMENT_REMOVE                    0x80000  /* if packet IP header contains fragmentation info remove fragment from pktlib internal list using header's Identification field */
+#define DS_PKT_INFO_FRAGMENT_SAVE                      0x40000  /* save packet fragment to pktlib internal fragment list using header's Identification field (should be applied only if packet IP header contains fragmentation info) */
+#define DS_PKT_INFO_FRAGMENT_REMOVE                    0x80000  /* remove packet fragment from pktlib internal list using header's Identification field (should be applied only if packet IP header contains fragmentation info) */
 #define DS_PKT_INFO_REASSEMBLY_GET_PACKET             0x100000  /* retrieve fully reassembled packet in pInfo and return the reassembled packet's length. This flag should only be specified if a previous call to DSGetPacketInfo() with the DS_PKT_INFO_FRAGMENT_SAVE flag has returned a flag value indicating a fully re-assembled packet is available */
 
 #define DS_PKT_INFO_EXTENDED_SESSION_SEARCH           0x400000  /* enable extended session search to allow matching of packets to mix of user-managed sessions and process-managed sessions */
@@ -1487,7 +1497,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, unsigned int uFlags, unsigned int* max
 #define DS_PKT_PYLD_CONTENT_DTMF                        0x2700  /* DTMF Event Packet RFC 4733, generic definition */
 #define DS_PKT_PYLD_CONTENT_PROBATION                   0x2800
 #define DS_PKT_PYLD_CONTENT_DTMF_SESSION                0x2900  /* DTMF matching a session-defined DTMF payload type -- note, only returned by DSGetOrderedPackets(), not DSBufferPackets() or DSGetPacketInfo() */
-#define DS_PKT_PYLD_CONTENT_MEDIA_REUSE                 0x2a00  /* generated by media packet repair */
+#define DS_PKT_PYLD_CONTENT_MEDIA_REUSE                 0x2a00  /* media packet gap and timestamp jump adjustment */
 
 /* can be combined with other DS_PKT_PYLD_CONTENT_XXX flags */
 

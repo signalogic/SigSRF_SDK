@@ -220,7 +220,7 @@ int isArrayZero(uint8_t* array, int len) {
 
 int non_zero = 0;
 
-#if defined(_X86) || defined(_ARM)
+#if defined(_X86)
 
    __asm__ (
       "cld\n"
@@ -255,6 +255,28 @@ int not_less = 0, k;
    }
 
    return !not_less;
+}
+
+/* scale array */
+
+int ScaleArray(short int* array, unsigned int uFlags, int len, float scale_or_limit) {
+
+int k;
+short int max_val = 0;
+float scale = 0;
+bool fScale = false;
+   
+   if (uFlags & DS_SCALE_ARRAY_LIMIT) {
+
+      for (k=0; k<len; k++) if (abs(array[k]) > max_val) max_val = abs(array[k]);
+      if (max_val > scale_or_limit) { scale = scale_or_limit/(1.0*max_val); fScale = true; }
+   }
+   else if (uFlags & DS_SCALE_ARRAY_SCALE) { scale = scale_or_limit; fScale = true; }
+
+   if (fScale) for (k=0; k<len; k++) array[k] *= scale;
+
+   if (uFlags & DS_SCALE_ARRAY_LIMIT) return max_val;
+   else return 0;
 }
 
 /* convert from one data type to another 

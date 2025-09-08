@@ -45,7 +45,8 @@
    Modified Jul 2024 JHB, add --group_pcap_nocopy and --random_bit_error cmd line options, integrate userInfo.h CmdLineFlags_t struct with 1-bit flags. Look for CmdLineFlags.xxx
    Modified Aug 2024 JHB, add --sha1sum and --sha512sum cmd line options, used by mediaMin and mediaTest apps
    Modified Mar 2025 JHB, use ALLOW_XX attributes defined in cmdLineOpt.h for overloaded options, for example -rN can accept N either int or float
-   Modified Jul 2025 JHB, handle --profile_stdout_ready and --exclude_payload_type_from_key command line options
+   Modified Jul 2025 JHB, process --profile_stdout_ready and --exclude_payload_type_from_key command line options
+   Modified Aug 2025 JHB, process --stdout_mode command line option
 */
 
 #include <stdlib.h>
@@ -198,7 +199,11 @@ static CmdLineOpt::Record options[] = {
    {(char)137, CmdLineOpt::INTEGER, NOTMANDATORY,
           (char *)"profile stdout ready wait time", {{(void*)0}} },  /* --stdout_ready_profile, JHB Jul 2025 */
    {(char)138, CmdLineOpt::INTEGER, NOTMANDATORY,
-          (char *)"exclude RTP payload type from session creation key", {{(void*)0}} }  /* --exclude_payload_type_from_key, JHB Jul 2025 */
+          (char *)"exclude RTP payload type from session creation key", {{(void*)0}} },  /* --exclude_payload_type_from_key, JHB Jul 2025 */
+   {(char)139, CmdLineOpt::INTEGER, NOTMANDATORY,
+          (char *)"disable codec FLC", {{(void*)0}} },  /* --disable_codec_flc, JHB Aug 2025 */
+   {(char)140, CmdLineOpt::INTEGER, NOTMANDATORY,
+          (char *)"stdout mode <0-3>", {{(void*)0}} }  /* --stdout_mode N, JHB Aug 2025 */
 };
 
 /* global storage of cmd line options */
@@ -434,6 +439,13 @@ char clkstr[100];
          userIfs->CmdLineFlags.stdout_ready_profile = (cmdOpts.nInstances((char)137) != 0 && ((uFlags & CLI_MEDIA_APPS_MEDIAMIN) || (uFlags & CLI_MEDIA_APPS_MEDIATEST)));  /* look for --profile_stdout_ready cmd line option, JHB Jul 2025 */
 
          userIfs->CmdLineFlags.exclude_payload_type_from_key = (cmdOpts.nInstances((char)138) != 0 && (uFlags & CLI_MEDIA_APPS_MEDIAMIN));  /* look for --exclude_payload_type_from_key cmd line option, JHB Jul 2025 */
+
+         userIfs->CmdLineFlags.disable_codec_flc = (cmdOpts.nInstances((char)139) != 0 && (uFlags & CLI_MEDIA_APPS_MEDIAMIN));  /* look for --disable_codec_flc, JHB Aug 2025 */
+
+         if (cmdOpts.nInstances((char)140) != 0 && (uFlags & CLI_MEDIA_APPS_MEDIAMIN)) {  /* look for --stdout_mode, JHB Aug 2025 */
+
+            userIfs->CmdLineFlags.stdout_mode = cmdOpts.getInt((char)140, 0, 0);
+         }
 
          if (userIfs->programMode >= 0) {
 

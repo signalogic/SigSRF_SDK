@@ -38,7 +38,8 @@
    Modified Jul 2024 JHB, add nRandomBitErrorPercentage define to support mediaTest payload / packet impairment operations
    Modified Aug 2024 JHB, add sha1sum and sha512sum flags to CmdLineFlags_t
    Modified Feb 2025 JHB, remove references to MAX_CONCURRENT_STREAMS and MAXSTREAMS; instead all libs and apps are now using a single definition MAX_STREAMS, in shared_include/streamlib.h
-   Modified Jul 2025 JHB, add stdout_ready_profile to CmdLineFlags_t
+   Modified Jul 2025 JHB, add stdout_ready_profile to CmdLineFlags_t struct
+   Modified Aug 2025 JHB, add stdout_mode to CmdLineFlags_t struct
 */
 
 #ifndef _USERINFO_H_
@@ -80,8 +81,10 @@ typedef struct CmdLineFlags_t {  /* 1-bit flags used inside UserInterface_t, JHB
   uint64_t  group_output_no_copy : 1;
   uint64_t  stdout_ready_profile : 1;
   uint64_t  exclude_payload_type_from_key : 1;
+  uint64_t  disable_codec_flc : 1;
+  uint64_t  stdout_mode : 2;  /* stdout mode 0-3 */
 
-  uint64_t  Reserved : 57;
+  uint64_t  Reserved : 54;
 
 } CmdLineFlags_t;
 
