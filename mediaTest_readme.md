@@ -3133,9 +3133,9 @@ where N can be 0 to set stdout to non-blocking, 1 to to poll stdout before writi
 
 The purpose of non-blocking stdout is to avoid blocking mediaMin and mediaTest threads, both application and packet/media worker threads, when they write console output. stdout blocking can especially be a problem for remote terminals, for example when inconsistent network connectivity is present or other connectivity issues arise. For mediaMin real-time and performance sensitive operations, blocked threads can result in wrong output. Blocked threads are detected and logged with preemption messages, as described above in [Real-Time Performance](#user-content-realtimeperformance).
 
-In the event stdout doesn't output some messages due to connectivity blocking, you may see a message similar to the following when mediaMin or mediaTest finishes:
+With mode 0 or 1 active, in the event stdout doesn't output some messages due to connectivity blocking, you may see a message similar to the following when mediaMin or mediaTest finishes:
 
-```Console output may be incomplete due to stdout blocking (0x), errors (12x), or timeouts (0x); please consult event log xxx_event_log.txt for complete stats and message history```
+    ```Console output may be incomplete due to stdout blocking (0x), errors (12x), or timeouts (0x); please consult event log xxx_event_log.txt for complete stats and message history```
 
 where "xxx" is the the leading part of the event log filename.
 
@@ -3408,6 +3408,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
 
