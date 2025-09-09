@@ -3247,6 +3247,24 @@ The -dN command line argument INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a h
 > * the INCLUDE_PAUSES_IN_WAV_OUTPUT flag has no affect on real-time output RTP streaming. Live output RTP streaming pauses for the duration of large pauses
 > * for large input pauses exceeding FLC limits, [streamlib](#user-content-streamlib_main) keeps track of pause size/duration, resuming merged outputs, live streaming output, and individual mono wav outputs (if enabled), always accurately reflecting input stream timing
 
+#### FLC Holdoff Enable
+
+The -dN command line argument ENABLE_FLC_HOLDOFFS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) will enable FLC Holdoffs, which make the FLC (Frame Loss Compensation] algorithm in [streamlib](#user-content-streamlib_main) less conservative and may slightly improve audio quality in some cases.  Normally the FLC algorithm acts immediately on any indication of late or missing audio output, with objectives (i) maintain continuous live streaming output and (ii) spread out any media impairments over a wide range of frames.
+
+When FLC Holdoffs are enabled streamlib will defer (hold off) action when it detects a marginally late frame in live real-time streaming output. This may or may not be effective, as there is no way to tell if at some point "down the line" frame gaps will get worse and the prior holdoff will cause either (i) a slight discontinuity between two (2) output frames or (ii) two (2) consecutive frames to need repair.
+
+In the best case the number of FLCs will be reduced or even eliminated, yielding the best possible live streaming output audio quality, in the worst case live streaming output may contain slightly detectable discontinuities where one or more extra FLCs were performed.
+
+#### Out-of-Spec RTP Padding
+
+The -dN command line argument ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
+
+#### Codec FLC
+
+By default [pktlib](#user-content-pktlib_main) applies codec FLC (Frame Loss Concealment) when repairing packet loss and timestamp gaps. Codec FLC can be disabled with the command line option:
+
+    --disable_codec_flc
+
 ### Reproducibility
 
 Applying the ENABLE_TIMESTAMP_MATCH_MODE flag enables a timestamp match mode designed for reproducible wav and pcap output results from run-to-run, regardless of Real-Time Interval. This mode relies wholly on arrival timestamps, regardless of amount of wav audio data generated, and with no wall clock references.
@@ -3299,24 +3317,6 @@ or as appropriate depending on the system's configuration (look in /etc/fstab to
     -g /ssd/mediamin/streamgroupwavs
 
 If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including the ENABLE_WAV_OUTPUT flag in the -dN command line argument (flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
-
-#### FLC Holdoff Enable
-
-The -dN command line argument ENABLE_FLC_HOLDOFFS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) will enable FLC Holdoffs, which make the FLC (Frame Loss Compensation] algorithm in [streamlib](#user-content-streamlib_main) less conservative and may slightly improve audio quality in some cases.  Normally the FLC algorithm acts immediately on any indication of late or missing audio output, with objectives (i) maintain continuous live streaming output and (ii) spread out any media impairments over a wide range of frames.
-
-When FLC Holdoffs are enabled streamlib will defer (hold off) action when it detects a marginally late frame in live real-time streaming output. This may or may not be effective, as there is no way to tell if at some point "down the line" frame gaps will get worse and the prior holdoff will cause either (i) a slight discontinuity between two (2) output frames or (ii) two (2) consecutive frames to need repair.
-
-In the best case the number of FLCs will be reduced or even eliminated, yielding the best possible live streaming output audio quality, in the worst case live streaming output may contain slightly detectable discontinuities where one or more extra FLCs were performed.
-
-#### Out-of-Spec RTP Padding
-
-The -dN command line argument ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
-
-### Codec FLC
-
-By default [pktlib](#user-content-pktlib_main) applies codec FLC (Frame Loss Concealment) when repairing packet loss and timestamp gaps. Codec FLC can be disabled with the command line option:
-
-    --disable_codec_flc
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
@@ -3402,5 +3402,6 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
