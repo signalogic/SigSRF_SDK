@@ -329,7 +329,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 <a name="mediaMin_main"></a>
 # mediaMin
 
-The mediaMin reference application runs optimized, high-capacity media packet streaming on x86 servers <sup>[1]</sup> used in bare-metal, VM, or container platforms. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams, with packet handling, DTX, media decoding, stream group processing, and event and packet logging and statistics.
+The mediaMin reference application runs optimized, high-capacity media packet streaming on x86 servers <sup>[1]</sup> used in bare-metal, VM, or container platforms. mediaMin reads/writes IP packet streams from/to network interfaces or pcap files (any combination of IPv4 and IPv6), processing multiple concurrent packet streams with packet handling, DTX, media decoding, stream group handling, and event and packet logging and statistics.
 
 For core functionality, mediaMin utilizes SigSRF libraries, including [pktlib](#user-content-pktlib_main) (packet handling and high-capacity media/packet worker threads), [voplib](#user-content-voplib) (voice-over-packet interface), [streamlib](#user-content-streamlib_main) (streaming media signal processing), and others. Pktlib includes jitter buffer, DTX, SID and media packet re-ordering and repair, packet formatting, and interface to voplib for media decoding and encoding.  mediaMin also makes use of APIs exported by <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/diaglib" target="_blank">diaglib</a> (diagnostics and stats, including [event logging](#user-content-eventlog_main) and [packet logging](#user-content-packetlog_main)) and <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/libs/derlib" target="_blank">derlib</a> (encapsulated stream decoding).
 
@@ -3098,6 +3098,10 @@ in the above examples the amr_8kHz_4750bps_bandwidth_efficient_config and amr_8k
 
 in the above example the merge_testing_config_amrwb config file is used to define a session with bidirectional packet flow, transcoding, and stream group merging.
 
+### Input Reuse
+
+The -nN command line option can be used to specify input reuse, where N indicates the number of times each stream found within input packet flow should be reused. Inputs are reused by slightly modifying UDP port and SSRC values to avoid session duplication (look for "nReuseInputs" in  <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). When running mediaTest for high capacity thread testing, this option can be combined with an -Emode option (see [Execution Mode](#user-content-executionmode) command line examples below).
+
 <a name="CommandLineRepeat"></a>
 ### Repeat
 
@@ -3321,7 +3325,7 @@ If -g is not entered, then wav files are generated on the mediaMin app subfolder
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
 
-Below are command line arguments and options supported by only mediaTest (and not mediaMin).
+Below are command line arguments and options supported only by mediaTest (and not mediaMin).
 
 <a name="ExecutionMode"></a>
 ### Execution Mode
@@ -3356,10 +3360,6 @@ in the above example, mediaTest combines the multiple application thread executi
 ### Number of Application Threads
 
 The -tN command lilne option can be used to specify a number of application threads. This option should be combined with an -Emode option (see [Execution Mode](#user-content-executionmode) command line examples above).
-
-### Input Reuse
-
-The -nN command line option can be used to specify input reuse, where N indicates the number of times each session found within input packet flow should be reused. Inputs are reused by slightly modifying UDP port and SSRC values to avoid session duplication (look for "nReuseInputs" in  <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). This option should be combined with an -Emode option (see [Execution Mode](#user-content-executionmode) command line examples above).
 
 <a name="mediaMinRunTimeKeyCommands"></a>
 ## mediaMin Run-Time Key Commands
@@ -3402,6 +3402,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
 
