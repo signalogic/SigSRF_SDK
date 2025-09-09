@@ -96,7 +96,8 @@ int DSGetPacketInfo(HSESSION      sessionHandle,
                     uint8_t*      pkt_buf,
                     int           pkt_len,
                     void*         pInfo,
-                    int*          chnum
+                    int*          chnum,
+                    unsigned int  uPktNumber
                    );
 ```
 
@@ -111,6 +112,7 @@ int DSGetPacketInfo(HSESSION      sessionHandle,
         -a fully re-assembled packet if uFlags includes DS_PKT_INFO_REASSEMBLY_GET_PACKET<br>
         -a [TERMINATION_INFO struct](https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h) or [SESSION_DATA struct](https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/session.h) if uFlags includes a DS_PKT_INFO_SESSION_xxx, DS_PKT_INFO_CODEC_xxx, or DS_PKT_INFO_CHNUM_xxx flag
   * chnum, if not NULL, on return will contain a matching channel number when DS_PKT_INFO_CHNUM or DS_PKT_INFO_CHNUM_PARENT are given in uFlags. If the packet matches a child channel number and DS_PKT_INFO_CHNUM_PARENT is given, chnum will contain the child channel number and the parent channel number will be returned
+  * uPktNumber, if not zero, is included in warning, error, and info messages. This allows applications to align messages with Wireshark input, assuming they are keeping track of input packet number (mediaMin does this, look for thread_info[].packet_number[] in [mediaMin.cpp](https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp))
 
 <ins>Return Value</ins>
 
