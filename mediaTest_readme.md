@@ -438,7 +438,7 @@ By default mediaMin instructs [pktlib](#user-content-pktlib_main) packet/media w
 
 See [Jitter Buffer](#user-content-jitterbuffer) below for information on underlying jitter buffer operation and functionality.
 
-The [-jN command line argument](#user-content-commandlinejitterbufferdepth) can be used to control jitter buffer target and maximum depths.
+The [-jN command line option](#user-content-commandlinejitterbufferdepth) can be used to control jitter buffer target and maximum depths.
 
 <a name="DTMFHandlingmediaMin"></a>
 ### DTMF / RTP Event Handling
@@ -451,7 +451,7 @@ By default mediaMin instructs [pktlib](#user-content-pktlib_main) packet/media w
 
     mediaMin -cx86 -i../pcaps/DTMF_RTP_Event.pcap -oout_dtmf.pcap -C../session_config/g711_dtmfevent_config -L
 
-In the first two examples, the -jN cmd line argument (see [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) below) is applied because dtmf_rtp_event_multiple_groups.pcapng has a high amount of packet out-of-order (ooo). The second command line runs the same test 40 times faster (see [Packet Push Rate Control](#user-content-packetpushratecontrol), [Bulk Pcap Handling](#user-content-bulkpcaphandling), and [Real-Time Interval](#user-content-realtimeinterval) below). The third command line is a static session configuration of a simple G711 pcap with no DTX and only a few RTP event packets, and runs with assumed -r0 entry ("as fast as possible" mode; see [Real-Time Interval](#user-content-realtimeinterval) below).
+In the first two examples, the -jN cmd line option (see [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) below) is applied because dtmf_rtp_event_multiple_groups.pcapng has a high amount of packet out-of-order (ooo). The second command line runs the same test 40 times faster (see [Packet Push Rate Control](#user-content-packetpushratecontrol), [Bulk Pcap Handling](#user-content-bulkpcaphandling), and [Real-Time Interval](#user-content-realtimeinterval) below). The third command line is a static session configuration of a simple G711 pcap with no DTX and only a few RTP event packets, and runs with assumed -r0 entry ("as fast as possible" mode; see [Real-Time Interval](#user-content-realtimeinterval) below).
 
 For the first two command lines, below are excerpts from mediaMin display and the [packet log](#user-content-packetlog_main) generated at the conclusion of the mediaMin run.
 
@@ -630,7 +630,7 @@ The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps 
 
 There are also several wav files generated, including individual stream, merged, and N-channel, which can be opened with Windows Media Player, Audacity, Hypersignal, etc.
 
-Command line arguments in the above examples are explained in [Command Line Quick-Reference](#user-content-commandlinequick-reference_main).
+Command line arguments and options in the above examples are explained in [Command Line Quick-Reference](#user-content-commandlinequick-reference_main).
 
 Below are more command line examples, taken from pcaps found in the [the Brno University Nesfit repository](https://github.com/nesfit/Codecs/tree/master/PCAPs):
 
@@ -882,7 +882,7 @@ mediaMin supports SDP (<a href="https://en.wikipedia.org/wiki/Session_Descriptio
 
 SDP input is processed by mediaMin in two (2) ways
 
-1) As a command line argument with an "-s" option, as shown in the following command line example:
+1) As a command line option with an "-s" option, as shown in the following command line example:
 
     ```C
     mediaMin -cx86 -i../pcaps/input.pcapng -L -d0x100c0c01 -r20 -sexample.sdp
@@ -974,7 +974,7 @@ a=ptime:20
 
   * Both command line SDP info and packet flow SDP descriptions are added to mediaMin's internal SDP database. SDP descriptions are added only if they contain one or more non-zero, unique Origin fields
 
-  * In all cases of packet flow containing SAP protocol, SIP Invite messages, and other forms of SDP descriptions, mediaMin automatically discovers media ports, and allows those for dynamic session creation and media packet processing. If any are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), mediaMin will allow them as media ports. Also see the [-pN port allow list command line argument](#user-content-commandlineportallowlist) below for more information
+  * In all cases of packet flow containing SAP protocol, SIP Invite messages, and other forms of SDP descriptions, mediaMin automatically discovers media ports, and allows those for dynamic session creation and media packet processing. If any are in the non-dynamic UDP port range, or in SIP port range (typically 5060 through 5082), mediaMin will allow them as media ports. Also see the [-pN port allow list command line option](#user-content-commandlineportallowlist) below for more information
 
   * The mediaMin Makefile brings in SDP source code from the <a href="https://github.com/signalogic/SigSRF_SDK/tree/master/apps/common/sdp" target="_blank">apps/common/sdp</a> folder path
 
@@ -1043,7 +1043,7 @@ The above example:
 
 Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. For detailed information about how stream groups function and how [streamlib](#user-content-streamgroups) operates, see [Stream Groups](#user-content-streamgroups) below. 
  
-mediaMin enables stream groups with the 0x400 flag in the command line -dN options argument. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
+mediaMin enables stream groups with the 0x400 flag in the -dN command line argument. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
 
 The mediaMin command below processes an input pcap containing two (2) AMR-WB 12650 bps RTP streams, of which the first stream creates three (3) additional dynamic RTP streams, for a total of five (5) RTP streams.
 
@@ -1368,7 +1368,7 @@ Note that both print identical MD5 sums in mediaMin summary stats:
 
 Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and thus avoid wall clock references.
 
-mediaMin and mediaTest support MD5, SHA1 and SHA512 hash sum command line arguments; see [Output Hash Sums](#usercontent-outputhashsums) below.
+mediaMin and mediaTest support MD5, SHA1 and SHA512 hash sum command line options; see [Output Hash Sums](#usercontent-outputhashsums) below.
 
 <i><b>
 ```diff
@@ -1696,7 +1696,7 @@ x86 mediaTest end
 	
 In this example, the test takes about 11.4 sec to encode and decode all 21 channels. Given the 30 sec duration of each audio channel, we can calculate a max single core capacity of around 55 channels of encode + decode to stay in real-time. On an Atom C2358 @ 2 GHz, the same command takes about 33 sec. Of course processing time varies depending on your system's core type and speed.
 	
-To make the test longer, for example to allow htop inspection of core activity and memory usage, the input waveform file can be "wrapped" using the [-RN repeat command line argument](#user-content-commandlinerepeat), for example:
+To make the test longer, for example to allow htop inspection of core activity and memory usage, the input waveform file can be "wrapped" using the [-RN repeat command line option](#user-content-commandlinerepeat), for example:
 
     mediaTest -cx86 -itest_files/Nchan21.wav -oNchan21_evs.wav -Csession_config/evs_16kHz_13200bps_config -R11
 
@@ -1961,7 +1961,7 @@ Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measu
 
 ### Session Configuration File
 
-Unlike mediaMin, mediaTest does not perform [dynamic session creation](#user-content-dynamicsessioncreation) on input pcap files. Instead mediaTest expects a session configuration file, specified on the command line with the [-Cconfig_file_path command line argument](#user-content-commandlineconfigfile), containing remote and local IP address and port info that match pcap file contents. Click on the small right arrow to see an example session config file for the above EVS Player examples:
+Unlike mediaMin, mediaTest does not perform [dynamic session creation](#user-content-dynamicsessioncreation) on input pcap files. Instead mediaTest expects a session configuration file, specified on the command line with the [-Cconfig_file_path command line option](#user-content-commandlineconfigfile), containing remote and local IP address and port info that match pcap file contents. Click on the small right arrow to see an example session config file for the above EVS Player examples:
 
 <details>
 <summary>Example Session Config File</summary>
@@ -2063,7 +2063,7 @@ mediaTest can perform transcoding by encoding from an audio input (see list abov
 3) Comparison results are bit-exact if the cmp command gives no messages
 4) .wav files are stored in either 16-bit linear (PCM) format or 8-bit G711 (uLaw) format, depending on the command line specs.  All generated .wav files can be played with Win Media, VLC, or other player
 5) Codec compressed bitstreams are stored in files in ".cod" format, with a MIME header and with FH formatted frames (i.e. every frame includes a ToC byte). This format is compatible with 3GPP reference tools, for example you can take a mediaTest generated .cod file and feed it to the 3GPP decoder, and vice versa you can take a 3GPP encoder generated .cod file and feed it to the mediaTest command line.  See examples in the "Using the 3GPP Decoder" section below.
-6) session config files (specified by the [-Cconfig_file_path command line argument](#user-content-commandlineconfigfile)), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the [Static Session Configuration](#user-content-staticsessionconfig) above.
+6) session config files (specified by the [-Cconfig_file_path command line option](#user-content-commandlineconfigfile)), contain codec, sampling rate, bitrate, DTX, ptime, and other options. They may be edited.  See the [Static Session Configuration](#user-content-staticsessionconfig) above.
 7) Transcoding in frame mode tests is not yet supported.
 
 <a name="hellocodec"></a>
@@ -2179,7 +2179,7 @@ In line with SigSRF's emphasis on high performance streaming, the pktlib library
 <a name="JitterBufferDepthControl"></a>
 ### Jitter Buffer Depth Control
 
-The [pktlib](#user-content-pktlib_main) jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. Default values of target and max depth are 10 and 14 packets, respectively. However, these can be changed if necessary. mediaMin supports the [-jN command line argument](#user-content-commandlinejitterbufferdepth), where N specifies depth as number of packets. For example, using the [OpenLI](#user-content-hi2_hi3_stream_and_openli_support) example command line shown above, jitter buffer depth could be specified as less than default values, having max depth of 12 and target depth of 7:
+The [pktlib](#user-content-pktlib_main) jitter buffer provides user control of various depth related parameters, including min, max, and target depth, dynamic adjustment, and others. Default values of target and max depth are 10 and 14 packets, respectively. However, these can be changed if necessary. mediaMin supports the [-jN command line option](#user-content-commandlinejitterbufferdepth), where N specifies depth as number of packets. For example, using the [OpenLI](#user-content-hi2_hi3_stream_and_openli_support) example command line shown above, jitter buffer depth could be specified as less than default values, having max depth of 12 and target depth of 7:
 
     mediaMin -cx86 -i../pcaps/openli-voip-example.pcap -L -d0x000c1c01 -r20 -j0x0c07
 
@@ -2273,7 +2273,7 @@ As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telec
 <a name="WavFileOutput"></a>
 ### Wav File Output
 
-Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. In the mediaMin command line, an 0x800 flag in the -dN options argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using [pktlib](#user-content-pktlib_main) session creation APIs, these wav file outputs can be specified separately or in combination, per application needs.
+Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. An 0x800 flag in the -dN command line argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using [pktlib](#user-content-pktlib_main) session creation APIs, these wav file outputs can be specified separately or in combination, per application needs.
 
 Note that [streamlib](#user-content-streamlib_main) handles the mechanics of wav file output, which means packet/media threads are able to generate wav file output concurrently. This provides the best possible combination of audio quality and real-time performance.
 
@@ -3068,7 +3068,7 @@ mediaTest does not generate implied outputs.
 <a name="CommandLinePacketLog"></a>
 ### Packet Logging
 
-[Packet history logging](#user-content-packetlog_main) is controlled by the -L command line argument:
+[Packet history logging](#user-content-packetlog_main) is controlled by the -L command line option:
 
 > * -L enables packet history logging with a default log filename of name_pkt_log.txt, where "name" is the filename (without extension) of the first command line input<br/>
 > * -L LogFile enables packet history logging with a filename of LogFile_pkt_log.txt<br/>
@@ -3080,7 +3080,7 @@ mediaTest does not generate implied outputs.
 <a name="CommandlineConfigFile"></a>
 ### Config Files
 
-The -Cconfig_filepath command line argument specifies codec and session and configuration files. mediaTest supports codec configuration files; mediaMin supports both codec and session configuration files. The latter is known as "[static session configuration](#user-content-staticsessionconfig)" -- normally mediaMin operates with [dynamic sessions](#user-content-dynamicsessioncreation); i.e. it auto-detects and creates sessions found in packet flow. Static session configuration is supported for applications and test scenarios where session configuration must be specified in advance.
+The -Cconfig_filepath command line option specifies codec and session and configuration files. mediaTest supports codec configuration files; mediaMin supports both codec and session configuration files. The latter is known as "[static session configuration](#user-content-staticsessionconfig)" -- normally mediaMin operates with [dynamic sessions](#user-content-dynamicsessioncreation); i.e. it auto-detects and creates sessions found in packet flow. Static session configuration is supported for applications and test scenarios where session configuration must be specified in advance.
 
 Here are some command line examples with codec or session configuration files:
 
@@ -3101,7 +3101,7 @@ in the above example the merge_testing_config_amrwb config file is used to defin
 <a name="CommandLineRepeat"></a>
 ### Repeat
 
-The -RN command line argument enables "repeat mode", where mediaMin or mediaTest will repeat the operation or test specified in its command line. -RN enables N number of repeats, and -R0 enables indefinite repeat. <b><i>Caution -- if using indefinite repeat, output audio and pcap files can rapidly consume available disk space !</i></b>
+The -RN command line option enables "repeat mode", where mediaMin or mediaTest will repeat the operation or test specified in its command line. -RN enables N number of repeats, and -R0 enables indefinite repeat. <b><i>Caution -- if using indefinite repeat, output audio and pcap files can rapidly consume available disk space !</i></b>
 
 ### Debug Stats
 
@@ -3113,11 +3113,21 @@ The -dN option ENABLE_MEM_STATS flag (defined in <a href="https://github.com/sig
 
 ### Output Hash Sums
 
-Output bit-exactness can be verified with the --md5sum command line argument, which will include output file md5 sum[s] in mediaMin summary stats. The following output hash sum command line options are accepted by both mediaMin and mediaTest:
+Output bit-exactness can be verified with the --md5sum command line option, which will include output file md5 sum[s] in mediaMin summary stats. The following output hash sum command line options are accepted by mediaMin and mediaTest:
 
     --md5sum
 	--sha1sum
     --sha512sum
+
+### Stdout Mode
+
+The mode in which console output is written to stdout by mediaMin and mediaTest can be set using the following command line option:
+
+    --stdout_mode N
+
+where N can be 0 to set stdout to non-blocking, 1 to to poll stdout before writing, and 2 for no action (i.e. leave stdout as-is). The default mode is non-blocking; however if this causes any problems with other applications or processes running on the same server, modes 1 or 2 may be helpful.
+
+The purpose of non-blocking stdout is to avoid blocking mediaMin and mediaTest threads, both application and packet/media worker threads, when they write console output. stdout blocking can especially be a problem for remote terminals, for example when inconsistent network connectivity is present or other connectivity issues arise. For mediaMin real-time and performance sensitive operations, blocked threads can result in wrong output. Blocked threads are detected and logged with preemption messages, as described above in [Real-Time Performance](#user-content-realtimeperformance).
 
 <a name="mediaMinCommandLineQuick-Reference"></a>
 ## mediaMin Command Line Quick-Reference
@@ -3196,7 +3206,7 @@ Here is an explanation of each flag in the above example command line:
 <a name="RFC7198LookbackDepth"></a>
 #### RFC7198 Lookback Depth
 
-The -lN (lower case L) command line argument specifies RTP packet de-duplication lookback depth. No entry sets N to 1, the default for compliance with RFC7198 temporal duplication. Additional notes:
+The -lN (lower case L) command line option specifies RTP packet de-duplication lookback depth. No entry sets N to 1, the default for compliance with RFC7198 temporal duplication. Additional notes:
 
 > * -l0 disables packet de-duplication<br/>
 > * -lN entry of N > 1 instructs [pktlib](#user-content-pktlib_main) to look further back in packet flow for "non-consecutive" duplicate RTP packets. N can be specified up to 8<br/>
@@ -3215,12 +3225,12 @@ indicate non-consecutive packet duplication, which can be confirmed by examining
 <a name="CommandLineJitterBufferDepth"></a>
 #### Jitter Buffer Depth
 
-The -jN command line argument controls jitter buffer target and maximum depth. Several command line examples are given in [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) above. *Note that N must be given as a hex value, as it contains multiple fields.*
+The -jN command line option controls jitter buffer target and maximum depth. Several command line examples are given in [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) above. *Note that N must be given as a hex value, as it contains multiple fields.*
 
 <a name="CommandLinePortAllowList"></a>
 #### Port Allow List
 
-The -pN command line argument specifies a UDP port to add to the "port allow list", a list of non-dynamic UDP ports (from 1 to 4095; see NON_DYNAMIC_UDP_PORT_RANGE definition in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/pktlib.h">pktlib.h</a>) that are normally treated as non-RTP ports by mediaMin when processing media streams. You can enter one or more ports to allow, for example:
+The -pN command line option specifies a UDP port to add to the "port allow list", a list of non-dynamic UDP ports (from 1 to 4095; see NON_DYNAMIC_UDP_PORT_RANGE definition in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/includes/pktlib.h">pktlib.h</a>) that are normally treated as non-RTP ports by mediaMin when processing media streams. You can enter one or more ports to allow, for example:
 
 > -p 1234<br/>
 >  <br/>
@@ -3241,7 +3251,7 @@ The -dN command line argument INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a h
 
 Applying the ENABLE_TIMESTAMP_MATCH_MODE flag enables a timestamp match mode designed for reproducible wav and pcap output results from run-to-run, regardless of Real-Time Interval. This mode relies wholly on arrival timestamps, regardless of amount of wav audio data generated, and with no wall clock references.
 
-To verify bit-exact reproducibility the --md5sum command line argument will include output file md5 sum[s] in mediaMin summary stats. The following output hash sum command line options are accepted by mediaMin and mediaTest:
+To verify bit-exact reproducibility the --md5sum command line option will include output file md5 sum[s] in mediaMin summary stats. The following output hash sum command line options are accepted by mediaMin and mediaTest:
 
     --md5sum
 	--sha1sum
@@ -3256,7 +3266,7 @@ General guidelines and recommendations for high capacity and real-time performan
 <a name="StreamGroupOutputWavPath"></a>
 #### Stream Group Output Wav Path
 
-The -gWavOutputPath command line argument specifies a path for intermediate stream group wav output, including individual streams and merged streams. Because packet/media threads write wav files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating media) drives. In general, for HDD based wav output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over long time periods may fragment files during writes (i.e. files with some sectors seperated by a long physical distance on the disk platter), thus resulting in longer seek times.
+The -gWavOutputPath command line option specifies a path for intermediate stream group wav output, including individual streams and merged streams. Because packet/media threads write wav files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating media) drives. In general, for HDD based wav output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over long time periods may fragment files during writes (i.e. files with some sectors seperated by a long physical distance on the disk platter), thus resulting in longer seek times.
 
 If mediaMin display output and event log shows pre-emption warning messages such as:
 
@@ -3311,12 +3321,12 @@ By default [pktlib](#user-content-pktlib_main) applies codec FLC (Frame Loss Con
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
 
-Below are command line arguments supported by mediaTest and not mediaMin.
+Below are command line arguments and options supported by only mediaTest (and not mediaMin).
 
 <a name="ExecutionMode"></a>
 ### Execution Mode
 
-The -Emode command line argument specifies an execution mode, where mode can be one of the following single characters:
+The -Emode command line option specifies an execution mode, where mode can be one of the following single characters:
 
 > a, application. This is the default mode for all testing other than codec tests
 > <br/>
@@ -3332,24 +3342,24 @@ Below are command line examples:
 
     mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/evs_player_example_config2 -L -Ea
 
-in the above examples, mediaTest reads EVS RTP pcaps, decodes, and writes to output .wav files. Since application mode is the default, the "-Ea" argument can be omitted for these command lines.
+in the above examples, mediaTest reads EVS RTP pcaps, decodes, and writes to output .wav files. Since application mode is the default, the "-Ea" option can be omitted for these command lines.
 
     mediaTest -c x86 -i test_files/T_mode.wav -o test_files/T_mode_48kHz_13200.wav -C session_config/evs_48kHz_input_16kHz_13200bps_full_band_config --md5sum -Ec -t2
 
-in the above example, mediaTest combines the command line execution mode and [number of application threads argument](#user-content-numberofapplicationthreads) to start two (2) concurrent threads that upsample a 16 kHz .wav file to 48 kHz, encode to EVS 13.2 kbps bitstream, then decode and write to output .wav files. In this mode mediaTest adds "_N" suffixes to output filenames to denote which thread.
+in the above example, mediaTest combines the command line execution mode and [number of application threads option](#user-content-numberofapplicationthreads) to start two (2) concurrent threads that upsample a 16 kHz .wav file to 48 kHz, encode to EVS 13.2 kbps bitstream, then decode and write to output .wav files. In this mode mediaTest adds "_N" suffixes to output filenames to denote which thread.
 
     mediaTest -cx86 -itest_files/testaf0824_EVS2EVScall8-tc41_tc90_onlyTC41.2922.0.pcap -L -d0x6cc11 -r20 -Et -t12 -n13 -R0
 
-in the above example, mediaTest combines the multiple application thread execution mode, number of threads argument, and input reuse argument to run a mediaMin capacity test. In this case mediaTest starts 12 mediaMin application threads (hyperthreaded) with 42 sessions each (3 sessions in the input pcap multiplied by 14), for a total of 504 concurrent sessions. As a side note, mediaMin starts 10 packet/media worker threads (non-hyperthreaded) to handle this (look for StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>).
+in the above example, mediaTest combines the multiple application thread execution mode, number of threads option, and input reuse option to run a mediaMin capacity test. In this case mediaTest starts 12 mediaMin application threads (hyperthreaded) with 42 sessions each (3 sessions in the input pcap multiplied by 14), for a total of 504 concurrent sessions. As a side note, mediaMin starts 10 packet/media worker threads (non-hyperthreaded) to handle this (look for StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>).
 
 <a name="NumberOfApplicationThreads"></a>
 ### Number of Application Threads
 
-The -tN command lilne argument can be used to specify a number of application threads. This argument should be combined with an -Emode argument (see [Execution Mode](#user-content-executionmode) command line examples above).
+The -tN command lilne option can be used to specify a number of application threads. This option should be combined with an -Emode option (see [Execution Mode](#user-content-executionmode) command line examples above).
 
 ### Input Reuse
 
-The -nN command line argument can be used to specify input reuse, where N indicates the number of times each session found within input packet flow should be reused. Inputs are reused by slightly modifying UDP port and SSRC values to avoid session duplication (look for "nReuseInputs" in  <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). This argument should be combined with an -Emode argument (see [Execution Mode](#user-content-executionmode) command line examples above).
+The -nN command line option can be used to specify input reuse, where N indicates the number of times each session found within input packet flow should be reused. Inputs are reused by slightly modifying UDP port and SSRC values to avoid session duplication (look for "nReuseInputs" in  <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). This option should be combined with an -Emode option (see [Execution Mode](#user-content-executionmode) command line examples above).
 
 <a name="mediaMinRunTimeKeyCommands"></a>
 ## mediaMin Run-Time Key Commands
@@ -3392,4 +3402,5 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
