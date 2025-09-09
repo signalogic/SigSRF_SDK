@@ -179,6 +179,7 @@ Below are IP header item flags that can be used in the uFlags param of DSGetPack
 #define DS_PKT_INFO_PYLDLEN                           /* returns size of packet payload. For UDP packets this is the UDP header "Length" field excluding the UDP header size (to include the UDP header add DS_PKT_INFO_PKTINFO_PYLDLEN_INCLUDE_UDP_HDR). For TCP packets this is packet length excluding IP and TCP headers */
 #define DS_PKT_INFO_SRC_ADDR                          /* requires pInfo to point to array of sufficient size, returns IP version */
 #define DS_PKT_INFO_DST_ADDR
+#define DS_PKT_INFO_EXT_HDRLEN                        /* length of extension headers, applicable only to IPv6 packets */
 
 #define DS_PKT_INFO_ITEM_MASK                         /* mask value to isolate above DS_PKT_INFO_xxx item flags */
 ```
@@ -305,7 +306,7 @@ int DSReadPcap(FILE*           fp_pcap,
   * p_eth_protocol, if not NULL, should point to a 16-bit unsigned int that on return will contain one or more ETH_P_XXX flags (as defined in netinet/if_ether.h Linux header file)
   * p_block_type, if not NULL, should point to a 16-bit unsigned int that on return will contain one or more PCAP_XXX_TYPE or PCAPNG_XXX_TYPE flags (as defined in [pktlib.h](https://www.github.com/signalogic/SigSRF_SDK/blob/master/includes/pktlib.h)). When reading pcap or .rtpxxx files, PCAP_PB_TYPE or RTP_PB_TYPE is returned
   * pcap_file_hdr, if not NULL, should point to a [pcap file header struct](#user-content-pcaphdrtstruct) that can be used for rtp and rtpdump reads to supply IP source and destination address and UDP port values. Note this requires file header information to be saved from a prior DSOpenPcap() call
-  * uPktNumber, if non-zero, will be included at the end of warning, error, and/or information messages. For messages concerning Interface Description, Interface Statistics, Journal, Decryption, or other block types the text "last transmitted data " is added and uPktNumber-1 is displayed, as these block types do not contain actual transmitted packet data. Applications are expected to keep track of packet numbers, for example to match accurately with Wireshark, even if they perform non-sequential file access
+  * uPktNumber, if not zero, will be included at the end of warning, error, and/or information messages. For messages concerning Interface Description, Interface Statistics, Journal, Decryption, or other block types the text "last transmitted data " is added and uPktNumber-1 is displayed, as these block types do not contain actual transmitted packet data. Applications are expected to keep track of packet numbers, for example to match accurately with Wireshark, even if they perform non-sequential file access
   * szUserMsgString, if not NULL, should point to a user-defined text string that will be displayed at the end of warning, error, and/or information messages
 
 On success pkt_buf will contain packet data read from the pcap, pcapng, or rtpXXX file.
