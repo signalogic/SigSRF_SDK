@@ -241,7 +241,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 
 &nbsp;&nbsp;&nbsp;[**Reproducibility**](#user-content-reproducibility)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Bulk Processing Mode Considersations](#user-content-bulkprocessingmodeconsiderations)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Hash Sums](#user-content-hashsums)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Output Hash Sums](#user-content-outputhashsums)<br/>
 
 &nbsp;&nbsp;&nbsp;[**ASR (Automatic Speech Recognition)**](#user-content-asr)<br/>
 
@@ -1367,7 +1367,7 @@ Note that both print identical MD5 sums in mediaMin summary stats:
 
 Note also that both commands apply the ANALYTICS_MODE flag in their -dN entry to enable analytics mode and thus avoid wall clock references.
 
-mediaMin and mediaTest support MD5, SHA1 and SHA512 hash sum command line arguments; see [Hash Sums](#usercontent-hashsums) below.
+mediaMin and mediaTest support MD5, SHA1 and SHA512 hash sum command line arguments; see [Output Hash Sums](#usercontent-outputhashsums) below.
 
 <i><b>
 ```diff
@@ -1393,21 +1393,21 @@ Timestamp match mode goes hand-in-hand with bulk pcap processing. The idea is th
 
 See [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) above for more information about avoiding worker thread pre-emption and warning messages that appear when it happens.
 
-<a name="HashSums"><a/>
-### Hash Sums
+<a name="OutputHashSums"><a/>
+### Output Hash Sums
 
-The mediaMin and mediaTest command lines accept the following hash sum options:
+The mediaMin and mediaTest command lines accept the following output hash sum options:
 
     --md5sum
     --sha1sum
     --sha512sum
 
-which will show output media file hash sum values in console display summary stats. Multiple hash sum options may be entered. The examples in [Reproducibility](#user-content-reproducibility) above demonstrate this option.
+which will show output media file hash sum values in console display summary stats. Output hash sum options may be combined. The examples in [Reproducibility](#user-content-reproducibility) above demonstrate this option.
 
 <i><b>
 ```diff
-- Note - for any operation involving RTP packet decode, hash sum values are system-dependent due to use of media codecs.
-- Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference.
+- Note - for any operation involving RTP packet decode, hash sum values are system-dependent due to use of media codecs
+- Differences in CPU type, gcc/g++ tools and GLIBC versions, host vs. container, and more, all make a difference
 ```
 </b></i>
 
@@ -3110,6 +3110,14 @@ The -dN option ENABLE_DEBUG_STATUS flag (defined in <a href="https://github.com/
 
 The -dN option ENABLE_MEM_STATS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) enables memory usage stats.
 
+### Output Hash Sums
+
+Output bit-exactness can be verified with the --md5sum command line argument, which will include output file md5 sum[s] in mediaMin summary stats. The following output hash sum command line options are accepted by both mediaMin and mediaTest:
+
+    --md5sum
+	--sha1sum
+    --sha512sum
+
 <a name="mediaMinCommandLineQuick-Reference"></a>
 ## mediaMin Command Line Quick-Reference
 
@@ -3232,7 +3240,13 @@ The -dN command line argument INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a h
 
 Applying the ENABLE_TIMESTAMP_MATCH_MODE flag enables a timestamp match mode designed for reproducible wav and pcap output results from run-to-run, regardless of Real-Time Interval. This mode relies wholly on arrival timestamps, regardless of amount of wav audio data generated, and with no wall clock references.
 
-Adding the --md5sum command line argument will include output file md5 sum in mediaMin stats.
+To verify bit-exact reproducibility the --md5sum command line argument will include output file md5 sum[s] in mediaMin summary stats. The following output hash sum command line options are accepted by mediaMin and mediaTest:
+
+    --md5sum
+	--sha1sum
+    --sha512sum
+
+Output hash sum command line options can be combined.
 
 ### Performance Improvements
 
@@ -3286,6 +3300,12 @@ In the best case the number of FLCs will be reduced or even eliminated, yielding
 #### Out-of-Spec RTP Padding
 
 The -dN command line argument ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
+
+### Codec FLC
+
+By default [pktlib](#user-content-pktlib_main) applies codec FLC (Frame Loss Concealment) when repairing packet loss and timestamp gaps. Codec FLC can be disabled with the command line option:
+
+    --disable_codec_flc
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
@@ -3371,5 +3391,3 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
-
-
