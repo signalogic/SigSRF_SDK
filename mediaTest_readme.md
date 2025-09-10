@@ -3131,9 +3131,11 @@ The mode in which console output is written to stdout by mediaMin and mediaTest 
 
 where N can be 0 to set stdout to non-blocking, 1 to to poll stdout before writing, and 2 for no action (i.e. leave stdout as-is). The default mode is non-blocking; however if this causes any problems with other applications or processes running on the same server, modes 1 or 2 may be helpful.
 
-The purpose of non-blocking stdout is to avoid blocking mediaMin and mediaTest threads, both application and packet/media worker threads, when they write console output. stdout blocking can especially be a problem for remote terminals, for example when inconsistent network connectivity is present or other connectivity issues arise. For mediaMin real-time and performance sensitive operations, blocked threads can result in wrong output. Blocked threads are detected and logged with preemption messages, as described above in [Real-Time Performance](#user-content-realtimeperformance).
+The purpose of non-blocking stdout (mode 0) is to avoid blocking application and/or packet/media worker threads when they write to console output. stdout blocking can especially be a problem for remote terminals, for example when network connectivity is inconsistent or temporarily unavailable. For mediaMin real-time and performance sensitive operations, blocked threads can result in wrong output. Blocked threads are detected and logged with preemption messages, as described above in [Real-Time Performance](#user-content-realtimeperformance).
 
-With mode 0 or 1 active, in the event stdout doesn't output some messages due to connectivity blocking, you may see a message similar to the following when mediaMin or mediaTest finishes:
+In mode 1 stdout is polled to determine whether it's currently blocked. If the polling times out, for example due to context switching delays, a timeout constant is used to limit the number of retries. This constant varies widely from system to system; to determine the retry limit the host system is profiled on-the-fly.
+
+When mode 0 or 1 are active, in the event stdout doesn't output some messages due to connectivity blocking, you may see a message similar to the following when mediaMin or mediaTest finishes:
 
     Console output may be incomplete due to stdout blocking (0x), errors (12x), or timeouts (0x); please consult event log xxx_event_log.txt for complete stats and message history
 
@@ -3408,6 +3410,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
 
