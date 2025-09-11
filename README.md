@@ -78,7 +78,7 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 * Robotics - implement ASR <sup>2</sup> voice commands for hands-free, urgent, or safety related requirements without cloud dependency <sup>3</sup>
 * Factory, construction, warehouse equipment - implement accident avoidance for remotely controlled and automated equipment
 * Vehicle automation - implement small server add-on / after-market products such as small form-factor Lidar
-* Satcom and HF Radio Speech Compression
+* Satcom voice, for example Narrowband-IoT, HF Radio, and other very low bitrate (VLBR) audio applications
 * R&D Labs and Workstations
 
 <sup>1</sup> For more information on EVS see the [codecs documentation page](https://www.github.com/signalogic/SigSRF_SDK/blob/master/codecs_readme.md) or product page <a href="https://www.signalogic.com/evs_codec.html" target=_blank> product page</a></br>
@@ -703,5 +703,6 @@ The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provid
 ## Technical Support / Questions
 
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can request group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+
 
 
