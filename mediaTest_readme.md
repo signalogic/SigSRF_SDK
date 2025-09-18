@@ -3115,7 +3115,9 @@ where path specifies event log location, for example:
 
 which stores event logs on a local RAM disk folder. The purpose of this command line option is for high capacity/performance and real-time operations, to avoid any possible blocking when writing or flushing the event log file. For example, if you see a console/log message similar to:
 
-    <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 40.5 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
+````
+00:22:01.579.295 WARNING: p/m thread 0 has not run for 40.5 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc
+````
 
 it's possible that an application thread or packet/media worker thread was blocked for some time by an event log write or flush operation on an HDD drive. Although such extremely long write times (in the 10s of msec) are rare, they can happen in situations where (i) the amount of event log output is very high due to multiple application and packet/media worker threads writing concurrently to the event log, or (ii) the HDD drive occasionally blocks due to long seeks related to block allocation and management. Using the --event_log_path command line option to locate the event log on a RAM disk or SSD drive (if available) can avoid this type of blocking.
 
@@ -3433,3 +3435,4 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
