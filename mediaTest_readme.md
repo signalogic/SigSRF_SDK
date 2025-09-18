@@ -7,7 +7,7 @@ Modified JHB May 2025, images are using https://raw.githubusercontent.com/signal
   -for some time during 2Q25 the github.com method hung up completely and would not display the image (see https://github.com/orgs/community/discussions/158744 and https://stackoverflow.com/questions/79618921/github-markdown-after-clicking-a-same-page-link-clicking-images-no-longer-works) 
 
 Modified JHB Jun 2025, update command line documentation, add pktlib info on pcap/pcapng support, fragmentation
-Modified JHB Jun 2025, add "_main" suffix to level 1 header link targets, to differentiate ToC and main text links (e.g. mediaMin and mediaMin_main). Otherwise the Github markdown processor only sees the first link
+Modified JHB Jun 2025, add "_main" suffix to level 1 header link targets, to differentiate auto-generated ToC links (when the markdown processor sees ## xxx) and main text links (e.g. mediaMin and mediaMin_main). Otherwise the Github markdown processor only sees the first link
 -->
 
 # mediaMin and mediaTest Reference Apps
@@ -32,6 +32,7 @@ Use case improvements
  - IPv6 fragmentation and reassembly support
  - improved redundant packet detection and handling
  - improved codec FLC
+ - improved event log handling during high capacity / high performance operations
 
 Errata
 
@@ -235,7 +236,7 @@ If you need an evaluation SDK with relaxed functional limits for a trial period,
 &nbsp;&nbsp;&nbsp;[**Performance**](#user-content-performance)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Remote Console](#user-content-remoteconsole)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Capacity](#user-content-highcapacity)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Real-Time Performance](#user-content-realtimeperformance)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[High Performance and Real-Time Performance](#user-content-highperformancerealtimeperformance)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Audio Quality](#user-content-audioquality)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Building High Performance Applications](#user-content-buildinghighperformanceapplications)<br/>
@@ -1151,7 +1152,7 @@ Concurrently specifiying AFAP mode (with a -r0 [Real-Time Interval argument](#us
 <a name="Peformance"></a>
 ## Performance
 
-From a general performance perspective, to achieve consistent high capacity, real-time performance, and audio quality, other applications and periodic Linux housekeeping operations (e.g. logging, network I/O, SQL, etc) should be limited to a minimum or even disabled during mediaMin operation. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (see examples below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting performance.
+From a general performance perspective, to achieve consistent high capacity, real-time performance and audio quality, other applications and periodic Linux housekeeping operations (e.g. logging, network I/O, SQL, etc) should be limited to a minimum or even disabled during mediaMin operation. If you see mediaMin onscreen or event log warning messages indicating packet/media thread pre-emption (see examples below), and the section of non-zero thread operation shown in the message seems to move around (i.e. not consistently the same section), then other applications or Linux housekeeping may be pre-empting packet/media threads and negatively impacting performance.
 
 From an audio quality perspective, it's important to note that mediaMin, [pktlib](#user-content-pktlib_main), and [streamlib](#user-content-streamlib_main) all have automatic packet and audio repair facilities that activate when latencies, packet loss, rate mismatches, or other stream impairments are encountered. Auto-repairs will "see" packet/media thread pre-emption as either delayed packets or lost audio frames, and will attempt to compensate. For example, streamlib will repair up to 250 msec of missing audio in a stream (known as "frame loss compensation", or FLC). Repairs notwithstanding, frequent and sustained thread pre-emption will at some point have noticeable impacts on audio quality.
 
@@ -1189,10 +1190,10 @@ When mediaMin detects that it's running in thread mode, it assigns a master thre
 
 <sup>1</sup> -Ex = execution mode, -tN = number of threads. Look in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp source code</a> for "thread_index" and "num_app_threads"
 
-<a name="RealTimePerformance"><a/>
-### Real-Time Performance
+<a name="HighPerformanceRealTimePerformance"><a/>
+### High Performance and Real-Time Peformance
 
-There are a number of complex factors involved in real-time performance, and by extension, high capacity operation. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
+There are a number of complex factors involved in real-time performance and high capacity operation. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
 
 Here is a summary of important points in achieving and sustaining real-time performance:
 
@@ -1203,6 +1204,7 @@ Here is a summary of important points in achieving and sustaining real-time perf
     - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, also consider the larger picture of what is running outside the VM or container
     - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run at regular intervals should temporarily be disabled 
     - network I/O should be limited to packet flow handled by pktlib and/or applications using pktlib
+    - avoid possibility of blocking during output file write or flush. This may be an issue for slow HDD drives, or even faster ones approaching their storage limit or in use for a long time. The [output wav path](#user-content-outputwavpath) and [event log path](#user-content-eventlogpath) command line options can help with this by storing output files to a dedicated fast output file option, for example a RAM disk or high performance SSD drive
  
     Non-deterministic OS are notorious for running what they want when they want, and Linux and its myriad of 3rd party install packages is no exception. Signalogic has seen cases where max capacity stress tests running 24/7 showed bursts of thread preemption messages repeating at intervals. In one case, on a Ubuntu system that was thought to be a minimal installation, messages appeared every 1 hour, like clockwork. It took days of sleuthing to figure out the cause; there were no obvious scheduled Linux or installed application tasks advertising a one hour interval.
     
@@ -1213,6 +1215,8 @@ Here is a summary of important points in achieving and sustaining real-time perf
     <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
 
     A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
+
+    Note that it's possible an application thread or packet/media worker thread can be blocked for some time by an event log write or flush operation to an HDD drive. Although such extremely long file write times (in the 10s of msec) are rare, they can happen in situations where (i) the amount of event log output is extremely high due to multiple application and packet/media worker threads writing concurrently to the event log, or (ii) the HDD drive that occasionally blocks due to long seeks related to block allocation and management. To avoid HDD file write blocking issues the [event log path](#user-content-eventlogpath) command line option is available.
 
 3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few concurrent sessions. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
 
@@ -1240,7 +1244,7 @@ If stream group processing is required, including correct wav and pcap file medi
 	
 You can apply the following guidelines to determine whether you are at the limit of FTRT mode acceleration:
 	
-> * there should be no warning messages about thread pre-emption, wav file write time exceeded, or other timing-related conditions. Warning message examples are given in [Stream Group Output Wav Path](#user-content-streamgroupoutputwavpath) below
+> * there should be no warning messages about thread pre-emption, wav file write time exceeded, or other timing-related conditions. Warning message examples are given in [Output Wav Path](#user-content-outputwavpath) below
 > * the number of FLCs (Frame Loss Compensation) in stream group output should be the same or nearly the same as running the same pcap(s) in real-time. Look for "Underrun" in [mediaMin Run-Time Stats](#user-content-runtimestats_main)
 	
 The last indicator is the most reliable. An increase in FTRT mode FLCs indicates the system does not have enough processing capacity to keep up with acceleration specified in the [Real-Time Interval](#user-content-realtimeinterval) -rN command line argument. Basically, the system is not able to maintain continuous stream group wav and pcap output without having to repair missed frames caused by lack of compute resources. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output wav files, limiting stream group audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc. might help.
@@ -2957,7 +2961,7 @@ To analyze packet media in Wirehark, follow these steps:
     - Click "Analyze" in the "RTP Streams" pop-up window
     - To play RTP audio, click "Play Streams" in the "RTP Stream Analysis" pop-up window, and click the :arrow_forward: button in the "RTP Player" pop-up window
 
-    For more detailed information on packet audio analysis and timing, see [Audio Quality Notes](#user-content-audioqualitynotes) and [Real-Time Performance](#user-content-realtimeperformance) below.
+    For more detailed information on packet audio analysis and timing, see [Audio Quality Notes](#user-content-audioqualitynotes) and [High Performance and Real-Time Performance](#user-content-highperformancerealtimeperformance) below.
 
 <a name="SavingAudioWireshark"></a>
 ## Saving Audio to File in Wireshark
@@ -3098,6 +3102,25 @@ in the above examples the amr_8kHz_4750bps_bandwidth_efficient_config and amr_8k
 
 in the above example the merge_testing_config_amrwb config file is used to define a session with bidirectional packet flow, transcoding, and stream group merging.
 
+<a name="EventLogPath"></a>
+### Event Log Path
+
+A path can be given for [event logs](#user-content-eventlog_main) using the following command line option:
+
+    --event_log_path <path>
+
+where path specifies event log location, for example:
+
+    --event_log_path /tmp/shared
+
+which stores event logs on a local RAM disk folder. The purpose of this command line option is for high capacity/performance and real-time operations, to avoid any possible blocking when writing or flushing the event log file. For example, if you see a console/log message similar to:
+
+    <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 40.5 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
+
+it's possible that an application thread or packet/media worker thread was blocked for some time by an event log write or flush operation on an HDD drive. Although such extremely long write times (in the 10s of msec) are rare, they can happen in situations where (i) the amount of event log output is very high due to multiple application and packet/media worker threads writing concurrently to the event log, or (ii) the HDD drive occasionally blocks due to long seeks related to block allocation and management. Using the --event_log_path command line option to locate the event log on a RAM disk or SSD drive (if available) can avoid this type of blocking.
+
+For additional information about other output file types, see [Performance](#user-content-performance) above. 
+
 ### Input Reuse
 
 The -nN command line option can be used to specify input reuse, where N indicates the number of times each stream found within input packet flow should be reused. Inputs are reused by slightly modifying UDP port and SSRC values to avoid session duplication (look for "nReuseInputs" in  <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>). When running mediaTest for high capacity thread testing, this option can be combined with an -Emode option (see [Execution Mode](#user-content-executionmode) command line examples below).
@@ -3131,7 +3154,7 @@ The mode in which console output is written to stdout by mediaMin and mediaTest 
 
 where N can be 0 to set stdout to non-blocking, 1 to to poll stdout before writing, and 2 for no action (i.e. leave stdout as-is). The default mode is non-blocking; however if this causes any problems with other applications or processes running on the same server, modes 1 or 2 may be helpful.
 
-The purpose of non-blocking stdout (mode 0) is to avoid blocking application and/or packet/media worker threads when they write to console output. stdout blocking can especially be a problem for remote terminals, for example when network connectivity is inconsistent or temporarily unavailable. For mediaMin real-time and performance sensitive operations, blocked threads can result in wrong output. Blocked threads are detected and logged with preemption messages, as described above in [Real-Time Performance](#user-content-realtimeperformance).
+The purpose of non-blocking stdout (mode 0) is to avoid blocking application and/or packet/media worker threads when they write to console output. stdout blocking can especially be a problem for remote terminals, for example when network connectivity is inconsistent or temporarily unavailable. For mediaMin real-time and performance sensitive operations, blocked threads can result in wrong output. Blocked threads are detected and logged with preemption messages, as described above in [High Performance and Real-Time Performance](#user-content-highperformancerealtimeperformance).
 
 In mode 1 stdout is polled to determine whether it's currently blocked. If the polling times out, for example due to context switching delays, a timeout constant is used to limit the number of retries. This constant varies widely from system to system; to determine the retry limit the host system is profiled on-the-fly.
 
@@ -3293,10 +3316,10 @@ Output hash sum command line options can be combined.
 
 General guidelines and recommendations for high capacity and real-time performance are given in [Performance](#user-content-performance) above. Below are command line options that may improve mediaMin and user application performance, in particular real-time performance and audio quality.
 
-<a name="StreamGroupOutputWavPath"></a>
-#### Stream Group Output Wav Path
+<a name="OutputWavPath"></a>
+#### Output Wav Path
 
-The -gWavOutputPath command line option specifies a path for intermediate stream group wav output, including individual streams and merged streams. Because packet/media threads write wav files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating media) drives. In general, for HDD based wav output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over long time periods may fragment files during writes (i.e. files with some sectors seperated by a long physical distance on the disk platter), thus resulting in longer seek times.
+The -g <path> command line option specifies a path for output wav files, including both stream group and timestamp matching mode output wav files and also including individual streams and merged streams. Because packet/media threads write wav files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating media) drives. In general, for HDD based wav output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over long time periods may fragment files during writes (i.e. files with some sectors seperated by a long physical distance on the disk platter), thus resulting in longer seek times.
 
 If mediaMin display output and event log shows pre-emption warning messages such as:
 
@@ -3304,17 +3327,17 @@ If mediaMin display output and event log shows pre-emption warning messages such
 WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.02, last encode time = 0.04, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
 ```
 
-this can indicate seek times for stream group output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec spent while other thread processing sections show minimal or no time spent. In such a case we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in mediaMin cmd line -dN options to further investigate:
+this can indicate seek times for output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec spent while other thread processing sections show minimal or no time spent. In such a case we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in mediaMin cmd line -dN options to further investigate:
 
     -d0x20000000c11
 
-the above -dN entry specifies dynamic session creation, packet arrival timestamps are valid and should be applied, and stream group output wav file seek time alarm set to 10 msec. If mediaMin display output and event log shows a warning message such as:
+the above -dN entry specifies dynamic session creation, packet arrival timestamps are valid and should be applied, and output wav file seek time alarm set to 10 msec. If mediaMin display output and event log shows a warning message such as:
 
     WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
 
 then it's clear that wav file write seek times are an issue. To change the write time alarm threshold, look for uStreamGroupOutputWavFileSeekTimeAlarmThreshold in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> (a member of the DEBUG_CONFIG struct defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/config.h" target = "_blank">shared_include/config.h</a>).
 
-Note that additional example of event log pre-emption warning messages are given in [Real-Time Performance]("user-content-realtimeperformance") above.
+Note that additional example of event log pre-emption warning messages are given in [High Performance and Real-Time Performance]("user-content-highperformancerealtimeperformance") above.
 
 Below are some examples of -g entry, including ramdisk and dedicated media folder. If a ramdisk exists, then the mediaMin command line might contain:
 
@@ -3410,11 +3433,3 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
-
-
-
-
-
-
-
-
