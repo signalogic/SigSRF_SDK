@@ -1204,7 +1204,7 @@ Here is a summary of important points in achieving and sustaining real-time perf
     - run a clean platform. For SigSRF software running on a server, don't run other applications, even housekeeping applications, unless absolutely necessary. For SigSRF software running in containers or VMs, also consider the larger picture of what is running outside the VM or container
     - run a minimal Linux. No GUI or web browser, no database, no extra applications, etc. Linux housekeeping tasks that run at regular intervals should temporarily be disabled 
     - network I/O should be limited to packet flow handled by pktlib and/or applications using pktlib
-    - avoid possibility of blocking during output file write or flush. This may be an issue for slow HDD drives, or even faster ones approaching their storage limit or in use for a long time. The [output wav path](#user-content-outputwavpath) and [event log path](#user-content-eventlogpath) command line options can help with this by storing output files to a dedicated fast output file option, for example a RAM disk or high performance SSD drive
+    - avoid possibility of blocking during output file write or flush. This may be an issue for slow HDD drives, or even faster ones approaching their storage limit or in use for a long time. The [output media path](#user-content-outputmediapath) and [event log path](#user-content-eventlogpath) command line options can help with this by storing output files to a dedicated fast output file option, for example a RAM disk or high performance SSD drive
  
     Non-deterministic OS are notorious for running what they want when they want, and Linux and its myriad of 3rd party install packages is no exception. Signalogic has seen cases where max capacity stress tests running 24/7 showed bursts of thread preemption messages repeating at intervals. In one case, on a Ubuntu system that was thought to be a minimal installation, messages appeared every 1 hour, like clockwork. It took days of sleuthing to figure out the cause; there were no obvious scheduled Linux or installed application tasks advertising a one hour interval.
     
@@ -1216,7 +1216,7 @@ Here is a summary of important points in achieving and sustaining real-time perf
 
     A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
 
-    Note that it's possible an application thread or packet/media worker thread can be blocked for some time by an event log write or flush operation to an HDD drive. Although such extremely long file write times (in the 10s of msec) are rare, they can happen in situations where (i) the amount of event log output is extremely high due to multiple application and packet/media worker threads writing concurrently to the event log, or (ii) the HDD drive that occasionally blocks due to long seeks related to block allocation and management. To avoid HDD file write blocking issues the [event log path](#user-content-eventlogpath) command line option is available.
+    Note that it's also possible an application thread or packet/media worker thread can be blocked for some time by (i) media output file writes or (ii) event log write or flush operations to an HDD drive. Although such extremely long file write times (in the 10s of msec) are rare, they can happen in situations where the amount of media file or event log file output is extremely high due to multiple application, packet/media worker, or media processing threads writing concurrently, and/or the HDD drive occasionally blocks due to long seeks related to block allocation and management. To avoid HDD file write blocking issues see the [output media path](#user-content-outputmediapath) and [event log path](#user-content-eventlogpath) command line options.
 
 3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few concurrent sessions. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
 
@@ -1244,10 +1244,10 @@ If stream group processing is required, including correct wav and pcap file medi
 	
 You can apply the following guidelines to determine whether you are at the limit of FTRT mode acceleration:
 	
-> * there should be no warning messages about thread pre-emption, wav file write time exceeded, or other timing-related conditions. Warning message examples are given in [Output Wav Path](#user-content-outputwavpath) below
+> * there should be no warning messages about thread pre-emption, wav file write time exceeded, or other timing-related conditions. Warning message examples are given in [Output Media Path](#user-content-outputmediapath) below
 > * the number of FLCs (Frame Loss Compensation) in stream group output should be the same or nearly the same as running the same pcap(s) in real-time. Look for "Underrun" in [mediaMin Run-Time Stats](#user-content-runtimestats_main)
 	
-The last indicator is the most reliable. An increase in FTRT mode FLCs indicates the system does not have enough processing capacity to keep up with acceleration specified in the [Real-Time Interval](#user-content-realtimeinterval) -rN command line argument. Basically, the system is not able to maintain continuous stream group wav and pcap output without having to repair missed frames caused by lack of compute resources. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output wav files, limiting stream group audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc. might help.
+The last indicator is the most reliable. An increase in FTRT mode FLCs indicates the system does not have enough processing capacity to keep up with acceleration specified in the [Real-Time Interval](#user-content-realtimeinterval) -rN command line argument. Basically, the system is not able to maintain continuous stream group wav and pcap output without having to repair missed frames caused by lack of compute resources. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output media files, limiting stream group audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc. might help.
 
 <a name="AudioQuality"><a/>
 ### Audio Quality
@@ -3115,9 +3115,7 @@ where path specifies event log location, for example:
 
 which stores event logs on a local RAM disk folder. The purpose of this command line option is for high capacity/performance and real-time operations, to avoid any possible blocking when writing or flushing the event log file. For example, if you see a console/log message similar to:
 
-````
-00:22:01.579.295 WARNING: p/m thread 0 has not run for 40.5 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc
-````
+    00:22:01.579.295 WARNING: p/m thread 0 has not run for 40.5 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc
 
 it's possible that an application thread or packet/media worker thread was blocked for some time by an event log write or flush operation on an HDD drive. Although such extremely long write times (in the 10s of msec) are rare, they can happen in situations where (i) the amount of event log output is very high due to multiple application and packet/media worker threads writing concurrently to the event log, or (ii) the HDD drive occasionally blocks due to long seeks related to block allocation and management. Using the --event_log_path command line option to locate the event log on a RAM disk or SSD drive (if available) can avoid this type of blocking.
 
@@ -3318,26 +3316,25 @@ Output hash sum command line options can be combined.
 
 General guidelines and recommendations for high capacity and real-time performance are given in [Performance](#user-content-performance) above. Below are command line options that may improve mediaMin and user application performance, in particular real-time performance and audio quality.
 
-<a name="OutputWavPath"></a>
-#### Output Wav Path
+<a name="OutputMediaPath"></a>
+#### Output Media Path
 
-The -g <path> command line option specifies a path for output wav files, including both stream group and timestamp matching mode output wav files and also including individual streams and merged streams. Because packet/media threads write wav files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating media) drives. In general, for HDD based wav output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over long time periods may fragment files during writes (i.e. files with some sectors seperated by a long physical distance on the disk platter), thus resulting in longer seek times.
+The -g <path> command line option specifies a path for output media files, including both stream group and timestamp matching mode output wav files and also including individual streams and merged streams. Because packet/media threads write media files on-the-fly, this option may help in improving packet/media thread performance, and in turn overall application performance, especially for systems with HDD (rotating) drives. In general, for HDD media output, any reduction in seek times can significantly improve overall thread performance, and specifically for Linux ext4 filesystems, an HDD operating at near full capacity over long time periods may fragment files during writes (i.e. files with some sectors separated by a long physical distance on the disk platter), thus resulting in longer seek times.
 
 If mediaMin display output and event log shows pre-emption warning messages such as:
 
-```
-WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.02, last encode time = 0.04, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
-```
+    WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.02, last encode time = 0.04, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
 
-this can indicate seek times for output wav files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec spent while other thread processing sections show minimal or no time spent. In such a case we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in mediaMin cmd line -dN options to further investigate:
+
+this can indicate seek times for output media files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec spent while other thread processing sections show minimal or no time spent. In such a case we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in mediaMin cmd line -dN options to further investigate:
 
     -d0x20000000c11
 
-the above -dN entry specifies dynamic session creation, packet arrival timestamps are valid and should be applied, and output wav file seek time alarm set to 10 msec. If mediaMin display output and event log shows a warning message such as:
+the above -dN entry specifies dynamic session creation, packet arrival timestamps are valid and should be applied, and output media file seek time alarm set to 10 msec. If mediaMin display output and event log shows a warning message such as:
 
     WARNING: streamlib says mono wav file write time 16 exceeds 10 msec, write (0) open(1) = 0, merge_data_len = 320, filepos[0][1] = 499224
 
-then it's clear that wav file write seek times are an issue. To change the write time alarm threshold, look for uStreamGroupOutputWavFileSeekTimeAlarmThreshold in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> (a member of the DEBUG_CONFIG struct defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/config.h" target = "_blank">shared_include/config.h</a>).
+then it's clear that media file write seek times are an issue. To change the write time alarm threshold, look for uStreamGroupOutputWavFileSeekTimeAlarmThreshold in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a> (a member of the DEBUG_CONFIG struct defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/shared_includes/config.h" target = "_blank">shared_include/config.h</a>).
 
 Note that additional example of event log pre-emption warning messages are given in [High Performance and Real-Time Performance]("user-content-highperformancerealtimeperformance") above.
 
@@ -3349,11 +3346,13 @@ Below are some examples of -g entry, including ramdisk and dedicated media folde
 
     -g /tmp/shared
 
-or as appropriate depending on the system's configuration (look in /etc/fstab to see if a ramdisk is active and if so its path). For a folder dedicated to wav file output, such as a separate SSD drive, then the mediaMin command line might contain something like:
+or as appropriate depending on the system's configuration (look in /etc/fstab to see if a ramdisk is active and if so its path). For a folder dedicated to media file output, such as a separate SSD drive, then the mediaMin command line might contain something like:
 
-    -g /ssd/mediamin/streamgroupwavs
+    -g /ssd/mediamin/streamgroupmedia
 
-If -g is not entered, then wav files are generated on the mediaMin app subfolder. Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including the ENABLE_WAV_OUTPUT flag in the -dN command line argument (flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
+If -g is not entered, then media files are generated on the mediaMin app subfolder.
+
+Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including the ENABLE_WAV_OUTPUT flag in the -dN command line argument (flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
@@ -3435,4 +3434,5 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
