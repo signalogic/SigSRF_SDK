@@ -1193,9 +1193,9 @@ When mediaMin detects that it's running in thread mode, it assigns a master thre
 <a name="HighPerformanceRealTimePerformance"><a/>
 ### High Performance and Real-Time Peformance
 
-There are a number of complex factors involved in real-time performance and high capacity operation. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
+There are a number of complex factors involved in high performance and/or real-time performance, depending on the application. For detailed coverage see section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>.
 
-Here is a summary of important points in achieving and sustaining real-time performance:
+Here is a summary of important points in achieving and sustaining maximum performance:
 
 1. First and foremost, hyperthreading should be avoided and each packet/media thread should be assigned to one (1) physical core. The pktlib DSConfigMediaService() API takes appropriate measures to ensure this is the case, and the <a href="https://en.wikipedia.org/wiki/Htop" target="_blank">htop utility</a> can be used to verify during run-time operation (this is fully explained in section 5, High Capacity Operation, in <a href="https://bit.ly/2UZXoaW" target="_blank">SigSRF Software Documentation</a>).  For DSConfigMediaService() usage see StartPacketMediaThreads() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin source code</a>.
 
@@ -1216,7 +1216,7 @@ Here is a summary of important points in achieving and sustaining real-time perf
 
     A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
 
-    Note that it's also possible an application thread or packet/media worker thread can be blocked for some time by (i) media output file writes or (ii) event log write or flush operations to an HDD drive. Although such extremely long file write times (in the 10s of msec) are rare, they can happen in situations where the amount of media file or event log file output is extremely high due to multiple application, packet/media worker, or media processing threads writing concurrently, and/or the HDD drive occasionally blocks due to long seeks related to block allocation and management. To avoid HDD file write blocking issues see the [output media path](#user-content-outputmediapath) and [event log path](#user-content-eventlogpath) command line options.
+    Note that it's also possible an application thread or packet/media worker thread can be blocked for some time by HDD file writes, either output media file writes or event log write or flush operations. Although such extremely long HDD file write times (in the 10s of msec) are rare, they can happen in situations where the amount of media or event log output is extremely high due to (i) multiple application, packet/media worker, and media processing threads writing concurrently, and/or (ii) the HDD drive occasionally blocks due to long seeks related to block allocation and management. To avoid HDD file write blocking issues see the [output media path](#user-content-outputmediapath) and [event log path](#user-content-eventlogpath) command line options.
 
 3. CPU performance is crucial. Atom, iN core, and other low power CPUs are unlikely to provide real-time performance for more than a few concurrent sessions. Performance specifications published for SigSRF software assume *at minimum* E5-2660 Xeon cores running at 2.2 GHz.
 
@@ -3117,9 +3117,9 @@ which stores event logs on a local RAM disk folder. The purpose of this command 
 
     00:22:01.579.295 WARNING: p/m thread 0 has not run for 40.5 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc
 
-it's possible that an application thread or packet/media worker thread was blocked for some time by an event log write or flush operation on an HDD drive. Although such extremely long write times (in the 10s of msec) are rare, they can happen in situations where (i) the amount of event log output is very high due to multiple application and packet/media worker threads writing concurrently to the event log, or (ii) the HDD drive occasionally blocks due to long seeks related to block allocation and management. Using the --event_log_path command line option to locate the event log on a RAM disk or SSD drive (if available) can avoid this type of blocking.
+it's possible that an application thread or packet/media worker thread was blocked for some time by an event log write or flush operation on an HDD drive. Although such extremely long write times (in the 10s of msec) are rare, they can happen in situations where (i) the amount of event log output is very high due to multiple application and packet/media worker threads writing concurrently to the event log, or (ii) the HDD drive occasionally blocks due to long seeks related to block allocation and management. Using the --event_log_path command line option to locate the event log to a RAM disk or SSD drive (if available) can avoid this type of blocking.
 
-For additional information about other output file types, see [Performance](#user-content-performance) above. 
+For additional information about other possible thread preemption causes or other output file types, see [Performance](#user-content-performance) above. 
 
 ### Input Reuse
 
@@ -3434,5 +3434,6 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
