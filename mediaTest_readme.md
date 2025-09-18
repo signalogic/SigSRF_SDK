@@ -1212,7 +1212,7 @@ Here is a summary of important points in achieving and sustaining maximum perfor
 
     To monitor for preemption by Linux or other apps, [pktlib](#user-content-pktlib_main) implements a "thread preemption alarm" that issues a warning in the event log when triggered. Here is an example:
 
-    <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc</pre>
+    <pre>00:22:01.579.295 WARNING: p/m thread 0 has not run for 60.23 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, decode time = 0.00, encode time = 0.01, ms time = 0.00 msec, prev ms time = 0.00, buffer time = 0.00, chan time = 0.00, pull time = 0.00, media processing time = 0.01 src 0xb6ef05cc</pre>
 
     A clean log should contain no preemption warnings, regardless of how many packet/media threads are running, and how long they have been running.
 
@@ -3115,7 +3115,7 @@ where path specifies event log location, for example:
 
 which stores event logs on a local RAM disk folder. The purpose of this command line option is for high capacity/performance and real-time operations, to avoid any possible blocking when writing or flushing the event log file. For example, if you see a console/log message similar to:
 
-    00:22:01.579.295 WARNING: p/m thread 0 has not run for 40.5 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.00, last encode time = 0.01, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 0.01 src 0xb6ef05cc
+    00:22:01.579.295 WARNING: p/m thread 0 has not run for 40.5 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, decode time = 0.00, encode time = 0.01, ms time = 0.00 msec, prev ms time = 0.00, buffer time = 0.00, chan time = 0.00, pull time = 0.00, media processing time = 0.01 src 0xb6ef05cc
 
 it's possible that an application thread or packet/media worker thread was blocked for some time by an event log write or flush operation on an HDD drive. Although such extremely long write times (in the 10s of msec) are rare, they can happen in situations where (i) the amount of event log output is very high due to multiple application and packet/media worker threads writing concurrently to the event log, or (ii) the HDD drive occasionally blocks due to long seeks related to block allocation and management. Using the --event_log_path command line option to locate the event log to a RAM disk or SSD drive (if available) can avoid this type of blocking.
 
@@ -3323,10 +3323,9 @@ The -g <path> command line option specifies a path for output media files, inclu
 
 If mediaMin display output and event log shows pre-emption warning messages such as:
 
-    WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, last decode time = 0.02, last encode time = 0.04, ms time = 0.00 msec, last ms time = 0.00, last buffer time = 0.00, last chan time = 0.00, last pull time = 0.00, last stream group time = 45.38
+    WARNING: p/m thread 0 has not run for 45.39 msec, may have been preempted, num sessions = 3, creation history = 0 0 0 0, deletion history = 0 0 0 0, decode time = 0.02, encode time = 0.04, ms time = 0.00 msec, prev ms time = 0.00, buffer time = 0.00, chan time = 0.00, pull time = 0.00, media processing time = 45.38
 
-
-this can indicate seek times for output media files are negatively impacting performance. The key text is "last stream group time" -- in the above example, this is showing 45 msec spent while other thread processing sections show minimal or no time spent. In such a case we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in mediaMin cmd line -dN options to further investigate:
+this can indicate seek times for output media files are negatively impacting performance. The key text is "media processing time" -- in the above example, this is showing 45 msec spent while other thread processing sections show minimal or no time spent. In such a case we can enable the ENABLE_WAV_OUT_SEEK_TIME_ALARM flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in mediaMin cmd line -dN options to further investigate:
 
     -d0x20000000c11
 
@@ -3434,6 +3433,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
 
