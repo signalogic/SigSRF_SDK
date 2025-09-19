@@ -3294,6 +3294,22 @@ In the best case the number of FLCs will be reduced or even eliminated, yielding
 
 The -dN command line argument ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
 
+#### Output Stream Group Pcap Path
+
+By default mediaMin stores stream group output pcaps (for example, merged streams) on the mediaMin subfolder. For flexibility and possible performance improvement, a path can be specified instead using the cmd line option:
+
+    --group_pcap_path <path>
+
+where path is the desired stream group output pcap path. Upon stream group completion, the pcap is copied to the mediaMin subfolder for convenience during analysis and measurement. Performance improvement might be obtained by specifying a path on a fast SSD drive or RAM disk.
+
+Also the cmd line option:
+
+    --group_pcap_path_nocopy <path>
+
+can be given to avoid the final copy.
+
+Note that these options are separate from [output media path](#user-content-outputmediapath) below.
+
 #### Codec FLC
 
 By default [pktlib](#user-content-pktlib_main) applies codec FLC (Frame Loss Concealment) when repairing packet loss and timestamp gaps. Codec FLC can be disabled with the command line option:
@@ -3433,7 +3449,3 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
-
-
-
-
