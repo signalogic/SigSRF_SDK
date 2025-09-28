@@ -3140,11 +3140,13 @@ The -dN option ENABLE_MEM_STATS flag (defined in <a href="https://github.com/sig
 
 ### Output Hash Sums
 
-Output bit-exactness can be verified with the --md5sum command line option, which will include output file md5 sum[s] in mediaMin summary stats. The following output hash sum command line options are accepted by mediaMin and mediaTest:
+Output media file bit-exactness can be verified with the --md5sum command line option, which will include output media file md5 sum[s] in mediaMin summary stats. The following output hash sum command line options are accepted by mediaMin and mediaTest:
 
     --md5sum
 	--sha1sum
     --sha512sum
+
+Multiple options can be combined.
 
 ### Stdout Mode
 
@@ -3154,15 +3156,15 @@ The mode in which console output is written to stdout by mediaMin and mediaTest 
 
 where N can be 0 to set stdout to non-blocking, 1 to to poll stdout before writing, and 2 for no action (i.e. leave stdout as-is). The default mode is non-blocking; however if this causes any problems with other applications or processes running on the same server, modes 1 or 2 may be helpful.
 
-The purpose of non-blocking stdout (mode 0) is to avoid blocking application and/or packet/media worker threads when they write to console output. stdout blocking can especially be a problem for remote terminals, for example when network connectivity is inconsistent or temporarily unavailable. For mediaMin real-time and performance sensitive operations, blocked threads can result in wrong output. Blocked threads are detected and logged with preemption messages, as described above in [High Performance and Real-Time Performance](#user-content-highperformancerealtimeperformance).
+The purpose of non-blocking stdout (mode 0) is to avoid blocking application and/or packet/media worker threads when they write to console output. stdout blocking can especially be a problem for remote terminals, for example when network connectivity is inconsistent or temporarily unavailable. For mediaMin real-time, performance sensitive, or bit-exact operations blocked threads can cause incorrect output. Blocked threads are detected and logged with preemption messages, as described above in [High Performance and Real-Time Performance](#user-content-highperformancerealtimeperformance).
 
-In mode 1 stdout is polled to determine whether it's currently blocked. If the polling times out, for example due to context switching delays, a timeout constant is used to limit the number of retries. This constant varies widely from system to system; to determine the retry limit the host system is profiled on-the-fly.
+In mode 1 stdout is polled to determine whether it's currently blocked. For polling timeouts, for example due to context switching delays, a limited number of retries are attemtped. The maximum number of retries is determined by profiling the host system on-the-fly to account for variations in CPU type, clock rate, system I/O capacity, etc.
 
-When mode 0 or 1 are active, in the event stdout doesn't output some messages due to connectivity blocking, you may see a message similar to the following when mediaMin or mediaTest finishes:
+In the event stdout doesn't output some messages due to connectivity blocking, you may see a message similar to the following when mediaMin or mediaTest finishes:
 
     Console output may be incomplete due to stdout blocking (0x), errors (12x), or timeouts (0x); please consult event log xxx_event_log.txt for complete stats and message history
 
-where "xxx" is the the leading part of the event log filename.
+where "xxx" is the the leading part of the event log path and filename.
 
 <a name="mediaMinCommandLineQuick-Reference"></a>
 ## mediaMin Command Line Quick-Reference
@@ -3201,7 +3203,6 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 > * entering a session configuration file on the command line that contains a "ptime" value, along with no -rN entry, will use the session config ptime value instead (see [Static Session Configuration](#user-content-staticsessionconfig) above)<br/>
 
 &nbsp;
-
 <a name="CommandLineDormantSessions"></a>
 #### Dormant Sessions
 
@@ -3449,5 +3450,6 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
