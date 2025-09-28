@@ -3002,7 +3002,7 @@ The command line quick-reference section covers all reference apps, followed by 
 
 ### Platform and Operating Mode
 
-> -cXXX is an argument specifying a base platform. Currently for the Github .rar packages and Docker containers this argument should always be given as -cx86<br/>
+> -cXXX is an argument specifying one or more "platform designators", for example -cx86, -cArm, etc. At least one host platform designator is required, specifying a bare metal, VM, or container platform. If more than one designator is given, the second specifies an accelerator or coCPU card. Currently for the Github .rar packages and Docker containers this argument should always be given as -cx86 or -c x86<br/>
 > <br/>
 > -MN specifies an optional operating mode N. -M0 is the default; currently for the Github .rar packages and Docker containers no operating mode should be given<br/>
 
@@ -3449,4 +3449,5 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
