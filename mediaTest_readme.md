@@ -3261,7 +3261,7 @@ indicate non-consecutive packet duplication, which can be confirmed by examining
 <a name="CommandLineJitterBufferDepth"></a>
 #### Jitter Buffer Depth
 
-The -jN command line option controls jitter buffer target and maximum depth. Several command line examples are given in [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) above. *Note that N must be given as a hex value, as it contains multiple fields.*
+The -jN command line option controls jitter buffer target and maximum depth. Several command line examples are given in [Jitter Buffer Depth Control](#user-content-jitterbufferdepthcontrol) above. *Note that N should be given as a hex value, as it contains multiple fields and hex format make these fields easier to see.*
 
 <a name="CommandLinePortAllowList"></a>
 #### Port Allow List
@@ -3450,6 +3450,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
 
