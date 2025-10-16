@@ -3000,7 +3000,7 @@ The command line quick-reference section covers all reference apps, followed by 
 > * Enter ./prog -h or ./prog -? to see a list of command line options (e.g. mediaMin -h or mediaTest -?. Just ? works also). Mandatory command line options are shown with "!"<br/>
 > * Application modes and functionality are controlled by the -dN command line argument, where N is a hex value containing up to 64 flags. These flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> and referenced throughout this documentation
 > * Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN flags apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
-> * mediaMin and mediaTest always generate an [event log](#user-content-eventlog_main). The default event log filename is name_event_log.txt, where "name" is the filename (without extension) of the first command line input and the event log is stored on the current working folder. The --event_log_path command line option can be used to control event log paths; otherwise event log filenames and all other event log options can be changed programmatically (as one example, look for LOG_EVENT_SETUP in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>)<br/>
+> * mediaMin and mediaTest always generate an [event log](#user-content-eventlog_main). The default event log filename is name_event_log.txt, where "name" is the filename (without extension) of the first command line input and the event log is stored on the current working folder. The &#8209;&#8209;event_log_path command line option can be used to control event log paths; otherwise event log filenames and all other event log options can be changed programmatically (as one example, look for LOG_EVENT_SETUP in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>)<br/>
 
 Command line error and reporting includes options with missing arguments, arguments with invalid format, unrecognized options, and misplaced entry. Here are some examples:
 
@@ -3472,8 +3472,3 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
-
-
-
-
-
