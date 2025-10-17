@@ -3014,7 +3014,7 @@ Here are some examples:
 
 ![Command line error reporting example](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/cmd_line_error_reporting_screencap2.png "SigSRF application command line error reporting example")
 
-In the above examples command line option arguments with invalid format are highlighted in red, unrecognized options in orange, and options with missing required argument in purple. Error reporting printout is shown below the command line.
+In the above examples command line option arguments with invalid format are highlighted in red, unrecognized options in yellow, and options with missing required argument in purple. Error reporting printout is shown immediately after the command line.
 
 ## Command Line Options and Arguments that Apply to All Reference Apps
 
@@ -3484,4 +3484,5 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
