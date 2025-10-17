@@ -3022,7 +3022,7 @@ Below are general command line options and arguments that apply to all reference
 
 ### Platform and Operating Mode
 
-> -c <platform] is a command line option specifying one or more "platform designators", for example
+> -c <platform> is a command line option specifying one or more "platform designators", for example
 
      -c x86
 	 -cx86
@@ -3484,6 +3484,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
 
