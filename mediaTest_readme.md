@@ -396,7 +396,7 @@ As explained in [Multiple RTP Streams (RFC8108)](#user-content-multiplertpstream
  
     mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC8108_IPv6.pcap -Csession_config/evs_16khz_13200bps_CH_RFC8108_IPv6_config -L -d0x40c00
 
-The first command line above uses dynamic session creation, analytics mode, and an -r20 argument (see [Real-Time Interval](#user-content-realtimeinterval) below) to specify a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
+The first command line above uses dynamic session creation, analytics mode, and an -r20 command line option (see [Real-Time Interval](#user-content-realtimeinterval) below) to specify a 20 msec packet push rate. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line). Analytics mode is used in both cases because input pcap packet timestamps are incorrect.
 
 Below is a screen capture showing output for the second command line above, with RTP stream transitions highlighted:
 
@@ -407,7 +407,7 @@ Packet stats and history log files produced by the above commands (mediaplayout_
 <a name="SSRCDuplicationandReuse"></a>
 ### SSRC Duplication and Reuse
 
-[pktlib](#user-content-pktlib_main) packet/media worker threads recognize and handle sessions that duplicate SSRCs in other sessions and reuse their previous SSRCs, assuming there is a valid reason for interleaving the same SSRC values betweeen sessions. Duplication happens when a new session uses the same SSRC as an existing session, and reuse happens when a session reverts to its previous SSRC value. mediaMin defaults to this behavior, but also allows the [ENABLE_DORMANT_SESSIONS flag](#user-content-commandlinedormantsessions) in the -dN command line argument to designate the original session as "dormant", implying a pause or halt in the original channel. In such cases each dormant session channel is flushed and any remaining media is cleared from its state information and jitter buffers.
+[pktlib](#user-content-pktlib_main) packet/media worker threads recognize and handle sessions that duplicate SSRCs in other sessions and reuse their previous SSRCs, assuming there is a valid reason for interleaving the same SSRC values betweeen sessions. Duplication happens when a new session uses the same SSRC as an existing session, and reuse happens when a session reverts to its previous SSRC value. mediaMin defaults to this behavior, but also allows the [ENABLE_DORMANT_SESSIONS flag](#user-content-commandlinedormantsessions) in the -dN command line option to designate the original session as "dormant", implying a pause or halt in the original channel. In such cases each dormant session channel is flushed and any remaining media is cleared from its state information and jitter buffers.
 
 To provide insight into SSRC usage and endpoint behavior, packet/media worker threads keep track of SSRC duplication and reuse, and include these stats in run-time stats. Below is a screen cap showing an SSRC duplication, where session 0, channel 4 duplicates the SSRC being used by session 1, channel 2 (highlighted in red):
 
@@ -430,7 +430,7 @@ As explained in [Duplicated RTP Streams (RFC7198)](#user-content-duplicatedrtpst
 
     mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_RFC7198_IPv6.pcap -oEVS_16khz_13200bps_CH_RFC7198_IPv6_g711.pcap -C../session_config/evs_16khz_13200bps_CH_RFC7198_IPv6_config -L -d0x40c00
 
-The first command line above uses dynamic session creation, telecom mode, and an -r20 argument (see [Real-Time Interval](#user-content-realtimeinterval) below). Because telecom mode is specified, the packet push rate is controlled by packet arrival timestamps. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
+The first command line above uses dynamic session creation, telecom mode, and an -r20 command line option (see [Real-Time Interval](#user-content-realtimeinterval) below). Because telecom mode is specified, the packet push rate is controlled by packet arrival timestamps. The second command line uses static session creation, analytics mode, and a "fast as possible" push rate (i.e. no -rN value specified on the command line).
 
 The default RFC7198 packet duplication "lookback" depth is one (1) packet. By specifying -lN cmd line entry, lookback depth can be increased to 8 packets, or disabled (-l0 entry). For more information, see [RFC7198 Lookback Depth](#user-content-rfc7198lookbackdepth) below.
 
@@ -633,7 +633,7 @@ The first example has one (1) AMR-WB 12650 bps stream and two (2) EVS 13200 bps 
 
 There are also several wav files generated, including individual stream, merged, and N-channel, which can be opened with Windows Media Player, Audacity, Hypersignal, etc.
 
-Command line arguments and options in the above examples are explained in [Command Line Quick-Reference](#user-content-commandlinequick-reference_main).
+Command line options and arguments in the above examples are explained in [Command Line Quick-Reference](#user-content-commandlinequick-reference_main).
 
 Below are more command line examples, taken from pcaps found in the [the Brno University Nesfit repository](https://github.com/nesfit/Codecs/tree/master/PCAPs):
 
@@ -936,7 +936,7 @@ Note in the above SDP file example that comments, marked by "#", are supported, 
 
 #### SDP Info and SIP Invite Message Packets
 
-mediaMin recognizes SAP/SDP protocol, SIP Invite message, and other packets containing SDP info. If the [-dN command line argument](#user-content-mediamincommandlineoptions) includes the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite message and SDP information.
+mediaMin recognizes SAP/SDP protocol, SIP Invite message, and other packets containing SDP info. If the [-dN command line option](#user-content-mediamincommandlineoptions) includes the ENABLE_STREAM_SDP_INFO flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) then mediaMin will log and display SIP Invite and SDP info messages and status, add packet SDP contents to its internal SDP database, and apply to incoming streams. If the ENABLE_STREAM_SDP_INFO flag is not set then mediaMin will still log and display SIP Invite message and SDP information.
 
 Below is an example of mediaMin display showing a SIP Invite message found in packet flow, along with other SIP messages. Note in this case the SDP description contains a unique Origin session ID.
 
@@ -984,11 +984,11 @@ a=ptime:20
 <a name="PacketPushRateControl"></a>
 ## Packet Push Rate Control
 
-In telecom mode, mediaMin assumes packet arrival timestamps are reliable and mostly accurate, and uses them to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib_main) DSPushPackets() API. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line argument (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs). Telecom mode is enabled if the [-dN command line argument](#user-content-mediamincommandlineoptions) USE_PACKET_ARRIVAL_TIMES flag is set (flag value 0x10 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
+In telecom mode, mediaMin assumes packet arrival timestamps are reliable and mostly accurate, and uses them to control packet push rate; i.e. the rate at which it calls the [pktlib](#user-content-pktlib_main) DSPushPackets() API. In addition, mediaMin reads the [Real-Time Interval](#user-content-realtimeinterval) command line option (-rN entry, where N is in msec) to set processing intervals needed by [pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main). For example, an -r20 cmd line entry is appropriate for RTP streams with 20 msec ptime, or multiples of 20 msec (typical for a wide variety of media codecs). Telecom mode is enabled if the [-dN command line option](#user-content-mediamincommandlineoptions) USE_PACKET_ARRIVAL_TIMES flag is set (flag value 0x10 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 	
-In analytics mode, mediaMin assumes packet arrival timestamps are only somewhat accurate or completely invalid, and uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval. As with telecom mode, analytics mode also uses the Real-Time Interval to set processing intervals needed by [pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main). Analytics mode is enabled if the [-dN command line argument](#user-content-mediamincommandlineoptions) ANALYTICS_MODE flag is set (flag value of 0x40000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
+In analytics mode, mediaMin assumes packet arrival timestamps are only somewhat accurate or completely invalid, and uses the [Real-Time Interval](#user-content-realtimeinterval) to either adjust or fully control the packet push rate. In the latter case, the AUTO_ADJUST_PUSH_RATE flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be applied in cmd line -dN options, which will enable a queue balancing algorithm that generates decoded media streams with average rate matching the Real-Time Interval. As with telecom mode, analytics mode also uses the Real-Time Interval to set processing intervals needed by [pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main). Analytics mode is enabled if the [-dN command line option](#user-content-mediamincommandlineoptions) ANALYTICS_MODE flag is set (flag value of 0x40000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
-For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by the [Real-Time Interval](#user-content-realtimeinterval) command line argument. The following example command lines show FTRT mode vs real-time using SDK demo pcaps:
+For offline or "bulk pcap processing" purposes, mediaMin supports "faster than real-time" (FTRT) and "as fast as possible" (AFAP) modes, controlled by the [Real-Time Interval](#user-content-realtimeinterval) command line option. The following example command lines show FTRT mode vs real-time using SDK demo pcaps:
 
     real-time:           mediaMin -cx86 -i../pcaps/mediaplayout_adelesinging_AMRWB_2xEVS.pcapng -L -d0xc11 -r20
 
@@ -1008,7 +1008,7 @@ The following command line examples show AFAP mode usage:
 
     mediaMin -cx86 -i../pcaps/DTMF_RTP_Event.pcap -L -d0x040c01 -r0
 
-Note in the above AFAP mode examples the ANALYTICS_MODE flag is set in the [-dN command line argument](#user-content-mediamincommandlineoptions). AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For the same reason, AFAP mode does not work in telecom mode as a non-zero Real-Time Interval is needed to calculate packet arrival timestamps. For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
+Note in the above AFAP mode examples the ANALYTICS_MODE flag is set in the [-dN command line option](#user-content-mediamincommandlineoptions). AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For the same reason, AFAP mode does not work in telecom mode as a non-zero Real-Time Interval is needed to calculate packet arrival timestamps. For more information see [Bulk Pcap Handling](#user-content-bulkpcaphandling).
 
 In the following AFAP mode example, the input contains multiple streams so stream group processing and wav file output have been disabled:
 
@@ -1018,7 +1018,7 @@ For inputs containing only one stream, i.e. no need for time alignment between s
 
 #### Auto-Adjust Push Rate
 
-The auto-adjust packet push rate algorithm is applied if the [-dN command line argument](#user-content-mediamincommandlineoptions) AUTO_ADJUST_PUSH_RATE flag is set. Auto-adjust packet push is useful in cases where packet arrival timestamps are zero or otherwise inaccurate. To operate correctly it must be combined with the ANALYTICS_MODE flag (AUTO_ADJUST_PUSH_RATE and ANALYTICS_MODE flag values 0x80000 and 0x40000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). Below are some auto-adjust push rate algorithm command line examples:
+The auto-adjust packet push rate algorithm is applied if the [-dN command line option](#user-content-mediamincommandlineoptions) AUTO_ADJUST_PUSH_RATE flag is set. Auto-adjust packet push is useful in cases where packet arrival timestamps are zero or otherwise inaccurate. To operate correctly it must be combined with the ANALYTICS_MODE flag (AUTO_ADJUST_PUSH_RATE and ANALYTICS_MODE flag values 0x80000 and 0x40000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). Below are some auto-adjust push rate algorithm command line examples:
 
     mediaMin -cx86 -i../pcaps/announcementplayout_metronometones1sec_2xAMR.pcapng -L -d0xc0c01 -r20
 
@@ -1046,7 +1046,7 @@ The above example:
 
 Stream groups are groupings of input streams, related by call participants, analytics criteria, or other association. For detailed information about how stream groups function and how [streamlib](#user-content-streamgroups) operates, see [Stream Groups](#user-content-streamgroups) below. 
  
-mediaMin enables stream groups with the 0x400 flag in the -dN command line argument. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
+mediaMin enables stream groups with the 0x400 flag in the -dN command line option. When enabled mediaMin's default behavior is to assign all streams from the same input source (e.g. a pcap file, UDP port, etc) to a group. Other command line options can be used to modify this.
 
 The mediaMin command below processes an input pcap containing two (2) AMR-WB 12650 bps RTP streams, of which the first stream creates three (3) additional dynamic RTP streams, for a total of five (5) RTP streams.
 
@@ -1062,9 +1062,9 @@ In general, mediaMin uses the following naming convention for stream group outpu
 
 where groupID is typically taken from the first input spec on the command line ("-i" spec), NN is the stream group index, TT is the mediaMin application thread index, and MM is the mode (none or "tm" for telecom mode, "am" for analytics mode).  If only one mediaMin thread is active, then TT is omitted.
 
-Note the above command line also enables [wav file outputs](#user-content-wavfileoutput) for the stream group and its individual contributors the ENABLE_WAV_OUTPUT flag in the -dN command line argument (defined as 0x800 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). An N-channel wav file is also created (where N is the number of group contributors).
+Note the above command line also enables [wav file outputs](#user-content-wavfileoutput) for the stream group and its individual contributors the ENABLE_WAV_OUTPUT flag in the -dN command line option (defined as 0x800 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>). An N-channel wav file is also created (where N is the number of group contributors).
 
-For a large number of stream groups, the WHOLE_GROUP_THREAD_ALLOCATE flag can be set in the -dN command line argument (defined as 0x8000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), which will prevent stream groups from splitting across packet/media threads. This avoids use of spinlocks (semaphores) for the stream group and improves performance.
+For a large number of stream groups, the WHOLE_GROUP_THREAD_ALLOCATE flag can be set in the -dN command line option (defined as 0x8000 in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), which will prevent stream groups from splitting across packet/media threads. This avoids use of spinlocks (semaphores) for the stream group and improves performance.
 
 Screen captures below show [run-time stats](#user-content-runtimestats_main) with stream group related information highlighted, display stream group output waveform display in Wireshark, and individual contributor wav file display in Audacity.
 
@@ -1104,15 +1104,15 @@ Here are some notes about the above command lines and what to look for when they
 
 3) For the first example [run-time stats](#user-content-runtimestats_main) should show a small amount of packet loss and repair (9 packets) in the second stream.
 
-4) In these OpenLI examples, DER encoded packet arrival timestamps do not increment at ptime intervals, so the above mediaMin command lines enable "analytics mode" (0xc0000 flags set in the -dN argument). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 argument in the above examples) to dynamically determine packet push rates. *(Note - In both analytics and telecom modes, the pktlib and streamlib modules make use of RTP timestamps for packet repair and interstream alignment.)*
+4) In these OpenLI examples, DER encoded packet arrival timestamps do not increment at ptime intervals, so the above mediaMin command lines enable "analytics mode" (0xc0000 flags set in the -dN command line option). In analytics mode mediaMin uses a queue balancing algorithm and command-specified ptime (the -r20 command line option in the above examples) to dynamically determine packet push rates. *(Note - In both analytics and telecom modes, the pktlib and streamlib modules make use of RTP timestamps for packet repair and interstream alignment.)*
 
-5) The above mediaMin command lines enable [dynamic session creation](#user-content-dynamicsessioncreation) (0x1 flag in the -dN argument) and DER stream detection (0x1000 flag in the -dN argument). When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type. HI3 DER stream detection, dynamic session creation, and codec auto-detection are highlighted in the mediaMin run-time screen captures below.
+5) The above mediaMin command lines enable [dynamic session creation](#user-content-dynamicsessioncreation) (0x1 flag in the -dN command line option) and DER stream detection (0x1000 flag in the -dN command line option). When creating sessions dynamically, or "on the fly", mediaMin looks for occurrences of unique IP/port/payload combinations, and auto-detects the codec type. HI3 DER stream detection, dynamic session creation, and codec auto-detection are highlighted in the mediaMin run-time screen captures below.
 
     ![OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/openli_hi3_intercept_DER_stream_detection_session_creation.png "OpenLI HI3 intercept stream detection, dynamic session creation, and codec auto-detection")
 
     Note that [static session configuration](#user-content-staticsessionconfig), using a session config file supplied on the command line, is also available, depending on application needs.
 
-6) The above mediaMin command lines have [stream groups](#user-content-streamgroupusage) enabled (0x400 flag in the -dN argument). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be applied to stream group output.
+6) The above mediaMin command lines have [stream groups](#user-content-streamgroupusage) enabled (0x400 flag in the -dN command line option). Stream group output is formed by combining (or "merging") all input stream contributors, correctly time-aligned, and with audio quality signal proessing applied. ASR (automatic speech recognition) can also be applied to stream group output.
 
 After loading stream group outputs in Wireshark (openli-voip-example_group0_am.pcap and openli-voip-example2_group0_am.pcap) you should see the following waveform displays:
 
@@ -1129,7 +1129,7 @@ mediaMin also generates [stream group](#user-content-streamgroupusage) output .w
 <a name="BulkPcapHandling"></a>
 ## Bulk Pcap Handling
 
-The mediaMin command line [Real-Time Interval argument](#user-content-realtimeinterval) allows a "faster than real-time", or FTRT mode. FTRT mode allows pcaps to be processed faster than real-time, while still maintaining correct time alignment (sync) between multiple streams in each pcap (and across pcaps, if given as multiple inputs on the mediaMin command line). Stream alignment happens in the media domain - *after* packets are re-ordered, repaired, and decoded - and requires a reference clock, which makes accelerated time a difficult math and signal processing problem.
+The [Real-Time Interval command line option](#user-content-realtimeinterval) allows a "faster than real-time", or FTRT mode. FTRT mode allows pcaps to be processed faster than real-time, while still maintaining correct time alignment (sync) between multiple streams in each pcap (and across pcaps, if given as multiple inputs on the mediaMin command line). Stream alignment happens in the media domain - *after* packets are re-ordered, repaired, and decoded - and requires a reference clock, which makes accelerated time a difficult math and signal processing problem.
 
 FTRT mode is useful when a large number of pcaps, or continuous aggregration of pcaps, must be processed and stream group wav and/or pcap output is required but not live real-time streaming pcap or UDP port output.
 
@@ -1143,13 +1143,13 @@ Below are some command line examples, both in real-time and accelerated time:
 
 In the first example, processing is 40 times faster, and in the second about 28 times faster. Acceleration is less in the latter example due to total number of streams, codec complexity and bitrates, and media content. Amount of acceleration is also dependent on host system CPU clock rate, number of cores, and storage configuration.  Additional performance information - and how to determine maximum acceleration without media quality degradation - is given in [Bulk Pcap Performance Considerations](#user-content-bulkpcapperformanceconsiderations) below.
 
-In addition to FTRT mode, mediaMin also supports "as fast as possible" mode, or AFAP mode, which is enabled with -r0 [Real-Time Interval](#user-content-realtimeinterval) command line argument (i.e. a Real-Time Interval of zero). AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For more information see [Packet Push Rate Control](#user-content-packetpushratecontrol) above.
+In addition to FTRT mode, mediaMin also supports "as fast as possible" mode, or AFAP mode, which is enabled with -r0 [Real-Time Interval](#user-content-realtimeinterval) command line option (i.e. a Real-Time Interval of zero). AFAP mode will correctly handle packet processing (re-ordering, repair, decode) but not time alignment (sync) between streams. For more information see [Packet Push Rate Control](#user-content-packetpushratecontrol) above.
 
 ### FTRT and AFAP Mode Notes
 
 Code running in [pktlib](#user-content-pktlib_main) and [streamlib](#user-content-streamlib_main) doesn't know that time has been accelerated. For example, if you see a packet push alarm saying "stream X has pushed no packets for 15 seconds" in FTRT mode, you would see the same warning in real-time.
 
-Concurrently specifiying AFAP mode (with a -r0 [Real-Time Interval argument](#user-content-realtimeinterval)) and applying the USE_PACKET_ARRIVAL_TIMES flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in the [-dN command line argument](#user-content-mediamincommandlineoptions) will produce undefined behavior.
+Concurrently specifiying AFAP mode (with a -r0 [Real-Time Interval command line option](#user-content-realtimeinterval)) and applying the USE_PACKET_ARRIVAL_TIMES flag (see <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) in the [-dN command line option](#user-content-mediamincommandlineoptions) will produce undefined behavior.
 
 <a name="Peformance"></a>
 ## Performance
@@ -1249,7 +1249,7 @@ You can apply the following guidelines to determine whether you are at the limit
 > * there should be no warning messages about thread pre-emption, wav file write time exceeded, or other timing-related conditions. Warning message examples are given in [Output Media Path](#user-content-outputmediapath) below
 > * the number of FLCs (Frame Loss Compensation) in stream group output should be the same or nearly the same as running the same pcap(s) in real-time. Look for "Underrun" in [mediaMin Run-Time Stats](#user-content-runtimestats_main)
 	
-The last indicator is the most reliable. An increase in FTRT mode FLCs indicates the system does not have enough processing capacity to keep up with acceleration specified in the [Real-Time Interval](#user-content-realtimeinterval) -rN command line argument. Basically, the system is not able to maintain continuous stream group wav and pcap output without having to repair missed frames caused by lack of compute resources. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output media files, limiting stream group audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc. might help.
+The last indicator is the most reliable. An increase in FTRT mode FLCs indicates the system does not have enough processing capacity to keep up with acceleration specified in the [Real-Time Interval](#user-content-realtimeinterval) -rN command line option. Basically, the system is not able to maintain continuous stream group wav and pcap output without having to repair missed frames caused by lack of compute resources. As FTRT mode acceleration nears system limits, small changes in system configuration, pcap contents, and command line settings can make a difference. For example, using a RAM disk to store output media files, limiting stream group audio output to 8 kHz (narrowband), limiting screen output (e.g. reducing number of INFO messages), disabling packet logging, etc. might help.
 
 <a name="AudioQuality"><a/>
 ### Audio Quality
@@ -1266,7 +1266,7 @@ Below are some items to keep in mind when measuring audio quality of both indivi
     
     Any "flexing" in audio marker spacing indicates timing issues -- frame loss (possibly resulting from packet loss or out-of-order packets), packet rate overrun or underrun, etc.
     
-    In the mediaMin command line, audio markers can be enabled with a 0x8000000 flag in the -dN options cmd line argument. For more information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
+    In the mediaMin command line, audio markers can be enabled with a 0x8000000 flag in the -dN options command line option. For more information on using Wireshark to analyze audio quality, see [Analyzing Packet Media in Wireshark](#user-content-analyzingpacketmediawireshark).
 
 3) Continuous, real-time packet repair is crucial to achieving high quality audio. Both missing (lost) SID and media packets must be repaired. [Pktlib](#user-content-pktlib_main) uses a variety of methods, including packet re-ordering (due to out-of-order, or ooo, packets), packet loss concealment, SID insertion, and more. To identify packet loss and ooo problems, pktlib looks at missing sequence numbers, mismatched timestamps, and packet delta (rate). When verifying / measuring audio quality, you can look at both [run-time stats](#user-content-runtimestats_main) and [packet logs](#user-content-packetlog_main) for anomalies that might indicate audio quality problems. Even issues that may not be perceptible when listening can be identified this way; for example, during long periods of silence or background noise there may be packet flow issues unidentifiable by listening.
 
@@ -1461,7 +1461,7 @@ The above mediaMin command can be run with wideband audio pcaps included in the 
 
 The original wav files are included in the mediaTest/test_files subfolder; they are recordings from a speech corpus known as the <a href="https://www.cs.columbia.edu/~hgs/audio/harvard.html">"Harvard Sentences"</a>, prepared in the 1960s by the IEEE Subcommittee on Subjective Measurements as part of their recommended practices for speech quality measurements.
 
-In general, to enable ASR with any arbitrary mediaMin command, including mediaMin commands documented on this page, you can set the ENABLE_STREAM_GROUP_ASR flag in the -dN command line argument (-dN command line options and debug flags are documented in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
+In general, to enable ASR with any arbitrary mediaMin command, including mediaMin commands documented on this page, you can set the ENABLE_STREAM_GROUP_ASR flag in the -dN command line option (-dN command line options and debug flags are documented in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
 Here are some notes about ASR operation:
 
@@ -1947,7 +1947,7 @@ mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -L -d0xc11 -r0.5
 
 mediaMin -cx86 -i../pcaps/EVS_16khz_13200bps_FH_IPv4.pcap -L -d0xc11 -r0.5
 ```
-The "-r0.5" command line argument specifies a processing interval of 1/2 msec instead of 20 msec <sup>[1]</sup>.
+The "-r0.5" command line option specifies a processing interval of 1/2 msec instead of 20 msec <sup>[1]</sup>.
 
 Going beyond mediaMin, mediaTest also can be used as a "deep dive" EVS Player. Below are mediaTest command lines using the same example EVS pcaps as above:
 ```shell
@@ -1955,13 +1955,13 @@ mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -oEVS_16khz_13200bps_FH_
 
 mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_CH_PT127_IPv4.pcap -oEVS_16khz_13200bps_CH_PT127_IPv4.wav -Csession_config/evs_player_example_config2 -L
 ```
-mediaTest also accepts the "-rN" command line argument. If none is specified, the default is N=20 (20 msec) <sup>[1]</sup>.
+mediaTest also accepts the "-rN" command line option. If none is specified, the default is N=20 (20 msec) <sup>[1]</sup>.
 
 mediaTest offers test and measurement features not available in mediaMin, including a wider variety of I/O formats and low-level EVS encoding control, such as RF (channel aware) settings, DTX enable/disable, ptime interval, and more. For example, the following command line will play an EVS pcap over USB audio:
 ```shell
 mediaTest -cx86 -ipcaps/EVS_16khz_13200bps_FH_IPv4.pcap -ousb0 -Csession_config/evs_player_example_config -L
 ```
-In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument). Other USB ports can be specified, depending on what is physically connected to the server.
+In the above USB audio example, output is specified as USB port 0 (the -ousb0 cmd line option). Other USB ports can be specified, depending on what is physically connected to the server.
 
 Combined with .cod file <sup>[2]</sup> input (described in [Codec Test and Measurement](#user-content-codectestmeasurement) above), .pcap, .pcapng, and .rtp input (or .rtpdump), this makes mediaTest a flexible "EVS player".
 
@@ -2030,7 +2030,7 @@ mediaTest -cx86 -ipcaps/AMRWB-23.85kbps-20ms_bw.pcap -ousb0 -Csession_config/amr
 ```
 The above command lines will work on any AMR pcap, including octet aligned and bandwidth efficient formats.  Combined with the .cod file input described above, this makes mediaTest an "AMR player" that can read pcaps or .cod files (which use MIME "full header" format per 3GPP specs).
 
-In the above USB audio example, output is specified as USB port 0 (the -ousb0 argument).  Other USB ports can be specified, depending on what is physically connected to the server.
+In the above USB audio example, output is specified as USB port 0 (the -ousb0 cmd line option).  Other USB ports can be specified, depending on what is physically connected to the server.
 
 <a name="ConvertingWav2Pcaps"></a>
 ### Converting Wav to Pcaps
@@ -2279,7 +2279,7 @@ As shown in <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telec
 <a name="WavFileOutput"></a>
 ### Wav File Output
 
-Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. An 0x800 flag in the -dN command line argument enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using [pktlib](#user-content-pktlib_main) session creation APIs, these wav file outputs can be specified separately or in combination, per application needs.
+Stream group wav file output can be specified in the mediaMin command line or via flags in pktlib session creation APIs. An 0x800 flag in the -dN command line option enables wav file outputs for stream groups, their individual contributors, and also an N-channel wav file (where N is the number of group contributors). Using [pktlib](#user-content-pktlib_main) session creation APIs, these wav file outputs can be specified separately or in combination, per application needs.
 
 Note that [streamlib](#user-content-streamlib_main) handles the mechanics of wav file output, which means packet/media threads are able to generate wav file output concurrently. This provides the best possible combination of audio quality and real-time performance.
 
@@ -2998,17 +2998,23 @@ The command line quick-reference section covers all reference apps, followed by 
 
 > * All command line option and arguments are case sensitive<br/>
 > * Enter ./prog -h or ./prog -? to see a list of command line options (e.g. mediaMin -h or mediaTest -?. Just ? works also). Mandatory command line options are shown with "!"<br/>
-> * Application modes and functionality are controlled by the -dN command line argument, where N is a hex value containing up to 64 flags. These flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> and referenced throughout this documentation
+> * Application modes and functionality are controlled by the -dN command line option, where N is a hex value containing up to 64 flags. These flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> and referenced throughout this documentation
 > * Comments in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a> start with 'm" or 'mm' to indicate which -dN flags apply to both mediaMin and mediaTest and which apply only to mediaMin<br/>
 > * mediaMin and mediaTest always generate an [event log](#user-content-eventlog_main). The default event log filename is name_event_log.txt, where "name" is the filename (without extension) of the first command line input and the event log is stored on the current working folder. The &#8209;&#8209;event_log_path command line option can be used to control event log paths; otherwise event log filenames and all other event log options can be changed programmatically (as one example, look for LOG_EVENT_SETUP in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>)<br/>
 
-Command line error and reporting includes options with missing arguments, arguments with invalid format, unrecognized options, and misplaced entry. Here are some examples:
+Command line error reporting includes command line options
+
+   * with arguments with invalid format
+   * missing a required argument
+   * unrecognized options (includes misplaced entry)
+
+Here are some examples:
 
 ![Command line error reporting example](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/cmd_line_error_reporting_screencap.png "SigSRF application command line error reporting example")
 
 ![Command line error reporting example](https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/images/cmd_line_error_reporting_screencap2.png "SigSRF application command line error reporting example")
 
-In the above examples command line arguments with invalid format are highlighted in red, unrecognized options in orange, and options with missing required argument in purple. Error reporting printout is shown below the command line.
+In the above examples command line option arguments with invalid format are highlighted in red, unrecognized options in orange, and options with missing required argument in purple. Error reporting printout is shown below the command line.
 
 ## Command Line Options and Arguments that Apply to All Reference Apps
 
@@ -3016,14 +3022,20 @@ Below are general command line options and arguments that apply to all reference
 
 ### Platform and Operating Mode
 
-> -cXXX is an argument specifying one or more "platform designators", for example -cx86, -cArm, etc. At least one host platform designator is required, specifying a bare metal, VM, or container platform. If more than one designator is given, the second specifies an accelerator or coCPU card. Currently for the Github .rar packages and Docker containers this argument should always be given as -cx86 or -c x86<br/>
+> -c <platform] is a command line option specifying one or more "platform designators", for example
+
+     -c x86
+	 -cx86
+	 -cArm
+	 
+At least one platform designator is required, specifying the host platform (i.e. bare metal, VM, or container). If more than one platform designator is given, the second specifies an accelerator or coCPU card. Currently for the Github .rar packages and Docker containers this option should always be given as -cx86 or -c x86<br/>
 > <br/>
-> -MN specifies an optional operating mode N. -M0 is the default; currently for the Github .rar packages and Docker containers no operating mode should be given<br/>
+> -M <mode> specifies an optional operating mode N. -M0 is the default; currently for the Github .rar packages and Docker containers no operating mode should be given<br/>
 
 <a name="CommandLineIO"></a>
 ### Inputs and Outputs
 
-Inputs and outputs are given by one or more "<span style="font-family: 'Courier New';">-i Input</span>" and "<span style="font-family: 'Courier New';">-o Output</span>" command line arguments, where Input and Output are file paths or UDP ports. mediaTest supports file types including .wav, .au, .pcap, .cod, .amr, and many others. mediaMin supports file types including .pcap, .pcapng, .rtpxx (.rtp, .rtpdump, etc), and .wav. Here are some command line input and output argument examples:
+Inputs and outputs are given by one or more "<span style="font-family: 'Courier New';">-i Input</span>" and "<span style="font-family: 'Courier New';">-o Output</span>" command line options, where Input and Output are file paths or UDP ports. mediaTest supports file types including .wav, .au, .pcap, .cod, .amr, and many others. mediaMin supports file types including .pcap, .pcapng, .rtpxx (.rtp, .rtpdump, etc), and .wav. Here are some input and output command line option examples:
 
 > -i sounds.wav<br/>
 > <br/>
@@ -3043,7 +3055,7 @@ Inputs and outputs are given by one or more "<span style="font-family: 'Courier 
 > <br/>
 > -i mytestinput1.pcap -imytestinput2.pcap -i192.168.1.2:52000<br/>
 
-Here are some examples of mediaTest and mediaMin command lines with input and output arguments:
+Here are some examples of mediaTest and mediaMin command lines with input and output options:
 
     mediaTest -cx86 -i test_files/stv16c.INP -o test_files/stv16c_amr_23850_16kHz_mime.pcap -C session_config/amrwb_codec_test_config
 
@@ -3057,7 +3069,7 @@ in the above command line, mediaTest upsamples a 16 kHz .wav file to 48 kHz, enc
 
     mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -o xcode0.pcap -o xcode1.pcap -o xcode2.pcap -L -d 0x04000c11 -r20
 
-in the above example the xcodeN.pcap files contain G711 RTP packets transcoded from the first three (3) streams found within incoming packet flow from a .pcapng file. Also, because the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags are set in the -dN argument, .wav files for audio streams found within incoming packet flow will be generated. The latter are [implied outputs](#user-content-impliedoutputs).
+in the above example the xcodeN.pcap files contain G711 RTP packets transcoded from the first three (3) streams found within incoming packet flow from a .pcapng file. Also, because the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags are set in the -dN command line option, .wav files for audio streams found within incoming packet flow will be generated. The latter are [implied outputs](#user-content-impliedoutputs).
 
     mediaMin -c x86 -i ../pcaps/h264.pcap -o sample_capture_test.h264 -L -d 0x06000000c11 -r20 -g /tmp/shared --md5sum
 
@@ -3065,19 +3077,19 @@ in the above example sample_capture_test.h264 is an elementary bitstream file ex
 
     mediaMin -c x86 -i ../test_files/audio_video.pcapng -L -d 0x06000000c11 -o es_0.h265 -o es_1.h265 -o es_2.h265 -r20 -g /tmp/shared -l4 --md5sum --sha1sum
 
-in the above example the es_N.h265 files contain H.265 elementary bitstreams for the first three video streams found within incoming packet flow. Also, because the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags are set in the -dN argument, .wav files for audio streams found within incoming packet flow will be generated. The latter are [implied outputs](#user-content-impliedoutputs).
+in the above example the es_N.h265 files contain H.265 elementary bitstreams for the first three video streams found within incoming packet flow. Also, because the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags are set in the -dN command line option, .wav files for audio streams found within incoming packet flow will be generated. The latter are [implied outputs](#user-content-impliedoutputs).
 
 Both mediaTest and mediaMin require at least one input. mediaTest command lines should always contain at least one output; mediaMin command lines do not need an output option.
 
 <a name="ImpliedOutputs"></a>
 ### Implied Outputs
 
-In addition to outputs specified on the command line, depending on the operating mode and options determined by the -dN command line argument, mediaMin generates [implied outputs](#user-content-impliedoutputs). For example, .wav outputs and jitter buffer .pcap outputs are generated if the ENABLE_STREAM_GROUPS and ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flags, respectively, are set in the -dN command line argument. Some of the example command lines shown in [Inputs and Outputs](#user-content-commandlineio) above have the ENABLE_STREAM_GROUPS flag set, in which case .wav files for audio streams found within incoming packet flow will be generated. Here is a list of implied outputs:
+In addition to outputs specified on the command line, depending on the operating mode and options determined by the -dN command line option, mediaMin generates [implied outputs](#user-content-impliedoutputs). For example, .wav outputs and jitter buffer .pcap outputs are generated if the ENABLE_STREAM_GROUPS and ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flags, respectively, are set in the -dN command line option. Some of the example command lines shown in [Inputs and Outputs](#user-content-commandlineio) above have the ENABLE_STREAM_GROUPS flag set, in which case .wav files for audio streams found within incoming packet flow will be generated. Here is a list of implied outputs:
 
-> * per stream [jitter buffer output pcaps](#user-content-commandlinejitterbufferoutputs) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag<br/>
-> * per [stream output wav files](#user-content-wavfileoutput) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
-> * [stream group output pcaps](#user-content-realtimepacketoutput) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS flag<br/>
-> * [stream group output wav files](#user-content-wavfileoutput) if the [-dN command line argument](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
+> * per stream [jitter buffer output pcaps](#user-content-commandlinejitterbufferoutputs) if the [-dN command line option](#user-content-mediamincommandlineoptions) contains the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag<br/>
+> * per [stream output wav files](#user-content-wavfileoutput) if the [-dN command line option](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
+> * [stream group output pcaps](#user-content-realtimepacketoutput) if the [-dN command line option](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS flag<br/>
+> * [stream group output wav files](#user-content-wavfileoutput) if the [-dN command line option](#user-content-mediamincommandlineoptions) contains the ENABLE_STREAM_GROUPS and ENABLE_WAV_OUTPUT flags<br/>
 
 These and other -dN flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>
 
@@ -3188,7 +3200,7 @@ Below is "quick-reference" mediaMin command line documentation:
 <a name="mediaMinCommandLineOptions"></a>
 ### Options and Flags
 
-The -dN command line argument specifies options and flags. Here are some key flags, including the flag name, a brief description, and -dN value given in ():
+The -dN command line option specifies options and flags. Here are some key flags, including the flag name, a brief description, and -dN value given in ():
 
 > **DYNAMIC_SESSIONS** (0x01) - enable dynamic sessions<br/>
 > **ENABLE_STREAM_GROUP_ASR** (0x08) - apply ASR to stream group output<br/>
@@ -3209,7 +3221,7 @@ Note that many use cases require flags to be combined together. All flags are do
 <a name="RealTimeInterval"></a>
 #### Real-Time Interval
 
-The -rN command line argument specifies a "real-time interval" that mediaMin uses for a target packet push rate and [pktlib](#user-content-pktlib_main) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec RTP ptime (packet interval). Additional notes:
+The -rN command line option specifies a "real-time interval" that mediaMin uses for a target packet push rate and [pktlib](#user-content-pktlib_main) uses to control overall timing in media/packet threads. For example, -r20 specifies 20 msec, which is appropriate for RTP packets encoded with codecs that use 20 msec RTP ptime (packet interval). Additional notes:
 
 > * -r0 specifies no intervals, or "as fast as possible" (AFAP) mode, where mediaMin will push and process packets as fast as possible without regard to media domain processing that require a nominal timing reference, such as stream alignment<br/>
 > * no entry is the same as -r0<br/>
@@ -3220,7 +3232,7 @@ The -rN command line argument specifies a "real-time interval" that mediaMin use
 <a name="CommandLineDormantSessions"></a>
 #### Dormant Sessions
 
-If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line argument (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that duplicate an SSRC in another session cause the session that was duplicated to be designated as dormant, and its remaining media cleared from session state information and jitter buffers. Doing this assumes a valid reason for the original session to pause or halt its use of the SSRC value, for example call-waiting or other normal operation. In this example with the ENABLE_DORMANT_SESSIONS flag set in the -dN command line argument:
+If the ENABLE_DORMANT_SESSIONS flag is set in the -dN command line option (flag value of 0x4000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), sessions that duplicate an SSRC in another session cause the session that was duplicated to be designated as dormant, and its remaining media cleared from session state information and jitter buffers. Doing this assumes a valid reason for the original session to pause or halt its use of the SSRC value, for example call-waiting or other normal operation. In this example with the ENABLE_DORMANT_SESSIONS flag set in the -dN command line option:
 
     mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d 0x04000c11 -r20
 
@@ -3233,7 +3245,7 @@ For more information and run-time stats screen capture examples, see [SSRC Dupli
 <a name="CommandLineJitterBufferOutputs"></a>
 #### Jitter Buffer Outputs
 
-If the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is set in the -dN command line argument (flag value of 0x8000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), jitter buffer output streams -- including all re-ordering, RFC 8108 SSRC changes, DTX expansion, and packet loss / timestamp repairs -- will be written to pcap files. For example, in this command line:
+If the ENABLE_JITTER_BUFFER_OUTPUT_PCAPS flag is set in the -dN command line option (flag value of 0x8000000 defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>), jitter buffer output streams -- including all re-ordering, RFC 8108 SSRC changes, DTX expansion, and packet loss / timestamp repairs -- will be written to pcap files. For example, in this command line:
 
     mediaMin -cx86 -i ../pcaps/mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB.pcapng -L -d 0x08000c11 -r20
 
@@ -3243,7 +3255,7 @@ the files:
 > :<br/>
 > mediaplayout_amazinggrace_ringtones_1malespeaker_dormantSSRC_2xEVS_3xAMRWB_jb3.pcap<br/>
 
-will be generated by adding a "_jbN.pcap" suffix to the first command line input argument. Note that depending on the number of input arguments, and streams per input, there could be many pcap files generated.
+will be generated by adding a "_jbN.pcap" suffix to the first input command line option. Note that depending on the number of input commamd line inputs, and streams per input, there could be many pcap files generated.
 
 Here is an explanation of each flag in the above example command line:
 
@@ -3290,7 +3302,7 @@ The -pN command line option specifies a UDP port to add to the "port allow list"
 
 #### Include Input Pauses in Wav Output
 
-The -dN command line argument INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) includes input pauses as silence in stream group and individual (mono) wav outputs. This applies when input of one or more streams in the group pauses, for example call-on-hold, packet push pause, etc. Input pauses are always accurately reflected in stream group RTP streaming output, but for wav output it's an option as pauses can become very large and increase file storage requirements. Notes:
+The -dN command line option INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) includes input pauses as silence in stream group and individual (mono) wav outputs. This applies when input of one or more streams in the group pauses, for example call-on-hold, packet push pause, etc. Input pauses are always accurately reflected in stream group RTP streaming output, but for wav output it's an option as pauses can become very large and increase file storage requirements. Notes:
 
 > * an "input pause" is formally defined as a packet gap where sequence numbers pause and then resume; i.e. no packets are lost. Lost packet gaps (i.e. missing sequence numbers) are handled by [pktlib](#user-content-pktlib_main) (packet repair, jitter buffer resync, etc) prior to [streamlib](#user-content-streamlib_main) processing. Lost packet gaps that can't be repaired by pktlib are handled in streamlib by FLC (Frame Loss Compensation), but only up to a limit (nominally around 180 msec)
 > * silence zeros are written to wav output only when input resumes. In other words, silence is not added to an input that has stopped permanently
@@ -3299,7 +3311,7 @@ The -dN command line argument INCLUDE_PAUSES_IN_WAV_OUTPUT flag (defined in <a h
 
 #### FLC Holdoff Enable
 
-The -dN command line argument ENABLE_FLC_HOLDOFFS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) will enable FLC Holdoffs, which make the FLC (Frame Loss Compensation] algorithm in [streamlib](#user-content-streamlib_main) less conservative and may slightly improve audio quality in some cases.  Normally the FLC algorithm acts immediately on any indication of late or missing audio output, with objectives (i) maintain continuous live streaming output and (ii) spread out any media impairments over a wide range of frames.
+The -dN command line option ENABLE_FLC_HOLDOFFS flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) will enable FLC Holdoffs, which make the FLC (Frame Loss Compensation] algorithm in [streamlib](#user-content-streamlib_main) less conservative and may slightly improve audio quality in some cases.  Normally the FLC algorithm acts immediately on any indication of late or missing audio output, with objectives (i) maintain continuous live streaming output and (ii) spread out any media impairments over a wide range of frames.
 
 When FLC Holdoffs are enabled streamlib will defer (hold off) action when it detects a marginally late frame in live real-time streaming output. This may or may not be effective, as there is no way to tell if at some point "down the line" frame gaps will get worse and the prior holdoff will cause either (i) a slight discontinuity between two (2) output frames or (ii) two (2) consecutive frames to need repair.
 
@@ -3307,7 +3319,7 @@ In the best case the number of FLCs will be reduced or even eliminated, yielding
 
 #### Out-of-Spec RTP Padding
 
-The -dN command line argument ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
+The -dN command line option ALLOW_OUTOFSPEC_RTP_PADDING flag (defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>) can be set to suppress error messages for RTP packets with unused trailing payload bytes not declared with the padding bit in the RTP packet header. See comments in CreateDynamicSession() in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaMin/mediaMin.cpp" target="_blank">mediaMin.cpp</a>.
 
 #### Output Stream Group Pcap Path
 
@@ -3390,12 +3402,12 @@ or as appropriate depending on the system's configuration (look in /etc/fstab to
 
 If -g is not entered, then media files are generated on the mediaMin app subfolder.
 
-Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including the ENABLE_WAV_OUTPUT flag in the -dN command line argument (flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
+Note that -g does not apply to N-channel wav files, which are post-processed after a stream group closes (all streams in the group are finished). Wav file output can be turned off altogether by not including the ENABLE_WAV_OUTPUT flag in the -dN command line option (flags are defined in <a href="https://github.com/signalogic/SigSRF_SDK/blob/master/apps/mediaTest/cmd_line_options_flags.h">cmd_line_options_flags.h</a>).
 
 <a name="mediaTestCommandLineQuick-Reference"></a>
 ## mediaTest Command Line Quick-Reference
 
-Below are command line arguments and options supported only by mediaTest (and not mediaMin).
+Below are command line options supported only by mediaTest (and not mediaMin).
 
 <a name="ExecutionMode"></a>
 ### Execution Mode
@@ -3472,3 +3484,4 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
