@@ -69,6 +69,7 @@
   Modified Jul 2025 JHB, add isStdoutReady(), SetStdoutNonBlock(), and console_out(). See comments in diaglib_util.cpp
   Modified Aug 2025 JHB, update DSGetTimestamp() flag names
   Modified Aug 2025 JHB, add SetStdoutMode()
+  Modified Sep 2025 JHB, move MAX_APP_STR_LEN definition here from mediaMin.h
 */
 
 #ifndef _DIAGLIB_H_
@@ -114,6 +115,8 @@ int Log_RT(uint32_t loglevel, const char* fmt, ...);
 
 #define LOG_SET_API_STATUS    0x10   /* can be combined (OR'd) with uEventLogMode settings */
 #define LOG_MODE_MASK         0x0f
+
+#define MAX_APP_STR_LEN       12000  /* max string size allowed by Log_RT() */
 
 int DSInitLogging(DEBUG_CONFIG* dbg_cfg, unsigned int uFlags);  /* initialize event logging. Note that DSInitLogging() should not be called twice without a matching DSCloseLogging() call, as it increments a semaphore count to track multithread usage */
 

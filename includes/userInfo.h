@@ -28,7 +28,7 @@
    Modified Jan 2020 JHB, add #define for nRepeat, for mediaMin app cmd line usage
    Modified Jan 2021 JHB, add #define for szSDPFile for mediaMin app SDP file cmd line input
    Modified Dec 2021 JHB, make debugMode 64-bit int
-   Modified Dec 2022 JHB, add #define for szStreamGroupWavOutputPath for mediaMin app stream group wav output path cmd line input
+   Modified Dec 2022 JHB, add #define for szOutputMediaPath for mediaMin app stream group wav output path cmd line input
    Modified May 2023 JHB, change frameRate from int to float in UserInterface struct, change dstUdpPort[] from unsigned int to uint16_t
    Modified May 2023 JHB, enable mediamin app usage of -l for RFC7198 lookback depth. Note default value of 1 if no entry, handled in getUserInfo() in get_user_interface.cpp
    Modified Nov 2023 JHB, add nCut command line option
@@ -40,6 +40,8 @@
    Modified Feb 2025 JHB, remove references to MAX_CONCURRENT_STREAMS and MAXSTREAMS; instead all libs and apps are now using a single definition MAX_STREAMS, in shared_include/streamlib.h
    Modified Jul 2025 JHB, add stdout_ready_profile to CmdLineFlags_t struct
    Modified Aug 2025 JHB, add stdout_mode to CmdLineFlags_t struct
+   Modified Sep 2025 JHB, add szEventLogPath
+   Modified Oct 2025 JHB, add suppress_packet_info_messages to CmdLineFlags_t struct
 */
 
 #ifndef _USERINFO_H_
@@ -83,8 +85,9 @@ typedef struct CmdLineFlags_t {  /* 1-bit flags used inside UserInterface_t, JHB
   uint64_t  exclude_payload_type_from_key : 1;
   uint64_t  disable_codec_flc : 1;
   uint64_t  stdout_mode : 2;  /* stdout mode 0-3 */
+  uint64_t  suppress_packet_info_messages : 2;  /* suppress packet info messages 0-3 */
 
-  uint64_t  Reserved : 54;
+  uint64_t  Reserved : 52;
 
 } CmdLineFlags_t;
 
@@ -169,18 +172,19 @@ typedef struct UserInterface_t {
 #else
    #define   nReuseInputs fftOrder                    /* mediaMin app usage of -n cmd line entry, JHB Apr 2019 */
 #endif
-   #define   nSegmentation inputType                  /* mediaTest app usage of -s cmd line entry, JHB Jul 2019 */
-   #define   nInterval scryptParamr                   /* mediaTest app usage of -I cmd line entry, JHB Jul 2019 */
-   #define   nAmplitude baseAddr                      /* mediaTest app usage of -A cmd line entry, JHB Jul 2019 */
-   #define   nJitterBufferOptions scryptParamp        /* mediaMin app usage of -j cmd line entry, JHB Dec 2019 */ 
-   #define   nRepeatTimes scryptdklen                 /* mediaMin app usasge of -R cmd line entry, JHB Jan 2020 */
-   #define   szSDPFile szScryptFile                   /* mediaMin app usasge of -s cmd line entry for SDP file input. Note that mediaTest uses -s for audio file segmentation, JHB Jan 2021 */
-   #define   szStreamGroupWavOutputPath scryptpasswd  /* mediaMin app usasge of -g cmd line entry for stream group wav output path, JHB Dec 2022 */
-   #define   szStreamGroupPcapOutputPath scryptsalt   /* mediaMin app usasge of --group_pcaps cmd line entry for stream group pcap output path, JHB Dec 2023 */
+   #define   nSegmentation inputType                  /* mediaTest app -s cmd line entry, JHB Jul 2019 */
+   #define   nInterval scryptParamr                   /* mediaTest app -I cmd line entry, JHB Jul 2019 */
+   #define   nAmplitude baseAddr                      /* mediaTest app -A cmd line entry, JHB Jul 2019 */
+   #define   nJitterBufferOptions scryptParamp        /* mediaMin app -j cmd line entry, JHB Dec 2019 */ 
+   #define   nRepeatTimes scryptdklen                 /* mediaMin app -R cmd line entry, JHB Jan 2020 */
+   #define   szSDPFile szScryptFile                   /* mediaMin app -s cmd line entry for SDP file input. Note that mediaTest uses -s for audio file segmentation, JHB Jan 2021 */
+   #define   szOutputMediaPath scryptpasswd           /* mediaMin app -g cmd line entry for output media path, JHB Dec 2022 */
+   #define   szStreamGroupPcapOutputPath scryptsalt   /* mediaMin app --group_pcaps cmd line entry for stream group pcap output path, JHB Dec 2023 */
    #define   nSamplingFrequency scryptParamp          /* mediaTest app Fs for gpx processing, JHB Mar 2022 */
-   #define   nLookbackDepth libFlags                  /* mediamin app usage of -l for RFC7198 lookback depth. Note default value of 1 if no entry, handled in getUserInfo() in get_user_interface.cpp, JHB May 2023 */
+   #define   nLookbackDepth libFlags                  /* mediamin app -l for RFC7198 lookback depth. Note default value of 1 if no entry, handled in getUserInfo() in get_user_interface.cpp, JHB May 2023 */
    #define   nCut detailsLevel
    #define   nRandomBitErrorPercentage algorithmIdNum
+   #define   szEventLogPath szRmtIpAddr               /* mediaMin / mediaTest app --event_log_path cmd line option */
 
 } UserInterface;
 

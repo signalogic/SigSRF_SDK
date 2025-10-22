@@ -11,31 +11,33 @@
 
    Created 10/06/05 3:31p Nithin
 
-   Modified Nov 2014 JHB, fix some naming to support multiple targets, unify/consolidate command line params for all test programs
+   Modified Nov 2014 JHB, fix some naming to support multiple targets, unify/consolidate command line options for all test programs
    Modified Dec 2014 JHB, add support for IP addr, UDP port, and MAC addr entry (e.g. -Daa.bb.cc.dd:port:aa-bb-cc-dd-ee-ff-gg)
    Modified Jul 2015 JHB, add -l and -t cmd lne options (lib configuration and core task assignments) to support multifunctional .out file, e.g. image analytics
    Modified Jul 2015 JHB, add INT64 type to support 64-bit core list entries
    Modified Jul 2018 JHB, changed mandatory support to handle x86 and coCPU separately.  Changed isMandatory element in Record struct from bool to unsigned char
    Modified Sep 2019 JHB, add CLI_MEDIA_APPS flag
-   Modified Jan 2021 JHB, add CLI_MEDIA_APPS_MEDIAMIN flag, add type param to getOption()
+   Modified Jan 2021 JHB, add CLI_MEDIA_APPS_MEDIAMIN flag, add arg type to getOption()
    Modified May 2023 JHB, add FLOAT option type, FLOAT switch statement cases, getFloat(), change getUdpPort() from unsigned int to uint16_t
    Modified Jul 2023 JHB, add getPosition() public function to CmdLineOpt class
    Modified Feb 2024 JHB, add CLI_MEDIA_APPS_MEDIATEST flag
    Modified Dec 2024 JHB, don't define CmdLineOpt class if __cplusplus not defined
-   Modified Mar 2025 JHB, define ALLOW_XX Type enums for use with overloaded options, for example -rN can accept N either int or float
+   Modified Mar 2025 JHB, define ARG_ALLOW_XX Type enums for use with overloaded options, for example -rN can accept N either int or float
+   Modified Sep 2025 JHB, define ARG_TYPE_NONE, ARG_TYPE_OPTIONAL, and ARG_TYPE_PATH enums
+   Modified Oct 2025 JHB, add arg_error_reporting() and ARG_NUM_TYPES enum in CmdLineOpt class
 */
 
 #ifndef _CMDLINEOPT_H_
 #define _CMDLINEOPT_H_
 
 #ifndef _WIN32
-#include <unistd.h>
+  #include <unistd.h>
 #endif
 
 #define MAX_INSTANCES 8
 #define MAX_MULTIPLES 8
 
-/* flags for getUserInfo() (located in getUserInterface.cpp) */
+/* flags for CmdLineOpt::Record options[] definitions in getUserInterface.cpp */
 
 #define CLI_DISABLE_MANDATORIES     1
 #define CLI_MEDIA_APPS              2  /* indicates that calling app is a media app (e.g. mediaMin or mediaTest). For example, for overloaded cmd line options, this specfies media app defaults */
@@ -54,19 +56,26 @@ class CmdLineOpt {
 
 public:
 
-/* option types supported */
+/* option argument types */
 
-   enum Type {
-      INTEGER,
-      INT64,
-      CHAR,
-      STRING,
-      BOOLEAN,
-      IPADDR,
-      FLOAT,
-      ALLOW_FLOAT = 0x100,  /* ALLOW_XX attributes can be combined with option types to indicate the argument is overloaded and errors in converting to the primary type should be ignored, JHB Mar 2025 */
-      ALLOW_STRING = 0x200,
-      OPTION_TYPE_MASK = 0xff
+   enum ArgType {
+      ARG_TYPE_NONE,
+      ARG_TYPE_INT,
+      ARG_TYPE_INT64,
+      ARG_TYPE_CHAR,
+      ARG_TYPE_STR,
+      ARG_TYPE_PATH,  /* basically same as string, but displayed differently in command line help and argument error reporting, added Sep 2025 */
+      ARG_TYPE_BOOL,
+      ARG_TYPE_IPADDR,
+      ARG_TYPE_FLOAT,
+
+      ARG_TYPE_UPPER_BOUND,  /* leave this as-is when adding new argument types */
+      ARG_NUM_TYPES = ARG_TYPE_UPPER_BOUND - ARG_TYPE_NONE,
+
+      ARG_ALLOW_FLOAT = 0x100,  /* ARG_ALLOW_XX attributes can be combined with argument types to indicate the argument is overloaded and errors in converting to the primary type should be ignored, JHB Mar 2025 */
+      ARG_ALLOW_STR = 0x200,
+      ARG_OPTIONAL = 0x400,
+      ARG_TYPE_MASK = 0xff      /* mask to isolate argument types from attributes */
    };
 
 /* Structure for working with command line options */
@@ -74,7 +83,7 @@ public:
    struct Record {
 
       char option;                 /* option character */
-      Type type;                   /* type (integer, string, etc) */
+      ArgType arg_type;            /* arg type (int, path, string, etc) */
       unsigned char isMandatory;   /* is it mandatory? */
       char *description;           /* help printout description */
 
@@ -101,7 +110,8 @@ public:
    char getChar(char option, int nInstance);
    char *getStr(char option, int nInstance);
    bool getBool(char option, int nInstance);
-   int getPosition(char option, Type type);
+   int getPosition(char option, ArgType arg_type);
+   int arg_error_reporting(char* arg_info_str, ArgType arg_types[], int num_arg_types);
 
    void display(void);
    void printOptions(void);

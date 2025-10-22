@@ -12,13 +12,13 @@
  Revision History
   
   Created Aug 2017 Chris Johnson
-  Modified Sep 2017 JHB, moved Log_RT() here from pktlib_logging.c.  Moved declaration of pktlib_dbg_cfg here from pktlib.c (and renamed to lib_dbg_cfg).  Added DSGetAPIStatus() error/warning and function codes
+  Modified Sep 2017 JHB, moved Log_RT() here from pktlib_logging.c.  Moved declaration of pktlib_dbg_cfg here from pktlib.c (and renamed to lib_dbg_cfg). Added DSGetAPIStatus() error/warning and function codes
   Modified Sep 2017 JHB, added more DS_API_CODE_xxx definitions
   Modified Jul 2018 CKJ, look at LOG_SCREEN, LOG_FILE, and LOG_SCREEN_FILE constants in Log_RT()
-  Modified Oct 2018 JHB, add timestamps to Log_RT() output (see USE_TIMESTAMP define below).  Possibly this should be an option in the DEBUG_CONFIG struct (shared_include/config.h)
+  Modified Oct 2018 JHB, add timestamps to Log_RT() output (see USE_TIMESTAMP define below). Possibly this should be an option in the DEBUG_CONFIG struct (shared_include/config.h)
   Modified Jan 2019 JHB, remove 0..23 wrap from hours field of logging timestamp
   Modified Feb 2019 JHB, add code to look at LOG_SET_API_STATUS flag
-  Modified Nov 2019 JHB, add va_end() to match va_start() in Log_RT().  Could not having then been cause of very slow mem leak ?
+  Modified Nov 2019 JHB, add va_end() to match va_start() in Log_RT(). Could not having that cause a slow mem leak ?
   Modified Dec 2019 JHB, add log file creation if lib_dbg_cfg.uEventLogFile is NULL, recreation if the file is deleted (possibly by an external process), uEventLog_fflush_size and uEventLog_max_size support
   Modified Jan 2020 JHB, use libg_dbg_cfg.uPrintfControl to determine screen output of Log_RT(), see comments near USE_NONBUFFERED_OUTPUT
   Modified Feb 2020 JHB, implement wall clock timestamp option
@@ -47,6 +47,7 @@
   Modified Jul 2025 JHB, in Log_RT() add color printout for console warnings (yellow) and errors/critical errors (red)
   Modified Jul 2025 JHB, in Log_RT() call console_out(), which calls isStdoutReady() before printf() to avoid blocking if stdout has loss of connectivity
   Modified Aug 2025 JHB, in DSInitLogging() add terminal color initialization (white)
+  Modified Sep 2025 JHB, in Log_RT() use MAX_APP_STR_LEN (defined in diaglib.h) for max string size instead of local definition
 */
 
 /* Linux and/or other OS includes */
@@ -83,7 +84,7 @@ using namespace std;
 #include "diaglib_priv.h"
 
 /* diaglib version string */
-const char DIAGLIB_VERSION[256] = "1.9.10";
+const char DIAGLIB_VERSION[256] = "1.9.11";
 
 /* semaphores for thread safe logging init and close. Logging itself is lockless */
 
@@ -483,7 +484,9 @@ int DSCloseLogging(unsigned int uFlags) {
 }
 
 #define ERROR_PARSE_LOGMSG
+#if 0  /* MAX_APP_STR_LEN now used instead (defined in diaglib.h), JHB Sep 2025 */
 #define MAX_STR_SIZE 8000  /* increased from 4000, JHB Feb 2024 */
+#endif
 #define MAX_ERRSTR_SIZE 200
 
 uint64_t usec_base = 0;
@@ -492,7 +495,7 @@ uint8_t usec_init_lock = 0;
 int Log_RT(uint32_t loglevel, const char* fmt, ...) {
 
 va_list va;
-char log_string[MAX_STR_SIZE];
+char log_string[MAX_APP_STR_LEN + 100]; /* assuming all calling apps are adhering to MAX_APP_STR_LEN max len, we add some extra here to allow for thread suffix, new line insert/concat, timestamp, etc. This is more efficient than using snprintf() and checking every line of code for a couple of bytes of space available, JHB Sep 2025 */
 int slen = 0, fmt_start = 0;
 
    if (lib_dbg_cfg.uEventLogMode & DS_EVENT_LOG_DISABLE) return 0;  /* event log is (temporarily) disabled */
@@ -536,14 +539,18 @@ int slen = 0, fmt_start = 0;
 
       int ts_str_len = strlen(log_string);  /* zero or length of timestamp */
 
-   /* add and format Log_RT() string */
+   /* add and format Log_RT() string. Note this should handle case where caller gives a string longer than local space declared here */
 
       va_start(va, fmt);
 
       #if 0
       vsnprintf(&log_string[ts_str_len], sizeof(log_string) - ts_str_len, &fmt[fmt_start], va);
       #else
-      vsnprintf(&log_string[ts_str_len], sizeof(log_string) - ts_str_len - 2, &fmt[fmt_start], va);  /* adjust string length limit, JHB Feb 2024 */
+      #if 0
+      vsnprintf(&log_string[ts_str_len], sizeof(log_string) - ts_str_len - 2, &fmt[fmt_start], va);  /* adjust string length limit based on start pos if applicable, JHB Feb 2024 */
+      #else  /* limit caller string size. Timestamp + anything else we add/insert is assumed to be less than the extra amount in log_string[] declaration, JHB Sep 2025 */
+      vsnprintf(&log_string[ts_str_len], MAX_APP_STR_LEN, &fmt[fmt_start], va);
+      #endif
       #endif
 
       va_end(va);  /* added JHB Nov 2019 */
@@ -576,7 +583,7 @@ int slen = 0, fmt_start = 0;
 
       /* to-do:
 
-         1) Add more published API codes.  Some APIs may not have function names in their log messaages yet (I have been updating many of them over last few weeks)
+         1) Add more published API codes. Some APIs may not have function names in their log messaages yet (I have been updating many of them over last few weeks)
          2) Add more internal API codes
          3) Maybe some internal APIs should be "2nd and 3rd level" flags that can be combined, if calls can go 3 levels deep
       */
@@ -648,7 +655,7 @@ create_log_file_if_needed:
 
             /* make a string copy so screen output is not affected */
 
-               char log_string_copy[MAX_STR_SIZE];
+               char log_string_copy[MAX_APP_STR_LEN + 100];
                strcpy(log_string_copy, log_string);
                slen = strlen(log_string_copy);
 
@@ -658,7 +665,7 @@ create_log_file_if_needed:
                   if (!p) p = strcasestr(log_string_copy, "error");
                   if (!p) p = strcasestr(log_string_copy, "critical");
 
-                  if (p && slen+1 < MAX_STR_SIZE) { memmove(p+2, p+1, strlen(p+1)+1); *(p+1) = '|'; slen++; }
+                  if (p) { memmove(p+2, p+1, strlen(p+1)+1); *(p+1) = '|'; slen++; }
 
                } while (p);
 

@@ -34,7 +34,7 @@
    Modified Dec 2021 JHB, make debugMode 64-bit int
    Modified Mar 2022 JHB, add GPX file input handling, -Fn flag for mediaTest gpx processing
    Modified Aug 2022 JHB, adjust declaration of a few global vars to allow no_mediamin and no_pktlib options in mediaTest build (look for run, frame_mode, etc vars)
-   Modified Dec 2022 JHB, add char szStreamGroupWavOutputPath[CMDOPT_MAX_INPUT_LEN]
+   Modified Dec 2022 JHB, add char szOutputMediaPath[CMDOPT_MAX_INPUT_LEN]
    Modified Dec 2022 JHB, move sig_lib_event_log_filename here from packet_flow_media_proc.c
    Modified Jan 2023 JHB, in ctrl-c event handler call DSConfigLogging() with DS_CONFIG_LOGGING_PKTLOG_ABORT flag and set fCtrl_C_pressed. Don't set run = 0 for mediaMin
    Modified Jan 2023 JHB, add szAppFullCmdLine var and GetCommandLine()
@@ -69,6 +69,8 @@
    Modified Apr 2025 JHB, comments only
    Modified Jul 2025 JHB, add fShow_stdout_ready_profile to support --profile_stdout_ready command line option, add fExclude_payload_type_from_key to support --exclude_payload_type_from_key command line option
    Modified Aug 2025 JHB, add uStdoutMode to support --stdout_mode command line option
+   Modified Sep 2025 JHB, add szEventLogPath to support --event_log_path command line option
+   Modified Oct 2025 JHB, add uSuppressPacketInfoMesssages to support --suppress_packet_info_messages command line option
 */
 
 #ifdef __cplusplus
@@ -121,7 +123,7 @@ int              nJitterBufferParams = 0;
 int              nRepeats = 0;
 char             szSDPFile[CMDOPT_MAX_INPUT_LEN] = "";
 int              nSamplingFrequency;  /* rate of gps point recording in gpx file processing, Mar 2022 JHB */
-char             szStreamGroupWavOutputPath[CMDOPT_MAX_INPUT_LEN] = "";
+char             szOutputMediaPath[CMDOPT_MAX_INPUT_LEN] = "";
 #ifndef __LIBRARYMODE__  /* this group declared here in non-library build, otherwise declared in packet_flow_media_proc.c, Aug 2022 JHB */
 volatile char    pktStatsLogFile[CMDOPT_MAX_INPUT_LEN] = "";
 volatile int     send_sock_fd = -1, send_sock_fd_ipv6 = -1;
@@ -147,6 +149,8 @@ bool             fShow_stdout_ready_profile = false;
 bool             fExclude_payload_type_from_key = false;
 bool             fDisable_codec_flc = false;
 uint8_t          uStdoutMode_apps = 0;
+char             szEventLogPath[CMDOPT_MAX_INPUT_LEN] = "";
+uint8_t          uSuppressPacketInfoMessages = 0;
 
 /* global vars set in packet_flow_media_proc, but only visible within an app build (not exported from a lib build) */
 
@@ -342,6 +346,8 @@ int i;
    if (userIfs.CmdLineFlags.disable_codec_flc) fDisable_codec_flc = true;
 
    uStdoutMode_apps = userIfs.CmdLineFlags.stdout_mode;
+   
+   uSuppressPacketInfoMessages = userIfs.CmdLineFlags.suppress_packet_info_messages;
 
    for (i=0; i<MAX_STREAMS; i++) {
    
@@ -362,13 +368,19 @@ int i;
    if (strlen(userIfs.szSDPFile)) strcpy(szSDPFile, userIfs.szSDPFile);
    nSamplingFrequency = userIfs.nSamplingFrequency;  /* sampling frequency for gpx processing */
 
-   if (strlen(userIfs.szStreamGroupWavOutputPath)) {
-      strcpy(szStreamGroupWavOutputPath, userIfs.szStreamGroupWavOutputPath);
-      lstrtrim(szStreamGroupWavOutputPath);  /* trim leading and trailing spaces, if any ... can happen when apps are run inside shell scripts, JHB Jul 2024 */
+   if (strlen(userIfs.szOutputMediaPath)) {
+      strcpy(szOutputMediaPath, userIfs.szOutputMediaPath);
+      lstrtrim(szOutputMediaPath);  /* trim leading and trailing spaces, if any ... can happen when apps are run inside shell scripts, JHB Jul 2024 */
    }
+
    if (strlen(userIfs.szStreamGroupPcapOutputPath)) {
       strcpy(szStreamGroupPcapOutputPath, userIfs.szStreamGroupPcapOutputPath);
       lstrtrim(szStreamGroupPcapOutputPath);  /* trim leading and trailing spaces, if any ... can happen when apps are run inside shell scripts, JHB Jul 2024 */
+   }
+
+   if (strlen(userIfs.szEventLogPath)) {  /* add event log path, JHB Sep 2025 */
+      strcpy(szEventLogPath, userIfs.szEventLogPath);
+      lstrtrim(szEventLogPath);  /* trim leading and trailing spaces, if any ... can happen when apps are run inside shell scripts */
    }
 
    nRandomBitErrorPercentage = userIfs.nRandomBitErrorPercentage;

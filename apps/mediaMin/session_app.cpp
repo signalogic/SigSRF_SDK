@@ -52,6 +52,8 @@
    Modified Jun 2025 JHB, rename check_config_file() to CheckConfigFile(), add to session_app.h, and change return value to be length of config file path found, if any
    Modified Jun 2025 JHB, fix bug in stream group wav output naming (szSessionName[] was not included)
    Modified Jul 2025 JHB, move FindStream() here from mediaMin.cpp
+   Modified Sep 2025 JHB, replace thread_info[].init_err with .uErrorCondition, per changes in mediaMin.h
+   Modified Sep 2025 JHB, change szStreamGroupOutputWavPath to szOutputMediaPath
 */
 
 #include <algorithm>
@@ -360,7 +362,7 @@ int ReadCodecConfig(codec_test_params_t* codec_test_params, int thread_index) {
 char codec_config_file[1024] = "";
 FILE* codec_cfg_fp = NULL;
 
-   if (thread_info[thread_index].init_err) return 0;
+   if (thread_info[thread_index].uErrorCondition) return 0;
 
    if (CheckConfigFile(codec_config_file, thread_index) <= 0) return 0;  /* no error message if not found ... optional on mediaMin cmd line, JHB Sep 2022. Check for <= 0 as CheckConfigFile() return value is now length of config file path, if found, JHB Jun 2025 */
 
@@ -373,7 +375,7 @@ FILE* codec_cfg_fp = NULL;
    if (codec_cfg_fp == NULL) {
 
       fprintf(stderr, "mediaMin Error: ReadCodecConfig() says failed to open codec config file %s (%d)\n", MediaParams[0].configFilename, thread_index);
-      thread_info[thread_index].init_err = true;
+      thread_info[thread_index].uErrorCondition = true;
 
       return -1;
    }
@@ -398,7 +400,7 @@ char session_config_file[1024] = "";
 FILE* session_cfg_fp = NULL;
 int nSessionsConfigured = 0;
 
-   if (thread_info[thread_index].init_err) return 0;
+   if (thread_info[thread_index].uErrorCondition) return 0;
 
    if (CheckConfigFile(session_config_file, thread_index) <= 0) {  /* check for <= 0 as CheckConfigFile() return value is now length of config file path, if found, JHB Jun 2025 */
 
@@ -416,7 +418,7 @@ int nSessionsConfigured = 0;
    if (session_cfg_fp == NULL) {
 
       fprintf(stderr, "mediaMin Error: ReadSessionConfig() says failed to open static session config file %s, exiting mediaMin (%d)\n", session_config_file, thread_index);
-      thread_info[thread_index].init_err = true;
+      thread_info[thread_index].uErrorCondition = true;
 
       return 0;
    }
@@ -521,7 +523,7 @@ HSESSION hSession;
 
                int nStream = 0;
                strcpy(thread_info[thread_index].szGroupName[nStream], szSessionName[nStream]);
-               sprintf(session_data[i].szSessionName, "%s%s", szStreamGroupWavOutputPath, thread_info[thread_index].szGroupName[nStream]);
+               sprintf(session_data[i].szSessionName, "%s%s", szOutputMediaPath, thread_info[thread_index].szGroupName[nStream]);
 
                fNChannelWavOutput = true;
             }
@@ -624,7 +626,7 @@ HSESSION hSession;
 
    if (nSessionsConfigured && !nSessionsCreated) {
 
-      thread_info[thread_index].init_err = true;
+      thread_info[thread_index].uErrorCondition = 1;
       return -1;  /* return error -- static sessions were configured but none created */
    }
 

@@ -92,7 +92,7 @@
   Modified May 2023 JHB, add DS_SESSION_INFO_RFC7198_LOOKBACK flag to allow retrieval of RFC7198 lookback depth
   Modified Jul 2023 JHB, add DS_JITTER_BUFFER_INFO_NUM_DTMF_PKTS
   Modified Sep 2023 JHB, add DSFilterPacket() and DSFindPcapPacket() APIs, DS_FILTER_PKT_XXX flags, and DS_FIND_PCAP_PACKET_XXX flags
-  Modified Nov 2023 JHB, modify pcap_hdr_t struct, add PCAP_TYPE_RTP flag, and update DSOpenPcap() and DSReadPcapRecord() to handle .rtp (.rtpdump) format
+  Modified Nov 2023 JHB, modify pcap_hdr_t struct, add PACKET_TYPE_RTP flag, and update DSOpenPcap() and DSReadPcapRecord() to handle .rtp (.rtpdump) format
   Modified Nov 2023 JHB, add DS_FMT_PKT_USER_UDP_PAYLOAD flag so DSFormatPacket() can handle formatting an input payload that needs no UDP payload modification (e.g. it already includes a full/correct RTP header)
   Modified Nov 2023 JHB, update comments and remove references to "background process"
   Modified Feb 2024 JHB, add DS_SESSION_INFO_LAST_ACTIVE_CHANNEL option for DSGetSessionInfo()
@@ -130,6 +130,8 @@
   Modified Jun 2025 JHB, add uPktNumber and szUserMsgString params to DSReadPcap(). See comments
   Modified Aug 2025 JHB, add uTimestamp_mode_record_search to PACKETMEDIAINFO struct. See usage in packet_flow_media_proc()
   Modified Aug 2025 JHB, add uPktNumber param in DSGetPacketInfo()
+  Modified Sep 2025 JHB, add LINKTYPE_IEEE802_11 and LINKTYPE_LINUX_SLL2
+  Modified Sep 2025 JHB, add support for pcap and pcapng big-endian format files (added IO_TYPE_PCAP_BE and IO_TYPE_PCAPNG_BE input/output types)
 */
 
 #ifndef _PKTLIB_H_
@@ -233,6 +235,8 @@
 /* misc UDP port numbers */
 
 #define DNS_PORT                        53
+#define DHCP_SERVER_PORT                67
+#define DHCP_CLIENT_PORT                68                     
 #define NetBIOS_PORT                    137   /* also uses 138 */
 #define QUIC_PORT                       443
 #define DHCPv6_PORT                     547
@@ -867,7 +871,7 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, uint8_t* pFragHdrIPv6, unsigned int uF
 
     -does basic verification on magic number and supported link layer types
     -sets pcap file header struct if one is passed in the params
-    -returns size of data link layer
+    -returns size of data link layer, or < 0 for an error condition (-1 for file not found, -2 for other errors)
 
   DSReadPcap() - reads in next pcap record
 
@@ -981,40 +985,66 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, uint8_t* pFragHdrIPv6, unsigned int uF
 
 /* definitions for block_type in above structs */
 
-  #define PCAP_PB_TYPE     0x7ff0  /* standard packet blocks for pcap and .rtpxxx files - these are not in any spec, we need values that should not conflict with the pcapng spec */
-  #define RTP_PB_TYPE      0x7ff1
-  #define PCAPNG_EPB_TYPE  6       /* pcapng enhanced block type, note this is the default block type containing IP/UDP/RTP data */
-  #define PCAPNG_SPB_TYPE  3       /* pcapng simple block type, IETF spec (https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html) section 4.4 explains "This block is preferred to the standard Enhanced Packet Block when performance or space occupation are critical factors, such as in sustained traffic capture applications" */
-  #define PCAPNG_IDB_TYPE  1       /* pcapng interface description block */
-  #define PCAPNG_NRB_TYPE  4       /* pcapng name resolution block */
+  #define PCAP_PB_TYPE                                 0x7ff0   /* standard packet blocks for pcap and .rtpxxx files - these are not in any spec, we need values that should not conflict with the pcapng spec */
+  #define RTP_PB_TYPE                                  0x7ff1
+  #define PCAPNG_EPB_TYPE                                   6   /* pcapng enhanced block type, note this is the default block type containing IP/UDP/RTP data */
+  #define PCAPNG_SPB_TYPE                                   3   /* pcapng simple block type, IETF spec (https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html) section 4.4 explains "This block is preferred to the standard Enhanced Packet Block when performance or space occupation are critical factors, such as in sustained traffic capture applications" */
+  #define PCAPNG_IDB_TYPE                                   1   /* pcapng interface description block */
+  #define PCAPNG_NRB_TYPE                                   4   /* pcapng name resolution block */
 
-/* definitions used by pcap APIs. Notes:
+/* definitions used by packet input/output APIs. Notes:
 
-  -PCAP_TYPE_LIBPCAP and PCAP_TYPE_PCAPNG are returned by DSOpenPcap() in upper 16 bits of return value, depending on file type discovered
-  -PCAP_TYPE_BER and PCAP_TYPE_HI3 are used by mediaMin for intermediate packet output
+  -IO_TYPE_XXX are input/output types
+  -IO_TYPE_LIBPCAP, IO_TYPE_LIBPCAP_BE, IO_TYPE_PCAPNG, and IO_TYPE_PCAPNG_BE are returned by DSOpenPcap() in input/output type field of a Link Layer Info value. IO_TYPE_RTP is returned for .rtpXXX format files
+  -LINK_LAYER_XXX_MASK can be used to isolate fields in a Linker Layer Info value
+  -getIOType() and isInputXxx() macros take Link Layer Info values and input/output type, respectively
+  -IO_TYPE_BER and IO_TYPE_HI3 are used by mediaMin for intermediate packet output
 */
 
-  #define PCAP_TYPE_LIBPCAP                                  0
-  #define PCAP_TYPE_PCAPNG                                   1
-  #define PCAP_TYPE_BER                                      2
-  #define PCAP_TYPE_HI3                                      3
-  #define PCAP_TYPE_RTP                                      4
+  #define IO_TYPE_LIBPCAP                                    0  /* pcap file */
+  #define IO_TYPE_LIBPCAP_BE                                 1  /* pcap file, big-endian format */
+  #define IO_TYPE_PCAPNG                                     2  /* pcapng file */
+  #define IO_TYPE_PCAPNG_BE                                  3  /* pcapng file, big-endian format */
+  #define IO_TYPE_RTP                                        4  /* .rtpXXX file */
+  #define IO_TYPE_BER                                        5  /* .ber file */
+  #define IO_TYPE_ASN_XML                                    6  /* ASN.1 XML file */
+  #define IO_TYPE_UDP                                       10  /* UDP port */
+  
+  #define LINK_LAYER_LINK_TYPE_MASK                 0x0ff00000  /* return value of DSOpenPcap() contains link type in bits 27-20, input type in bits 19-16, and link layer length in lower 16 bits */
+  #define LINK_LAYER_IO_TYPE_MASK                     0x0f0000
+  #define LINK_LAYER_LEN_MASK                           0xffff
 
-  #define PCAP_LINK_LAYER_LEN_MASK                      0xffff  /* return value of DSOpenPcap() contains link type in bits 27-20, file type in bits 19-16, and link layer length in lower 16 bits */
-  #define PCAP_LINK_LAYER_FILE_TYPE_MASK              0x0f0000
-  #define PCAP_LINK_LAYER_LINK_TYPE_MASK            0x0ff00000
+  #define getLinkType(link_layer_info)      (((link_layer_info) & LINK_LAYER_LINK_TYPE_MASK) >> 20)  /* returns a Link Type from a Link Layer Info value. These are Link Layer types for pcap file formats as documented at https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcaplinktype */
+  #define getIOType(link_layer_info)        (((link_layer_info) & LINK_LAYER_IO_TYPE_MASK) >> 16)    /* returns an input/output type from a Link Layer Info value */
+  #define getLinkLayerLen(link_layer_info)  ((link_layer_info) & LINK_LAYER_LEN_MASK)                /* returns a Link Layer length from a Link Layer Info value (in bytes) */
 
+/* helper macros for input/output types */
+
+  #define isInputPcap(io_type)     ((io_type) >= IO_TYPE_LIBPCAP && (io_type) <= IO_TYPE_RTP)  /* returns true if the input/output type is a pcap, pcapng, or .rtpXXX file */
+  #define isInputBer(io_type)      ((io_type) == IO_TYPE_BER)
+  #define isInputAsn_Xml(io_type)  ((io_type) == IO_TYPE_ASN_XML)
+  #define isInputUDP(io_type)      ((io_type) == IO_TYPE_UDP)
+  
+  #define isOutputPcap             isInputPcap
+  #define isOutputBer              isInputBer
+  #define isOutputAsn_Xml          isInputAsn_Xml
+  #define isOutputUDP              isInputUDP
+  
   #ifndef LINKTYPE_ETHERNET  /* define pcap file link types if needed. We don't require libpcap to be installed */
 
     #define LINKTYPE_ETHERNET                                1  /* standard Ethernet Link Layer */
+    #define LINKTYPE_IEEE802_11                            105  /* wireless LAN */
     #define LINKTYPE_LINUX_SLL                             113  /* Linux "cooked" capture encapsulation */
+    #define LINKTYPE_LINUX_SLL2                            276
     #define LINKTYPE_RAW_BSD                                12  /* Raw IP, OpenBSD compatibility value */
     #define LINKTYPE_RAW                                   101  /* Raw IP */
     #define LINKTYPE_IPV4                                  228  /* Raw IPv4 */
     #define LINKTYPE_IPV6                                  229  /* Raw IPv6 */
   #endif
 
-  #define LINKTYPE_LINUX_SLL_LINK_LEN                       16
+  #define LINKTYPE_LINUX_IEEE802_11_LEN                     32  /* link layer lengths (in bytes) not defined in if_ether.h */
+  #define LINKTYPE_LINUX_SLL_LEN                            16
+  #define LINKTYPE_LINUX_SLL2_LEN                           20
 
 /* DSOpenPcap() opens a pcap, pcapng, or rtp/rtpdump file and fills in a pcap_hdr_t struct (above). Notes:
 
@@ -1024,11 +1054,11 @@ int DSPktRemoveFragment(uint8_t* pkt_buf, uint8_t* pFragHdrIPv6, unsigned int uF
 
    -return value is a 32-bit int formatted as:
 
-      (link_type << 20) | (file_type << 16) | link_layer_length
+      (link_type << 20) | (input_type << 16) | link_layer_length
 
-    where link_type is one of the LINKTYPE_XXX definitions above, file_type is one of the PCAP_TYPE_XXX definitions above, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14). The full return value should be saved and then given as link_layer_info in DSReadPcap() and DSFilterPacket()
+    where link_type is one of the LINKTYPE_XXX definitions above, input_type is one of the PACKET_TYPE_XXX definitions above, and link_layer_length is the length (in bytes) of link related information preceding the pcap record (typically ranging from 0 to 14). The full return value should be saved and then given as link_layer_info in DSReadPcap() and DSFilterPacket()
 
-   -a return value < 0 indicates an error
+   -a return value < 0 indicates an error (-1 if file not found, -2 for file format errors)
 */
 
   int DSOpenPcap(const char* pcap_file, unsigned int uFlags, FILE** fp_pcap, pcap_hdr_t* pcap_file_hdr, const char* pErrstr);

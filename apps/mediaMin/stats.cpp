@@ -147,7 +147,7 @@ unsigned int nOrphansRemoved, nMaxListFragments;
 
    bool fLogTimeStampPrinted = false;  /* make sure only one event log timestamp is printed in the case of multiple stats strings (which should only happen with 100s of inputs during stress tests) */
   
-/* note stats are concatenated into one string declared in mediaMin and then give to one call to app_printf() for display and logging; when multiple app threads and packet/media threads are running this avoids text fragments and mixing with other messages. The string can be large, see MAX_APP_STR_LEN in mediaMin.h (currently set to 12000) */
+/* note stats are concatenated into one string declared in mediaMin and then give to one call to app_printf() for display and logging; when multiple app threads and packet/media threads are running this avoids text fragments and mixing with other messages. The string can be large, see MAX_APP_STR_LEN in diaglib.h (this limit is used by Log_RT() event logging API) */
 
    sprintf(tmpstr, "=== mediaMin summary stats");
    if (num_app_threads > 1) snprintf(&tmpstr[strlen(tmpstr)], max_buffer_size - strlen(tmpstr), " (%d)", thread_index);  /* show application thread if more than one. Show only once, on stats heading */

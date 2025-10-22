@@ -32,6 +32,7 @@
  Revision History
 
    Created Jun 2025 JHB, split off from mediaMin.cpp
+   Modified Sep 2025 JHB, in isPortAllowed() recognize UDP/DHCP
 */
 
 #include <algorithm>
@@ -107,36 +108,42 @@ static unsigned int uCursorPos[MAX_APP_THREADS][MAX_STREAMS_THREAD] = {{ 0 }};
 
       switch (port) {  /* see additional comments for port definitions in pktlib.h */
 
+         case DHCP_SERVER_PORT:
+         case DHCP_CLIENT_PORT:
+            strcpy(portstr, "DHCP");
+            nFound = 1;
+            break;
+
          case DNS_PORT:
             strcpy(portstr, "DNS");
-            nFound = 1;
+            nFound = 2;
             break;
 
          case DHCPv6_PORT:
             strcpy(portstr, "DHCPv6");
-            nFound = 2;
+            nFound = 3;
             break;
 
          case NetBIOS_PORT:
          case NetBIOS_PORT+1:
             strcpy(portstr, "NetBIOS");
-            nFound = 3;
+            nFound = 4;
             break;
 
          case QUIC_PORT:  /* added JHB Feb 2025 */
             strcpy(portstr, "QUIC");
-            nFound = 4;
+            nFound = 5;
             break;
 
          case GTP_PORT:  /* GPRS tunneling protocol */
             if (num_GPRS++ < 16 || (num_GPRS < 512 && num_GPRS % 32 == 0) || num_GPRS % 512 == 0) { sprintf(portstr, "GPRS Tunneling"); sprintf(countstr, " (%d)", num_GPRS); }
-            nFound = 5;
+            nFound = 6;
             fSDPInfoFound = sdp_info_check(pkt_buf, pkt_len);
             break;
 
          case PICHAT_PORT:
             strcpy(portstr, "pichat");
-            nFound = 6;
+            nFound = 7;
             break;
 
          default:

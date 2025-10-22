@@ -63,6 +63,9 @@
    Modified Jun 2025 JHB, add szTranscodeOutput[] to support bit-exact operations on transcode output files
    Modified Jun 2025 JHB, add session joining flags (session_join_flags[])
    Modified Aug 2025 JHB, add PktInfo_Reassembled[]
+   Modified Sep 2025 JHB, define MAX_STREAM_STATS separately to better handle capacity tests using cmd line repeat
+   Modified Sep 2025 JHB, replace thread_info[].init_err with .uErrorCondition to improve differentiation of initialization and run-time errors
+   Modified Sep 2025 JHB, move MAX_APP_STR_LEN define to diaglib.h (now used by Log_RT() as an upper limit on event log strings)
 */
 
 #ifndef _MEDIAMIN_H_
@@ -99,9 +102,7 @@
 */
 
 #define MAX_STREAMS_THREAD                  64  /* maximum number of streams per thread */
-#define MAX_SESSIONS_THREAD                 64  /* maximum number of sessions per thread */
-
-#define MAX_APP_STR_LEN                  12000  /* size used for very large string ops like summary stats, when we have concerns about multi-thread operation breaking string output in console display and event log */
+#define MAX_SESSIONS_THREAD                 64  /* maximum number of concurrent sessions per thread */
 
 #define SESSION_MARKED_AS_DELETED  0x80000000L  /* reserved mediaMin flag used to mark hSessions[] entries as deleted during dynamic session operation */
 
@@ -148,7 +149,8 @@ typedef struct {
    
 } GROUP_INTERVAL_STATS;
 
-#define MAX_GROUP_STATS  512
+#define MAX_STREAM_STATS                    512
+#define MAX_GROUP_STATS                     512
 
 typedef struct {
 
@@ -171,7 +173,7 @@ typedef struct {
 #define STREAM_STAT_FIRST_PKT              0x10  /* set when stream receives first packet */
 #define STREAM_STAT_FLAG_MASK              0xf0
 
-#define MAX_DYN_PYLD_TYPES  32  /* max number of disallowed payload type messsages (fDisallowedPyldTypeMsg) */
+#define MAX_DYN_PYLD_TYPES                   32  /* max number of disallowed payload type messsages (fDisallowedPyldTypeMsg) */
 
 typedef struct {  /* input data cache items, JHB Oct 2024 */
 
@@ -185,14 +187,14 @@ typedef struct {  /* input data cache items, JHB Oct 2024 */
 
 /* definitions for uFlags field in INPUT_DATA_CACHE struct */
 
-#define CACHE_INVALID          0  /* indicate to GetInputData() that input cache contains stale or outdated data */
-#define CACHE_READ             1  /* indicate to GetInputData() that current packet data is still being processed and should be read from input cache, examples include (i) packet arrival timestamp not yet elapsed and (ii) a TCP packet being consumed in segments */
-#define CACHE_READ_PKTBUF      2  /* same as CACHE_READ but indicates pktbuf is no longer valid due to in-place processing and should also be read from cache */
+#define CACHE_INVALID                         0  /* indicate to GetInputData() that input cache contains stale or outdated data */
+#define CACHE_READ                            1  /* indicate to GetInputData() that current packet data is still being processed and should be read from input cache, examples include (i) packet arrival timestamp not yet elapsed and (ii) a TCP packet being consumed in segments */
+#define CACHE_READ_PKTBUF                     2  /* same as CACHE_READ but indicates pktbuf is no longer valid due to in-place processing and should also be read from cache */
 
-#define CACHE_NEW_DATA      0x10  /* set by GetInputData(), indicates input cache has been updated with new data */
-#define CACHE_MTU_EXPANDED  0x20  /* set by GetInputData(), indicates input cache packet data buffer size is currently expanded for an oversize packet */
+#define CACHE_NEW_DATA                     0x10  /* set by GetInputData(), indicates input cache has been updated with new data */
+#define CACHE_MTU_EXPANDED                 0x20  /* set by GetInputData(), indicates input cache packet data buffer size is currently expanded for an oversize packet */
 
-#define CACHE_ITEM_MASK     0x0f  /* mask to isolate flags that instruct GetInputData() */
+#define CACHE_ITEM_MASK                    0x0f  /* mask to isolate flags that instruct GetInputData() */
 
 
 /* APP_THREAD_INFO defines per-thread application vars and structs. If mediaMin is run from the cmd line then there is just one application thread, if mediaMin is run from mediaTest with -Et command line entry, then -tN entry determines how many application threads */
@@ -226,7 +228,7 @@ typedef struct {
   int                   nSessionOutputStream[MAX_SESSIONS_THREAD];
   bool                  fDuplicatedHeaders[MAX_STREAMS_THREAD];
   FILE*                 fp_pcap_jb[MAX_SESSIONS_THREAD];
-  bool                  init_err;
+  uint8_t               uErrorCondition;
 
 /* packet stats */
 
@@ -263,7 +265,7 @@ typedef struct {
 
 /* stream stats */
 
-  STREAM_STATS          StreamStats[MAX_STREAMS_THREAD];
+  STREAM_STATS          StreamStats[MAX_STREAM_STATS];
   int16_t               num_stream_stats;
 
   uint32_t              pkt_push_ctr, pkt_pull_jb_ctr, pkt_pull_output_ctr, pkt_pull_streamgroup_ctr, prev_pkt_push_ctr, prev_pkt_pull_jb_ctr, prev_pkt_pull_output_ctr, prev_pkt_pull_streamgroup_ctr;  /* referenced in UpdateCounters() console update in user_io.cpp */

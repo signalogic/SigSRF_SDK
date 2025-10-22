@@ -45,7 +45,7 @@
    Modified Sep 2023 JHB, and fCapacityTest. Moved here from mediaMin.cpp, referenced both there and in packet_flow_media_proc.c
    Modified Nov 2023 JHB, add nCut, set from cmd line --cut option
    Modified Nov 2023 JHB, remove definition of MAX_CODEC_INSTANCES (now in voplib.h)
-   Modified Dec 2023 JHB, add char szStreamGroupPcapOutputPath[CMDOPT_MAX_INPUT_LEN]
+   Modified Dec 2023 JHB, add char szOutputMediaPath[CMDOPT_MAX_INPUT_LEN]
    Modified Dec 2023 JHB, remove session_cmd.h and transcoding.h includes
    Modified Dec 2023 JHB, add bandwidth_limit and input_sample_rate fields to codec_test_params_t struct
    Modified Feb 2024 JHB, modify definition of mediaTest_proc() to support multi-thread testing
@@ -63,6 +63,8 @@
    Modified Jun 2025 JHB, include directcore.h
    Modified Jul 2025 JHB, add fShow_stdout_ready_profile to support --profile_stdout_ready command line option, add fExclude_payload_type_from_key to support --exclude_payload_type_from_key command line option
    Modified Aug 2025 JHB, add uStdoutMode to support --stdout_mode command line option
+   Modified Sep 2025 JHB, add szEventLogPath to support --event_log_path command line option
+   Modified Oct 2025 JHB, add uSuppressPacketInfoMesssages to support --suppress_packet_info_messages command line option
 */
 
 #ifndef _MEDIA_TEST_H_
@@ -203,7 +205,7 @@ extern                   MEDIAPARAMS MediaParams[];
 extern                   PLATFORMPARAMS PlatformParams;
 extern float             RealTimeInterval[];
 
-extern volatile char     pktStatsLogFile[CMDOPT_MAX_INPUT_LEN];
+extern volatile char     pktStatsLogFile[];
 extern volatile bool     demo_build;
 extern volatile bool     frame_mode, use_bkgnd_process, use_log_file;
 extern volatile int8_t   pm_run;  /* "q" (quit) key and ctrl-C handler variable.  In thread mode, this is direct access to thread state variable if needed:  1 = run (default, set when pktlib is loaded), 0 = exit, 2 = debug info */
@@ -233,11 +235,11 @@ extern int               nSegmentInterval;
 extern int               nAmplitude;
 extern int               nJitterBufferParams;
 extern int               nRepeats;
-extern char              szSDPFile[CMDOPT_MAX_INPUT_LEN];
+extern char              szSDPFile[];
 extern int               nSamplingFrequency;
-extern char              szStreamGroupWavOutputPath[CMDOPT_MAX_INPUT_LEN];
-extern char              szStreamGroupPcapOutputPath[CMDOPT_MAX_INPUT_LEN];
-extern uint16_t          uPortList[MAX_STREAMS];
+extern char              szOutputMediaPath[];
+extern char              szStreamGroupPcapOutputPath[];
+extern uint16_t          uPortList[];
 extern uint8_t           uLookbackDepth;
 
 extern QWORD             nCoreList;                         /* bitwise core list given in command line */
@@ -272,6 +274,8 @@ extern bool              fShow_stdout_ready_profile;  /* command line --stdout_r
 extern bool              fExclude_payload_type_from_key;  /* command line --exclude_payload_type_from_key */
 extern bool              fDisable_codec_flc;
 extern uint8_t           uStdoutMode_apps;
+extern char              szEventLogPath[];
+extern uint8_t           uSuppressPacketInfoMessages;
 
 #define szAppFullCmdLine (((const char*)full_cmd_line))  /* szAppFullCmdLine is what apps should use. full_cmd_line should not be modified so this is a half-attempt to remind user apps that it should be treated as const char* */
 

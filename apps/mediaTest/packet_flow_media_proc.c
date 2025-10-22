@@ -1862,22 +1862,22 @@ run_loop:
 
       /* encode and decode profiling times are always enabled, as they are the major components of thread capacity, and used for some capacity management related decisions, JHB Feb 2020 */
 
-         if (packet_media_thread_info[thread_index].fProfilingEnabled) {
+         if (packet_media_thread_info[thread_index].fProfilingEnabled) {  /* note - these are the _previous_ profiling times, from the last pass through the p/m worker thread loop */
 
             sprintf(&tmpstr[strlen(tmpstr)], ", ms time = %4.2f (msec)", 1.0*(end_profile_time - start_profile_time)/1000);
-            sprintf(&tmpstr[strlen(tmpstr)], ", last ms time = %4.2f", 1.0*packet_media_thread_info[thread_index].manage_sessions_time[(packet_media_thread_info[thread_index].manage_sessions_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
+            sprintf(&tmpstr[strlen(tmpstr)], ", prev ms time = %4.2f", 1.0*packet_media_thread_info[thread_index].manage_sessions_time[(packet_media_thread_info[thread_index].manage_sessions_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
 
-            sprintf(&tmpstr[strlen(tmpstr)], ", last buffer time = %4.2f", 1.0*packet_media_thread_info[thread_index].buffer_time[(packet_media_thread_info[thread_index].buffer_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
-            sprintf(&tmpstr[strlen(tmpstr)], ", last chan time = %4.2f", 1.0*packet_media_thread_info[thread_index].chan_time[(packet_media_thread_info[thread_index].chan_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
-            sprintf(&tmpstr[strlen(tmpstr)], ", last pull time = %4.2f", 1.0*packet_media_thread_info[thread_index].pull_time[(packet_media_thread_info[thread_index].pull_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
+            sprintf(&tmpstr[strlen(tmpstr)], ", buffer time = %4.2f", 1.0*packet_media_thread_info[thread_index].buffer_time[(packet_media_thread_info[thread_index].buffer_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
+            sprintf(&tmpstr[strlen(tmpstr)], ", chan time = %4.2f", 1.0*packet_media_thread_info[thread_index].chan_time[(packet_media_thread_info[thread_index].chan_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
+            sprintf(&tmpstr[strlen(tmpstr)], ", pull time = %4.2f", 1.0*packet_media_thread_info[thread_index].pull_time[(packet_media_thread_info[thread_index].pull_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
          }
 
-         sprintf(&tmpstr[strlen(tmpstr)], ", last decode time = %4.2f", last_decode_time/1000);
-         sprintf(&tmpstr[strlen(tmpstr)], ", last encode time = %4.2f", last_encode_time/1000);
+         sprintf(&tmpstr[strlen(tmpstr)], ", decode time = %4.2f", last_decode_time/1000);
+         sprintf(&tmpstr[strlen(tmpstr)], ", encode time = %4.2f", last_encode_time/1000);
 
-         if (packet_media_thread_info[thread_index].fProfilingEnabled) {
+         if (packet_media_thread_info[thread_index].fProfilingEnabled) {  /* media processing time - includes stream group processing, wav and pcap output, also timestamp matching mode processing and wav output time. Also includes ASR and other media domain processing if active */
 
-            sprintf(&tmpstr[strlen(tmpstr)], ", last stream group time = %4.2f", 1.0*packet_media_thread_info[thread_index].stream_group_time[(packet_media_thread_info[thread_index].stream_group_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
+            sprintf(&tmpstr[strlen(tmpstr)], ", media processing time = %4.2f", 1.0*packet_media_thread_info[thread_index].stream_group_time[(packet_media_thread_info[thread_index].stream_group_time_index-1) & (THREAD_STATS_TIME_MOVING_AVG-1)]/1000);
          }
 
          Log_RT(3, "%s \n", tmpstr);
@@ -2077,6 +2077,8 @@ get_pkt_info:
             progress_var[hSession] |= 1;
          }
 #endif
+
+  uint64_t debug_time = 0;
 
          if (session_info_thread[hSession].fDataAvailable) {  /* reset channel markers of this sessions's channels (not including dynamic channels) */
 
@@ -2475,6 +2477,8 @@ static int log_pkt_in_index = 0;
   log_pkt_in_index++;
 #endif
 
+  if ((debug_time = (get_time(USE_CLOCK_GETTIME) - start_profile_time)/1000) > 40) printf("\n *** time check 1 = %llu \n", (long long unsigned int)debug_time);
+
                         ret_val = DSBufferPackets(hSession_param, uFlags_buffer_pkts, pkt_ptr, packet_len, pkt_info, &chnum, cur_time);  /* buffer one or more packets for this session, applying flags as required. chnum[] is returned as the packet match, either parent or child, as applicable, JHB Jan 2020. Note that DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG and DS_PKTLIB_SUPPRESS_RTP_WARNING_ERROR_MSG are not set, so display and/or event log is going to show any packet issues */
 
    //#define DEBUG_TELECOM_MODE_TIMESTAMP_GAP
@@ -2506,6 +2510,8 @@ static int log_pkt_in_index = 0;
                            #ifdef __LIBRARYMODE__
                            last_buffer_time[chnum] = cur_time;
                            #endif
+
+  if ((debug_time = (get_time(USE_CLOCK_GETTIME) - start_profile_time)/1000) > 40) printf("\n *** time check 2 = %llu \n", (long long unsigned int)debug_time);
                         }
                         else {
 
@@ -2563,6 +2569,8 @@ static int log_pkt_in_index = 0;
 
                   unsigned int pkt_ctrs[3]; pkt_ctrs[0] = pkt_counters[thread_index].pkt_input_cnt; pkt_ctrs[1] = pkt_counters[thread_index].pkt_read_cnt; pkt_ctrs[2] = pkt_counters[thread_index].pkt_add_to_jb_cnt;
                   int nSSRC_change;
+
+  if ((debug_time = (get_time(USE_CLOCK_GETTIME) - start_profile_time)/1000) > 40) printf("\n *** time check 3 = %llu \n", (long long unsigned int)debug_time);
 
                   #if 0
                   if (ret_val > 0 && (nSSRC_change = CheckForSSRCChange(hSession, &chnum_parent, pkt_ptr, &pkt_len[j], 1, uFlags_info, uFlags_session(hSession), pkt_ctrs, thread_index)) > 0) {  /* look for an SSRC change in the input stream, set fSSRC_Change[] if found */
@@ -2667,15 +2675,19 @@ static int log_pkt_in_index = 0;
 
          /* buffer time profiling, if enabled */
 
+  if ((debug_time = (get_time(USE_CLOCK_GETTIME) - start_profile_time)/1000) > 40) printf("\n *** time check 4 = %llu \n", (long long unsigned int)debug_time);
+
             if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
                end_profile_time = get_time(USE_CLOCK_GETTIME);
                buffer_time += end_profile_time - start_profile_time;
+
+  if (buffer_time/1000 > 40) printf("\n *** i = %d buffer_time = %llu \n", i, (long long unsigned int)buffer_time);
             }
 
          }  /* end of elapsed time check */
 
-      }  /* end of input/buffering loop */
+      }  /* end of session input/buffering loop (i..numSessions-1) */
 
       if (!fPreemptAlarm && packet_media_thread_info[thread_index].fProfilingEnabled) {
 
@@ -4200,7 +4212,7 @@ static int log_pkt_index = 0;
                               uint8_t pyld_type_sav = pkt_out_buf[IPV4_HEADER_LEN+UDP_HEADER_LEN+1];
                               pkt_out_buf[IPV4_HEADER_LEN+UDP_HEADER_LEN+1] = rtp_pyld_type[j];  /* temporarily set payload type corresponding to input, needed in timestamp match mode, Feb 2024 */
 
-                              DSProcessStreamGroupContributorsTSM(hSession, pkt_out_buf, &packet_length, 1, MediaParams[0].Media.inputFilename, szStreamGroupWavOutputPath, uTimestampMatchMode, thread_index);
+                              DSProcessStreamGroupContributorsTSM(hSession, pkt_out_buf, &packet_length, 1, MediaParams[0].Media.inputFilename, szOutputMediaPath, uTimestampMatchMode, thread_index);
 
                               pkt_out_buf[IPV4_HEADER_LEN+UDP_HEADER_LEN+1] = pyld_type_sav;
                            }
@@ -4695,7 +4707,7 @@ stream_check:
    }
    #endif
 
-/* last check:  make sure the session is assigned to this packet/media thread */
+/* final check:  make sure the session is assigned to this packet/media thread */
 
 #if 0  /* not needed because modified ManageSessions() now creates an hSessions_t[] reflection filtered by thread, and also left-shifted, JHB Oct2018 */
    if (isSessionAssignedToThread(hSessions[i], thread_index)) return hSessions[i];
@@ -7022,7 +7034,7 @@ char tmpstr[8000] = "";
 
    cpu = sched_getcpu();
 
-   sprintf(&tmpstr[strlen(tmpstr)], "Debug info for p/m thread %d, CPU %d, usage (msec) avg = %2.2f, max = %2.2f, flags = 0x%x, state = %s, es count = %d, max inactivity time (sec) = %d, ms mismatch = %d, ms create early exit = %d,  ms delete early exit = %d, max preemption time (msec) = %4.2f\n", thread_index, cpu, 1.0*cpu_time_sum/max(num_counted, (uint64_t)1)/1000, 1.0*packet_media_thread_info[thread_index].CPU_time_max/1000, packet_media_thread_info[thread_index].uFlags, packet_media_thread_info[thread_index].nEnergySaverState ? "energy save" : "run", packet_media_thread_info[thread_index].energy_saver_state_count, (int)(packet_media_thread_info[thread_index].max_inactivity_time/1000000L), packet_media_thread_info[thread_index].manage_sessions_count_mismatch, packet_media_thread_info[thread_index].manage_sessions_create_early_exit, packet_media_thread_info[thread_index].manage_sessions_delete_early_exit, 1.0*packet_media_thread_info[thread_index].max_elapsed_time_thread_preempt/1000);
+   sprintf(&tmpstr[strlen(tmpstr)], "Debug info for p/m thread %d (CPU %d), num p/m threads %d, usage (msec) avg = %2.2f, max = %2.2f, flags = 0x%x, state = %s, es count = %d, max inactivity time (sec) = %d, ms mismatch = %d, ms create early exit = %d,  ms delete early exit = %d, max preemption time (msec) = %4.2f\n", thread_index, cpu, num_pktmedia_threads, 1.0*cpu_time_sum/max(num_counted, (uint64_t)1)/1000, 1.0*packet_media_thread_info[thread_index].CPU_time_max/1000, packet_media_thread_info[thread_index].uFlags, packet_media_thread_info[thread_index].nEnergySaverState ? "energy save" : "run", packet_media_thread_info[thread_index].energy_saver_state_count, (int)(packet_media_thread_info[thread_index].max_inactivity_time/1000000L), packet_media_thread_info[thread_index].manage_sessions_count_mismatch, packet_media_thread_info[thread_index].manage_sessions_create_early_exit, packet_media_thread_info[thread_index].manage_sessions_delete_early_exit, 1.0*packet_media_thread_info[thread_index].max_elapsed_time_thread_preempt/1000);
 
    if (packet_media_thread_info[thread_index].fProfilingEnabled) {
 

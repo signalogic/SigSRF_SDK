@@ -39,6 +39,7 @@
   Modified Mar 2025 JHB, per changes in pktlib.h to standardize with other SigSRF libs, adjust references to DS_PKTLIB_SUPPRESS_WARNING_ERROR_MSG flag
   Modified Apr 2025 JHB, bump release version number due to changes in PKTINFO struct in pktlib
   Modified Aug 2025 JHB, add uPktNumber param to DSGetPacketInfo() calls per mod in pktlib.h
+  Modified Sep 2025 JHB, in DSFindDerStream() andd DSDecodeDerStream() allow both UDP and TCP encapsulating packets (previously was only TCP)
 */
 
 /* Linux includes */
@@ -650,122 +651,125 @@ char szAuthCountryIdentifier[128] = "";
 static bool fOnce = false;
 #endif
 
-   if (pkt_in_buf && DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL, 0) == TCP_PROTOCOL) {
+   if (!pkt_in_buf) return -1;
 
-   /* get packet's dest port */
+   #if 0  /* mediaMin only lets through UDP and TCP, we look for encapsulated SIP and RTP in either, JHB Sep 2025 */
+   if (pkt_in_buf && DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL, 0) == TCP) {
+   #endif
 
-      if ((int)(dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL, 0)) <= 0) return 0;
+/* get packet's dest port */
 
-   /* if caller provides port list and packet matches a port already on the list then nothing to do. Ports are listed once an interception point ID is found; see ret_val below */
- 
-      if (dest_port_list) for (i=0; i<MAX_DER_DSTPORTS; i++) if (dest_port_list[i] == dst_port) return 0;
+   if ((int)(dst_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL, 0)) <= 0) return 0;
 
-   /* get packet's payload length and offset */
- 
-      if (!(pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL, 0))) return 0;
-      pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL, 0);
+/* if caller provides port list and packet matches a port already on the list then nothing to do. Ports are listed once an interception point ID is found; see ret_val below */
 
-   /* decode asn and write to file if requested */
+   if (dest_port_list) for (i=0; i<MAX_DER_DSTPORTS; i++) if (dest_port_list[i] == dst_port) return 0;
 
-  #if 1
-      if (hFile_asn_output) DSDecodeDerFields(pkt_in_buf, DS_DER_DECODEFIELDS_PACKET | DS_DER_DECODEFIELDS_OUTPUT_ASN | (uFlags & DS_DECODE_DER_PRINT_ASN_DEBUG_INFO), pyld_len, hFile_asn_output, "find gen asn");
-  #endif
+/* get packet's payload length and offset */
 
-   /* auto-detect */
+   if (!(pyld_len = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDLEN, pkt_in_buf, -1, NULL, NULL, 0))) return 0;
+   pyld_ofs = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PYLDOFS, pkt_in_buf, -1, NULL, NULL, 0);
 
-      if ((uFlags & DS_DER_FIND_INTERCEPTPOINTID) && (!(uFlags & DS_DER_FIND_PORT_MUST_BE_EVEN) || !(dst_port & 1)))  {
+/* decode asn and write to file if requested */
 
-         for (i=0; i<pyld_len; i++) {  /* search full payload until intercept point ID found. To-do-maybe: do we need packet boundary aggregation as in DSDecodeDerStream() ? */
+#if 1
+   if (hFile_asn_output) DSDecodeDerFields(pkt_in_buf, DS_DER_DECODEFIELDS_PACKET | DS_DER_DECODEFIELDS_OUTPUT_ASN | (uFlags & DS_DECODE_DER_PRINT_ASN_DEBUG_INFO), pyld_len, hFile_asn_output, "find gen asn");
+#endif
 
-            uint8_t tag_chk = pkt_in_buf[pyld_ofs+i];
+/* auto-detect */
 
-            if (tag_chk == DER_TAG_INTERCEPTPOINTID || (tag_chk >= 0x80 && tag_chk <= 0x82)) {
+   if ((uFlags & DS_DER_FIND_INTERCEPTPOINTID) && (!(uFlags & DS_DER_FIND_PORT_MUST_BE_EVEN) || !(dst_port & 1)))  {
+
+      for (i=0; i<pyld_len; i++) {  /* search full payload until intercept point ID found. To-do-maybe: do we need packet boundary aggregation as in DSDecodeDerStream() ? */
+
+         uint8_t tag_chk = pkt_in_buf[pyld_ofs+i];
+
+         if (tag_chk == DER_TAG_INTERCEPTPOINTID || (tag_chk >= 0x80 && tag_chk <= 0x82)) {
+
+            #ifdef INTERCEPTPOINTDEBUG
+            printf("\n $$$$ index = %d, dst port = %d \n", i, dst_port);
+            #endif
+
+            bool fValidTagFound = false;
+            int j, k = 0, len_chk = (int8_t)pkt_in_buf[pyld_ofs+i+1];
+
+            if (len_chk > 0) for (j=0, fValidTagFound=true; j<len_chk; j++) {
+               k = i+2+j;
+               if (k >= pyld_len || pkt_in_buf[pyld_ofs+k] <= 0x20 || pkt_in_buf[pyld_ofs+k] >= 127) { fValidTagFound = false; break; }
+            }
+
+            if (fValidTagFound) {
+
+               tag = tag_chk;
+               len = len_chk;
 
                #ifdef INTERCEPTPOINTDEBUG
-               printf("\n $$$$ index = %d, dst port = %d \n", i, dst_port);
+               printf("\n $$$$ found valid tag = 0x%x, len = %d \n", tag, len);
                #endif
 
-               bool fValidTagFound = false;
-               int j, k = 0, len_chk = (int8_t)pkt_in_buf[pyld_ofs+i+1];
+               if (tag == 0x80) {
 
-               if (len_chk > 0) for (j=0, fValidTagFound=true; j<len_chk; j++) {
-                  k = i+2+j;
-                  if (k >= pyld_len || pkt_in_buf[pyld_ofs+k] <= 0x20 || pkt_in_buf[pyld_ofs+k] >= 127) { fValidTagFound = false; break; }
+                 generic_string_count++;  /* count valid generic string tags */
                }
+               else if (tag == 0x81) {
 
-               if (fValidTagFound) {
+                  memcpy(szInterceptionIdentifier, &pkt_in_buf[pyld_ofs+i+2], len);
+                  szInterceptionIdentifier[len] = 0;
+               }
+               else if (tag == 0x82) {
 
-                  tag = tag_chk;
-                  len = len_chk;
-
-                  #ifdef INTERCEPTPOINTDEBUG
-                  printf("\n $$$$ found valid tag = 0x%x, len = %d \n", tag, len);
+                  #if 0  /* test case for buffer input with size 0 indicating unknown data length */
+                  DSDecodeDerFields(&pkt_in_buf[pyld_ofs+i], DS_DER_DECODEFIELDS_BUFFER | DS_DER_DECODEFIELDS_OUTPUT_ASN, 0, hFile_asn_output, "country identifier");
                   #endif
 
-                  if (tag == 0x80) {
+                  #ifdef INTERCEPTPOINTDEBUG
+                  printf("\n $$$$ attempting country code, len = %d \n", len);
+                  if (!fOnce) { usleep(1000000); fOnce = true; }
+                  #endif
 
-                    generic_string_count++;  /* count valid generic string tags */
+                  len = min(len, (int)sizeof(szAuthCountryIdentifier)-1);
+                  memcpy(szAuthCountryIdentifier, &pkt_in_buf[pyld_ofs+i+2], len);
+                  szAuthCountryIdentifier[len] = 0;
+                  
+
+               }
+               else if (tag == DER_TAG_INTERCEPTPOINTID) {
+
+                  ret_val = 1;
+
+                  if (szInterceptPointId) {
+
+                     memcpy(szInterceptPointId, &pkt_in_buf[pyld_ofs+i+2], len);
+                     szInterceptPointId[len] = 0;
                   }
-                  else if (tag == 0x81) {
 
-                     memcpy(szInterceptionIdentifier, &pkt_in_buf[pyld_ofs+i+2], len);
-                     szInterceptionIdentifier[len] = 0;
-                  }
-                  else if (tag == 0x82) {
-
-                     #if 0  /* test case for buffer input with size 0 indicating unknown data length */
-                     DSDecodeDerFields(&pkt_in_buf[pyld_ofs+i], DS_DER_DECODEFIELDS_BUFFER | DS_DER_DECODEFIELDS_OUTPUT_ASN, 0, hFile_asn_output, "country identifier");
-                     #endif
-
-                     #ifdef INTERCEPTPOINTDEBUG
-                     printf("\n $$$$ attempting country code, len = %d \n", len);
-                     if (!fOnce) { usleep(1000000); fOnce = true; }
-                     #endif
-
-                     len = min(len, (int)sizeof(szAuthCountryIdentifier)-1);
-                     memcpy(szAuthCountryIdentifier, &pkt_in_buf[pyld_ofs+i+2], len);
-                     szAuthCountryIdentifier[len] = 0;
-                     
-  
-                  }
-                  else if (tag == DER_TAG_INTERCEPTPOINTID) {
-
-                     ret_val = 1;
-
-                     if (szInterceptPointId) {
-
-                        memcpy(szInterceptPointId, &pkt_in_buf[pyld_ofs+i+2], len);
-                        szInterceptPointId[len] = 0;
-                     }
-
-                     break;  /* found valid intercept point Id, break out of payload loop */
-                  }
+                  break;  /* found valid intercept point Id, break out of payload loop */
                }
             }
-         }  /* end of payload loop */
-
-      /* some countries don't use Intercept Point Id; for those, if we can't find one then we use LI Identifier as the Id. Conditions for that are (i) valid country identifier found, or (ii) valid generic text strings found above some threshold. Notes: JHB Dec 2021
-
-         -tag count threshold (ret_val == 3) works for some customers
-         -HIx streams from Japan differ from ETSI LI standard
-      */ 
-
-         if (!ret_val && strlen(szInterceptionIdentifier) && (generic_string_count >= 3 || !strcmp(szAuthCountryIdentifier, "JP"))) {
-
-            ret_val = !strcmp(szAuthCountryIdentifier, "JP") ? 2 : 3;  /* ret_val = 3 unless country identifier found, then ret_val = 2, JHB Nov 2022 */
-
-            if (szInterceptPointId) strcpy(szInterceptPointId, szInterceptionIdentifier);
          }
+      }  /* end of payload loop */
+
+   /* some countries don't use Intercept Point Id; for those, if we can't find one then we use LI Identifier as the Id. Conditions for that are (i) valid country identifier found, or (ii) valid generic text strings found above some threshold. Notes: JHB Dec 2021
+
+      -tag count threshold (ret_val == 3) works for some customers
+      -HIx streams from Japan differ from ETSI LI standard
+   */ 
+
+      if (!ret_val && strlen(szInterceptionIdentifier) && (generic_string_count >= 3 || !strcmp(szAuthCountryIdentifier, "JP"))) {
+
+         ret_val = !strcmp(szAuthCountryIdentifier, "JP") ? 2 : 3;  /* ret_val = 3 unless country identifier found, then ret_val = 2, JHB Nov 2022 */
+
+         if (szInterceptPointId) strcpy(szInterceptPointId, szInterceptionIdentifier);
       }
+   }
 
-   /* intercept point Id given as input, see if we can find and verify it */
+/* intercept point Id given as input, see if we can find and verify it */
 
-      else if (szInterceptPointId && strlen(szInterceptPointId)) {
+   else if (szInterceptPointId && strlen(szInterceptPointId)) {
 
-         uint8_t* p = (uint8_t*)memmem(&pkt_in_buf[pyld_ofs], pyld_len, szInterceptPointId, strlen(szInterceptPointId));
+      uint8_t* p = (uint8_t*)memmem(&pkt_in_buf[pyld_ofs], pyld_len, szInterceptPointId, strlen(szInterceptPointId));
 
-         if (p && p - &pkt_in_buf[pyld_ofs] >= 2 && p[-2] == DER_TAG_INTERCEPTPOINTID && p[-1] == strlen(szInterceptPointId)) ret_val = 1; 
-      }
+      if (p && p - &pkt_in_buf[pyld_ofs] >= 2 && p[-2] == DER_TAG_INTERCEPTPOINTID && p[-1] == strlen(szInterceptPointId)) ret_val = 1; 
    }
 
    if (ret_val && (uFlags & DS_DER_FIND_DSTPORT)) {
@@ -881,8 +885,10 @@ uint8_t* pkt_in_buf_local = NULL;
 
    if (!derlib_sem_init) return -1;  /* we don't need the derlib semaphore when decoding, but the app should not be attempting decode unless derlib has been initialized first, so we return an error condition */
 
-   if (DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL, 0) != TCP_PROTOCOL) return -1;
-
+   #if 0  /* mediaMin only lets through UDP and TCP, we look for encapsulated SIP and RTP in either, JHB Sep 2025 */
+   if (DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_PROTOCOL, pkt_in_buf, -1, NULL, NULL, 0) != TCP) return -1;
+   #endif
+ 
    if ((int)(pkt_dest_port = DSGetPacketInfo(-1, DS_BUFFER_PKT_IP_PACKET | DS_PKT_INFO_DST_PORT, pkt_in_buf, -1, NULL, NULL, 0)) <= 0) return -1;
 
 /* verify packet dest port is on list of ports previously determined from IRI info */

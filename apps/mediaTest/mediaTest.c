@@ -123,7 +123,8 @@
    Modified Jul 2024 JHB, print command line along with banner info
    Modified Nov 2024 JHB, update headerfull constant to match voplib.h definitions. Include directcore.h (no longer implicitly included in other header files)
    Modified Dec 2024 JHB, change DS_PYLD_HDR_FMT_XXX to DS_PYLD_FMT_XXX due to renaming in voplib.h
-   Modified Feb 2025 JHB, update version number
+   Modified Feb 2025 JHB, update minor version number
+   Modified Sep 2025 JHB, update minor version number
 */
 
 /* Linux includes / system header files */
@@ -1180,7 +1181,7 @@ exit:
 
 static char prog_str[] = "mediaTest";
 static char banner_str[] = "SigSRF media transcoding, codec, speech recognition, and packet streaming analysis, test, and measurement program for x86 and/or coCPU platforms";
-static char version_str[] = "v2.10.1";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
+static char version_str[] = "v2.10.3";  /* break out ver_str separate, for use with cmdLineInterface(), JHB Jul 2023 */
 static char copyright_str[] = "Copyright (C) Signalogic 2015-2025";
 
 int main(int argc, char **argv) {
@@ -1224,7 +1225,7 @@ char              version_info[500], lib_info[500], banner_info[2048];
 
    sprintf(version_info, "%s %s \n%s%s \n", prog_str, version_str, copyright_str, demo_build ? " \nUsing demo-only library versions" : "");
 
-   sprintf(banner_info, "%s: %s %s \n%s \n%s \ncmd line: %s \n", prog_str, banner_str, version_str, copyright_str, lib_info, szAppFullCmdLine);  /* include command line here in case mediaTest is invoked from a shell script, JHB Jul 2024 */
+   sprintf(banner_info, "%s: %s %s \n%s \n%s \n  cmd line: %s \n", prog_str, banner_str, version_str, copyright_str, lib_info, szAppFullCmdLine);  /* include command line here in case mediaTest is invoked from a shell script, JHB Jul 2024 */
 
    if (!cmdLineInterface(argc, argv, CLI_MEDIA_APPS | CLI_MEDIA_APPS_MEDIATEST, version_info, banner_info)) exit(EXIT_FAILURE);
    {

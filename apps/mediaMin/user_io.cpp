@@ -44,6 +44,7 @@
    Modified Jul 2025 JHB, in app_printf() call console_out(), which calls isStdoutReady() before printf() to avoid blocking if stdout has loss of connectivity
    Modified Jul 2025 JHB, in ProcessKeys() replace remaining printf() with app_printf()
    Modified Aug 2025 JHB, update DSGetTimestamp() flag names per changes in diaglib.h
+   Modified Sep 2025 JHB, fix bug in app_printf() where strings close to the max size limit are appended and cause a buffer overflow. See use of MAX_APP_STR_LEN
 */
 
 #include <algorithm>
@@ -223,7 +224,7 @@ static bool fSetStdoutNonBuffered = false;
          if (!fRepeatIndefinitely && nRepeatsRemaining[thread_index] >= 0) sprintf(repeatstr, ", repeats remaining = %d", nRepeatsRemaining[thread_index]);  /* if cmd line entry includes -RN with N >= 0, nRepeatsRemaining will be > 0 for repeat operation, JHB Jan2020 */
          else if (nRepeatsRemaining[thread_index] == -1) strcpy(repeatstr, ", no repeats");  /* nRepeat is -1 if cmd line has no -RN entry (no repeats). For cmd line entry -R0, fRepeatIndefinitely will be set */
 
-         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "#### (App Thread) %sDebug info for app thread %d, run = %d%s, command line %s", tmpstr, app_thread_index_debug, pm_run, fRepeatIndefinitely ? ", repeating indefinitely" : repeatstr, szAppFullCmdLine);
+         app_printf(APP_PRINTF_NEW_LINE | APP_PRINTF_PRINT_ONLY, cur_time, thread_index, "#### (App Thread) %sDebug info for app thread %d, num app threads %d, run = %d%s, command line %s", tmpstr, app_thread_index_debug, num_app_threads, pm_run, fRepeatIndefinitely ? ", repeating indefinitely" : repeatstr, szAppFullCmdLine);
 
          strcpy(tmpstr, "");
          for (i=0; i<thread_info[app_thread_index_debug].nSessionsCreated; i++) sprintf(&tmpstr[strlen(tmpstr)], " %d", thread_info[app_thread_index_debug].flush_state[i]);
@@ -252,7 +253,7 @@ static bool fSetStdoutNonBuffered = false;
             pm_run = 2;
 #else  /* ask for run-time debug output from one or more packet / media threads */
             uint64_t uThreadList = 1UL << pm_thread_index_debug;  /* uThreadList is a bitwise list of threads to display.  In this example only one bit is set */
-            DSDisplayThreadDebugInfo(uThreadList, DS_DISPLAY_THREAD_DEBUG_INFO_SCREEN_OUTPUT, "#### (PM Thread) ");  /* display run-time debug info for one or more packet/media threads.  Note that DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT could also be used to print to the event log */
+            DSDisplayThreadDebugInfo(uThreadList, DS_DISPLAY_THREAD_DEBUG_INFO_SCREEN_OUTPUT, "#### (PM Thread) ");  /* display run-time debug info for one or more packet/media threads.  Note that DS_DISPLAY_THREAD_DEBUG_INFO_EVENT_LOG_OUTPUT could also be used to print to the event log. DSDisplayThreadDebugInfo() is in pktlib */
 #endif
          }
       }
@@ -294,7 +295,8 @@ static bool fSetStdoutNonBuffered = false;
 
 void app_printf(unsigned int uFlags, uint64_t cur_time, int thread_index, const char* fmt, ...) {
 
-char outstr[MAX_APP_STR_LEN];
+char outstr[MAX_APP_STR_LEN + 100];  /* assuming all calling apps are adhering to MAX_APP_STR_LEN max len, we add some extra here to allow for thread suffix, new line insert/concat, etc. This is more efficient than using snprintf() and checking every line of code for a couple of bytes of space available. MAX_APP_STR_LEN is defined in diaglib.h, JHB Sep 2025 */
+
 char* p;
 va_list va;
 int slen;

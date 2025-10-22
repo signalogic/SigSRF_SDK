@@ -14,7 +14,7 @@ Projects
 
   SigSRF, DirectCore
  
-Copyright Signalogic Inc. 2025
+Copyright Signalogic Inc. 2024-2025
 
 License
 
@@ -26,7 +26,7 @@ Documentation and Usage
  
   2) Functions here are called by DSGetPacketInfo(), a pktlib API. pktlib is a SigSRF shared object library linked by mediaMin and mediaTest reference apps and user apps
 
-  3) If you modify PktXxx() or DSXxx() functions, then place the resulting .o before libpktlib.so in your app link order, then your mods will take precedence over pktlib function names
+  3) If you modify PktXxx() or DSXxx() functions, place the resulting .o before libpktlib.so in your app link order, then your mods will take precedence over pktlib functions
 
 Revision History
 
@@ -46,7 +46,7 @@ Revision History
   Modified Apr 2025 JHB, add check for UDP SIP duplicates in DSIsPacketDuplicate(). See comments about differentiating UDP and RTP payloads
   Modified Jun 2025 JHB, in DSIsReservedPort() use XXX_PORT definitions
   Modified Aug 2025 JHB, add uPktNumber param to DSGetPacketInfo() calls per mod in pktlib.h
-  Modified Aug 2025 JHB, add IPv6 fragmentation support per RFC 8200
+  Modified Aug 2025 JHB, add IPv6 fragmentation and reassembly support per RFC 8200
   Modified Aug 2025 JHB, in DSIsPacketDuplicate() packet lengths check pulled out of TCP and UDP sections and moved to on-entry
 */
 
