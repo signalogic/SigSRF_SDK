@@ -379,11 +379,11 @@ wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages
 ```
 Ubuntu and Debian .rar
 ```
-wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_4Sep25.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_4Sep25.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_20Oct25.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_Ubuntu12.04-22.04_20Oct25.rar
 ```
 CentOS .rar
 ```
-wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_CentOS6-8_4Sep25.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_CentOS6-8_4Sep25.rar
+wget https://raw.githubusercontent.com/signalogic/SigSRF_SDK/master/rar_packages/Signalogic_sw_host_SigSRF_SDK_CentOS6-8_20Oct25.rar --content-disposition -O Signalogic_sw_host_SigSRF_SDK_CentOS6-8_20Oct25.rar
 ```
 For the ASR version of the SDK, the following multi-line command can be used:
 ```
@@ -713,6 +713,7 @@ The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provid
 ## Technical Support / Questions
 
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can request group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+
 
 
 
