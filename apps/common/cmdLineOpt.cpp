@@ -166,14 +166,8 @@ bool       fError = false, fPrintOptions = false, fMissingRequiredArg = false;
 int        optCounter;
 int        optionFound;
 char       optionString[MAX_OPTIONS*2];
-intptr_t   x;
-float      f;
-long long  llx;
 char*      p, *p2, *p3;
-int        d[10] = { 0 };
 int        ret;
-uint64_t   m[10] = { 0 };
-uint64_t   ulx;
 int        instance_index, nMultiple, valueSuffix;
 char       suffix;
 bool       fx86, fOptionFound, fInvalidFormat;
@@ -285,255 +279,265 @@ int long_option_index = -1;  /* index of long option, if found */
       fOptionFound = false;
       fInvalidFormat = false;
 
-      for (optCounter=0; optCounter < this->numOptions; optCounter++) {
+      for (optCounter=0; optCounter < this->numOptions; optCounter++) if (this->options[optCounter].option == optionFound) {
 
-         if (this->options[optCounter].option == optionFound) {
+         instance_index = this->options[optCounter].nInstances;  /* options[].nInstance starts at zero and increments each time an instance is found */
 
-            instance_index = this->options[optCounter].nInstances;  /* options[].nInstance starts at zero and increments each time an instance is found */
+         #ifdef GETOPT_DEBUG
+         printf(" *** processing option = %d \n", optionFound);
+         #endif
 
-            #ifdef GETOPT_DEBUG
-            printf(" *** processing option = %d \n", optionFound);
-            #endif
+         switch (this->options[optCounter].arg_type & ARG_TYPE_MASK) {
 
-            switch (this->options[optCounter].arg_type & ARG_TYPE_MASK) {
+            case ARG_TYPE_NONE:
 
-               case ARG_TYPE_NONE:
+               fOptionFound = true;
+               break;
 
-                  fOptionFound = true;
+            case ARG_TYPE_BOOL:
+
+               #if 0
+               this->options[optCounter].value[instance_index][0] = (void*)true;  /* if the option exist on command line its true */
+               fOptionFound = true;
+               break;
+               #else  /* options that take no argument(s) now have ARG_TYPE_NONE. If an option takes boolean entry (e.g. y/n, t/f, 1/0) then it should have the ARG_TYPE_BOOL type when defined in CmdLineOpt::Record options in getUserInterface.cpp, JHB Sep 2025 */
+
+               if (!optarg) break;
+
+               if (!strcasecmp(optarg, "true") || !strcasecmp(optarg, "t") || !strcasecmp(optarg, "y") || !strcmp(optarg, "1")) this->options[optCounter].value[instance_index][0] = (void*)true;
+               else if (!strcasecmp(optarg, "false") || !strcasecmp(optarg, "f") || !strcasecmp(optarg, "n") || !strcmp(optarg, "0")) this->options[optCounter].value[instance_index][0] = (void*)false;
+               else fInvalidFormat = true;
+
+               fOptionFound = true;
+               #endif
+
+               break;
+
+            case ARG_TYPE_INT:  /* usually accept entry in format -option NN, but also -option 0xNN and -option NN:NN:NN (up to 3 values) */
+
+               if ((this->options[optCounter].arg_type & ARG_OPTIONAL) && !optarg) { fOptionFound = true; break; }  /* if the option has an optional argument then no parsing and don't overwrite the default value in CmdLineOpt::Record options[] in getUserInterface.cpp, JHB Sep 2025 */
+
+               nMultiple = 0;
+               if (!optarg) {
+                  #ifdef GETOPT_DEBUG
+                  printf("optarg is NULL for option = %d \n", this->options[optCounter].option);
+                  #endif
                   break;
+               }
 
-               case ARG_TYPE_BOOL:
+               strcpy(tmpstr, optarg);  /* temporary working buffer */
+               p = tmpstr;
+               valueSuffix = -1;
 
+               do {
+
+                  p2 = p;
+
+                  p = strstr(p2, ":");
+                  if (p != NULL) *p++ = 0;
+
+                  bool fHexVal = p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X');  /* hex values must have 0x prefix */
+
+                  if (strlen(p2) > 1) {  /* look for option suffix char */
+
+                     suffix = p2[strlen(p2)-1];
+
+                     if ((!fHexVal && suffix >= 'a' && suffix <= 'w') || (suffix >= 'y' && suffix <= 'z') || (suffix == 'x' && strlen(p2) > 3)) {  /* add hex value check, otherwise this suffix char code was stripping off the last a-f hex digit :-( JHB Dec 2019 */
+
+                        valueSuffix = (int)(p2[strlen(p2)-1] - 'a' + 1);
+                        p2[strlen(p2)-1] = 0;  /* remove suffix from option string before converting to int */
+                     }
+                  }
+
+                  intptr_t x;
+
+                  if (fHexVal) ret = sscanf(&p2[2], "%x", (unsigned int*)&x);
                   #if 0
-                  this->options[optCounter].value[instance_index][0] = (void*)true;  /* if the option exist on command line its true */
-                  fOptionFound = true;
-                  break;
-                  #else  /* options that take no argument(s) now have ARG_TYPE_NONE. If an option takes boolean entry (e.g. y/n, t/f, 1/0) then it should have the ARG_TYPE_BOOL type when defined in CmdLineOpt::Record options in getUserInterface.cpp, JHB Sep 2025 */
-
-                  if (!optarg) break;
-
-                  if (!strcasecmp(optarg, "true") || !strcasecmp(optarg, "t") || !strcasecmp(optarg, "y") || !strcmp(optarg, "1")) this->options[optCounter].value[instance_index][0] = (void*)true;
-                  else if (!strcasecmp(optarg, "false") || !strcasecmp(optarg, "f") || !strcasecmp(optarg, "n") || !strcmp(optarg, "0")) this->options[optCounter].value[instance_index][0] = (void*)false;
-                  else fInvalidFormat = true;
-
-                  fOptionFound = true;
+                  else x = atoi(p2);
+                  #else
+                  else ret = sscanf(p2, "%d", (int*)&x);
                   #endif
 
-                  break;
+                  if ((ret != 1 || !valid_number(fHexVal ? &p2[2] : p2, fHexVal, this->options[optCounter].arg_type & ARG_ALLOW_FLOAT)) && !(this->options[optCounter].arg_type & ARG_ALLOW_STR)) fInvalidFormat = true;
 
-               case ARG_TYPE_INT:  /* usually accept entry in format -option NN, but also -option 0xNN and -option NN:NN:NN (up to 3 values) */
+                  if (valueSuffix >= 0) {
 
-                  if ((this->options[optCounter].arg_type & ARG_OPTIONAL) && !optarg) { fOptionFound = true; break; }  /* if the option has an optional argument then no parsing and don't overwrite the default value in CmdLineOpt::Record options[] in getUserInterface.cpp, JHB Sep 2025 */
-
-                  nMultiple = 0;
-                  if (!optarg) {
-                     #ifdef GETOPT_DEBUG
-                     printf("optarg is NULL for option = %d \n", this->options[optCounter].option);
-                     #endif
-                     break;
+                     x |= valueSuffix << 24;  /* option suffix value stored in bits 31-24.  Probably that could be 63-56 on 64-bit systems, but for now the typical option where a suffix is used doesn't have much range in values */
                   }
 
-                  strcpy(tmpstr, optarg);  /* temporary working buffer */
-                  p = tmpstr;
-                  valueSuffix = -1;
+                  this->options[optCounter].value[instance_index][nMultiple] = (void*)x;
 
-                  do {
+               } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
 
-                     p2 = p;
+               fOptionFound = true;
+               break;
 
-                     p = strstr(p2, ":");
-                     if (p != NULL) *p++ = 0;
+            case ARG_TYPE_INT64:  /* 64-bit support, JHB Aug 2015 */
 
-                     bool fHexVal = p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X');  /* hex values must have 0x prefix */
+               if (!optarg) break;
 
-                     if (strlen(p2) > 1) {  /* look for option suffix char */
+               nMultiple = 0;
+               strcpy(tmpstr, optarg);  /* temporary working buffer */
+               p = tmpstr;
 
-                        suffix = p2[strlen(p2)-1];
+               do {
 
-                        if ((!fHexVal && suffix >= 'a' && suffix <= 'w') || (suffix >= 'y' && suffix <= 'z') || (suffix == 'x' && strlen(p2) > 3)) {  /* add hex value check, otherwise this suffix char code was stripping off the last a-f hex digit :-( JHB Dec 2019 */
+                  bool fHexVal = false;
+                  long long llx;
+                  p2 = p;
 
-                           valueSuffix = (int)(p2[strlen(p2)-1] - 'a' + 1);
-                           p2[strlen(p2)-1] = 0;  /* remove suffix from option string before converting to int */
-                        }
-                     }
+                  p = strstr(p2, ":");
+                  if (p != NULL) *p++ = 0;
 
-                     if (fHexVal) ret = sscanf(&p2[2], "%x", (unsigned int*)&x);
-                     #if 0
-                     else x = atoi(p2);
-                     #else
-                     else ret = sscanf(p2, "%d", (int*)&x);
-                     #endif
-
-                     if ((ret != 1 || !valid_number(fHexVal ? &p2[2] : p2, fHexVal, this->options[optCounter].arg_type & ARG_ALLOW_FLOAT)) && !(this->options[optCounter].arg_type & ARG_ALLOW_STR)) fInvalidFormat = true;
-
-                     if (valueSuffix >= 0) {
-
-                        x |= valueSuffix << 24;  /* option suffix value stored in bits 31-24.  Probably that could be 63-56 on 64-bit systems, but for now the typical option where a suffix is used doesn't have much range in values */
-                     }
-
-                     this->options[optCounter].value[instance_index][nMultiple] = (void*)x;
-
-                  } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
-
-                  fOptionFound = true;
-                  break;
-
-               case ARG_TYPE_INT64:  /* 64-bit support, JHB Aug 2015 */
-
-                  if (!optarg) break;
-
-                  nMultiple = 0;
-                  strcpy(tmpstr, optarg);  /* temporary working buffer */
-                  p = tmpstr;
-
-                  do {
-
-                     bool fHexVal = false;
-                     p2 = p;
-
-                     p = strstr(p2, ":");
-                     if (p != NULL) *p++ = 0;
-
-                     if (p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X')) {
-                        ret = sscanf(&p2[2], "%llx", (unsigned long long*)&llx);
-                        fHexVal = true;
-                     }
-                     else
-                       #if 0
-                       llx = atol(p2);
-                       #else
-                       ret = sscanf(p2, "%lld", (unsigned long long*)&llx);
-                       #endif
-
-                     if ((ret != 1 || !valid_number(fHexVal ? &p2[2] : p2, fHexVal, false)) && !(this->options[optCounter].arg_type & ARG_ALLOW_STR)) fInvalidFormat = true;
-
-                     this->options[optCounter].value3[instance_index] = llx;
-
-                  } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
-
-                  fOptionFound = true;
-                  break;
-
-               case ARG_TYPE_IPADDR:  /* accept entry in format -Daa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm, where a, b, c, d, and port are decimal numbers, and mm are hex digits. Also allow -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm for input UDP ports, JHB Dec 2022 */
-
-                  strcpy(tmpstr, optarg);
-                  p = strstr(tmpstr, ":");
-
-                  if (p != NULL) {  /* get integer after ':' char */
-   
-                     *p++ = 0;
-
-                     if (p != NULL) {
-
-                        p2 = strstr(p, ":");  /* entry after 2nd : is MAC addr */
-
-                        if (p2 != NULL) {
-
-                           *p2++ = 0;
-
-                           p3 = strstr(p2, "-");
-                           int i = 0;
-
-                           while ((p3 != NULL) || (p2 != NULL)) {
-
-                              if (p3 != NULL) *p3++ = 0;
-
-                              if (p2 != NULL) {
-
-                                 sscanf(p2, "%x", (unsigned int*)&x);
-                                 m[i++] = (uint64_t)x;
-                              }
-                              p2 = p3;
-                              if (p2 != NULL) p3 = strstr(p2, "-");
-                              else p3 = NULL;
-                           }
-
-                           ulx = (m[0] << 40) + (m[1] << 32) + (m[2] << 24) + (m[3] << 16) + (m[4] << 8) + m[5];
-
-                           this->options[optCounter].value3[instance_index] = ulx;
-                        }
-                     }
-
-                     x = atoi(p);
-                     this->options[optCounter].value2[instance_index] = x;
+                  if (p2[0] == '0' && (p2[1] == 'x' || p2[1] == 'X')) {
+                     ret = sscanf(&p2[2], "%llx", (unsigned long long*)&llx);
+                     fHexVal = true;
                   }
+                  else
+                    #if 0
+                    llx = atol(p2);
+                    #else
+                    ret = sscanf(p2, "%lld", (unsigned long long*)&llx);
+                    #endif
 
-                  p = strstr(tmpstr, ".");  /* IP addr format */
+                  if ((ret != 1 || !valid_number(fHexVal ? &p2[2] : p2, fHexVal, false)) && !(this->options[optCounter].arg_type & ARG_ALLOW_STR)) fInvalidFormat = true;
+
+                  this->options[optCounter].value3[instance_index] = llx;
+
+               } while (p != NULL && ++nMultiple < MAX_MULTIPLES);
+
+               fOptionFound = true;
+               break;
+
+            case ARG_TYPE_IPADDR:  /* accept entry in format -Daa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm, where a, b, c, d, and port are decimal numbers, and mm are hex digits. Also allow -iaa.bb.cc.dd:port:mm-mm-mm-mm-mm-mm for input UDP ports, JHB Dec 2022 */
+
+               strcpy(tmpstr, optarg);
+               p = strstr(tmpstr, ":");
+
+               if (p != NULL) {  /* get integer after ':' char */
+
+                  *p++ = 0;
 
                   if (p != NULL) {
 
-                     p2 = tmpstr;
-                     int i = 0;
+                     p2 = strstr(p, ":");  /* entry after 2nd : is MAC addr */
 
-                     while (p != NULL) {
+                     if (p2 != NULL) {
 
-                        *p++ = 0;
-                        d[i++] = atoi(p2);
-                        p2 = p;
-                        p = strstr(p2, ".");
+                        *p2++ = 0;
+
+                        p3 = strstr(p2, "-");
+                        int i = 0;
+                        #define MAC_ADDR_LEN 6
+                        uint64_t ulx, m[MAC_ADDR_LEN] = { 0 };
+
+                        while ((p3 != NULL) || (p2 != NULL)) {
+
+                           if (p3 != NULL) *p3++ = 0;
+
+                           if (p2 != NULL) {
+
+                              intptr_t x;
+                              sscanf(p2, "%x", (unsigned int*)&x);
+                              if (i < MAC_ADDR_LEN) m[i++] = (uint64_t)x;
+                              else { fInvalidFormat = true; break; }
+                           }
+                           p2 = p3;
+                           if (p2 != NULL) p3 = strstr(p2, "-");
+                           else p3 = NULL;
+                        }
+
+                        ulx = (m[0] << 40) + (m[1] << 32) + (m[2] << 24) + (m[3] << 16) + (m[4] << 8) + m[5];
+
+                        this->options[optCounter].value3[instance_index] = ulx;
                      }
-
-                     if (p2 != NULL) d[i++] = atoi(p2);
-
-                     x = (d[0] << 24) + (d[1] << 16) + (d[2] << 8) + d[3];
-
-                     this->options[optCounter].value[instance_index][0] = (void*)x;
                   }
 
-                  fOptionFound = true;
-                  break;
+                  intptr_t x = atoi(p);
+                  this->options[optCounter].value2[instance_index] = x;
+               }
 
-               case ARG_TYPE_FLOAT:  /* add FLOAT type, May 2023 JHB */
+               p = strstr(tmpstr, ".");  /* IP addr format */
 
-                  if (!optarg) break;
+               if (p != NULL) {
 
-                  #if 0
-                  f = atof(optarg);
-                  #else
-                  ret = sscanf(optarg, "%f", (float*)&f);
-                  if ((ret != 1 || !valid_number(optarg, false, true)) && !(this->options[optCounter].arg_type & ARG_ALLOW_STR)) fInvalidFormat = true;  /* not a hex value, allow float chars */
-                  #endif
+                  p2 = tmpstr;
+                  int i = 0;
+                  #define IP_ADDR_LEN 4
+                  int d[IP_ADDR_LEN] = { 0 };
 
-                  #if 0
-                  printf(" inside FLOAT argument = %s, ret = %d, fInvalidFormat = %d \n", optarg, ret, fInvalidFormat);
-                  #endif
-                  memcpy(&x, &f, sizeof(float));  /* hack to store float in a void* */
+                  while (p != NULL) {
+
+                     *p++ = 0;
+                     if (i < IP_ADDR_LEN) d[i++] = atoi(p2);
+                     else { fInvalidFormat = true; break; }
+                     p2 = p;
+                     p = strstr(p2, ".");
+                  }
+
+                  if (p2 != NULL) d[i++] = atoi(p2);
+
+                  intptr_t x = (d[0] << 24) + (d[1] << 16) + (d[2] << 8) + d[3];
+
                   this->options[optCounter].value[instance_index][0] = (void*)x;
-                  fOptionFound = true;
-                  break;
+               }
 
-               case ARG_TYPE_CHAR:
+               fOptionFound = true;
+               break;
 
-                  x = (intptr_t)optarg[0];
-                  this->options[optCounter].value[instance_index][0] = (void*)x;  /* store first optarg char in void* */
-                  fOptionFound = true;
-                  break;
+            case ARG_TYPE_FLOAT:  /* add FLOAT type, May 2023 JHB */
 
-               case ARG_TYPE_STR:
-               case ARG_TYPE_PATH:  /* handled identical to ARG_TYPE_STR, JHB Sep 2025 */
+               if (!optarg) break;
 
-                  if ((this->options[optCounter].arg_type & ARG_OPTIONAL) && !optarg) {}  /* if the option has an optional argument (e.g. -L with no string value), then don't overwrite the default value in CmdLineOpt::Record options[] in getUserInterface.cpp, JHB Sep 2017 */
-                  else this->options[optCounter].value[instance_index][0] = (void*)optarg;
-                  fOptionFound = true;
-                  break;
+               float f;
+               intptr_t x;
 
-               default:
+               #if 0
+               f = atof(optarg);
+               #else
+               ret = sscanf(optarg, "%f", (float*)&f);
+               if ((ret != 1 || !valid_number(optarg, false, true)) && !(this->options[optCounter].arg_type & ARG_ALLOW_STR)) fInvalidFormat = true;  /* not a hex value, allow float chars */
+               #endif
 
-                  cout << " cmd line option " << optionFound << "has type " << (this->options[optCounter].arg_type & ARG_TYPE_MASK) << " with flags " << (this->options[optCounter].arg_type & ~ARG_TYPE_MASK) << " is unknown" << endl;
-                  fError = true;
-                  break;
-            }
+               #if 0
+               printf(" inside FLOAT argument = %s, ret = %d, fInvalidFormat = %d \n", optarg, ret, fInvalidFormat);
+               #endif
+               memcpy(&x, &f, sizeof(float));  /* hack to store float in a void* */
+               this->options[optCounter].value[instance_index][0] = (void*)x;
+               fOptionFound = true;
+               break;
 
-            if (!fError) {
-               this->options[optCounter].nInstances++;
-// debug   printf("option = %s, optCounter = %d, count = %d\n", optarg, optCounter, this->options[optCounter].nInstances);
-            }
+            case ARG_TYPE_CHAR:
 
-            #if 0  /* remove this for-loop break so all defined options will be checked vs. cmd line option found. This allows options to be overloaded (e.g. two 's' definitions, integer for app A and string for app B), JHB Jan 2021 */ 
-            break;
-            #endif
+               x = (intptr_t)optarg[0];
+               this->options[optCounter].value[instance_index][0] = (void*)x;  /* store first optarg char in void* */
+               fOptionFound = true;
+               break;
+
+            case ARG_TYPE_STR:
+            case ARG_TYPE_PATH:  /* handled identical to ARG_TYPE_STR, JHB Sep 2025 */
+
+               if ((this->options[optCounter].arg_type & ARG_OPTIONAL) && !optarg) {}  /* if the option has an optional argument (e.g. -L with no string value), then don't overwrite the default value in CmdLineOpt::Record options[] in getUserInterface.cpp, JHB Sep 2017 */
+               else this->options[optCounter].value[instance_index][0] = (void*)optarg;
+               fOptionFound = true;
+               break;
+
+            default:
+
+               cout << " cmd line option " << optionFound << "has type " << (this->options[optCounter].arg_type & ARG_TYPE_MASK) << " with flags " << (this->options[optCounter].arg_type & ~ARG_TYPE_MASK) << " is unknown" << endl;
+               fError = true;
+               break;
          }
-      }  /* end of for loop comparing optionFound vs allowed options */
+
+         if (!fError) {
+            this->options[optCounter].nInstances++;
+// debug   printf("option = %s, optCounter = %d, count = %d\n", optarg, optCounter, this->options[optCounter].nInstances);
+         }
+
+         #if 0  /* remove this for-loop break so all defined options will be checked vs. cmd line option found. This allows options to be overloaded (e.g. two 's' definitions, integer for app A and string for app B), JHB Jan 2021 */ 
+         break;
+         #endif
+      }  /* end of for loop comparing optionFound vs defined options */
 
    /* per-option error handling - note we have opterr turned off so we handle all error types (unrecognized option, invalid format, option requires an argument that wasn't given, etc, JHB Nov 2023 */
 
