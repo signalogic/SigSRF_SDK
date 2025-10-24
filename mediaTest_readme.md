@@ -12,7 +12,7 @@ Modified JHB Jun 2025, add "_main" suffix to level 1 header link targets, to dif
 
 # mediaMin and mediaTest Reference Apps
 
-After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-content-installnotes), this page gives example command lines and basic documentation for the mediaMin and mediaTest reference applications, including:
+After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-content-installnotes), this page gives example command lines and documentation for the mediaMin and mediaTest reference applications, including:
 
  - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs. UDP and file packet input with full RTP packet functionality. SDP aware, recognition and filtering of a wide range of protocols, pcap/pcapng/rtp file support, encapsulated packet support, HI2/HI3 support, packet buffering, re-ordering, repair, tracing and logging
  - high capacity RTP decoding and transcoding (EVS 1, AMR, G729, MELPe, H.264, H.265, etc), RFC 8108, auto-detection of RTP stream/codec type, SDP detection, and .sdp file input definitions. Session aware stream merging, unified conversations, forensic audio features
@@ -3488,6 +3488,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
 
