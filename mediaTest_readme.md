@@ -14,8 +14,11 @@ Modified JHB Jun 2025, add "_main" suffix to level 1 header link targets, to dif
 
 After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-content-installnotes), this page gives example command lines and basic documentation for the mediaMin and mediaTest reference applications, including:
 
- - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs
- - high capacity transcoding, RTP stream merging, call recording, post-processing (e.g speech recognition), and audio and video enhancement processing
+ - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs. UDP and file packet input with full RTP packet functionality. SDP aware, recognition and filtering of a wide range of protocols, pcap/pcapng/rtp file support, encapsulated packet support, HI2/HI3 support, packet buffering, re-ordering, repair, tracing and logging
+ - high capacity RTP decoding and transcoding (EVS 1, AMR, G729, MELPe, H.264, H.265, etc), RFC 8108, auto-detection of RTP stream/codec type, SDP detection, and .sdp file input definitions. Session aware stream merging, unified conversations, forensic audio features
+ - ready-to-run applications include LI, call recording, SBC, and media post-processing (e.g speech recognition)
+ - real-time live output and bit-exact (reproducible) wav, pcap, and bitstream file output
+ - packet and event logging
  - test and measurement, including codec audio and video quality and performance, media RFC verification, and transcoding
  - application examples, including source code, showing how to use [pktlib](#user-content-pktlib_main) and [voplib](#user-content-voplib_main) APIs (see <a href="https://github.com/signalogic/SigSRF_SDK#user-content-telecommodedataflowdiagram">data flow diagrams</a> and <a href="https://github.com/signalogic/SigSRF_SDK#user-content-softwarearchitecturediagram">architecture diagram</a> on the SigSRF page)
 
@@ -3485,6 +3488,7 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
 
 
 
