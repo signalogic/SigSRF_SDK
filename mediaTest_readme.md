@@ -3198,9 +3198,11 @@ where "xxx" is the the leading part of the event log path and filename.
 
 ### Version
 
-Version information can be obtained with the command line option:
+Version information for SigSRF applications can be obtained with the command line option:
 
     --version
+
+Note that if this option appears on the command line, in any position, the application will not run and will only display version information.
 
 <a name="mediaMinCommandLineQuick-Reference"></a>
 ## mediaMin Command Line Quick-Reference
@@ -3494,3 +3496,4 @@ Debug output is highlighted in red. Individual highlighted areas are described b
 | Yellow | Session information, including values of all possible session handles. -1 indicates not used |
 | Blue | Stream group information. gN indicates group index, mN indicates group member index, o indicates group owner, flc indicates frame loss concealment, and "num split groups" indicates number of stream groups split across packet/media threads (see WHOLE_GROUP_THREAD_ALLOCATE flag usage in [Stream Group Usage](#user-content-streamgroupusage) above) |
 | Green | System wide information, including number of active packet/media threads, maximum number of sessions and stream groups allocated, free handles, and current warnings, errors, and critical errors (if any) |
+
