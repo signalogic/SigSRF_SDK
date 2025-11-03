@@ -1,6 +1,6 @@
 # Table of Contents
 
-[EdgeStream and SigSRF Overview](#user-content-overview)<br/>
+[Mediashark™; and SigSRF Overview](#user-content-overview)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Functionality](#user-content-functionality)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Applications and Use Cases](#user-content-applications)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#user-content-platformssupported)<br/>
@@ -41,13 +41,13 @@
 [Documentation, Support, and Contact](#user-content-documentationsupport)<br/>
 
 <a name="Overview"></a>
-# EdgeStream™ and SigSRF Overview
+# Mediashark™ and SigSRF Overview
 
-SigSRF is a series of modules (libraries) and [EdgeStream™](https://signalogic.com/edgestream) is a combination of SigSRF and applications that use SigSRF APIs. SRF stands for Streaming Resourcing Functions.
+SigSRF is a series of modules (libraries) and [Mediashark™](https://signalogic.com/mediashark) is a combination of SigSRF and applications that use SigSRF APIs. SRF stands for Streaming Resourcing Functions.
 
-The combined EdgeStream + SigSRF SDK introduces a scalable approach to telecom, media, HPC, and AI servers. The basic concept is to scale between cloud, private cloud, and Edge and IoT servers, while maintaining a container programming model. Third-party source code is minimized and all modules are scanned and tested continuously for security vulnerabilities. 
+Mediashark and its underlying SigSRF modular architecture introduces a scalable approach to telecom, media, HPC, and AI servers. The basic concept is to scale between cloud, private cloud, and Edge and IoT servers, while maintaining a container programming model. Third-party source code is minimized and all modules are scanned and tested continuously for security vulnerabilities. 
 
-The primary objectives of EdgeStream and SigSRF software are:
+The primary objectives of Mediashark™ and SigSRF software are:
 
 * provide high performance software modules for telecom, media, AI (deep learning), and analytics streaming applications
 * provide both telecom and analytics modes for (i) telecom and CDN applications and (ii) data analytics and web IT applications
@@ -71,7 +71,7 @@ The primary objectives of EdgeStream and SigSRF software are:
 <a name="Applications"></a>
 ## Applications and Use Cases
 
-EdgeStream and SigSRF software are currently deployed in the following cloud and edge application areas:
+Mediashark™ and SigSRF software are currently deployed in the following cloud and edge application areas:
 
 ### Cloud Use Cases
 * Audio Quality Optimization
@@ -98,9 +98,9 @@ EdgeStream and SigSRF software are currently deployed in the following cloud and
 <a name="PlatformsSupported"></a>
 ## Platforms Supported
 
-EdgeStream and SigSRF software are designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Reference SDK applications have low resource and footprint profiles and are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
+Mediashark™ and SigSRF software are designed to run on (i) private, public, or hybrid cloud servers and (ii) embedded system servers.  Reference SDK applications have low resource and footprint profiles and are intended to run on any Linux server based on x86, ARM, and PowerPC, and on form-factors as small as mini- and micro-ITX.
 
-EdgeStream and SigSRF support media delivery, transcoding, deep learning <sup>1</sup>, OpenCV and image analytics, speech recognition, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
+Mediashark™ and SigSRF support media delivery, transcoding, deep learning <sup>1</sup>, OpenCV and image analytics, speech recognition, and other calculation / data intensive applications.  High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers.  The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop verification, Linux guidelines, etc.
 
 For applications facing SWaP <sup>2</sup>, latency, or bandwidth constraints, SigSRF software supports a wide range of coCPU&trade; and SoC embedded device targets while maintaining a cloud compatible software architecture, for an overview see <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/WhenSoftwareOnlyIsNotEnough.md">When Software Only Is Not Enough</a>.
 
@@ -165,7 +165,7 @@ For information on HI2 and HI3 intercept decoding with <a href="https://openli.n
 <a name="Multithreaded"></a>
 ## High Capacity Multithreaded Operation
 
-Both SigSRF library modules and EdgeStream applications support multiple, concurrent packet + media processing threads. Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups. Thread stats include profiling, performance, and session allocation. Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
+Both SigSRF library modules and Mediashark™ applications support multiple, concurrent packet + media processing threads. Session-to-thread allocation modes include linear, round-robin, and "whole group" in the case of stream groups. Thread stats include profiling, performance, and session allocation. Threads support an optional "energy saver" mode, after a specified amount of inactivity time. The [SigSRF packet media thread data flow diagram](#user-content-packetmediathreaddataflowdiagram) below shows per thread data flow.
 
 High capacity operation exceeding 2000 concurrent sessions is possible on multicore x86 servers. The High Capacity Operation section in [SigSRF Documentation](#user-content-documentationsupport) has information on thread affinity, htop measurement and verification, Linux guidelines, etc.
 
@@ -198,9 +198,9 @@ where N is the required number of concurrent streams, numCPUs is the number of a
 <a name="DeploymentGrade"></a>
 ## Deployment Grade
 
-EdgeStream and SigSRF software are currently deployed by major carriers, LEAs, research organizations, and B2B enterprises. Under NDA, and with end customer permission, it may be possible to provide more information on deployment use cases and/or locations.
+Mediashark™ and SigSRF software are currently deployed by major carriers, LEAs, research organizations, and B2B enterprises. Under NDA, and with end customer permission, it may be possible to provide more information on deployment use cases and/or locations.
 
-EdgeStream and SigSRF software, unlike many open source repositories, are not experimental or prototype. Some of the signal processing modules have deployment histories dating back to 2005, including telecom, communications, and aviation systems. Packet processing modules include some components dating back to 2010, such as jitter buffer and some voice codecs.  The origins of SigSRF software are in telecom system deployment, with emphasis in the last few years on deep learning. Both EdgeStream and SigSRF continuously undergo rigorous customer production testing. 
+Mediashark™ and SigSRF software, unlike many open source repositories, are not experimental or prototype. Some of the signal processing modules have deployment histories dating back to 2005, including telecom, communications, and aviation systems. Packet processing modules include some components dating back to 2010, such as jitter buffer and some voice codecs.  The origins of SigSRF software are in telecom system deployment, with emphasis in the last few years on deep learning. Both Mediashark™ and SigSRF continuously undergo rigorous customer production testing. 
 
 For calculation-intensive shared library components, such as codecs, signal processing, and inference, SigSRF implements the XDAIS standard made popular by Texas Instruments.  XDAIS was designed to manage shared resources and conflict between calculation- and memory-intensive algorithms.  Originally XDAIS was intended by TI to help produce robust, reliable software on highly resource-constrained embedded platforms.  It continues to help achieve that on today's modern Linux servers.
 
@@ -254,11 +254,11 @@ Some notes about the above data flow diagram:
 <a name="SDKDownload"></a>
 # Using the SDK - Run Demos and Reference Apps, Build User Apps
 
-There are two (2) options to run and test the EdgeStream and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. Option (i) is fastest and easiest, option (ii) will give precise performance results for specific VM or bare-metal configurations. See the [Docker Containers](#user-content-dockercontainers) and [Rar Packages](#user-content-rarpackages) sections below.
+There are two (2) options to run and test the Mediashark™ and SigSRF SDK (i) Docker containers, or (ii) download a RAR package and install script. Option (i) is fastest and easiest, option (ii) will give precise performance results for specific VM or bare-metal configurations. See the [Docker Containers](#user-content-dockercontainers) and [Rar Packages](#user-content-rarpackages) sections below.
 
 The SDK contains:
 
-   1) A limited eval / reference version of SigSRF libraries and EdgeStream applications, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on reference application limits, see [Run Notes](#user-content-RunNotes) below.
+   1) A limited eval / reference version of SigSRF libraries and Mediashark™ applications, including media packet streaming and decoding, media transcoding, image analytics, and H.264 video streaming (ffmpeg acceleration).  For notes on reference application limits, see [Run Notes](#user-content-RunNotes) below.
 
    2) Makefiles and C/C++ source code for
    &nbsp;&nbsp;&nbsp;&nbsp;<ul>
@@ -276,7 +276,7 @@ For servers augmented with a coCPU card, the mediaTest, mediaMin, and iaTest ref
 <a name="DockerContainers"></a>
 ## Docker Containers
 
-Ubuntu and CentOS docker containers with EdgeStream and SigSRF SDK and demos installed and ready to run are located at:
+Ubuntu and CentOS docker containers with Mediashark™ and SigSRF SDK and demos installed and ready to run are located at:
 
     https://hub.docker.com/r/signalogic/sigsrf_sdk_demo_ubuntu
 
@@ -300,7 +300,7 @@ or
 
     cd /home/sigsrf_sdk_demo/Signalogic/apps/mediaTest/mediaMin
 
-... depending on which EdgeStream app you want to run. The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
+... depending on which Mediashark™ app you want to run. The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a> gives example command lines for streaming media, transcoding, speech recognition, waveform file and USB audio processing, and more.
 
 <a name="ASRDockerContainer"></a>
 ### ASR Docker Container
@@ -312,7 +312,7 @@ The ASR (automatic speech recognition) container is larger than other containers
 
 1. All available containers have been tested on x86 Linux bare metal servers, including performance and capacity measurements given on the <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/mediaTest_readme.md">mediaMin and mediaTest page</a>. Measurements on x86 VMs on other OS (e.g MacOS, WinXX) are likely to be slower.
 
-2. All available containers are configured for root privileges which makes modifying and rebuilding EdgeStream applications and test and measurement file transfers easier.
+2. All available containers are configured for root privileges which makes modifying and rebuilding Mediashark™ applications and test and measurement file transfers easier.
 
 3. App performance inside containers can be slightly improved by adding the "privileged" flag to the run command, for example:
 
@@ -325,7 +325,7 @@ The ASR (automatic speech recognition) container is larger than other containers
 <a name="WinSCPAccesDockerContainers"></a>
 ### WinSCP Access to Docker Containers
 
-You may want to remotely access inside a running/active container pcap and media files output by EdgeStream apps -- for example to run WireShark or a media player (for more information on pcap, waveform, event log, packet log, and other test files provided/generated using the SDK, see [Test File Notes](#user-content-testfilenotes) below). This can be convenient for test and measurement purposes, as it avoids manual copying of files between host and container.
+You may want to remotely access inside a running/active container pcap and media files output by Mediashark™ apps -- for example to run WireShark or a media player (for more information on pcap, waveform, event log, packet log, and other test files provided/generated using the SDK, see [Test File Notes](#user-content-testfilenotes) below). This can be convenient for test and measurement purposes, as it avoids manual copying of files between host and container.
 
 To do this with WinSCP, you can set up a second host SSH port NNNN and then add:
 
@@ -366,7 +366,7 @@ and then using the reported IP and port info in the remote WinSCP client, along 
 <a name="RarPackages"></a>
 ## Rar Packages
 
-As an alternative to Docker containers, Ubuntu and CentOS RAR packages are available to install SigSRF and EdgeStream software on VMs or bare-metal servers. The install script auto-checks kernel version and Linux distro version to decide which .rar file to look for. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install the most recent .rar file.
+As an alternative to Docker containers, Ubuntu and CentOS RAR packages are available to install SigSRF and Mediashark™ software on VMs or bare-metal servers. The install script auto-checks kernel version and Linux distro version to decide which .rar file to look for. If you have downloaded more than one RAR package, for example you are upgrading to a newer SDK version, the install script will install the most recent .rar file.
 
 <a name="InstallNotes"></a>
 ### Install Notes
@@ -405,7 +405,7 @@ For more information on pcap, waveform, and other test files provided with the S
 <a name="ASRInstallNotes"></a>
 ### ASR Install Notes
 
-To install the ASR RAR package, first follow the instructions in [Rar Packages](#user-content-rarpackages) above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install EdgeStream and SigSRF Software with ASR Option" instead of item 1).
+To install the ASR RAR package, first follow the instructions in [Rar Packages](#user-content-rarpackages) above, and then in [Running the Install Script](#user-content-runningtheinstallscript), below. The install procedure is the same as the standard SDK version, except you should choose item "2) Install Mediashark™ and SigSRF Software with ASR Option" instead of item 1).
 
 Note that downloading the ASR .rar files takes longer as the .rar size is  substantially larger. Also the install itself takes a little longer.
     
@@ -429,17 +429,17 @@ The script will then prompt as follows:
 
 Host is the default. VM should only be selected when (i) platform acceleration is in use, for example a coCPU card, DPDK, GPU board inference, etc. <sup>[1]</sup> and (ii) you are not running in a container. Host is valid for containers, VMs, bare-metal, or cloud compute instances. After choosing a platform, the script will next prompt for an install option:
 
-    1) Install EdgeStream and SigSRF Software
-    2) Install EdgeStream and SigSRF Software with ASR Option
-    3) Install EdgeStream and SigSRF Software with coCPU Option
-    4) Uninstall EdgeStream and SigSRF Software
-    5) Check / Verify EdgeStream and SigSRF Software Install
+    1) Install Mediashark™ and SigSRF Software
+    2) Install Mediashark™ and SigSRF Software with ASR Option
+    3) Install Mediashark™ and SigSRF Software with coCPU Option
+    4) Uninstall Mediashark™ and SigSRF Software
+    5) Check / Verify Mediashark™ and SigSRF Software Install
     6) Exit
     Please select install operation to perform [1-6]:
 
 If operations 1) thru 3) are selected, the script will prompt for an install path:
 
-    Enter the path for EdgeStream and SigSRF software installation:
+    Enter the path for Mediashark™ and SigSRF software installation:
 
 If no path is entered the default path is /usr/local. <i>Do not enter a path such as "Signalogic" or "/home/Signalogic"</i> as during the install a "Signalogic" symlink is created for the base install folder, which would conflict. Here are a few possible install path examples:
 
@@ -456,7 +456,7 @@ To be compatible with the install path in the [Docker Containers](#user-content-
 ```
 In any case, providing an absolute path is strongly recommended, relative install paths have not been tested.
 
-After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail). During the install, if g++/gcc build tools are not found on your system, the install script will ask permission to install them, and then build EdgeStream applications as part of the install process. This is important, as the EdgeStream app Makefiles look for OS distro version, tools version, libraries such as libmvec, and packages like ALSA and Kaldi, and set compiler defines based on what is found on the system. For example, if you are installing the ASR option, and Kaldi is not found on your system, then the mediaMin Makefile will set compiler defines to use Kaldi libs included in the Rar package.
+After entering an install path, you will be prompted for confirmation. After confirming the install path, if unrar is not available you will be prompted whether to install it (note - without unrar the install will fail). During the install, if g++/gcc build tools are not found on your system, the install script will ask permission to install them, and then build Mediashark™ applications as part of the install process. This is important, as the Mediashark™ app Makefiles look for OS distro version, tools version, libraries such as libmvec, and packages like ALSA and Kaldi, and set compiler defines based on what is found on the system. For example, if you are installing the ASR option, and Kaldi is not found on your system, then the mediaMin Makefile will set compiler defines to use Kaldi libs included in the Rar package.
 
 If at any time you want to abort the install and start over, press Ctrl-C.
 
@@ -485,11 +485,11 @@ Release:        20.04
 Codename:       focal
 Kernel Version: 5.4.0-86-generic
 
-EdgeStream and SigSRF Install Path and Options Check
+Mediashark™ and SigSRF Install Path and Options Check
 Install path: /home/labuser
 Install options:
 
-EdgeStream and SigSRF Symlinks Check
+Mediashark™ and SigSRF Symlinks Check
 Signalogic Symlink ..............................................[ OK ]
 Apps Symlink ....................................................[ OK ]
 Linux Symlink ...................................................[ OK ]
@@ -504,7 +504,7 @@ hwmgr ...........................................................[ OK ]
 filelib .........................................................[ OK ]
 cimlib ..........................................................[ OK ]
 
-EdgeStream Apps Check
+Mediashark™ Apps Check
 iaTest ..........................................................[ OK ]
 mediaTest .......................................................[ OK ]
 mediaMin ........................................................[ OK ]
@@ -565,9 +565,9 @@ which although it shows an error message will cause no problems.
 
 ### Building Reference Applications
 
-Reference application examples are provided as executables, C/C++ source code and Makefiles. After installing a Rar package, reference apps may run as-is, but also they may not, as the EdgeStream app Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and set compiler defines based on what is found on the system. Note this does not apply to Docker containers, as they are already pre-configured with ready-to-run EdgeStream apps.
+Reference application examples are provided as executables, C/C++ source code and Makefiles. After installing a Rar package, reference apps may run as-is, but also they may not, as the Mediashark™ app Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and set compiler defines based on what is found on the system. Note this does not apply to Docker containers, as they are already pre-configured with ready-to-run Mediashark™ apps.
 
-EdgeStream apps can be rebuilt at any time using gcc and/or g++.  To allow this, the Rar package install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
+Mediashark™ apps can be rebuilt at any time using gcc and/or g++.  To allow this, the Rar package install script checks for the presence of the following run-time and build related packages:  gcc, ncurses, lib-explain, and redhat-lsb-core (RedHat and CentOS) and lsb-core (Ubuntu). These are prompted for and installed if not found.
 
 <a name="TestFileNotes"></a>
 ## Test File Notes
@@ -603,7 +603,7 @@ Currently SigSRF attempts to maintain real-time performance for one stream group
 <a name="RunNotes"></a>
 ## Run Notes
 
-Docker containers are pre-configured with ready-to-run EdgeStream executables. For Rar packages, the install script builds executables as its last step -- <i>if that fails for any reason, make sure you initially rebuild the demo and reference apps before running them. This is important, as the Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and then set compiler defines based on what's found on the system.</i>
+Docker containers are pre-configured with ready-to-run Mediashark™ executables. For Rar packages, the install script builds executables as its last step -- <i>if that fails for any reason, make sure you initially rebuild the demo and reference apps before running them. This is important, as the Makefiles look for system configuration (such as OS distro version, tools version, libraries like libmvec, and packages like ALSA and Kaldi), and then set compiler defines based on what's found on the system.</i>
 
 Reference applications limits are listed below.  The iaTest and paTest apps do not have a functionality limit. mediaMin and mediaTest app functionality is limited as follows:
 
@@ -648,7 +648,7 @@ The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/paTest_rea
 <a name="SDKDemoTestedPlatforms"></a>
 # SDK / Demo Tested Platforms
 
-The EdgeStream and SigSRF SDK and demos have been tested on the following platforms:
+The Mediashark™ and SigSRF SDK and demos have been tested on the following platforms:
  
 <b>Ubuntu</b>
  
@@ -713,6 +713,7 @@ The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provid
 ## Technical Support / Questions
 
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can request group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+
 
 
 
