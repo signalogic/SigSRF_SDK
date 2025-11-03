@@ -1,6 +1,6 @@
 # Table of Contents
 
-[Mediashark™; and SigSRF Overview](#user-content-overview)<br/>
+[Mediashark™ and SigSRF Overview](#user-content-overview)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Functionality](#user-content-functionality)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Applications and Use Cases](#user-content-applications)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[Platforms Supported](#user-content-platformssupported)<br/>
@@ -713,6 +713,7 @@ The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provid
 ## Technical Support / Questions
 
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can request group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+
 
 
 
