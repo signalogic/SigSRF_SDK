@@ -43,9 +43,9 @@
 <a name="Overview"></a>
 # Mediashark™ and SigSRF Overview
 
-SigSRF is a series of modules (libraries) and [Mediashark™](https://signalogic.com/mediashark) is a combination of SigSRF and applications that use SigSRF APIs. SRF stands for Streaming Resourcing Functions.
+SigSRF software is a series of modules (libraries) and [Mediashark™](https://signalogic.com/mediashark) software is a combination of SigSRF and applications that use SigSRF APIs. SRF stands for Streaming Resourcing Functions. Mediashark™ includes the mediaTest, mediaMin, and Mediashark™ applications.
 
-Mediashark and its underlying SigSRF modular architecture introduces a scalable approach to telecom, media, HPC, and AI servers. The basic concept is to scale between cloud, private cloud, and Edge and IoT servers, while maintaining a container programming model. Third-party source code is minimized and all modules are scanned and tested continuously for security vulnerabilities. 
+Mediashark™ and its underlying SigSRF modular architecture take a scalable approach to telecom, media, HPC, and AI servers. The basic concept is to scale between cloud, private cloud, and Edge, robotics, and IoT servers, while maintaining a container programming model. Third-party source code is minimized and all modules are scanned and tested continuously for security vulnerabilities. 
 
 The primary objectives of Mediashark™ and SigSRF software are:
 
@@ -713,6 +713,7 @@ The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provid
 ## Technical Support / Questions
 
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can request group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+
 
 
 
