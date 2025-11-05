@@ -65,6 +65,7 @@ The primary objectives of Mediashark™ and SigSRF software are:
 * RTP Decoding (EVS <sup>1</sup>, AMR, G729, MELPe, H.264, H.265, etc). Support for RTP stream transitions (RFC 8108). Auto-detection of RTP stream/codec type, SDP detection, and .sdp file input definitions
 * Session aware stream merging, unified conversations, forensic audio features
 * Live real-time output
+* High performance, for example decoding multiple concurrent streams to linear PCM audio
 * Bit-exact (reproducible) wav, pcap, and bitstream file output
 * Extensive packet and event logging
 
@@ -74,11 +75,12 @@ The primary objectives of Mediashark™ and SigSRF software are:
 Mediashark™ and SigSRF software are currently deployed in the following cloud and edge application areas:
 
 ### Cloud Use Cases
-* Audio Quality Optimization
-* Lawful Intercept and Lawful Intelligence (LI) and Forensic Audio
-* Call Recording, Call Transcription, Multiparty Call Reconstruction
+* High performance decoding to multiple L16 streams for AI speech-to-text and translation purposes
+* Audio quality optimization
+* Lawful intercept, lawful intelligence (LI) and forensic audio
+* Call recording, call transcription, multiparty call reconstruction
 * Session Border Controller (SBC) and Media Gateway
-* Bulk Pcap Processing
+* Bulk pcap processing
 * Security
     * Security assessment - auto-detect, extract, and decode audio and video RTP streams (from a variety of endpoints including phones, webcams, etc)
     * Detect RTP malware including RTP header and codec bitstream steganography
@@ -713,6 +715,7 @@ The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provid
 ## Technical Support / Questions
 
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can request group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+
 
 
 
