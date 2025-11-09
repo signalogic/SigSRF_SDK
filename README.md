@@ -653,7 +653,10 @@ The <a href="https://www.github.com/signalogic/SigSRF_SDK/blob/master/paTest_rea
 The Mediashark™ and SigSRF SDK and demos have been tested on the following platforms:
  
 <b>Ubuntu</b>
- 
+
+  Ubuntu 22.04.1 LTS</br>
+  g++/gcc 11.2.0
+
   Ubuntu 20.04.1 LTS</br>
   g++/gcc (Ubuntu 9.3.0-17ubuntu1\~20.04) 9.3.0
    
@@ -683,7 +686,12 @@ The Mediashark™ and SigSRF SDK and demos have been tested on the following pla
 
   CentOS Linux release 7.6.1810 (Core)</br>
   g++/gcc (GCC) 4.8.5 20150623 (Red Hat 4.8.5-44)
-   
+
+<b>Debian</b>
+ 
+  Debian GNU/Linux bookworm/sid</br>
+  g++/gcc (Debian 11.3.0-5) 11.3.0
+
 <a name="DocumentationSupport"></a>
 # Documentation, Support, and Contact
 
@@ -715,6 +723,7 @@ The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provid
 ## Technical Support / Questions
 
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can request group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+
 
 
 
