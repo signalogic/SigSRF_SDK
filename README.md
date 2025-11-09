@@ -61,7 +61,7 @@ The primary objectives of Mediashark™ and SigSRF software are:
 <a name="Functionality"></a>
 ## Functionality
 
-* UDP and file packet input with full RTP packet functionality. SDP aware, recognition and filtering of a wide range of protocols, pcap/pcapng/rtp file support, encapsulated packet support, HI2/HI3 support, packet buffering, re-ordering, repair, tracing and logging
+* UDP and file packet input with full RTP packet functionality. SDP aware, recognition and filtering of a wide range of protocols, pcap/pcapng/rtp file support, encapsulated packet support, HI2/HI3 support, packet buffering, re-ordering, repair, tracing and logging. Pcap, pcapng, rtpXXX, wav, .h26x, coded files (e.g. .amr), and other media file formats are supported
 * RTP Decoding (EVS <sup>1</sup>, AMR, G729, MELPe, H.264, H.265, etc). Support for RTP stream transitions (RFC 8108). Auto-detection of RTP stream/codec type, SDP detection, and .sdp file input definitions
 * Session aware stream merging, unified conversations, forensic audio features
 * Live real-time output
@@ -715,6 +715,7 @@ The <a href="https://bit.ly/2J18F3f" target="_blank">coCPU User Guide</a> provid
 ## Technical Support / Questions
 
 Limited tech support for the SigSRF SDK and coCPU option is available from Signalogic via e-mail and Skype.  You can request group skype engineer support using Skype Id "signalogic underscore inc" (replace with _ and no spaces).  For e-mail questions, send to "info at signalogic dot com".
+
 
 
 
