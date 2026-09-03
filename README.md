@@ -75,7 +75,7 @@ The primary objectives of Mediashark™ and SigSRF software are:
 Mediashark™ and SigSRF software are currently deployed in the following cloud and edge application areas:
 
 ### Cloud Use Cases
-* High performance decoding to multiple L16 streams for AI speech-to-text and translation purposes
+* Audio cleaning on single and multiple streams (unified conversation) prior to AI model speech recognition (high performance decoding to multiple L16 streams for AI speech-to-text and translation purposes)
 * Audio quality optimization
 * Lawful intercept, lawful intelligence (LI) and forensic audio
 * Call recording, call transcription, multiparty call reconstruction
