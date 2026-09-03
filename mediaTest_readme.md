@@ -16,6 +16,7 @@ After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-
 
  - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs. UDP and file packet input with full RTP packet functionality. SDP aware, recognition and filtering of a wide range of protocols, pcap/pcapng/rtp file support, encapsulated packet support, HI2/HI3 support, packet buffering, re-ordering, repair, tracing and logging
  - high capacity RTP decoding and transcoding (EVS 1, AMR, G729, MELPe, H.264, H.265, etc), RFC 8108, auto-detection of RTP stream/codec type, SDP detection, and .sdp file input definitions. Session aware stream merging, unified conversations, forensic audio features
+ - audio cleaning on single and multiple streams (unified conversation) prior to AI model speech recognition
  - ready-to-run applications include LI, call recording, SBC, media post-processing (e.g speech recognition), and high performance decoding to multiple L16 streams for AI speech-to-text and translation purposes
  - real-time live output and bit-exact (reproducible) wav, pcap, and bitstream file output
  - packet and event logging
