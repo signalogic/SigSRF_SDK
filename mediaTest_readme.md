@@ -8,11 +8,12 @@ Modified JHB May 2025, images are using https://raw.githubusercontent.com/signal
 
 Modified JHB Jun 2025, update command line documentation, add pktlib info on pcap/pcapng support, fragmentation
 Modified JHB Jun 2025, add "_main" suffix to level 1 header link targets, to differentiate auto-generated ToC links (when the markdown processor sees ## xxx) and main text links (e.g. mediaMin and mediaMin_main). Otherwise the Github markdown processor only sees the first link
+Modified JHB Sep 2025, add Mediashark naming
 -->
 
-# mediaMin and mediaTest Reference Apps
+# Mediashark™ Reference Apps
 
-After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-content-installnotes), this page gives example command lines and documentation for the mediaMin and mediaTest reference applications, including:
+After [installing the SigSRF SDK](https://github.com/signalogic/SigSRF_SDK#user-content-installnotes), this page gives example command lines and documentation for Mediashark™ reference applications, including mediaMin and mediaTest:
 
  - packet streaming, both real-time and unlimited rate buffering, with packet re-ordering and packet RFCs. UDP and file packet input with full RTP packet functionality. SDP aware, recognition and filtering of a wide range of protocols, pcap/pcapng/rtp file support, encapsulated packet support, HI2/HI3 support, packet buffering, re-ordering, repair, tracing and logging
  - high capacity RTP decoding and transcoding (EVS 1, AMR, G729, MELPe, H.264, H.265, etc), RFC 8108, auto-detection of RTP stream/codec type, SDP detection, and .sdp file input definitions. Session aware stream merging, unified conversations, forensic audio features
