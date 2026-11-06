@@ -30,6 +30,17 @@ Input and output options include network I/O, pcap file, and audio file format f
 
 # News and Updates
 
+<i><b>2026</b></i>
+
+The following Mediashark improvements are under development with AI coding tool assistance<sup>1</sup>:
+
+ - CALEA LI capture pcaps, in addition to 3GPP LI formats. PCLI and TPKT CDC formats supported
+ - Oracle OCOM pcap processing
+ - audio domain (i.e. PCM) input, both audio file formats (e.g. .wav, .au, etc) and USB audio (e.g. USB microphone), similar to existing functionality in mediaTest
+ - Whisper ASR (in addition to Kaldi)
+ - video codec decode and encode, support for OpenCV operations on YUV domain data
+ - RF-over-IP packet support (Vita 49), demodulation, audio stream input
+
 <i><b>3Q 2025</b></i>
 
 Use case improvements
@@ -185,6 +196,8 @@ Here are some new features added recently:
 3Q 2018 - mediaMin joins mediaTest as a reference / example application, with published soure code.  mediaMin uses a minimal set of SigSRF APIs -- push packet, pull packet, session management -- and dynamic session creation to process pcaps and UDP port data.  Plug in a multistream pcap and decode all streams, handle DTX, merge streams together, generate output pcaps and wav files, and more
 
 1Q 2018 - SigSRF and mediaTest software reached a milestone, now in use or deployed with more than 20 customers.
+
+<sup>1</sup>AI assisted coding improvements are carefully scrutinized and monitored, with results subjected to extensive test, measurement, and validation. A regression test based on 100s of pcap, wav, and other media format files is applied, with outputs checked for bit-exactness, media quality, timing, and other metrics as applicable
 
 <a name="SDKFunctionalLimits"></a>
 # SDK Functional Limits
