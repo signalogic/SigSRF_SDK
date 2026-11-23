@@ -79,12 +79,16 @@ Mediashark™ and SigSRF software are currently deployed in the following cloud 
 * Audio quality optimization
 * Lawful intercept, lawful intelligence (LI) and forensic audio
 * Call recording, call transcription, multiparty call reconstruction
-* Session Border Controller (SBC) and Media Gateway
 * Bulk pcap processing
 * Security
     * Security assessment - auto-detect, extract, and decode audio and video RTP streams (from a variety of endpoints including phones, webcams, etc)
     * Detect RTP malware including RTP header and codec bitstream steganography
 * Network Analyzers
+
+### Telecom Use Cases
+* Lawful intercept, lawful intelligence (LI) and forensic audio
+* Session Border Controller (SBC) and Media Gateway embedding and integration
+* Carrier media "always on" 24/7 monitoring, with media quality alerts, stats, and logging. PESQ (MOS emulation) scores in the audio domain (i.e. after stream decoding)
 
 ### Edge Computing and Edge AI Use Cases
 * Robotics - implement ASR <sup>2</sup> voice commands for hands-free, urgent, or safety related requirements without cloud dependency <sup>3</sup>
